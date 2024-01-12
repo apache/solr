@@ -1,0 +1,122 @@
+= Exercise 3: Index Your Own Data
+:experimental:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+[[exercise-3]]
+== Exercise 3: Index Your Own Data
+
+For this last exercise, work with a dataset of your choice.
+This can be files on your local hard drive, a set of data you have worked with before, or maybe a sample of the data you intend to index to Solr for your production application.
+
+This exercise is intended to get you thinking about what you will need to do for your application:
+
+* What sorts of data do you need to index?
+* What will you need to do to prepare Solr for your data (such as, create specific fields, set up copy fields, determine analysis rules, etc.)
+* What kinds of search options do you want to provide to users?
+* How much testing will you need to do to ensure everything works the way you expect?
+
+=== Create Your Own Collection
+
+Before you get started, create a new collection, named whatever you'd like.
+In this example, the collection will be named "localDocs"; replace that name with whatever name you choose if you want to.
+
+[,console]
+----
+$ bin/solr create -c localDocs -s 2 -rf 2
+----
+
+Again, as we saw from Exercise 2 above, this will use the `_default` configset and all the schemaless features it provides.
+As we noted previously, this may cause problems when we index our data.
+You may need to iterate on indexing a few times before you get the schema right.
+
+=== Indexing Ideas
+
+Solr has lots of ways to index data.
+Choose one of the approaches below and try it out with your system:
+
+Local Files with `bin/post`::
+If you have a local directory of files, the Post Tool (`bin/post`) can index a directory of files.
+We saw this in action in our first exercise.
++
+We used only JSON, XML and CSV in our exercises, but the Post Tool can also handle HTML, PDF, Microsoft Office formats (such as MS Word), plain text, and more.
++
+In this example, assume there is a directory named "Documents" locally.
+To index it, we would issue a command like this (correcting the collection name after the `-c` parameter as needed):
++
+[,console]
+----
+$ bin/post -c localDocs ~/Documents
+----
++
+You may get errors as it works through your documents.
+These might be caused by the field guessing, or the file type may not be supported.
+Indexing content such as this demonstrates the need to plan Solr for your data, which requires understanding it and perhaps also some trial and error.
+
+SolrJ::
+SolrJ is a Java-based client for interacting with Solr.
+Use xref:deployment-guide:solrj.adoc[] for JVM-based languages or other xref:deployment-guide:client-apis.adoc[] to programmatically create documents to send to Solr.
+
+Documents Screen::
+Use the Admin UI xref:indexing-guide:documents-screen.adoc[] (at http://localhost:8983/solr/#/localDocs/documents) to paste in a document to be indexed, or select `Document Builder` from the `Document Type` dropdown to build a document one field at a time.
+Click on the btn:[Submit Document] button below the form to index your document.
+
+=== Updating Data
+
+You may notice that even if you index content in this tutorial more than once, it does not duplicate the results found.
+This is because the example Solr schema (a file named either `managed-schema.xml` or `schema.xml`) specifies a `uniqueKey` field called `id`.
+Whenever you POST commands to Solr to add a document with the same value for the `uniqueKey` as an existing document, it automatically replaces it for you.
+
+You can see that has happened by looking at the values for `numDocs` and `maxDoc` in the core-specific Overview section of the Solr Admin UI.
+
+`numDocs` represents the number of searchable documents in the index (and will be larger than the number of XML, JSON, or CSV files since some files contained more than one document).
+The `maxDoc` value may be larger as the `maxDoc` count includes logically deleted documents that have not yet been physically removed from the index.
+You can re-post the sample files over and over again as much as you want and `numDocs` will never increase, because the new documents will constantly be replacing the old.
+
+Go ahead and edit any of the existing example data files, change some of the data, and re-run the PostTool (`bin/post`).
+You'll see your changes reflected in subsequent searches.
+
+=== Deleting Data
+
+If you need to iterate a few times to get your schema right, you may want to delete documents to clear out the collection and try again.
+Note, however, that merely removing documents doesn't change the underlying field definitions.
+Essentially, this will allow you to reindex your data after making changes to fields for your needs.
+
+You can delete data by POSTing a delete command to the update URL and specifying the value of the document's unique key field, or a query that matches multiple documents (be careful with that one!).
+We can use `bin/post` to delete documents also if we structure the request properly.
+
+Execute the following command to delete a specific document:
+
+[,console]
+----
+$ bin/post -c localDocs -d "<delete><id>SP2514N</id></delete>"
+----
+
+To delete all documents, you can use "delete-by-query" command like:
+
+[,console]
+----
+$ bin/post -c localDocs -d "<delete><query>*:*</query></delete>"
+----
+
+You can also modify the above to only delete documents that match a specific query.
+
+=== Exercise 3 Wrap Up
+
+At this point, you're ready to start working on your own.
+
+Jump ahead to the overall xref:solr-tutorial.adoc#wrapping-up[wrap up] when you're ready to stop Solr and remove all the examples you worked with and start fresh.

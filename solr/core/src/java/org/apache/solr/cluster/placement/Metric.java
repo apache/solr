@@ -17,24 +17,21 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * Metric-related attribute of a node or replica. It defines a short symbolic name of the metric, the corresponding
- * internal metric name and the desired format/unit conversion. Generic type
+ * Metric-related attribute of a node or replica. It defines a short symbolic name of the metric,
+ * the corresponding internal metric name and the desired format/unit conversion. Generic type
  * specifies the type of converted values of this attribute.
  */
 public interface Metric<T> {
 
-  /**
-   * Return the short-hand name that identifies this attribute.
-   */
+  /** Return the short-hand name that identifies this attribute. */
   String getName();
 
-  /**
-   * Return the internal name of a Solr metric associated with this attribute.
-   */
+  /** Return the internal name of a Solr metric associated with this attribute. */
   String getInternalName();
 
   /**
    * Convert raw value. This may involve changing raw value type or units.
+   *
    * @param value raw value
    * @return converted value
    */

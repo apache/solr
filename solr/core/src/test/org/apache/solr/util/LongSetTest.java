@@ -17,7 +17,6 @@
 package org.apache.solr.util;
 
 import java.util.HashSet;
-
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
@@ -90,5 +89,4 @@ public class LongSetTest extends SolrTestCase {
     assertEquals(0L, it.next());
     assertFalse(it.hasNext());
   }
-
 }

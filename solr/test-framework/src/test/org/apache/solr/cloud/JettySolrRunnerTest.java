@@ -17,17 +17,17 @@
 
 package org.apache.solr.cloud;
 
+import static org.hamcrest.core.IsNot.not;
+
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
+import org.hamcrest.MatcherAssert;
 import org.junit.Test;
-
-import static org.hamcrest.core.IsNot.not;
 
 public class JettySolrRunnerTest extends SolrTestCaseJ4 {
 
@@ -35,7 +35,9 @@ public class JettySolrRunnerTest extends SolrTestCaseJ4 {
   public void testRestartPorts() throws Exception {
 
     Path solrHome = createTempDir();
-    Files.write(solrHome.resolve("solr.xml"), MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.getBytes(Charset.defaultCharset()));
+    Files.write(
+        solrHome.resolve("solr.xml"),
+        MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.getBytes(Charset.defaultCharset()));
 
     JettyConfig config = JettyConfig.builder().build();
 
@@ -49,18 +51,18 @@ public class JettySolrRunnerTest extends SolrTestCaseJ4 {
       jetty.stop();
       jetty.start();
 
-      assertEquals("After restart, jetty port should be the same", usedPort, jetty.getBaseUrl().getPort());
+      assertEquals(
+          "After restart, jetty port should be the same", usedPort, jetty.getBaseUrl().getPort());
 
       jetty.stop();
       jetty.start(false);
 
-      assertThat("After restart, jetty port should be different", jetty.getBaseUrl().getPort(), not(usedPort));
+      MatcherAssert.assertThat(
+          "After restart, jetty port should be different",
+          jetty.getBaseUrl().getPort(),
+          not(usedPort));
+    } finally {
+      if (jetty.isRunning()) jetty.stop();
     }
-    finally {
-      if (jetty.isRunning())
-        jetty.stop();
-    }
-
   }
-
 }

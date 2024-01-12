@@ -20,16 +20,13 @@ package org.apache.solr.search.facet;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.IntFunction;
-
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.FieldNameValueSource;
 
-/**
- * {@link AggValueSource} to count values for given {@link ValueSource}
- */
+/** {@link AggValueSource} to count values for given {@link ValueSource} */
 public class CountValsAgg extends SimpleAggValueSource {
 
   public CountValsAgg(ValueSource vs) {
@@ -37,10 +34,11 @@ public class CountValsAgg extends SimpleAggValueSource {
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
+      throws IOException {
     ValueSource vs = getArg();
     if (vs instanceof FieldNameValueSource) {
-      String field = ((FieldNameValueSource)vs).getFieldName();
+      String field = ((FieldNameValueSource) vs).getFieldName();
       SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(field);
       if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
         if (sf.hasDocValues()) {
@@ -50,7 +48,8 @@ public class CountValsAgg extends SimpleAggValueSource {
           return new CountSortedSetDVAcc(fcontext, sf, numSlots);
         }
         if (sf.getType().isPointField()) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
               "'countvals' aggregation not supported for PointField without docValues");
         }
         return new CountMultiValuedAcc(fcontext, sf, numSlots);
@@ -61,41 +60,43 @@ public class CountValsAgg extends SimpleAggValueSource {
     return new CountValSlotAcc(vs, fcontext, numSlots);
   }
 
-
   @Override
   public FacetMerger createFacetMerger(Object prototype) {
     return new FacetModule.FacetLongMerger();
   }
 
-  class CountValSlotAcc extends SlotAcc.LongFuncSlotAcc {
+  static class CountValSlotAcc extends SlotAcc.LongFuncSlotAcc {
 
     public CountValSlotAcc(ValueSource values, FacetContext fcontext, int numSlots) {
       super(values, fcontext, numSlots, 0);
     }
 
     @Override
-    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext)
+        throws IOException {
       if (values.exists(doc)) {
         result[slot]++;
       }
     }
   }
 
-  class CountSortedNumericDVAcc extends DocValuesAcc.LongSortedNumericDVAcc {
+  static class CountSortedNumericDVAcc extends DocValuesAcc.LongSortedNumericDVAcc {
 
-    public CountSortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public CountSortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots)
+        throws IOException {
       super(fcontext, sf, numSlots, 0);
     }
 
     @Override
     protected void collectValues(int doc, int slot) throws IOException {
-      result[slot]+=values.docValueCount();
+      result[slot] += values.docValueCount();
     }
   }
 
-  class CountSortedSetDVAcc extends DocValuesAcc.LongSortedSetDVAcc {
+  static class CountSortedSetDVAcc extends DocValuesAcc.LongSortedSetDVAcc {
 
-    public CountSortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public CountSortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots)
+        throws IOException {
       super(fcontext, sf, numSlots, 0);
     }
 
@@ -107,17 +108,19 @@ public class CountValsAgg extends SimpleAggValueSource {
     }
   }
 
-  class CountMultiValuedAcc extends UnInvertedFieldAcc {
+  static class CountMultiValuedAcc extends UnInvertedFieldAcc {
     private int currentSlot;
     long[] result;
 
-    public CountMultiValuedAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public CountMultiValuedAcc(FacetContext fcontext, SchemaField sf, int numSlots)
+        throws IOException {
       super(fcontext, sf, numSlots);
       result = new long[numSlots];
     }
 
     @Override
-    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext)
+        throws IOException {
       this.currentSlot = slot;
       docToTerm.getBigTerms(doc + currentDocBase, this);
       docToTerm.getSmallTerms(doc + currentDocBase, this);

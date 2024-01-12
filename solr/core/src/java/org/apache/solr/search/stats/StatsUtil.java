@@ -18,17 +18,15 @@ package org.apache.solr.search.stats;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
 import org.apache.lucene.index.Term;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -36,10 +34,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Various utilities for de/serialization of term stats and collection stats.
- * <p>TODO: serialization format is very simple and does nothing to compress the data.</p>
+ *
+ * <p>TODO: serialization format is very simple and does nothing to compress the data.
  */
 public class StatsUtil {
-  
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ENTRY_SEPARATOR = "!";
@@ -47,10 +46,11 @@ public class StatsUtil {
 
   /**
    * Parse a list of urls separated by "|" in order to retrieve a shard name.
+   *
    * @param collectionName collection name
    * @param shardUrls list of urls
-   * @return shard name, or shardUrl if no shard info is present,
-   *        or null if impossible to determine (eg. empty string)
+   * @return shard name, or shardUrl if no shard info is present, or null if impossible to determine
+   *     (eg. empty string)
    */
   public static String shardUrlToShard(String collectionName, String shardUrls) {
     // we may get multiple replica urls
@@ -136,9 +136,7 @@ public class StatsUtil {
     return sb.toString();
   }
 
-  /**
-   * Make a String representation of {@link CollectionStats}
-   */
+  /** Make a String representation of {@link CollectionStats} */
   public static String colStatsToString(CollectionStats colStats) {
     StringBuilder sb = new StringBuilder();
     sb.append(colStats.field);
@@ -152,7 +150,7 @@ public class StatsUtil {
     sb.append(colStats.sumDocFreq);
     return sb.toString();
   }
-  
+
   private static CollectionStats colStatsFromString(String data) {
     if (data == null || data.trim().length() == 0) {
       log.warn("Invalid empty collection stats string");
@@ -169,14 +167,13 @@ public class StatsUtil {
       long docCount = Long.parseLong(vals[2]);
       long sumTotalTermFreq = Long.parseLong(vals[3]);
       long sumDocFreq = Long.parseLong(vals[4]);
-      return new CollectionStats(field, maxDoc, docCount, sumTotalTermFreq,
-          sumDocFreq);
+      return new CollectionStats(field, maxDoc, docCount, sumTotalTermFreq, sumDocFreq);
     } catch (Exception e) {
       log.warn("Invalid collection stats string '{}', ", data, e);
       return null;
     }
   }
-  
+
   public static String termToEncodedString(Term t) {
     StringBuilder sb = new StringBuilder();
     sb.append(t.field()).append(':');
@@ -192,21 +189,21 @@ public class StatsUtil {
     for (int i = 0; i < value.length(); i++) {
       char c = value.charAt(i);
       switch (c) {
-        case ESCAPE :
+        case ESCAPE:
           output.append(ESCAPE).append(ESCAPE);
           break;
-        case ENTRY_SEPARATOR_CHAR :
+        case ENTRY_SEPARATOR_CHAR:
           output.append(ESCAPE).append(ESCAPE_ENTRY_SEPARATOR);
           break;
-        default :
+        default:
           output.append(c);
       }
     }
-    return URLEncoder.encode(output.toString(), Charset.forName("UTF-8"));
+    return URLEncoder.encode(output.toString(), StandardCharsets.UTF_8);
   }
 
   public static String decode(String value) throws IOException {
-    value = URLDecoder.decode(value, Charset.forName("UTF-8"));
+    value = URLDecoder.decode(value, StandardCharsets.UTF_8);
     StringBuilder output = new StringBuilder(value.length());
     for (int i = 0; i < value.length(); i++) {
       char c = value.charAt(i);
@@ -238,7 +235,7 @@ public class StatsUtil {
     String value = term.substring(idx + 1);
     return prefix + encode(value);
   }
-  
+
   public static Term termFromEncodedString(String data) {
     if (data == null || data.trim().length() == 0) {
       log.warn("Invalid empty term value");
@@ -252,13 +249,13 @@ public class StatsUtil {
     String field = data.substring(0, idx);
     String value = data.substring(idx + 1);
     try {
-       return new Term(field, decode(value));
+      return new Term(field, decode(value));
     } catch (Exception e) {
       log.warn("Invalid term value '{}'", value);
       return null;
     }
   }
-  
+
   public static String termStatsToString(TermStats termStats, boolean encode) {
     StringBuilder sb = new StringBuilder();
     sb.append(encode ? termToEncodedString(termStats.term) : termStats.term).append(',');
@@ -267,7 +264,7 @@ public class StatsUtil {
     sb.append(termStats.totalTermFreq);
     return sb.toString();
   }
-  
+
   private static TermStats termStatsFromString(String data) {
     if (data == null || data.trim().length() == 0) {
       log.warn("Invalid empty term stats string");
@@ -289,11 +286,11 @@ public class StatsUtil {
     }
   }
 
-  public static Map<String,CollectionStats> colStatsMapFromString(String data) {
+  public static Map<String, CollectionStats> colStatsMapFromString(String data) {
     if (data == null || data.trim().length() == 0) {
       return null;
     }
-    Map<String,CollectionStats> map = new HashMap<String,CollectionStats>();
+    Map<String, CollectionStats> map = new HashMap<>();
     String[] entries = data.split(ENTRY_SEPARATOR);
     for (String es : entries) {
       CollectionStats stats = colStatsFromString(es);
@@ -303,13 +300,13 @@ public class StatsUtil {
     }
     return map;
   }
-  
-  public static String colStatsMapToString(Map<String,CollectionStats> stats) {
+
+  public static String colStatsMapToString(Map<String, CollectionStats> stats) {
     if (stats == null || stats.isEmpty()) {
       return "";
     }
     StringBuilder sb = new StringBuilder();
-    for (Entry<String,CollectionStats> e : stats.entrySet()) {
+    for (Entry<String, CollectionStats> e : stats.entrySet()) {
       if (sb.length() > 0) {
         sb.append(ENTRY_SEPARATOR);
       }
@@ -317,12 +314,12 @@ public class StatsUtil {
     }
     return sb.toString();
   }
-  
-  public static Map<String,TermStats> termStatsMapFromString(String data) {
+
+  public static Map<String, TermStats> termStatsMapFromString(String data) {
     if (data == null || data.trim().length() == 0) {
       return null;
     }
-    Map<String,TermStats> map = new HashMap<>();
+    Map<String, TermStats> map = new HashMap<>();
     String[] entries = data.split(ENTRY_SEPARATOR);
     for (String es : entries) {
       TermStats termStats = termStatsFromString(es);
@@ -332,13 +329,13 @@ public class StatsUtil {
     }
     return map;
   }
-  
-  public static String termStatsMapToString(Map<String,TermStats> stats) {
+
+  public static String termStatsMapToString(Map<String, TermStats> stats) {
     if (stats == null || stats.isEmpty()) {
       return "";
     }
     StringBuilder sb = new StringBuilder();
-    for (Entry<String,TermStats> e : stats.entrySet()) {
+    for (Entry<String, TermStats> e : stats.entrySet()) {
       if (sb.length() > 0) {
         sb.append(ENTRY_SEPARATOR);
       }
@@ -346,5 +343,4 @@ public class StatsUtil {
     }
     return sb.toString();
   }
-  
 }

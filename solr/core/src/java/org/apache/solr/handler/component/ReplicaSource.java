@@ -30,9 +30,7 @@ interface ReplicaSource {
    */
   List<String> getSliceNames();
 
-  /**
-   * Get the list of replica urls for a 0-indexed slice number.
-   */
+  /** Get the list of replica urls for a 0-indexed slice number. */
   List<String> getReplicasBySlice(int sliceNumber);
 
   /**

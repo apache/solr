@@ -22,25 +22,20 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 
-
 /**
- * Basic functionality to upload a File or {@link org.apache.solr.common.util.ContentStream} to a Solr Cell or some
- * other handler that takes ContentStreams (CSV)
- * <p>
- * See https://solr.apache.org/guide/indexing-with-tika.html<br>
- * See https://solr.apache.org/guide/indexing-with-update-handlers.html
+ * Basic functionality to upload a File or {@link org.apache.solr.common.util.ContentStream} to a
+ * Solr Cell or some other handler that takes ContentStreams (CSV)
  *
- *
- **/
+ * <p>See https://solr.apache.org/guide/solr/latest/indexing-guide/indexing-with-tika.html<br>
+ * See https://solr.apache.org/guide/solr/latest/indexing-guide/indexing-with-update-handlers.html
+ */
 public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
   List<ContentStream> contentStreams;
 
   /**
-   *
    * @param url The URL to send the {@link org.apache.solr.common.util.ContentStream} to in Solr.
    */
   public ContentStreamUpdateRequest(String url) {
@@ -55,12 +50,13 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
 
   @Override
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-    if (contentStreams == null || contentStreams.isEmpty() || contentStreams.size() > 1) return null;
+    if (contentStreams == null || contentStreams.isEmpty() || contentStreams.size() > 1)
+      return null;
     ContentStream stream = contentStreams.get(0);
     return new RequestWriter.ContentWriter() {
       @Override
       public void write(OutputStream os) throws IOException {
-        try(var inStream = stream.getStream()) {
+        try (var inStream = stream.getStream()) {
           inStream.transferTo(os);
         }
       }
@@ -74,9 +70,9 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
 
   /**
    * Add a File to the {@link org.apache.solr.common.util.ContentStream}s.
+   *
    * @param file The File to add.
    * @throws IOException if there was an error with the file.
-   *
    * @see #getContentStreams()
    * @see org.apache.solr.common.util.ContentStreamBase.FileStream
    */
@@ -88,10 +84,10 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
 
   /**
    * Add a {@link org.apache.solr.common.util.ContentStream} to {@link #getContentStreams()}
+   *
    * @param contentStream The {@link org.apache.solr.common.util.ContentStream}
    */
-  public void addContentStream(ContentStream contentStream){
+  public void addContentStream(ContentStream contentStream) {
     contentStreams.add(contentStream);
   }
-
 }

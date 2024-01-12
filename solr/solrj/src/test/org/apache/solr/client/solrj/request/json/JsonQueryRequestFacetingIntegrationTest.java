@@ -20,12 +20,10 @@ package org.apache.solr.client.solrj.request.json;
 import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
@@ -60,9 +58,6 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
         .addConfig(CONFIG_NAME, new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
         .configure();
 
-    final List<String> solrUrls = new ArrayList<>();
-    solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
-
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
@@ -77,18 +72,18 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testSingleTermsFacet() throws Exception {
-    final TermsFacetMap categoriesFacetMap = new TermsFacetMap("cat")
-        .setLimit(3);
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("top_cats", categoriesFacetMap);
+    final TermsFacetMap categoriesFacetMap = new TermsFacetMap("cat").setLimit(3);
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("top_cats", categoriesFacetMap);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
     assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
-    assertHasFacetWithBucketValues(topLevelFacetData, "top_cats",
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "top_cats",
         new FacetBucket("electronics", NUM_ELECTRONICS),
         new FacetBucket("currency", NUM_CURRENCY),
         new FacetBucket("memory", NUM_MEMORY));
@@ -96,61 +91,61 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testTermsFacetWithPrelimSort() throws Exception {
-    final TermsFacetMap categoriesFacetMap = new TermsFacetMap("cat")
-        .setPreliminarySort("count desc")
-        .setSort("index desc")
-        .setLimit(3);
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("top_cats", categoriesFacetMap);
+    final TermsFacetMap categoriesFacetMap =
+        new TermsFacetMap("cat").setPreliminarySort("count desc").setSort("index desc").setLimit(3);
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("top_cats", categoriesFacetMap);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
     assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
-    //The prelim_sort/sort combination should give us the 3 most popular categories in reverse-alpha order
-    assertHasFacetWithBucketValues(topLevelFacetData, "top_cats",
+    // The prelim_sort/sort combination should give us the 3 most popular categories in
+    // reverse-alpha order
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "top_cats",
         new FacetBucket("memory", NUM_MEMORY),
         new FacetBucket("electronics", NUM_ELECTRONICS),
         new FacetBucket("currency", NUM_CURRENCY));
-
   }
 
   @Test
   public void testTermsFacetWithNumBucketsRequested() throws Exception {
-    final TermsFacetMap categoriesFacetMap = new TermsFacetMap("cat")
-        .includeTotalNumBuckets(true)
-        .setLimit(3);
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("top_cats", categoriesFacetMap);
+    final TermsFacetMap categoriesFacetMap =
+        new TermsFacetMap("cat").includeTotalNumBuckets(true).setLimit(3);
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("top_cats", categoriesFacetMap);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
 
     assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
-    assertHasFacetWithBucketValues(topLevelFacetData, "top_cats",
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "top_cats",
         new FacetBucket("electronics", NUM_ELECTRONICS),
         new FacetBucket("currency", NUM_CURRENCY),
         new FacetBucket("memory", NUM_MEMORY));
-    assertEquals(NUM_CATEGORIES, topLevelFacetData.getBucketBasedFacets("top_cats").getNumBuckets());
+    assertEquals(
+        NUM_CATEGORIES, topLevelFacetData.getBucketBasedFacets("top_cats").getNumBuckets());
   }
 
   @Test
   public void testTermsFacetWithAllBucketsRequested() throws Exception {
-    final TermsFacetMap categoriesFacetMap = new TermsFacetMap("cat")
-        .includeAllBucketsUnionBucket(true)
-        .setLimit(3);
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("top_cats", categoriesFacetMap);
+    final TermsFacetMap categoriesFacetMap =
+        new TermsFacetMap("cat").includeAllBucketsUnionBucket(true).setLimit(3);
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("top_cats", categoriesFacetMap);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
 
     assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
-    assertHasFacetWithBucketValues(topLevelFacetData, "top_cats",
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "top_cats",
         new FacetBucket("electronics", NUM_ELECTRONICS),
         new FacetBucket("currency", NUM_CURRENCY),
         new FacetBucket("memory", NUM_MEMORY));
@@ -159,24 +154,26 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testFacetCanBeRepresentedByMapWriter() throws Exception {
-    final MapWriter categoriesFacet = new MapWriter() {
-      @Override
-      public void writeMap(EntryWriter ew) throws IOException {
-        ew.put("type", "terms");
-        ew.put("field", "cat");
-        ew.put("limit", 3);
-      }
-    };
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("top_cats", categoriesFacet);
+    final MapWriter categoriesFacet =
+        new MapWriter() {
+          @Override
+          public void writeMap(EntryWriter ew) throws IOException {
+            ew.put("type", "terms");
+            ew.put("field", "cat");
+            ew.put("limit", 3);
+          }
+        };
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("top_cats", categoriesFacet);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
     assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
-    assertHasFacetWithBucketValues(topLevelFacetData, "top_cats",
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "top_cats",
         new FacetBucket("electronics", NUM_ELECTRONICS),
         new FacetBucket("currency", NUM_CURRENCY),
         new FacetBucket("memory", NUM_MEMORY));
@@ -184,25 +181,28 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testMultiTermsFacet() throws Exception {
-    final TermsFacetMap categoriesFacetMap = new TermsFacetMap("cat")
-        .setLimit(3);
-    final TermsFacetMap manufacturersFacetMap = new TermsFacetMap("manu_id_s")
-        .setLimit(3);
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("top_cats", categoriesFacetMap)
-        .withFacet("top_manufacturers", manufacturersFacetMap);
+    final TermsFacetMap categoriesFacetMap = new TermsFacetMap("cat").setLimit(3);
+    final TermsFacetMap manufacturersFacetMap = new TermsFacetMap("manu_id_s").setLimit(3);
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .withFacet("top_cats", categoriesFacetMap)
+            .withFacet("top_manufacturers", manufacturersFacetMap);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
     assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
-    assertHasFacetWithBucketValues(topLevelFacetData, "top_cats",
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "top_cats",
         new FacetBucket("electronics", NUM_ELECTRONICS),
         new FacetBucket("currency", NUM_CURRENCY),
         new FacetBucket("memory", NUM_MEMORY));
-    assertHasFacetWithBucketValues(topLevelFacetData, "top_manufacturers",
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "top_manufacturers",
         new FacetBucket("corsair", NUM_CORSAIR),
         new FacetBucket("belkin", NUM_BELKIN),
         new FacetBucket("canon", NUM_CANON));
@@ -211,16 +211,17 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testSingleRangeFacet() throws Exception {
     final RangeFacetMap pricesFacet = new RangeFacetMap("price", 0, 100, 20);
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("prices", pricesFacet);
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("prices", pricesFacet);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
     assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
-    assertHasFacetWithBucketValues(topLevelFacetData,"prices",
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "prices",
         new FacetBucket(0.0f, 5),
         new FacetBucket(20.0f, 0),
         new FacetBucket(40.0f, 0),
@@ -232,18 +233,19 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
   public void testSingleDateRangeFacet() throws Exception {
     final Date startDate = new Date(Instant.parse("2005-08-01T16:30:25Z").toEpochMilli());
     final Date endDate = new Date(Instant.parse("2006-02-13T15:26:37Z").toEpochMilli());
-    final RangeFacetMap manufactureDateFacet = new RangeFacetMap("manufacturedate_dt", startDate, endDate, "+1MONTH")
-        .setMinCount(1);
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("man_date", manufactureDateFacet);
+    final RangeFacetMap manufactureDateFacet =
+        new RangeFacetMap("manufacturedate_dt", startDate, endDate, "+1MONTH").setMinCount(1);
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("man_date", manufactureDateFacet);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
-    assertHasFacetWithBucketValues(topLevelFacetData,"man_date",
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "man_date",
         new FacetBucket(new Date(Instant.parse("2005-08-01T16:30:25Z").toEpochMilli()), 1),
         new FacetBucket(new Date(Instant.parse("2005-10-01T16:30:25Z").toEpochMilli()), 1),
         new FacetBucket(new Date(Instant.parse("2006-02-01T16:30:25Z").toEpochMilli()), 9));
@@ -253,289 +255,329 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
   public void testMultiRangeFacet() throws Exception {
     final RangeFacetMap pricesFacet = new RangeFacetMap("price", 0, 100, 20);
     final RangeFacetMap shippingWeightFacet = new RangeFacetMap("weight", 0, 200, 50);
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("prices", pricesFacet)
-        .withFacet("shipping_weights", shippingWeightFacet);
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .withFacet("prices", pricesFacet)
+            .withFacet("shipping_weights", shippingWeightFacet);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
     assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
-    assertHasFacetWithBucketValues(topLevelFacetData,"prices",
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "prices",
         new FacetBucket(0.0f, 5),
         new FacetBucket(20.0f, 0),
         new FacetBucket(40.0f, 0),
         new FacetBucket(60.0f, 1),
         new FacetBucket(80.0f, 1));
-    assertHasFacetWithBucketValues(topLevelFacetData, "shipping_weights",
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "shipping_weights",
         new FacetBucket(0.0f, 6),
         new FacetBucket(50.0f, 0),
         new FacetBucket(100.0f, 0),
-        new FacetBucket(150.0f,1));
+        new FacetBucket(150.0f, 1));
   }
 
   @Test
   public void testSingleStatFacet() throws Exception {
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withStatFacet("sum_price", "sum(price)");
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withStatFacet("sum_price", "sum(price)");
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
     assertEquals(NUM_TECHPRODUCTS_DOCS, topLevelFacetData.getCount());
-    assertHasStatFacetWithValue(topLevelFacetData,"sum_price", 5251.270030975342);
+    assertHasStatFacetWithValue(topLevelFacetData, "sum_price", 5251.270030975342);
   }
 
   @Test
   public void testMultiStatFacet() throws Exception {
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withStatFacet("sum_price", "sum(price)")
-        .withStatFacet("avg_price", "avg(price)");
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .withStatFacet("sum_price", "sum(price)")
+            .withStatFacet("avg_price", "avg(price)");
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
-    assertHasStatFacetWithValue(topLevelFacetData,"sum_price", 5251.270030975342);
-    assertHasStatFacetWithValue(topLevelFacetData,"avg_price", 328.20437693595886);
+    assertHasStatFacetWithValue(topLevelFacetData, "sum_price", 5251.270030975342);
+    assertHasStatFacetWithValue(topLevelFacetData, "avg_price", 328.20437693595886);
   }
 
   @Test
   public void testMultiFacetsMixedTypes() throws Exception {
-    final TermsFacetMap categoryFacet = new TermsFacetMap("cat")
-        .setLimit(3);
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withStatFacet("avg_price", "avg(price)")
-        .withFacet("top_cats", categoryFacet);
+    final TermsFacetMap categoryFacet = new TermsFacetMap("cat").setLimit(3);
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .withStatFacet("avg_price", "avg(price)")
+            .withFacet("top_cats", categoryFacet);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
-    assertHasStatFacetWithValue(topLevelFacetData,"avg_price", 328.20437693595886);
-    assertHasFacetWithBucketValues(topLevelFacetData,"top_cats",
-        new FacetBucket("electronics",NUM_ELECTRONICS),
+    assertHasStatFacetWithValue(topLevelFacetData, "avg_price", 328.20437693595886);
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "top_cats",
+        new FacetBucket("electronics", NUM_ELECTRONICS),
         new FacetBucket("currency", NUM_CURRENCY),
         new FacetBucket("memory", NUM_MEMORY));
   }
 
   @Test
   public void testNestedTermsFacet() throws Exception {
-    final TermsFacetMap categoriesFacet = new TermsFacetMap("cat")
-        .setLimit(3)
-        .withSubFacet("top_manufacturers_for_cat", new TermsFacetMap("manu_id_s").setLimit(1));
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("top_cats", categoriesFacet);
+    final TermsFacetMap categoriesFacet =
+        new TermsFacetMap("cat")
+            .setLimit(3)
+            .withSubFacet("top_manufacturers_for_cat", new TermsFacetMap("manu_id_s").setLimit(1));
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("top_cats", categoriesFacet);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
     // Test top level facets
-    assertHasFacetWithBucketValues(topLevelFacetData,"top_cats",
-        new FacetBucket("electronics",NUM_ELECTRONICS),
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "top_cats",
+        new FacetBucket("electronics", NUM_ELECTRONICS),
         new FacetBucket("currency", NUM_CURRENCY),
         new FacetBucket("memory", NUM_MEMORY));
     // Test subfacet values for each top-level facet bucket
-    final List<BucketJsonFacet> topCatsBuckets = topLevelFacetData.getBucketBasedFacets("top_cats").getBuckets();
+    final List<BucketJsonFacet> topCatsBuckets =
+        topLevelFacetData.getBucketBasedFacets("top_cats").getBuckets();
     final NestableJsonFacet electronicsFacet = topCatsBuckets.get(0);
-    assertHasFacetWithBucketValues(electronicsFacet, "top_manufacturers_for_cat", new FacetBucket("corsair", 3));
+    assertHasFacetWithBucketValues(
+        electronicsFacet, "top_manufacturers_for_cat", new FacetBucket("corsair", 3));
     final NestableJsonFacet currencyFacet = topCatsBuckets.get(1);
-    assertHasFacetWithBucketValues(currencyFacet, "top_manufacturers_for_cat", new FacetBucket("boa", 1));
+    assertHasFacetWithBucketValues(
+        currencyFacet, "top_manufacturers_for_cat", new FacetBucket("boa", 1));
     final NestableJsonFacet memoryFacet = topCatsBuckets.get(2);
-    assertHasFacetWithBucketValues(memoryFacet, "top_manufacturers_for_cat", new FacetBucket("corsair", 3));
+    assertHasFacetWithBucketValues(
+        memoryFacet, "top_manufacturers_for_cat", new FacetBucket("corsair", 3));
   }
 
   @Test
   public void testNestedFacetsOfMixedTypes() throws Exception {
     final String subfacetName = "avg_price_for_cat";
 
-    final TermsFacetMap categoriesFacet = new TermsFacetMap("cat")
-        .setLimit(3)
-        .withStatSubFacet(subfacetName, "avg(price)");
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("top_cats", categoriesFacet);
+    final TermsFacetMap categoriesFacet =
+        new TermsFacetMap("cat").setLimit(3).withStatSubFacet(subfacetName, "avg(price)");
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("*:*").withFacet("top_cats", categoriesFacet);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
     // Test top level facets
-    assertHasFacetWithBucketValues(topLevelFacetData,"top_cats",
-        new FacetBucket("electronics",NUM_ELECTRONICS),
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "top_cats",
+        new FacetBucket("electronics", NUM_ELECTRONICS),
         new FacetBucket("currency", NUM_CURRENCY),
         new FacetBucket("memory", NUM_MEMORY));
     // Test subfacet values for each top-level facet bucket
-    final List<BucketJsonFacet> topCatsResultBuckets = topLevelFacetData.getBucketBasedFacets("top_cats").getBuckets();
-    assertHasStatFacetWithValue(topCatsResultBuckets.get(0), subfacetName, 252.02909261530095); // electronics
+    final List<BucketJsonFacet> topCatsResultBuckets =
+        topLevelFacetData.getBucketBasedFacets("top_cats").getBuckets();
+    assertHasStatFacetWithValue(
+        topCatsResultBuckets.get(0), subfacetName, 252.02909261530095); // electronics
     assertHasStatFacetWithValue(topCatsResultBuckets.get(1), subfacetName, 0.0); // currency
-    assertHasStatFacetWithValue(topCatsResultBuckets.get(2), subfacetName, 129.99499893188477); // memory
+    assertHasStatFacetWithValue(
+        topCatsResultBuckets.get(2), subfacetName, 129.99499893188477); // memory
   }
 
   @Test
   public void testFacetWithDomainFilteredBySimpleQueryString() throws Exception {
-    final TermsFacetMap popularCategoriesFacet = new TermsFacetMap("cat")
-        .setLimit(3)
-        .withDomain(new DomainMap()
-            .withFilter("popularity:[5 TO 10]"));
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("top_popular_cats", popularCategoriesFacet);
+    final TermsFacetMap popularCategoriesFacet =
+        new TermsFacetMap("cat")
+            .setLimit(3)
+            .withDomain(new DomainMap().withFilter("popularity:[5 TO 10]"));
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .withFacet("top_popular_cats", popularCategoriesFacet);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
-    assertHasFacetWithBucketValues(topLevelFacetData,"top_popular_cats",
-        new FacetBucket("electronics",9),
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "top_popular_cats",
+        new FacetBucket("electronics", 9),
         new FacetBucket("graphics card", 2),
         new FacetBucket("hard drive", 2));
   }
 
   @Test
   public void testFacetWithDomainFilteredByLocalParamsQueryString() throws Exception {
-    final TermsFacetMap popularCategoriesFacet = new TermsFacetMap("cat")
-        .setLimit(3)
-        .withDomain(new DomainMap()
-            .withFilter("{!lucene df=\"popularity\" v=\"[5 TO 10]\"}"));
+    final TermsFacetMap popularCategoriesFacet =
+        new TermsFacetMap("cat")
+            .setLimit(3)
+            .withDomain(new DomainMap().withFilter("{!lucene df=\"popularity\" v=\"[5 TO 10]\"}"));
 
-    JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("top_popular_cats", popularCategoriesFacet);
+    JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .withFacet("top_popular_cats", popularCategoriesFacet);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_TECHPRODUCTS_DOCS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
-    assertHasFacetWithBucketValues(topLevelFacetData,"top_popular_cats",
-        new FacetBucket("electronics",9),
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "top_popular_cats",
+        new FacetBucket("electronics", 9),
         new FacetBucket("graphics card", 2),
         new FacetBucket("hard drive", 2));
   }
 
   @Test
   public void testFacetWithArbitraryDomainFromQueryString() throws Exception {
-    final TermsFacetMap categoriesFacet = new TermsFacetMap("cat")
-        .setLimit(3)
-        .withDomain(new DomainMap()
-            .withQuery("*:*"));
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("cat:electronics")
-        .withFacet("top_cats", categoriesFacet);
+    final TermsFacetMap categoriesFacet =
+        new TermsFacetMap("cat").setLimit(3).withDomain(new DomainMap().withQuery("*:*"));
+    final JsonQueryRequest request =
+        new JsonQueryRequest().setQuery("cat:electronics").withFacet("top_cats", categoriesFacet);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_ELECTRONICS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
-    assertHasFacetWithBucketValues(topLevelFacetData,"top_cats",
-        new FacetBucket("electronics",NUM_ELECTRONICS),
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "top_cats",
+        new FacetBucket("electronics", NUM_ELECTRONICS),
         new FacetBucket("currency", NUM_CURRENCY),
         new FacetBucket("memory", NUM_MEMORY));
   }
 
   @Test
   public void testFacetWithArbitraryDomainFromLocalParamsQuery() throws Exception {
-    final TermsFacetMap searchCategoriesFacet = new TermsFacetMap("cat")
-        .withDomain(new DomainMap()
-            .withQuery("{!lucene df=\"cat\" v=\"search\"}"));
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("cat:electronics")
-        .withFacet("largest_search_cats", searchCategoriesFacet);
+    final TermsFacetMap searchCategoriesFacet =
+        new TermsFacetMap("cat")
+            .withDomain(new DomainMap().withQuery("{!lucene df=\"cat\" v=\"search\"}"));
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("cat:electronics")
+            .withFacet("largest_search_cats", searchCategoriesFacet);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_ELECTRONICS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
-    assertHasFacetWithBucketValues(topLevelFacetData,"largest_search_cats",
-        new FacetBucket("search",2),
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "largest_search_cats",
+        new FacetBucket("search", 2),
         new FacetBucket("software", 2));
   }
 
   @Test
   public void testFacetWithMultipleSimpleQueryClausesInArbitraryDomain() throws Exception {
-    final TermsFacetMap solrCategoriesFacet = new TermsFacetMap("cat")
-        .withDomain(new DomainMap()
-            .withQuery("cat:search")
-            .withQuery("name:Solr"));
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("cat:electronics")
-        .withFacet("cats_matching_solr", solrCategoriesFacet);
+    final TermsFacetMap solrCategoriesFacet =
+        new TermsFacetMap("cat")
+            .withDomain(new DomainMap().withQuery("cat:search").withQuery("name:Solr"));
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("cat:electronics")
+            .withFacet("cats_matching_solr", solrCategoriesFacet);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_ELECTRONICS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
-    assertHasFacetWithBucketValues(topLevelFacetData,"cats_matching_solr",
-        new FacetBucket("search",1),
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "cats_matching_solr",
+        new FacetBucket("search", 1),
         new FacetBucket("software", 1));
   }
 
   @Test
   public void testFacetWithMultipleLocalParamsQueryClausesInArbitraryDomain() throws Exception {
-    final TermsFacetMap solrCategoriesFacet = new TermsFacetMap("cat")
-        .withDomain(new DomainMap()
-            .withQuery("{!lucene df=\"cat\" v=\"search\"}")
-            .withQuery("{!lucene df=\"name\" v=\"Solr\"}"));
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("cat:electronics")
-        .withFacet("cats_matching_solr", solrCategoriesFacet);
+    final TermsFacetMap solrCategoriesFacet =
+        new TermsFacetMap("cat")
+            .withDomain(
+                new DomainMap()
+                    .withQuery("{!lucene df=\"cat\" v=\"search\"}")
+                    .withQuery("{!lucene df=\"name\" v=\"Solr\"}"));
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("cat:electronics")
+            .withFacet("cats_matching_solr", solrCategoriesFacet);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_ELECTRONICS, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
-    assertHasFacetWithBucketValues(topLevelFacetData,"cats_matching_solr",
-        new FacetBucket("search",1),
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "cats_matching_solr",
+        new FacetBucket("search", 1),
         new FacetBucket("software", 1));
   }
 
   @Test
   public void testFacetWithDomainWidenedUsingExcludeTagsToIgnoreFilters() throws Exception {
-    final TermsFacetMap inStockFacet = new TermsFacetMap("cat")
-        .setLimit(2);
-    final TermsFacetMap allProductsFacet = new TermsFacetMap("cat")
-        .setLimit(2).withDomain(new DomainMap().withTagsToExclude("on_shelf"));
+    final TermsFacetMap inStockFacet = new TermsFacetMap("cat").setLimit(2);
+    final TermsFacetMap allProductsFacet =
+        new TermsFacetMap("cat")
+            .setLimit(2)
+            .withDomain(new DomainMap().withTagsToExclude("on_shelf"));
     final Map<String, Object> taggedFilterMap = new HashMap<>();
     taggedFilterMap.put("#on_shelf", "inStock:true");
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFilter(taggedFilterMap)
-        .withFacet("in_stock_only", inStockFacet)
-        .withFacet("all", allProductsFacet);
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .withFilter(taggedFilterMap)
+            .withFacet("in_stock_only", inStockFacet)
+            .withFacet("all", allProductsFacet);
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
 
     assertExpectedDocumentsFoundAndReturned(response, NUM_IN_STOCK, 10);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
-    assertHasFacetWithBucketValues(topLevelFacetData,"in_stock_only",
-        new FacetBucket("electronics",8),
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "in_stock_only",
+        new FacetBucket("electronics", 8),
         new FacetBucket("currency", 4));
-    assertHasFacetWithBucketValues(topLevelFacetData  ,"all",
-        new FacetBucket("electronics",12),
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "all",
+        new FacetBucket("electronics", 12),
         new FacetBucket("currency", 4));
   }
 
   @Test
   public void testRangeFacetWithOtherBucketsRequested() throws Exception {
-    final JsonQueryRequest request = new JsonQueryRequest()
-        .setQuery("*:*")
-        .withFacet("price_range",
-            new RangeFacetMap("price", 0, 100, 20)
-                .setOtherBuckets(RangeFacetMap.OtherBuckets.ALL)
-        );
+    final JsonQueryRequest request =
+        new JsonQueryRequest()
+            .setQuery("*:*")
+            .withFacet(
+                "price_range",
+                new RangeFacetMap("price", 0, 100, 20)
+                    .setOtherBuckets(RangeFacetMap.OtherBuckets.ALL));
 
     QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION_NAME);
     final NestableJsonFacet topLevelFacetData = response.getJsonFacetingResponse();
 
-    assertHasFacetWithBucketValues(topLevelFacetData, "price_range",
+    assertHasFacetWithBucketValues(
+        topLevelFacetData,
+        "price_range",
         new FacetBucket(0.0f, 5),
         new FacetBucket(20.0f, 0),
         new FacetBucket(40.0f, 0),
@@ -546,22 +588,31 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
     assertEquals(7, topLevelFacetData.getBucketBasedFacets("price_range").getBetween());
   }
 
-  private class FacetBucket {
+  private static class FacetBucket {
     private final Object val;
     private final int count;
+
     FacetBucket(Object val, int count) {
       this.val = val;
       this.count = count;
     }
 
-    public Object getVal() { return val; }
-    public int getCount() { return count; }
+    public Object getVal() {
+      return val;
+    }
+
+    public int getCount() {
+      return count;
+    }
   }
 
-  private void assertHasFacetWithBucketValues(NestableJsonFacet response, String expectedFacetName, FacetBucket... expectedBuckets) {
-    assertTrue("Expected response to have facet with name " + expectedFacetName,
-        response.getBucketBasedFacets(expectedFacetName) != null);
-    final List<BucketJsonFacet> buckets = response.getBucketBasedFacets(expectedFacetName).getBuckets();
+  private void assertHasFacetWithBucketValues(
+      NestableJsonFacet response, String expectedFacetName, FacetBucket... expectedBuckets) {
+    assertNotNull(
+        "Expected response to have facet with name " + expectedFacetName,
+        response.getBucketBasedFacets(expectedFacetName));
+    final List<BucketJsonFacet> buckets =
+        response.getBucketBasedFacets(expectedFacetName).getBuckets();
     assertEquals(expectedBuckets.length, buckets.size());
     for (int i = 0; i < expectedBuckets.length; i++) {
       final FacetBucket expectedBucket = expectedBuckets[i];
@@ -571,13 +622,16 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
     }
   }
 
-  private void assertHasStatFacetWithValue(NestableJsonFacet response, String expectedFacetName, Double expectedStatValue) {
-    assertTrue("Expected response to have stat facet named '" + expectedFacetName + "'",
-        response.getStatValue(expectedFacetName) != null);
+  private void assertHasStatFacetWithValue(
+      NestableJsonFacet response, String expectedFacetName, Double expectedStatValue) {
+    assertNotNull(
+        "Expected response to have stat facet named '" + expectedFacetName + "'",
+        response.getStatValue(expectedFacetName));
     assertEquals(expectedStatValue, response.getStatValue(expectedFacetName));
   }
 
-  private void assertExpectedDocumentsFoundAndReturned(QueryResponse response, int expectedNumFound, int expectedReturned) {
+  private void assertExpectedDocumentsFoundAndReturned(
+      QueryResponse response, int expectedNumFound, int expectedReturned) {
     assertEquals(0, response.getStatus());
     final SolrDocumentList documents = response.getResults();
     assertEquals(expectedNumFound, documents.getNumFound());

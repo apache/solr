@@ -16,10 +16,9 @@
  */
 package org.apache.solr.core;
 
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -27,7 +26,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.search.QueryResultKey;
 import org.junit.Test;
@@ -37,18 +36,20 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
   public void testFiltersOutOfOrder1() {
     // the hashcode should be the same even when the list
     // of filters is in a different order
-    
+
     Sort sort = new Sort(new SortField("test", SortField.Type.INT));
     BooleanQuery.Builder query = new BooleanQuery.Builder();
     query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
-    
-    List<Query> filters = Arrays.<Query>asList(new TermQuery(new Term("test", "field")),
-                                               new TermQuery(new Term("test2", "field2")));
-    QueryResultKey qrk1 = new QueryResultKey(query.build() , filters, sort, 1);
-    
-    List<Query> filters2 = Arrays.<Query>asList(new TermQuery(new Term("test2", "field2")),
-                                                new TermQuery(new Term("test", "field")));
-    QueryResultKey qrk2 = new QueryResultKey(query.build() , filters2, sort, 1);
+
+    List<Query> filters =
+        Arrays.<Query>asList(
+            new TermQuery(new Term("test", "field")), new TermQuery(new Term("test2", "field2")));
+    QueryResultKey qrk1 = new QueryResultKey(query.build(), filters, sort, 1);
+
+    List<Query> filters2 =
+        Arrays.<Query>asList(
+            new TermQuery(new Term("test2", "field2")), new TermQuery(new Term("test", "field")));
+    QueryResultKey qrk2 = new QueryResultKey(query.build(), filters2, sort, 1);
     assertKeyEquals(qrk1, qrk2);
   }
 
@@ -71,7 +72,7 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
   public void testQueryResultKeyUnSortedFiltersWithDups() {
     Query query = new TermQuery(new Term("main", "val"));
 
-    // we need Query clauses that have identical hashCodes 
+    // we need Query clauses that have identical hashCodes
     // but are not equal unless the term is equals
     Query fq_aa = new FlatHashTermQuery("fq_a");
     Query fq_ab = new FlatHashTermQuery("fq_a");
@@ -89,41 +90,97 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     assertEquals(fq_ac, fq_aa);
     assertEquals(fq_ac, fq_ab);
 
-    assertTrue( ! fq_aa.equals(fq_zz) );
-    assertTrue( ! fq_ab.equals(fq_zz) );
-    assertTrue( ! fq_ac.equals(fq_zz) );
-    assertTrue( ! fq_zz.equals(fq_aa) );
-    assertTrue( ! fq_zz.equals(fq_ab) );
-    assertTrue( ! fq_zz.equals(fq_ac) );
+    assertNotEquals(fq_aa, fq_zz);
+    assertNotEquals(fq_ab, fq_zz);
+    assertNotEquals(fq_ac, fq_zz);
+    assertNotEquals(fq_zz, fq_aa);
+    assertNotEquals(fq_zz, fq_ab);
+    assertNotEquals(fq_zz, fq_ac);
 
     List<Query> filters1 = Arrays.asList(fq_aa, fq_ab);
     List<Query> filters2 = Arrays.asList(fq_zz, fq_ac);
 
     QueryResultKey key1 = new QueryResultKey(query, filters1, null, 0);
     QueryResultKey key2 = new QueryResultKey(query, filters2, null, 0);
-    
+
     assertEquals(key1.hashCode(), key2.hashCode());
 
     assertKeyNotEquals(key1, key2);
   }
 
-  public void testRandomQueryKeyEquality() {
+  public void testCreateKeyWithNullFilterList() {
+    Sort sort = new Sort(new SortField("test", SortField.Type.INT));
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
 
+    QueryResultKey qrk1 = new QueryResultKey(query.build(), null, sort, 1);
+    assertNotNull(qrk1);
+  }
+
+  public void testCreateKeyWithNullFilterListAndNullSort() {
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
+
+    QueryResultKey qrk1 = new QueryResultKey(query.build(), null, null, 1);
+    assertNotNull(qrk1);
+  }
+
+  public void testNullFilterInFiltersList() {
+    // the hashcode should be the same even when the list
+    // of filters has a null filter
+
+    Sort sort = new Sort(new SortField("test", SortField.Type.INT));
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
+
+    List<Query> filters =
+        Arrays.asList(
+            new TermQuery(new Term("test", "field")),
+            new TermQuery(new Term("test2", "field2")),
+            null);
+    QueryResultKey qrk1 = new QueryResultKey(query.build(), filters, sort, 1);
+
+    List<Query> filters2 =
+        Arrays.asList(
+            new TermQuery(new Term("test2", "field2")), new TermQuery(new Term("test", "field")));
+    QueryResultKey qrk2 = new QueryResultKey(query.build(), filters2, sort, 1);
+    assertKeyEquals(qrk1, qrk2);
+  }
+
+  public void testNullSortFieldInSort() {
+    // the hashcode should be the same even when the list
+    // of SortFields has a null value.
+
+    Sort sort1 = new Sort(new SortField("test", SortField.Type.INT), null);
+    Sort sort2 = new Sort(new SortField("test", SortField.Type.INT), null);
+    BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.add(new TermQuery(new Term("test", "field")), Occur.MUST);
+
+    List<Query> filters =
+        Arrays.asList(
+            new TermQuery(new Term("test", "field")), new TermQuery(new Term("test2", "field2")));
+    QueryResultKey qrk1 = new QueryResultKey(query.build(), filters, sort1, 1);
+
+    QueryResultKey qrk2 = new QueryResultKey(query.build(), filters, sort2, 1);
+    assertKeyEquals(qrk1, qrk2);
+  }
+
+  public void testRandomQueryKeyEquality() {
 
     final int minIters = atLeast(100 * 1000);
     final Query base = new FlatHashTermQuery("base");
-    
+
     // ensure we cover both code paths at least once
     boolean didEquals = false;
     boolean didNotEquals = false;
     int iter = 1;
-    while (iter <= minIters || (! didEquals ) || (! didNotEquals ) ) {
+    while (iter <= minIters || (!didEquals) || (!didNotEquals)) {
       iter++;
       int[] numsA = smallArrayOfRandomNumbers();
       int[] numsB = smallArrayOfRandomNumbers();
       QueryResultKey aa = new QueryResultKey(base, buildFiltersFromNumbers(numsA), null, 0);
       QueryResultKey bb = new QueryResultKey(base, buildFiltersFromNumbers(numsB), null, 0);
-      // now that we have our keys, sort the numbers so we know what to expect
+      // now that we have our keys, sort the numbers, so we know what to expect
       Arrays.sort(numsA);
       Arrays.sort(numsB);
       if (Arrays.equals(numsA, numsB)) {
@@ -134,26 +191,26 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
         assertKeyNotEquals(aa, bb);
       }
     }
-    assert minIters <= iter;
   }
-  
+
   public void testMinExactCount() {
     int[] nums = smallArrayOfRandomNumbers();
     final Query base = new FlatHashTermQuery("base");
-    assertKeyEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),
+    assertKeyEquals(
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),
         new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10));
-    assertKeyNotEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),
+    assertKeyNotEquals(
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),
         new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 20));
-    assertKeyNotEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),
-        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0));//Integer.MAX_VALUE
-    assertKeyEquals(new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, Integer.MAX_VALUE),
+    assertKeyNotEquals(
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, 10),
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0)); // Integer.MAX_VALUE
+    assertKeyEquals(
+        new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0, Integer.MAX_VALUE),
         new QueryResultKey(base, buildFiltersFromNumbers(nums), null, 0));
-    
   }
-  
-  /**
-   * does bi-directional equality check as well as verifying hashCode
-   */
+
+  /** does bi-directional equality check as well as verifying hashCode */
   public void assertKeyEquals(QueryResultKey key1, QueryResultKey key2) {
     assertNotNull(key1);
     assertNotNull(key2);
@@ -163,33 +220,30 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
     assertEquals(key2, key1);
   }
 
-  /**
-   * does bi-directional check that the keys are <em>not</em> equals
-   */
+  /** does bi-directional check that the keys are <em>not</em> equals */
   public void assertKeyNotEquals(QueryResultKey key1, QueryResultKey key2) {
-    assertTrue( ! key1.equals(key2) );
-    assertTrue( ! key2.equals(key1) );
+    assertNotEquals(key1, key2);
+    assertNotEquals(key2, key1);
   }
 
   /**
-   * returns a "small" list of "small" random numbers.  The idea behind this method is 
-   * that multiple calls have a decent change of returning two arrays which are the 
-   * same size and contain the same numbers but in a differed order.
+   * returns a "small" list of "small" random numbers. The idea behind this method is that multiple
+   * calls have a decent change of returning two arrays which are the same size and contain the same
+   * numbers but in a differed order.
    *
-   * the array is guaranteed to always have at least 1 element
+   * <p>the array is guaranteed to always have at least 1 element
    */
   private int[] smallArrayOfRandomNumbers() {
     int size = TestUtil.nextInt(random(), 1, 5);
     int[] result = new int[size];
-    for (int i=0; i < size; i++) {
+    for (int i = 0; i < size; i++) {
       result[i] = TestUtil.nextInt(random(), 1, 5);
     }
     return result;
   }
 
   /**
-   * Creates an array of Filter queries using {@link FlatHashTermQuery} based on the 
-   * specified ints
+   * Creates an array of Filter queries using {@link FlatHashTermQuery} based on the specified ints
    */
   private List<Query> buildFiltersFromNumbers(int[] values) {
     ArrayList<Query> filters = new ArrayList<>(values.length);
@@ -200,8 +254,8 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Quick and dirty subclass of TermQuery that uses fixed field name and a constant 
-   * value hashCode, regardless of the Term value.
+   * Quick and dirty subclass of TermQuery that uses fixed field name and a constant value hashCode,
+   * regardless of the Term value.
    */
   private static class FlatHashTermQuery extends TermQuery {
     public FlatHashTermQuery(String val) {

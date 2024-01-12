@@ -21,8 +21,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
-
-import org.apache.lucene.mockfile.FilterPath;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
@@ -37,7 +36,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
   private static SolrResourceLoader loader = null;
 
   @BeforeClass
-  public static void setupLoader() throws Exception {
+  public static void setupLoader() {
     solrHome = FilterPath.unwrap(createTempDir()); // FilterPath can interfere
     loader = new SolrResourceLoader(solrHome);
   }
@@ -59,28 +58,27 @@ public class DirectoryFactoryTest extends SolrTestCase {
   }
 
   @Test
-  public void testLockTypesUnchanged() throws Exception {
+  public void testLockTypesUnchanged() {
     assertEquals("simple", DirectoryFactory.LOCK_TYPE_SIMPLE);
     assertEquals("native", DirectoryFactory.LOCK_TYPE_NATIVE);
     assertEquals("single", DirectoryFactory.LOCK_TYPE_SINGLE);
     assertEquals("none", DirectoryFactory.LOCK_TYPE_NONE);
-    assertEquals("hdfs", DirectoryFactory.LOCK_TYPE_HDFS);
   }
 
   @Test
   public void testGetDataHomeRAMDirectory() throws Exception {
     doTestGetDataHome(RAMDirectoryFactory.class);
   }
-  
+
   @Test
   public void testGetDataHomeByteBuffersDirectory() throws Exception {
     doTestGetDataHome(ByteBuffersDirectoryFactory.class);
   }
-  
-  private void doTestGetDataHome(Class<? extends DirectoryFactory> directoryFactoryClass) throws Exception {
+
+  private void doTestGetDataHome(Class<? extends DirectoryFactory> directoryFactoryClass)
+      throws Exception {
     NodeConfig config = loadNodeConfig("/solr/solr-solrDataHome.xml");
     CoreContainer cc = new CoreContainer(config);
-    Properties cp = cc.getContainerProperties();
     DirectoryFactory df = directoryFactoryClass.getConstructor().newInstance();
     df.initCoreContainer(cc);
     df.init(new NamedList<>());
@@ -93,7 +91,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
     args.add("solr.data.home", "/solrdata/");
     df.init(args);
     assertDataHome("/solrdata/inst_dir/data", "inst_dir", df, cc);
-    
+
     // solr.data.home set with System property, and relative path
     System.setProperty("solr.data.home", "solrdata");
     config = loadNodeConfig("/solr/solr-solrDataHome.xml");
@@ -101,9 +99,16 @@ public class DirectoryFactoryTest extends SolrTestCase {
     df = directoryFactoryClass.getConstructor().newInstance();
     df.initCoreContainer(cc);
     df.init(new NamedList<>());
-    assertDataHome(solrHome.resolve("solrdata/inst_dir/data").toAbsolutePath().toString(), "inst_dir", df, cc);
+    assertDataHome(
+        solrHome.resolve("solrdata/inst_dir/data").toAbsolutePath().toString(), "inst_dir", df, cc);
     // Test parsing last component of instanceDir, and using custom dataDir
-    assertDataHome(solrHome.resolve("solrdata/myinst/mydata").toAbsolutePath().toString(), "/path/to/myinst", df, cc, "dataDir", "mydata");
+    assertDataHome(
+        solrHome.resolve("solrdata/myinst/mydata").toAbsolutePath().toString(),
+        "/path/to/myinst",
+        df,
+        cc,
+        "dataDir",
+        "mydata");
     // solr.data.home set but also solrDataHome set in solr.xml, which should override the former
     System.setProperty("test.solr.data.home", "/foo");
     config = loadNodeConfig("/solr/solr-solrDataHome.xml");
@@ -114,14 +119,21 @@ public class DirectoryFactoryTest extends SolrTestCase {
     assertDataHome("/foo/inst_dir/data", "inst_dir", df, cc);
   }
 
-  private void assertDataHome(String expected, String instanceDir, DirectoryFactory df, CoreContainer cc, String... properties) throws IOException {
-    String dataHome = df.getDataHome(
-            new CoreDescriptor("core_name", Paths.get(instanceDir).toAbsolutePath(), cc, properties));
+  private void assertDataHome(
+      String expected,
+      String instanceDir,
+      DirectoryFactory df,
+      CoreContainer cc,
+      String... properties)
+      throws IOException {
+    String dataHome =
+        df.getDataHome(
+            new CoreDescriptor(
+                "core_name", Paths.get(instanceDir).toAbsolutePath(), cc, properties));
     assertEquals(Paths.get(expected).toAbsolutePath(), Paths.get(dataHome).toAbsolutePath());
   }
 
-
-  private NodeConfig loadNodeConfig(String config) throws Exception {
+  private NodeConfig loadNodeConfig(String config) {
     InputStream is = DirectoryFactoryTest.class.getResourceAsStream(config);
     return SolrXmlConfig.fromInputStream(solrHome, is, new Properties());
   }

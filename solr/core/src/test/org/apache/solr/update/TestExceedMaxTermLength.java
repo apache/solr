@@ -16,23 +16,21 @@
  */
 package org.apache.solr.update;
 
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4;
-
 import java.util.Locale;
-
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestExceedMaxTermLength extends SolrTestCaseJ4 {
 
-  public final static String TEST_SOLRCONFIG_NAME = "solrconfig.xml";
-  public final static String TEST_SCHEMAXML_NAME = "schema11.xml";
+  public static final String TEST_SOLRCONFIG_NAME = "solrconfig.xml";
+  public static final String TEST_SCHEMAXML_NAME = "schema11.xml";
 
-  private final static int minTestTermLength = IndexWriter.MAX_TERM_LENGTH + 1;
-  private final static int maxTestTermLength = IndexWriter.MAX_TERM_LENGTH * 2;
+  private static final int minTestTermLength = IndexWriter.MAX_TERM_LENGTH + 1;
+  private static final int maxTestTermLength = IndexWriter.MAX_TERM_LENGTH * 2;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -40,43 +38,43 @@ public class TestExceedMaxTermLength extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     assertU(delQ("*:*"));
     assertU(commit());
   }
 
   @Test
-  public void testExceededMaxTermLength(){
+  public void testExceededMaxTermLength() {
 
     // problematic field
     final String longFieldName = "cat";
-    final String longFieldValue = TestUtil.randomSimpleString(random(),
-        minTestTermLength,
-        maxTestTermLength);
+    final String longFieldValue =
+        TestUtil.randomSimpleString(random(), minTestTermLength, maxTestTermLength);
 
-    final String okayFieldName = TestUtil.randomSimpleString(random(), 1, 50) + "_sS" ; //Dynamic field
-    final String okayFieldValue = TestUtil.randomSimpleString(random(),
-        minTestTermLength,
-        maxTestTermLength);
+    final String okayFieldName =
+        TestUtil.randomSimpleString(random(), 1, 50) + "_sS"; // Dynamic field
+    final String okayFieldValue =
+        TestUtil.randomSimpleString(random(), minTestTermLength, maxTestTermLength);
 
     boolean includeOkayFields = random().nextBoolean();
 
-    if(random().nextBoolean()) {
-      //Use XML
+    if (random().nextBoolean()) {
+      // Use XML
       String doc;
-      if(includeOkayFields) {
+      if (includeOkayFields) {
         doc = adoc("id", "1", longFieldName, longFieldValue, okayFieldName, okayFieldValue);
       } else {
         doc = adoc("id", "1", longFieldName, longFieldValue);
       }
       assertFailedU(doc);
     } else {
-      //Use JSON
+      // Use JSON
       final String jsonStr;
-      if(includeOkayFields) {
+      if (includeOkayFields) {
         String format = "[{'id':'1','%s':'%s', '%s': '%s'}]";
-        jsonStr = String.format(Locale.ROOT, format, longFieldName, longFieldValue,
-            okayFieldName, okayFieldValue);
+        jsonStr =
+            String.format(
+                Locale.ROOT, format, longFieldName, longFieldValue, okayFieldName, okayFieldValue);
       } else {
         String format = "[{'id':'1','%s':'%s'}]";
         jsonStr = String.format(Locale.ROOT, format, longFieldName, longFieldValue);
@@ -92,38 +90,43 @@ public class TestExceedMaxTermLength extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExceededMaxTermLengthWithLimitingFilter(){
+  public void testExceededMaxTermLengthWithLimitingFilter() {
 
     // problematic field
     final String longFieldName = "cat_length";
-    final String longFieldValue = TestUtil.randomSimpleString(random(),
-        minTestTermLength,
-        maxTestTermLength);
+    final String longFieldValue =
+        TestUtil.randomSimpleString(random(), minTestTermLength, maxTestTermLength);
 
-    final String okayFieldName = TestUtil.randomSimpleString(random(), 1, 50) + "_sS" ; //Dynamic field
-    final String okayFieldValue = TestUtil.randomSimpleString(random(),
-        minTestTermLength,
-        maxTestTermLength);
+    final String okayFieldName =
+        TestUtil.randomSimpleString(random(), 1, 50) + "_sS"; // Dynamic field
+    final String okayFieldValue =
+        TestUtil.randomSimpleString(random(), minTestTermLength, maxTestTermLength);
 
     boolean includeOkayFields = random().nextBoolean();
 
-    if(random().nextBoolean()) {
-      //Use XML
+    if (random().nextBoolean()) {
+      // Use XML
       String doc;
-      if(includeOkayFields) {
+      if (includeOkayFields) {
         doc = adoc("id", "1", longFieldName, longFieldValue, okayFieldName, okayFieldValue);
       } else {
         doc = adoc("id", "1", longFieldName, longFieldValue);
       }
       assertU(doc);
     } else {
-      //Use JSON
+      // Use JSON
       String jsonStr = null;
       try {
-        if(includeOkayFields) {
+        if (includeOkayFields) {
           jsonStr = "[{'id':'1','%s':'%s', '%s': '%s'}]";
-          jsonStr = String.format(Locale.ROOT, jsonStr, longFieldName, longFieldValue, 
-                                  okayFieldName, okayFieldValue);
+          jsonStr =
+              String.format(
+                  Locale.ROOT,
+                  jsonStr,
+                  longFieldName,
+                  longFieldValue,
+                  okayFieldName,
+                  okayFieldValue);
           updateJ(json(jsonStr), null);
         } else {
           jsonStr = "[{'id':'1','%s':'%s'}]";
@@ -132,10 +135,9 @@ public class TestExceedMaxTermLength extends SolrTestCaseJ4 {
         }
       } catch (Exception e) {
         fail("Should not have failed adding doc " + jsonStr);
-        String msg= e.getCause().getMessage();
+        String msg = e.getCause().getMessage();
         assertTrue(msg.contains("one immense term in field=\"cat\""));
       }
-
     }
 
     assertU(commit());

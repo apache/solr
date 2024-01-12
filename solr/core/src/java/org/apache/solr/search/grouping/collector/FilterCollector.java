@@ -17,11 +17,10 @@
 package org.apache.solr.search.grouping.collector;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.FilterLeafCollector;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.solr.search.DocSet;
 
 /**
@@ -40,8 +39,7 @@ public class FilterCollector extends org.apache.lucene.search.FilterCollector {
   }
 
   @Override
-  public LeafCollector getLeafCollector(LeafReaderContext context)
-      throws IOException {
+  public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
     final int docBase = context.docBase;
     return new FilterLeafCollector(super.getLeafCollector(context)) {
       @Override

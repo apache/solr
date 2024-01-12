@@ -30,40 +30,37 @@ import org.apache.solr.schema.SimilarityFactory;
 
 /**
  * Factory for {@link IBSimilarity}
- * <p>
- * You must specify the implementations for all three components of the
- * Information-Based model (strings).
+ *
+ * <p>You must specify the implementations for all three components of the Information-Based model
+ * (strings).
+ *
  * <ol>
- *     <li>{@link Distribution distribution}: Probabilistic distribution used to
- *         model term occurrence
- *         <ul>
- *             <li>{@link DistributionLL LL}: Log-logistic</li>
- *             <li>{@link DistributionLL SPL}: Smoothed power-law</li>
- *         </ul>
- *     </li>
- *     <li>{@link Lambda lambda}: &lambda;<sub>w</sub> parameter of the
- *         probability distribution
- *         <ul>
- *             <li>{@link LambdaDF DF}: <code>N<sub>w</sub>/N</code> or average
- *                 number of documents where w occurs</li>
- *             <li>{@link LambdaTTF TTF}: <code>F<sub>w</sub>/N</code> or
- *                 average number of occurrences of w in the collection</li>
- *         </ul>
- *     </li>
- *     <li>{@link Normalization normalization}: Term frequency normalization 
- *         <blockquote>Any supported DFR normalization listed in
-                       {@link DFRSimilarityFactory}</blockquote>
-       </li>
+ *   <li>{@link Distribution distribution}: Probabilistic distribution used to model term occurrence
+ *       <ul>
+ *         <li>{@link DistributionLL LL}: Log-logistic
+ *         <li>{@link DistributionLL SPL}: Smoothed power-law
+ *       </ul>
+ *   <li>{@link Lambda lambda}: &lambda;<sub>w</sub> parameter of the probability distribution
+ *       <ul>
+ *         <li>{@link LambdaDF DF}: <code>N<sub>w</sub>/N</code> or average number of documents
+ *             where w occurs
+ *         <li>{@link LambdaTTF TTF}: <code>F<sub>w</sub>/N</code> or average number of occurrences
+ *             of w in the collection
+ *       </ul>
+ *   <li>{@link Normalization normalization}: Term frequency normalization
+ *       <blockquote>
+ *       Any supported DFR normalization listed in {@link DFRSimilarityFactory}
+ *       </blockquote>
  * </ol>
- * <p>
- * Optional settings:
+ *
+ * <p>Optional settings:
+ *
  * <ul>
- *   <li>discountOverlaps (bool): Sets
- *       {@link IBSimilarity#setDiscountOverlaps(boolean)}</li>
+ *   <li>discountOverlaps (bool): Sets {@link IBSimilarity#setDiscountOverlaps(boolean)}
  * </ul>
+ *
  * @lucene.experimental
  */
-
 public class IBSimilarityFactory extends SimilarityFactory {
   private boolean discountOverlaps;
   private Distribution distribution;
@@ -76,10 +73,11 @@ public class IBSimilarityFactory extends SimilarityFactory {
     discountOverlaps = params.getBool("discountOverlaps", true);
     distribution = parseDistribution(params.get("distribution"));
     lambda = parseLambda(params.get("lambda"));
-    normalization = DFRSimilarityFactory.parseNormalization(
-        params.get("normalization"), params.get("c"), params.get("mu"), params.get("z"));
+    normalization =
+        DFRSimilarityFactory.parseNormalization(
+            params.get("normalization"), params.get("c"), params.get("mu"), params.get("z"));
   }
-  
+
   private Distribution parseDistribution(String expr) {
     if ("LL".equals(expr)) {
       return new DistributionLL();
@@ -89,7 +87,7 @@ public class IBSimilarityFactory extends SimilarityFactory {
       throw new RuntimeException("Invalid distribution: " + expr);
     }
   }
-  
+
   private Lambda parseLambda(String expr) {
     if ("DF".equals(expr)) {
       return new LambdaDF();

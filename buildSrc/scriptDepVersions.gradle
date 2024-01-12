@@ -20,14 +20,12 @@
 // but are reused in buildSrc and across applied scripts.
 
 ext {
-  // TODO: Check if Solr needs all of these
   scriptDepVersions = [
-      "apache-rat": "0.11",
-      "commons-codec": "1.13",
-      "ecj": "3.27.0",
-      "flexmark": "0.61.24",
-      "javacc": "7.0.4",
-      "jflex": "1.8.2",
-      "jgit": "5.9.0.202009080501-r",
+      "apache-rat": "0.15",
+      "commons-codec": "1.16.0",
+      "ecj": "3.33.0",
+      "javacc": "7.0.12",
+      "jgit": "6.7.0.202309050840-r",
+      "flexmark": "0.64.8",
   ]
 }

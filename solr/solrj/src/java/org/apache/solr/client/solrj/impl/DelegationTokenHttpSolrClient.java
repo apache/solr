@@ -16,49 +16,31 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.IOException;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.params.SolrParams;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.TreeSet;
-
 public class DelegationTokenHttpSolrClient extends HttpSolrClient {
-  public final static String DELEGATION_TOKEN_PARAM = "delegation";
+  public static final String DELEGATION_TOKEN_PARAM = "delegation";
 
   /**
-   * Constructor for use by
-   * {@linkplain org.apache.solr.client.solrj.impl.HttpSolrClient.Builder}.
+   * Constructor for use by {@linkplain org.apache.solr.client.solrj.impl.HttpSolrClient.Builder}.
+   *
    * @lucene.internal
    */
   protected DelegationTokenHttpSolrClient(Builder builder) {
     super(builder);
-    setQueryParams(new TreeSet<>(Arrays.asList(DELEGATION_TOKEN_PARAM)));
   }
 
   @Override
-  protected HttpRequestBase createMethod(final SolrRequest<?> request, String collection) throws IOException, SolrServerException {
+  protected HttpRequestBase createMethod(final SolrRequest<?> request, String collection)
+      throws IOException, SolrServerException {
     SolrParams params = request.getParams();
     if (params != null && params.getParams(DELEGATION_TOKEN_PARAM) != null) {
       throw new IllegalArgumentException(DELEGATION_TOKEN_PARAM + " parameter not supported");
     }
     return super.createMethod(request, collection);
-  }
-
-  @Override
-  public void setQueryParams(Set<String> queryParams) {
-    queryParams = queryParams == null ?
-        Set.of(DELEGATION_TOKEN_PARAM): queryParams;
-    if (!queryParams.contains(DELEGATION_TOKEN_PARAM)) {
-      queryParams = new HashSet<String>(queryParams);
-      queryParams.add(DELEGATION_TOKEN_PARAM);
-      queryParams = Collections.unmodifiableSet(queryParams);
-    }
-    super.setQueryParams(queryParams);
   }
 }

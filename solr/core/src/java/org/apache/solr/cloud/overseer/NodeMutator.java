@@ -18,13 +18,12 @@ package org.apache.solr.cloud.overseer;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Optional;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
+import java.util.Optional;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -42,6 +41,7 @@ public class NodeMutator {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected SolrZkClient zkClient;
+
   public NodeMutator(SolrCloudManager cloudManager) {
     zkClient = SliceMutator.getZkClient(cloudManager);
   }
@@ -57,8 +57,10 @@ public class NodeMutator {
     for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
       String collectionName = entry.getKey();
       DocCollection docCollection = entry.getValue();
+      if (docCollection.isPerReplicaState()) continue;
 
-      Optional<ZkWriteCommand> zkWriteCommand = computeCollectionUpdate(nodeName, collectionName, docCollection, zkClient);
+      Optional<ZkWriteCommand> zkWriteCommand =
+          computeCollectionUpdate(nodeName, collectionName, docCollection, zkClient);
 
       if (zkWriteCommand.isPresent()) {
         zkWriteCommands.add(zkWriteCommand.get());
@@ -69,15 +71,18 @@ public class NodeMutator {
   }
 
   /**
-   * Returns the write command needed to update the replicas of a given collection given the identity of a node being down.
-   * @return An optional with the write command or an empty one if the collection does not need any state modification.
-   *    The returned write command might be for per replica state updates or for an update to state.json, depending on the
-   *    configuration of the collection.
+   * Returns the write command needed to update the replicas of a given collection given the
+   * identity of a node being down.
+   *
+   * @return An optional with the write command or an empty one if the collection does not need any
+   *     state modification. The returned write command might be for per replica state updates or
+   *     for an update to state.json, depending on the configuration of the collection.
    */
-  public static Optional<ZkWriteCommand> computeCollectionUpdate(String nodeName, String collectionName, DocCollection docCollection, SolrZkClient client) {
+  public static Optional<ZkWriteCommand> computeCollectionUpdate(
+      String nodeName, String collectionName, DocCollection docCollection, SolrZkClient client) {
     boolean needToUpdateCollection = false;
     List<String> downedReplicas = new ArrayList<>();
-    Map<String,Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
+    Map<String, Slice> slicesCopy = new LinkedHashMap<>(docCollection.getSlicesMap());
 
     for (Entry<String, Slice> sliceEntry : slicesCopy.entrySet()) {
       Slice slice = sliceEntry.getValue();
@@ -92,29 +97,43 @@ public class NodeMutator {
         if (rNodeName.equals(nodeName)) {
           log.debug("Update replica state for {} to {}", replica, Replica.State.DOWN);
           Map<String, Object> props = replica.shallowCopy();
-          Replica newReplica = new Replica(replica.getName(), replica.node, replica.collection, slice.getName(), replica.core,
-              Replica.State.DOWN, replica.type, props);
+          Replica newReplica =
+              new Replica(
+                  replica.getName(),
+                  replica.node,
+                  replica.collection,
+                  slice.getName(),
+                  replica.core,
+                  Replica.State.DOWN,
+                  replica.type,
+                  props);
           newReplicas.put(replica.getName(), newReplica);
           needToUpdateCollection = true;
           downedReplicas.add(replica.getName());
         }
       }
 
-      Slice newSlice = new Slice(slice.getName(), newReplicas, slice.shallowCopy(),collectionName);
+      Slice newSlice = new Slice(slice.getName(), newReplicas, slice.shallowCopy(), collectionName);
       sliceEntry.setValue(newSlice);
     }
 
     if (needToUpdateCollection) {
       if (docCollection.isPerReplicaState()) {
-        PerReplicaStates prs = client == null ?
-            docCollection.getPerReplicaStates() :
-            PerReplicaStates.fetch(docCollection.getZNode(), client, docCollection.getPerReplicaStates());
+        PerReplicaStates prs =
+            client == null
+                ? docCollection.getPerReplicaStates()
+                : PerReplicaStatesOps.fetch(
+                    docCollection.getZNode(), client, docCollection.getPerReplicaStates());
 
-        return Optional.of(new ZkWriteCommand(collectionName, docCollection.copyWithSlices(slicesCopy),
-            PerReplicaStatesOps.downReplicas(downedReplicas,
-                prs), false));
+        return Optional.of(
+            new ZkWriteCommand(
+                collectionName,
+                docCollection.copyWithSlices(slicesCopy),
+                PerReplicaStatesOps.downReplicas(downedReplicas, prs),
+                false));
       } else {
-        return Optional.of(new ZkWriteCommand(collectionName, docCollection.copyWithSlices(slicesCopy)));
+        return Optional.of(
+            new ZkWriteCommand(collectionName, docCollection.copyWithSlices(slicesCopy)));
       }
     } else {
       // No update needed for this collection
@@ -122,4 +141,3 @@ public class NodeMutator {
     }
   }
 }
-

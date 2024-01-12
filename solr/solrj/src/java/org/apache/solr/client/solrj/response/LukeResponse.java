@@ -23,14 +23,11 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.util.NamedList;
 
-
 /**
  * This is an incomplete representation of the data returned from Luke
- *
  *
  * @since solr 1.3
  */
@@ -44,12 +41,10 @@ public class LukeResponse extends SolrResponseBase {
     List<String> fields;
     List<String> dynamicFields;
 
-
     public FieldTypeInfo(String name) {
       this.name = name;
       fields = Collections.emptyList();
     }
-
 
     public String getAnalyzer() {
       return analyzer;
@@ -73,26 +68,26 @@ public class LukeResponse extends SolrResponseBase {
 
     public boolean isTokenized() {
       return tokenized;
-    }/*
-     Sample:
-     types={ignored={fields=null,tokenized=false,analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@f94934},
-     integer={fields=null,tokenized=false,analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@3525a2},
-     sfloat={fields=[price, weight],tokenized=false,analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@39cf9c},
-     text_ws={fields=[cat],tokenized=true,analyzer=TokenizerChain(org.apache.solr.analysis.WhitespaceTokenizerFactory@6d3ca2)},
-     alphaOnlySort={fields=[alphaNameSort],tokenized=true,analyzer=TokenizerChain(org.apache.solr.analysis.KeywordTokenizerFactory@a7bd3b,
-      org.apache.solr.analysis.LowerCaseFilterFactory@78aae2, org.apache.solr.analysis.TrimFilterFactory@1b16a7,
-      org.apache.solr.analysis.PatternReplaceFilterFactory@6c6b08)},date={fields=[timestamp],tokenized=false,
-      analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@e6e42e},sint={fields=[popularity],
-      tokenized=false,analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@8ea21d},
-      boolean={fields=[inStock],tokenized=false,analyzer=org.apache.solr.schema.BoolField$1@354949},
-      textTight={fields=[sku],tokenized=true,analyzer=TokenizerChain(org.apache.solr.analysis.WhitespaceTokenizerFactory@5e88f7,
-       org.apache.solr.analysis.SynonymFilterFactory@723646, org.apache.solr.analysis.StopFilterFactory@492ff1,
-       org.apache.solr.analysis.WordDelimiterFilterFactory@eaabad, org.apache.solr.analysis.LowerCaseFilterFactory@ad1355,
-        org.apache.solr.analysis.EnglishPorterFilterFactory@d03a00, org.apache.solr.analysis.RemoveDuplicatesTokenFilterFactory@900079)},
-        long={fields=null,tokenized=false,analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@f3b83},
-        double={fields=null,tokenized=false,analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@c2b07},
+    } /*
+      Sample:
+      types={ignored={fields=null,tokenized=false,analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@f94934},
+      integer={fields=null,tokenized=false,analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@3525a2},
+      sfloat={fields=[price, weight],tokenized=false,analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@39cf9c},
+      text_ws={fields=[cat],tokenized=true,analyzer=TokenizerChain(org.apache.solr.analysis.WhitespaceTokenizerFactory@6d3ca2)},
+      alphaOnlySort={fields=[alphaNameSort],tokenized=true,analyzer=TokenizerChain(org.apache.solr.analysis.KeywordTokenizerFactory@a7bd3b,
+       org.apache.solr.analysis.LowerCaseFilterFactory@78aae2, org.apache.solr.analysis.TrimFilterFactory@1b16a7,
+       org.apache.solr.analysis.PatternReplaceFilterFactory@6c6b08)},date={fields=[timestamp],tokenized=false,
+       analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@e6e42e},sint={fields=[popularity],
+       tokenized=false,analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@8ea21d},
+       boolean={fields=[inStock],tokenized=false,analyzer=org.apache.solr.schema.BoolField$1@354949},
+       textTight={fields=[sku],tokenized=true,analyzer=TokenizerChain(org.apache.solr.analysis.WhitespaceTokenizerFactory@5e88f7,
+        org.apache.solr.analysis.SynonymFilterFactory@723646, org.apache.solr.analysis.StopFilterFactory@492ff1,
+        org.apache.solr.analysis.WordDelimiterFilterFactory@eaabad, org.apache.solr.analysis.LowerCaseFilterFactory@ad1355,
+         org.apache.solr.analysis.EnglishPorterFilterFactory@d03a00, org.apache.solr.analysis.RemoveDuplicatesTokenFilterFactory@900079)},
+         long={fields=null,tokenized=false,analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@f3b83},
+         double={fields=null,tokenized=false,analyzer=org.apache.solr.schema.FieldType$DefaultAnalyzer@c2b07},
 
-      */
+       */
 
     @SuppressWarnings("unchecked")
     public void read(NamedList<Object> nl) {
@@ -217,7 +212,7 @@ public class LukeResponse extends SolrResponseBase {
     NamedList<Object> flds = (NamedList<Object>) res.get("fields");
     NamedList<Object> dynamicFlds = (NamedList<Object>) res.get("dynamicFields");
 
-    if (flds == null && schema != null ) {
+    if (flds == null && schema != null) {
       flds = (NamedList<Object>) schema.get("fields");
     }
     if (flds != null) {
@@ -241,7 +236,7 @@ public class LukeResponse extends SolrResponseBase {
       }
     }
 
-    if( schema != null ) {
+    if (schema != null) {
       NamedList<Object> fldTypes = (NamedList<Object>) schema.get("types");
       if (fldTypes != null) {
         fieldTypeInfo = new HashMap<>();
@@ -254,8 +249,8 @@ public class LukeResponse extends SolrResponseBase {
     }
   }
 
-  //----------------------------------------------------------------
-  //----------------------------------------------------------------
+  // ----------------------------------------------------------------
+  // ----------------------------------------------------------------
 
   public String getIndexDirectory() {
     if (indexInfo == null) return null;
@@ -305,5 +300,5 @@ public class LukeResponse extends SolrResponseBase {
     return dynamicFieldInfo.get(f);
   }
 
-  //----------------------------------------------------------------
+  // ----------------------------------------------------------------
 }

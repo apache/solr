@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.BytesRef;
@@ -30,21 +29,22 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.FieldNameValueSource;
 
-
 public class AvgAgg extends SimpleAggValueSource {
   public AvgAgg(ValueSource vs) {
     super("avg", vs);
   }
 
   @Override
-  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots) throws IOException {
+  public SlotAcc createSlotAcc(FacetContext fcontext, long numDocs, int numSlots)
+      throws IOException {
     ValueSource vs = getArg();
 
     if (vs instanceof FieldNameValueSource) {
       String field = ((FieldNameValueSource) vs).getFieldName();
       SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(field);
       if (sf.getType().getNumberType() == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
             name() + " aggregation not supported for " + sf.getType().getTypeName());
       }
       if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
@@ -55,7 +55,8 @@ public class AvgAgg extends SimpleAggValueSource {
           return new AvgSortedSetAcc(fcontext, sf, numSlots);
         }
         if (sf.getType().isPointField()) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
               name() + " aggregation not supported for PointField w/o docValues");
         }
         return new AvgUnInvertedFieldAcc(fcontext, sf, numSlots);
@@ -89,10 +90,11 @@ public class AvgAgg extends SimpleAggValueSource {
     }
   }
 
-  class AvgSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
+  static class AvgSortedNumericAcc extends DocValuesAcc.DoubleSortedNumericDVAcc {
     int[] counts;
 
-    public AvgSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public AvgSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots)
+        throws IOException {
       super(fcontext, sf, numSlots, 0);
       this.counts = new int[numSlots];
     }
@@ -100,7 +102,7 @@ public class AvgAgg extends SimpleAggValueSource {
     @Override
     protected void collectValues(int doc, int slot) throws IOException {
       for (int i = 0, count = values.docValueCount(); i < count; i++) {
-        result[slot]+=getDouble(values.nextValue());
+        result[slot] += getDouble(values.nextValue());
         counts[slot]++;
       }
     }
@@ -139,7 +141,7 @@ public class AvgAgg extends SimpleAggValueSource {
     }
   }
 
-  class AvgSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
+  static class AvgSortedSetAcc extends DocValuesAcc.DoubleSortedSetDVAcc {
     int[] counts;
 
     public AvgSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
@@ -153,7 +155,7 @@ public class AvgAgg extends SimpleAggValueSource {
       while ((ord = values.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
         BytesRef term = values.lookupOrd(ord);
         Object obj = sf.getType().toObject(sf, term);
-        double val = obj instanceof Date ? ((Date)obj).getTime(): ((Number)obj).doubleValue();
+        double val = obj instanceof Date ? ((Date) obj).getTime() : ((Number) obj).doubleValue();
         result[slot] += val;
         counts[slot]++;
       }
@@ -193,10 +195,11 @@ public class AvgAgg extends SimpleAggValueSource {
     }
   }
 
-  class AvgUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
+  static class AvgUnInvertedFieldAcc extends UnInvertedFieldAcc.DoubleUnInvertedFieldAcc {
     int[] counts;
 
-    public AvgUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public AvgUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots)
+        throws IOException {
       super(fcontext, sf, numSlots, 0);
       this.counts = new int[numSlots];
     }
@@ -206,7 +209,7 @@ public class AvgAgg extends SimpleAggValueSource {
       try {
         BytesRef term = docToTerm.lookupOrd(termNum);
         Object obj = sf.getType().toObject(sf, term);
-        double val = obj instanceof Date? ((Date)obj).getTime(): ((Number)obj).doubleValue();
+        double val = obj instanceof Date ? ((Date) obj).getTime() : ((Number) obj).doubleValue();
         result[currentSlot] += val;
         counts[currentSlot]++;
       } catch (IOException e) {

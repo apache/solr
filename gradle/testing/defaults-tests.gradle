@@ -34,7 +34,7 @@ allprojects {
           // asserts, debug output.
           [propName: 'tests.verbose', value: false, description: "Enables verbose mode (emits full test outputs immediately)."],
           [propName: 'tests.workDir',
-           value: { -> file("${buildDir}/tmp/tests-tmp") },
+           value: { -> project.relativePath(file("${buildDir}/tmp/tests-tmp")) },
            description: "Working directory for forked test JVMs",
            includeInReproLine: false
           ],
@@ -46,8 +46,9 @@ allprojects {
            value: { -> ((int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0))) },
            description: "Number of forked test JVMs"],
           [propName: 'tests.haltonfailure', value: true, description: "Halt processing on test failure."],
+          // Default code cache size is 240m, but disabling C2 compiler shrinks it to 48m, which turns out to not be enough
           [propName: 'tests.jvmargs',
-           value: { -> propertyOrEnvOrDefault("tests.jvmargs", "TEST_JVM_ARGS", "-XX:TieredStopAtLevel=1") },
+           value: { -> propertyOrEnvOrDefault("tests.jvmargs", "TEST_JVM_ARGS", "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ActiveProcessorCount=1 -XX:ReservedCodeCacheSize=120m") },
            description: "Arguments passed to each forked JVM."],
           // Other settings.
           [propName: 'tests.neverUpToDate', value: true,
@@ -65,8 +66,6 @@ allprojects {
 
       testsCwd = file("${buildDir}/tmp/tests-cwd")
       testsTmpDir = file(resolvedTestOption("tests.workDir"))
-
-      commonSolrDir = project(":solr").projectDir
     }
 
     def verboseMode = resolvedTestOption("tests.verbose").toBoolean()
@@ -90,7 +89,7 @@ allprojects {
 
     tasks.withType(Test) {
       ext {
-        testOutputsDir = file("${reports.junitXml.destination}/outputs")
+        testOutputsDir = file("${reports.junitXml.outputLocation.get()}/outputs")
       }
 
       // LUCENE-9660: Make it possible to always rerun tests, even if they're incrementally up-to-date.
@@ -120,7 +119,15 @@ allprojects {
         jvmArgs '--illegal-access=deny'
       }
 
-      systemProperty 'java.util.logging.config.file', file("${resources}/logging.properties")
+      def loggingConfigFile = layout.projectDirectory.file("${resources}/logging.properties")
+      def tempDir = layout.projectDirectory.dir(testsTmpDir.toString())
+      jvmArgumentProviders.add(
+          new LoggingFileArgumentProvider(
+              loggingConfigFile: loggingConfigFile,
+              tempDir: tempDir
+          )
+      )
+
       systemProperty 'java.awt.headless', 'true'
       systemProperty 'jdk.map.althashing.threshold', '0'
 
@@ -141,14 +148,13 @@ allprojects {
 
       // Set up cwd and temp locations.
       systemProperty("java.io.tmpdir", testsTmpDir)
-      systemProperty("tempDir", testsTmpDir)
       doFirst {
         testsCwd.mkdirs()
         testsTmpDir.mkdirs()
       }
 
       // Disable HTML report generation. The reports are big and slow to generate.
-      reports.html.enabled = false
+      reports.html.required = false
 
       // Set up logging.
       testLogging {
@@ -176,5 +182,22 @@ allprojects {
         logger.info("Test folders for {}: cwd={}, tmp={}", project.path, testsCwd, testsTmpDir)
       }
     }
+  }
+}
+
+class LoggingFileArgumentProvider implements CommandLineArgumentProvider {
+  @InputFile
+  @PathSensitive(PathSensitivity.RELATIVE)
+  RegularFile loggingConfigFile
+
+  @Internal
+  Directory tempDir
+
+  @Override
+  Iterable<String> asArguments() {
+    [
+        "-Djava.util.logging.config.file=${loggingConfigFile.getAsFile()}",
+        "-DtempDir=${tempDir.getAsFile()}"
+    ]
   }
 }

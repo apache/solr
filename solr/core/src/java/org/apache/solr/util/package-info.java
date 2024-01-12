@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Common utility classes used throughout Solr
- */
+
+/** Common utility classes used throughout Solr */
 package org.apache.solr.util;
-
-

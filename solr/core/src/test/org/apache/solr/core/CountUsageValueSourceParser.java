@@ -15,6 +15,11 @@
  * limitations under the License.
  */
 package org.apache.solr.core;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -24,25 +29,19 @@ import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.ValueSourceParser;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
 /**
- * A Mock ValueSource parser that produces ValueSources that returns a constant 
- * value but also keeps track of how many times it was asked for a value for any 
- * document via a static map and a user defined key.
- **/
+ * A Mock ValueSource parser that produces ValueSources that returns a constant value but also keeps
+ * track of how many times it was asked for a value for any document via a static map and a user
+ * defined key.
+ */
 public class CountUsageValueSourceParser extends ValueSourceParser {
 
-  private static final ConcurrentMap<String,AtomicInteger> counters 
-    = new ConcurrentHashMap<>();
+  private static final ConcurrentMap<String, AtomicInteger> counters = new ConcurrentHashMap<>();
 
   public static void clearCounters() {
     counters.clear();
   }
+
   public static int getAndClearCount(String key) {
     AtomicInteger counter = counters.remove(key);
     if (null == counter) {
@@ -55,25 +54,26 @@ public class CountUsageValueSourceParser extends ValueSourceParser {
   public ValueSource parse(FunctionQParser fp) throws SyntaxError {
     String key = fp.parseArg();
     double val = fp.parseDouble();
-    
+
     AtomicInteger counter = new AtomicInteger();
     if (null != counters.putIfAbsent(key, counter)) {
       throw new IllegalArgumentException("Key has already been used: " + key);
-    } 
+    }
     return new CountDocsValueSource(counter, val);
   }
 
-  static final private class CountDocsValueSource extends DoubleConstValueSource {
+  private static final class CountDocsValueSource extends DoubleConstValueSource {
     private final AtomicInteger counter;
     private final double value;
+
     public CountDocsValueSource(AtomicInteger counter, double value) {
       super(value);
       this.value = value;
       this.counter = counter;
     }
+
     @Override
-    public FunctionValues getValues(Map<Object, Object> context,
-                                    LeafReaderContext readerContext) throws IOException {
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) {
       return new DoubleDocValues(this) {
         @Override
         public double doubleVal(int doc) {
@@ -83,5 +83,4 @@ public class CountUsageValueSourceParser extends ValueSourceParser {
       };
     }
   }
-
 }

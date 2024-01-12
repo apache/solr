@@ -40,6 +40,7 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/angular/menu.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/plugins.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/documents.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/paramsets.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/query.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/stream.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/replication.css?_=${version}">
@@ -67,10 +68,13 @@ limitations under the License.
   <script src="libs/highlight.js?_=${version}"></script>
   <script src="libs/d3.js?_=${version}"></script>
   <script src="libs/ui-grid.min.js?_=${version}"></script>
+  <script src="libs/solr/index.js"></script>
   <script src="libs/jquery-ui.min.js?_=${version}"></script>
   <script src="libs/angular-utf8-base64.min.js?_=${version}"></script>
+  <script src="libs/jssha-3.3.1-sha256.min.js?_=${version}"></script>
   <script src="js/angular/app.js?_=${version}"></script>
   <script src="js/angular/services.js?_=${version}"></script>
+  <script src="js/angular/permissions.js?_=${version}"></script>
   <script src="js/angular/controllers/index.js?_=${version}"></script>
   <script src="js/angular/controllers/login.js?_=${version}"></script>
   <script src="js/angular/controllers/logging.js?_=${version}"></script>
@@ -84,6 +88,7 @@ limitations under the License.
   <script src="js/angular/controllers/collection-overview.js?_=${version}"></script>
   <script src="js/angular/controllers/analysis.js?_=${version}"></script>
   <script src="js/angular/controllers/documents.js?_=${version}"></script>
+  <script src="js/angular/controllers/paramsets.js?_=${version}"></script>
   <script src="js/angular/controllers/files.js?_=${version}"></script>
   <script src="js/angular/controllers/query.js?_=${version}"></script>
   <script src="js/angular/controllers/stream.js?_=${version}"></script>
@@ -211,6 +216,7 @@ limitations under the License.
                 <li class="overview" ng-show="currentCollection.type === 'alias'" ng-class="{active:page=='alias-overview'}"><a href="#/{{currentCollection.name}}/alias-overview"><span>Overview</span></a></li>
                 <li class="analysis" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='analysis'}"><a href="#/{{currentCollection.name}}/analysis"><span>Analysis</span></a></li>
                 <li class="documents" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='documents'}"><a href="#/{{currentCollection.name}}/documents"><span>Documents</span></a></li>
+                <li class="paramsets" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='paramsets'}"><a href="#/{{currentCollection.name}}/paramsets"><span>Paramsets</span></a></li>
                 <li class="files" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='files'}"><a href="#/{{currentCollection.name}}/files"><span>Files</span></a></li>
                 <li class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCollection.name}}/query"><span>Query</span></a></li>
                 <li class="stream" ng-class="{active:page=='stream'}"><a href="#/{{currentCollection.name}}/stream"><span>Stream</span></a></li>
@@ -236,6 +242,7 @@ limitations under the License.
                 <li class="overview" ng-class="{active:page=='overview'}"><a href="#/{{currentCore.name}}/core-overview"><span>Overview</span></a></li>
                 <li ng-hide="isCloudEnabled" class="analysis" ng-class="{active:page=='analysis'}"><a href="#/{{currentCore.name}}/analysis"><span>Analysis</span></a></li>
                 <li ng-hide="isCloudEnabled" class="documents" ng-class="{active:page=='documents'}"><a href="#/{{currentCore.name}}/documents"><span>Documents</span></a></li>
+                <li ng-hide="isCloudEnabled" class="paramsets" ng-class="{active:page=='paramsets'}"><a href="#/{{currentCore.name}}/paramsets"><span>Paramsets</span></a></li>
                 <li ng-hide="isCloudEnabled" class="files" ng-class="{active:page=='files'}"><a href="#/{{currentCore.name}}/files"><span>Files</span></a></li>
                 <li class="ping" ng-class="{active:page=='ping'}"><a ng-click="ping()"><span>Ping</span><small class="qtime" ng-show="showPing"> (<span>{{pingMS}}ms</span>)</small></a></li>
                 <li class="plugins" ng-class="{active:page=='plugins'}"><a href="#/{{currentCore.name}}/plugins"><span>Plugins / Stats</span></a></li>
@@ -253,11 +260,12 @@ limitations under the License.
 
         <ul>
 
-          <li class="documentation"><a href="http://solr.apache.org/guide/"><span>Documentation</span></a></li>
-          <li class="issues"><a href="http://issues.apache.org/jira/browse/SOLR"><span>Issue Tracker</span></a></li>
-          <li class="irc"><a href="http://webchat.freenode.net/?channels=#solr"><span>IRC Channel</span></a></li>
-          <li class="mailinglist"><a href="http://wiki.apache.org/solr/UsingMailingLists"><span>Community forum</span></a></li>
-          <li class="wiki-query-syntax"><a href="https://solr.apache.org/guide/query-syntax-and-parsers.html"><span>Solr Query Syntax</span></a></li>
+          <li class="documentation"><a href="https://solr.apache.org/guide/solr/latest/" target="_blank"><span>Documentation</span></a></li>
+          <li class="query-syntax"><a href="https://solr.apache.org/guide/solr/latest/query-guide/query-syntax-and-parsers.html" target="_blank"><span>Solr Query Syntax</span></a></li>
+          <li class="community"><a href="https://solr.apache.org/community.html" target="_blank"><span>Community</span></a></li>
+          <li class="issues"><a href="https://issues.apache.org/jira/browse/SOLR" target="_blank"><span>Issue Tracker</span></a></li>
+          <li class="chat"><a href="https://s.apache.org/solr-slack" target="_blank"><span>Slack</span></a></li>
+          <li class="chat"><a href="https://web.libera.chat/?channels=#solr" target="_blank"><span>IRC</span></a></li>
 
         </ul>
 

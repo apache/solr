@@ -28,31 +28,31 @@ import org.apache.solr.request.SolrQueryRequest;
 public class LuceneQParser extends QParser {
   SolrQueryParser lparser;
 
-  public LuceneQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public LuceneQParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
   }
-
 
   @Override
   public Query parse() throws SyntaxError {
     String qstr = getString();
-    if (qstr == null || qstr.length()==0) return null;
+    if (qstr == null || qstr.length() == 0) return null;
 
     String defaultField = getParam(CommonParams.DF);
     lparser = new SolrQueryParser(this, defaultField);
 
     lparser.setDefaultOperator(QueryParsing.parseOP(getParam(QueryParsing.OP)));
-    lparser.setSplitOnWhitespace(StrUtils.parseBool
-      (getParam(QueryParsing.SPLIT_ON_WHITESPACE), SolrQueryParser.DEFAULT_SPLIT_ON_WHITESPACE));
+    lparser.setSplitOnWhitespace(
+        StrUtils.parseBool(
+            getParam(QueryParsing.SPLIT_ON_WHITESPACE),
+            SolrQueryParser.DEFAULT_SPLIT_ON_WHITESPACE));
     lparser.setAllowSubQueryParsing(true);
 
     return lparser.parse(qstr);
   }
 
-
   @Override
   public String[] getDefaultHighlightFields() {
-    return lparser == null ? new String[]{} : new String[]{lparser.getDefaultField()};
+    return lparser == null ? new String[] {} : new String[] {lparser.getDefaultField()};
   }
-
 }

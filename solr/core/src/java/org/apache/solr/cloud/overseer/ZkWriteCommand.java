@@ -20,9 +20,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 
 public class ZkWriteCommand {
-  /**
-   * Single NO_OP instance, can be compared with ==
-   */
+  /** Single NO_OP instance, can be compared with == */
   static final ZkWriteCommand NO_OP = new ZkWriteCommand(null, null);
 
   public final String name;
@@ -33,12 +31,17 @@ public class ZkWriteCommand {
   public final boolean persistJsonState;
   public final PerReplicaStatesOps ops;
 
-  public ZkWriteCommand(String name, DocCollection collection, PerReplicaStatesOps replicaOps, boolean persistJsonState) {
+  public ZkWriteCommand(
+      String name,
+      DocCollection collection,
+      PerReplicaStatesOps replicaOps,
+      boolean persistJsonState) {
     isPerReplicaStateCollection = collection != null && collection.isPerReplicaState();
     this.name = name;
     this.collection = collection;
     this.ops = replicaOps;
-    this.persistJsonState = persistJsonState || !isPerReplicaStateCollection; // Always persist for non "per replica state" collections
+    // Always persist for non "per replica state" collections
+    this.persistJsonState = persistJsonState || !isPerReplicaStateCollection;
   }
 
   public ZkWriteCommand(String name, DocCollection collection) {
@@ -50,4 +53,3 @@ public class ZkWriteCommand {
     return getClass().getSimpleName() + ": " + (this == NO_OP ? "no-op" : name + "=" + collection);
   }
 }
-

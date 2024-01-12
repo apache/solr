@@ -16,23 +16,22 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import org.apache.solr.common.util.NamedList;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * A base class for all analysis responses.
- *
  *
  * @since solr 1.4
  */
 public class AnalysisResponseBase extends SolrResponseBase {
 
   /**
-   * Parses the given named list and builds a list of analysis phases form it. Expects a named list of the form:
-   * <br>
+   * Parses the given named list and builds a list of analysis phases form it. Expects a named list
+   * of the form: <br>
+   *
    * <pre><code>
    *  &lt;lst name="index"&gt;
    *      &lt;arr name="Tokenizer"&gt;
@@ -57,10 +56,10 @@ public class AnalysisResponseBase extends SolrResponseBase {
    *  &lt;/lst&gt;
    * </code></pre>
    *
-   * The special case is a CharacterFilter that just returns a string, which we then map to a single token without type.
+   * The special case is a CharacterFilter that just returns a string, which we then map to a single
+   * token without type.
    *
    * @param phaseNL The names list to parse.
-   *
    * @return The built analysis phases list.
    */
   protected List<AnalysisPhase> buildPhases(NamedList<Object> phaseNL) {
@@ -88,6 +87,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
 
   /**
    * Convert a string value (from CharacterFilter) into a TokenInfo for its value full span.
+   *
    * @param value String value
    * @return The built token info (with type set to null)
    */
@@ -98,6 +98,7 @@ public class AnalysisResponseBase extends SolrResponseBase {
   /**
    * Parses the given named list and builds a token infoform it. Expects a named list of the form:
    * <br>
+   *
    * <pre><code>
    *  &lt;arr name="Tokenizer"&gt;
    *      &lt;str name="text"&gt;the_text&lt;/str&gt;
@@ -111,7 +112,6 @@ public class AnalysisResponseBase extends SolrResponseBase {
    * </code></pre>
    *
    * @param tokenNL The named list to parse.
-   *
    * @return The built token info.
    */
   protected TokenInfo buildTokenInfo(NamedList<?> tokenNL) {
@@ -122,15 +122,15 @@ public class AnalysisResponseBase extends SolrResponseBase {
     int end = (Integer) tokenNL.get("end");
     int position = (Integer) tokenNL.get("position");
     Boolean match = (Boolean) tokenNL.get("match");
-    return new TokenInfo(text, rawText, type, start, end, position, (match == null ? false : match));
+    return new TokenInfo(
+        text, rawText, type, start, end, position, (match == null ? false : match));
   }
 
-
-  //================================================= Inner Classes ==================================================
+  // ===== Inner Classes =====
 
   /**
-   * A phase in the analysis process. The phase holds the tokens produced in this phase and the name of the class that
-   * produced them.
+   * A phase in the analysis process. The phase holds the tokens produced in this phase and the name
+   * of the class that produced them.
    */
   public static class AnalysisPhase {
 
@@ -142,7 +142,8 @@ public class AnalysisResponseBase extends SolrResponseBase {
     }
 
     /**
-     * The name of the class (analyzer, tokenzier, or filter) that produced the token stream for this phase.
+     * The name of the class (analyzer, tokenzier, or filter) that produced the token stream for
+     * this phase.
      *
      * @return The name of the class that produced the token stream for this phase.
      */
@@ -162,12 +163,9 @@ public class AnalysisResponseBase extends SolrResponseBase {
     public List<TokenInfo> getTokens() {
       return tokens;
     }
-
   }
 
-  /**
-   * Holds all information of a token as part of an analysis phase.
-   */
+  /** Holds all information of a token as part of an analysis phase. */
   public static class TokenInfo {
 
     private final String text;
@@ -181,18 +179,20 @@ public class AnalysisResponseBase extends SolrResponseBase {
     /**
      * Constructs a new TokenInfo.
      *
-     * @param text     The text of the token
-     * @param rawText  The raw text of the token. If the token is stored in the index in a special format (e.g.
-     *                 dates or padded numbers) this argument should hold this value. If the token is stored as is,
-     *                 then this value should be {@code null}.
-     * @param type     The type fo the token (typically either {@code word} or {@code <ALPHANUM>} though it depends
-     *                 on the tokenizer/filter used).
-     * @param start    The start position of the token in the original text where it was extracted from.
-     * @param end      The end position of the token in the original text where it was extracted from.
+     * @param text The text of the token
+     * @param rawText The raw text of the token. If the token is stored in the index in a special
+     *     format (e.g. dates or padded numbers) this argument should hold this value. If the token
+     *     is stored as is, then this value should be {@code null}.
+     * @param type The type fo the token (typically either {@code word} or {@code <ALPHANUM>} though
+     *     it depends on the tokenizer/filter used).
+     * @param start The start position of the token in the original text where it was extracted
+     *     from.
+     * @param end The end position of the token in the original text where it was extracted from.
      * @param position The position of the token within the token stream.
-     * @param match    Indicates whether this token matches one of the query tokens.
+     * @param match Indicates whether this token matches one of the query tokens.
      */
-    TokenInfo(String text, String rawText, String type, int start, int end, int position, boolean match) {
+    TokenInfo(
+        String text, String rawText, String type, int start, int end, int position, boolean match) {
       this.text = text;
       this.rawText = rawText;
       this.type = type;
@@ -212,8 +212,9 @@ public class AnalysisResponseBase extends SolrResponseBase {
     }
 
     /**
-     * Returns the raw text of the token. If the token is index in a special format (e.g. date or paddded numbers)
-     * it will be returned as the raw text. Returns {@code null} if the token is indexed as is.
+     * Returns the raw text of the token. If the token is index in a special format (e.g. date or
+     * paddded numbers) it will be returned as the raw text. Returns {@code null} if the token is
+     * indexed as is.
      *
      * @return Returns the raw text of the token.
      */
@@ -222,8 +223,8 @@ public class AnalysisResponseBase extends SolrResponseBase {
     }
 
     /**
-     * Returns the type of the token. Typically this will be {@code word} or {@code <ALPHANUM>}, but it really
-     * depends on the tokenizer and filters that are used.
+     * Returns the type of the token. Typically this will be {@code word} or {@code <ALPHANUM>}, but
+     * it really depends on the tokenizer and filters that are used.
      *
      * @return The type of the token.
      */
@@ -267,5 +268,4 @@ public class AnalysisResponseBase extends SolrResponseBase {
       return match;
     }
   }
-
 }

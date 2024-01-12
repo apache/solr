@@ -20,17 +20,15 @@ package org.apache.solr.common.util;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-
 import org.noggit.CharArr;
 
-/**A mutable byte[] backed Utf8CharSequence. This is quite similar to the BytesRef of Lucene
- * Do not alter the contents of the byte[] . it may be inconsistent with the cached String
- * This is designed for single-threaded use
- *
+/**
+ * A mutable byte[] backed Utf8CharSequence. This is quite similar to the BytesRef of Lucene Do not
+ * alter the contents of the byte[] . it may be inconsistent with the cached String This is designed
+ * for single-threaded use
  */
 public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
 
@@ -69,13 +67,14 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
 
   @Override
   public byte byteAt(int idx) {
-    if (idx >= length || idx < 0) throw new ArrayIndexOutOfBoundsException("idx must be >=0 and < " + length);
+    if (idx >= length || idx < 0)
+      throw new ArrayIndexOutOfBoundsException("idx must be >=0 and < " + length);
     return buf[offset + idx];
   }
 
   /**
-   * this is for internal use to get a cached string value.
-   * returns null if There is no cached String value
+   * this is for internal use to get a cached string value. returns null if There is no cached
+   * String value
    */
   public String getStringOrNull() {
     return utf16;
@@ -86,7 +85,8 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
     return _writeBytes(buf, offset, length, start, buffer, pos);
   }
 
-  static int _writeBytes(byte[] src, int srcOffset, int srcLength, int start, byte[] buffer, int pos) {
+  static int _writeBytes(
+      byte[] src, int srcOffset, int srcLength, int start, byte[] buffer, int pos) {
     if (srcOffset == -1 || start >= srcLength) return -1;
     int writableBytes = Math.min(srcLength - start, buffer.length - pos);
     System.arraycopy(src, srcOffset + start, buffer, pos, writableBytes);
@@ -98,7 +98,8 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
     return length;
   }
 
-  private ByteArrayUtf8CharSequence(byte[] buf, int offset, int length, String utf16, int hashCode) {
+  private ByteArrayUtf8CharSequence(
+      byte[] buf, int offset, int length, String utf16, int hashCode) {
     this.buf = buf;
     this.offset = offset;
     this.length = length;
@@ -126,8 +127,13 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
       if (other instanceof ByteArrayUtf8CharSequence) {
         if (this.length != ((ByteArrayUtf8CharSequence) other).length) return false;
         ByteArrayUtf8CharSequence that = (ByteArrayUtf8CharSequence) other;
-        return _equals(this.buf, this.offset, this.offset + this.length,
-            that.buf, that.offset, that.offset + that.length);
+        return _equals(
+            this.buf,
+            this.offset,
+            this.offset + this.length,
+            that.buf,
+            that.offset,
+            that.offset + that.length);
       }
       return utf8Equals(this, (Utf8CharSequence) other);
     } else {
@@ -142,7 +148,6 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
     }
     return true;
   }
-
 
   @Override
   public char charAt(int index) {
@@ -159,7 +164,6 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
         ByteUtils.UTF8toUTF16(buf, offset, length, arr);
         this.utf16 = utf16 = arr.toString();
       }
-
     }
     return utf16;
   }
@@ -183,10 +187,10 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
   @SuppressWarnings({"rawtypes"})
   public static Map.Entry convertCharSeq(Map.Entry e) {
     if (e.getKey() instanceof Utf8CharSequence || e.getValue() instanceof Utf8CharSequence) {
-      return new AbstractMap.SimpleEntry<>(convertCharSeq(e.getKey()), convertCharSeq(e.getValue()));
+      return new AbstractMap.SimpleEntry<>(
+          convertCharSeq(e.getKey()), convertCharSeq(e.getValue()));
     }
     return e;
-
   }
 
   @SuppressWarnings("rawtypes")
@@ -201,8 +205,8 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
     }
     if (needsCopy) {
       Collection<Object> copy = null;
-      if (vals instanceof Set){
-        copy = new HashSet<>(vals.size());
+      if (vals instanceof Set) {
+        copy = CollectionUtil.newHashSet(vals.size());
       } else {
         copy = new ArrayList<>(vals.size());
       }
@@ -219,7 +223,6 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
     return o;
   }
 
-
   // methods in Arrays are defined stupid: they cannot use Objects.checkFromToIndex
   // they throw IAE (vs IOOBE) in the case of fromIndex > toIndex.
   // so this method works just like checkFromToIndex, but with that stupidity added.
@@ -228,7 +231,8 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
       throw new IllegalArgumentException("fromIndex " + fromIndex + " > toIndex " + toIndex);
     }
     if (fromIndex < 0 || toIndex > length) {
-      throw new IndexOutOfBoundsException("Range [" + fromIndex + ", " + toIndex + ") out-of-bounds for length " + length);
+      throw new IndexOutOfBoundsException(
+          "Range [" + fromIndex + ", " + toIndex + ") out-of-bounds for length " + length);
     }
   }
 
@@ -240,9 +244,11 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
   /**
    * Behaves like Java 9's Arrays.equals
    *
-   * @see <a href="https://docs.oracle.com/javase/9/docs/api/java/util/Arrays.html#equals-byte:A-int-int-byte:A-int-int-">Arrays.equals</a>
+   * @see <a
+   *     href="https://docs.oracle.com/javase/9/docs/api/java/util/Arrays.html#equals-byte:A-int-int-byte:A-int-int-">Arrays.equals</a>
    */
-  public static boolean _equals(byte[] a, int aFromIndex, int aToIndex, byte[] b, int bFromIndex, int bToIndex) {
+  public static boolean _equals(
+      byte[] a, int aFromIndex, int aToIndex, byte[] b, int bFromIndex, int bToIndex) {
     checkFromToIndex(aFromIndex, aToIndex, a.length);
     checkFromToIndex(bFromIndex, bToIndex, b.length);
     int aLen = aToIndex - aFromIndex;
@@ -259,7 +265,6 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
     return true;
   }
 
-
   public ByteArrayUtf8CharSequence reset(byte[] bytes, int offset, int length, String str) {
     this.buf = bytes;
     this.offset = offset;
@@ -269,10 +274,7 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
     return this;
   }
 
-  /**
-   * Performs internal consistency checks.
-   * Always returns true (or throws IllegalStateException)
-   */
+  /** Performs internal consistency checks. Always returns true (or throws IllegalStateException) */
   public boolean isValid() {
     if (buf == null) {
       throw new IllegalStateException("bytes is null");
@@ -281,19 +283,28 @@ public class ByteArrayUtf8CharSequence implements Utf8CharSequence {
       throw new IllegalStateException("length is negative: " + length);
     }
     if (length > buf.length) {
-      throw new IllegalStateException("length is out of bounds: " + length + ",bytes.length=" + buf.length);
+      throw new IllegalStateException(
+          "length is out of bounds: " + length + ",bytes.length=" + buf.length);
     }
     if (offset < 0) {
       throw new IllegalStateException("offset is negative: " + offset);
     }
     if (offset > buf.length) {
-      throw new IllegalStateException("offset out of bounds: " + offset + ",bytes.length=" + buf.length);
+      throw new IllegalStateException(
+          "offset out of bounds: " + offset + ",bytes.length=" + buf.length);
     }
     if (offset + length < 0) {
-      throw new IllegalStateException("offset+length is negative: offset=" + offset + ",length=" + length);
+      throw new IllegalStateException(
+          "offset+length is negative: offset=" + offset + ",length=" + length);
     }
     if (offset + length > buf.length) {
-      throw new IllegalStateException("offset+length out of bounds: offset=" + offset + ",length=" + length + ",bytes.length=" + buf.length);
+      throw new IllegalStateException(
+          "offset+length out of bounds: offset="
+              + offset
+              + ",length="
+              + length
+              + ",bytes.length="
+              + buf.length);
     }
     return true;
   }

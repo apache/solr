@@ -17,13 +17,11 @@
 package org.apache.solr.core;
 
 import java.io.IOException;
-
 import org.apache.lucene.store.Directory;
 
 /**
- * {@link CachingDirectoryFactory} will call this method
- * rather than {@link Directory#close()} on shutdown if
- * a Directory implements this interface.
+ * {@link CachingDirectoryFactory} will call this method rather than {@link Directory#close()} on
+ * shutdown if a Directory implements this interface.
  */
 public interface ShutdownAwareDirectory {
   public void closeOnShutdown() throws IOException;

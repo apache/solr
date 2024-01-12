@@ -18,12 +18,10 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
@@ -33,22 +31,22 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueFloat;
+import org.apache.solr.legacy.LegacyNumericUtils;
 
 /**
- * A numeric field that can contain single-precision 32-bit IEEE 754 
- * floating point values.
+ * A numeric field that can contain single-precision 32-bit IEEE 754 floating point values.
  *
  * <ul>
- *  <li>Min Value Allowed: 1.401298464324817E-45</li>
- *  <li>Max Value Allowed: 3.4028234663852886E38</li>
+ *   <li>Min Value Allowed: 1.401298464324817E-45
+ *   <li>Max Value Allowed: 3.4028234663852886E38
  * </ul>
  *
- * <b>NOTE:</b> The behavior of this class when given values of 
- * {@link Float#NaN}, {@link Float#NEGATIVE_INFINITY}, or 
- * {@link Float#POSITIVE_INFINITY} is undefined.
- * 
+ * <b>NOTE:</b> The behavior of this class when given values of {@link Float#NaN}, {@link
+ * Float#NEGATIVE_INFINITY}, or {@link Float#POSITIVE_INFINITY} is undefined.
+ *
  * @see Float
- * @see <a href="http://java.sun.com/docs/books/jls/third_edition/html/typesValues.html#4.2.3">Java Language Specification, s4.2.3</a>
+ * @see <a href="http://java.sun.com/docs/books/jls/third_edition/html/typesValues.html#4.2.3">Java
+ *     Language Specification, s4.2.3</a>
  * @deprecated Trie fields are deprecated as of Solr 7.0
  * @see FloatPointField
  */
@@ -60,7 +58,7 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
 
   @Override
   public Object toNativeType(Object val) {
-    if(val==null) return null;
+    if (val == null) return null;
     if (val instanceof Number) return ((Number) val).floatValue();
     if (val instanceof CharSequence) return Float.parseFloat(val.toString());
     return super.toNativeType(val);
@@ -68,21 +66,23 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
 
   @Override
   protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField f) {
-    
+
     return new SortedSetFieldSource(f.getName(), choice) {
       @Override
-      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+      public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+          throws IOException {
         SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
-        
+
         SortedSetDocValues sortedSet = DocValues.getSortedSet(readerContext.reader(), field);
         SortedDocValues view = SortedSetSelector.wrap(sortedSet, selector);
-        
+
         return new FloatDocValues(thisAsSortedSetFieldSource) {
           private int lastDocID;
 
           private boolean setDoc(int docID) throws IOException {
             if (docID < lastDocID) {
-              throw new IllegalArgumentException("docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
+              throw new IllegalArgumentException(
+                  "docs out of order: lastDocID=" + lastDocID + " docID=" + docID);
             }
             if (docID > view.docID()) {
               return docID == view.advance(docID);
@@ -90,7 +90,7 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
               return docID == view.docID();
             }
           }
-          
+
           @Override
           public float floatVal(int doc) throws IOException {
             if (setDoc(doc)) {
@@ -111,17 +111,19 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
           public ValueFiller getValueFiller() {
             return new ValueFiller() {
               private final MutableValueFloat mval = new MutableValueFloat();
-              
+
               @Override
               public MutableValue getValue() {
                 return mval;
               }
-              
+
               @Override
               public void fillValue(int doc) throws IOException {
                 if (setDoc(doc)) {
                   mval.exists = true;
-                  mval.value = NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(view.lookupOrd(view.ordValue())));
+                  mval.value =
+                      NumericUtils.sortableIntToFloat(
+                          LegacyNumericUtils.prefixCodedToInt(view.lookupOrd(view.ordValue())));
                 } else {
                   mval.exists = false;
                   mval.value = 0F;
@@ -133,5 +135,4 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
       }
     };
   }
-
 }

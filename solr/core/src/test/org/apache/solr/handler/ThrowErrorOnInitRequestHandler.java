@@ -16,21 +16,15 @@
  */
 package org.apache.solr.handler;
 
-import java.io.IOException;
-
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 
-/**
- * throws a {@link java.lang.Error} on init for testing purposes
- */
-public class ThrowErrorOnInitRequestHandler extends RequestHandlerBase
-{
+/** throws a {@link java.lang.Error} on init for testing purposes */
+public class ThrowErrorOnInitRequestHandler extends RequestHandlerBase {
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
-  {
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) {
     /* NOOP */
   }
 

@@ -18,13 +18,10 @@
 package org.apache.solr.cloud;
 
 import java.util.Collections;
-
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-
 
 public class OverseerModifyCollectionTest extends SolrCloudTestCase {
 
@@ -45,20 +42,26 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     // Modify configSet
-    RequestStatusState requestStatusState = CollectionAdminRequest.modifyCollection(collName,
-            Collections.singletonMap("collection.configName", "conf2"))
+    RequestStatusState requestStatusState =
+        CollectionAdminRequest.modifyCollection(
+                collName, Collections.singletonMap("collection.configName", "conf2"))
             .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     assertEquals(requestStatusState, RequestStatusState.COMPLETED);
 
-    String configName = cluster.getSolrClient().getClusterStateProvider().getCollection(collName).getConfigName();
+    String configName =
+        cluster.getSolrClient().getClusterStateProvider().getCollection(collName).getConfigName();
     assertEquals("conf2", configName);
-    
-    //Try an invalid config name
-    Exception e = expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.modifyCollection(collName,
-              Collections.singletonMap("collection.configName", "notARealConfigName")
-      ).process(cluster.getSolrClient());
-    });
+
+    // Try an invalid config name
+    Exception e =
+        expectThrows(
+            Exception.class,
+            () -> {
+              CollectionAdminRequest.modifyCollection(
+                      collName,
+                      Collections.singletonMap("collection.configName", "notARealConfigName"))
+                  .process(cluster.getSolrClient());
+            });
 
     assertTrue(e.getMessage(), e.getMessage().contains("Can not find the specified config set"));
   }

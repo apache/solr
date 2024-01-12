@@ -17,37 +17,38 @@
 
 package org.apache.solr.handler.admin.api;
 
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.STATUS;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
+import org.apache.solr.api.EndPoint;
+import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+
 /**
  * V2 API for retrieving status information for all cores on the receiving node.
  *
- * This API (GET /v2/cores is analogous to the v1 /admin/cores?action=status command.
+ * <p>This API (GET /v2/cores is analogous to the v1 /admin/cores?action=status command.
  *
  * @see SingleCoreStatusAPI
  */
 public class AllCoresStatusAPI {
 
-    private final CoreAdminHandler coreAdminHandler;
+  private final CoreAdminHandler coreAdminHandler;
 
-    public AllCoresStatusAPI(CoreAdminHandler coreAdminHandler) {
-        this.coreAdminHandler = coreAdminHandler;
-    }
+  public AllCoresStatusAPI(CoreAdminHandler coreAdminHandler) {
+    this.coreAdminHandler = coreAdminHandler;
+  }
 
-    @EndPoint(path = {"/cores"},
-            method = GET,
-            permission = CORE_READ_PERM)
-    public void getStatusOfAllCores(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        req = wrapParams(req, ACTION, STATUS);
-        coreAdminHandler.handleRequestBody(req, rsp);
-    }
+  @EndPoint(
+      path = {"/cores"},
+      method = GET,
+      permission = CORE_READ_PERM)
+  public void getStatusOfAllCores(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    req = wrapParams(req, ACTION, STATUS);
+    coreAdminHandler.handleRequestBody(req, rsp);
+  }
 }

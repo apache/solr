@@ -34,8 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -54,7 +52,6 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   List<Throwable> unexpected = new CopyOnWriteArrayList<>();
-
 
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -75,7 +72,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       sb.append(th.getClass().getSimpleName());
       lastCause = th;
       th = th.getCause();
-    } while(th != null);
+    } while (th != null);
     sb.append("(" + lastCause.getMessage() + ")");
     return sb.toString();
   }
@@ -83,19 +80,19 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   public void showExceptions() throws Exception {
     if (unexpected.isEmpty()) return;
 
-    Map<String,Integer> counts = new HashMap<>();
+    Map<String, Integer> counts = new HashMap<>();
 
     // dedup in case there are many clients or many exceptions
     for (Throwable e : unexpected) {
       String chain = getChain(e);
       Integer prev = counts.put(chain, 1);
       if (prev != null) {
-        counts.put(chain, prev+1);
+        counts.put(chain, prev + 1);
       }
     }
 
     StringBuilder sb = new StringBuilder("EXCEPTION LIST:");
-    for (Map.Entry<String,Integer> entry : counts.entrySet()) {
+    for (Map.Entry<String, Integer> entry : counts.entrySet()) {
       sb.append("\n\t").append(entry.getValue()).append(") ").append(entry.getKey());
     }
 
@@ -104,23 +101,29 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
 
   @Test
   public void testWithXml() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    client.setRequestWriter(new RequestWriter());
-    client.deleteByQuery("*:*"); // delete everything!
-    doIt(client);
+    try (SolrClient client =
+        new HttpSolrClient.Builder(getCoreUrl()).withRequestWriter(new RequestWriter()).build()) {
+
+      client.deleteByQuery("*:*"); // delete everything!
+      doIt(client);
+    }
   }
 
   @Test
   public void testWithBinary() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    client.setRequestWriter(new BinaryRequestWriter());
-    client.deleteByQuery("*:*"); // delete everything!
-    doIt(client);
+    try (SolrClient client =
+        new HttpSolrClient.Builder(getCoreUrl())
+            .withRequestWriter(new BinaryRequestWriter())
+            .build()) {
+      client.deleteByQuery("*:*"); // delete everything!
+      doIt(client);
+    }
   }
 
   Iterator<SolrInputDocument> manyDocs(final int base, final int numDocs) {
-    return new Iterator<SolrInputDocument>() {
+    return new Iterator<>() {
       int count = 0;
+
       @Override
       public boolean hasNext() {
         return count < numDocs;
@@ -129,43 +132,48 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       @Override
       public SolrInputDocument next() {
         int id = base + count++;
-        if (count == 1) {  // first doc is legit, and will increment a counter
-          return sdoc("id","test", "count_i", map("inc",1));
+        if (count == 1) { // first doc is legit, and will increment a counter
+          return sdoc("id", "test", "count_i", map("inc", 1));
         }
-        // include "ignore_exception" so the log doesn't fill up with known exceptions, and change the values for each doc
-        // so binary format won't compress too much
-        return sdoc("id",Integer.toString(id),"ignore_exception_field_does_not_exist_"+id,"fieldval"+id);
+        // include "ignore_exception" so the log doesn't fill up with known exceptions, and change
+        // the values for each doc so binary format won't compress too much
+        return sdoc(
+            "id",
+            Integer.toString(id),
+            "ignore_exception_field_does_not_exist_" + id,
+            "fieldval" + id);
       }
 
       @Override
-      public void remove() {
-      }
+      public void remove() {}
     };
-  };
+  }
+  ;
 
-  void doThreads(final HttpSolrClient client, final int numThreads, final int numRequests) throws Exception {
+  void doThreads(final SolrClient client, final int numThreads, final int numRequests)
+      throws Exception {
     final AtomicInteger tries = new AtomicInteger(0);
 
     List<Thread> threads = new ArrayList<>();
 
-    for (int i=0; i<numThreads; i++) {
+    for (int i = 0; i < numThreads; i++) {
       final int threadNum = i;
-      threads.add( new Thread() {
-                     int reqLeft = numRequests;
+      threads.add(
+          new Thread() {
+            int reqLeft = numRequests;
 
-                     @Override
-                     public void run() {
-                       try {
-                         while (--reqLeft >= 0) {
-                           tries.incrementAndGet();
-                           doSingle(client, threadNum);
-                         }
-                       } catch (Throwable e) {
-                         // Allow thread to exit, we should have already recorded the exception.
-                       }
-                     }
-                   }
-      );
+            @Override
+            public void run() {
+              try {
+                while (--reqLeft >= 0) {
+                  tries.incrementAndGet();
+                  doSingle(client, threadNum);
+                }
+              } catch (Throwable e) {
+                // Allow thread to exit, we should have already recorded the exception.
+              }
+            }
+          });
     }
 
     for (Thread thread : threads) {
@@ -184,46 +192,44 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
 
     assertEquals(tries.get(), getCount(client));
 
-    assertTrue("got unexpected exceptions. ", unexpected.isEmpty() );
+    assertTrue("got unexpected exceptions. ", unexpected.isEmpty());
   }
 
-  int getCount(HttpSolrClient client) throws IOException, SolrServerException {
+  int getCount(SolrClient client) throws IOException, SolrServerException {
     client.commit();
     QueryResponse rsp = client.query(params("q", "id:test", "fl", "count_i", "wt", "json"));
-    int count = ((Number)rsp.getResults().get(0).get("count_i")).intValue();
+    int count = ((Number) rsp.getResults().get(0).get("count_i")).intValue();
     return count;
   }
 
   // this always failed with the Jetty 9.3 snapshot
-  void doIt(HttpSolrClient client) throws Exception {
+  void doIt(SolrClient client) throws Exception {
     client.deleteByQuery("*:*");
-    doThreads(client,10,100);
+    doThreads(client, 10, 100);
     // doSingle(client, 1);
   }
 
-  void doSingle(HttpSolrClient client, int threadNum) {
+  void doSingle(SolrClient client, int threadNum) {
     try {
-      client.add(manyDocs(threadNum*1000000, 1000));
-    }
-    catch (BaseHttpSolrClient.RemoteSolrException e) {
+      client.add(manyDocs(threadNum * 1000000, 1000));
+    } catch (BaseHttpSolrClient.RemoteSolrException e) {
       String msg = e.getMessage();
       assertTrue(msg, msg.contains("field_does_not_exist"));
-    }
-    catch (Throwable e) {
+    } catch (Throwable e) {
       unexpected.add(e);
       log.error("unexpected exception:", e);
       fail("FAILING unexpected exception: " + e);
     }
   }
 
-  /***
+  /*
   @Test
   public void testLive() throws Exception {
     HttpSolrClient client = new HttpSolrClient("http://localhost:8983/techproducts/solr/");
     client.add( sdoc() );
     doiIt(client);
   }
-  ***/
+  */
 
   String getJsonDocs(int numDocs) {
     StringBuilder sb = new StringBuilder(numDocs * 20);
@@ -244,10 +250,10 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   String getResponse(InputStream is) throws Exception {
     StringBuilder sb = new StringBuilder();
     byte[] buf = new byte[100000];
-    for (;;) {
+    for (; ; ) {
       int n = 0;
       try {
-         n = is.read(buf);
+        n = is.read(buf);
       } catch (IOException e) {
         // a real HTTP client probably wouldn't try to read past the end and would thus
         // not get an exception until the *next* http request.
@@ -256,7 +262,8 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       if (n <= 0) break;
       sb.append(new String(buf, 0, n, StandardCharsets.UTF_8));
       log.info("BUFFER={}", sb);
-      break;  // for now, assume we got whole response in one read... otherwise we could block when trying to read again
+      break; // for now, assume we got whole response in one read... otherwise we could block when
+      // trying to read again
     }
     return sb.toString();
   }
@@ -264,11 +271,10 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   @Test
   public void testHttpURLConnection() throws Exception {
 
-   String bodyString = getJsonDocs(200000);  // sometimes succeeds with this size, but larger can cause OOM from command line
+    // sometimes succeeds with this size, but larger can cause OOM from command line
+    String bodyString = getJsonDocs(200000);
 
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-
-    String urlString = client.getBaseURL() + "/update";
+    String urlString = getCoreUrl() + "/update";
 
     HttpURLConnection conn = null;
     URL url = new URL(urlString);
@@ -278,7 +284,8 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     conn.setDoOutput(true);
     conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
 
-    OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream(), StandardCharsets.UTF_8);
+    OutputStreamWriter writer =
+        new OutputStreamWriter(conn.getOutputStream(), StandardCharsets.UTF_8);
     writer.write(bodyString);
     writer.flush();
 
@@ -289,15 +296,15 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       log.error("ERROR DURING conn.getResponseCode():", th);
     }
 
-/***
- java.io.IOException: Error writing to server
- at __randomizedtesting.SeedInfo.seed([2928C6EE314CD076:947A81A74F582526]:0)
- at sun.net.www.protocol.http.HttpURLConnection.writeRequests(HttpURLConnection.java:665)
- at sun.net.www.protocol.http.HttpURLConnection.writeRequests(HttpURLConnection.java:677)
- at sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1533)
- at sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1440)
- at java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:480)
- */
+    /*
+    java.io.IOException: Error writing to server
+    at __randomizedtesting.SeedInfo.seed([2928C6EE314CD076:947A81A74F582526]:0)
+    at sun.net.www.protocol.http.HttpURLConnection.writeRequests(HttpURLConnection.java:665)
+    at sun.net.www.protocol.http.HttpURLConnection.writeRequests(HttpURLConnection.java:677)
+    at sun.net.www.protocol.http.HttpURLConnection.getInputStream0(HttpURLConnection.java:1533)
+    at sun.net.www.protocol.http.HttpURLConnection.getInputStream(HttpURLConnection.java:1440)
+    at java.net.HttpURLConnection.getResponseCode(HttpURLConnection.java:480)
+    */
 
     log.info("CODE= {}", code);
     InputStream is;
@@ -312,7 +319,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       }
     }
 
-    String rbody = IOUtils.toString(is, StandardCharsets.UTF_8);
+    String rbody = new String(is.readAllBytes(), StandardCharsets.UTF_8);
     log.info("RESPONSE BODY:{}", rbody);
   }
 
@@ -320,12 +327,11 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   public void testRawSocket() throws Exception {
 
     String hostName = "127.0.0.1";
-    int port = jetty.getLocalPort();
+    int port = getJetty().getLocalPort();
 
     try (Socket socket = new Socket(hostName, port);
         OutputStream out = new BufferedOutputStream(socket.getOutputStream());
-        InputStream in = socket.getInputStream();
-    ) {
+        InputStream in = socket.getInputStream(); ) {
       byte[] body = getJsonDocs(100000).getBytes(StandardCharsets.UTF_8);
       int bodyLen = body.length;
 
@@ -334,30 +340,38 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       byte[] whitespace = whitespace(1000000);
       bodyLen += whitespace.length;
 
-      String headers = "POST /solr/collection1/update HTTP/1.1\n" +
-          "Host: localhost:" + port + "\n" +
-//        "User-Agent: curl/7.43.0\n" +
-          "Accept: */*\n" +
-          "Content-type:application/json\n" +
-          "Content-Length: " + bodyLen + "\n" +
-          "Connection: Keep-Alive\n";
+      String headers =
+          "POST /solr/collection1/update HTTP/1.1\n"
+              + "Host: localhost:"
+              + port
+              + "\n"
+              +
+              //        "User-Agent: curl/7.43.0\n" +
+              "Accept: */*\n"
+              + "Content-type:application/json\n"
+              + "Content-Length: "
+              + bodyLen
+              + "\n"
+              + "Connection: Keep-Alive\n";
 
       // Headers of HTTP connection are defined to be ASCII only:
       out.write(headers.getBytes(StandardCharsets.US_ASCII));
-      out.write('\n');  // extra newline separates headers from body
+      out.write('\n'); // extra newline separates headers from body
       out.write(body);
       out.flush();
 
       // Now what if I try to write more?  This doesn't seem to throw an exception!
       Thread.sleep(1000);
-      out.write(whitespace);  // whitespace
+      out.write(whitespace); // whitespace
       out.flush();
 
-      String rbody = getResponse(in);  // This will throw a connection reset exception if you try to read past the end of the HTTP response
+      // This will throw a connection reset exception if you try to read past the end of the HTTP
+      // response
+      String rbody = getResponse(in);
       log.info("RESPONSE BODY: {}", rbody);
       assertTrue(rbody.contains("unknown_field"));
 
-      /***
+      /*
       // can I reuse now?
       // writing another request doesn't actually throw an exception, but the following read does
       out.write(headers);
@@ -368,9 +382,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       rbody = getResponse(in);
       log.info("RESPONSE BODY: {}", rbody);
       assertTrue(rbody.contains("unknown_field"));
-      ***/
+      */
     }
   }
-
-
 }

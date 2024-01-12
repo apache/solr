@@ -19,85 +19,89 @@ package org.apache.solr.common.params;
 import java.util.Locale;
 import java.util.Set;
 
-
-/**
- * Parameters used across many handlers
- */
+/** Parameters used across many handlers */
 public interface CommonParams {
 
-  /** 
-   * Override for the concept of "NOW" to be used throughout this request, 
-   * expressed as milliseconds since epoch.  This is primarily used in 
-   * distributed search to ensure consistent time values are used across 
-   * multiple sub-requests.
+  /**
+   * Override for the concept of "NOW" to be used throughout this request, expressed as milliseconds
+   * since epoch. This is primarily used in distributed search to ensure consistent time values are
+   * used across multiple sub-requests.
    */
   String NOW = "NOW";
 
-  /** 
-   * Specifies the TimeZone used by the client for the purposes of 
-   * any DateMath rounding that may take place when executing the request
+  /**
+   * Specifies the TimeZone used by the client for the purposes of any DateMath rounding that may
+   * take place when executing the request
    */
   String TZ = "TZ";
 
-  /** the Request Handler (formerly known as the Query Type) - which Request Handler should handle the request */
-  String QT ="qt";
-  
+  /**
+   * the Request Handler (formerly known as the Query Type) - which Request Handler should handle
+   * the request
+   */
+  String QT = "qt";
+
   /** the response writer type - the format of the response */
-  String WT ="wt";
-  
+  String WT = "wt";
+
   /** query string */
-  String Q ="q";
+  String Q = "q";
 
   /** rank query */
-  String RQ ="rq";
-  
+  String RQ = "rq";
+
   /** distrib string */
   String DISTRIB = "distrib";
-  
+
   /** sort order */
-  String SORT ="sort";
-  
+  String SORT = "sort";
+
   /** Lucene query string(s) for filtering the results without affecting scoring */
-  String FQ ="fq";
-  
+  String FQ = "fq";
+
   /** zero based offset of matching documents to retrieve */
-  String START ="start";
+  String START = "start";
+
   int START_DEFAULT = 0;
-  
+
   /** number of documents to return starting at "start" */
-  String ROWS ="rows";
+  String ROWS = "rows";
+
   int ROWS_DEFAULT = 10;
+
+  String INDENT = "indent";
 
   // SOLR-4228 start
   /** handler value for SolrPing */
   String PING_HANDLER = "/admin/ping";
-  
+
   /** "action" parameter for SolrPing */
   String ACTION = "action";
-  
+
   /** "disable" value for SolrPing action */
   String DISABLE = "disable";
-  
+
   /** "enable" value for SolrPing action */
   String ENABLE = "enable";
-  
+
   /** "ping" value for SolrPing action */
   String PING = "ping";
+
   // SOLR-4228 end
 
   /** stylesheet to apply to XML results */
-  String XSL ="xsl";
-  
+  String XSL = "xsl";
+
   /** version parameter to check request-response compatibility */
-  String VERSION ="version";
-  
+  String VERSION = "version";
+
   /** query and init param for field list */
   String FL = "fl";
-  
+
   /** default query field */
   String DF = "df";
 
-  /** whether to include debug data for all components pieces, including doing explains*/
+  /** whether to include debug data for all components pieces, including doing explains */
   String DEBUG_QUERY = "debugQuery";
 
   /**
@@ -107,88 +111,80 @@ public interface CommonParams {
    */
   String DEBUG = "debug";
 
-  /**
-   * {@link #DEBUG} value indicating an interest in debug output related to timing
-   */
+  /** {@link #DEBUG} value indicating an interest in debug output related to timing */
   String TIMING = "timing";
+
   /**
    * {@link #DEBUG} value indicating an interest in debug output related to the results (explains)
    */
   String RESULTS = "results";
+
   /**
-   * {@link #DEBUG} value indicating an interest in debug output related to the Query (parsing, etc.)
+   * {@link #DEBUG} value indicating an interest in debug output related to the Query (parsing,
+   * etc.)
    */
   String QUERY = "query";
+
   /**
    * {@link #DEBUG} value indicating an interest in debug output related to the distributed tracking
    */
   String TRACK = "track";
-  /** 
-   * boolean indicating whether score explanations should structured (true), 
-   * or plain text (false)
+
+  /**
+   * boolean indicating whether score explanations should structured (true), or plain text (false)
    */
   String EXPLAIN_STRUCT = "debug.explain.structured";
-  
+
   /** another query to explain against */
   String EXPLAIN_OTHER = "explainOther";
-  
 
   /** If the content stream should come from a URL (using URLConnection) */
   String STREAM_URL = "stream.url";
 
   /** If the content stream should come from a File (using FileReader) */
   String STREAM_FILE = "stream.file";
-  
+
   /** If the content stream should come directly from a field */
   String STREAM_BODY = "stream.body";
-  
-  /** 
-   * Explicitly set the content type for the input stream
-   * If multiple streams are specified, the explicit contentType
-   * will be used for all of them.  
+
+  /**
+   * Explicitly set the content type for the input stream If multiple streams are specified, the
+   * explicit contentType will be used for all of them.
    */
   String STREAM_CONTENTTYPE = "stream.contentType";
-  
-  /**
-   * Whether or not the search may be terminated early within a segment.
-   */
+
+  /** Whether or not the search may be terminated early within a segment. */
   String SEGMENT_TERMINATE_EARLY = "segmentTerminateEarly";
+
   boolean SEGMENT_TERMINATE_EARLY_DEFAULT = false;
 
-  /**
-   * Timeout value in milliseconds.  If not set, or the value is &gt; 0, there is no timeout.
-   */
+  /** Timeout value in milliseconds. If not set, or the value is &gt; 0, there is no timeout. */
   String TIME_ALLOWED = "timeAllowed";
 
-  /**
-   * Is the query cancellable?
-   */
+  /** Is the query cancellable? */
   String IS_QUERY_CANCELLABLE = "canCancel";
 
-  /**
-   * Custom query UUID if provided.
-   */
+  /** Custom query UUID if provided. */
   String QUERY_UUID = "queryUUID";
 
-  /**
-   * UUID of the task whose status is to be checked
-   */
+  /** UUID of the task whose status is to be checked */
   String TASK_CHECK_UUID = "taskUUID";
 
   /**
-   * The number of hits that need to be counted accurately. If more than {@link #MIN_EXACT_COUNT} documents
-   * match a query, then the value in "numFound" may be an estimate to speedup search.
+   * The number of hits that need to be counted accurately. If more than {@link #MIN_EXACT_COUNT}
+   * documents match a query, then the value in "numFound" may be an estimate to speedup search.
    */
   String MIN_EXACT_COUNT = "minExactCount";
-  
+
   /** 'true' if the header should include the handler name */
   String HEADER_ECHO_HANDLER = "echoHandler";
-  
-  /** include the parameters in the header **/
+
+  /** include the parameters in the header * */
   String HEADER_ECHO_PARAMS = "echoParams";
 
   /** include header in the response */
   String OMIT_HEADER = "omitHeader";
+
   String CORES_HANDLER_PATH = "/admin/cores";
   String COLLECTIONS_HANDLER_PATH = "/admin/collections";
   String INFO_HANDLER_PATH = "/admin/info";
@@ -206,17 +202,18 @@ public interface CommonParams {
   String OK = "OK";
   String FAILURE = "FAILURE";
 
-  Set<String> ADMIN_PATHS = Set.of(
-      CORES_HANDLER_PATH,
-      COLLECTIONS_HANDLER_PATH,
-      HEALTH_CHECK_HANDLER_PATH,
-      CONFIGSETS_HANDLER_PATH,
-      SYSTEM_INFO_PATH,
-      ZK_PATH,
-      ZK_STATUS_PATH,
-      AUTHC_PATH,
-      AUTHZ_PATH,
-      METRICS_PATH);
+  Set<String> ADMIN_PATHS =
+      Set.of(
+          CORES_HANDLER_PATH,
+          COLLECTIONS_HANDLER_PATH,
+          HEALTH_CHECK_HANDLER_PATH,
+          CONFIGSETS_HANDLER_PATH,
+          SYSTEM_INFO_PATH,
+          ZK_PATH,
+          ZK_STATUS_PATH,
+          AUTHC_PATH,
+          AUTHZ_PATH,
+          METRICS_PATH);
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
 
@@ -225,17 +222,17 @@ public interface CommonParams {
     EXPLICIT,
     ALL,
     NONE;
-    
-    public static EchoParamStyle get( String v ) {
-      if( v != null ) {
+
+    public static EchoParamStyle get(String v) {
+      if (v != null) {
         v = v.toUpperCase(Locale.ROOT);
-        if( v.equals( "EXPLICIT" ) ) {
+        if (v.equals("EXPLICIT")) {
           return EXPLICIT;
         }
-        if( v.equals( "ALL") ) {
+        if (v.equals("ALL")) {
           return ALL;
         }
-        if( v.equals( "NONE") ) {  // the same as nothing...
+        if (v.equals("NONE")) { // the same as nothing...
           return NONE;
         }
       }
@@ -243,7 +240,7 @@ public interface CommonParams {
     }
   }
 
-  /** which parameters to log (if not supplied all parameters will be logged) **/
+  /** which parameters to log (if not supplied all parameters will be logged) * */
   String LOG_PARAMS_LIST = "logParamsList";
 
   String EXCLUDE = "ex";
@@ -256,16 +253,19 @@ public interface CommonParams {
   String TRUE = Boolean.TRUE.toString();
   String FALSE = Boolean.FALSE.toString();
 
-  /** document type in {@link CollectionAdminParams#SYSTEM_COLL} collection. **/
+  /** document type in {@link CollectionAdminParams#SYSTEM_COLL} collection. * */
   String TYPE = "type";
 
-  /** Used as a local parameter on queries.  cache=false means don't check any query or filter caches.
+  /**
+   * Used as a local parameter on queries. cache=false means don't check any query or filter caches.
    * cache=true is the default.
    */
   String CACHE = "cache";
 
-  /** Used as a local param on filter queries in conjunction with cache=false.  Filters are checked in order, from
-   * smallest cost to largest. If cost&gt;=100 and the query implements PostFilter, then that interface will be used to do post query filtering.
+  /**
+   * Used as a local param on filter queries in conjunction with cache=false. Filters are checked in
+   * order, from smallest cost to largest. If cost&gt;=100 and the query implements PostFilter, then
+   * that interface will be used to do post query filtering.
    */
   String COST = "cost";
 
@@ -273,21 +273,23 @@ public interface CommonParams {
    * Request ID parameter added to all distributed queries (that do not opt out)
    *
    * @see #DISABLE_REQUEST_ID
+   * @deprecated this was replaced by the auto-generated trace ids
    */
+  @Deprecated(since = "9.4")
   String REQUEST_ID = "rid";
 
   /**
    * An opt-out flag to prevent the addition of {@link #REQUEST_ID} tracing on distributed queries
    *
-   * Defaults to 'false' if not specified.
+   * <p>Defaults to 'false' if not specified.
    *
    * @see #REQUEST_ID
+   * @deprecated this was replaced by the auto-generated trace ids
    */
+  @Deprecated(since = "9.4")
   String DISABLE_REQUEST_ID = "disableRequestId";
 
-  /**
-   * Request Purpose parameter added to each internal shard request when using debug=track
-   */
+  /** Request Purpose parameter added to each internal shard request when using debug=track */
   String REQUEST_PURPOSE = "requestPurpose";
 
   String JAVABIN = "javabin";
@@ -303,9 +305,9 @@ public interface CommonParams {
 
   String SOLR_REQUEST_TYPE_PARAM = "Solr-Request-Type";
 
-  String VERSION_FIELD="_version_";
+  String VERSION_FIELD = "_version_";
 
-  String FAIL_ON_VERSION_CONFLICTS ="failOnVersionConflicts";
+  String FAIL_ON_VERSION_CONFLICTS = "failOnVersionConflicts";
 
   String ID = "id";
   String JSON_MIME = "application/json";
@@ -316,6 +318,4 @@ public interface CommonParams {
   String FILES = "files";
 
   String CHILDDOC = "_childDocuments_";
-
 }
-

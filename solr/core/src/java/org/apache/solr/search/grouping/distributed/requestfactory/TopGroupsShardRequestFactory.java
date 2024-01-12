@@ -16,6 +16,10 @@
  */
 package org.apache.solr.search.grouping.distributed.requestfactory;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.search.grouping.SearchGroup;
 import org.apache.lucene.util.BytesRef;
@@ -32,27 +36,22 @@ import org.apache.solr.search.Grouping;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 /**
- * Concrete implementation of {@link ShardRequestFactory} that creates {@link ShardRequest} instances for getting the
- * top groups from all shards.
+ * Concrete implementation of {@link ShardRequestFactory} that creates {@link ShardRequest}
+ * instances for getting the top groups from all shards.
  */
 public class TopGroupsShardRequestFactory implements ShardRequestFactory {
 
-  /**
-   * Represents a string value for
-   */
+  /** Represents a string value for */
   public static final String GROUP_NULL_VALUE = "" + ReverseStringFilter.START_OF_HEADING_MARKER;
 
   @Override
   public ShardRequest[] constructRequest(ResponseBuilder rb) {
-    // If we have a group.query we need to query all shards... Or we move this to the group first phase queries
+    // If we have a group.query we need to query all shards... Or we move this to the group first
+    // phase queries
     boolean containsGroupByQuery = rb.getGroupingSpec().getQueries().length > 0;
-    // TODO: If groups.truncate=true we only have to query the specific shards even faceting and statistics are enabled
+    // TODO: If groups.truncate=true we only have to query the specific shards even faceting and
+    // statistics are enabled
     if (rb.isNeedDocSet() || containsGroupByQuery) {
       // In case we need more results such as faceting and statistics we have to query all shards
       return createRequestForAllShards(rb);
@@ -71,15 +70,14 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
       }
     }
 
-    return createRequest(rb, uniqueShards.toArray(new String[uniqueShards.size()]));
+    return createRequest(rb, uniqueShards.toArray(new String[0]));
   }
 
   private ShardRequest[] createRequestForAllShards(ResponseBuilder rb) {
     return createRequest(rb, ShardRequest.ALL_SHARDS);
   }
 
-  private ShardRequest[] createRequest(ResponseBuilder rb, String[] shards)
-  {
+  private ShardRequest[] createRequest(ResponseBuilder rb, String[] shards) {
     ShardRequest sreq = new ShardRequest();
     sreq.shards = shards;
     sreq.purpose = ShardRequest.PURPOSE_GET_TOP_IDS;
@@ -105,36 +103,41 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
       // if the client set shards.rows set this explicitly
       sreq.params.set(CommonParams.ROWS, rb.shards_rows);
     } else {
-      sreq.params.set(CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
+      sreq.params.set(
+          CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
     }
 
     sreq.params.set(GroupParams.GROUP_DISTRIBUTED_SECOND, "true");
     final IndexSchema schema = rb.req.getSearcher().getSchema();
-    for (Map.Entry<String, Collection<SearchGroup<BytesRef>>> entry : rb.mergedSearchGroups.entrySet()) {
+    for (Map.Entry<String, Collection<SearchGroup<BytesRef>>> entry :
+        rb.mergedSearchGroups.entrySet()) {
       for (SearchGroup<BytesRef> searchGroup : entry.getValue()) {
         String groupValue;
         if (searchGroup.groupValue != null) {
           FieldType fieldType = schema.getField(entry.getKey()).getType();
-          groupValue = fieldType.indexedToReadable(searchGroup.groupValue, new CharsRefBuilder()).toString();
+          groupValue =
+              fieldType.indexedToReadable(searchGroup.groupValue, new CharsRefBuilder()).toString();
         } else {
           groupValue = GROUP_NULL_VALUE;
         }
-        sreq.params.add(GroupParams.GROUP_DISTRIBUTED_TOPGROUPS_PREFIX + entry.getKey(), groupValue);
+        sreq.params.add(
+            GroupParams.GROUP_DISTRIBUTED_TOPGROUPS_PREFIX + entry.getKey(), groupValue);
       }
     }
 
-    if ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0 || rb.getSortSpec().includesScore()) {
+    if ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
+        || rb.getSortSpec().includesScore()) {
       sreq.params.set(CommonParams.FL, schema.getUniqueKeyField().getName() + ",score");
     } else {
       sreq.params.set(CommonParams.FL, schema.getUniqueKeyField().getName());
     }
-    
+
     int origTimeAllowed = sreq.params.getInt(CommonParams.TIME_ALLOWED, -1);
     if (origTimeAllowed > 0) {
-      sreq.params.set(CommonParams.TIME_ALLOWED, Math.max(1,origTimeAllowed - rb.firstPhaseElapsedTime));
+      sreq.params.set(
+          CommonParams.TIME_ALLOWED, Math.max(1, origTimeAllowed - rb.firstPhaseElapsedTime));
     }
 
     return new ShardRequest[] {sreq};
   }
-
 }

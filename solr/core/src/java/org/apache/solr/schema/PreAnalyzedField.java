@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+
+import static org.apache.solr.common.params.CommonParams.JSON;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -36,8 +38,8 @@ import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.AttributeSource.State;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeSource.State;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -45,23 +47,21 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.JSON;
-
 /**
- * Pre-analyzed field type provides a way to index a serialized token stream,
- * optionally with an independent stored value of a field.
+ * Pre-analyzed field type provides a way to index a serialized token stream, optionally with an
+ * independent stored value of a field.
  */
 public class PreAnalyzedField extends TextField implements HasImplicitIndexAnalyzer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /** Init argument name. Value is a fully-qualified class name of the parser
-   * that implements {@link PreAnalyzedParser}.
+  /**
+   * Init argument name. Value is a fully-qualified class name of the parser that implements {@link
+   * PreAnalyzedParser}.
    */
   public static final String PARSER_IMPL = "parserImpl";
-  
+
   private static final String DEFAULT_IMPL = JsonPreAnalyzedParser.class.getName();
 
-  
   private PreAnalyzedParser parser;
   private PreAnalyzedAnalyzer preAnalyzer;
 
@@ -79,12 +79,16 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
         parser = new SimplePreAnalyzedParser();
       } else {
         try {
-          Class<? extends PreAnalyzedParser> implClazz = schema.getSolrClassLoader().findClass(implName, PreAnalyzedParser.class);
+          Class<? extends PreAnalyzedParser> implClazz =
+              schema.getSolrClassLoader().findClass(implName, PreAnalyzedParser.class);
           Constructor<?> c = implClazz.getConstructor(new Class<?>[0]);
           parser = (PreAnalyzedParser) c.newInstance(new Object[0]);
         } catch (Exception e) {
-          log.warn("Can't use the configured PreAnalyzedParser class '{}', using defualt {}"
-              , implName, DEFAULT_IMPL, e);
+          log.warn(
+              "Can't use the configured PreAnalyzedParser class '{}', using defualt {}",
+              implName,
+              DEFAULT_IMPL,
+              e);
           parser = new JsonPreAnalyzedParser();
         }
       }
@@ -95,8 +99,8 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   }
 
   /**
-   * Overridden to return an analyzer consisting of a {@link PreAnalyzedTokenizer}.
-   * NOTE: If an index analyzer is specified in the schema, it will be ignored.
+   * Overridden to return an analyzer consisting of a {@link PreAnalyzedTokenizer}. NOTE: If an
+   * index analyzer is specified in the schema, it will be ignored.
    */
   @Override
   public Analyzer getIndexAnalyzer() {
@@ -104,13 +108,12 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   }
 
   /**
-   * Returns the query analyzer defined via the schema, unless there is none,
-   * in which case the index-time pre-analyzer is returned.
+   * Returns the query analyzer defined via the schema, unless there is none, in which case the
+   * index-time pre-analyzer is returned.
    *
-   * Note that if the schema specifies an index-time analyzer via either
-   * {@code <analyzer>} or {@code <analyzer type="index">}, but no query-time
-   * analyzer, the query analyzer returned here will be the index-time
-   * analyzer specified in the schema rather than the pre-analyzer.
+   * <p>Note that if the schema specifies an index-time analyzer via either {@code <analyzer>} or
+   * {@code <analyzer type="index">}, but no query-time analyzer, the query analyzer returned here
+   * will be the index-time analyzer specified in the schema rather than the pre-analyzer.
    */
   @Override
   public Analyzer getQueryAnalyzer() {
@@ -129,13 +132,13 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
     }
     return f;
   }
-  
+
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    return getSortedSetSortField(field, SortedSetSelector.Type.MIN, top,
-                                 SortField.STRING_FIRST, SortField.STRING_LAST);
+    return getSortedSetSortField(
+        field, SortedSetSelector.Type.MIN, top, SortField.STRING_FIRST, SortField.STRING_LAST);
   }
-  
+
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     return new SortedSetFieldSource(field.getName());
@@ -147,13 +150,13 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f)
-          throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, toExternal(f), true);
   }
-  
-  /** Utility method to convert a field to a string that is parse-able by this
-   * class.
+
+  /**
+   * Utility method to convert a field to a string that is parse-able by this class.
+   *
    * @param f field to convert
    * @return string that is compatible with the serialization format
    * @throws IOException If there is a low-level I/O error.
@@ -161,10 +164,10 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   public String toFormattedString(Field f) throws IOException {
     return parser.toFormattedString(f);
   }
-  
+
   /**
-   * Utility method to create a {@link org.apache.lucene.document.FieldType}
-   * based on the {@link SchemaField}
+   * Utility method to create a {@link org.apache.lucene.document.FieldType} based on the {@link
+   * SchemaField}
    */
   public static org.apache.lucene.document.FieldType createFieldType(SchemaField field) {
     if (!field.indexed() && !field.stored()) {
@@ -190,39 +193,37 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
     newType.setStoreTermVectorPayloads(field.storeTermPayloads());
     return newType;
   }
-  
-  /**
-   * This is a simple holder of a stored part and the collected states (tokens with attributes).
-   */
+
+  /** This is a simple holder of a stored part and the collected states (tokens with attributes). */
   public static class ParseResult {
     public String str;
     public byte[] bin;
-    public List<State> states = new LinkedList<>();
+    public List<State> states = new ArrayList<>();
   }
-  
-  /**
-   * Parse the input and return the stored part and the tokens with attributes.
-   */
+
+  /** Parse the input and return the stored part and the tokens with attributes. */
   public static interface PreAnalyzedParser {
     /**
      * Parse input.
+     *
      * @param reader input to read from
      * @param parent parent who will own the resulting states (tokens with attributes)
      * @return parse result, with possibly null stored and/or states fields.
      * @throws IOException if a parsing error or IO error occurs
      */
     public ParseResult parse(Reader reader, AttributeSource parent) throws IOException;
-    
+
     /**
-     * Format a field so that the resulting String is valid for parsing with {@link #parse(Reader, AttributeSource)}.
+     * Format a field so that the resulting String is valid for parsing with {@link #parse(Reader,
+     * AttributeSource)}.
+     *
      * @param f field instance
      * @return formatted string
      * @throws IOException If there is a low-level I/O error.
      */
     public String toFormattedString(Field f) throws IOException;
   }
-  
-  
+
   public IndexableField fromString(SchemaField field, String val) throws Exception {
     if (val == null || val.trim().length() == 0) {
       return null;
@@ -251,7 +252,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
     } else {
       type.setStored(false);
     }
-    
+
     if (parse.hasTokenStream()) {
       if (field.indexed()) {
         type.setTokenized(true);
@@ -270,11 +271,9 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
     return f;
   }
 
-  /**
-   * Token stream that works from a list of saved states.
-   */
+  /** Token stream that works from a list of saved states. */
   private static class PreAnalyzedTokenizer extends Tokenizer {
-    private final List<AttributeSource.State> cachedStates = new LinkedList<>();
+    private final List<AttributeSource.State> cachedStates = new ArrayList<>();
     private Iterator<AttributeSource.State> it = null;
     private String stringValue = null;
     private byte[] binaryValue = null;
@@ -287,15 +286,15 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
       super(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);
       this.parser = parser;
     }
-    
+
     public boolean hasTokenStream() {
       return !cachedStates.isEmpty();
     }
-    
+
     public String getStringValue() {
       return stringValue;
     }
-    
+
     public byte[] getBinaryValue() {
       return binaryValue;
     }
@@ -305,7 +304,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
       if (!it.hasNext()) {
         return false;
       }
-      
+
       AttributeSource.State state = it.next();
       restoreState(state.clone());
       // TODO: why can't I lookup the OffsetAttribute up in ctor instead?
@@ -314,8 +313,8 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
     }
 
     /**
-     * Throws a delayed exception if one was thrown from decodeInput()
-     * while reading from the input reader.
+     * Throws a delayed exception if one was thrown from decodeInput() while reading from the input
+     * reader.
      */
     @Override
     public final void reset() throws IOException {
@@ -331,7 +330,8 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
     @Override
     public void end() throws IOException {
       super.end();
-      // we must set the end offset correctly so multi-valued fields don't try to send offsets backwards:
+      // we must set the end offset correctly so multi-valued fields don't try to send offsets
+      // backwards:
       addAttribute(OffsetAttribute.class).setOffset(lastEndOffset, lastEndOffset);
     }
 
@@ -339,11 +339,9 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
       readerConsumptionException = e;
     }
 
-    /**
-     * Parses the input reader and adds attributes specified there.
-     */
+    /** Parses the input reader and adds attributes specified there. */
     private void decodeInput(Reader reader) throws IOException {
-      removeAllAttributes();  // reset attributes to the empty set
+      removeAllAttributes(); // reset attributes to the empty set
       cachedStates.clear();
       stringValue = null;
       binaryValue = null;
@@ -357,7 +355,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
           }
         }
       } catch (IOException e) {
-        removeAllAttributes();  // reset attributes to the empty set
+        removeAllAttributes(); // reset attributes to the empty set
         throw e; // rethrow
       }
     }
@@ -373,13 +371,15 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
       final PreAnalyzedTokenizer tokenizer = new PreAnalyzedTokenizer(parser);
-      return new TokenStreamComponents(r -> {
-        try {
-          tokenizer.decodeInput(r);
-        } catch (IOException e) {
-          tokenizer.setReaderConsumptionException(e);
-        }
-      }, tokenizer);
+      return new TokenStreamComponents(
+          r -> {
+            try {
+              tokenizer.decodeInput(r);
+            } catch (IOException e) {
+              tokenizer.setReaderConsumptionException(e);
+            }
+          },
+          tokenizer);
     }
   }
 }

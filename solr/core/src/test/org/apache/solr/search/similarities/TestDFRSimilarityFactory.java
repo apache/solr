@@ -26,17 +26,15 @@ import org.apache.lucene.search.similarities.NormalizationH3;
 import org.apache.lucene.search.similarities.Similarity;
 import org.junit.BeforeClass;
 
-/**
- * Tests {@link DFRSimilarityFactory}
- */
+/** Tests {@link DFRSimilarityFactory} */
 public class TestDFRSimilarityFactory extends BaseSimilarityTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-dfr.xml");
+    initCore("solrconfig-basic.xml", "schema-dfr.xml");
   }
-  
+
   /** dfr with default parameters */
-  public void test() throws Exception {
+  public void test() {
     Similarity sim = getSimilarity("text");
     assertEquals(DFRSimilarity.class, sim.getClass());
     DFRSimilarity dfr = (DFRSimilarity) sim;
@@ -44,9 +42,9 @@ public class TestDFRSimilarityFactory extends BaseSimilarityTestCase {
     assertEquals(AfterEffectB.class, dfr.getAfterEffect().getClass());
     assertEquals(NormalizationH2.class, dfr.getNormalization().getClass());
   }
-  
+
   /** dfr with parametrized normalization */
-  public void testParameters() throws Exception {
+  public void testParameters() {
     Similarity sim = getSimilarity("text_params");
     assertEquals(DFRSimilarity.class, sim.getClass());
     DFRSimilarity dfr = (DFRSimilarity) sim;
@@ -56,9 +54,9 @@ public class TestDFRSimilarityFactory extends BaseSimilarityTestCase {
     NormalizationH3 norm = (NormalizationH3) dfr.getNormalization();
     assertEquals(900f, norm.getMu(), 0.01f);
   }
-  
+
   /** LUCENE-3566 */
-  public void testParameterC() throws Exception {
+  public void testParameterC() {
     Similarity sim = getSimilarity("text_paramc");
     assertEquals(DFRSimilarity.class, sim.getClass());
     DFRSimilarity dfr = (DFRSimilarity) sim;

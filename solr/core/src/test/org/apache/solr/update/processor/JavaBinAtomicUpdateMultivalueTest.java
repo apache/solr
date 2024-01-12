@@ -17,12 +17,12 @@
 package org.apache.solr.update.processor;
 
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer.RequestWriterSupplier;
+import org.junit.BeforeClass;
 
 public class JavaBinAtomicUpdateMultivalueTest extends AbstractAtomicUpdatesMultivalueTestBase {
 
-  @Override
-  RequestWriterSupplier getRequestWriterSupplier() {
-    return RequestWriterSupplier.JavaBin;
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initWithRequestWriter(RequestWriterSupplier.JavaBin);
   }
-
 }

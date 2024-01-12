@@ -44,9 +44,9 @@ def update_changes(filename, new_version, init_changes, headers):
   print('done' if changed else 'uptodate')
 
 def update_solrversion_class(new_version):
-  filename = 'solr/core/src/java/org/apache/solr/util/SolrVersion.java'
+  filename = 'solr/api/src/java/org/apache/solr/client/api/util/SolrVersion.java'
   print('  changing version to %s...' % new_version.dot, end='', flush=True)
-  constant_prefix = 'private static final String LATEST_STRING = "(.*?)"'
+  constant_prefix = 'public static final String LATEST_STRING = "(.*?)"'
   matcher = re.compile(constant_prefix)
 
   def edit(buffer, match, line):
@@ -104,7 +104,7 @@ def update_solrconfig(filename, matcher, new_version):
 
 def check_solr_version_class_tests():
   print('  checking solr version tests...', end='', flush=True)
-  run('./gradlew -p solr/core test --tests TestSolrVersion')
+  run('./gradlew -p solr/api test --tests TestSolrVersion')
   print('ok')
 
 def check_lucene_match_version_tests():
@@ -136,10 +136,7 @@ def parse_properties_file(filename):
   return dict(parser.items('DUMMY_SECTION'))
 
 def get_solr_init_changes():
-  return dedent('''
-    Docker and contrib modules have separate CHANGES.md files.
-
-    ''')
+  return ''
   
 def main():
   if not os.path.exists('build.gradle'):
@@ -151,7 +148,7 @@ def main():
 
   print('\nAdding new version %s' % newconf.version)
   update_changes('solr/CHANGES.txt', newconf.version, get_solr_init_changes(),
-                 ['Bug Fixes'] if is_bugfix else ['New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Other Changes'])
+                 ['Bug Fixes', 'Dependency Upgrades'] if is_bugfix else ['New Features', 'Improvements', 'Optimizations', 'Bug Fixes', 'Dependency Upgrades', 'Other Changes'])
 
   if newconf.is_latest_version:
     print('\nAdded version is latest version, updating...')
@@ -165,7 +162,7 @@ def main():
     check_solr_version_class_tests()
     check_lucene_match_version_tests()
   else:
-    print('\nNot updating build.gradle, SolrVersion or solrconfig.xml since version added is not latest version' % newconf.version)
+    print('\nNot updating build.gradle, SolrVersion or solrconfig.xml since version added (%s) is not latest version' % newconf.version)
 
   print()
 

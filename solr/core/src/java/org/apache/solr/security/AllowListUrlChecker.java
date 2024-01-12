@@ -18,13 +18,6 @@
 package org.apache.solr.security;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.core.NodeConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -34,6 +27,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.core.NodeConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Validates URLs based on an allow list or a {@link ClusterState} in SolrCloud. */
 public class AllowListUrlChecker {
@@ -119,7 +117,9 @@ public class AllowListUrlChecker {
     }
   }
 
-  /** @see #checkAllowList(List, ClusterState) */
+  /**
+   * @see #checkAllowList(List, ClusterState)
+   */
   public void checkAllowList(List<String> urls) throws MalformedURLException {
     checkAllowList(urls, null);
   }
@@ -134,13 +134,14 @@ public class AllowListUrlChecker {
    * @throws SolrException If an URL is not present in the allow-list or in the provided {@link
    *     ClusterState}.
    */
-  public void checkAllowList(List<String> urls, @Nullable ClusterState clusterState)
+  public void checkAllowList(List<String> urls, ClusterState clusterState)
       throws MalformedURLException {
     Set<String> clusterHostAllowList =
         clusterState == null ? Collections.emptySet() : clusterState.getHostAllowList();
     for (String url : urls) {
       String hostPort = parseHostPort(url);
-      if (!clusterHostAllowList.contains(hostPort) && !hostAllowList.contains(hostPort)) {
+      if (clusterHostAllowList.stream().noneMatch(hostPort::equalsIgnoreCase)
+          && hostAllowList.stream().noneMatch(hostPort::equalsIgnoreCase)) {
         throw new SolrException(
             SolrException.ErrorCode.FORBIDDEN,
             "URL "

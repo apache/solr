@@ -1,0 +1,95 @@
+= System Requirements
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+You can install Solr in any system where a suitable Java Runtime Environment (JRE) is available.
+
+== Installation Requirements
+
+=== Supported Operating Systems
+
+Solr is tested on several versions of Linux, macOS and Windows.
+
+//TODO: this with the next big section on Java fragments the Java requirements too much. Consider merging sections.
+=== Java Requirements
+
+You will need the Java Runtime Environment (JRE) version 11 or higher.
+At a command line, check your Java version like this:
+
+[source,bash]
+----
+$ java -version
+openjdk version "11.0.14.1" 2022-02-08
+OpenJDK Runtime Environment Temurin-11.0.14.1+1 (build 11.0.14.1+1)
+OpenJDK 64-Bit Server VM Temurin-11.0.14.1+1 (build 11.0.14.1+1, mixed mode)
+----
+
+The exact output will vary, but you need to make sure you meet the minimum version requirement.
+We also recommend choosing a version that is not end-of-life from its vendor.
+It's also preferred to use the latest available official release.
+
+Some versions of Java VM have bugs that may impact your implementation.
+To be sure, check the page https://cwiki.apache.org/confluence/display/LUCENE/JavaBugs[Lucene Java Bugs].
+
+=== Sources for Java
+
+Java is available from a number of providers.
+The official Docker image for Solr uses the Temurin distribution of OpenJDK from the https://adoptium.net/[Adoptium project].
+Solr regularly test with https://adoptium.net/temurin/releases[Temurin], https://jdk.java.net/[OpenJDK] and Oracle versions of Java.
+Some distributions are free, others have a cost, some provide security patches and support, others do not.
+We recommend you read the article https://medium.com/@javachampions/java-is-still-free-2-0-0-6b9aa8d6d244[Java is still free by Java Champions] to help you decide.
+
+The Solr project does not endorse any particular provider of Java.
+
+NOTE: While we reference the Java Development (JDK) on this page, any Java Runtime Environment (JRE) associated with the referenced JDKs is acceptable.
+
+== Java and Solr Combinations
+
+Each Solr release has an extensively tested minimum Java version.
+For instance the minimum Java version for Solr 9 is Java 11.
+This section provides guidance when running Solr with a more recent Java version than the minimum specified.
+
+* OpenJDK and Oracle Java distributions are tested extensively and will continue to be tested going forward.
+** Distributions of Java from other sources are not regularly tested by our testing infrastructure, therefore you must test Java from those sources in your environment.
+** For the purposes of Solr, Oracle's Java and OpenJDK are identical.
+* Upgrading Java is not required with the understanding that no Java bugs will be addressed unless you are using a version of Java that provides LTS.
+* Java 11 has been extensively tested by both automated tests and users through Solr 9.
+Long Term Support (LTS) for Java 11 is provided from several sources.
+* The project's testing infrastructure continuously tests with the minimum and greater versions of Java for each development branch.
+* Java 12, 13, 14, 15 and 16 have no LTS.
+For this reason, Java 17 is preferred when upgrading Java.
+* For specific questions the http://solr.apache.org/community.html#mailing-lists-chat[Solr User's List] is a great resource.
+
+=== Project Testing of Java-Solr Combinations
+Solr and Lucene run a continuous integration model, running automated unit and integration tests using several versions of Java.
+In addition, some organizations also maintain their own test infrastructure and feed their results back to the community.
+
+Our continuous testing is against the two code lines under active development, Solr 9x and the future Solr 10.0:
+
+* Solr 9.x is the current stable release line and will have "point releases", i.e., 9.1, 9.2, etc., until Solr 10.0 is released.
+** Solr 9.x is currently tested against Java 11, 17 and 18-prerelease.
+* There is also development and testing with the future Solr 10.x release line.
+* /Solr 8.x and earlier release lines are not tested on a continuous basis.
+
+=== Released Solr and Java Versions
+The success rate in our automated tests is similar with all the Java versions tested with the following caveats.
+
+==== Solr 8.x
+
+* Requires Java 8 or higher.
+* This version did have continuous testing with Java 9, 10, 11, 12 and the pre-release version of Java 13.
+* There were known issues with Kerberos with Java 9+ prior to Solr 8.1.

@@ -16,12 +16,11 @@
  */
 package org.apache.solr.handler.admin;
 
+import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
-
-import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -29,9 +28,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.loader.CSVLoader;
+import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.handler.loader.JavabinLoader;
 import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.handler.loader.XMLLoader;
@@ -52,22 +51,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Handler to collect and aggregate metric reports.  Each report indicates the target registry where
- * metrics values should be collected and aggregated. Metrics with the same names are
- * aggregated using {@link AggregateMetric} instances, which track the source of updates and
- * their count, as well as providing simple statistics over collected values.
+ * Handler to collect and aggregate metric reports. Each report indicates the target registry where
+ * metrics values should be collected and aggregated. Metrics with the same names are aggregated
+ * using {@link AggregateMetric} instances, which track the source of updates and their count, as
+ * well as providing simple statistics over collected values.
  *
- * Each report consists of {@link SolrInputDocument}-s that are expected to contain
- * the following fields:
+ * <p>Each report consists of {@link SolrInputDocument}-s that are expected to contain the following
+ * fields:
+ *
  * <ul>
- *   <li>{@link SolrReporter#GROUP_ID} - (required) specifies target registry name where metrics will be grouped.</li>
- *   <li>{@link SolrReporter#REPORTER_ID} - (required) id of the reporter that sent this update. This can be eg.
- *   node name or replica name or other id that uniquely identifies the source of metrics values.</li>
- *   <li>{@link MetricUtils#METRIC_NAME} - (required) metric name (in the source registry)</li>
- *   <li>{@link SolrReporter#LABEL_ID} - (optional) label to prepend to metric names in the target registry.</li>
- *   <li>{@link SolrReporter#REGISTRY_ID} - (optional) name of the source registry.</li>
+ *   <li>{@link SolrReporter#GROUP_ID} - (required) specifies target registry name where metrics
+ *       will be grouped.
+ *   <li>{@link SolrReporter#REPORTER_ID} - (required) id of the reporter that sent this update.
+ *       This can be eg. node name or replica name or other id that uniquely identifies the source
+ *       of metrics values.
+ *   <li>{@link MetricUtils#METRIC_NAME} - (required) metric name (in the source registry)
+ *   <li>{@link SolrReporter#LABEL_ID} - (optional) label to prepend to metric names in the target
+ *       registry.
+ *   <li>{@link SolrReporter#REGISTRY_ID} - (optional) name of the source registry.
  * </ul>
- * Remaining fields are assumed to be single-valued, and to contain metric attributes and their values. Example:
+ *
+ * Remaining fields are assumed to be single-valued, and to contain metric attributes and their
+ * values. Example:
+ *
  * <pre>
  *   &lt;doc&gt;
  *     &lt;field name="_group_"&gt;solr.core.collection1.shard1.leader&lt;/field&gt;
@@ -90,7 +96,6 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
   public MetricsCollectorHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     this.metricManager = coreContainer.getMetricManager();
-
   }
 
   @Override
@@ -101,12 +106,12 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
     } else {
       params = new ModifiableSolrParams();
     }
-    loaders.put("application/xml", new XMLLoader().init(params) );
-    loaders.put("application/json", new JsonLoader().init(params) );
-    loaders.put("application/csv", new CSVLoader().init(params) );
-    loaders.put("application/javabin", new JavabinLoader().init(params) );
-    loaders.put("text/csv", loaders.get("application/csv") );
-    loaders.put("text/xml", loaders.get("application/xml") );
+    loaders.put("application/xml", new XMLLoader().init(params));
+    loaders.put("application/json", new JsonLoader().init(params));
+    loaders.put("application/csv", new CSVLoader().init(params));
+    loaders.put("application/javabin", new JavabinLoader().init(params));
+    loaders.put("text/csv", loaders.get("application/csv"));
+    loaders.put("text/xml", loaders.get("application/xml"));
     loaders.put("text/json", loaders.get("application/json"));
   }
 
@@ -116,7 +121,7 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
       // silently drop request
       return;
     }
-    //log.info("#### {}", req);
+    // log.info("#### {}", req);
     if (req.getContentStreams() == null) { // no content
       return;
     }
@@ -127,7 +132,12 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
       }
       ContentStreamLoader loader = loaders.get(cs.getContentType());
       if (loader == null) {
-        throw new SolrException(SolrException.ErrorCode.UNSUPPORTED_MEDIA_TYPE, "Unsupported content type for stream: " + cs.getSourceInfo() + ", contentType=" + cs.getContentType());
+        throw new SolrException(
+            SolrException.ErrorCode.UNSUPPORTED_MEDIA_TYPE,
+            "Unsupported content type for stream: "
+                + cs.getSourceInfo()
+                + ", contentType="
+                + cs.getContentType());
       }
       loader.load(req, rsp, cs, new MetricUpdateProcessor(metricManager));
     }
@@ -157,7 +167,7 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
       if (doc == null) {
         return;
       }
-      String metricName = (String)doc.getFieldValue(MetricUtils.METRIC_NAME);
+      String metricName = (String) doc.getFieldValue(MetricUtils.METRIC_NAME);
       if (metricName == null) {
         log.warn("Missing {} field in document, skipping: {}", MetricUtils.METRIC_NAME, doc);
         return;
@@ -165,42 +175,43 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
       doc.remove(MetricUtils.METRIC_NAME);
       // XXX we could modify keys by using this original registry name
       doc.remove(SolrReporter.REGISTRY_ID);
-      String groupId = (String)doc.getFieldValue(SolrReporter.GROUP_ID);
+      String groupId = (String) doc.getFieldValue(SolrReporter.GROUP_ID);
       if (groupId == null) {
         log.warn("Missing {}  field in document, skipping: {}", SolrReporter.GROUP_ID, doc);
         return;
       }
       doc.remove(SolrReporter.GROUP_ID);
-      String reporterId = (String)doc.getFieldValue(SolrReporter.REPORTER_ID);
+      String reporterId = (String) doc.getFieldValue(SolrReporter.REPORTER_ID);
       if (reporterId == null) {
         log.warn("Missing {} field in document, skipping: {}", SolrReporter.REPORTER_ID, doc);
         return;
       }
       doc.remove(SolrReporter.REPORTER_ID);
-      String labelId = (String)doc.getFieldValue(SolrReporter.LABEL_ID);
+      String labelId = (String) doc.getFieldValue(SolrReporter.LABEL_ID);
       doc.remove(SolrReporter.LABEL_ID);
-      doc.forEach(f -> {
-        String key;
-        if (doc.size() == 1 && f.getName().equals(MetricUtils.VALUE)) {
-          // only one "value" field - skip the unnecessary field name
-          key = MetricRegistry.name(labelId, metricName);
-        } else {
-          key = MetricRegistry.name(labelId, metricName, f.getName());
-        }
-        MetricRegistry registry = metricManager.registry(groupId);
-        AggregateMetric metric = getOrCreate(registry, key);
-        Object o = f.getFirstValue();
-        if (o != null) {
-          metric.set(reporterId, o);
-        } else {
-          // remove missing values
-          metric.clear(reporterId);
-        }
-      });
+      doc.forEach(
+          f -> {
+            String key;
+            if (doc.size() == 1 && f.getName().equals(MetricUtils.VALUE)) {
+              // only one "value" field - skip the unnecessary field name
+              key = MetricRegistry.name(labelId, metricName);
+            } else {
+              key = MetricRegistry.name(labelId, metricName, f.getName());
+            }
+            MetricRegistry registry = metricManager.registry(groupId);
+            AggregateMetric metric = getOrCreate(registry, key);
+            Object o = f.getFirstValue();
+            if (o != null) {
+              metric.set(reporterId, o);
+            } else {
+              // remove missing values
+              metric.clear(reporterId);
+            }
+          });
     }
 
     private AggregateMetric getOrCreate(MetricRegistry registry, String name) {
-      AggregateMetric existing = (AggregateMetric)registry.getMetrics().get(name);
+      AggregateMetric existing = (AggregateMetric) registry.getMetrics().get(name);
       if (existing != null) {
         return existing;
       }
@@ -210,7 +221,7 @@ public class MetricsCollectorHandler extends RequestHandlerBase {
         return add;
       } catch (IllegalArgumentException e) {
         // someone added before us
-        existing = (AggregateMetric)registry.getMetrics().get(name);
+        existing = (AggregateMetric) registry.getMetrics().get(name);
         if (existing == null) { // now, that is weird...
           throw new IllegalArgumentException("Inconsistent metric status, " + name);
         }

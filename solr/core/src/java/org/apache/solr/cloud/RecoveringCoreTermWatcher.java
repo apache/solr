@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.solr.client.solrj.cloud.ShardTerms;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -27,9 +26,7 @@ import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Start recovery of a core if its term is less than leader's term
- */
+/** Start recovery of a core if its term is less than leader's term */
 public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreDescriptor coreDescriptor;
@@ -53,13 +50,18 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
         return false;
       }
 
-      if (solrCore.getCoreDescriptor() == null || solrCore.getCoreDescriptor().getCloudDescriptor() == null) return true;
+      if (solrCore.getCoreDescriptor() == null
+          || solrCore.getCoreDescriptor().getCloudDescriptor() == null) return true;
       String coreNodeName = solrCore.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
       if (terms.haveHighestTermValue(coreNodeName)) return true;
       if (lastTermDoRecovery.get() < terms.getTerm(coreNodeName)) {
-        log.info("Start recovery on {} because core's term is less than leader's term", coreNodeName);
+        log.info(
+            "Start recovery on {} because core's term is less than leader's term", coreNodeName);
         lastTermDoRecovery.set(terms.getTerm(coreNodeName));
-        solrCore.getUpdateHandler().getSolrCoreState().doRecovery(solrCore.getCoreContainer(), solrCore.getCoreDescriptor());
+        solrCore
+            .getUpdateHandler()
+            .getSolrCoreState()
+            .doRecovery(solrCore.getCoreContainer(), solrCore.getCoreDescriptor());
       }
     } catch (Exception e) {
       if (log.isInfoEnabled()) {
@@ -74,10 +76,9 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof RecoveringCoreTermWatcher)) return false;
 
     RecoveringCoreTermWatcher that = (RecoveringCoreTermWatcher) o;
-
     return coreDescriptor.getName().equals(that.coreDescriptor.getName());
   }
 

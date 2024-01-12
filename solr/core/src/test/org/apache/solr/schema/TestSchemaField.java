@@ -25,7 +25,7 @@ public class TestSchemaField extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void create() throws Exception {
-    initCore("solrconfig_codec.xml","schema_postingsformat.xml");
+    initCore("solrconfig_codec.xml", "schema_postingsformat.xml");
   }
 
   @Before
@@ -39,15 +39,26 @@ public class TestSchemaField extends SolrTestCaseJ4 {
     assertFieldTypeFormats("str_standard_simple", "Lucene84", "SimpleTextDocValuesFormat");
   }
 
-  private void assertFieldTypeFormats(String fieldTypeName, String expectedPostingsFormat, String expectedDocValuesFormat) {
+  private void assertFieldTypeFormats(
+      String fieldTypeName, String expectedPostingsFormat, String expectedDocValuesFormat) {
     FieldType ft = h.getCore().getLatestSchema().getFieldTypeByName(fieldTypeName);
     assertNotNull("Field type " + fieldTypeName + " not found  - schema got changed?", ft);
-    assertEquals("Field type " + ft.getTypeName() + " wrong " + FieldProperties.POSTINGS_FORMAT
+    assertEquals(
+        "Field type "
+            + ft.getTypeName()
+            + " wrong "
+            + FieldProperties.POSTINGS_FORMAT
             + "  - schema got changed?",
-        expectedPostingsFormat, ft.getNamedPropertyValues(true).get(FieldProperties.POSTINGS_FORMAT));
-    assertEquals("Field type " + ft.getTypeName() + " wrong " + FieldProperties.DOC_VALUES_FORMAT
+        expectedPostingsFormat,
+        ft.getNamedPropertyValues(true).get(FieldProperties.POSTINGS_FORMAT));
+    assertEquals(
+        "Field type "
+            + ft.getTypeName()
+            + " wrong "
+            + FieldProperties.DOC_VALUES_FORMAT
             + "  - schema got changed?",
-        expectedDocValuesFormat, ft.getNamedPropertyValues(true).get(FieldProperties.DOC_VALUES_FORMAT));
+        expectedDocValuesFormat,
+        ft.getNamedPropertyValues(true).get(FieldProperties.DOC_VALUES_FORMAT));
   }
 
   public void testFields() {
@@ -71,14 +82,25 @@ public class TestSchemaField extends SolrTestCaseJ4 {
     assertFieldFormats("any_simple", "Direct", "SimpleTextDocValuesFormat");
   }
 
-    private void assertFieldFormats(String fieldName, String expectedPostingsFormat, String expectedDocValuesFormat) {
+  private void assertFieldFormats(
+      String fieldName, String expectedPostingsFormat, String expectedDocValuesFormat) {
     SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
     assertNotNull("Field " + fieldName + " not found  - schema got changed?", f);
-    assertEquals("Field " + f.getName() + " wrong " + FieldProperties.POSTINGS_FORMAT
+    assertEquals(
+        "Field "
+            + f.getName()
+            + " wrong "
+            + FieldProperties.POSTINGS_FORMAT
             + "  - schema got changed?",
-        expectedPostingsFormat, f.getPostingsFormat());
-    assertEquals("Field " + f.getName() + " wrong " + FieldProperties.DOC_VALUES_FORMAT
+        expectedPostingsFormat,
+        f.getPostingsFormat());
+    assertEquals(
+        "Field "
+            + f.getName()
+            + " wrong "
+            + FieldProperties.DOC_VALUES_FORMAT
             + "  - schema got changed?",
-        expectedDocValuesFormat, f.getDocValuesFormat());
+        expectedDocValuesFormat,
+        f.getDocValuesFormat());
   }
 }

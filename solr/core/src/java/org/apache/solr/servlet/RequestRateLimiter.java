@@ -19,25 +19,24 @@ package org.apache.solr.servlet;
 
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.solr.common.annotation.SolrThreadSafe;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.core.RateLimiterConfig;
 
 /**
  * Handles rate limiting for a specific request type.
  *
- * The control flow is as follows:
- * Handle request -- Check if slot is available -- If available, acquire slot and proceed --
- * else reject the same.
+ * <p>The control flow is as follows: Handle request -- Check if slot is available -- If available,
+ * acquire slot and proceed -- else reject the same.
  */
-@SolrThreadSafe
+@ThreadSafe
 public class RequestRateLimiter {
   // Slots that are guaranteed for this request rate limiter.
   private final Semaphore guaranteedSlotsPool;
 
-  // Competitive slots pool that are available for this rate limiter as well as borrowing by other request rate limiters.
-  // By competitive, the meaning is that there is no prioritization for the acquisition of these slots -- First Come First Serve,
-  // irrespective of whether the request is of this request rate limiter or other.
+  // Competitive slots pool that are available for this rate limiter as well as borrowing by other
+  // request rate limiters. By competitive, the meaning is that there is no prioritization for the
+  // acquisition of these slots -- First Come First Serve, irrespective of whether the request is of
+  // this request rate limiter or other.
   private final Semaphore borrowableSlotsPool;
 
   private final RateLimiterConfig rateLimiterConfig;
@@ -48,26 +47,30 @@ public class RequestRateLimiter {
   public RequestRateLimiter(RateLimiterConfig rateLimiterConfig) {
     this.rateLimiterConfig = rateLimiterConfig;
     this.guaranteedSlotsPool = new Semaphore(rateLimiterConfig.guaranteedSlotsThreshold);
-    this.borrowableSlotsPool = new Semaphore(rateLimiterConfig.allowedRequests - rateLimiterConfig.guaranteedSlotsThreshold);
+    this.borrowableSlotsPool =
+        new Semaphore(
+            rateLimiterConfig.allowedRequests - rateLimiterConfig.guaranteedSlotsThreshold);
     this.guaranteedSlotMetadata = new SlotMetadata(guaranteedSlotsPool);
     this.borrowedSlotMetadata = new SlotMetadata(borrowableSlotsPool);
   }
 
   /**
-   * Handles an incoming request. returns a metadata object representing the metadata for the acquired slot, if acquired.
-   * If a slot is not acquired, returns a null metadata object.
-   * */
+   * Handles an incoming request. returns a metadata object representing the metadata for the
+   * acquired slot, if acquired. If a slot is not acquired, returns a null metadata object.
+   */
   public SlotMetadata handleRequest() throws InterruptedException {
 
     if (!rateLimiterConfig.isEnabled) {
       return nullSlotMetadata;
     }
 
-    if (guaranteedSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
+    if (guaranteedSlotsPool.tryAcquire(
+        rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
       return guaranteedSlotMetadata;
     }
 
-    if (borrowableSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
+    if (borrowableSlotsPool.tryAcquire(
+        rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
       return borrowedSlotMetadata;
     }
 
@@ -75,15 +78,18 @@ public class RequestRateLimiter {
   }
 
   /**
-   * Whether to allow another request type to borrow a slot from this request rate limiter. Typically works fine
-   * if there is a relatively lesser load on this request rate limiter's type compared to the others (think of skew).
-   * @return returns a metadata object for the acquired slot, if acquired. If the
-   * slot was not acquired, returns a metadata object with a null pool.
+   * Whether to allow another request type to borrow a slot from this request rate limiter.
+   * Typically works fine if there is a relatively lesser load on this request rate limiter's type
+   * compared to the others (think of skew).
    *
-   * @lucene.experimental -- Can cause slots to be blocked if a request borrows a slot and is itself long lived.
+   * @return returns a metadata object for the acquired slot, if acquired. If the slot was not
+   *     acquired, returns a metadata object with a null pool.
+   * @lucene.experimental -- Can cause slots to be blocked if a request borrows a slot and is itself
+   *     long lived.
    */
   public SlotMetadata allowSlotBorrowing() throws InterruptedException {
-    if (borrowableSlotsPool.tryAcquire(rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
+    if (borrowableSlotsPool.tryAcquire(
+        rateLimiterConfig.waitForSlotAcquisition, TimeUnit.MILLISECONDS)) {
       return borrowedSlotMetadata;
     }
 

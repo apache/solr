@@ -1,0 +1,156 @@
+= Exercise 0: Five Minutes to Searching!
+:experimental:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This exercise will walk you through how to start using Solr in just 5 Minutes!
+
+== Launch Solr in SolrCloud Mode
+To launch Solr, run: `bin/solr start -c` on Unix or MacOS; `bin\solr.cmd start -c` on Windows.
+
+To start another Solr node and have it join the cluster alongside the first node,
+
+[,console]
+----
+$ bin/solr -c -z localhost:9983 -p 8984
+----
+
+
+== Create a collection
+
+Like a database system holds data in tables, Solr holds data in collections. A collection can be created as follows:
+
+[,console]
+----
+$ curl --request POST \
+--url http://localhost:8983/api/collections \
+--header 'Content-Type: application/json' \
+--data '{
+  "name": "techproducts",
+  "numShards": 1,
+  "replicationFactor": 1
+}'
+----
+
+== Define a schema
+
+Let us define some of the fields that our documents will contain.
+
+[,console]
+----
+$ curl --request POST \
+  --url http://localhost:8983/api/collections/techproducts/schema \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "add-field": [
+    {"name": "name", "type": "text_general", "multiValued": false},
+    {"name": "cat", "type": "string", "multiValued": true},
+    {"name": "manu", "type": "string"},
+    {"name": "features", "type": "text_general", "multiValued": true},
+    {"name": "weight", "type": "pfloat"},
+    {"name": "price", "type": "pfloat"},
+    {"name": "popularity", "type": "pint"},
+    {"name": "inStock", "type": "boolean", "stored": true},
+    {"name": "store", "type": "location"}
+  ]
+}'
+----
+
+## Index some documents
+
+A single document can be indexed as:
+
+[,console]
+----
+$ curl --request POST \
+--url 'http://localhost:8983/api/collections/techproducts/update' \
+  --header 'Content-Type: application/json' \
+  --data '  {
+    "id" : "978-0641723445",
+    "cat" : ["book","hardcover"],
+    "name" : "The Lightning Thief",
+    "author" : "Rick Riordan",
+    "series_t" : "Percy Jackson and the Olympians",
+    "sequence_i" : 1,
+    "genre_s" : "fantasy",
+    "inStock" : true,
+    "price" : 12.50,
+    "pages_i" : 384
+  }'
+----
+
+Multiple documents can be indexed in the same request:
+
+[,console]
+----
+$ curl --request POST \
+  --url 'http://localhost:8983/api/collections/techproducts/update' \
+  --header 'Content-Type: application/json' \
+  --data '  [
+  {
+    "id" : "978-0641723445",
+    "cat" : ["book","hardcover"],
+    "name" : "The Lightning Thief",
+    "author" : "Rick Riordan",
+    "series_t" : "Percy Jackson and the Olympians",
+    "sequence_i" : 1,
+    "genre_s" : "fantasy",
+    "inStock" : true,
+    "price" : 12.50,
+    "pages_i" : 384
+  }
+,
+  {
+    "id" : "978-1423103349",
+    "cat" : ["book","paperback"],
+    "name" : "The Sea of Monsters",
+    "author" : "Rick Riordan",
+    "series_t" : "Percy Jackson and the Olympians",
+    "sequence_i" : 2,
+    "genre_s" : "fantasy",
+    "inStock" : true,
+    "price" : 6.49,
+    "pages_i" : 304
+  }
+]'
+----
+
+A file containing the documents can be indexed as follows:
+
+[,console]
+----
+$ curl -H "Content-Type: application/json" \
+       -X POST \
+       -d @example/products.json \
+       --url 'http://localhost:8983/api/collections/techproducts/update?commit=true'
+----
+
+== Commit the Changes
+After documents are indexed into a collection, they are not immediately available for searching. In order to have them searchable, a commit operation (also called `refresh` in other search engines like OpenSearch etc.) is needed. Commits can be scheduled at periodic intervals using auto-commits as follows.
+
+[,console]
+----
+$ curl -X POST -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}' http://localhost:8983/api/collections/techproducts/config
+----
+
+== Make some Basic search queries
+You can now try searching your documents like:
+
+[source]
+----
+curl 'http://localhost:8983/solr/techproducts/select?q=name%3Alightning'
+----

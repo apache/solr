@@ -1,0 +1,26 @@
+= SQL Query Screen
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+You can use the *SQL Query* screen to submit a SQL query to a Solr collection and get the results in a tabular format.
+
+In the example in the screenshot, a SQL query has been submitted, and the screen shows the query results listed as a table.
+
+.Results of a SQL Query
+image::sql-screen/sql-query-ui.png[image,height=400]
+
+Learn more by reading the xref:sql-query.adoc[], including the specific xref:sql-query.adoc#solr-sql-syntax[SQL syntax] supported by Solr.

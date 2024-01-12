@@ -21,5 +21,4 @@ public class NonExistentCoreException extends SolrException {
   public NonExistentCoreException(String msg) {
     super(ErrorCode.BAD_REQUEST, msg);
   }
-
 }

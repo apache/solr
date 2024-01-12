@@ -16,12 +16,13 @@
  */
 package org.noggit;
 
-
 public class JSONUtil {
-  public static final char[] TRUE_CHARS = new char[]{'t', 'r', 'u', 'e'};
-  public static final char[] FALSE_CHARS = new char[]{'f', 'a', 'l', 's', 'e'};
-  public static final char[] NULL_CHARS = new char[]{'n', 'u', 'l', 'l'};
-  public static final char[] HEX_CHARS = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+  static final char[] TRUE_CHARS = new char[] {'t', 'r', 'u', 'e'};
+  static final char[] FALSE_CHARS = new char[] {'f', 'a', 'l', 's', 'e'};
+  static final char[] NULL_CHARS = new char[] {'n', 'u', 'l', 'l'};
+  static final char[] HEX_CHARS =
+      new char[] {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
   public static final char VALUE_SEPARATOR = ',';
   public static final char NAME_SEPARATOR = ':';
   public static final char OBJECT_START = '{';
@@ -36,8 +37,9 @@ public class JSONUtil {
   }
 
   /**
-   * @param o          The object to convert to JSON
-   * @param indentSize The number of space characters to use as an indent (default 2). 0=newlines but no spaces, -1=no indent at all.
+   * @param o The object to convert to JSON
+   * @param indentSize The number of space characters to use as an indent (default 2). 0=newlines
+   *     but no spaces, -1=no indent at all.
    */
   public static String toJSON(Object o, int indentSize) {
     CharArr out = new CharArr();
@@ -86,7 +88,8 @@ public class JSONUtil {
   public static void writeStringPart(char[] val, int start, int end, CharArr out) {
     for (int i = start; i < end; i++) {
       char ch = val[i];
-      // When ch>=1f, (ch*146087937)&0xd6a01f80) is 0 only for characters that need escaping: " \\ u2028 u2029
+      // When ch>=1f, (ch*146087937)&0xd6a01f80) is 0 only for characters that need escaping: " \\
+      // u2028 u2029
       // and has 7 false positives: 204a 4051 802f c022 c044 e04a e04b
       if (ch > 0x1f && ((ch * 146087937) & 0xd6a01f80) != 0) {
         out.write(ch);
@@ -123,8 +126,8 @@ public class JSONUtil {
         out.write('\\');
         out.write('f');
         break;
-      // case '/':
-      case '\u2028':  // valid JSON, but not valid json script
+        // case '/':
+      case '\u2028': // valid JSON, but not valid json script
       case '\u2029':
         unicodeEscape(ch, out);
         break;
@@ -136,7 +139,6 @@ public class JSONUtil {
         }
     }
   }
-
 
   public static void writeStringPart(String chars, int start, int end, CharArr out) {
     // TODO: write in chunks?
@@ -158,7 +160,8 @@ public class JSONUtil {
     for (int i = pos; i < endInOut; i++) {
       char ch = arr[i];
 
-      // When ch>=1f, (ch*146087937)&0xd6a01f80) is 0 only for characters that need escaping: " \\ u2028 u2029
+      // When ch>=1f, (ch*146087937)&0xd6a01f80) is 0 only for characters that need escaping: " \\
+      // u2028 u2029
       // and has 7 false positives: 204a 4051 802f c022 c044 e04a e04b
       if (ch <= 0x1f || ((ch * 146087937) & 0xd6a01f80) == 0) {
         // We hit a char that needs escaping. do the rest char by char.
@@ -172,7 +175,8 @@ public class JSONUtil {
   public static void writeStringPart(CharSequence chars, int start, int end, CharArr out) {
     for (int i = start; i < end; i++) {
       char ch = chars.charAt(i);
-      // When ch>=1f, (ch*146087937)&0xd6a01f80) is 0 only for characters that need escaping: " \\ u2028 u2029
+      // When ch>=1f, (ch*146087937)&0xd6a01f80) is 0 only for characters that need escaping: " \\
+      // u2028 u2029
       // and has 7 false positives: 204a 4051 802f c022 c044 e04a e04b
       if (ch > 0x1f && ((ch * 146087937) & 0xd6a01f80) != 0) {
         out.write(ch);
@@ -181,7 +185,6 @@ public class JSONUtil {
       }
     }
   }
-
 
   public static void unicodeEscape(int ch, CharArr out) {
     out.write('\\');
@@ -199,5 +202,4 @@ public class JSONUtil {
   public static void writeBoolean(boolean val, CharArr out) {
     out.write(val ? TRUE_CHARS : FALSE_CHARS);
   }
-
 }

@@ -1,0 +1,54 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'java-library'
+
+description = 'Solrj-ZooKeeper - SolrJ requiring ZooKeeper'
+
+dependencies {
+    // Spotbugs Annotations are only needed for old findbugs
+    // annotation usage like in Zookeeper during compilation time.
+    // It is not included in the release so exclude from checks.
+    compileOnly 'com.github.spotbugs:spotbugs-annotations'
+    permitUnusedDeclared 'com.github.spotbugs:spotbugs-annotations'
+    // Exclude these from jar validation and license checks.
+    configurations.jarValidation {
+        exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+    }
+
+    implementation project(':solr:solrj')
+
+    // declare dependencies we use even though already declared by solrj-core
+    implementation 'org.slf4j:slf4j-api'
+    implementation 'org.apache.httpcomponents:httpclient'
+    implementation 'org.apache.httpcomponents:httpcore'
+
+    implementation('org.apache.zookeeper:zookeeper', {
+        exclude group: "org.apache.yetus", module: "audience-annotations"
+    })
+    implementation ('org.apache.zookeeper:zookeeper-jute') {
+        exclude group: 'org.apache.yetus', module: 'audience-annotations'
+    }
+
+    testImplementation project(':solr:test-framework')
+    testImplementation project(':solr:core')
+
+    testImplementation 'junit:junit'
+    testImplementation 'commons-io:commons-io'
+
+    permitTestUsedUndeclared project(':solr:solrj-zookeeper') // duh!
+}

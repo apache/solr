@@ -22,29 +22,30 @@ import org.apache.http.config.Lookup;
 import org.apache.http.cookie.CookieSpecProvider;
 
 /**
- * Builder class for configuring internal HttpClients. This
- * relies on the internal HttpClient implementation and is subject to
- * change.
- * 
+ * Builder class for configuring internal HttpClients. This relies on the internal HttpClient
+ * implementation and is subject to change.
+ *
  * @lucene.experimental
+ * @deprecated Please look into using Solr's new Http2 clients
  */
+@Deprecated(since = "9.0")
 public class SolrHttpClientBuilder {
   public static SolrHttpClientBuilder create() {
     return new SolrHttpClientBuilder();
   }
-  
+
   public interface CredentialsProviderProvider {
     CredentialsProvider getCredentialsProvider();
   }
-  
+
   public interface AuthSchemeRegistryProvider {
     Lookup<AuthSchemeProvider> getAuthSchemeRegistry();
   }
-  
+
   public interface CookieSpecRegistryProvider {
     Lookup<CookieSpecProvider> getCookieSpecRegistry();
   }
-  
+
   private CookieSpecRegistryProvider cookieSpecRegistryProvider;
   private AuthSchemeRegistryProvider authSchemeRegistryProvider;
   private CredentialsProviderProvider credentialsProviderProvider;
@@ -58,13 +59,13 @@ public class SolrHttpClientBuilder {
     this.cookieSpecRegistryProvider = cookieSpecRegistryProvider;
     return this;
   }
-  
+
   public final SolrHttpClientBuilder setDefaultCredentialsProvider(
       final CredentialsProviderProvider credentialsProviderProvider) {
     this.credentialsProviderProvider = credentialsProviderProvider;
     return this;
   }
-  
+
   public final SolrHttpClientBuilder setAuthSchemeRegistryProvider(
       final AuthSchemeRegistryProvider authSchemeRegistryProvider) {
     this.authSchemeRegistryProvider = authSchemeRegistryProvider;
@@ -82,5 +83,4 @@ public class SolrHttpClientBuilder {
   public CredentialsProviderProvider getCredentialsProviderProvider() {
     return credentialsProviderProvider;
   }
-
 }

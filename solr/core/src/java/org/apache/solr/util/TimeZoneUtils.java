@@ -20,11 +20,11 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.solr.common.SolrException;
 
 /**
  * Simple utilities for working with TimeZones
+ *
  * @see java.util.TimeZone
  */
 public final class TimeZoneUtils {
@@ -34,26 +34,26 @@ public final class TimeZoneUtils {
   }
 
   /**
-   * An immutable Set of all TimeZone IDs supported by the TimeZone class 
-   * at the moment the TimeZoneUtils was initialized.
-   * 
+   * An immutable Set of all TimeZone IDs supported by the TimeZone class at the moment the
+   * TimeZoneUtils was initialized.
+   *
    * @see TimeZone#getAvailableIDs
    */
-  public static final Set<String> KNOWN_TIMEZONE_IDS 
-    = Set.of(TimeZone.getAvailableIDs());
+  public static final Set<String> KNOWN_TIMEZONE_IDS = Set.of(TimeZone.getAvailableIDs());
 
   /**
-   * This method is provided as a replacement for TimeZone.getTimeZone but 
-   * without the annoying behavior of returning "GMT" for gibberish input.
-   * <p>
-   * This method will return null unless the input is either:
-   * </p>
+   * This method is provided as a replacement for TimeZone.getTimeZone but without the annoying
+   * behavior of returning "GMT" for gibberish input.
+   *
+   * <p>This method will return null unless the input is either:
+   *
    * <ul>
-   *  <li>Included in the set of known TimeZone IDs</li>
-   *  <li>A "CustomID" specified as a numeric offset from "GMT"</li>
+   *   <li>Included in the set of known TimeZone IDs
+   *   <li>A "CustomID" specified as a numeric offset from "GMT"
    * </ul>
-   * 
-   * @param ID Either a TimeZone ID found in KNOWN_TIMEZONE_IDS, or a "CustomID" specified as a GMT offset.
+   *
+   * @param ID Either a TimeZone ID found in KNOWN_TIMEZONE_IDS, or a "CustomID" specified as a GMT
+   *     offset.
    * @return A TimeZone object corresponding to the input, or null if no such TimeZone is supported.
    * @see #KNOWN_TIMEZONE_IDS
    * @see TimeZone
@@ -66,7 +66,7 @@ public final class TimeZoneUtils {
     if (matcher.matches()) {
       int hour = Integer.parseInt(matcher.group(1));
       if (hour < 0 || 23 < hour) return null;
-      
+
       final String minStr = matcher.group(2);
       if (null != minStr) {
         int min = Integer.parseInt(minStr);
@@ -77,22 +77,23 @@ public final class TimeZoneUtils {
     return null;
   }
 
-  private static Pattern CUSTOM_ID_REGEX = Pattern.compile("GMT(?:\\+|\\-)(\\d{1,2})(?::?(\\d{2}))?");
+  private static Pattern CUSTOM_ID_REGEX =
+      Pattern.compile("GMT(?:\\+|\\-)(\\d{1,2})(?::?(\\d{2}))?");
 
   /**
    * Parse the specified timezone ID. If null input then return UTC. If we can't resolve it then
-   * throw an exception.  Does not return null.
+   * throw an exception. Does not return null.
    */
   public static TimeZone parseTimezone(String tzStr) {
     if (tzStr != null) {
       TimeZone tz = getTimeZone(tzStr);
       if (null == tz) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Solr JVM does not support TZ: " + tzStr);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Solr JVM does not support TZ: " + tzStr);
       }
       return tz;
     } else {
-      return DateMathParser.UTC; //TODO move to TimeZoneUtils
+      return DateMathParser.UTC; // TODO move to TimeZoneUtils
     }
   }
 }

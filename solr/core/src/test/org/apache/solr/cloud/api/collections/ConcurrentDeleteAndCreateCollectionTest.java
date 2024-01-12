@@ -20,8 +20,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.apache.lucene.util.LuceneTestCase.Nightly;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -38,18 +37,18 @@ import org.slf4j.LoggerFactory;
 
 @Nightly
 public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
-  
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private MiniSolrCloudCluster solrCluster;
-  
+
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    solrCluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig());
   }
-  
+
   @Override
   @After
   public void tearDown() throws Exception {
@@ -59,7 +58,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     }
     super.tearDown();
   }
-  
+
   public void testConcurrentCreateAndDeleteDoesNotFail() throws IOException {
     final AtomicReference<Exception> failure = new AtomicReference<>();
     final int timeToRunSec = 30;
@@ -69,16 +68,22 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
       solrCluster.uploadConfigSet(configset("configset-2"), collectionName);
       final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       final SolrClient solrClient = getHttpSolrClient(baseUrl);
-      threads[i] = new CreateDeleteSearchCollectionThread("create-delete-search-" + i, collectionName, collectionName, 
-          timeToRunSec, solrClient, failure);
+      threads[i] =
+          new CreateDeleteSearchCollectionThread(
+              "create-delete-search-" + i,
+              collectionName,
+              collectionName,
+              timeToRunSec,
+              solrClient,
+              failure);
     }
-    
+
     startAll(threads);
     joinAll(threads);
-    
+
     assertNull("concurrent create and delete collection failed: " + failure.get(), failure.get());
   }
-  
+
   public void testConcurrentCreateAndDeleteOverTheSameConfig() throws IOException {
     final String configName = "testconfig";
     // upload config once, to be used by all collections
@@ -90,8 +95,9 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     for (int i = 0; i < threads.length; i++) {
       final String collectionName = "collection" + i;
       final SolrClient solrClient = getHttpSolrClient(baseUrl);
-      threads[i] = new CreateDeleteCollectionThread("create-delete-" + i, collectionName, configName,
-                                                    timeToRunSec, solrClient, failure);
+      threads[i] =
+          new CreateDeleteCollectionThread(
+              "create-delete-" + i, collectionName, configName, timeToRunSec, solrClient, failure);
     }
 
     startAll(threads);
@@ -110,22 +116,27 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
       }
     }
   }
-  
+
   private void startAll(final Thread[] threads) {
     for (Thread t : threads) {
       t.start();
     }
   }
-  
+
   private static class CreateDeleteCollectionThread extends Thread {
     protected final String collectionName;
     protected final String configName;
     protected final long timeToRunSec;
     protected final SolrClient solrClient;
     protected final AtomicReference<Exception> failure;
-    
-    public CreateDeleteCollectionThread(String name, String collectionName, String configName, long timeToRunSec,
-        SolrClient solrClient, AtomicReference<Exception> failure) {
+
+    public CreateDeleteCollectionThread(
+        String name,
+        String collectionName,
+        String configName,
+        long timeToRunSec,
+        SolrClient solrClient,
+        AtomicReference<Exception> failure) {
       super(name);
       this.collectionName = collectionName;
       this.timeToRunSec = timeToRunSec;
@@ -133,20 +144,20 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
       this.failure = failure;
       this.configName = configName;
     }
-    
+
     @Override
     public void run() {
       final TimeOut timeout = new TimeOut(timeToRunSec, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-      while (! timeout.hasTimedOut() && failure.get() == null) {
+      while (!timeout.hasTimedOut() && failure.get() == null) {
         doWork();
       }
     }
-    
+
     protected void doWork() {
       createCollection();
       deleteCollection();
     }
-    
+
     protected void addFailure(Exception e) {
       log.error("Add Failure", e);
       synchronized (failure) {
@@ -157,10 +168,11 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
         }
       }
     }
-    
+
     private void createCollection() {
       try {
-        final CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName,configName,1,1)
+        final CollectionAdminResponse response =
+            CollectionAdminRequest.createCollection(collectionName, configName, 1, 1)
                 .process(solrClient);
         if (response.getStatus() != 0) {
           addFailure(new RuntimeException("failed to create collection " + collectionName));
@@ -168,13 +180,12 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
       } catch (Exception e) {
         addFailure(e);
       }
-      
     }
-    
+
     private void deleteCollection() {
       try {
-        final CollectionAdminRequest.Delete deleteCollectionRequest
-          = CollectionAdminRequest.deleteCollection(collectionName);
+        final CollectionAdminRequest.Delete deleteCollectionRequest =
+            CollectionAdminRequest.deleteCollection(collectionName);
         final CollectionAdminResponse response = deleteCollectionRequest.process(solrClient);
         if (response.getStatus() != 0) {
           addFailure(new RuntimeException("failed to delete collection " + collectionName));
@@ -183,7 +194,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
         addFailure(e);
       }
     }
-    
+
     public void joinAndClose() throws InterruptedException {
       try {
         super.join(60000);
@@ -192,20 +203,25 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
       }
     }
   }
-  
+
   private static class CreateDeleteSearchCollectionThread extends CreateDeleteCollectionThread {
 
-    public CreateDeleteSearchCollectionThread(String name, String collectionName, String configName, long timeToRunSec,
-        SolrClient solrClient, AtomicReference<Exception> failure) {
+    public CreateDeleteSearchCollectionThread(
+        String name,
+        String collectionName,
+        String configName,
+        long timeToRunSec,
+        SolrClient solrClient,
+        AtomicReference<Exception> failure) {
       super(name, collectionName, configName, timeToRunSec, solrClient, failure);
     }
-    
+
     @Override
     protected void doWork() {
       super.doWork();
       searchNonExistingCollection();
     }
-    
+
     private void searchNonExistingCollection() {
       try {
         solrClient.query(collectionName, new SolrQuery("*"));
@@ -215,7 +231,5 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
         }
       }
     }
-    
   }
-  
 }

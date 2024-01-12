@@ -18,7 +18,7 @@
 
 <!--
      For more details about configurations options that may appear in
-     this file, see https://solr.apache.org/guide/configuring-solrconfig-xml.html.
+     this file, see https://solr.apache.org/guide/solr/latest/configuration-guide/configuring-solrconfig-xml.html.
 -->
 <config>
   <!-- In all configuration below, a prefix of "solr." for class names
@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>9.0</luceneMatchVersion>
+  <luceneMatchVersion>9.8</luceneMatchVersion>
 
   <!-- <lib/> directives can be used to instruct Solr to load any Jars
        identified and use them to resolve any "plugins" specified in
@@ -69,10 +69,10 @@
        If a 'dir' option (with or without a regex) is used and nothing
        is found that matches, a warning will be logged.
 
-       The example below can be used to load a solr-contrib along
+       The example below can be used to load a Solr Module along
        with their external dependencies.
     -->
-    <!-- <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" /> -->
+    <!-- <lib dir="${solr.install.dir:../../../..}/modules/ltr/lib" regex=".*\.jar" /> -->
 
   <!-- an exact 'path' can be used instead of a 'dir' to specify a
        specific jar file.  This will cause a serious error to be logged
@@ -274,7 +274,7 @@
          Instead of enabling autoCommit, consider using "commitWithin"
          when adding documents.
 
-         https://solr.apache.org/guide/indexing-with-update-handlers.html
+         https://solr.apache.org/guide/solr/latest/indexing-guide/indexing-with-update-handlers.html
 
          maxDocs - Maximum number of documents to add since the last
                    commit before automatically triggering a new commit.
@@ -301,7 +301,7 @@
       -->
 
     <autoSoftCommit>
-      <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime>
+      <maxTime>${solr.autoSoftCommit.maxTime:3000}</maxTime>
     </autoSoftCommit>
 
     <!-- Update Related Event Listeners
@@ -352,9 +352,9 @@
 
          This limit only impacts boolean queries specified by a user as part of a query string,
          and provides per-collection controls on how complex user specified boolean queries can
-         be.  Query strings that specify more clauses then this will result in an error.
+         be.  Query strings that specify more clauses than this will result in an error.
 
-         If this per-collection limit is greater then the global `maxBooleanClauses` limit
+         If this per-collection limit is greater than the global `maxBooleanClauses` limit
          specified in `solr.xml`, it will have no effect, as that setting also limits the size
          of user specified boolean queries.
       -->
@@ -428,7 +428,7 @@
     <!--
        <fieldValueCache size="512"
                         autowarmCount="128"
-                        showItems="32" />
+                        />
       -->
 
     <!-- Custom Cache
@@ -494,23 +494,6 @@
       -->
     <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
 
-  <!-- Use Filter For Sorted Query
-
-   A possible optimization that attempts to use a filter to
-   satisfy a search.  If the requested sort does not include
-   score, then the filterCache will be checked for a filter
-   matching the query. If found, the filter will be used as the
-   source of document ids, and then the sort will be applied to
-   that.
-
-   For most situations, this will not be useful unless you
-   frequently get the same search repeatedly with different sort
-   options, and none of them ever use "score"
--->
-    <!--
-       <useFilterForSortedQuery>true</useFilterForSortedQuery>
-      -->
-
     <!-- Query Related Event Listeners
 
          Various IndexSearcher related events can trigger Listeners to
@@ -559,65 +542,6 @@
 
   </query>
 
-  <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     Circuit Breaker Section - This section consists of configurations for
-     circuit breakers
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-
-    <!-- Circuit Breakers
-
-     Circuit breakers are designed to allow stability and predictable query
-     execution. They prevent operations that can take down the node and cause
-     noisy neighbour issues.
-
-     This flag is the uber control switch which controls the activation/deactivation of all circuit
-     breakers. If a circuit breaker wishes to be independently configurable,
-     they are free to add their specific configuration but need to ensure that this flag is always
-     respected - this should have veto over all independent configuration flags.
-    -->
-    <circuitBreakers enabled="true">
-
-    <!-- Memory Circuit Breaker Configuration
-
-     Specific configuration for max JVM heap usage circuit breaker. This configuration defines whether
-     the circuit breaker is enabled and the threshold percentage of maximum heap allocated beyond which queries will be rejected until the
-     current JVM usage goes below the threshold. The valid value range for this value is 50-95.
-
-     Consider a scenario where the max heap allocated is 4 GB and memoryCircuitBreakerThreshold is
-     defined as 75. Threshold JVM usage will be 4 * 0.75 = 3 GB. Its generally a good idea to keep this value between 75 - 80% of maximum heap
-     allocated.
-
-     If, at any point, the current JVM heap usage goes above 3 GB, queries will be rejected until the heap usage goes below 3 GB again.
-     If you see queries getting rejected with 503 error code, check for "Circuit Breakers tripped"
-     in logs and the corresponding error message should tell you what transpired (if the failure
-     was caused by tripped circuit breakers).
-
-     If, at any point, the current JVM heap usage goes above 3 GB, queries will be rejected until the heap usage goes below 3 GB again.
-     If you see queries getting rejected with 503 error code, check for "Circuit Breakers tripped"
-     in logs and the corresponding error message should tell you what transpired (if the failure
-     was caused by tripped circuit breakers).
-    -->
-    <!--
-   <memBreaker enabled="true" threshold="75"/>
-    -->
-
-      <!-- CPU Circuit Breaker Configuration
-
-     Specific configuration for CPU utilization based circuit breaker. This configuration defines whether the circuit breaker is enabled
-     and the average load over the last minute at which the circuit breaker should start rejecting queries.
-
-     Consider a scenario where the max heap allocated is 4 GB and memoryCircuitBreakerThreshold is
-     defined as 75. Threshold JVM usage will be 4 * 0.75 = 3 GB. Its generally a good idea to keep this value between 75 - 80% of maximum heap
-     allocated.
-    -->
-
-      <!--
-       <cpuBreaker enabled="true" threshold="75"/>
-      -->
-
-  </circuitBreakers>
-
-
   <!-- Request Dispatcher
 
        This section contains instructions for how the SolrDispatchFilter
@@ -630,9 +554,6 @@
          These settings indicate how Solr Requests may be parsed, and
          what restrictions may be placed on the ContentStreams from
          those requests
-
-         enableRemoteStreaming - enables use of the stream.file
-         and stream.url parameters for specifying remote streams.
 
          multipartUploadLimitInKB - specifies the max size (in KiB) of
          Multipart File Uploads that Solr will allow in a Request.
@@ -649,12 +570,7 @@
          Solr components, but may be useful when developing custom
          plugins.
 
-         *** WARNING ***
-         Before enabling remote streaming, you should make sure your
-         system has authentication enabled.
-
-    <requestParsers enableRemoteStreaming="false"
-                    multipartUploadLimitInKB="-1"
+    <requestParsers multipartUploadLimitInKB="-1"
                     formdataUploadLimitInKB="-1"
                     addHttpRequestToContext="false"/>
       -->
@@ -716,7 +632,7 @@
 
   <!-- Request Handlers
 
-       https://solr.apache.org/guide/requesthandlers-and-searchcomponents-in-solrconfig.html
+       https://solr.apache.org/guide/solr/latest/configuration-guide/requesthandlers-searchcomponents.html
 
        Incoming queries will be dispatched to a specific handler by name based on the path specified in the request.
 
@@ -759,7 +675,7 @@
        The spell check component can return a list of alternative spelling
        suggestions.
 
-       https://solr.apache.org/guide/spell-checking.html
+       https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html
     -->
   <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
 
@@ -816,7 +732,7 @@
        IN OTHER WORDS, THERE IS REALLY GOOD CHANCE THE SETUP BELOW IS
        NOT WHAT YOU WANT FOR YOUR PRODUCTION SYSTEM!
 
-       See https://solr.apache.org/guide/spell-checking.html for details
+       See https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html for details
        on the request parameters.
     -->
   <requestHandler name="/spell" class="solr.SearchHandler" startup="lazy">
@@ -843,9 +759,11 @@
 
   <!-- Highlighting Component
 
-       https://solr.apache.org/guide/highlighting.html
+       https://solr.apache.org/guide/solr/latest/query-guide/highlighting.html
     -->
   <searchComponent class="solr.HighlightComponent" name="highlight">
+    <!-- note: the hl.method=unified highlighter is not configured here; it's completely configured
+    via parameters.  The below configuration supports hl.method=original and fastVector. -->
     <highlighting>
       <!-- Configure the standard fragmenter -->
       <!-- This could most likely be commented out in the "default" case -->
@@ -948,7 +866,7 @@
   </searchComponent>
 
   <!-- Update Request Processors
-       https://solr.apache.org/guide/update-request-processors.html
+       https://solr.apache.org/guide/solr/latest/configuration-guide/update-request-processors.html
 
        Chains or individual Update Request Processor Factories can be declared and referenced
        to preprocess documents sent to Update Request Handlers.
@@ -967,7 +885,7 @@
        declaring schemaFactory as ManagedIndexSchemaFactory, with
        mutable specified as true.
 
-       See https://solr.apache.org/guide/schemaless-mode.html for further explanation.
+       See https://solr.apache.org/guide/solr/latest/indexing-guide/schemaless-mode.html for further explanation.
 
     -->
   <updateProcessor class="solr.UUIDUpdateProcessorFactory" name="uuid"/>
@@ -1052,7 +970,7 @@
 
   <!-- Response Writers
 
-       https://solr.apache.org/guide/response-writers.html
+       https://solr.apache.org/guide/solr/latest/query-guide/response-writers.html
 
        Request responses will be written using the writer specified by
        the 'wt' request parameter matching the name of a registered
@@ -1089,7 +1007,7 @@
 
   <!-- Query Parsers
 
-       https://solr.apache.org/guide/query-syntax-and-parsing.html
+       https://solr.apache.org/guide/solr/latest/query-guide/query-syntax-and-parsers.html
 
        Multiple QParserPlugins can be registered by name, and then
        used in either the "defType" param for the QueryComponent (used
@@ -1102,7 +1020,7 @@
 
   <!-- Function Parsers
 
-       https://solr.apache.org/guide/function-queries.html
+       https://solr.apache.org/guide/solr/latest/query-guide/function-queries.html
 
        Multiple ValueSourceParsers can be registered by name, and then
        used as function names when using the "func" QParser.
@@ -1115,7 +1033,7 @@
 
 
   <!-- Document Transformers
-       https://solr.apache.org/guide/document-transformers.html
+       https://solr.apache.org/guide/solr/latest/query-guide/document-transformers.html
     -->
   <!--
      Could be something like:

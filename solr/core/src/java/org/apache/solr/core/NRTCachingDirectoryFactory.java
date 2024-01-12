@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockFactory;
@@ -26,9 +25,7 @@ import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
-/**
- * Factory to instantiate {@link org.apache.lucene.store.NRTCachingDirectory}
- */
+/** Factory to instantiate {@link org.apache.lucene.store.NRTCachingDirectory} */
 public class NRTCachingDirectoryFactory extends StandardDirectoryFactory {
   public static final int DEFAULT_MAX_MERGE_SIZE_MB = 4;
   private double maxMergeSizeMB = DEFAULT_MAX_MERGE_SIZE_MB;
@@ -40,17 +37,19 @@ public class NRTCachingDirectoryFactory extends StandardDirectoryFactory {
     super.init(args);
     SolrParams params = args.toSolrParams();
     maxMergeSizeMB = params.getDouble("maxMergeSizeMB", DEFAULT_MAX_MERGE_SIZE_MB);
-    if (maxMergeSizeMB <= 0){
+    if (maxMergeSizeMB <= 0) {
       throw new IllegalArgumentException("maxMergeSizeMB must be greater than 0");
     }
     maxCachedMB = params.getDouble("maxCachedMB", DEFAULT_MAX_CACHED_MB);
-    if (maxCachedMB <= 0){
+    if (maxCachedMB <= 0) {
       throw new IllegalArgumentException("maxCachedMB must be greater than 0");
     }
   }
 
   @Override
-  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) throws IOException {
-    return new NRTCachingDirectory(FSDirectory.open(Path.of(path), lockFactory), maxMergeSizeMB, maxCachedMB);
+  protected Directory create(String path, LockFactory lockFactory, DirContext dirContext)
+      throws IOException {
+    return new NRTCachingDirectory(
+        FSDirectory.open(Path.of(path), lockFactory), maxMergeSizeMB, maxCachedMB);
   }
 }

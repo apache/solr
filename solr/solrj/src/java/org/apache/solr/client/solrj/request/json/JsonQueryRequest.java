@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -33,24 +32,22 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 
 /**
- * Represents a query using the <a href="https://solr.apache.org/guide/json-request-api.html">JSON Query DSL</a>
+ * Represents a query using the <a
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/json-request-api.html">JSON Query
+ * DSL</a>
  *
- * This class constructs the request using setters for individual properties.  For a more monolithic approach to
- * constructing the JSON request, see {@link DirectJsonQueryRequest}
+ * <p>This class constructs the request using setters for individual properties. For a more
+ * monolithic approach to constructing the JSON request, see {@link DirectJsonQueryRequest}
  */
 public class JsonQueryRequest extends QueryRequest {
   private final Map<String, Object> jsonRequestMap;
 
-  /**
-   * Creates a {@link JsonQueryRequest} with an empty {@link SolrParams} object
-   */
+  /** Creates a {@link JsonQueryRequest} with an empty {@link SolrParams} object */
   public JsonQueryRequest() {
     this(new ModifiableSolrParams());
   }
 
-  /**
-   * Creates a {@link JsonQueryRequest} using the provided {@link SolrParams}
-   */
+  /** Creates a {@link JsonQueryRequest} using the provided {@link SolrParams} */
   public JsonQueryRequest(SolrParams params) {
     super(params, METHOD.POST);
     this.jsonRequestMap = new HashMap<>();
@@ -59,11 +56,11 @@ public class JsonQueryRequest extends QueryRequest {
   /**
    * Specify the query sent as a part of this JSON request
    *
-   * This method may be called multiple times, but each call overwrites the value specified by previous calls.
+   * <p>This method may be called multiple times, but each call overwrites the value specified by
+   * previous calls.
    *
-   * @param query a String in either of two formats: a query string for the default deftype (e.g. "title:solr"), or a
-   *              localparams query (e.g. "{!lucene df=text v='solr'}" )
-   *
+   * @param query a String in either of two formats: a query string for the default deftype (e.g.
+   *     "title:solr"), or a localparams query (e.g. "{!lucene df=text v='solr'}" )
    * @throws IllegalArgumentException if {@code query} is null
    */
   public JsonQueryRequest setQuery(String query) {
@@ -77,20 +74,23 @@ public class JsonQueryRequest extends QueryRequest {
   /**
    * Specify the query sent as a part of this JSON request.
    *
-   * This method may be called multiple times, but each call overwrites the value specified by previous calls.
-   * <p>
-   * <b>Example:</b> You wish to send the JSON request: "{'limit': 5, 'query': {'lucene': {'df':'genre_s', 'query': 'scifi'}}}".  The
-   * query subtree of this request is: "{'lucene': {'df': 'genre_s', 'query': 'scifi'}}".  You would represent this query
-   * JSON as follows:
+   * <p>This method may be called multiple times, but each call overwrites the value specified by
+   * previous calls.
+   *
+   * <p><b>Example:</b> You wish to send the JSON request: "{'limit': 5, 'query': {'lucene':
+   * {'df':'genre_s', 'query': 'scifi'}}}". The query subtree of this request is: "{'lucene': {'df':
+   * 'genre_s', 'query': 'scifi'}}". You would represent this query JSON as follows:
+   *
    * <pre>{@code
-   *     final Map<String, Object> queryMap = new HashMap<>();
-   *     final Map<String, Object> luceneQueryParamMap = new HashMap<>();
-   *     queryMap.put("lucene", luceneQueryParamMap);
-   *     luceneQueryParamMap.put("df", "genre_s");
-   *     luceneQueryParamMap.put("query", "scifi");
+   * final Map<String, Object> queryMap = new HashMap<>();
+   * final Map<String, Object> luceneQueryParamMap = new HashMap<>();
+   * queryMap.put("lucene", luceneQueryParamMap);
+   * luceneQueryParamMap.put("df", "genre_s");
+   * luceneQueryParamMap.put("query", "scifi");
    * }</pre>
    *
-   * @param queryJson a Map of values representing the query subtree of the JSON request you wish to send.
+   * @param queryJson a Map of values representing the query subtree of the JSON request you wish to
+   *     send.
    * @throws IllegalArgumentException if {@code queryJson} is null.
    */
   public JsonQueryRequest setQuery(Map<String, Object> queryJson) {
@@ -104,11 +104,13 @@ public class JsonQueryRequest extends QueryRequest {
   /**
    * Specify the query sent as a part of this JSON request.
    *
-   * This method may be called multiple times, but each call overwrites the value specified by previous calls.
-   * <p>
-   * <b>Example:</b> You wish to send the JSON request: "{'limit': 5, 'query': {'lucene': {'df':'genre_s', 'query': 'scifi'}}}".  The
-   * query subtree of this request is: "{'lucene': {'df': 'genre_s', 'query': 'scifi'}}".  You would represent this query
-   * JSON as follows:
+   * <p>This method may be called multiple times, but each call overwrites the value specified by
+   * previous calls.
+   *
+   * <p><b>Example:</b> You wish to send the JSON request: "{'limit': 5, 'query': {'lucene':
+   * {'df':'genre_s', 'query': 'scifi'}}}". The query subtree of this request is: "{'lucene': {'df':
+   * 'genre_s', 'query': 'scifi'}}". You would represent this query JSON as follows:
+   *
    * <pre>
    *     final MapWriter queryWriter = new MapWriter() {
    *         &#64;Override
@@ -121,7 +123,8 @@ public class JsonQueryRequest extends QueryRequest {
    *     };
    * </pre>
    *
-   * @param queryWriter a MapWriter capable of writing out the query subtree of the JSON request you wish to send.
+   * @param queryWriter a MapWriter capable of writing out the query subtree of the JSON request you
+   *     wish to send.
    * @throws IllegalArgumentException if {@code queryWriter} is null.
    */
   public JsonQueryRequest setQuery(MapWriter queryWriter) {
@@ -135,22 +138,25 @@ public class JsonQueryRequest extends QueryRequest {
   /**
    * Specify a facet sent as a part of this JSON request.
    *
-   * This method may be called multiple times.  Each call made with a different {@code facetName} value will add a new
-   * top-level facet.  Repeating {@code facetName} values will cause previous facets with that {@code facetName} to be
-   * overwritten.
-   * <p>
-   * <b>Example:</b> You wish to send the JSON request: {"query": "*:*", "facet": { "top_cats":{"type": "terms", "field":"cat"}}}.  You
-   * would represent (and attach) the facet in this request as follows:
-   * <pre>{@code
-   *     final Map<String, Object> catFacetMap = new HashMap<>();
-   *     catFacetMap.put("type", "terms");
-   *     catFacetMap.put("field", "cat");
+   * <p>This method may be called multiple times. Each call made with a different {@code facetName}
+   * value will add a new top-level facet. Repeating {@code facetName} values will cause previous
+   * facets with that {@code facetName} to be overwritten.
    *
-   *     jsonQueryRequest.withStatFacet("top_cats", catFacetMap);
+   * <p><b>Example:</b> You wish to send the JSON request: {"query": "*:*", "facet": {
+   * "top_cats":{"type": "terms", "field":"cat"}}}. You would represent (and attach) the facet in
+   * this request as follows:
+   *
+   * <pre>{@code
+   * final Map<String, Object> catFacetMap = new HashMap<>();
+   * catFacetMap.put("type", "terms");
+   * catFacetMap.put("field", "cat");
+   *
+   * jsonQueryRequest.withStatFacet("top_cats", catFacetMap);
    * }</pre>
    *
-   * @param facetName the name of the top-level facet you'd like to add.  Avoid choosing facet names which overload
-   *                  properties already present in the JSON response schema (e.g. "count", "val", "minX", etc.)
+   * @param facetName the name of the top-level facet you'd like to add. Avoid choosing facet names
+   *     which overload properties already present in the JSON response schema (e.g. "count", "val",
+   *     "minX", etc.)
    * @param facetJson a Map of values representing the facet you wish to add to the request
    */
   public JsonQueryRequest withFacet(String facetName, Map<String, Object> facetJson) {
@@ -161,7 +167,7 @@ public class JsonQueryRequest extends QueryRequest {
       throw new IllegalArgumentException("'facetMap' parameter must be non-null");
     }
 
-    if (! jsonRequestMap.containsKey("facet")) {
+    if (!jsonRequestMap.containsKey("facet")) {
       jsonRequestMap.put("facet", new HashMap<String, Object>());
     }
 
@@ -174,12 +180,14 @@ public class JsonQueryRequest extends QueryRequest {
   /**
    * Specify a facet sent as a part of this JSON request.
    *
-   * This method may be called multiple times.  Each call made with a different {@code facetName} value will add a new
-   * top-level facet.  Repeating {@code facetName} values will cause previous facets with that {@code facetName} to be
-   * overwritten.
-   * <p>
-   * <b>Example:</b> You wish to send the JSON request: {"query": "*:*", "facet": { "top_cats":{"type": "terms", "field":"cat"}}}.  You
-   * would represent the facet in this request as follows:
+   * <p>This method may be called multiple times. Each call made with a different {@code facetName}
+   * value will add a new top-level facet. Repeating {@code facetName} values will cause previous
+   * facets with that {@code facetName} to be overwritten.
+   *
+   * <p><b>Example:</b> You wish to send the JSON request: {"query": "*:*", "facet": {
+   * "top_cats":{"type": "terms", "field":"cat"}}}. You would represent the facet in this request as
+   * follows:
+   *
    * <pre>
    *     final MapWriter facetWriter = new MapWriter() {
    *         &#64;Override
@@ -190,8 +198,9 @@ public class JsonQueryRequest extends QueryRequest {
    *     };
    * </pre>
    *
-   * @param facetName the name of the top-level facet you'd like to add.  Avoid choosing facet names which overload
-   *                  properties already present in the JSON response schema (e.g. "count", "val", "minX", etc.)
+   * @param facetName the name of the top-level facet you'd like to add. Avoid choosing facet names
+   *     which overload properties already present in the JSON response schema (e.g. "count", "val",
+   *     "minX", etc.)
    * @param facetWriter a MapWriter representing the facet you wish to add to the request
    */
   public JsonQueryRequest withFacet(String facetName, MapWriter facetWriter) {
@@ -202,7 +211,7 @@ public class JsonQueryRequest extends QueryRequest {
       throw new IllegalArgumentException("'facetWriter' parameter must be non-null");
     }
 
-    if (! jsonRequestMap.containsKey("facet")) {
+    if (!jsonRequestMap.containsKey("facet")) {
       jsonRequestMap.put("facet", new HashMap<String, Object>());
     }
 
@@ -215,18 +224,20 @@ public class JsonQueryRequest extends QueryRequest {
   /**
    * Specify a simple stat or aggregation facet to be sent as a part of this JSON request.
    *
-   * This method may be called multiple times.  Each call made with a different {@code facetName} value will add a new
-   * top-level facet.  Repeating {@code facetName} values will cause previous facets with that {@code facetName} to be
-   * overwritten.
-   * <p>
-   * <b>Example:</b>  You wish to send the JSON request: {"query": "*:*", "facet": {"avg_price": "avg(price)"}}.  You
-   * would represent the facet in this request as follows:
+   * <p>This method may be called multiple times. Each call made with a different {@code facetName}
+   * value will add a new top-level facet. Repeating {@code facetName} values will cause previous
+   * facets with that {@code facetName} to be overwritten.
+   *
+   * <p><b>Example:</b> You wish to send the JSON request: {"query": "*:*", "facet": {"avg_price":
+   * "avg(price)"}}. You would represent the facet in this request as follows:
+   *
    * <pre>{@code
-   *     jsonQueryRequest.withStatFacet("avg_price", "avg(price)");
+   * jsonQueryRequest.withStatFacet("avg_price", "avg(price)");
    * }</pre>
    *
-   * @param facetName the name of the top-level stat/agg facet you'd like to add.  Avoid choosing facet names which overload
-   *                  properties already present in the JSON response schema (e.g. "count", "val", "minX", etc.)
+   * @param facetName the name of the top-level stat/agg facet you'd like to add. Avoid choosing
+   *     facet names which overload properties already present in the JSON response schema (e.g.
+   *     "count", "val", "minX", etc.)
    * @param facetValue a String representing the stat/agg facet computation to perform.
    */
   public JsonQueryRequest withStatFacet(String facetName, String facetValue) {
@@ -237,7 +248,7 @@ public class JsonQueryRequest extends QueryRequest {
       throw new IllegalArgumentException("'facetValue' parameter must be non-null");
     }
 
-    if (! jsonRequestMap.containsKey("facet")) {
+    if (!jsonRequestMap.containsKey("facet")) {
       jsonRequestMap.put("facet", new HashMap<String, Object>());
     }
 
@@ -250,10 +261,10 @@ public class JsonQueryRequest extends QueryRequest {
   /**
    * Specify whether results should be fetched starting from a particular offset (or 'start').
    *
-   * Defaults to 0 if not set.
+   * <p>Defaults to 0 if not set.
    *
-   * @param offset a non-negative integer representing the offset (or 'start') to use when returning results
-   *
+   * @param offset a non-negative integer representing the offset (or 'start') to use when returning
+   *     results
    * @throws IllegalArgumentException if {@code offset} is negative
    */
   public JsonQueryRequest setOffset(int offset) {
@@ -282,7 +293,6 @@ public class JsonQueryRequest extends QueryRequest {
    * Specify how results to the JSON request should be sorted before being returned by Solr
    *
    * @param sort a string representing the desired result sort order (e.g. "price asc")
-   *
    * @throws IllegalArgumentException if {@code sort} is null
    */
   public JsonQueryRequest setSort(String sort) {
@@ -296,10 +306,10 @@ public class JsonQueryRequest extends QueryRequest {
   /**
    * Add a filter query to run as a part of the JSON request
    *
-   * This method may be called multiple times; each call will add a new filter to the request
+   * <p>This method may be called multiple times; each call will add a new filter to the request
    *
-   * @param filterQuery a String in either of two formats: a query string for the default deftype (e.g. "title:solr"), or a
-   *                    localparams query (e.g. "{!lucene df=text v='solr'}" )
+   * @param filterQuery a String in either of two formats: a query string for the default deftype
+   *     (e.g. "title:solr"), or a localparams query (e.g. "{!lucene df=text v='solr'}" )
    * @throws IllegalArgumentException if {@code filterQuery} is null
    */
   @SuppressWarnings({"unchecked"})
@@ -307,24 +317,25 @@ public class JsonQueryRequest extends QueryRequest {
     if (filterQuery == null) {
       throw new IllegalArgumentException("'filterQuery' must be non-null");
     }
-    ((List)jsonRequestMap.computeIfAbsent("filter", s -> new ArrayList<>())).add(filterQuery) ;
+    ((List) jsonRequestMap.computeIfAbsent("filter", s -> new ArrayList<>())).add(filterQuery);
     return this;
   }
 
   /**
    * Add a filter query to run as a part of the JSON request
    *
-   * This method may be called multiple times; each call will add a new filter to the request
-   * <p>
-   * <b>Example:</b> You wish to send the JSON request: "{'query':'*:*', 'filter': [{'lucene': {'df':'genre_s', 'query': 'scifi'}}]}".
-   * The filter you want to add is: "{'lucene': {'df': 'genre_s', 'query': 'scifi'}}".  You would represent this filter
-   * query as follows:
+   * <p>This method may be called multiple times; each call will add a new filter to the request
+   *
+   * <p><b>Example:</b> You wish to send the JSON request: "{'query':'*:*', 'filter': [{'lucene':
+   * {'df':'genre_s', 'query': 'scifi'}}]}". The filter you want to add is: "{'lucene': {'df':
+   * 'genre_s', 'query': 'scifi'}}". You would represent this filter query as follows:
+   *
    * <pre>{@code
-   *     final Map<String, Object> filterMap = new HashMap<>();
-   *     final Map<String, Object> luceneQueryParamMap = new HashMap<>();
-   *     filterMap.put("lucene", luceneQueryParamMap);
-   *     luceneQueryParamMap.put("df", "genre_s");
-   *     luceneQueryParamMap.put("query", "scifi");
+   * final Map<String, Object> filterMap = new HashMap<>();
+   * final Map<String, Object> luceneQueryParamMap = new HashMap<>();
+   * filterMap.put("lucene", luceneQueryParamMap);
+   * luceneQueryParamMap.put("df", "genre_s");
+   * luceneQueryParamMap.put("query", "scifi");
    * }</pre>
    *
    * @param filterQuery a Map of values representing the filter request you wish to send.
@@ -335,14 +346,15 @@ public class JsonQueryRequest extends QueryRequest {
     if (filterQuery == null) {
       throw new IllegalArgumentException("'filterQuery' parameter must be non-null");
     }
-    ((List)jsonRequestMap.computeIfAbsent("filter", s -> new ArrayList<>())).add(filterQuery) ;
+    ((List) jsonRequestMap.computeIfAbsent("filter", s -> new ArrayList<>())).add(filterQuery);
     return this;
   }
 
   /**
    * Specify fields which should be returned by the JSON request.
    *
-   * This method may be called multiple times; each call will add a new field to the list of those to be returned.
+   * <p>This method may be called multiple times; each call will add a new field to the list of
+   * those to be returned.
    *
    * @param fieldNames the field names that should be returned by the request
    */
@@ -359,7 +371,8 @@ public class JsonQueryRequest extends QueryRequest {
   /**
    * Specify fields which should be returned by the JSON request.
    *
-   * This method may be called multiple times; each call will add a new field to the list of those to be returned.
+   * <p>This method may be called multiple times; each call will add a new field to the list of
+   * those to be returned.
    *
    * @param fieldNames the field names that should be returned by the request
    * @throws IllegalArgumentException if {@code fieldNames} is null
@@ -381,17 +394,17 @@ public class JsonQueryRequest extends QueryRequest {
   /**
    * Add a property to the "params" block supported by the JSON query DSL
    *
-   * The JSON query DSL has special support for a few query parameters (limit/rows, offset/start, filter/fq, etc.).  But
-   * many other query parameters are not explicitly covered by the query DSL.  This method can be used to add any of
-   * these other parameters to the JSON request.
-   * <p>
-   * This method may be called multiple times; each call with a different {@code name} will add a new param name/value
-   * to the params subtree. Invocations that repeat a {@code name} will overwrite the previously specified parameter
-   * values associated with that name.
+   * <p>The JSON query DSL has special support for a few query parameters (limit/rows, offset/start,
+   * filter/fq, etc.). But many other query parameters are not explicitly covered by the query DSL.
+   * This method can be used to add any of these other parameters to the JSON request.
+   *
+   * <p>This method may be called multiple times; each call with a different {@code name} will add a
+   * new param name/value to the params subtree. Invocations that repeat a {@code name} will
+   * overwrite the previously specified parameter values associated with that name.
    *
    * @param name the name of the parameter to add
-   * @param value the value of the parameter to add.  Usually a String, Number (Integer, Long, Double), or Boolean.
-   *
+   * @param value the value of the parameter to add. Usually a String, Number (Integer, Long,
+   *     Double), or Boolean.
    * @throws IllegalArgumentException if either {@code name} or {@code value} are null
    */
   @SuppressWarnings({"unchecked"})
@@ -403,10 +416,13 @@ public class JsonQueryRequest extends QueryRequest {
       throw new IllegalArgumentException("'value' parameter must be non-null");
     }
 
-    ((Map<String, Object>)jsonRequestMap.computeIfAbsent("params", s -> new HashMap<String, Object>())).put(name, value);
+    ((Map<String, Object>)
+            jsonRequestMap.computeIfAbsent("params", s -> new HashMap<String, Object>()))
+        .put(name, value);
     return this;
   }
 
+  @Override
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
     return new RequestWriter.ContentWriter() {
       @Override

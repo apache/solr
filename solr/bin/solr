@@ -38,7 +38,7 @@
 # Note: This is particularly handy for running multiple instances on a
 # single installation, or for quick tests.
 #
-# Finally, developers and enthusiasts who frequently run from an SVN
+# Finally, developers and enthusiasts who frequently run from an Git
 # checkout, and do not want to locally modify bin/solr.in.sh, can put
 # a customized include file at ~/.solr.in.sh.
 #
@@ -48,10 +48,10 @@
 
 SOLR_SCRIPT="$0"
 verbose=false
-THIS_OS=`uname -s`
+THIS_OS=$(uname -s)
 
 # What version of Java is required to run this version of Solr.
-JAVA_VER_REQ="8"
+JAVA_VER_REQ=11
 
 stop_all=false
 
@@ -61,28 +61,41 @@ if [ "${THIS_OS:0:6}" == "CYGWIN" ]; then
   echo -e "This script does not support cygwin due to severe limitations and lack of adherence\nto BASH standards, such as lack of lsof, curl, and ps options.\n\nPlease use the native solr.cmd script on Windows!"
   exit 1
 fi
+# Alpine Linux BusyBox comes with a stripped down ps, make sure we have a fully featured one
+# shellcheck disable=SC2046
+if [ $$ -ne $(ps -o pid='' -p $$ || echo 0) ] ; then
+  echo -e "This script relies on a version of ps that supports the -p flag.\n\nPlease install a POSIX compliant version and try again."
+  exit 1
+fi
+
+# This helps with debugging when running bats tests but not the whole script is compliant yet
+# set -u
+# set -o pipefail
 
 # Resolve symlinks to this script
 while [ -h "$SOLR_SCRIPT" ] ; do
-  ls=`ls -ld "$SOLR_SCRIPT"`
+  ls=$(ls -ld "$SOLR_SCRIPT")
   # Drop everything prior to ->
-  link=`expr "$ls" : '.*-> \(.*\)$'`
+  link=$(expr "$ls" : '.*-> \(.*\)$')
   if expr "$link" : '/.*' > /dev/null; then
     SOLR_SCRIPT="$link"
   else
-    SOLR_SCRIPT=`dirname "$SOLR_SCRIPT"`/"$link"
+    SOLR_SCRIPT=$(dirname "$SOLR_SCRIPT")/"$link"
   fi
 done
 
 CDPATH=''  # Prevent "file or directory not found" for 'cdpath' users
-SOLR_TIP=`dirname "$SOLR_SCRIPT"`/..
-SOLR_TIP=`cd "$SOLR_TIP"; pwd`
+SOLR_TIP=$(dirname "$SOLR_SCRIPT")/..
+# shellcheck disable=SC2164
+SOLR_TIP_SYM=$(cd "$SOLR_TIP"; pwd -L)
+# shellcheck disable=SC2164
+SOLR_TIP=$(cd "$SOLR_TIP"; pwd -P)
 DEFAULT_SERVER_DIR="$SOLR_TIP/server"
 
 # If an include wasn't specified in the environment, then search for one...
-if [ -z "$SOLR_INCLUDE" ]; then
+if [[ -z "${SOLR_INCLUDE:-}" ]]; then
   # Locations (in order) to use when searching for an include file.
-  for include in "`dirname "$0"`/solr.in.sh" \
+  for include in "$(dirname "$0")/solr.in.sh" \
                "$HOME/.solr.in.sh" \
                /usr/share/solr/solr.in.sh \
                /usr/local/share/solr/solr.in.sh \
@@ -99,14 +112,20 @@ elif [ -r "$SOLR_INCLUDE" ]; then
   . "$SOLR_INCLUDE"
 fi
 
-if [ -z "$SOLR_PID_DIR" ]; then
-  SOLR_PID_DIR="$SOLR_TIP/bin"
-fi
+# Export variables we want to make visible to Solr sub-process
+for var in $(compgen -e); do
+  if [[ "$var" =~ ^(SOLR_.*|DEFAULT_CONFDIR|ZK_.*|GCS_BUCKET|GCS_.*|S3_.*|OTEL_.*|AWS_.*)$ ]]; then
+    export "${var?}"
+  fi
+done
 
-if [ -n "$SOLR_JAVA_HOME" ]; then
+# if pid dir is unset, default to $solr_tip/bin
+: "${SOLR_PID_DIR:=$SOLR_TIP/bin}"
+
+if [ -n "${SOLR_JAVA_HOME:-}" ]; then
   JAVA="$SOLR_JAVA_HOME/bin/java"
   JSTACK="$SOLR_JAVA_HOME/bin/jstack"
-elif [ -n "$JAVA_HOME" ]; then
+elif [ -n "${JAVA_HOME:-}" ]; then
   for java in "$JAVA_HOME"/bin/amd64 "$JAVA_HOME"/bin; do
     if [ -x "$java/java" ]; then
       JAVA="$java/java"
@@ -132,14 +151,17 @@ else
   JSTACK=jstack
 fi
 
-if [ -z "$SOLR_STOP_WAIT" ]; then
-  SOLR_STOP_WAIT=180
-fi
-if [ -z "$SOLR_START_WAIT" ]; then
-  SOLR_START_WAIT=$SOLR_STOP_WAIT # defaulting to $SOLR_STOP_WAIT for backwards compatibility reasons
-fi
+: "${SOLR_STOP_WAIT:=180}"
+: "${SOLR_START_WAIT:=$SOLR_STOP_WAIT}" # defaulting to $SOLR_STOP_WAIT for backwards compatibility reasons
+
+# Store whether a solr port was explicitly provided, for the "solr stop" command.
+PROVIDED_SOLR_PORT="${SOLR_PORT:-}"
+: "${SOLR_PORT:=8983}"
+export SOLR_PORT
+
 # test that Java exists, is executable and correct version
 JAVA_VER=$("$JAVA" -version 2>&1)
+# shellcheck disable=SC2181
 if [[ $? -ne 0 ]] ; then
   echo >&2 "Java not found, or an error was encountered when running java."
   echo >&2 "A working Java $JAVA_VER_REQ JRE is required to run Solr!"
@@ -153,7 +175,7 @@ if [[ $? -ne 0 ]] ; then
   echo >&2 "${PATH}"
   exit 1
 else
-  JAVA_VER_NUM=$(echo $JAVA_VER | head -1 | awk -F '"' '/version/ {print $2}' | sed -e's/^1\.//' | sed -e's/[._-].*$//')
+  JAVA_VER_NUM=$(echo "$JAVA_VER" | grep -v '_OPTIONS' | head -1 | awk -F '"' '/version/ {print $2}' | sed -e's/^1\.//' | sed -e's/[._-].*$//')
   if [[ "$JAVA_VER_NUM" -lt "$JAVA_VER_REQ" ]] ; then
     echo >&2 "Your current version of Java is too old to run this version of Solr."
     echo >&2 "We found major version $JAVA_VER_NUM, using command '${JAVA} -version', with response:"
@@ -169,7 +191,7 @@ else
   fi
   JAVA_VENDOR="Oracle"
    # OpenJ9 was previously known as IBM J9, this will match both
-  if [ "`echo $JAVA_VER | grep -i -E "OpenJ9|IBM J9"`" != "" ]; then
+  if [ "$(echo "$JAVA_VER" | grep -i -E "OpenJ9|IBM J9")" != "" ]; then
       JAVA_VENDOR="OpenJ9"
   fi
 fi
@@ -180,12 +202,12 @@ SOLR_URL_SCHEME=http
 SOLR_JETTY_CONFIG=()
 SOLR_SSL_OPTS=""
 
-if [ -n "$SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH" ]; then
+if [ -n "${SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH:-}" ]; then
   SOLR_SSL_OPTS+=" -Dhadoop.security.credential.provider.path=$SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH"
 fi
 
-if [ -z "$SOLR_SSL_ENABLED" ]; then
-  if [ -n "$SOLR_SSL_KEY_STORE" ]; then
+if [ -z "${SOLR_SSL_ENABLED:-}" ]; then
+  if [ -n "${SOLR_SSL_KEY_STORE:-}" ]; then
     SOLR_SSL_ENABLED="true" # implicitly from earlier behaviour
   else
     SOLR_SSL_ENABLED="false"
@@ -193,9 +215,17 @@ if [ -z "$SOLR_SSL_ENABLED" ]; then
 fi
 if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=https" "--lib=$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*")
+  if [ "${SOLR_SSL_RELOAD_ENABLED:-true}" == "true" ]; then
+    SOLR_JETTY_CONFIG+=("--module=ssl-reload")
+    SOLR_SSL_OPTS+=" -Dsolr.keyStoreReload.enabled=true"
+  fi
   SOLR_URL_SCHEME=https
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.keystore=$SOLR_SSL_KEY_STORE"
+    if [ "${SOLR_SSL_RELOAD_ENABLED:-true}" == "true" ] && [ "${SOLR_SECURITY_MANAGER_ENABLED:-true}" == "true"  ]; then
+      # In this case we need to allow reads from the parent directory of the keystore
+      SOLR_SSL_OPTS+=" -Dsolr.jetty.keystoreParentPath=$SOLR_SSL_KEY_STORE/.."
+    fi
   fi
   if [ -n "$SOLR_SSL_KEY_STORE_PASSWORD" ]; then
     export SOLR_SSL_KEY_STORE_PASSWORD=$SOLR_SSL_KEY_STORE_PASSWORD
@@ -214,7 +244,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.type=$SOLR_SSL_TRUST_STORE_TYPE"
   fi
 
-  if [ -z "$SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION" ] ; then
+  if [ "${SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION:true}" == "true" ] ; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
   fi
 
@@ -234,6 +264,10 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_TYPE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_CLIENT_KEY_STORE_TYPE"
     fi
+    if [ "${SOLR_SSL_RELOAD_ENABLED:-true}" == "true" ] && [ "${SOLR_SECURITY_MANAGER_ENABLED:-true}" == "true"  ]; then
+      # In this case we need to allow reads from the parent directory of the keystore
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreParentPath=$SOLR_SSL_CLIENT_KEY_STORE/.."
+    fi
   else
     if [ -n "$SOLR_SSL_KEY_STORE" ]; then
       SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_KEY_STORE"
@@ -244,7 +278,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   fi
 
   if [ -n "$SOLR_SSL_CHECK_PEER_NAME" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.ssl.checkPeerName=$SOLR_SSL_CHECK_PEER_NAME"
+    SOLR_SSL_OPTS+=" -Dsolr.ssl.checkPeerName=$SOLR_SSL_CHECK_PEER_NAME -Dsolr.jetty.ssl.sniHostCheck=$SOLR_SSL_CHECK_PEER_NAME"
   fi
 
   if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
@@ -268,9 +302,10 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
 else
   SOLR_JETTY_CONFIG+=("--module=http")
 fi
+export SOLR_URL_SCHEME
 
 # Requestlog options
-if [ "$SOLR_REQUESTLOG_ENABLED" == "true" ]; then
+if [ "${SOLR_REQUESTLOG_ENABLED:-true}" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=requestlog")
 fi
 
@@ -280,21 +315,21 @@ if [ "${SOLR_GZIP_ENABLED:-true}" == "true" ]; then
 fi
 
 # Authentication options
-if [ -z "$SOLR_AUTH_TYPE" ] && [ -n "$SOLR_AUTHENTICATION_OPTS" ]; then
+if [ -z "${SOLR_AUTH_TYPE:-}" ] && [ -n "${SOLR_AUTHENTICATION_OPTS:-}" ]; then
   echo "WARNING: SOLR_AUTHENTICATION_OPTS environment variable configured without associated SOLR_AUTH_TYPE variable"
   echo "         Please configure SOLR_AUTH_TYPE environment variable with the authentication type to be used."
   echo "         Currently supported authentication types are [kerberos, basic]"
 fi
 
-if [ -n "$SOLR_AUTH_TYPE" ] && [ -n "$SOLR_AUTHENTICATION_CLIENT_BUILDER" ]; then
+if [ -n "${SOLR_AUTH_TYPE:-}" ] && [ -n "${SOLR_AUTHENTICATION_CLIENT_BUILDER:-}" ]; then
   echo "WARNING: SOLR_AUTHENTICATION_CLIENT_BUILDER and SOLR_AUTH_TYPE environment variables are configured together."
   echo "         Use SOLR_AUTH_TYPE environment variable to configure authentication type to be used. "
   echo "         Currently supported authentication types are [kerberos, basic]"
   echo "         The value of SOLR_AUTHENTICATION_CLIENT_BUILDER environment variable will be ignored"
 fi
 
-if [ -n "$SOLR_AUTH_TYPE" ]; then
-  case "$(echo $SOLR_AUTH_TYPE | awk '{print tolower($0)}')" in
+if [ -n "${SOLR_AUTH_TYPE:-}" ]; then
+  case "$(echo "$SOLR_AUTH_TYPE" | awk '{print tolower($0)}')" in
     basic)
       SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
       ;;
@@ -307,108 +342,92 @@ if [ -n "$SOLR_AUTH_TYPE" ]; then
    esac
 fi
 
-if [ "$SOLR_AUTHENTICATION_CLIENT_CONFIGURER" != "" ]; then
+if [ -n "${SOLR_AUTHENTICATION_CLIENT_CONFIGURER:-}" ]; then
   echo "WARNING: Found unsupported configuration variable SOLR_AUTHENTICATION_CLIENT_CONFIGURER"
   echo "         Please start using SOLR_AUTH_TYPE instead"
 fi
-if [ "$SOLR_AUTHENTICATION_CLIENT_BUILDER" != "" ]; then
+if [ -n "${SOLR_AUTHENTICATION_CLIENT_BUILDER:-}" ]; then
   AUTHC_CLIENT_BUILDER_ARG="-Dsolr.httpclient.builder.factory=$SOLR_AUTHENTICATION_CLIENT_BUILDER"
+  AUTHC_OPTS="${AUTHC_CLIENT_BUILDER_ARG:-}"
 fi
-AUTHC_OPTS="$AUTHC_CLIENT_BUILDER_ARG $SOLR_AUTHENTICATION_OPTS"
+# This looks strange, but it is to avoid extra spaces when we have only one of the values set
+AUTHC_OPTS="${AUTHC_OPTS:-}${SOLR_AUTHENTICATION_OPTS:+ $SOLR_AUTHENTICATION_OPTS}"
 
 # Set the SOLR_TOOL_HOST variable for use when connecting to a running Solr instance
-if [ "$SOLR_HOST" != "" ]; then
-  SOLR_TOOL_HOST="$SOLR_HOST"
-else
-  SOLR_TOOL_HOST="localhost"
-fi
+SOLR_TOOL_HOST="${SOLR_HOST:-localhost}"
+export SOLR_TOOL_HOST
 
 function print_usage() {
-  CMD="$1"
-  ERROR_MSG="$2"
+  CMD="${1:-}"
+  ERROR_MSG="${2:-}"
 
-  if [ "$ERROR_MSG" != "" ]; then
+  if [ -n "${ERROR_MSG:-}" ]; then
     echo -e "\nERROR: $ERROR_MSG\n"
   fi
 
-  if [ -z "$CMD" ]; then
-    echo ""
-    echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, export, api, package"
-    echo ""
-    echo "  Standalone server example (start Solr running in the background on port 8984):"
-    echo ""
-    echo "    ./solr start -p 8984"
-    echo ""
-    echo "  SolrCloud example (start Solr running in SolrCloud mode using localhost:2181 to connect to Zookeeper, with 1g max heap size and remote Java debug options enabled):"
-    echo ""
-    echo "    ./solr start -c -m 1g -z localhost:2181 -a \"-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=1044\""
-    echo ""
-    echo "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh."
-    echo ""
-    echo "Pass -help after any COMMAND to see command-specific usage information,"
-    echo "  such as:    ./solr start -help or ./solr stop -help"
-    echo ""
-  elif [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
+  if [[ "$CMD" == "start" || "$CMD" == "restart" ]]; then
     echo ""
     echo "Usage: solr $CMD [-f] [-c] [-h hostname] [-p port] [-d directory] [-z zkHost] [-m memory] [-e example] [-s solr.solr.home] [-t solr.data.home] [-a \"additional-options\"] [-V]"
     echo ""
-    echo "  -f            Start Solr in foreground; default starts Solr in the background"
-    echo "                  and sends stdout / stderr to solr-PORT-console.log"
+    echo "  -f                    Start Solr in foreground; default starts Solr in the background"
+    echo "                          and sends stdout / stderr to solr-PORT-console.log"
     echo ""
-    echo "  -c or -cloud  Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in"
-    echo "                  solr.in.sh, an embedded ZooKeeper instance is started on Solr port+1000,"
-    echo "                  such as 9983 if Solr is bound to 8983"
+    echo "  -c or -cloud          Start Solr in SolrCloud mode; if -z not supplied and ZK_HOST not defined in"
+    echo "                          solr.in.sh, an embedded ZooKeeper instance is started on Solr port+1000,"
+    echo "                          such as 9983 if Solr is bound to 8983"
     echo ""
-    echo "  -h <host>     Specify the hostname for this Solr instance"
+    echo "  -host <host>          Specify the hostname for this Solr instance"
     echo ""
-    echo "  -p <port>     Specify the port to start the Solr HTTP listener on; default is 8983"
-    echo "                  The specified port (SOLR_PORT) will also be used to determine the stop port"
-    echo "                  STOP_PORT=(\$SOLR_PORT-1000) and JMX RMI listen port RMI_PORT=(\$SOLR_PORT+10000). "
-    echo "                  For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985"
+    echo "  -p <port>             Specify the port to start the Solr HTTP listener on; default is 8983"
+    echo "                          The specified port (SOLR_PORT) will also be used to determine the stop port"
+    echo "                          STOP_PORT=(\$SOLR_PORT-1000) and JMX RMI listen port RMI_PORT=(\$SOLR_PORT+10000). "
+    echo "                          For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985"
     echo ""
-    echo "  -d <dir>      Specify the Solr server directory; defaults to server"
+    echo "  -d <dir>              Specify the Solr server directory; defaults to server"
     echo ""
-    echo "  -z <zkHost>   Zookeeper connection string; only used when running in SolrCloud mode using -c"
-    echo "                   If neither ZK_HOST is defined in solr.in.sh nor the -z parameter is specified,"
-    echo "                   an embedded ZooKeeper instance will be launched."
-    echo "                   Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
+    echo "  -z/-zkHost <zkHost>   Zookeeper connection string; only used when running in SolrCloud mode using -c"
+    echo "                          If neither ZK_HOST is defined in solr.in.sh nor the -z parameter is specified,"
+    echo "                          an embedded ZooKeeper instance will be launched."
+    echo "                          Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
     echo ""
-    echo "  -m <memory>   Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g"
-    echo "                  results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m"
+    echo "  -m <memory>           Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g"
+    echo "                          results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m"
     echo ""
-    echo "  -s <dir>      Sets the solr.solr.home system property; Solr will create core directories under"
-    echo "                  this directory. This allows you to run multiple Solr instances on the same host"
-    echo "                  while reusing the same server directory set using the -d parameter. If set, the"
-    echo "                  specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper."
-    echo "                  This parameter is ignored when running examples (-e), as the solr.solr.home depends"
-    echo "                  on which example is run. The default value is server/solr. If passed relative dir,"
-    echo "                  validation with current dir will be done, before trying default server/<dir>"
+    echo "  -s <dir>              Sets the solr.solr.home system property; Solr will create core directories under"
+    echo "                          this directory. This allows you to run multiple Solr instances on the same host"
+    echo "                          while reusing the same server directory set using the -d parameter. If set, the"
+    echo "                          specified directory should contain a solr.xml file, unless solr.xml exists in Zookeeper."
+    echo "                          This parameter is ignored when running examples (-e), as the solr.solr.home depends"
+    echo "                          on which example is run. The default value is server/solr. If passed relative dir,"
+    echo "                          validation with current dir will be done, before trying default server/<dir>"
     echo ""
-    echo "  -t <dir>      Sets the solr.data.home system property, where Solr will store index data in <instance_dir>/data subdirectories."
-    echo "                  If not set, Solr uses solr.solr.home for config and data."
+    echo "  -t <dir>              Sets the solr.data.home system property, where Solr will store index data in <instance_dir>/data subdirectories."
+    echo "                          If not set, Solr uses solr.solr.home for config and data."
     echo ""
-    echo "  -e <example>  Name of the example to run; available examples:"
-    echo "      cloud:         SolrCloud example"
-    echo "      techproducts:  Comprehensive example illustrating many of Solr's core capabilities"
-    echo "      schemaless:    Schema-less example"
-    echo "      films:         Example of starting with _default configset and adding explicit fields dynamically"
+    echo "  -e <example>          Name of the example to run; available examples:"
+    echo "      cloud:              SolrCloud example"
+    echo "      techproducts:       Comprehensive example illustrating many of Solr's core capabilities"
+    echo "      schemaless:         Schema-less example (schema is inferred from data during indexing)"
+    echo "      films:              Example of starting with _default configset and adding explicit fields dynamically"
     echo ""
-    echo "  -a            Additional parameters to pass to the JVM when starting Solr, such as to setup"
-    echo "                  Java debug options. For example, to enable a Java debugger to attach to the Solr JVM"
-    echo "                  you could pass: -a \"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983\""
-    echo "                  In most cases, you should wrap the additional parameters in double quotes."
+    echo "  -a <jvmParams>        Additional parameters to pass to the JVM when starting Solr, such as to setup"
+    echo "                          Java debug options. For example, to enable a Java debugger to attach to the Solr JVM"
+    echo "                          you could pass: -a \"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983\""
+    echo "                          In most cases, you should wrap the additional parameters in double quotes."
     echo ""
-    echo "  -j            Additional parameters to pass to Jetty when starting Solr."
-    echo "                  For example, to add configuration folder that jetty should read"
-    echo "                  you could pass: -j \"--include-jetty-dir=/etc/jetty/custom/server/\""
-    echo "                  In most cases, you should wrap the additional parameters in double quotes."
+    echo "  -j <jettyParams>      Additional parameters to pass to Jetty when starting Solr."
+    echo "                          For example, to add configuration folder that jetty should read"
+    echo "                          you could pass: -j \"--include-jetty-dir=/etc/jetty/custom/server/\""
+    echo "                          In most cases, you should wrap the additional parameters in double quotes."
     echo ""
-    echo "  -noprompt     Don't prompt for input; accept all defaults when running examples that accept user input"
+    echo "  -noprompt             Don't prompt for input; accept all defaults when running examples that accept user input"
     echo ""
-    echo "  -v and -q     Verbose (-v) or quiet (-q) logging. Sets default log level to DEBUG or WARN instead of INFO"
+    echo "  -force                If attempting to start Solr as the root user, the script will exit with a warning that running Solr as "root" can cause problems."
+    echo "                          It is possible to override this warning with the `-force` parameter."
     echo ""
-    echo "  -V/-verbose   Verbose messages from this script"
+    echo "  -v and -q             Verbose (-v) or quiet (-q) logging. Sets default log level of Solr to DEBUG or WARN instead of INFO"
+    echo ""
+    echo "  -V/-verbose           Verbose messages from this script"
     echo ""
   elif [ "$CMD" == "stop" ]; then
     echo ""
@@ -424,148 +443,31 @@ function print_usage() {
     echo ""
     echo "  NOTE: To see if any Solr servers are running, do: solr status"
     echo ""
-  elif [ "$CMD" == "healthcheck" ]; then
-    echo ""
-    echo "Usage: solr healthcheck [-c collection] [-z zkHost] [-V]"
-    echo ""
-    echo "Can be run from remote (non-Solr) hosts, as long as a proper ZooKeeper connection is provided"
-    echo ""
-    echo "  -c <collection>  Collection to run healthcheck against."
-    echo ""
-    echo "  -z <zkHost>      Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;"
-    echo "                     otherwise, default is localhost:9983"
-    echo ""
-    echo "  -V               Enable more verbose output"
-    echo ""
-  elif [ "$CMD" == "status" ]; then
-    echo ""
-    echo "Usage: solr status"
-    echo ""
-    echo "  This command will show the status of all running Solr servers."
-    echo "  It can only detect those Solr servers running on the current host."
-    echo ""
-  elif [ "$CMD" == "create" ]; then
-    echo ""
-    echo "Usage: solr create [-c name] [-d confdir] [-n configName] [-shards #] [-replicationFactor #] [-p port] [-V]"
-    echo ""
-    echo "  Create a core or collection depending on whether Solr is running in standalone (core) or SolrCloud"
-    echo "  mode (collection). In other words, this action detects which mode Solr is running in, and then takes"
-    echo "  the appropriate action (either create_core or create_collection). For detailed usage instructions, do:"
-    echo ""
-    echo "    bin/solr create_core -help"
-    echo ""
-    echo "       or"
-    echo ""
-    echo "    bin/solr create_collection -help"
-    echo ""
-  elif [ "$CMD" == "delete" ]; then
-    echo ""
-    echo "Usage: solr delete [-c name] [-deleteConfig true|false] [-p port] [-V]"
-    echo ""
-    echo "  Deletes a core or collection depending on whether Solr is running in standalone (core) or SolrCloud"
-    echo "  mode (collection). If you're deleting a collection in SolrCloud mode, the default behavior is to also"
-    echo "  delete the configuration directory from Zookeeper so long as it is not being used by another collection."
-    echo "  You can override this behavior by passing -deleteConfig false when running this command."
-    echo ""
-    echo "  Can be run on remote (non-Solr) hosts, as long as a valid SOLR_HOST is provided in solr.in.sh"
-    echo ""
-    echo "  -c <name>               Name of the core / collection to delete"
-    echo ""
-    echo "  -deleteConfig <boolean> Delete the configuration directory from Zookeeper; default is true"
-    echo ""
-    echo "  -p <port>               Port of a local Solr instance where you want to delete the core/collection"
-    echo "                            If not specified, the script will search the local system for a running"
-    echo "                            Solr instance and will use the port of the first server it finds."
-    echo ""
-    echo "  -V                      Enables more verbose output."
-    echo ""
-  elif [ "$CMD" == "create_core" ]; then
-    echo ""
-    echo "Usage: solr create_core [-c core] [-d confdir] [-p port] [-V]"
-    echo ""
-    echo "When a configSet is used, this can be run from remote (non-Solr) hosts.  If pointing at a non-configSet directory, this"
-    echo "must be run from the host that you wish to create the core on"
-    echo ""
-    echo "  -c <core>     Name of core to create"
-    echo ""
-    echo "  -d <confdir>  Configuration directory to copy when creating the new core, built-in options are:"
-    echo ""
-    echo "      _default: Minimal configuration, which supports enabling/disabling field-guessing support"
-    echo "      sample_techproducts_configs: Example configuration with many optional features enabled to"
-    echo "         demonstrate the full power of Solr"
-    echo ""
-    echo "      If not specified, default is: _default"
-    echo ""
-    echo "      Alternatively, you can pass the path to your own configuration directory instead of using"
-    echo "      one of the built-in configurations, such as: bin/solr create_core -c mycore -d /tmp/myconfig"
-    echo ""
-    echo "  -p <port>     Port of a local Solr instance where you want to create the new core"
-    echo "                  If not specified, the script will search the local system for a running"
-    echo "                  Solr instance and will use the port of the first server it finds."
-    echo ""
-    echo "  -V            Enable more verbose output."
-    echo ""
-  elif [ "$CMD" == "create_collection" ]; then
-    echo ""
-    echo "Usage: solr create_collection [-c collection] [-d confdir] [-n configName] [-shards #] [-replicationFactor #] [-p port] [-V]"
-    echo ""
-    echo "Can be run from remote (non-Solr) hosts, as long as a valid SOLR_HOST is provided in solr.in.sh"
-    echo "  -c <collection>         Name of collection to create"
-    echo ""
-    echo "  -d <confdir>            Configuration directory to copy when creating the new collection, built-in options are:"
-    echo ""
-    echo "      _default: Minimal configuration, which supports enabling/disabling field-guessing support"
-    echo "      sample_techproducts_configs: Example configuration with many optional features enabled to"
-    echo "         demonstrate the full power of Solr"
-    echo ""
-    echo "      If not specified, default is: _default"
-    echo ""
-    echo "      Alternatively, you can pass the path to your own configuration directory instead of using"
-    echo "      one of the built-in configurations, such as: bin/solr create_collection -c mycoll -d /tmp/myconfig"
-    echo ""
-    echo "      By default the script will upload the specified confdir directory into Zookeeper using the same"
-    echo "      name as the collection (-c) option. Alternatively, if you want to reuse an existing directory"
-    echo "      or create a confdir in Zookeeper that can be shared by multiple collections, use the -n option"
-    echo ""
-    echo "  -n <configName>         Name the configuration directory in Zookeeper; by default, the configuration"
-    echo "                            will be uploaded to Zookeeper using the collection name (-c), but if you want"
-    echo "                            to use an existing directory or override the name of the configuration in"
-    echo "                            Zookeeper, then use the -c option."
-    echo ""
-    echo "  -shards <#>             Number of shards to split the collection into; default is 1"
-    echo ""
-    echo "  -replicationFactor <#>  Number of copies of each document in the collection, default is 1 (no replication)"
-    echo ""
-    echo "  -p <port>               Port of a local Solr instance where you want to create the new collection"
-    echo "                            If not specified, the script will search the local system for a running"
-    echo "                            Solr instance and will use the port of the first server it finds."
-    echo ""
-    echo "  -V                      Enable more verbose output."
-    echo ""
   elif [ "$CMD" == "zk" ]; then
     print_short_zk_usage ""
     echo "         Can be run on remote (non-Solr) hosts, as long as valid ZK_HOST information is provided"
     echo "         Be sure to check the Solr logs in case of errors."
     echo ""
-    echo "             -z zkHost  Optional Zookeeper connection string for all commands. If specified it"
-    echo "                        overrides the 'ZK_HOST=...'' defined in solr.in.sh."
+    echo "             -z zkHost          Optional Zookeeper connection string for all commands. If specified it"
+    echo "                                  overrides the 'ZK_HOST=...'' defined in solr.in.sh."
     echo ""
-    echo "             -V        Enable more verbose output."
+    echo "             -V/-verbose        Enable more verbose output for this script."
     echo ""
-    echo "         upconfig uploads a configset from the local machine to Zookeeper. (Backcompat: -upconfig)"
+    echo "         upconfig uploads a configset from the local machine to Zookeeper."
     echo ""
-    echo "         downconfig downloads a configset from Zookeeper to the local machine. (Backcompat: -downconfig)"
+    echo "         downconfig downloads a configset from Zookeeper to the local machine."
     echo ""
-    echo "             -n configName    Name of the configset in Zookeeper that will be the destination of"
-    echo "                             'upconfig' and the source for 'downconfig'."
+    echo "             -n <configName>    Name of the configset in Zookeeper that will be the destination of"
+    echo "                                  'upconfig' and the source for 'downconfig'."
     echo ""
-    echo "             -d confdir      The local directory the configuration will be uploaded from for"
-    echo "                             'upconfig' or downloaded to for 'downconfig'. If 'confdir' is a child of"
-    echo "                             ...solr/server/solr/configsets' then the configs will be copied from/to"
-    echo "                             that directory. Otherwise it is interpreted as a simple local path."
+    echo "             -d <confdir>       The local directory the configuration will be uploaded from for"
+    echo "                                  'upconfig' or downloaded to for 'downconfig'. If 'confdir' is a child of"
+    echo "                                  ...solr/server/solr/configsets' then the configs will be copied from/to"
+    echo "                                  that directory. Otherwise it is interpreted as a simple local path."
     echo ""
     echo "         cp copies files or folders to/from Zookeeper or Zookeeper -> Zookeeper"
-    echo "             -r    Recursively copy <src> to <dst>. Command will fail if <src> has children and "
+    echo ""
+    echo "             -r       Recursively copy <src> to <dst>. Command will fail if <src> has children and "
     echo "                        -r is not specified. Optional"
     echo ""
     echo "             <src>, <dest> : [file:][/]path/to/local/file or zk:/path/to/zk/node"
@@ -595,11 +497,13 @@ function print_usage() {
     echo "             Wildcards are supported when copying from local, trailing only and must be quoted."
     echo ""
     echo "         rm deletes files or folders on Zookeeper"
-    echo "             -r     Recursively delete if <path> is a directory. Command will fail if <path>"
-    echo "                    has children and -r is not specified. Optional"
+    echo ""
+    echo "             -r       Recursively delete if <path> is a directory. Command will fail if <path>"
+    echo "                        has children and -r is not specified. Optional"
     echo "             <path> : [zk:]/path/to/zk/node. <path> may not be the root ('/')"
     echo ""
     echo "         mv moves (renames) znodes on Zookeeper"
+    echo ""
     echo "             <src>, <dest> : Zookeeper nodes, the 'zk:' prefix is optional."
     echo "             If <dest> ends with '/', then <dest> will be a parent znode"
     echo "             and the last element of the <src> path will be appended."
@@ -608,16 +512,17 @@ function print_usage() {
     echo "             is important."
     echo ""
     echo "         ls lists the znodes on Zookeeper"
-    echo "             -r recursively descends the path listing all znodes. Optional"
-    echo "             <path>: The Zookeeper path to use as the root."
+    echo ""
+    echo "             -r       Recursively descends the path listing all znodes. Optional"
+    echo "             <path>:  The Zookeeper path to use as the root."
     echo ""
     echo "             Only the node names are listed, not data"
     echo ""
     echo "         mkroot makes a znode in Zookeeper with no data. Can be used to make a path of arbitrary"
     echo "             depth but primarily intended to create a 'chroot'."
     echo ""
-    echo "             <path>: The Zookeeper path to create. Leading slash is assumed if not present."
-    echo "                     Intermediate nodes are created as needed if not present."
+    echo "             <path>:  The Zookeeper path to create. Leading slash is assumed if not present."
+    echo "                        Intermediate nodes are created as needed if not present."
     echo ""
   elif [ "$CMD" == "auth" ]; then
     echo ""
@@ -628,33 +533,47 @@ function print_usage() {
     echo ""
     echo "  Updates or enables/disables authentication.  Must be run on the machine hosting Solr."
     echo ""
-    echo "  -type <type>                           The authentication mechanism (basicAuth or kerberos) to enable. Defaults to 'basicAuth'."
+    echo "  -type or -t <type>                     The authentication mechanism (basicAuth or kerberos) to enable. Defaults to 'basicAuth'."
     echo ""
     echo "  -credentials <user:pass>               The username and password of the initial user. Applicable for basicAuth only."
-    echo "                                         Note: only one of -prompt or -credentials must be provided"
+    echo "                                          Note: only one of -prompt or -credentials must be provided"
     echo ""
-    echo "  -config \"<configs>\"                    Configuration parameters (Solr startup parameters). Required and applicable only for Kerberos"
+    echo "  -config \"<configs>\"                  Configuration parameters (Solr startup parameters). Required and applicable only for Kerberos"
+    echo ""
+    echo "  -solrIncludeFile <includeFilePath>     Specify the full path to the include file in the environment."
+    echo "                                          If not specified this script looks for an include file named solr.in.sh to set environment variables. "
+    echo "                                          Specifically,the following locations are searched in this order:"
+    echo "                                              <script location>/."
+    echo "                                              $HOME/.solr.in.sh"
+    echo "                                              /usr/share/solr"
+    echo "                                              /usr/local/share/solr"
+    echo "                                              /etc/default"
+    echo "                                              /var/solr"
+    echo "                                              /opt/solr"
     echo ""
     echo "  -prompt <true|false>                   Prompts the user to provide the credentials. Applicable for basicAuth only."
-    echo "                                         Note: only one of -prompt or -credentials must be provided"
+    echo "                                          Note: only one of -prompt or -credentials must be provided"
     echo ""
     echo "  -blockUnknown <true|false>             When true, this blocks out access to unauthenticated users. When not provided,"
-    echo "                                         this defaults to false (i.e. unauthenticated users can access all endpoints, except the"
-    echo "                                         operations like collection-edit, security-edit, core-admin-edit etc.). Check the reference"
-    echo "                                         guide for Basic Authentication for more details. Applicable for basicAuth only."
+    echo "                                          this defaults to false (i.e. unauthenticated users can access all endpoints, except the"
+    echo "                                          operations like collection-edit, security-edit, core-admin-edit etc.). Check the reference"
+    echo "                                          guide for Basic Authentication for more details. Applicable for basicAuth only."
     echo ""
     echo "  -updateIncludeFileOnly <true|false>    Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
-    echo "                                         authentication (i.e. don't update security.json)"
+    echo "                                          authentication (i.e. don't update security.json)"
     echo ""
-    echo "  -z zkHost                              Zookeeper connection string. Unnecessary if ZK_HOST is defined in solr.in.sh."
+    echo "  -z or -zkHost <zkHost>                 Zookeeper connection string. Unnecessary if ZK_HOST is defined in solr.in.sh."
     echo ""
-    echo "  -d <dir>                               Specify the Solr server directory"
+    echo "  -d or -dir <dir>                       Specify the Solr server directory"
     echo ""
-    echo "  -s <dir>                               Specify the Solr home directory. This is where any credentials or authentication"
-    echo "                                         configuration files (e.g. basicAuth.conf) would be placed."
+    echo "  -s or -solr.home <dir>                 Specify the Solr home directory. This is where any credentials or authentication"
+    echo "                                          configuration files (e.g. basicAuth.conf) would be placed."
     echo ""
-    echo "  -V                                     Enable more verbose output."
+    echo "  -V/-verbose                            Enable more verbose output for this script."
     echo ""
+  elif [ "$CMD" == "package" ]; then
+    echo ""
+    run_tool package "help"
   fi
 } # end print_usage
 
@@ -683,8 +602,9 @@ function print_short_zk_usage() {
 function spinner() {
   local pid=$1
   local delay=0.5
+  # shellcheck disable=SC1003
   local spinstr='|/-\'
-  while [ "$(ps aux | awk '{print $2}' | grep -w $pid)" ]; do
+  while ps -o pid='' -p "$pid" &> /dev/null ; do
       local temp=${spinstr#?}
       printf " [%c]  " "$spinstr"
       local spinstr=$temp${spinstr%"$temp"}
@@ -698,19 +618,18 @@ function spinner() {
 function solr_pid_by_port() {
   THE_PORT="$1"
   if [ -e "$SOLR_PID_DIR/solr-$THE_PORT.pid" ]; then
-    PID=`cat "$SOLR_PID_DIR/solr-$THE_PORT.pid"`
-    CHECK_PID=`ps auxww | awk '{print $2}' | grep -w $PID | sort -r | tr -d ' '`
-    if [ "$CHECK_PID" != "" ]; then
-      local solrPID=$PID
+    PID=$(cat "$SOLR_PID_DIR/solr-$THE_PORT.pid")
+    CHECK_PID=$(ps -o pid='' -p "$PID" | tr -d ' ')
+    if [ -n "$CHECK_PID" ]; then
+      echo "$PID"
     fi
   fi
-  echo "$solrPID"
 }
 
 # extract the value of the -Djetty.port parameter from a running Solr process
 function jetty_port() {
   SOLR_PID="$1"
-  SOLR_PROC=`ps auxww | grep -w $SOLR_PID | grep start\.jar | grep jetty\.port`
+  SOLR_PROC=$(ps -f -p "$SOLR_PID" | grep start\.jar | grep jetty\.port)
   IFS=' ' read -a proc_args <<< "$SOLR_PROC"
   for arg in "${proc_args[@]}"
     do
@@ -727,71 +646,67 @@ function jetty_port() {
 # useful for doing cross-platform work from the command-line using Java
 function run_tool() {
 
-  "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS $SOLR_ZK_CREDS_AND_ACLS -Dsolr.install.dir="$SOLR_TIP" \
+  # shellcheck disable=SC2086
+  "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_ZK_CREDS_AND_ACLS:-} ${SOLR_TOOL_OPTS:-} -Dsolr.install.dir="$SOLR_TIP" \
     -Dlog4j.configurationFile="$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*:$DEFAULT_SERVER_DIR/lib/*" \
-    org.apache.solr.util.SolrCLI "$@"
+    org.apache.solr.cli.SolrCLI "$@"
 
   return $?
 } # end run_tool function
 
-# get information about any Solr nodes running on this host
-function get_info() {
-  CODE=4
+# get status about any Solr nodes running on this host
+function get_status() {
   # first, see if Solr is running
-  numSolrs=`find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' '`
+  numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
   if [ "$numSolrs" != "0" ]; then
     echo -e "\nFound $numSolrs Solr nodes: "
     while read PIDF
       do
-        ID=`cat "$PIDF"`
-        port=`jetty_port "$ID"`
+        ID=$(cat "$PIDF")
+        port=$(jetty_port "$ID")
         if [ "$port" != "" ]; then
           echo -e "\nSolr process $ID running on port $port"
-          run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
-          CODE=$?
+          run_tool status -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr" "$@"
           echo ""
         else
           echo -e "\nSolr process $ID from $PIDF not found."
-          CODE=1
         fi
     done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
   else
     # no pid files but check using ps just to be sure
-    numSolrs=`ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//'`
+    numSolrs=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//')
     if [ "$numSolrs" != "0" ]; then
       echo -e "\nFound $numSolrs Solr nodes: "
       PROCESSES=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | awk '{print $2}' | sort -r)
       for ID in $PROCESSES
         do
-          port=`jetty_port "$ID"`
+          port=$(jetty_port "$ID")
           if [ "$port" != "" ]; then
             echo ""
             echo "Solr process $ID running on port $port"
-            run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
-            CODE=$?
+            run_tool status -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr" "$@"
             echo ""
           fi
       done
     else
       echo -e "\nNo Solr nodes are running.\n"
-      CODE=3
+      run_tool status "$@"
     fi
   fi
 
-  return $CODE
-} # end get_info
+} # end get_status
 
 function run_package() {
   runningSolrUrl=""
 
-  numSolrs=`find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' '`
+  numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
   if [ "$numSolrs" != "0" ]; then
     #echo -e "\nFound $numSolrs Solr nodes: "
     while read PIDF
       do
-        ID=`cat "$PIDF"`
-        port=`jetty_port "$ID"`
+        ID=$(cat "$PIDF")
+        port=$(jetty_port "$ID")
         if [ "$port" != "" ]; then
           #echo -e "\nSolr process $ID running on port $port"
           runningSolrUrl="$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
@@ -805,13 +720,13 @@ function run_package() {
     done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
   else
     # no pid files but check using ps just to be sure
-    numSolrs=`ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//'`
+    numSolrs=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//')
     if [ "$numSolrs" != "0" ]; then
       echo -e "\nFound $numSolrs Solr nodes: "
       PROCESSES=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | awk '{print $2}' | sort -r)
       for ID in $PROCESSES
         do
-          port=`jetty_port "$ID"`
+          port=$(jetty_port "$ID")
           if [ "$port" != "" ]; then
             echo ""
             echo "Solr process $ID running on port $port"
@@ -828,7 +743,7 @@ function run_package() {
     fi
   fi
 
-  run_tool package -solrUrl "$runningSolrUrl" $@
+  run_tool package -solrUrl "$runningSolrUrl" "$@"
   #exit $?
 }
 
@@ -839,22 +754,27 @@ function stop_solr() {
 
   DIR="$1"
   SOLR_PORT="$2"
-  THIS_STOP_PORT="${STOP_PORT:-$(expr $SOLR_PORT - 1000)}"
+  THIS_STOP_PORT="${STOP_PORT:-$((SOLR_PORT - 1000))}"
   STOP_KEY="$3"
   SOLR_PID="$4"
 
-  if [ "$SOLR_PID" != "" ]; then
+  if [ -n "$SOLR_PID"  ]; then
     echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting up to $SOLR_STOP_WAIT seconds to allow Jetty process $SOLR_PID to stop gracefully."
-    "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS -jar "$DIR/start.jar" "STOP.PORT=$THIS_STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
+    # shellcheck disable=SC2086
+    "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_TOOL_OPTS:-} -jar "$DIR/start.jar" "STOP.PORT=$THIS_STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
       (loops=0
       while true
       do
-        CHECK_PID=`ps auxww | awk '{print $2}' | grep -w $SOLR_PID | sort -r | tr -d ' '`
-        if [ "$CHECK_PID" != "" ]; then
+        # Check if a process is running with the specified PID.
+        # -o stat will output the STAT, where Z indicates a zombie
+        # stat='' removes the header (--no-headers isn't supported on all platforms)
+        # Note the space after '$('. It is needed to avoid confusion with special bash eval syntax
+        STAT=$( (ps -o stat='' -p "$SOLR_PID" || :) | tr -d ' ')
+        if [[ "${STAT:-Z}" != "Z" ]]; then
           slept=$((loops * 2))
           if [ $slept -lt $SOLR_STOP_WAIT ]; then
             sleep 2
-            loops=$[$loops+1]
+            loops=$((loops+1))
           else
             exit # subshell!
           fi
@@ -869,24 +789,31 @@ function stop_solr() {
     exit 0
   fi
 
-  CHECK_PID=`ps auxww | awk '{print $2}' | grep -w $SOLR_PID | sort -r | tr -d ' '`
-  if [ "$CHECK_PID" != "" ]; then
-    if [ "$JSTACK" != "" ]; then
+  # Note the space after '$('. It is needed to avoid confusion with special bash eval syntax
+  STAT=$( (ps -o stat='' -p "$SOLR_PID" || :) | tr -d ' ')
+  if [[ "${STAT:-Z}" != "Z" ]]; then
+    if [ -n "${JSTACK:-}" ]; then
       echo -e "Solr process $SOLR_PID is still running; jstacking it now."
-      $JSTACK $SOLR_PID
+      $JSTACK "$SOLR_PID"
     elif [ "$JATTACH" != "" ]; then
       echo -e "Solr process $SOLR_PID is still running; jattach threaddumping it now."
-      $JATTACH $SOLR_PID threaddump
+      $JATTACH "$SOLR_PID" threaddump
     fi
     echo -e "Solr process $SOLR_PID is still running; forcefully killing it now."
-    kill -9 $SOLR_PID
+    kill -9 "$SOLR_PID"
     echo "Killed process $SOLR_PID"
     rm -f "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
     sleep 10
   fi
 
-  CHECK_PID=`ps auxww | awk '{print $2}' | grep -w $SOLR_PID | sort -r | tr -d ' '`
-  if [ "$CHECK_PID" != "" ]; then
+  # Note the space after '$('. It is needed to avoid confusion with special bash eval syntax
+  STAT=$( (ps -o stat='' -p "$SOLR_PID" || :) | tr -d ' ')
+  if [ "${STAT:-}" == "Z" ]; then
+    # This can happen if, for example, you are running Solr inside a docker container with multiple processes
+    # rather than running it is as the only service. The --init flag on docker avoids that particular problem.
+    echo -e "Solr process $SOLR_PID has terminated abnormally. Solr has exited but a zombie process entry remains."
+    exit 1
+  elif [ -n "${STAT:-}" ]; then
     echo "ERROR: Failed to kill previous Solr Java process $SOLR_PID ... script fails."
     exit 1
   fi
@@ -894,385 +821,55 @@ function stop_solr() {
 
 if [ $# -eq 1 ]; then
   case $1 in
-    -help|-usage|-h|--help)
-        print_usage ""
-        exit
-    ;;
-    -info|-i|status)
-        get_info
-        exit $?
-    ;;
-    -version|-v|version)
-        run_tool version
+    -help|-h)
+        run_tool ""
         exit
     ;;
   esac
 fi
 
 if [ $# -gt 0 ]; then
-  # if first arg starts with a dash (and it's not -help or -info),
-  # then assume they are starting Solr, such as: solr -f
-  if [[ $1 == -* ]]; then
-    SCRIPT_CMD="start"
-  else
-    SCRIPT_CMD="$1"
-    shift
-  fi
+  SCRIPT_CMD="$1"
+  shift
 else
   # no args - just show usage and exit
-  print_usage ""
+  run_tool "$@"
   exit
 fi
 
+# status tool
 if [ "$SCRIPT_CMD" == "status" ]; then
-  # hacky - the script hits this if the user passes additional args with the status command,
-  # which is not supported but also not worth complaining about either
-  get_info
-  exit
+  get_status
+  exit $?
 fi
 
 # assert tool
 if [ "$SCRIPT_CMD" == "assert" ]; then
-  run_tool assert $*
+  run_tool assert "$@"
   exit $?
 fi
 
-# run a healthcheck and exit if requested
+# healthcheck tool
 if [ "$SCRIPT_CMD" == "healthcheck" ]; then
-
-  VERBOSE=""
-
-  if [ $# -gt 0 ]; then
-    while true; do
-      case "$1" in
-          -c|-collection)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Collection name is required when using the $1 option!"
-                exit 1
-              fi
-              HEALTHCHECK_COLLECTION="$2"
-              shift 2
-          ;;
-          -z|-zkhost|-zkHost)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
-                exit 1
-              fi
-              ZK_HOST="$2"
-              shift 2
-          ;;
-          -help|-usage)
-              print_usage "$SCRIPT_CMD"
-              exit 0
-          ;;
-          -V|--verbose)
-              VERBOSE="-verbose"
-              shift
-          ;;
-          --)
-              shift
-              break
-          ;;
-          *)
-              if [ "$1" != "" ]; then
-                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
-                exit 1
-              else
-                break # out-of-args, stop looping
-              fi
-          ;;
-      esac
-    done
-  fi
-
-  if [ -z "$ZK_HOST" ]; then
-    ZK_HOST=localhost:9983
-  fi
-
-  if [ -z "$HEALTHCHECK_COLLECTION" ]; then
-    echo "collection parameter is required!"
-    print_usage "healthcheck"
-    exit 1
-  fi
-
-  run_tool healthcheck -zkHost "$ZK_HOST" -collection "$HEALTHCHECK_COLLECTION" $VERBOSE
-
+  run_tool healthcheck "$@"
   exit $?
 fi
 
-if [[ "$SCRIPT_CMD" == "config" ]]; then
-  CONFIG_PARAMS=()
-
-  if [ $# -gt 0 ]; then
-    while true; do
-      case "$1" in
-          -z|-zkhost|-zkHost)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
-                exit 1
-              fi
-              ZK_HOST="$2"
-              shift 2
-          ;;
-          -s|-scheme)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "URL scheme is required when using the $1 option!"
-                exit 1
-              fi
-              SOLR_URL_SCHEME="$2"
-              shift 2
-          ;;
-          *)  # Pass through all other params
-              if [ "$1" != "" ]; then
-                CONFIG_PARAMS+=($1)
-                shift
-              else
-                break
-              fi
-          ;;
-      esac
-    done
-  fi
-  if [[ -n "$ZK_HOST" ]]; then
-    CONFIG_PARAMS+=("-z" "$ZK_HOST")
-  fi
-  if [[ -n "$SOLR_URL_SCHEME" ]]; then
-    CONFIG_PARAMS+=("-scheme" "$SOLR_URL_SCHEME")
-  fi
-  run_tool config "${CONFIG_PARAMS[@]}"
+# config tool
+if [ "$SCRIPT_CMD" == "config" ]; then
+  run_tool config "$@"
   exit $?
 fi
 
 # create a core or collection
-if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CMD" == "create_collection" ]]; then
-
-  CREATE_NUM_SHARDS=1
-  CREATE_REPFACT=1
-  FORCE=false
-  VERBOSE=""
-
-  if [ $# -gt 0 ]; then
-    while true; do
-      case "$1" in
-          -c|-core|-collection)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "name is required when using the $1 option!"
-                exit 1
-              fi
-              CREATE_NAME="$2"
-              shift 2
-          ;;
-          -n|-confname)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Configuration name is required when using the $1 option!"
-                exit 1
-              fi
-              CREATE_CONFNAME="$2"
-              shift 2
-          ;;
-          -d|-confdir)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Configuration directory is required when using the $1 option!"
-                exit 1
-              fi
-              CREATE_CONFDIR="$2"
-              shift 2
-          ;;
-          -s|-shards)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Shard count is required when using the $1 option!"
-                exit 1
-              fi
-              CREATE_NUM_SHARDS="$2"
-              shift 2
-          ;;
-          -rf|-replicationFactor)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Replication factor is required when using the $1 option!"
-                exit 1
-              fi
-              CREATE_REPFACT="$2"
-              shift 2
-          ;;
-          -p|-port)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Solr port is required when using the $1 option!"
-                exit 1
-              fi
-              CREATE_PORT="$2"
-              shift 2
-          ;;
-          -V|--verbose)
-              VERBOSE="-verbose"
-              shift
-          ;;
-          -force)
-              FORCE=true
-              shift
-          ;;
-          -help|-usage)
-              print_usage "$SCRIPT_CMD"
-              exit 0
-          ;;
-          --)
-              shift
-              break
-          ;;
-          *)
-              if [ "$1" != "" ]; then
-                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
-                exit 1
-              else
-                break # out-of-args, stop looping
-              fi
-          ;;
-      esac
-    done
-  fi
-
-  if [ -z "$CREATE_CONFDIR" ]; then
-    CREATE_CONFDIR='_default'
-  fi
-
-  # validate the confdir arg (if provided)
-  if [[ ! -d "$SOLR_TIP/server/solr/configsets/$CREATE_CONFDIR" && ! -d "$CREATE_CONFDIR" ]]; then
-    echo -e "\nSpecified configuration directory $CREATE_CONFDIR not found!\n"
-    exit 1
-  fi
-
-  if [ -z "$CREATE_NAME" ]; then
-    echo "Name (-c) argument is required!"
-    print_usage "$SCRIPT_CMD"
-    exit 1
-  fi
-
-  if [ -z "$CREATE_PORT" ]; then
-    for ID in `ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r`
-      do
-        port=`jetty_port "$ID"`
-        if [ "$port" != "" ]; then
-          CREATE_PORT=$port
-          break
-        fi
-    done
-  fi
-
-  if [ -z "$CREATE_PORT" ]; then
-    echo "Failed to determine the port of a local Solr instance, cannot create $CREATE_NAME!"
-    exit 1
-  fi
-
-  if [[ "$CREATE_CONFDIR" == "_default" ]] && ([[ "$CREATE_CONFNAME" == "" ]] || [[ "$CREATE_CONFNAME" == "_default" ]]); then
-    echo "WARNING: Using _default configset with data driven schema functionality. NOT RECOMMENDED for production use."
-    echo "         To turn off: bin/solr config -c $CREATE_NAME -p $CREATE_PORT -action set-user-property -property update.autoCreateFields -value false"
-  fi
-
-  if [[ $EUID -eq 0 ]] && [[ "$FORCE" == "false" ]] ; then
-    echo "WARNING: Creating cores as the root user can cause Solr to fail and is not advisable. Exiting."
-    echo "         If you started Solr as root (not advisable either), force core creation by adding argument -force"
-    exit 1
-  fi
-  if [ "$SCRIPT_CMD" == "create_core" ]; then
-    run_tool create_core -name "$CREATE_NAME" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$CREATE_PORT/solr" \
-      -confdir "$CREATE_CONFDIR" -configsetsDir "$SOLR_TIP/server/solr/configsets" \
-      $VERBOSE
-    exit $?
-  else
-    run_tool "$SCRIPT_CMD" -name "$CREATE_NAME" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$CREATE_PORT/solr" \
-      -shards "$CREATE_NUM_SHARDS" -replicationFactor "$CREATE_REPFACT" \
-      -confname "$CREATE_CONFNAME" -confdir "$CREATE_CONFDIR" \
-      -configsetsDir "$SOLR_TIP/server/solr/configsets" \
-      $VERBOSE
-    exit $?
-  fi
+if [[ "$SCRIPT_CMD" == "create" ]]; then
+  run_tool $SCRIPT_CMD $@
+  exit $?
 fi
 
 # delete a core or collection
 if [[ "$SCRIPT_CMD" == "delete" ]]; then
-
-  VERBOSE=""
-
-  if [ $# -gt 0 ]; then
-    while true; do
-      case "$1" in
-          -c|-core|-collection)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "name is required when using the $1 option!"
-                exit 1
-              fi
-              DELETE_NAME="$2"
-              shift 2
-          ;;
-          -p|-port)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "Solr port is required when using the $1 option!"
-                exit 1
-              fi
-              DELETE_PORT="$2"
-              shift 2
-          ;;
-          -deleteConfig)
-              if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
-                print_usage "$SCRIPT_CMD" "true|false is required when using the $1 option!"
-                exit 1
-              fi
-              DELETE_CONFIG="$2"
-              shift 2
-          ;;
-          -V|--verbose)
-              VERBOSE="-verbose"
-              shift
-          ;;
-          -help|-usage)
-              print_usage "$SCRIPT_CMD"
-              exit 0
-          ;;
-          --)
-              shift
-              break
-          ;;
-          *)
-              if [ "$1" != "" ]; then
-                print_usage "$SCRIPT_CMD" "Unrecognized or misplaced argument: $1!"
-                exit 1
-              else
-                break # out-of-args, stop looping
-              fi
-          ;;
-      esac
-    done
-  fi
-
-  if [ -z "$DELETE_NAME" ]; then
-    echo "Name (-c) argument is required!"
-    print_usage "$SCRIPT_CMD"
-    exit 1
-  fi
-
-  # If not defined, use the collection name for the name of the configuration in Zookeeper
-  if [ -z "$DELETE_CONFIG" ]; then
-    DELETE_CONFIG=true
-  fi
-
-  if [ -z "$DELETE_PORT" ]; then
-    for ID in `ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r`
-      do
-        port=`jetty_port "$ID"`
-        if [ "$port" != "" ]; then
-          DELETE_PORT=$port
-          break
-        fi
-    done
-  fi
-
-  if [ -z "$DELETE_PORT" ]; then
-    echo "Failed to determine the port of a local Solr instance, cannot delete $DELETE_NAME!"
-    exit 1
-  fi
-
-  run_tool delete -name "$DELETE_NAME" -deleteConfig "$DELETE_CONFIG" \
-    -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$DELETE_PORT/solr" \
-    $VERBOSE
+  run_tool $SCRIPT_CMD $@
   exit $?
 fi
 
@@ -1286,13 +883,9 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
 
   if [ $# -gt 0 ]; then
     while true; do
-      case "$1" in
-        -upconfig|upconfig|-downconfig|downconfig|cp|rm|mv|ls|mkroot)
-            if [ "${1:0:1}" == "-" ]; then
-              ZK_OP=${1:1}
-            else
-              ZK_OP=$1
-            fi
+      case "${1:-}" in
+        upconfig|downconfig|cp|rm|mv|ls|mkroot)
+            ZK_OP=$1
             shift 1
         ;;
         -z|-zkhost|-zkHost)
@@ -1320,11 +913,11 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
             ZK_RECURSE="true"
             shift
         ;;
-        -V|--verbose)
+        -V|-verbose)
             VERBOSE="-verbose"
             shift
         ;;
-        -help|-usage|-h)
+        -help|-h)
             print_usage "$SCRIPT_CMD"
             exit 0
         ;;
@@ -1333,13 +926,13 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
             break
         ;;
         *)  # Pick up <src> <dst> or <path> params for rm, ls, cp, mv, mkroot.
-            if [ "$1" == "" ]; then
+            if [ -z "${1:-}" ]; then
               break # out-of-args, stop looping
             fi
-            if [ -z "$ZK_SRC" ]; then
+            if [ -z "${ZK_SRC:-}" ]; then
               ZK_SRC=$1
             else
-              if [ -z "$ZK_DST" ]; then
+              if [ -z "${ZK_DST:-}" ]; then
                 ZK_DST=$1
               else
                 print_short_zk_usage "Unrecognized or misplaced command $1. 'cp' with trailing asterisk requires quoting, see help text."
@@ -1374,7 +967,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
       print_short_zk_usage "<source> and <destination> must be specified when using either the 'mv' or 'cp' commands."
     fi
     if [[ "$ZK_OP" == "cp" && "${ZK_SRC:0:3}" != "zk:" && "${ZK_DST:0:3}" != "zk:" ]]; then
-      print_short_zk_usage "One of the source or desintation paths must be prefixed by 'zk:' for the 'cp' command."
+      print_short_zk_usage "One of the source or destination paths must be prefixed by 'zk:' for the 'cp' command."
     fi
   fi
 
@@ -1424,14 +1017,26 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
   exit $?
 fi
 
-
-if [[ "$SCRIPT_CMD" == "export" ]]; then
-  run_tool export $@
-  exit $?
-fi
-
 if [[ "$SCRIPT_CMD" == "package" ]]; then
-  run_package $@
+  if [ $# -gt 0 ]; then
+    while true; do
+      case "$1" in
+          -help|-h)
+              print_usage "$SCRIPT_CMD"
+              exit 0
+          ;;
+          --)
+              shift
+              break
+          ;;
+          *)
+              break # out-of-args, stop looping
+
+          ;;
+      esac
+    done
+  fi
+  run_package "$@"
   exit $?
 fi
 
@@ -1442,7 +1047,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
   declare -a AUTH_PARAMS
   if [ $# -gt 0 ]; then
     while true; do
-      case "$1" in
+      case "${1:-}" in
         enable|disable)
             AUTH_OP=$1
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "$AUTH_OP")
@@ -1464,7 +1069,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             shift 2
         ;;
         -config)
-            AUTH_CONFIG="`echo $2| base64`"
+            AUTH_CONFIG="$(echo "$2"| base64)"
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-config" "$AUTH_CONFIG")
             shift 2
         ;;
@@ -1484,7 +1089,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-updateIncludeFileOnly" "$2")
             shift 2
         ;;
-        -V|--verbose)
+        -V|-verbose)
             VERBOSE="-verbose"
             shift
         ;;
@@ -1495,7 +1100,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             fi
 
             if [[ "$2" == "." || "$2" == "./" || "$2" == ".." || "$2" == "../" ]]; then
-              SOLR_SERVER_DIR="$(pwd)/$2"
+              SOLR_SERVER_DIR="$(pwd -P)/$2"
             else
               # see if the arg value is relative to the tip vs full path
               if [[ "$2" != /* ]] && [[ -d "$SOLR_TIP/$2" ]]; then
@@ -1505,7 +1110,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
               fi
             fi
             # resolve it to an absolute path
-            SOLR_SERVER_DIR="$(cd "$SOLR_SERVER_DIR"; pwd)"
+            SOLR_SERVER_DIR="$(cd "$SOLR_SERVER_DIR" || (echo "SOLR_SERVER_DIR not found" && exit 1); pwd)"
             shift 2
         ;;
         -s|-solr.home)
@@ -1517,7 +1122,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             SOLR_HOME="$2"
             shift 2
         ;;
-        -help|-usage|-h)
+        -help|-h)
             print_usage "$SCRIPT_CMD"
             exit 0
         ;;
@@ -1533,19 +1138,17 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
     done
   fi
 
-  if [ -z "$SOLR_SERVER_DIR" ]; then
-    SOLR_SERVER_DIR="$DEFAULT_SERVER_DIR"
-  fi
+  : "${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}"
   if [ ! -e "$SOLR_SERVER_DIR" ]; then
     echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
     exit 1
   fi
 
-  if [ -z "$SOLR_HOME" ]; then
+  if [ -z "${SOLR_HOME:-}" ]; then
     SOLR_HOME="$SOLR_SERVER_DIR/solr"
   elif [[ $SOLR_HOME != /* ]]; then
-    if [[ -d "`pwd`/$SOLR_HOME" ]]; then
-      SOLR_HOME="$(pwd)/$SOLR_HOME"
+    if [[ -d "$(pwd -P)/$SOLR_HOME" ]]; then
+      SOLR_HOME="$(pwd -P)/$SOLR_HOME"
     elif [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
       SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
       SOLR_PID_DIR="$SOLR_HOME"
@@ -1559,62 +1162,66 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
 
   AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-solrIncludeFile" "$SOLR_INCLUDE")
 
-  if [ -z "$AUTH_PORT" ]; then
-    for ID in `ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r`
+  if [ -z "${AUTH_PORT:-}" ]; then
+    for ID in $(ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r)
       do
-        port=`jetty_port "$ID"`
+        port=$(jetty_port "$ID")
         if [ "$port" != "" ]; then
           AUTH_PORT=$port
           break
         fi
       done
   fi
-  run_tool auth ${AUTH_PARAMS[@]} -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$AUTH_PORT/solr" -authConfDir "$SOLR_HOME" $VERBOSE
+  run_tool auth "${AUTH_PARAMS[@]}" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}" -authConfDir "$SOLR_HOME" $VERBOSE
   exit $?
 fi
 
+if [[ "$SCRIPT_CMD" == "api" ]]; then
+  run_tool api "$@"
+  exit $?
+fi
 
 # verify the command given is supported
-if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ] && [ "$SCRIPT_CMD" != "assert" ]; then
+if [ "$SCRIPT_CMD" != "stop" ] && [ "$SCRIPT_CMD" != "start" ] && [ "$SCRIPT_CMD" != "restart" ] && [ "$SCRIPT_CMD" != "status" ]; then
   # handoff this command to the SolrCLI and let it handle the option parsing and validation
-  run_tool $SCRIPT_CMD "$@"
-  exit $?
+  run_tool "$SCRIPT_CMD" "$@"
+  ret=$?
+  if [ $ret -ne 0 ]; then
+    print_usage ""
+    exit $ret
+  fi
+  exit 0
 fi
 
 #Check current Ulimits for Open Files and Max Processes.  Warn if they are below the recommended values.
 
-if [ -z "$SOLR_RECOMMENDED_MAX_PROCESSES" ]; then
-  SOLR_RECOMMENDED_MAX_PROCESSES=65000
-fi
+: "${SOLR_RECOMMENDED_MAX_PROCESSES:=65000}"
+: "${SOLR_RECOMMENDED_OPEN_FILES:=65000}"
 
-if [ -z "$SOLR_RECOMMENDED_OPEN_FILES" ]; then
-  SOLR_RECOMMENDED_OPEN_FILES=65000
-fi
-
-if [ -z "$SOLR_ULIMIT_CHECKS" ] || [ "$SOLR_ULIMIT_CHECKS" != "false" ]; then
+if [[ "${SOLR_ULIMIT_CHECKS:-}" != "false" ]]; then
   if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ] || [ "$SCRIPT_CMD" == "status" ]; then
     if hash ulimit 2>/dev/null; then
        openFiles=$(ulimit -n)
        maxProcs=$(ulimit -u)
        virtualMemory=$(ulimit -v)
        maxMemory=$(ulimit -m)
-       if [ $openFiles != "unlimited" ] && [ $openFiles -lt "$SOLR_RECOMMENDED_OPEN_FILES" ]; then
+       if [ "$openFiles" != "unlimited" ] && [ "$openFiles" -lt "$SOLR_RECOMMENDED_OPEN_FILES" ]; then
            echo "*** [WARN] *** Your open file limit is currently $openFiles.  "
            echo " It should be set to $SOLR_RECOMMENDED_OPEN_FILES to avoid operational disruption. "
            echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"
        fi
 
-       if [ $maxProcs != "unlimited" ] && [ $maxProcs -lt "$SOLR_RECOMMENDED_MAX_PROCESSES" ]; then
+       if [ "$maxProcs" != "unlimited" ] && [ "$maxProcs" -lt "$SOLR_RECOMMENDED_MAX_PROCESSES" ]; then
            echo "*** [WARN] ***  Your Max Processes Limit is currently $maxProcs. "
            echo " It should be set to $SOLR_RECOMMENDED_MAX_PROCESSES to avoid operational disruption. "
            echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"
        fi
-       if [ $virtualMemory != "unlimited" ]; then
+       if [ "$virtualMemory" != "unlimited" ]; then
            echo "*** [WARN] ***  Your Virtual Memory limit is $virtualMemory. "
            echo " It should be set to 'unlimited' to avoid operational disruption. "
            echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"
        fi
-       if [ $maxMemory != "unlimited" ]; then
+       if [ "$maxMemory" != "unlimited" ]; then
            echo "*** [WARN] ***  Your Max Memory Size limit is $maxMemory. "
            echo " It should be set to 'unlimited' to avoid operational disruption. "
            echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"
@@ -1625,7 +1232,7 @@ if [ -z "$SOLR_ULIMIT_CHECKS" ] || [ "$SOLR_ULIMIT_CHECKS" != "false" ]; then
       echo "     max processes:   $SOLR_RECOMMENDED_MAX_PROCESSES "
       echo "     open files:      $SOLR_RECOMMENDED_OPEN_FILES"
       echo "     virtual memory:  unlimited"
-      echo "     max memorh size: unlimited"
+      echo "     max memory size: unlimited"
     fi
   fi
 fi
@@ -1633,16 +1240,16 @@ fi
 # Run in foreground (default is to run in the background)
 FG="false"
 FORCE=false
-noprompt=false
-SOLR_OPTS=($SOLR_OPTS)
-PASS_TO_RUN_EXAMPLE=
+SOLR_OPTS=(${SOLR_OPTS:-})
+SCRIPT_SOLR_OPTS=()
+PASS_TO_RUN_EXAMPLE=()
 
 if [ $# -gt 0 ]; then
   while true; do
-    case "$1" in
+    case "${1:-}" in
         -c|-cloud)
             SOLR_MODE="solrcloud"
-            PASS_TO_RUN_EXAMPLE+=" -c"
+            PASS_TO_RUN_EXAMPLE+=("-c")
             shift
         ;;
         -d|-dir)
@@ -1652,7 +1259,7 @@ if [ $# -gt 0 ]; then
             fi
 
             if [[ "$2" == "." || "$2" == "./" || "$2" == ".." || "$2" == "../" ]]; then
-              SOLR_SERVER_DIR="$(pwd)/$2"
+              SOLR_SERVER_DIR="$(pwd -P)/$2"
             else
               # see if the arg value is relative to the tip vs full path
               if [[ "$2" != /* ]] && [[ -d "$SOLR_TIP/$2" ]]; then
@@ -1662,7 +1269,7 @@ if [ $# -gt 0 ]; then
               fi
             fi
             # resolve it to an absolute path
-            SOLR_SERVER_DIR="$(cd "$SOLR_SERVER_DIR"; pwd)"
+            SOLR_SERVER_DIR="$(cd "$SOLR_SERVER_DIR" || (echo "SOLR_SERVER_DIR not found" && exit 1); pwd)"
             shift 2
         ;;
         -s|-solr.home)
@@ -1690,13 +1297,13 @@ if [ $# -gt 0 ]; then
             FG="true"
             shift
         ;;
-        -h|-host)
+        -host)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Hostname is required when using the $1 option!"
               exit 1
             fi
             SOLR_HOST="$2"
-            PASS_TO_RUN_EXAMPLE+=" -h $SOLR_HOST"
+            PASS_TO_RUN_EXAMPLE+=("-host" "$SOLR_HOST")
             shift 2
         ;;
         -m|-memory)
@@ -1705,7 +1312,7 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             SOLR_HEAP="$2"
-            PASS_TO_RUN_EXAMPLE+=" -m $SOLR_HEAP"
+            PASS_TO_RUN_EXAMPLE+=("-m" "$SOLR_HEAP")
             shift 2
         ;;
         -p|-port)
@@ -1714,7 +1321,8 @@ if [ $# -gt 0 ]; then
               exit 1
             fi
             SOLR_PORT="$2"
-            PASS_TO_RUN_EXAMPLE+=" -p $SOLR_PORT"
+            PROVIDED_SOLR_PORT="${SOLR_PORT}"
+            PASS_TO_RUN_EXAMPLE+=("-p" "$SOLR_PORT")
             shift 2
         ;;
         -z|-zkhost|-zkHost)
@@ -1724,45 +1332,42 @@ if [ $# -gt 0 ]; then
             fi
             ZK_HOST="$2"
             SOLR_MODE="solrcloud"
-            PASS_TO_RUN_EXAMPLE+=" -z $ZK_HOST"
+            PASS_TO_RUN_EXAMPLE+=("-z" "$ZK_HOST")
             shift 2
         ;;
         -a|-addlopts)
             ADDITIONAL_CMD_OPTS="$2"
-            PASS_TO_RUN_EXAMPLE+=" -a \"$ADDITIONAL_CMD_OPTS\""
+            PASS_TO_RUN_EXAMPLE+=("-a" "$ADDITIONAL_CMD_OPTS")
             shift 2
         ;;
         -j|-jettyconfig)
             ADDITIONAL_JETTY_CONFIG="$2"
-            PASS_TO_RUN_EXAMPLE+=" -j \"$ADDITIONAL_JETTY_CONFIG\""
+            PASS_TO_RUN_EXAMPLE+=("-j" "$ADDITIONAL_JETTY_CONFIG")
             shift 2
         ;;
         -k|-key)
             STOP_KEY="$2"
             shift 2
         ;;
-        -help|-usage)
+        -help|-h)
             print_usage "$SCRIPT_CMD"
             exit 0
         ;;
         -noprompt)
-            noprompt=true
-            PASS_TO_RUN_EXAMPLE+=" -noprompt"
+            PASS_TO_RUN_EXAMPLE+=("-noprompt")
             shift
         ;;
         -V|-verbose)
             verbose=true
-            PASS_TO_RUN_EXAMPLE+=" --verbose"
+            PASS_TO_RUN_EXAMPLE+=("-verbose")
             shift
         ;;
         -v)
             SOLR_LOG_LEVEL=DEBUG
-            PASS_TO_RUN_EXAMPLE+=" -Dsolr.log.level=$SOLR_LOG_LEVEL"
             shift
         ;;
         -q)
             SOLR_LOG_LEVEL=WARN
-            PASS_TO_RUN_EXAMPLE+=" -Dsolr.log.level=$SOLR_LOG_LEVEL"
             shift
         ;;
         -all)
@@ -1771,7 +1376,7 @@ if [ $# -gt 0 ]; then
         ;;
         -force)
             FORCE=true
-            PASS_TO_RUN_EXAMPLE+=" -force"
+            PASS_TO_RUN_EXAMPLE+=("-force")
             shift
         ;;
         --)
@@ -1779,38 +1384,44 @@ if [ $# -gt 0 ]; then
             break
         ;;
         *)
-            if [ "${1:0:2}" == "-D" ]; then
+            if [ -z "${1:-}" ]; then
+              break # out-of-args, stop looping
+            elif [ "${1:0:2}" == "-D" ]; then
               # pass thru any opts that begin with -D (java system props)
+              # These should go to the end of SOLR_OPTS, as they should override everything else
               SOLR_OPTS+=("$1")
-              PASS_TO_RUN_EXAMPLE+=" $1"
+              PASS_TO_RUN_EXAMPLE+=("$1")
               shift
             else
-              if [ "$1" != "" ]; then
-                print_usage "$SCRIPT_CMD" "$1 is not supported by this script"
-                exit 1
-              else
-                break # out-of-args, stop looping
-              fi
+              print_usage "$SCRIPT_CMD" "$1 is not supported by this script"
+              exit 1
             fi
         ;;
     esac
   done
 fi
 
-if [[ $SOLR_LOG_LEVEL ]] ; then
-  SOLR_LOG_LEVEL_OPT="-Dsolr.log.level=$SOLR_LOG_LEVEL"
+# Default placement plugin
+if [[ -n "${SOLR_PLACEMENTPLUGIN_DEFAULT:-}" ]] ; then
+  SCRIPT_SOLR_OPTS+=("-Dsolr.placementplugin.default=$SOLR_PLACEMENTPLUGIN_DEFAULT")
 fi
 
-if [ -z "$SOLR_SERVER_DIR" ]; then
-  SOLR_SERVER_DIR="$DEFAULT_SERVER_DIR"
+# Remote streaming and stream body
+if [ "${SOLR_ENABLE_REMOTE_STREAMING:-false}" == "true" ]; then
+  SCRIPT_SOLR_OPTS+=("-Dsolr.enableRemoteStreaming=true")
 fi
+if [ "${SOLR_ENABLE_STREAM_BODY:-false}" == "true" ]; then
+  SCRIPT_SOLR_OPTS+=("-Dsolr.enableStreamBody=true")
+fi
+
+: ${SOLR_SERVER_DIR:=$DEFAULT_SERVER_DIR}
 
 if [ ! -e "$SOLR_SERVER_DIR" ]; then
   echo -e "\nSolr server directory $SOLR_SERVER_DIR not found!\n"
   exit 1
 fi
 
-if [[ "$FG" == 'true' && "$EXAMPLE" != "" ]]; then
+if [[ "$FG" == 'true' && -n "${EXAMPLE:-}" ]]; then
   FG='false'
   echo -e "\nWARNING: Foreground mode (-f) not supported when running examples.\n"
 fi
@@ -1819,8 +1430,8 @@ fi
 # If the user specified an example to run, invoke the run_example tool (Java app) and exit
 # otherwise let this script proceed to process the user request
 #
-if [ -n "$EXAMPLE" ] && [ "$SCRIPT_CMD" == "start" ]; then
-  run_tool run_example -e $EXAMPLE -d "$SOLR_SERVER_DIR" -urlScheme $SOLR_URL_SCHEME $PASS_TO_RUN_EXAMPLE
+if [ -n "${EXAMPLE:-}" ] && [ "$SCRIPT_CMD" == "start" ]; then
+  run_tool run_example -e "$EXAMPLE" -d "$SOLR_SERVER_DIR" -urlScheme "$SOLR_URL_SCHEME" "${PASS_TO_RUN_EXAMPLE[@]}"
   exit $?
 fi
 
@@ -1832,27 +1443,25 @@ if $verbose ; then
   "$JAVA" -version
 fi
 
-if [ "$SOLR_HOST" != "" ]; then
+if [ -n "${SOLR_HOST:-}" ]; then
   SOLR_HOST_ARG=("-Dhost=$SOLR_HOST")
-elif [[ -z "$SOLR_JETTY_HOST" || "$SOLR_JETTY_HOST" == "127.0.0.1" ]]; then
+elif [[ "${SOLR_JETTY_HOST:-127.0.0.1}" == "127.0.0.1" ]]; then
   # Jetty will only bind on localhost interface, so nodes must advertise themselves with localhost
   SOLR_HOST_ARG=("-Dhost=localhost")
 else
   SOLR_HOST_ARG=()
 fi
 
-if [ -z "$STOP_KEY" ]; then
-  STOP_KEY='solrrocks'
-fi
+: "${STOP_KEY:=solrrocks}"
 
-# stop all if no port specified
-if [[ "$SCRIPT_CMD" == "stop" && -z "$SOLR_PORT" ]]; then
+# stop all if no port specified or "all" is used
+if [[ "$SCRIPT_CMD" == "stop" ]]; then
   if $stop_all; then
     none_stopped=true
     find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | while read PIDF
       do
-        NEXT_PID=`cat "$PIDF"`
-        port=`jetty_port "$NEXT_PID"`
+        NEXT_PID=$(cat "$PIDF")
+        port=$(jetty_port "$NEXT_PID")
         if [ "$port" != "" ]; then
           stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
           none_stopped=false
@@ -1864,16 +1473,17 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "$SOLR_PORT" ]]; then
     # if $none_stopped; then
     #   echo -e "\nNo Solr nodes found to stop.\n"
     # fi
-  else
-    # not stopping all and don't have a port, but if we can find the pid file for the default port 8983, then use that
+    exit
+  elif [[ -z "${PROVIDED_SOLR_PORT:-}" ]]; then
+    # not stopping all and don't have a port, but if we can find a single pid file for Solr, then use that
     none_stopped=true
-    numSolrs=`find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' '`
-    if [ $numSolrs -eq 1 ]; then
+    numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
+    if [ "$numSolrs" -eq 1 ]; then
       # only do this if there is only 1 node running, otherwise they must provide the -p or -all
       PID="$(cat "$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)")"
-      CHECK_PID=`ps auxww | awk '{print $2}' | grep -w $PID | sort -r | tr -d ' '`
+      CHECK_PID=$(ps -o pid='' -p "$PID" | tr -d ' ')
       if [ "$CHECK_PID" != "" ]; then
-        port=`jetty_port "$CHECK_PID"`
+        port=$(jetty_port "$CHECK_PID")
         if [ "$port" != "" ]; then
           stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$CHECK_PID"
           none_stopped=false
@@ -1882,32 +1492,30 @@ if [[ "$SCRIPT_CMD" == "stop" && -z "$SOLR_PORT" ]]; then
     fi
 
     if $none_stopped; then
-      if [ $numSolrs -gt 0 ]; then
+      if [ "$numSolrs" -gt 0 ]; then
         echo -e "\nFound $numSolrs Solr nodes running! Must either specify a port using -p or -all to stop all Solr nodes on this host.\n"
       else
         echo -e "\nNo Solr nodes found to stop.\n"
       fi
       exit 1
     fi
+    exit
   fi
-  exit
 fi
 
-if [ -z "$SOLR_PORT" ]; then
-  SOLR_PORT=8983
+if [ -n "${SOLR_PORT_ADVERTISE:-}" ]; then
+  SCRIPT_SOLR_OPTS+=("-Dsolr.port.advertise=$SOLR_PORT_ADVERTISE")
 fi
 
-if [ -n "$SOLR_PORT_ADVERTISE" ]; then
-  SOLR_OPTS+=("-Dsolr.port.advertise=$SOLR_PORT_ADVERTISE")
+if [ -n "${SOLR_JETTY_HOST:-}" ]; then
+  SCRIPT_SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
 fi
 
-if [ -n "$SOLR_JETTY_HOST" ]; then
-  SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
+if [ -n "${SOLR_ZK_EMBEDDED_HOST:-}" ]; then
+  SCRIPT_SOLR_OPTS+=("-Dsolr.zk.embedded.host=$SOLR_ZK_EMBEDDED_HOST")
 fi
 
-if [ -z "$STOP_PORT" ]; then
-  STOP_PORT=`expr $SOLR_PORT - 1000`
-fi
+: "${STOP_PORT:=$((SOLR_PORT - 1000))}"
 
 if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ] ; then
   if [[ $EUID -eq 0 ]] && [[ "$FORCE" == "false" ]] ; then
@@ -1919,24 +1527,24 @@ fi
 
 if [[ "$SCRIPT_CMD" == "start" ]]; then
   # see if Solr is already running
-  SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
+  SOLR_PID=$(solr_pid_by_port "$SOLR_PORT")
 
-  if [ -z "$SOLR_PID" ]; then
+  if [ -z "${SOLR_PID:-}" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
+    SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r)
   fi
 
-  if [ "$SOLR_PID" != "" ]; then
+  if [ -n "${SOLR_PID:-}" ]; then
     echo -e "\nPort $SOLR_PORT is already being used by another process (pid: $SOLR_PID)\nPlease choose a different port using the -p option.\n"
     exit 1
   fi
 else
   # either stop or restart
   # see if Solr is already running
-  SOLR_PID=`solr_pid_by_port "$SOLR_PORT"`
+  SOLR_PID=$(solr_pid_by_port "$SOLR_PORT")
   if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
+    SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r)
   fi
   if [ "$SOLR_PID" != "" ]; then
     stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY" "$SOLR_PID"
@@ -1948,11 +1556,11 @@ else
   fi
 fi
 
-if [ -z "$SOLR_HOME" ]; then
+if [ -z "${SOLR_HOME:-}" ]; then
   SOLR_HOME="$SOLR_SERVER_DIR/solr"
 elif [[ $SOLR_HOME != /* ]]; then
-  if [[ -d "`pwd`/$SOLR_HOME" ]]; then
-    SOLR_HOME="$(pwd)/$SOLR_HOME"
+  if [[ -d "$(pwd -P)/$SOLR_HOME" ]]; then
+    SOLR_HOME="$(pwd -P)/$SOLR_HOME"
   elif [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
     SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
     SOLR_PID_DIR="$SOLR_HOME"
@@ -1960,23 +1568,21 @@ elif [[ $SOLR_HOME != /* ]]; then
 fi
 
 # Set the default configset dir to be bootstrapped as _default
-if [ -z "$DEFAULT_CONFDIR" ]; then
-  DEFAULT_CONFDIR="$SOLR_SERVER_DIR/solr/configsets/_default/conf"
-fi
+: "${DEFAULT_CONFDIR:="$SOLR_SERVER_DIR/solr/configsets/_default/conf"}"
 
 # This is quite hacky, but examples rely on a different log4j2.xml
 # so that we can write logs for examples to $SOLR_HOME/../logs
-if [ -z "$SOLR_LOGS_DIR" ]; then
-  SOLR_LOGS_DIR="$SOLR_SERVER_DIR/logs"
-fi
+: "${SOLR_LOGS_DIR:="$SOLR_SERVER_DIR/logs"}"
 EXAMPLE_DIR="$SOLR_TIP/example"
+# if SOLR_HOME is inside of EXAMPLE_DIR
 if [ "${SOLR_HOME:0:${#EXAMPLE_DIR}}" = "$EXAMPLE_DIR" ]; then
   LOG4J_PROPS="$DEFAULT_SERVER_DIR/resources/log4j2.xml"
   SOLR_LOGS_DIR="$SOLR_HOME/../logs"
 fi
 
-LOG4J_CONFIG=()
-if [ -n "$LOG4J_PROPS" ]; then
+# Set the logging manager by default, so that Lucene JUL logs are included with Solr logs.
+LOG4J_CONFIG=("-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager")
+if [ -n "${LOG4J_PROPS:-}" ]; then
   LOG4J_CONFIG+=("-Dlog4j.configurationFile=$LOG4J_PROPS")
 fi
 
@@ -1991,18 +1597,13 @@ if [ ! -e "$SOLR_HOME" ]; then
   echo -e "\nSolr home directory $SOLR_HOME not found!\n"
   exit 1
 fi
-if [[ $SOLR_DATA_HOME ]] && [ ! -e "$SOLR_DATA_HOME" ]; then
+if [[ -n ${SOLR_DATA_HOME:-} ]] && [ ! -e "$SOLR_DATA_HOME" ]; then
   echo -e "\nSolr data home directory $SOLR_DATA_HOME not found!\n"
   exit 1
 fi
-if $verbose ; then
-  q=""
-else
-  q="-q"
-fi
 
 # Establish default GC logging opts if no env var set (otherwise init to sensible default)
-if [ -z ${GC_LOG_OPTS+x} ]; then
+if [ -z "${GC_LOG_OPTS}" ]; then
   if [[ "$JAVA_VER_NUM" -lt "9" ]] ; then
     GC_LOG_OPTS=('-verbose:gc' '-XX:+PrintHeapAtGC' '-XX:+PrintGCDetails' \
                  '-XX:+PrintGCDateStamps' '-XX:+PrintGCTimeStamps' '-XX:+PrintTenuringDistribution' \
@@ -2011,11 +1612,13 @@ if [ -z ${GC_LOG_OPTS+x} ]; then
     GC_LOG_OPTS=('-Xlog:gc*')
   fi
 else
+  # TODO: Should probably not overload GC_LOG_OPTS as both string and array, but leaving it be for now
+  # shellcheck disable=SC2128
   GC_LOG_OPTS=($GC_LOG_OPTS)
 fi
 
 # if verbose gc logging enabled, setup the location of the log file and rotation
-if [ "$GC_LOG_OPTS" != "" ]; then
+if [ "${#GC_LOG_OPTS[@]}" -gt 0 ]; then
   if [[ "$JAVA_VER_NUM" -lt "9" ]] || [ "$JAVA_VENDOR" == "OpenJ9" ]; then
     gc_log_flag="-Xloggc"
     if [ "$JAVA_VENDOR" == "OpenJ9" ]; then
@@ -2033,26 +1636,28 @@ if [ "$GC_LOG_OPTS" != "" ]; then
       # for simplicity, we only look at the prefix '-Xlog:gc'
       # (if 'all' or multiple tags are used starting with anything other then 'gc' the user is on their own)
       # if a single additional ':' exists in param, then there is already an explicit output specifier
-      GC_LOG_OPTS[$i]=$(echo ${GC_LOG_OPTS[$i]} | sed "s|^\(-Xlog:gc[^:]*$\)|\1:file=$SOLR_LOGS_DIR/solr_gc.log:time,uptime:filecount=9,filesize=20M|")
+      # shellcheck disable=SC2001
+      GC_LOG_OPTS[$i]=$(echo "${GC_LOG_OPTS[$i]}" | sed "s|^\(-Xlog:gc[^:]*$\)|\1:file=$SOLR_LOGS_DIR/solr_gc.log:time,uptime:filecount=9,filesize=20M|")
     done
   fi
 fi
 
 # If ZK_HOST is defined, the assume SolrCloud mode
-if [[ -n "$ZK_HOST" ]]; then
+if [[ -n "${ZK_HOST:-}" ]]; then
   SOLR_MODE="solrcloud"
 fi
 
-if [ "$SOLR_MODE" == 'solrcloud' ]; then
-  if [ -z "$ZK_CLIENT_TIMEOUT" ]; then
-    ZK_CLIENT_TIMEOUT="30000"
-  fi
-
+if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
+  : "${ZK_CLIENT_TIMEOUT:=30000}"
   CLOUD_MODE_OPTS=("-DzkClientTimeout=$ZK_CLIENT_TIMEOUT")
 
-  if [ "$ZK_HOST" != "" ]; then
+  if [ -n "${ZK_HOST:-}" ]; then
     CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
   else
+    if [ $SOLR_PORT -gt 64535 ]; then
+      echo -e "\nZK_HOST is not set and Solr port is $SOLR_PORT, which would result in an invalid embedded Zookeeper port!\n"
+      exit 1
+    fi
     if $verbose ; then
       echo "Configuring SolrCloud to launch an embedded Zookeeper using -DzkRun"
     fi
@@ -2060,7 +1665,7 @@ if [ "$SOLR_MODE" == 'solrcloud' ]; then
     CLOUD_MODE_OPTS+=('-DzkRun')
   fi
 
-  if [ -n "$ZK_CREATE_CHROOT" ]; then
+  if [ -n "${ZK_CREATE_CHROOT:-}" ]; then
     CLOUD_MODE_OPTS+=("-DcreateZkChroot=$ZK_CREATE_CHROOT")
   fi
 
@@ -2069,28 +1674,31 @@ if [ "$SOLR_MODE" == 'solrcloud' ]; then
     CLOUD_MODE_OPTS+=('-Dbootstrap_confdir=./solr/collection1/conf' '-Dcollection.configName=myconf' '-DnumShards=1')
   fi
 
+  if [ "${SOLR_SOLRXML_REQUIRED:-false}" == "true" ]; then
+    CLOUD_MODE_OPTS+=("-Dsolr.solrxml.required=true")
+  fi
 else
-  if [ ! -e "$SOLR_HOME/solr.xml" ]; then
+  if [ ! -e "$SOLR_HOME/solr.xml" ] && [ "${SOLR_SOLRXML_REQUIRED:-}" == "true" ]; then
     echo -e "\nSolr home directory $SOLR_HOME must contain a solr.xml file!\n"
     exit 1
   fi
 fi
 
 # Exit if old syntax found
-if [ -n "${SOLR_IP_BLACKLIST}" ] || [ -n "${SOLR_IP_WHITELIST}" ]; then
+if [ -n "${SOLR_IP_BLACKLIST:-}" ] || [ -n "${SOLR_IP_WHITELIST:-}" ]; then
   echo "ERROR: SOLR_IP_BLACKLIST and SOLR_IP_WHITELIST are no longer supported. Please use SOLR_IP_ALLOWLIST and SOLR_IP_DENYLIST instead."
   exit 1
 fi
 
 # IP-based access control
-IP_ACL_OPTS=("-Dsolr.jetty.inetaccess.includes=${SOLR_IP_ALLOWLIST}" \
-             "-Dsolr.jetty.inetaccess.excludes=${SOLR_IP_DENYLIST}")
+IP_ACL_OPTS=("-Dsolr.jetty.inetaccess.includes=${SOLR_IP_ALLOWLIST:-}" \
+             "-Dsolr.jetty.inetaccess.excludes=${SOLR_IP_DENYLIST:-}")
 
 # These are useful for attaching remote profilers like VisualVM/JConsole
-if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then
+if [ "${ENABLE_REMOTE_JMX_OPTS:-false}" == "true" ]; then
 
   if [ -z "$RMI_PORT" ]; then
-    RMI_PORT=`expr $SOLR_PORT + 10000`
+    RMI_PORT=$((SOLR_PORT + 10000))
     if [ $RMI_PORT -gt 65535 ]; then
       echo -e "\nRMI_PORT is $RMI_PORT, which is invalid!\n"
       exit 1
@@ -2123,7 +1731,7 @@ else
 fi
 
 # Enable ADMIN UI by default, and give the option for users to disable it
-if [ "$SOLR_ADMIN_UI_DISABLED" == "true" ]; then
+if [ "${SOLR_ADMIN_UI_DISABLED:-false}" == "true" ]; then
   SOLR_ADMIN_UI="-DdisableAdminUI=true"
   echo -e "ADMIN UI Disabled"
 else
@@ -2131,22 +1739,17 @@ else
 fi
 
 JAVA_MEM_OPTS=()
-if [ -z "$SOLR_HEAP" ] && [ -n "$SOLR_JAVA_MEM" ]; then
+if [ -z "${SOLR_HEAP:-}" ] && [ -n "${SOLR_JAVA_MEM:-}" ]; then
   JAVA_MEM_OPTS=($SOLR_JAVA_MEM)
 else
   SOLR_HEAP="${SOLR_HEAP:-512m}"
   JAVA_MEM_OPTS=("-Xms$SOLR_HEAP" "-Xmx$SOLR_HEAP")
 fi
 
-# Pick default for Java thread stack size, and then add to SOLR_OPTS
-if [ -z ${SOLR_JAVA_STACK_SIZE+x} ]; then
-  SOLR_JAVA_STACK_SIZE='-Xss256k'
-fi
-SOLR_OPTS+=($SOLR_JAVA_STACK_SIZE)
+# Pick default for Java thread stack size, and then add to SCRIPT_SOLR_OPTS
+SCRIPT_SOLR_OPTS+=(${SOLR_JAVA_STACK_SIZE:-"-Xss256k"})
 
-if [ -z "$SOLR_TIMEZONE" ]; then
-  SOLR_TIMEZONE='UTC'
-fi
+: "${SOLR_TIMEZONE:=UTC}"
 
 function mk_writable_dir() {
   local DIRNAME="$1"
@@ -2171,8 +1774,8 @@ function start_solr() {
   SOLR_JETTY_ADDL_CONFIG="$3"
 
   # define default GC_TUNE
-  if [ -z ${GC_TUNE+x} ]; then
-      GC_TUNE=('-XX:+UseG1GC' \
+  if [ -z "${GC_TUNE}" ]; then
+      GC_TUNE_ARR=('-XX:+UseG1GC' \
         '-XX:+PerfDisableSharedMem' \
         '-XX:+ParallelRefProcEnabled' \
         '-XX:MaxGCPauseMillis=250' \
@@ -2180,95 +1783,127 @@ function start_solr() {
         '-XX:+AlwaysPreTouch' \
         '-XX:+ExplicitGCInvokesConcurrent')
   else
-    GC_TUNE=($GC_TUNE)
+    # shellcheck disable=SC2128
+    GC_TUNE_ARR=($GC_TUNE) # Stuff the string from outside into first value of the array
   fi
 
-  if [ -n "$SOLR_WAIT_FOR_ZK" ]; then
-    WAIT_FOR_ZK_PROP="-DwaitForZk=$SOLR_WAIT_FOR_ZK"
-    SOLR_OPTS+=($WAIT_FOR_ZK_PROP)
+  if [ -n "${SOLR_WAIT_FOR_ZK:-}" ]; then
+    SCRIPT_SOLR_OPTS+=("-DwaitForZk=$SOLR_WAIT_FOR_ZK")
   fi
 
-  # If SSL-related system props are set, add them to SOLR_OPTS
+  if [ -n "${SOLR_DATA_HOME:-}" ]; then
+    SCRIPT_SOLR_OPTS+=("-Dsolr.data.home=$SOLR_DATA_HOME")
+  fi
+
+  if [ -n "${SOLR_DELETE_UNKNOWN_CORES:-}" ]; then
+    SCRIPT_SOLR_OPTS+=("-Dsolr.deleteUnknownCores=$SOLR_DELETE_UNKNOWN_CORES")
+  fi
+
+  # If SSL-related system props are set, add them to SCRIPT_SOLR_OPTS
   if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     # If using SSL and solr.jetty.https.port not set explicitly, use the jetty.port
     SSL_PORT_PROP="-Dsolr.jetty.https.port=$SOLR_PORT"
-    SOLR_OPTS+=($SOLR_SSL_OPTS "$SSL_PORT_PROP")
+    SCRIPT_SOLR_OPTS+=($SOLR_SSL_OPTS "$SSL_PORT_PROP")
   fi
 
-  # If authentication system props are set, add them to SOLR_OPTS
+  # If authentication system props are set, add them to SCRIPT_SOLR_OPTS
   if [ -n "$AUTHC_OPTS" ]; then
-    SOLR_OPTS+=($AUTHC_OPTS)
+    SCRIPT_SOLR_OPTS+=($AUTHC_OPTS)
   fi
 
-  # If a heap dump directory is specified, enable it in SOLR_OPTS
-  if [[ -z "$SOLR_HEAP_DUMP_DIR" ]] && [[ "$SOLR_HEAP_DUMP" == "true" ]]; then
+  # If there are internal options set by Solr (users should not use this variable), add them to SCRIPT_SOLR_OPTS
+  if [ -n "$SOLR_OPTS_INTERNAL" ]; then
+    SCRIPT_SOLR_OPTS+=($SOLR_OPTS_INTERNAL)
+  fi
+
+  # If a heap dump directory is specified, enable it in SCRIPT_SOLR_OPTS
+  if [[ -z "${SOLR_HEAP_DUMP_DIR:-}" ]] && [[ "${SOLR_HEAP_DUMP:-}" == "true" ]]; then
     SOLR_HEAP_DUMP_DIR="${SOLR_LOGS_DIR}/dumps"
   fi
-  if [[ -n "$SOLR_HEAP_DUMP_DIR" ]]; then
-    SOLR_OPTS+=("-XX:+HeapDumpOnOutOfMemoryError")
-    SOLR_OPTS+=("-XX:HeapDumpPath=$SOLR_HEAP_DUMP_DIR/solr-$(date +%s)-pid$$.hprof")
+  if [[ -n "${SOLR_HEAP_DUMP_DIR:-}" ]]; then
+    SCRIPT_SOLR_OPTS+=("-XX:+HeapDumpOnOutOfMemoryError")
+    SCRIPT_SOLR_OPTS+=("-XX:HeapDumpPath=$SOLR_HEAP_DUMP_DIR/solr-$(date +%s)-pid$$.hprof")
   fi
 
   if $verbose ; then
     echo -e "\nStarting Solr using the following settings:"
-    echo -e "    JAVA            = $JAVA"
-    echo -e "    SOLR_SERVER_DIR = $SOLR_SERVER_DIR"
-    echo -e "    SOLR_HOME       = $SOLR_HOME"
-    echo -e "    SOLR_HOST       = $SOLR_HOST"
-    echo -e "    SOLR_PORT       = $SOLR_PORT"
-    echo -e "    STOP_PORT       = $STOP_PORT"
-    echo -e "    JAVA_MEM_OPTS   = ${JAVA_MEM_OPTS[@]}"
-    echo -e "    GC_TUNE         = ${GC_TUNE[@]}"
-    echo -e "    GC_LOG_OPTS     = ${GC_LOG_OPTS[@]}"
-    echo -e "    SOLR_TIMEZONE   = $SOLR_TIMEZONE"
+    echo -e "    JAVA               = $JAVA"
+    echo -e "    SOLR_SERVER_DIR    = $SOLR_SERVER_DIR"
+    echo -e "    SOLR_HOME          = $SOLR_HOME"
+    echo -e "    SOLR_HOST          = ${SOLR_HOST:-}"
+    echo -e "    SOLR_PORT          = $SOLR_PORT"
+    echo -e "    STOP_PORT          = $STOP_PORT"
+    echo -e "    JAVA_MEM_OPTS      = ${JAVA_MEM_OPTS[*]}"
+    echo -e "    GC_TUNE            = ${GC_TUNE_ARR[*]}"
+    echo -e "    GC_LOG_OPTS        = ${GC_LOG_OPTS[*]}"
+    echo -e "    SOLR_TIMEZONE      = $SOLR_TIMEZONE"
 
     if [ "$SOLR_MODE" == "solrcloud" ]; then
-      echo -e "    CLOUD_MODE_OPTS = ${CLOUD_MODE_OPTS[@]}"
+      echo -e "    CLOUD_MODE_OPTS    = ${CLOUD_MODE_OPTS[*]}"
     fi
 
-    if [ "$SOLR_OPTS" != "" ]; then
-      echo -e "    SOLR_OPTS       = ${SOLR_OPTS[@]}"
+    if [ -n "${SOLR_OPTS:-}" ]; then
+      echo -e "    SOLR_OPTS (USER)   = ${SOLR_OPTS[*]}"
     fi
 
-    if [ "$SOLR_ADDL_ARGS" != "" ]; then
-      echo -e "    SOLR_ADDL_ARGS  = $SOLR_ADDL_ARGS"
+    if [ -n "${SCRIPT_SOLR_OPTS:-}" ]; then
+      echo -e "    SOLR_OPTS (SCRIPT) = ${SCRIPT_SOLR_OPTS[*]}"
     fi
 
-    if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then
-      echo -e "    RMI_PORT        = $RMI_PORT"
-      echo -e "    REMOTE_JMX_OPTS = ${REMOTE_JMX_OPTS[@]}"
+    if [ -n "${SOLR_ADDL_ARGS:-}" ]; then
+      echo -e "    SOLR_ADDL_ARGS     = $SOLR_ADDL_ARGS"
     fi
 
-    if [ "$SOLR_LOG_LEVEL" != "" ]; then
-      echo -e "    SOLR_LOG_LEVEL  = $SOLR_LOG_LEVEL"
+    if [ "${ENABLE_REMOTE_JMX_OPTS:-false}" == "true" ]; then
+      echo -e "    RMI_PORT           = ${RMI_PORT:-}"
+      echo -e "    REMOTE_JMX_OPTS    = ${REMOTE_JMX_OPTS[*]}"
     fi
 
-    if [ "$SOLR_DATA_HOME" != "" ]; then
-      echo -e "    SOLR_DATA_HOME  = $SOLR_DATA_HOME"
+    if [ -n "${SOLR_LOG_LEVEL:-}" ]; then
+      echo -e "    SOLR_LOG_LEVEL     = $SOLR_LOG_LEVEL"
     fi
-    echo -e "\n"
+
+    if [ -n "${SOLR_DATA_HOME:-}" ]; then
+      echo -e "    SOLR_DATA_HOME     = $SOLR_DATA_HOME"
+    fi
+    echo
   fi
 
   # need to launch solr from the server dir
-  cd "$SOLR_SERVER_DIR"
+  cd "$SOLR_SERVER_DIR" || (echo -e "\nCd to SOLR_SERVER_DIR failed" && exit 1)
 
   if [ ! -e "$SOLR_SERVER_DIR/start.jar" ]; then
     echo -e "\nERROR: start.jar file not found in $SOLR_SERVER_DIR!\nPlease check your -d parameter to set the correct Solr server directory.\n"
     exit 1
   fi
 
-  SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
-    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" $SOLR_LOG_LEVEL_OPT -Dsolr.log.dir="$SOLR_LOGS_DIR" \
+  # Workaround for JIT crash, see https://issues.apache.org/jira/browse/SOLR-16463
+  if [[ "$JAVA_VER_NUM" -ge "17" ]] ; then
+    SCRIPT_SOLR_OPTS+=("-XX:CompileCommand=exclude,com.github.benmanes.caffeine.cache.BoundedLocalCache::put")
+    echo "Java $JAVA_VER_NUM detected. Enabled workaround for SOLR-16463"
+  fi
+
+  # Vector optimizations are only supported for Java 20 and 21 for now.
+  # This will need to change as Lucene is upgraded and newer Java versions are released
+  if [[ "$JAVA_VER_NUM" -ge "20" ]] && [[ "$JAVA_VER_NUM" -le "21" ]] ; then
+    SCRIPT_SOLR_OPTS+=("--add-modules" "jdk.incubator.vector")
+    echo "Java $JAVA_VER_NUM detected. Incubating Panama Vector APIs have been enabled"
+  fi
+
+  SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE_ARR[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
+    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" -Dsolr.log.dir="$SOLR_LOGS_DIR" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
-    "-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
-    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=$SOLR_DATA_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
-    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
+    # '+CrashOnOutOfMemoryError' ensures that Solr crashes whenever
+    # OOME is thrown. Program operation after OOME is unpredictable.
+    "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \
+    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.install.dir=$SOLR_TIP" "-Dsolr.install.symDir=$SOLR_TIP_SYM" \
+    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SCRIPT_SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}" "${SOLR_OPTS[@]}")
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"
-  if [[ -n "$SOLR_HEAP_DUMP_DIR" ]]; then
+  if [[ -n "${SOLR_HEAP_DUMP_DIR:-}" ]]; then
     mk_writable_dir "$SOLR_HEAP_DUMP_DIR" "Heap Dump"
   fi
   case "$SOLR_LOGS_DIR" in
@@ -2279,19 +1914,38 @@ function start_solr() {
   esac
 
   if [ "$run_in_foreground" == "true" ]; then
+    # shellcheck disable=SC2086
     exec "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG
   else
     # run Solr in the background
+    # shellcheck disable=SC2086
     nohup "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -Dsolr.log.muteconsole \
         -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG \
-	1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
+        1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
 
-    # check if /proc/sys/kernel/random/entropy_avail exists then check output of cat /proc/sys/kernel/random/entropy_avail to see if less than 300
-    if [[ -f /proc/sys/kernel/random/entropy_avail ]] && (( `cat /proc/sys/kernel/random/entropy_avail` < 300)); then
-	echo "Warning: Available entropy is low. As a result, use of the UUIDField, SSL, or any other features that require"
-	echo "RNG might not work properly. To check for the amount of available entropy, use 'cat /proc/sys/kernel/random/entropy_avail'."
-	echo ""
+    # Check and warn about low entropy on Linux systems
+    if [ -e /proc/sys/kernel/random ]; then
+      # Get the current entropy available
+      entropy_avail=$(cat /proc/sys/kernel/random/entropy_avail)
+
+      # Get the pool size
+      pool_size=$(cat /proc/sys/kernel/random/poolsize)
+
+      # Check if entropy is available and pool size is non-zero
+      if [[ $entropy_avail -gt 0 && $pool_size -ne 0 ]]; then
+        # Compute the ratio of entropy available to pool size
+        ratio=$(awk -v ea="$entropy_avail" -v ps="$pool_size" 'BEGIN {print int((ea/ps)*100)}')
+
+        # Check if the ratio is less than 25%
+        if (( ratio < 25 )); then
+          echo "Warning: Available entropy is low. As a result, use of the UUIDField, SSL, or any other features that require"
+          echo "RNG might not work properly. To check for the amount of available entropy, use 'cat /proc/sys/kernel/random/entropy_avail'."
+        fi
+      else
+        echo "Error: Either no entropy is available or the pool size is zero."
+      fi
     fi
+
     # no lsof on cygwin though
     if lsof -v 2>&1 | grep -q revision; then
       echo -n "Waiting up to $SOLR_START_WAIT seconds to see Solr running on port $SOLR_PORT"
@@ -2299,19 +1953,19 @@ function start_solr() {
       (loops=0
       while true
       do
-        running=$(lsof -t -PniTCP:$SOLR_PORT -sTCP:LISTEN)
-        if [ -z "$running" ]; then
-	  slept=$((loops * 2))
+        running=$(lsof -t -PniTCP:$SOLR_PORT -sTCP:LISTEN || :)
+        if [ -z "${running:-}" ]; then
+          slept=$((loops * 2))
           if [ $slept -lt $SOLR_START_WAIT ]; then
             sleep 2
-            loops=$[$loops+1]
+            loops=$((loops+1))
           else
             echo -e "Still not seeing Solr listening on $SOLR_PORT after $SOLR_START_WAIT seconds!"
             tail -30 "$SOLR_LOGS_DIR/solr.log"
             exit # subshell!
           fi
         else
-          SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
+          SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r)
           echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
           exit # subshell!
         fi
@@ -2320,13 +1974,13 @@ function start_solr() {
     else
       echo -e "NOTE: Please install lsof as this script needs it to determine if Solr is listening on port $SOLR_PORT."
       sleep 10
-      SOLR_PID=`ps auxww | grep start\.jar | grep -w "\-Djetty\.port=$SOLR_PORT" | grep -v grep | awk '{print $2}' | sort -r`
+      SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r)
       echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
       return;
     fi
   fi
 }
 
-start_solr "$FG" "$ADDITIONAL_CMD_OPTS" "$ADDITIONAL_JETTY_CONFIG"
+start_solr "$FG" "${ADDITIONAL_CMD_OPTS:-}" "${ADDITIONAL_JETTY_CONFIG:-}"
 
 exit $?

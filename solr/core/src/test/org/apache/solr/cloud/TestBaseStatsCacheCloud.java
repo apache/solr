@@ -16,15 +16,12 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -33,38 +30,35 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.search.similarities.CustomSimilarityFactory;
 import org.apache.solr.search.stats.StatsCache;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/**
- *
- */
+/** */
 @Ignore("Abstract classes should not be executed as tests")
 public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected int numNodes = 2;
   protected String configset = "cloud-dynamic";
 
   protected String collectionName = "collection_" + getClass().getSimpleName();
 
-  protected Function<Integer, SolrInputDocument> generator = i -> {
-    SolrInputDocument doc = new SolrInputDocument("id", "id-" + i);
-    if (i % 3 == 0) {
-      doc.addField("foo_t", "bar baz");
-    } else if (i % 3 == 1) {
-      doc.addField("foo_t", "bar");
-    } else {
-      // skip the field
-    }
-    return doc;
-  };
+  protected Function<Integer, SolrInputDocument> generator =
+      i -> {
+        SolrInputDocument doc = new SolrInputDocument("id", "id-" + i);
+        if (i % 3 == 0) {
+          doc.addField("foo_t", "bar baz");
+        } else if (i % 3 == 1) {
+          doc.addField("foo_t", "bar");
+        } else {
+          // skip the field
+        }
+        return doc;
+      };
 
   protected CloudSolrClient solrClient;
 
@@ -110,10 +104,16 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
   @Test
   @SuppressWarnings({"unchecked"})
   public void testBasicStats() throws Exception {
-    QueryResponse cloudRsp = solrClient.query(collectionName,
-        params("q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + NUM_DOCS, "debug", "true"));
-    QueryResponse controlRsp = control.query("collection1",
-        params("q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + NUM_DOCS, "debug", "true"));
+    QueryResponse cloudRsp =
+        solrClient.query(
+            collectionName,
+            params(
+                "q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + NUM_DOCS, "debug", "true"));
+    QueryResponse controlRsp =
+        control.query(
+            "collection1",
+            params(
+                "q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + NUM_DOCS, "debug", "true"));
 
     assertResponses(controlRsp, cloudRsp, assertSameScores());
 
@@ -121,75 +121,94 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     indexDocs(solrClient, collectionName, NUM_DOCS, NUM_DOCS, generator);
     indexDocs(control, "collection1", NUM_DOCS, NUM_DOCS, generator);
 
-    cloudRsp = solrClient.query(collectionName,
-        params("q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + (NUM_DOCS * 2)));
-    controlRsp = control.query("collection1",
-        params("q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + (NUM_DOCS * 2)));
+    cloudRsp =
+        solrClient.query(
+            collectionName,
+            params("q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + (NUM_DOCS * 2)));
+    controlRsp =
+        control.query(
+            "collection1",
+            params("q", "foo_t:\"bar baz\"", "fl", "*,score", "rows", "" + (NUM_DOCS * 2)));
     assertResponses(controlRsp, cloudRsp, assertSameScores());
 
     // check cache metrics
     StatsCache.StatsCacheMetrics statsCacheMetrics = new StatsCache.StatsCacheMetrics();
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       try (SolrClient client = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
-        NamedList<Object> metricsRsp = client.request(
-            new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params("group", "solr.core", "prefix", "CACHE.searcher.statsCache")));
+        NamedList<Object> metricsRsp =
+            client.request(
+                new GenericSolrRequest(
+                    SolrRequest.METHOD.GET,
+                    "/admin/metrics",
+                    params("group", "solr.core", "prefix", "CACHE.searcher.statsCache")));
         assertNotNull(metricsRsp);
-        NamedList<Object> metricsPerReplica = (NamedList<Object>)metricsRsp.get("metrics");
+        NamedList<Object> metricsPerReplica = (NamedList<Object>) metricsRsp.get("metrics");
         assertNotNull("no metrics perReplica", metricsPerReplica);
-        //log.info("======= Node: " + jettySolrRunner.getBaseUrl());
-        //log.info("======= Metrics:\n" + Utils.toJSONString(metricsPerReplica));
-        metricsPerReplica.forEach((replica, metrics) -> {
-          Map<String, Object> values = (Map<String, Object>)((NamedList<Object>)metrics).get("CACHE.searcher.statsCache");
-          values.forEach((name, value) -> {
-            long val = value instanceof Number ? ((Number) value).longValue() : 0;
-            switch (name) {
-              case "lookups" :
-                statsCacheMetrics.lookups.add(val);
-                break;
-              case "returnLocalStats" :
-                statsCacheMetrics.returnLocalStats.add(val);
-                break;
-              case "mergeToGlobalStats" :
-                statsCacheMetrics.mergeToGlobalStats.add(val);
-                break;
-              case "missingGlobalFieldStats" :
-                statsCacheMetrics.missingGlobalFieldStats.add(val);
-                break;
-              case "missingGlobalTermStats" :
-                statsCacheMetrics.missingGlobalTermStats.add(val);
-                break;
-              case "receiveGlobalStats" :
-                statsCacheMetrics.receiveGlobalStats.add(val);
-                break;
-              case "retrieveStats" :
-                statsCacheMetrics.retrieveStats.add(val);
-                break;
-              case "sendGlobalStats" :
-                statsCacheMetrics.sendGlobalStats.add(val);
-                break;
-              case "useCachedGlobalStats" :
-                statsCacheMetrics.useCachedGlobalStats.add(val);
-                break;
-              case "statsCacheImpl" :
-                assertTrue("incorreect cache impl, expected" + getImplementationName() + " but was " + value,
-                    getImplementationName().endsWith((String)value));
-                break;
-              default:
-                fail("Unexpected cache metrics: key=" + name + ", value=" + value);
-            }
-          });
-        });
+        // log.info("======= Node: " + jettySolrRunner.getBaseUrl());
+        // log.info("======= Metrics:\n" + Utils.toJSONString(metricsPerReplica));
+        metricsPerReplica.forEach(
+            (replica, metrics) -> {
+              Map<String, Object> values =
+                  (Map<String, Object>)
+                      ((NamedList<Object>) metrics).get("CACHE.searcher.statsCache");
+              values.forEach(
+                  (name, value) -> {
+                    long val = value instanceof Number ? ((Number) value).longValue() : 0;
+                    switch (name) {
+                      case "lookups":
+                        statsCacheMetrics.lookups.add(val);
+                        break;
+                      case "returnLocalStats":
+                        statsCacheMetrics.returnLocalStats.add(val);
+                        break;
+                      case "mergeToGlobalStats":
+                        statsCacheMetrics.mergeToGlobalStats.add(val);
+                        break;
+                      case "missingGlobalFieldStats":
+                        statsCacheMetrics.missingGlobalFieldStats.add(val);
+                        break;
+                      case "missingGlobalTermStats":
+                        statsCacheMetrics.missingGlobalTermStats.add(val);
+                        break;
+                      case "receiveGlobalStats":
+                        statsCacheMetrics.receiveGlobalStats.add(val);
+                        break;
+                      case "retrieveStats":
+                        statsCacheMetrics.retrieveStats.add(val);
+                        break;
+                      case "sendGlobalStats":
+                        statsCacheMetrics.sendGlobalStats.add(val);
+                        break;
+                      case "useCachedGlobalStats":
+                        statsCacheMetrics.useCachedGlobalStats.add(val);
+                        break;
+                      case "statsCacheImpl":
+                        assertTrue(
+                            "incorrect cache impl, expected"
+                                + getImplementationName()
+                                + " but was "
+                                + value,
+                            getImplementationName().endsWith((String) value));
+                        break;
+                      default:
+                        fail("Unexpected cache metrics: key=" + name + ", value=" + value);
+                    }
+                  });
+            });
       }
     }
     checkStatsCacheMetrics(statsCacheMetrics);
   }
 
   protected void checkStatsCacheMetrics(StatsCache.StatsCacheMetrics statsCacheMetrics) {
-    assertEquals(statsCacheMetrics.toString(), 0, statsCacheMetrics.missingGlobalFieldStats.intValue());
-    assertEquals(statsCacheMetrics.toString(), 0, statsCacheMetrics.missingGlobalTermStats.intValue());
+    assertEquals(
+        statsCacheMetrics.toString(), 0, statsCacheMetrics.missingGlobalFieldStats.intValue());
+    assertEquals(
+        statsCacheMetrics.toString(), 0, statsCacheMetrics.missingGlobalTermStats.intValue());
   }
 
-  protected void assertResponses(QueryResponse controlRsp, QueryResponse cloudRsp, boolean sameScores) throws Exception {
+  protected void assertResponses(
+      QueryResponse controlRsp, QueryResponse cloudRsp, boolean sameScores) {
     Map<String, SolrDocument> cloudDocs = new HashMap<>();
     Map<String, SolrDocument> controlDocs = new HashMap<>();
     cloudRsp.getResults().forEach(doc -> cloudDocs.put((String) doc.getFieldValue("id"), doc));
@@ -202,14 +221,22 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
       Float controlScore = (Float) controlDoc.getFieldValue("score");
       Float cloudScore = (Float) cloudDoc.getFieldValue("score");
       if (sameScores) {
-        assertEquals("cloud score differs from control", controlScore, cloudScore, controlScore * 0.001f);
+        assertEquals(
+            "cloud score differs from control", controlScore, cloudScore, controlScore * 0.001f);
       } else {
-        assertNotEquals("cloud score is the same as control", controlScore, cloudScore, controlScore * 0.001f);
+        assertNotEquals(
+            "cloud score is the same as control", controlScore, cloudScore, controlScore * 0.001f);
       }
     }
   }
 
-  protected void indexDocs(SolrClient client, String collectionName, int num, int start, Function<Integer, SolrInputDocument> generator) throws Exception {
+  protected void indexDocs(
+      SolrClient client,
+      String collectionName,
+      int num,
+      int start,
+      Function<Integer, SolrInputDocument> generator)
+      throws Exception {
 
     UpdateRequest ureq = new UpdateRequest();
     for (int i = 0; i < num; i++) {

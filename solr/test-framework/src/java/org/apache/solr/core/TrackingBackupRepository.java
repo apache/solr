@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -34,117 +33,133 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 
 public class TrackingBackupRepository implements BackupRepository {
-    private static final List<URI> COPIED_FILES = Collections.synchronizedList(new ArrayList<>());
+  private static final List<URI> COPIED_FILES = Collections.synchronizedList(new ArrayList<>());
+  private static final List<URI> DIRECTORIES_CREATED =
+      Collections.synchronizedList(new ArrayList<>());
+  private static final List<URI> OUTPUTS_CREATED = Collections.synchronizedList(new ArrayList<>());
 
-    private BackupRepository delegate;
+  private BackupRepository delegate;
 
-    @Override
-    public <T> T getConfigProperty(String name) {
-        return delegate.getConfigProperty(name);
-    }
+  @Override
+  public <T> T getConfigProperty(String name) {
+    return delegate.getConfigProperty(name);
+  }
 
-    @Override
-    public URI createURI(String path) {
-        return delegate.createURI(path);
-    }
+  @Override
+  public URI createURI(String path) {
+    return delegate.createURI(path);
+  }
 
-    @Override
-    public URI createDirectoryURI(String path) {
-        return delegate.createDirectoryURI(path);
-    }
+  @Override
+  public URI createDirectoryURI(String path) {
+    return delegate.createDirectoryURI(path);
+  }
 
-    @Override
-    public URI resolve(URI baseUri, String... pathComponents) {
-        return delegate.resolve(baseUri, pathComponents);
-    }
+  @Override
+  public URI resolve(URI baseUri, String... pathComponents) {
+    return delegate.resolve(baseUri, pathComponents);
+  }
 
-    @Override
-    public URI resolveDirectory(URI baseUri, String... pathComponents) {
-        return delegate.resolveDirectory(baseUri, pathComponents);
-    }
+  @Override
+  public URI resolveDirectory(URI baseUri, String... pathComponents) {
+    return delegate.resolveDirectory(baseUri, pathComponents);
+  }
 
-    @Override
-    public boolean exists(URI path) throws IOException {
-        return delegate.exists(path);
-    }
+  @Override
+  public boolean exists(URI path) throws IOException {
+    return delegate.exists(path);
+  }
 
-    @Override
-    public PathType getPathType(URI path) throws IOException {
-        return delegate.getPathType(path);
-    }
+  @Override
+  public PathType getPathType(URI path) throws IOException {
+    return delegate.getPathType(path);
+  }
 
-    @Override
-    public String[] listAll(URI path) throws IOException {
-        return delegate.listAll(path);
-    }
+  @Override
+  public String[] listAll(URI path) throws IOException {
+    return delegate.listAll(path);
+  }
 
-    @Override
-    public IndexInput openInput(URI dirPath, String fileName, IOContext ctx) throws IOException {
-        return delegate.openInput(dirPath, fileName, ctx);
-    }
+  @Override
+  public IndexInput openInput(URI dirPath, String fileName, IOContext ctx) throws IOException {
+    return delegate.openInput(dirPath, fileName, ctx);
+  }
 
-    @Override
-    public OutputStream createOutput(URI path) throws IOException {
-        return delegate.createOutput(path);
-    }
+  @Override
+  public OutputStream createOutput(URI path) throws IOException {
+    OUTPUTS_CREATED.add(path);
+    return delegate.createOutput(path);
+  }
 
-    @Override
-    public void createDirectory(URI path) throws IOException {
-        delegate.createDirectory(path);
-    }
+  @Override
+  public void createDirectory(URI path) throws IOException {
+    DIRECTORIES_CREATED.add(path);
+    delegate.createDirectory(path);
+  }
 
-    @Override
-    public void deleteDirectory(URI path) throws IOException {
-        delegate.deleteDirectory(path);
-    }
+  @Override
+  public void deleteDirectory(URI path) throws IOException {
+    delegate.deleteDirectory(path);
+  }
 
-    @Override
-    public void copyIndexFileFrom(Directory sourceDir, String sourceFileName, URI destDir, String destFileName) throws IOException {
-        COPIED_FILES.add(delegate.resolve(destDir, destFileName));
-        delegate.copyIndexFileFrom(sourceDir, sourceFileName, destDir, destFileName);
-    }
+  @Override
+  public void copyIndexFileFrom(
+      Directory sourceDir, String sourceFileName, URI destDir, String destFileName)
+      throws IOException {
+    COPIED_FILES.add(delegate.resolve(destDir, destFileName));
+    delegate.copyIndexFileFrom(sourceDir, sourceFileName, destDir, destFileName);
+  }
 
-    @Override
-    public void close() throws IOException {
-        delegate.close();
-    }
+  @Override
+  public void close() throws IOException {
+    delegate.close();
+  }
 
+  @Override
+  public void delete(URI path, Collection<String> files) throws IOException {
+    delegate.delete(path, files);
+  }
 
-    @Override
-    public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException) throws IOException {
-        delegate.delete(path, files, ignoreNoSuchFileException);
-    }
+  @Override
+  public Checksum checksum(Directory dir, String fileName) throws IOException {
+    return delegate.checksum(dir, fileName);
+  }
 
-    @Override
-    public Checksum checksum(Directory dir, String fileName) throws IOException {
-        return delegate.checksum(dir, fileName);
-    }
+  @Override
+  public void init(NamedList<?> args) {
+    BackupRepositoryFactory factory = (BackupRepositoryFactory) args.get("factory");
+    SolrResourceLoader loader = (SolrResourceLoader) args.get("loader");
+    String repoName = (String) args.get("delegateRepoName");
 
-    @Override
-    public void init(NamedList<?> args) {
-        BackupRepositoryFactory factory = (BackupRepositoryFactory) args.get("factory");
-        SolrResourceLoader loader = (SolrResourceLoader) args.get("loader");
-        String repoName = (String) args.get("delegateRepoName");
+    this.delegate = factory.newInstance(loader, repoName);
+  }
 
-        this.delegate = factory.newInstance(loader, repoName);
-    }
+  /**
+   * @return list of files were copied by using {@link #copyFileFrom(Directory, String, URI)}
+   */
+  public static List<URI> copiedFiles() {
+    return new ArrayList<>(COPIED_FILES);
+  }
 
-    /**
-     * @return list of files were copied by using {@link #copyFileFrom(Directory, String, URI)}
-     */
-    public static List<URI> copiedFiles() {
-        return new ArrayList<>(COPIED_FILES);
-    }
+  public static List<URI> directoriesCreated() {
+    return new ArrayList<>(DIRECTORIES_CREATED);
+  }
 
-    /**
-     * Clear all tracking data
-     */
-    public static void clear() {
-        COPIED_FILES.clear();
-    }
+  public static List<URI> outputsCreated() {
+    return new ArrayList<>(OUTPUTS_CREATED);
+  }
 
-    @Override
-    public void copyIndexFileTo(URI sourceRepo, String sourceFileName, Directory dest, String destFileName) throws IOException {
-        delegate.copyIndexFileTo(sourceRepo, sourceFileName, dest, destFileName);
-    }
+  /** Clear all tracking data */
+  public static void clear() {
+    COPIED_FILES.clear();
+    DIRECTORIES_CREATED.clear();
+    OUTPUTS_CREATED.clear();
+  }
+
+  @Override
+  public void copyIndexFileTo(
+      URI sourceRepo, String sourceFileName, Directory dest, String destFileName)
+      throws IOException {
+    delegate.copyIndexFileTo(sourceRepo, sourceFileName, dest, destFileName);
+  }
 }

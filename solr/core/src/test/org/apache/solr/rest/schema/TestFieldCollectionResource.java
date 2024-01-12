@@ -16,76 +16,80 @@
  */
 package org.apache.solr.rest.schema;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
-
 public class TestFieldCollectionResource extends SolrRestletTestBase {
   @Test
-  public void testXMLGetAllFields() throws Exception {
-    assertQ("/schema/fields?wt=xml",
-            "(/response/arr[@name='fields']/lst/str[@name='name'])[1] = 'HTMLstandardtok'",
-            "(/response/arr[@name='fields']/lst/str[@name='name'])[2] = 'HTMLwhitetok'",
-            "(/response/arr[@name='fields']/lst/str[@name='name'])[3] = '_version_'");
+  public void testXMLGetAllFields() {
+    assertQ(
+        "/schema/fields?wt=xml",
+        "(/response/arr[@name='fields']/lst/str[@name='name'])[1] = 'HTMLstandardtok'",
+        "(/response/arr[@name='fields']/lst/str[@name='name'])[2] = 'HTMLwhitetok'",
+        "(/response/arr[@name='fields']/lst/str[@name='name'])[3] = '_version_'");
   }
-
 
   @Test
   public void testGetAllFields() throws Exception {
-    assertJQ("/schema/fields",
-             "/fields/[0]/name=='HTMLstandardtok'",
-             "/fields/[1]/name=='HTMLwhitetok'",
-             "/fields/[2]/name=='_version_'");
+    assertJQ(
+        "/schema/fields",
+        "/fields/[0]/name=='HTMLstandardtok'",
+        "/fields/[1]/name=='HTMLwhitetok'",
+        "/fields/[2]/name=='_version_'");
   }
 
   @Test
-  public void testXMLGetThreeFieldsDontIncludeDynamic() throws IOException {
+  public void testXMLGetThreeFieldsDontIncludeDynamic() {
     //
-    assertQ("/schema/fields?wt=xml&fl=id,_version_,price_i",
+    assertQ(
+        "/schema/fields?wt=xml&fl=id,_version_,price_i",
         "count(/response/arr[@name='fields']/lst/str[@name='name']) = 2",
         "(/response/arr[@name='fields']/lst/str[@name='name'])[1] = 'id'",
         "(/response/arr[@name='fields']/lst/str[@name='name'])[2] = '_version_'");
   }
 
   @Test
-  public void testXMLGetThreeFieldsIncludeDynamic() throws IOException {
-    assertQ("/schema/fields?wt=xml&fl=id,_version_,price_i&includeDynamic=on",
-
+  public void testXMLGetThreeFieldsIncludeDynamic() {
+    assertQ(
+        "/schema/fields?wt=xml&fl=id,_version_,price_i&includeDynamic=on",
         "count(/response/arr[@name='fields']/lst/str[@name='name']) = 3",
-
         "(/response/arr[@name='fields']/lst/str[@name='name'])[1] = 'id'",
-
         "(/response/arr[@name='fields']/lst/str[@name='name'])[2] = '_version_'",
-
         "(/response/arr[@name='fields']/lst/str[@name='name'])[3] = 'price_i'",
-
         "/response/arr[@name='fields']/lst[    str[@name='name']='price_i'    "
-            +"                                  and str[@name='dynamicBase']='*_i']");
+            + "                                  and str[@name='dynamicBase']='*_i']");
   }
+
   @Test
-  public void testXMLNotFoundFields() throws IOException {
-    assertQ("/schema/fields?&wt=xml&fl=not_in_there,this_one_either",
+  public void testXMLNotFoundFields() {
+    assertQ(
+        "/schema/fields?&wt=xml&fl=not_in_there,this_one_either",
         "count(/response/arr[@name='fields']) = 1",
         "count(/response/arr[@name='fields']/lst/str[@name='name']) = 0");
   }
 
-
   @Test
   public void testGetAllFieldsIncludeDynamic() throws Exception {
-    List<Map<String, Object>> fields = new SchemaRequest.Fields(params("includeDynamic", "true"))
-        .process(getSolrClient())
-        .getFields();
+    List<Map<String, Object>> fields =
+        new SchemaRequest.Fields(params("includeDynamic", "true"))
+            .process(getSolrClient())
+            .getFields();
 
-    Set<String> lookingForNames = asSet("HTMLstandardtok", "HTMLwhitetok", "_version_", // static
-        "*_d", "*_f", "*_b", "*_t", "*_l"); // dynamic
+    Set<String> lookingForNames =
+        asSet(
+            "HTMLstandardtok",
+            "HTMLwhitetok",
+            "_version_", // static
+            "*_d",
+            "*_f",
+            "*_b",
+            "*_t",
+            "*_l"); // dynamic
     fields.stream().map(f -> f.get("name")).forEach(lookingForNames::remove);
     assertTrue(lookingForNames.toString(), lookingForNames.isEmpty());
   }
-
 }

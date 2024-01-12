@@ -17,8 +17,9 @@
 
 package org.apache.solr.update.processor;
 
-import java.util.Locale;
+import static org.apache.solr.update.processor.ClassificationUpdateProcessorFactory.Algorithm.KNN;
 
+import java.util.Locale;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -30,11 +31,10 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.LuceneQParser;
 import org.apache.solr.search.SyntaxError;
 
-import static org.apache.solr.update.processor.ClassificationUpdateProcessorFactory.Algorithm.KNN;
-
 /**
- * This class implements an UpdateProcessorFactory for the Classification Update Processor.
- * It takes in input a series of parameter that will be necessary to instantiate and use the Classifier
+ * This class implements an UpdateProcessorFactory for the Classification Update Processor. It takes
+ * in input a series of parameter that will be necessary to instantiate and use the Classifier
+ *
  * @since 6.1.0
  */
 public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessorFactory {
@@ -50,9 +50,12 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
   private static final String KNN_K_PARAM = "knn.k";
   private static final String KNN_FILTER_QUERY = "knn.filterQuery";
 
-  public enum Algorithm {KNN, BAYES}
+  public enum Algorithm {
+    KNN,
+    BAYES
+  }
 
-  //Update Processor Defaults
+  // Update Processor Defaults
   private static final int DEFAULT_MAX_CLASSES_TO_ASSIGN = 1;
   private static final int DEFAULT_MIN_TF = 1;
   private static final int DEFAULT_MIN_DF = 1;
@@ -68,7 +71,8 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
       params = args.toSolrParams();
       classificationParams = new ClassificationUpdateProcessorParams();
 
-      String fieldNames = params.get(INPUT_FIELDS_PARAM);// must be a comma separated list of fields
+      String fieldNames =
+          params.get(INPUT_FIELDS_PARAM); // must be a comma separated list of fields
       checkNotNull(INPUT_FIELDS_PARAM, fieldNames);
       classificationParams.setInputFieldNames(fieldNames.split("\\,"));
 
@@ -82,20 +86,22 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
       }
       classificationParams.setPredictedClassField(predictedClassField);
 
-      classificationParams.setMaxPredictedClasses(getIntParam(params, MAX_CLASSES_TO_ASSIGN_PARAM, DEFAULT_MAX_CLASSES_TO_ASSIGN));
+      classificationParams.setMaxPredictedClasses(
+          getIntParam(params, MAX_CLASSES_TO_ASSIGN_PARAM, DEFAULT_MAX_CLASSES_TO_ASSIGN));
 
       String algorithmString = params.get(ALGORITHM_PARAM);
       Algorithm classificationAlgorithm;
       try {
-        if (algorithmString == null || Algorithm.valueOf(algorithmString.toUpperCase(Locale.ROOT)) == null) {
+        if (algorithmString == null
+            || Algorithm.valueOf(algorithmString.toUpperCase(Locale.ROOT)) == null) {
           classificationAlgorithm = DEFAULT_ALGORITHM;
         } else {
           classificationAlgorithm = Algorithm.valueOf(algorithmString.toUpperCase(Locale.ROOT));
         }
       } catch (IllegalArgumentException e) {
-        throw new SolrException
-            (SolrException.ErrorCode.SERVER_ERROR,
-                "Classification UpdateProcessor Algorithm: '" + algorithmString + "' not supported");
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Classification UpdateProcessor Algorithm: '" + algorithmString + "' not supported");
       }
       classificationParams.setAlgorithm(classificationAlgorithm);
 
@@ -126,14 +132,15 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
 
   private void checkNotNull(String paramName, Object param) {
     if (param == null) {
-      throw new SolrException
-          (SolrException.ErrorCode.SERVER_ERROR,
-              "Classification UpdateProcessor '" + paramName + "' can not be null");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Classification UpdateProcessor '" + paramName + "' can not be null");
     }
   }
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     String trainingFilterQueryString = (params.get(KNN_FILTER_QUERY));
     try {
       if (trainingFilterQueryString != null && !trainingFilterQueryString.isEmpty()) {
@@ -141,9 +148,12 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
         classificationParams.setTrainingFilterQuery(trainingFilterQuery);
       }
     } catch (SyntaxError | RuntimeException syntaxError) {
-      throw new SolrException
-          (SolrException.ErrorCode.SERVER_ERROR,
-              "Classification UpdateProcessor Training Filter Query: '" + trainingFilterQueryString + "' is not supported", syntaxError);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Classification UpdateProcessor Training Filter Query: '"
+              + trainingFilterQueryString
+              + "' is not supported",
+          syntaxError);
     }
 
     IndexSchema schema = req.getSchema();
@@ -152,7 +162,9 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
     return new ClassificationUpdateProcessor(classificationParams, next, indexReader, schema);
   }
 
-  private Query parseFilterQuery(String trainingFilterQueryString, SolrParams params, SolrQueryRequest req) throws SyntaxError {
+  private Query parseFilterQuery(
+      String trainingFilterQueryString, SolrParams params, SolrQueryRequest req)
+      throws SyntaxError {
     LuceneQParser parser = new LuceneQParser(trainingFilterQueryString, null, params, req);
     return parser.parse();
   }

@@ -16,5 +16,4 @@
  */
 package org.apache.solr.servlet;
 
-public class SolrAuthenticationException extends Exception{
-}
+public class SolrAuthenticationException extends Exception {}

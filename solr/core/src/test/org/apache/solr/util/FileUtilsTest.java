@@ -17,16 +17,15 @@
 package org.apache.solr.util;
 
 import java.io.File;
-import java.io.IOException;
-
 import org.apache.solr.SolrTestCase;
 
 public class FileUtilsTest extends SolrTestCase {
 
-  public void testResolve() throws IOException {
+  public void testResolve() {
     String cwd = new File(".").getAbsolutePath();
     assertEquals(new File("conf/data"), FileUtils.resolvePath(new File("conf"), "data"));
-    assertEquals(new File(cwd+"/conf/data"), FileUtils.resolvePath(new File(cwd+"/conf"), "data"));
-    assertEquals(new File(cwd+"/data"), FileUtils.resolvePath(new File("conf"), cwd+"/data"));
+    assertEquals(
+        new File(cwd + "/conf/data"), FileUtils.resolvePath(new File(cwd + "/conf"), "data"));
+    assertEquals(new File(cwd + "/data"), FileUtils.resolvePath(new File("conf"), cwd + "/data"));
   }
 }

@@ -17,32 +17,32 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.security.PermissionNameProvider.Name.HEALTH_PERM;
+
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.admin.HealthCheckHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
-
 /**
  * V2 API for checking the health of the receiving node.
  *
- * This API (GET /v2/node/health) is analogous to the v1 /admin/info/health.
+ * <p>This API (GET /v2/node/health) is analogous to the v1 /admin/info/health.
  */
 public class NodeHealthAPI {
-    private final HealthCheckHandler handler;
+  private final HealthCheckHandler handler;
 
-    public NodeHealthAPI(HealthCheckHandler handler) {
-        this.handler = handler;
-    }
+  public NodeHealthAPI(HealthCheckHandler handler) {
+    this.handler = handler;
+  }
 
-    // TODO Update permission here once SOLR-11623 lands.
-    @EndPoint(
-            path = {"/node/health"},
-            method = GET,
-            permission = CONFIG_READ_PERM)
-    public void getSystemInformation(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        handler.handleRequestBody(req, rsp);
-    }
+  // TODO Update permission here once SOLR-11623 lands.
+  @EndPoint(
+      path = {"/node/health"},
+      method = GET,
+      permission = HEALTH_PERM)
+  public void getSystemInformation(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    handler.handleRequestBody(req, rsp);
+  }
 }

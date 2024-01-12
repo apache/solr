@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.text.Collator;
 import java.text.ParseException;
 import java.text.RuleBasedCollator;
@@ -26,12 +27,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -40,38 +38,41 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /**
- * Field for collated sort keys. 
- * These can be used for locale-sensitive sort and range queries.
- * <p>
- * This field can be created in two ways: 
+ * Field for collated sort keys. These can be used for locale-sensitive sort and range queries.
+ *
+ * <p>This field can be created in two ways:
+ *
  * <ul>
- *  <li>Based upon a system collator associated with a Locale.
- *  <li>Based upon a tailored ruleset.
+ *   <li>Based upon a system collator associated with a Locale.
+ *   <li>Based upon a tailored ruleset.
  * </ul>
- * <p>
- * Using a System collator:
+ *
+ * <p>Using a System collator:
+ *
  * <ul>
- *  <li>language: ISO-639 language code (mandatory)
- *  <li>country: ISO-3166 country code (optional)
- *  <li>variant: vendor or browser-specific code (optional)
- *  <li>strength: 'primary','secondary','tertiary', or 'identical' (optional)
- *  <li>decomposition: 'no','canonical', or 'full' (optional)
+ *   <li>language: ISO-639 language code (mandatory)
+ *   <li>country: ISO-3166 country code (optional)
+ *   <li>variant: vendor or browser-specific code (optional)
+ *   <li>strength: 'primary','secondary','tertiary', or 'identical' (optional)
+ *   <li>decomposition: 'no','canonical', or 'full' (optional)
  * </ul>
- * <p>
- * Using a Tailored ruleset:
+ *
+ * <p>Using a Tailored ruleset:
+ *
  * <ul>
- *  <li>custom: UTF-8 text file containing rules supported by RuleBasedCollator (mandatory)
- *  <li>strength: 'primary','secondary','tertiary', or 'identical' (optional)
- *  <li>decomposition: 'no','canonical', or 'full' (optional)
+ *   <li>custom: UTF-8 text file containing rules supported by RuleBasedCollator (mandatory)
+ *   <li>strength: 'primary','secondary','tertiary', or 'identical' (optional)
+ *   <li>decomposition: 'no','canonical', or 'full' (optional)
  * </ul>
- * 
+ *
  * @see Collator
  * @see Locale
  * @see RuleBasedCollator
@@ -81,56 +82,50 @@ public class CollationField extends FieldType {
   private Analyzer analyzer;
 
   @Override
-  protected void init(IndexSchema schema, Map<String,String> args) {
+  protected void init(IndexSchema schema, Map<String, String> args) {
     properties |= TOKENIZED; // this ensures our analyzer gets hit
     setup(schema.getResourceLoader(), args);
     super.init(schema, args);
   }
-  
-  /**
-   * Setup the field according to the provided parameters
-   */
-  private void setup(ResourceLoader loader, Map<String,String> args) {
+
+  /** Setup the field according to the provided parameters */
+  private void setup(ResourceLoader loader, Map<String, String> args) {
     String custom = args.remove("custom");
     String language = args.remove("language");
     String country = args.remove("country");
     String variant = args.remove("variant");
     String strength = args.remove("strength");
     String decomposition = args.remove("decomposition");
-    
+
     final Collator collator;
 
     if (custom == null && language == null)
       throw new SolrException(ErrorCode.SERVER_ERROR, "Either custom or language is required.");
-    
-    if (custom != null && 
-        (language != null || country != null || variant != null))
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Cannot specify both language and custom. "
-          + "To tailor rules for a built-in language, see the javadocs for RuleBasedCollator. "
-          + "Then save the entire customized ruleset to a file, and use with the custom parameter");
-    
-    if (language != null) { 
+
+    if (custom != null && (language != null || country != null || variant != null))
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Cannot specify both language and custom. "
+              + "To tailor rules for a built-in language, see the javadocs for RuleBasedCollator. "
+              + "Then save the entire customized ruleset to a file, and use with the custom parameter");
+
+    if (language != null) {
       // create from a system collator, based on Locale.
       collator = createFromLocale(language, country, variant);
-    } else { 
+    } else {
       // create from a custom ruleset
       collator = createFromRules(custom, loader);
     }
-    
+
     // set the strength flag, otherwise it will be the default.
     if (strength != null) {
-      if (strength.equalsIgnoreCase("primary"))
-        collator.setStrength(Collator.PRIMARY);
-      else if (strength.equalsIgnoreCase("secondary"))
-        collator.setStrength(Collator.SECONDARY);
-      else if (strength.equalsIgnoreCase("tertiary"))
-        collator.setStrength(Collator.TERTIARY);
-      else if (strength.equalsIgnoreCase("identical"))
-        collator.setStrength(Collator.IDENTICAL);
-      else
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid strength: " + strength);
+      if (strength.equalsIgnoreCase("primary")) collator.setStrength(Collator.PRIMARY);
+      else if (strength.equalsIgnoreCase("secondary")) collator.setStrength(Collator.SECONDARY);
+      else if (strength.equalsIgnoreCase("tertiary")) collator.setStrength(Collator.TERTIARY);
+      else if (strength.equalsIgnoreCase("identical")) collator.setStrength(Collator.IDENTICAL);
+      else throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid strength: " + strength);
     }
-    
+
     // set the decomposition flag, otherwise it will be the default.
     if (decomposition != null) {
       if (decomposition.equalsIgnoreCase("no"))
@@ -144,42 +139,35 @@ public class CollationField extends FieldType {
     }
     analyzer = new CollationKeyAnalyzer(collator);
   }
-  
+
   /**
-   * Create a locale from language, with optional country and variant.
-   * Then return the appropriate collator for the locale.
+   * Create a locale from language, with optional country and variant. Then return the appropriate
+   * collator for the locale.
    */
   private Collator createFromLocale(String language, String country, String variant) {
     Locale locale;
-    
+
     if (language != null && country == null && variant != null)
-      throw new SolrException(ErrorCode.SERVER_ERROR, 
-          "To specify variant, country is required");
+      throw new SolrException(ErrorCode.SERVER_ERROR, "To specify variant, country is required");
     else if (language != null && country != null && variant != null)
       locale = new Locale(language, country, variant);
-    else if (language != null && country != null)
-      locale = new Locale(language, country);
-    else 
-      locale = new Locale(language);
-    
+    else if (language != null && country != null) locale = new Locale(language, country);
+    else locale = new Locale(language);
+
     return Collator.getInstance(locale);
   }
-  
+
   /**
-   * Read custom rules from a file, and create a RuleBasedCollator
-   * The file cannot support comments, as # might be in the rules!
+   * Read custom rules from a file, and create a RuleBasedCollator The file cannot support comments,
+   * as # might be in the rules!
    */
   private Collator createFromRules(String fileName, ResourceLoader loader) {
-    InputStream input = null;
-    try {
-     input = loader.openResource(fileName);
-     String rules = IOUtils.toString(input, "UTF-8");
-     return new RuleBasedCollator(rules);
+    try (InputStream input = loader.openResource(fileName)) {
+      String rules = new String(input.readAllBytes(), StandardCharsets.UTF_8);
+      return new RuleBasedCollator(rules);
     } catch (IOException | ParseException e) {
       // io error or invalid rules
       throw new RuntimeException(e);
-    } finally {
-      IOUtils.closeQuietly(input);
     }
   }
 
@@ -192,7 +180,7 @@ public class CollationField extends FieldType {
   public SortField getSortField(SchemaField field, boolean top) {
     return getStringSort(field, top);
   }
-  
+
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
@@ -213,14 +201,13 @@ public class CollationField extends FieldType {
   }
 
   /**
-   * analyze the range with the analyzer, instead of the collator.
-   * because jdk collators might not be thread safe (when they are
-   * it's just that all methods are synced), this keeps things 
-   * simple (we already have a threadlocal clone in the reused TS)
+   * analyze the range with the analyzer, instead of the collator. because jdk collators might not
+   * be thread safe (when they are it's just that all methods are synced), this keeps things simple
+   * (we already have a threadlocal clone in the reused TS)
    */
-  private BytesRef getCollationKey(String field, String text) {     
+  private BytesRef getCollationKey(String field, String text) {
     try (TokenStream source = analyzer.tokenStream(field, text)) {
-      source.reset();    
+      source.reset();
       TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
 
       // we control the analyzer here: most errors are impossible
@@ -234,9 +221,15 @@ public class CollationField extends FieldType {
       throw new RuntimeException("Unable to analyze text: " + text, e);
     }
   }
-  
+
   @Override
-  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String part1,
+      String part2,
+      boolean minInclusive,
+      boolean maxInclusive) {
     String f = field.getName();
     BytesRef low = part1 == null ? null : getCollationKey(f, part1);
     BytesRef high = part2 == null ? null : getCollationKey(f, part2);

@@ -17,6 +17,4 @@
 
 package org.apache.solr.client.solrj.response;
 
-public class V2Response extends SolrResponseBase {
-
-}
+public class V2Response extends SolrResponseBase {}

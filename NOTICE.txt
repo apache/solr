@@ -1,6 +1,6 @@
 ==============================================================
  Apache Solr
- Copyright 2006-2021 The Apache Software Foundation
+ Copyright 2006-2023 The Apache Software Foundation
 ==============================================================
 
 This product includes software developed at
@@ -54,6 +54,10 @@ Copyright (c) 2013 Randy McLaughlin, MIT-license, https://github.com/randymized/
 
 This product includes fugue icons created by Yusuke Kamiyamane
 Copyright (C) 2013-2014 Yusuke Kamiyamane, https://github.com/yusukekamiyamane/fugue-icons
+
+This product includes octicons: https://github.com/primer/octicons
+License: MIT
+Copyright (c) 2022 GitHub Inc.
 
 Jackcess: http://jackcess.sourceforge.net/
 Copyright (C) 2011-2014 James Ahlborn
@@ -189,7 +193,7 @@ The snowball stopword lists in
   analysis/common/src/resources/org/apache/lucene/analysis/snowball
 were developed by Martin Porter and Richard Boulton.
 The full snowball package is available from
-  http://snowball.tartarus.org/
+  https://snowballstem.org/
 
 The KStem stemmer in
   analysis/common/src/org/apache/lucene/analysis/en
@@ -344,6 +348,9 @@ This software includes a binary and/or source version of data from
 which can be obtained from
 
   https://bitbucket.org/eunjeon/mecab-ko-dic/downloads/mecab-ko-dic-2.0.3-20170922.tar.gz
+
+The floating point precision conversion in NumericUtils.Float16Converter is derived from work by
+Jeroen van der Zijp, granted for use under the Apache license.
 ---
 
 This product includes/uses software, Woodstox (http://woodstox.codehaus.org),
@@ -399,7 +406,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ==  Apache Tika Notices                                                ==
 =========================================================================
 
-The following notices apply to contrib/extraction:
+The following notices apply to modules/extraction:
 
 This product includes software developed by the following copyright owners:
 
@@ -434,7 +441,7 @@ http://www.sourceforge.net/projects/jmatio
 ==  Language Detection Notices                                         ==
 =========================================================================
 
-The following notices apply to contrib/langid:
+The following notices apply to modules/langid:
 
 This product includes software developed by Cybozu Labs, Inc.
 (c)2010 All rights reserved by Cybozu Labs, Inc.
@@ -611,6 +618,13 @@ https://github.com/yonik/noggit
 This product includes the Angular UI UI Grid JavaScript library.
 Copyright (c) 2015 the AngularUI Team, http://angular-ui.github.com
 
+=========================================================================
+==         jsSHA notice                                                ==
+=========================================================================
+
+This product includes the jsSHA library.
+Copyright (c) 2008-2023 Brian Turek, 1998-2009 Paul Johnston & Contributors
+https://github.com/Caligatio/jsSHA
 
 =========================================================================
 ==         grpc notice                                                 ==
@@ -667,4 +681,4 @@ an open source universal data plane API, which can be obtained at:
 The S3 Output Stream is based on ASL 2.0 reference implementations found at:
     https://github.com/confluentinc/kafka-connect-storage-cloud/blob/5.0.x/kafka-connect-s3/src/main/java/io/confluent/connect/s3/storage/S3OutputStream.java
 This files resides at:
-    contrib/s3-repository/src/java/org/apache/solr/s3/S3OutputStream.java
+    modules/s3-repository/src/java/org/apache/solr/s3/S3OutputStream.java

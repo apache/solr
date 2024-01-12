@@ -16,6 +16,16 @@
  */
 package org.apache.solr.metrics;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.MetricSet;
+import com.codahale.metrics.SharedMetricRegistries;
+import com.codahale.metrics.Timer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -37,17 +47,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
-
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.MetricSet;
-import com.codahale.metrics.SharedMetricRegistries;
-import com.codahale.metrics.Timer;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
@@ -63,43 +62,48 @@ import org.slf4j.MDC;
 /**
  * This class maintains a repository of named {@link MetricRegistry} instances, and provides several
  * helper methods for managing various aspects of metrics reporting:
+ *
  * <ul>
- * <li>registry creation, clearing and removal,</li>
- * <li>creation of most common metric implementations,</li>
- * <li>management of {@link SolrMetricReporter}-s specific to a named registry.</li>
+ *   <li>registry creation, clearing and removal,
+ *   <li>creation of most common metric implementations,
+ *   <li>management of {@link SolrMetricReporter}-s specific to a named registry.
  * </ul>
- * {@link MetricRegistry} instances are automatically created when first referenced by name. Similarly,
- * instances of {@link Metric} implementations, such as {@link Meter}, {@link Counter}, {@link Timer} and
- * {@link Histogram} are automatically created and registered under hierarchical names, in a specified
- * registry, when {@link #meter(SolrMetricsContext, String, String, String...)} and other similar methods are called.
- * <p>This class enforces a common prefix ({@link #REGISTRY_NAME_PREFIX}) in all registry
- * names.</p>
- * <p>Solr uses several different registries for collecting metrics belonging to different groups, using
- * {@link org.apache.solr.core.SolrInfoBean.Group} as the main name of the registry (plus the
- * above-mentioned prefix). Instances of {@link SolrMetricManager} are created for each {@link org.apache.solr.core.CoreContainer},
- * and most registries are local to each instance, with the exception of two global registries:
- * <code>solr.jetty</code> and <code>solr.jvm</code>, which are shared between all {@link org.apache.solr.core.CoreContainer}-s</p>
+ *
+ * {@link MetricRegistry} instances are automatically created when first referenced by name.
+ * Similarly, instances of {@link Metric} implementations, such as {@link Meter}, {@link Counter},
+ * {@link Timer} and {@link Histogram} are automatically created and registered under hierarchical
+ * names, in a specified registry, when {@link #meter(SolrMetricsContext, String, String,
+ * String...)} and other similar methods are called.
+ *
+ * <p>This class enforces a common prefix ({@link #REGISTRY_NAME_PREFIX}) in all registry names.
+ *
+ * <p>Solr uses several different registries for collecting metrics belonging to different groups,
+ * using {@link org.apache.solr.core.SolrInfoBean.Group} as the main name of the registry (plus the
+ * above-mentioned prefix). Instances of {@link SolrMetricManager} are created for each {@link
+ * org.apache.solr.core.CoreContainer}, and most registries are local to each instance, with the
+ * exception of two global registries: <code>solr.jetty</code> and <code>solr.jvm</code>, which are
+ * shared between all {@link org.apache.solr.core.CoreContainer}-s
  */
 public class SolrMetricManager {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /**
-   * Common prefix for all registry names that Solr uses.
-   */
+  /** Common prefix for all registry names that Solr uses. */
   public static final String REGISTRY_NAME_PREFIX = "solr.";
 
   /**
    * Registry name for Jetty-specific metrics. This name is also subject to overrides controlled by
    * system properties. This registry is shared between instances of {@link SolrMetricManager}.
    */
-  public static final String JETTY_REGISTRY = REGISTRY_NAME_PREFIX + SolrInfoBean.Group.jetty.toString();
+  public static final String JETTY_REGISTRY =
+      REGISTRY_NAME_PREFIX + SolrInfoBean.Group.jetty.toString();
 
   /**
    * Registry name for JVM-specific metrics. This name is also subject to overrides controlled by
    * system properties. This registry is shared between instances of {@link SolrMetricManager}.
    */
-  public static final String JVM_REGISTRY = REGISTRY_NAME_PREFIX + SolrInfoBean.Group.jvm.toString();
+  public static final String JVM_REGISTRY =
+      REGISTRY_NAME_PREFIX + SolrInfoBean.Group.jvm.toString();
 
   private final ConcurrentMap<String, MetricRegistry> registries = new ConcurrentHashMap<>();
 
@@ -129,7 +133,8 @@ public class SolrMetricManager {
     counterSupplier = MetricSuppliers.counterSupplier(loader, metricsConfig.getCounterSupplier());
     meterSupplier = MetricSuppliers.meterSupplier(loader, metricsConfig.getMeterSupplier());
     timerSupplier = MetricSuppliers.timerSupplier(loader, metricsConfig.getTimerSupplier());
-    histogramSupplier = MetricSuppliers.histogramSupplier(loader, metricsConfig.getHistogramSupplier());
+    histogramSupplier =
+        MetricSuppliers.histogramSupplier(loader, metricsConfig.getHistogramSupplier());
   }
 
   // for unit tests
@@ -149,38 +154,29 @@ public class SolrMetricManager {
     return histogramSupplier;
   }
 
-  /**
-   * Return an object used for representing a null (missing) numeric value.
-   */
+  /** Return an object used for representing a null (missing) numeric value. */
   public Object nullNumber() {
     return metricsConfig.getNullNumber();
   }
 
-  /**
-   * Return an object used for representing a "Not A Number" (NaN) value.
-   */
+  /** Return an object used for representing a "Not A Number" (NaN) value. */
   public Object notANumber() {
     return metricsConfig.getNotANumber();
   }
 
-  /**
-   * Return an object used for representing a null (missing) string value.
-   */
+  /** Return an object used for representing a null (missing) string value. */
   public Object nullString() {
     return metricsConfig.getNullString();
   }
 
-  /**
-   * Return an object used for representing a null (missing) object value.
-   */
+  /** Return an object used for representing a null (missing) object value. */
   public Object nullObject() {
     return metricsConfig.getNullObject();
   }
 
-
   /**
-   * An implementation of {@link MetricFilter} that selects metrics
-   * with names that start with one of prefixes.
+   * An implementation of {@link MetricFilter} that selects metrics with names that start with one
+   * of prefixes.
    */
   public static class PrefixFilter implements MetricFilter {
     private final Set<String> prefixes = new HashSet<>();
@@ -190,9 +186,8 @@ public class SolrMetricManager {
     /**
      * Create a filter that uses the provided prefixes.
      *
-     * @param prefixes prefixes to use, must not be null. If empty then any
-     *                 name will match, if not empty then match on any prefix will
-     *                 succeed (logical OR).
+     * @param prefixes prefixes to use, must not be null. If empty then any name will match, if not
+     *     empty then match on any prefix will succeed (logical OR).
      */
     public PrefixFilter(String... prefixes) {
       Objects.requireNonNull(prefixes);
@@ -236,24 +231,20 @@ public class SolrMetricManager {
       return Collections.unmodifiableSet(matched);
     }
 
-    /**
-     * Clear the set of names that matched.
-     */
+    /** Clear the set of names that matched. */
     public void reset() {
       matched.clear();
     }
 
     @Override
     public String toString() {
-      return "PrefixFilter{" +
-          "prefixes=" + prefixes +
-          '}';
+      return "PrefixFilter{" + "prefixes=" + prefixes + '}';
     }
   }
 
   /**
-   * An implementation of {@link MetricFilter} that selects metrics
-   * with names that match regular expression patterns.
+   * An implementation of {@link MetricFilter} that selects metrics with names that match regular
+   * expression patterns.
    */
   public static class RegexFilter implements MetricFilter {
     private final Set<Pattern> compiledPatterns = new HashSet<>();
@@ -263,9 +254,8 @@ public class SolrMetricManager {
     /**
      * Create a filter that uses the provided prefix.
      *
-     * @param patterns regex patterns to use, must not be null. If empty then any
-     *                 name will match, if not empty then match on any pattern will
-     *                 succeed (logical OR).
+     * @param patterns regex patterns to use, must not be null. If empty then any name will match,
+     *     if not empty then match on any pattern will succeed (logical OR).
      */
     public RegexFilter(String... patterns) throws PatternSyntaxException {
       this(patterns != null ? Arrays.asList(patterns) : Collections.emptyList());
@@ -277,10 +267,11 @@ public class SolrMetricManager {
         allMatch = true;
         return;
       }
-      patterns.forEach(p -> {
-        Pattern pattern = Pattern.compile(p);
-        compiledPatterns.add(pattern);
-      });
+      patterns.forEach(
+          p -> {
+            Pattern pattern = Pattern.compile(p);
+            compiledPatterns.add(pattern);
+          });
       if (patterns.isEmpty()) {
         allMatch = true;
       }
@@ -310,24 +301,20 @@ public class SolrMetricManager {
       return Collections.unmodifiableSet(matched);
     }
 
-    /**
-     * Clear the set of names that matched.
-     */
+    /** Clear the set of names that matched. */
     public void reset() {
       matched.clear();
     }
 
     @Override
     public String toString() {
-      return "RegexFilter{" +
-          "compiledPatterns=" + compiledPatterns +
-          '}';
+      return "RegexFilter{" + "compiledPatterns=" + compiledPatterns + '}';
     }
   }
 
   /**
-   * An implementation of {@link MetricFilter} that selects metrics
-   * that match any filter in a list of filters.
+   * An implementation of {@link MetricFilter} that selects metrics that match any filter in a list
+   * of filters.
    */
   public static class OrFilter implements MetricFilter {
     List<MetricFilter> filters = new ArrayList<>();
@@ -360,8 +347,8 @@ public class SolrMetricManager {
   }
 
   /**
-   * An implementation of {@link MetricFilter} that selects metrics
-   * that match all filters in a list of filters.
+   * An implementation of {@link MetricFilter} that selects metrics that match all filters in a list
+   * of filters.
    */
   public static class AndFilter implements MetricFilter {
     List<MetricFilter> filters = new ArrayList<>();
@@ -393,9 +380,7 @@ public class SolrMetricManager {
     }
   }
 
-  /**
-   * Return a set of existing registry names.
-   */
+  /** Return a set of existing registry names. */
   public Set<String> registryNames() {
     Set<String> set = new HashSet<>();
     set.addAll(registries.keySet());
@@ -418,9 +403,8 @@ public class SolrMetricManager {
   /**
    * Return set of existing registry names that match a regex pattern
    *
-   * @param patterns regex patterns. NOTE: users need to make sure that patterns that
-   *                 don't start with a wildcard use the full registry name starting with
-   *                 {@link #REGISTRY_NAME_PREFIX}
+   * @param patterns regex patterns. NOTE: users need to make sure that patterns that don't start
+   *     with a wildcard use the full registry name starting with {@link #REGISTRY_NAME_PREFIX}
    * @return set of existing registry names where at least one pattern matched.
    */
   public Set<String> registryNames(String... patterns) throws PatternSyntaxException {
@@ -431,7 +415,7 @@ public class SolrMetricManager {
     for (String pattern : patterns) {
       compiled.add(Pattern.compile(pattern));
     }
-    return registryNames(compiled.toArray(new Pattern[compiled.size()]));
+    return registryNames(compiled.toArray(new Pattern[0]));
   }
 
   public Set<String> registryNames(Pattern... patterns) {
@@ -439,20 +423,22 @@ public class SolrMetricManager {
     if (patterns == null || patterns.length == 0) {
       return allNames;
     }
-    return allNames.stream().filter(s -> {
-      for (Pattern p : patterns) {
-        if (p.matcher(s).matches()) {
-          return true;
-        }
-      }
-      return false;
-    }).collect(Collectors.toSet());
+    return allNames.stream()
+        .filter(
+            s -> {
+              for (Pattern p : patterns) {
+                if (p.matcher(s).matches()) {
+                  return true;
+                }
+              }
+              return false;
+            })
+        .collect(Collectors.toSet());
   }
 
   /**
-   * Check for predefined shared registry names. This compares the input name
-   * with normalized names of predefined shared registries -
-   * {@link #JVM_REGISTRY} and {@link #JETTY_REGISTRY}.
+   * Check for predefined shared registry names. This compares the input name with normalized names
+   * of predefined shared registries - {@link #JVM_REGISTRY} and {@link #JETTY_REGISTRY}.
    *
    * @param registry already normalized name
    * @return true if the name matches one of shared registries
@@ -481,7 +467,8 @@ public class SolrMetricManager {
     }
   }
 
-  private static MetricRegistry getOrCreateRegistry(ConcurrentMap<String, MetricRegistry> map, String registry) {
+  private static MetricRegistry getOrCreateRegistry(
+      ConcurrentMap<String, MetricRegistry> map, String registry) {
     final MetricRegistry existing = map.get(registry);
     if (existing == null) {
       final MetricRegistry created = new MetricRegistry();
@@ -519,20 +506,20 @@ public class SolrMetricManager {
   }
 
   /**
-   * Swap registries. This is useful eg. during
-   * {@link org.apache.solr.core.SolrCore} rename or swap operations. NOTE:
-   * this operation is not supported for shared registries.
+   * Swap registries. This is useful eg. during {@link org.apache.solr.core.SolrCore} rename or swap
+   * operations. NOTE: this operation is not supported for shared registries.
    *
    * @param registry1 source registry
    * @param registry2 target registry. Note: when used after core rename the target registry doesn't
-   *                  exist, so the swap operation will only rename the existing registry without creating
-   *                  an empty one under the previous name.
+   *     exist, so the swap operation will only rename the existing registry without creating an
+   *     empty one under the previous name.
    */
   public void swapRegistries(String registry1, String registry2) {
     registry1 = enforcePrefix(registry1);
     registry2 = enforcePrefix(registry2);
     if (isSharedRegistry(registry1) || isSharedRegistry(registry2)) {
-      throw new UnsupportedOperationException("Cannot swap shared registry: " + registry1 + ", " + registry2);
+      throw new UnsupportedOperationException(
+          "Cannot swap shared registry: " + registry1 + ", " + registry2);
     }
     swapLock.lock();
     try {
@@ -555,35 +542,34 @@ public class SolrMetricManager {
   }
 
   /**
-   * Potential conflict resolution strategies when attempting to register a new metric that already exists
+   * Potential conflict resolution strategies when attempting to register a new metric that already
+   * exists
    */
   public enum ResolutionStrategy {
     /**
-     * The existing metric will be kept and the new metric will be ignored. If no metric exists, then the new metric
-     * will be registered.
+     * The existing metric will be kept and the new metric will be ignored. If no metric exists,
+     * then the new metric will be registered.
      */
     IGNORE,
-    /**
-     * The existing metric will be removed and replaced with the new metric
-     */
+    /** The existing metric will be removed and replaced with the new metric */
     REPLACE,
-    /**
-     * An exception will be thrown. This is the default implementation behavior.
-     */
+    /** An exception will be thrown. This is the default implementation behavior. */
     ERROR
   }
 
   /**
-   * Register all metrics in the provided {@link MetricSet}, optionally skipping those that
-   * already exist.
+   * Register all metrics in the provided {@link MetricSet}, optionally skipping those that already
+   * exist.
    *
-   * @param registry   registry name
-   * @param metrics    metric set to register
-   * @param strategy   the conflict resolution strategy to use if the named metric already exists.
+   * @param registry registry name
+   * @param metrics metric set to register
+   * @param strategy the conflict resolution strategy to use if the named metric already exists.
    * @param metricPath (optional) additional top-most metric name path elements
    * @throws Exception if a metric with this name already exists.
    */
-  public void registerAll(String registry, MetricSet metrics, ResolutionStrategy strategy, String... metricPath) throws Exception {
+  public void registerAll(
+      String registry, MetricSet metrics, ResolutionStrategy strategy, String... metricPath)
+      throws Exception {
     MetricRegistry metricRegistry = registry(registry);
     synchronized (metricRegistry) {
       Map<String, Metric> existingMetrics = metricRegistry.getMetrics();
@@ -611,12 +597,11 @@ public class SolrMetricManager {
   /**
    * Remove some metrics from a named registry
    *
-   * @param registry   registry name
-   * @param metricPath (optional) top-most metric name path elements. If empty then
-   *                   this is equivalent to calling {@link #clearRegistry(String)},
-   *                   otherwise non-empty elements will be joined using dotted notation
-   *                   to form a fully-qualified prefix. Metrics with names that start
-   *                   with the prefix will be removed.
+   * @param registry registry name
+   * @param metricPath (optional) top-most metric name path elements. If empty then this is
+   *     equivalent to calling {@link #clearRegistry(String)}, otherwise non-empty elements will be
+   *     joined using dotted notation to form a fully-qualified prefix. Metrics with names that
+   *     start with the prefix will be removed.
    * @return set of metrics names that have been removed.
    */
   public Set<String> clearMetrics(String registry, String... metricPath) {
@@ -634,7 +619,7 @@ public class SolrMetricManager {
   /**
    * Retrieve matching metrics and their names.
    *
-   * @param registry     registry name.
+   * @param registry registry name.
    * @param metricFilter filter (null is equivalent to {@link MetricFilter#ALL}).
    * @return map of matching names and metrics
    */
@@ -650,13 +635,14 @@ public class SolrMetricManager {
   /**
    * Create or get an existing named {@link Meter}
    *
-   * @param registry   registry name
-   * @param metricName metric name, either final name or a fully-qualified name
-   *                   using dotted notation
+   * @param registry registry name
+   * @param metricName metric name, either final name or a fully-qualified name using dotted
+   *     notation
    * @param metricPath (optional) additional top-most metric name path elements
    * @return existing or a newly created {@link Meter}
    */
-  public Meter meter(SolrMetricsContext context, String registry, String metricName, String... metricPath) {
+  public Meter meter(
+      SolrMetricsContext context, String registry, String metricName, String... metricPath) {
     final String name = mkName(metricName, metricPath);
     if (context != null) {
       context.registerMetricName(name);
@@ -667,13 +653,14 @@ public class SolrMetricManager {
   /**
    * Create or get an existing named {@link Timer}
    *
-   * @param registry   registry name
-   * @param metricName metric name, either final name or a fully-qualified name
-   *                   using dotted notation
+   * @param registry registry name
+   * @param metricName metric name, either final name or a fully-qualified name using dotted
+   *     notation
    * @param metricPath (optional) additional top-most metric name path elements
    * @return existing or a newly created {@link Timer}
    */
-  public Timer timer(SolrMetricsContext context, String registry, String metricName, String... metricPath) {
+  public Timer timer(
+      SolrMetricsContext context, String registry, String metricName, String... metricPath) {
     final String name = mkName(metricName, metricPath);
     if (context != null) {
       context.registerMetricName(name);
@@ -684,13 +671,14 @@ public class SolrMetricManager {
   /**
    * Create or get an existing named {@link Counter}
    *
-   * @param registry   registry name
-   * @param metricName metric name, either final name or a fully-qualified name
-   *                   using dotted notation
+   * @param registry registry name
+   * @param metricName metric name, either final name or a fully-qualified name using dotted
+   *     notation
    * @param metricPath (optional) additional top-most metric name path elements
    * @return existing or a newly created {@link Counter}
    */
-  public Counter counter(SolrMetricsContext context, String registry, String metricName, String... metricPath) {
+  public Counter counter(
+      SolrMetricsContext context, String registry, String metricName, String... metricPath) {
     final String name = mkName(metricName, metricPath);
     if (context != null) {
       context.registerMetricName(name);
@@ -701,13 +689,14 @@ public class SolrMetricManager {
   /**
    * Create or get an existing named {@link Histogram}
    *
-   * @param registry   registry name
-   * @param metricName metric name, either final name or a fully-qualified name
-   *                   using dotted notation
+   * @param registry registry name
+   * @param metricName metric name, either final name or a fully-qualified name using dotted
+   *     notation
    * @param metricPath (optional) additional top-most metric name path elements
    * @return existing or a newly created {@link Histogram}
    */
-  public Histogram histogram(SolrMetricsContext context, String registry, String metricName, String... metricPath) {
+  public Histogram histogram(
+      SolrMetricsContext context, String registry, String metricName, String... metricPath) {
     final String name = mkName(metricName, metricPath);
     if (context != null) {
       context.registerMetricName(name);
@@ -716,24 +705,43 @@ public class SolrMetricManager {
   }
 
   /**
-   * @deprecated use {@link #registerMetric(SolrMetricsContext, String, Metric, ResolutionStrategy, String, String...)}
+   * @deprecated use {@link #registerMetric(SolrMetricsContext, String, Metric, ResolutionStrategy,
+   *     String, String...)}
    */
   @Deprecated
-  public void registerMetric(SolrMetricsContext context, String registry, Metric metric, boolean force, String metricName, String... metricPath) {
-    registerMetric(context, registry, metric, force ? ResolutionStrategy.REPLACE : ResolutionStrategy.IGNORE, metricName, metricPath);
+  public void registerMetric(
+      SolrMetricsContext context,
+      String registry,
+      Metric metric,
+      boolean force,
+      String metricName,
+      String... metricPath) {
+    registerMetric(
+        context,
+        registry,
+        metric,
+        force ? ResolutionStrategy.REPLACE : ResolutionStrategy.IGNORE,
+        metricName,
+        metricPath);
   }
 
   /**
    * Register an instance of {@link Metric}.
    *
-   * @param registry   registry name
-   * @param metric     metric instance
-   * @param strategy   the conflict resolution strategy to use if the named metric already exists.
-   * @param metricName metric name, either final name or a fully-qualified name
-   *                   using dotted notation
+   * @param registry registry name
+   * @param metric metric instance
+   * @param strategy the conflict resolution strategy to use if the named metric already exists.
+   * @param metricName metric name, either final name or a fully-qualified name using dotted
+   *     notation
    * @param metricPath (optional) additional top-most metric name path elements
    */
-  public void registerMetric(SolrMetricsContext context, String registry, Metric metric, ResolutionStrategy strategy, String metricName, String... metricPath) {
+  public void registerMetric(
+      SolrMetricsContext context,
+      String registry,
+      Metric metric,
+      ResolutionStrategy strategy,
+      String metricName,
+      String... metricPath) {
     MetricRegistry metricRegistry = registry(registry);
     String fullName = mkName(metricName, metricPath);
     if (context != null) {
@@ -742,7 +750,8 @@ public class SolrMetricManager {
     synchronized (metricRegistry) { // prevent race; register() throws if metric is already present
       if (strategy == ResolutionStrategy.REPLACE) { // must remove any existing one if present
         metricRegistry.remove(fullName);
-      } else if (strategy == ResolutionStrategy.IGNORE && metricRegistry.getMetrics().containsKey(fullName)) {
+      } else if (strategy == ResolutionStrategy.IGNORE
+          && metricRegistry.getMetrics().containsKey(fullName)) {
         return;
       } // strategy == ERROR will fail when we try to register
       metricRegistry.register(fullName, metric);
@@ -750,11 +759,11 @@ public class SolrMetricManager {
   }
 
   /**
-   * This is a wrapper for {@link Gauge} metrics, which are usually implemented as
-   * lambdas that often keep a reference to their parent instance. In order to make sure that
-   * all such metrics are removed when their parent instance is removed / closed the
-   * metric is associated with an instance tag, which can be used then to remove
-   * wrappers with the matching tag using {@link #unregisterGauges(String, String)}.
+   * This is a wrapper for {@link Gauge} metrics, which are usually implemented as lambdas that
+   * often keep a reference to their parent instance. In order to make sure that all such metrics
+   * are removed when their parent instance is removed / closed the metric is associated with an
+   * instance tag, which can be used then to remove wrappers with the matching tag using {@link
+   * #unregisterGauges(String, String)}.
    */
   public static class GaugeWrapper<T> implements Gauge<T> {
     private final Gauge<T> gauge;
@@ -780,18 +789,41 @@ public class SolrMetricManager {
   }
 
   /**
-   * @deprecated use {@link #registerGauge(SolrMetricsContext, String, Gauge, String, ResolutionStrategy, String, String...)}
+   * @deprecated use {@link #registerGauge(SolrMetricsContext, String, Gauge, String,
+   *     ResolutionStrategy, String, String...)}
    */
   @Deprecated
-  public void registerGauge(SolrMetricsContext context, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
-    registerGauge(context, registry, gauge, tag, force ? ResolutionStrategy.REPLACE : ResolutionStrategy.ERROR, metricName, metricPath);
+  public void registerGauge(
+      SolrMetricsContext context,
+      String registry,
+      Gauge<?> gauge,
+      String tag,
+      boolean force,
+      String metricName,
+      String... metricPath) {
+    registerGauge(
+        context,
+        registry,
+        gauge,
+        tag,
+        force ? ResolutionStrategy.REPLACE : ResolutionStrategy.ERROR,
+        metricName,
+        metricPath);
   }
 
-  public <T> void registerGauge(SolrMetricsContext context, String registry, Gauge<T> gauge, String tag, ResolutionStrategy strategy, String metricName, String... metricPath) {
+  public <T> void registerGauge(
+      SolrMetricsContext context,
+      String registry,
+      Gauge<T> gauge,
+      String tag,
+      ResolutionStrategy strategy,
+      String metricName,
+      String... metricPath) {
     if (!metricsConfig.isEnabled()) {
       gauge = MetricSuppliers.getNoOpGauge(gauge);
     }
-    registerMetric(context, registry, new GaugeWrapper<>(gauge, tag), strategy, metricName, metricPath);
+    registerMetric(
+        context, registry, new GaugeWrapper<>(gauge, tag), strategy, metricName, metricPath);
   }
 
   public int unregisterGauges(String registryName, String tagSegment) {
@@ -801,18 +833,18 @@ public class SolrMetricManager {
     MetricRegistry registry = registry(registryName);
     if (registry == null) return 0;
     AtomicInteger removed = new AtomicInteger();
-    registry.removeMatching((name, metric) -> {
-      if (metric instanceof GaugeWrapper) {
-        GaugeWrapper<?> wrapper = (GaugeWrapper<?>) metric;
-        boolean toRemove = wrapper.getTag().contains(tagSegment);
-        if (toRemove) {
-          removed.incrementAndGet();
-        }
-        return toRemove;
-      }
-      return false;
-
-    });
+    registry.removeMatching(
+        (name, metric) -> {
+          if (metric instanceof GaugeWrapper) {
+            GaugeWrapper<?> wrapper = (GaugeWrapper<?>) metric;
+            boolean toRemove = wrapper.getTag().contains(tagSegment);
+            if (toRemove) {
+              removed.incrementAndGet();
+            }
+            return toRemove;
+          }
+          return false;
+        });
     return removed.get();
   }
 
@@ -820,15 +852,14 @@ public class SolrMetricManager {
    * This method creates a hierarchical name with arbitrary levels of hierarchy
    *
    * @param name the final segment of the name, must not be null or empty.
-   * @param path optional path segments, starting from the top level. Empty or null
-   *             segments will be skipped.
-   * @return fully-qualified name using dotted notation, with all valid hierarchy
-   * segments prepended to the name.
+   * @param path optional path segments, starting from the top level. Empty or null segments will be
+   *     skipped.
+   * @return fully-qualified name using dotted notation, with all valid hierarchy segments prepended
+   *     to the name.
    */
   public static String mkName(String name, String... path) {
-    return makeName(path == null || path.length == 0 ? Collections.emptyList() : Arrays.asList(path),
-        name);
-
+    return makeName(
+        path == null || path.length == 0 ? Collections.emptyList() : Arrays.asList(path), name);
   }
 
   public static String makeName(List<String> path, String name) {
@@ -860,14 +891,13 @@ public class SolrMetricManager {
    * Enforces the leading {@link #REGISTRY_NAME_PREFIX} in a name.
    *
    * @param name input name, possibly without the prefix
-   * @return original name if it contained the prefix, or the
-   * input name with the prefix prepended.
+   * @return original name if it contained the prefix, or the input name with the prefix prepended.
    */
   public static String enforcePrefix(String name) {
     if (name.startsWith(REGISTRY_NAME_PREFIX)) {
       return name;
     } else {
-      return new StringBuilder(REGISTRY_NAME_PREFIX).append(name).toString();
+      return REGISTRY_NAME_PREFIX + name;
     }
   }
 
@@ -876,13 +906,13 @@ public class SolrMetricManager {
    *
    * @param group reporting group
    * @param names optional child elements of the registry name. If exactly one element is provided
-   *              and it already contains the required prefix and group name then this value will be used,
-   *              and the group parameter will be ignored.
+   *     and it already contains the required prefix and group name then this value will be used,
+   *     and the group parameter will be ignored.
    * @return fully-qualified and prefixed registry name, with overrides applied.
    */
   public static String getRegistryName(SolrInfoBean.Group group, String... names) {
     String fullName;
-    String prefix = new StringBuilder(REGISTRY_NAME_PREFIX).append(group.name()).append('.').toString();
+    String prefix = REGISTRY_NAME_PREFIX + group.name() + '.';
     // check for existing prefix and group
     if (names != null && names.length > 0 && names[0] != null && names[0].startsWith(prefix)) {
       // assume the first segment already was expanded
@@ -902,22 +932,30 @@ public class SolrMetricManager {
   // reporter management
 
   /**
-   * Create and register {@link SolrMetricReporter}-s specific to a {@link org.apache.solr.core.SolrInfoBean.Group}.
-   * Note: reporters that specify neither "group" nor "registry" attributes are treated as universal -
-   * they will always be loaded for any group. These two attributes may also contain multiple comma- or
-   * whitespace-separated values, in which case the reporter will be loaded for any matching value from
-   * the list. If both attributes are present then only "group" attribute will be processed.
+   * Create and register {@link SolrMetricReporter}-s specific to a {@link
+   * org.apache.solr.core.SolrInfoBean.Group}. Note: reporters that specify neither "group" nor
+   * "registry" attributes are treated as universal - they will always be loaded for any group.
+   * These two attributes may also contain multiple comma- or whitespace-separated values, in which
+   * case the reporter will be loaded for any matching value from the list. If both attributes are
+   * present then only "group" attribute will be processed.
    *
-   * @param pluginInfos   plugin configurations
-   * @param loader        resource loader
+   * @param pluginInfos plugin configurations
+   * @param loader resource loader
    * @param coreContainer core container
-   * @param solrCore      optional solr core
-   * @param tag           optional tag for the reporters, to distinguish reporters logically created for different parent
-   *                      component instances.
-   * @param group         selected group, not null
+   * @param solrCore optional solr core
+   * @param tag optional tag for the reporters, to distinguish reporters logically created for
+   *     different parent component instances.
+   * @param group selected group, not null
    * @param registryNames optional child registry name elements
    */
-  public void loadReporters(PluginInfo[] pluginInfos, SolrResourceLoader loader, CoreContainer coreContainer, SolrCore solrCore, String tag, SolrInfoBean.Group group, String... registryNames) {
+  public void loadReporters(
+      PluginInfo[] pluginInfos,
+      SolrResourceLoader loader,
+      CoreContainer coreContainer,
+      SolrCore solrCore,
+      String tag,
+      SolrInfoBean.Group group,
+      String... registryNames) {
     if (pluginInfos == null || pluginInfos.length == 0) {
       return;
     }
@@ -965,11 +1003,14 @@ public class SolrMetricManager {
   }
 
   /**
-   * Convenience wrapper for {@link SolrMetricManager#loadReporter(String, SolrResourceLoader, CoreContainer, SolrCore, PluginInfo, String)}
-   * passing {@link SolrCore#getResourceLoader()} and {@link SolrCore#getCoreContainer()} as the extra parameters.
+   * Convenience wrapper for {@link SolrMetricManager#loadReporter(String, SolrResourceLoader,
+   * CoreContainer, SolrCore, PluginInfo, String)} passing {@link SolrCore#getResourceLoader()} and
+   * {@link SolrCore#getCoreContainer()} as the extra parameters.
    */
-  public void loadReporter(String registry, SolrCore solrCore, PluginInfo pluginInfo, String tag) throws Exception {
-    loadReporter(registry,
+  public void loadReporter(String registry, SolrCore solrCore, PluginInfo pluginInfo, String tag)
+      throws Exception {
+    loadReporter(
+        registry,
         solrCore.getResourceLoader(),
         solrCore.getCoreContainer(),
         solrCore,
@@ -978,46 +1019,61 @@ public class SolrMetricManager {
   }
 
   /**
-   * Convenience wrapper for {@link SolrMetricManager#loadReporter(String, SolrResourceLoader, CoreContainer, SolrCore, PluginInfo, String)}
-   * passing {@link CoreContainer#getResourceLoader()} and null solrCore and tag.
+   * Convenience wrapper for {@link SolrMetricManager#loadReporter(String, SolrResourceLoader,
+   * CoreContainer, SolrCore, PluginInfo, String)} passing {@link CoreContainer#getResourceLoader()}
+   * and null solrCore and tag.
    */
-  public void loadReporter(String registry, CoreContainer coreContainer, PluginInfo pluginInfo) throws Exception {
-    loadReporter(registry,
-        coreContainer.getResourceLoader(),
-        coreContainer,
-        null,
-        pluginInfo,
-        null);
+  public void loadReporter(String registry, CoreContainer coreContainer, PluginInfo pluginInfo)
+      throws Exception {
+    loadReporter(
+        registry, coreContainer.getResourceLoader(), coreContainer, null, pluginInfo, null);
   }
 
   /**
    * Create and register an instance of {@link SolrMetricReporter}.
    *
-   * @param registry      reporter is associated with this registry
-   * @param loader        loader to use when creating an instance of the reporter
+   * @param registry reporter is associated with this registry
+   * @param loader loader to use when creating an instance of the reporter
    * @param coreContainer core container
-   * @param solrCore      optional solr core
-   * @param pluginInfo    plugin configuration. Plugin "name" and "class" attributes are required.
-   * @param tag           optional tag for the reporter, to distinguish reporters logically created for different parent
-   *                      component instances.
+   * @param solrCore optional solr core
+   * @param pluginInfo plugin configuration. Plugin "name" and "class" attributes are required.
+   * @param tag optional tag for the reporter, to distinguish reporters logically created for
+   *     different parent component instances.
    * @throws Exception if any argument is missing or invalid
    */
-  public void loadReporter(String registry, SolrResourceLoader loader, CoreContainer coreContainer, SolrCore solrCore, PluginInfo pluginInfo, String tag) throws Exception {
-    if (registry == null || pluginInfo == null || pluginInfo.name == null || pluginInfo.className == null) {
-      throw new IllegalArgumentException("loadReporter called with missing arguments: " +
-          "registry=" + registry + ", loader=" + loader + ", pluginInfo=" + pluginInfo);
+  public void loadReporter(
+      String registry,
+      SolrResourceLoader loader,
+      CoreContainer coreContainer,
+      SolrCore solrCore,
+      PluginInfo pluginInfo,
+      String tag)
+      throws Exception {
+    if (registry == null
+        || pluginInfo == null
+        || pluginInfo.name == null
+        || pluginInfo.className == null) {
+      throw new IllegalArgumentException(
+          "loadReporter called with missing arguments: "
+              + "registry="
+              + registry
+              + ", loader="
+              + loader
+              + ", pluginInfo="
+              + pluginInfo);
     }
     // make sure we use a name with prefix
     registry = enforcePrefix(registry);
-    SolrMetricReporter reporter = loader.newInstance(
-        pluginInfo.className,
-        SolrMetricReporter.class,
-        new String[0],
-        new Class<?>[]{SolrMetricManager.class, String.class},
-        new Object[]{this, registry}
-    );
+    SolrMetricReporter reporter =
+        loader.newInstance(
+            pluginInfo.className,
+            SolrMetricReporter.class,
+            new String[0],
+            new Class<?>[] {SolrMetricManager.class, String.class},
+            new Object[] {this, registry});
     // prepare MDC for plugins that want to use its properties
-    MDCLoggingContext.setCoreDescriptor(coreContainer, solrCore == null ? null : solrCore.getCoreDescriptor());
+    MDCLoggingContext.setCoreDescriptor(
+        coreContainer, solrCore == null ? null : solrCore.getCoreDescriptor());
     if (tag != null) {
       // add instance tag to MDC
       MDC.put("tag", "t:" + tag);
@@ -1039,13 +1095,15 @@ public class SolrMetricManager {
     registerReporter(registry, pluginInfo.name, tag, reporter);
   }
 
-  private void registerReporter(String registry, String name, String tag, SolrMetricReporter reporter) throws Exception {
+  private void registerReporter(
+      String registry, String name, String tag, SolrMetricReporter reporter) throws Exception {
     try {
       if (!reportersLock.tryLock(10, TimeUnit.SECONDS)) {
         throw new Exception("Could not obtain lock to modify reporters registry: " + registry);
       }
     } catch (InterruptedException e) {
-      throw new Exception("Interrupted while trying to obtain lock to modify reporters registry: " + registry);
+      throw new Exception(
+          "Interrupted while trying to obtain lock to modify reporters registry: " + registry);
     }
     try {
       Map<String, SolrMetricReporter> perRegistry = reporters.get(registry);
@@ -1058,7 +1116,8 @@ public class SolrMetricManager {
       }
       SolrMetricReporter oldReporter = perRegistry.get(name);
       if (oldReporter != null) { // close it
-        log.info("Replacing existing reporter '{}' in registry'{}': {}", name, registry, oldReporter);
+        log.info(
+            "Replacing existing reporter '{}' in registry'{}': {}", name, registry, oldReporter);
         oldReporter.close();
       }
       perRegistry.put(name, reporter);
@@ -1072,9 +1131,9 @@ public class SolrMetricManager {
    * Close and unregister a named {@link SolrMetricReporter} for a registry.
    *
    * @param registry registry name
-   * @param name     reporter name
-   * @param tag      optional tag for the reporter, to distinguish reporters logically created for different parent
-   *                 component instances.
+   * @param name reporter name
+   * @param tag optional tag for the reporter, to distinguish reporters logically created for
+   *     different parent component instances.
    * @return true if a named reporter existed and was closed.
    */
   public boolean closeReporter(String registry, String name, String tag) {
@@ -1086,7 +1145,8 @@ public class SolrMetricManager {
         return false;
       }
     } catch (InterruptedException e) {
-      log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
+      log.warn(
+          "Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
       return false;
     }
     try {
@@ -1126,8 +1186,8 @@ public class SolrMetricManager {
    * Close and unregister all {@link SolrMetricReporter}-s for a registry.
    *
    * @param registry registry name
-   * @param tag      optional tag for the reporter, to distinguish reporters logically created for different parent
-   *                 component instances.
+   * @param tag optional tag for the reporter, to distinguish reporters logically created for
+   *     different parent component instances.
    * @return names of closed reporters
    */
   public Set<String> closeReporters(String registry, String tag) {
@@ -1139,7 +1199,8 @@ public class SolrMetricManager {
         return Collections.emptySet();
       }
     } catch (InterruptedException e) {
-      log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
+      log.warn(
+          "Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
       return Collections.emptySet();
     }
     try {
@@ -1148,18 +1209,19 @@ public class SolrMetricManager {
       if (perRegistry != null) {
         Set<String> names = new HashSet<>(perRegistry.keySet());
         Set<String> removed = new HashSet<>();
-        names.forEach(name -> {
-          if (tag != null && !tag.isEmpty() && !name.endsWith("@" + tag)) {
-            return;
-          }
-          SolrMetricReporter reporter = perRegistry.remove(name);
-          try {
-            reporter.close();
-          } catch (IOException ioe) {
-            log.warn("Exception closing reporter {}", reporter, ioe);
-          }
-          removed.add(name);
-        });
+        names.forEach(
+            name -> {
+              if (tag != null && !tag.isEmpty() && !name.endsWith("@" + tag)) {
+                return;
+              }
+              SolrMetricReporter reporter = perRegistry.remove(name);
+              try {
+                reporter.close();
+              } catch (IOException ioe) {
+                log.warn("Exception closing reporter {}", reporter, ioe);
+              }
+              removed.add(name);
+            });
         if (removed.size() == names.size()) {
           reporters.remove(registry);
         }
@@ -1190,7 +1252,8 @@ public class SolrMetricManager {
         return Collections.emptyMap();
       }
     } catch (InterruptedException e) {
-      log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
+      log.warn(
+          "Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
       return Collections.emptyMap();
     }
     try {
@@ -1206,9 +1269,11 @@ public class SolrMetricManager {
     }
   }
 
-  private List<PluginInfo> prepareCloudPlugins(PluginInfo[] pluginInfos, String group,
-                                               Map<String, String> defaultAttributes,
-                                               Map<String, Object> defaultInitArgs) {
+  private List<PluginInfo> prepareCloudPlugins(
+      PluginInfo[] pluginInfos,
+      String group,
+      Map<String, String> defaultAttributes,
+      Map<String, Object> defaultInitArgs) {
     List<PluginInfo> result = new ArrayList<>();
     if (pluginInfos == null) {
       pluginInfos = new PluginInfo[0];
@@ -1227,29 +1292,31 @@ public class SolrMetricManager {
   }
 
   @SuppressWarnings("unchecked")
-  private PluginInfo preparePlugin(PluginInfo info, Map<String, String> defaultAttributes,
-                                   Map<String, Object> defaultInitArgs) {
+  private PluginInfo preparePlugin(
+      PluginInfo info, Map<String, String> defaultAttributes, Map<String, Object> defaultInitArgs) {
     if (info == null) {
       return null;
     }
     String classNameAttr = info.attributes.get("class");
 
     Map<String, String> attrs = new HashMap<>(info.attributes);
-    defaultAttributes.forEach((k, v) -> {
-      if (!attrs.containsKey(k)) {
-        attrs.put(k, v);
-      }
-    });
+    defaultAttributes.forEach(
+        (k, v) -> {
+          if (!attrs.containsKey(k)) {
+            attrs.put(k, v);
+          }
+        });
     attrs.put("class", classNameAttr);
     Map<String, Object> initArgs = new HashMap<>();
     if (info.initArgs != null) {
       initArgs.putAll(info.initArgs.asMap(10));
     }
-    defaultInitArgs.forEach((k, v) -> {
-      if (!initArgs.containsKey(k)) {
-        initArgs.put(k, v);
-      }
-    });
+    defaultInitArgs.forEach(
+        (k, v) -> {
+          if (!initArgs.containsKey(k)) {
+            initArgs.put(k, v);
+          }
+        });
     return new PluginInfo(info.type, attrs, new NamedList<>(initArgs), null);
   }
 
@@ -1267,8 +1334,8 @@ public class SolrMetricManager {
 
     String registryName = core.getCoreMetricManager().getRegistryName();
     // collect infos and normalize
-    List<PluginInfo> infos = prepareCloudPlugins(pluginInfos, SolrInfoBean.Group.shard.toString(),
-        attrs, initArgs);
+    List<PluginInfo> infos =
+        prepareCloudPlugins(pluginInfos, SolrInfoBean.Group.shard.toString(), attrs, initArgs);
     for (PluginInfo info : infos) {
       try {
         loadReporter(registryName, core, info, core.getMetricTag());
@@ -1288,8 +1355,8 @@ public class SolrMetricManager {
     attrs.put("group", SolrInfoBean.Group.cluster.toString());
     Map<String, Object> initArgs = new HashMap<>();
     initArgs.put("period", DEFAULT_CLOUD_REPORTER_PERIOD);
-    List<PluginInfo> infos = prepareCloudPlugins(pluginInfos, SolrInfoBean.Group.cluster.toString(),
-        attrs, initArgs);
+    List<PluginInfo> infos =
+        prepareCloudPlugins(pluginInfos, SolrInfoBean.Group.cluster.toString(), attrs, initArgs);
     String registryName = getRegistryName(SolrInfoBean.Group.cluster);
     for (PluginInfo info : infos) {
       try {
@@ -1300,4 +1367,7 @@ public class SolrMetricManager {
     }
   }
 
+  public MetricsConfig getMetricsConfig() {
+    return metricsConfig;
+  }
 }

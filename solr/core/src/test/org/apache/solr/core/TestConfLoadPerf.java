@@ -17,6 +17,8 @@
 
 package org.apache.solr.core;
 
+import static org.apache.solr.core.TestConfigSets.solrxml;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -26,7 +28,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -34,18 +35,17 @@ import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Ignore;
 
-import static org.apache.solr.core.TestConfigSets.solrxml;
-
 public class TestConfLoadPerf extends SolrTestCaseJ4 {
 
   @Ignore
   @SuppressForbidden(reason = "Needed to provide time for tests.")
-  public void testPerf() throws Exception{
+  public void testPerf() throws Exception {
     String sourceHome = ExternalPaths.SOURCE_HOME;
-    File configSetDir = new File(sourceHome, "server/solr/configsets/sample_techproducts_configs/conf");
+    File configSetDir =
+        new File(sourceHome, "server/solr/configsets/sample_techproducts_configs/conf");
 
     String configSetsBaseDir = TEST_PATH().resolve("configsets").toString();
-    byte[]  b  = Files.readAllBytes(new File(configSetDir, "solrconfig.xml").toPath());
+    byte[] b = Files.readAllBytes(new File(configSetDir, "solrconfig.xml").toPath());
     Path testDirectory = createTempDir();
 
     System.setProperty("configsets", configSetsBaseDir);
@@ -54,35 +54,41 @@ public class TestConfLoadPerf extends SolrTestCaseJ4 {
     container.load();
     container.shutdown();
 
-    SolrResourceLoader srl = new SolrResourceLoader("temp", Collections.emptyList(), container.solrHome, container.getResourceLoader().classLoader){
+    SolrResourceLoader srl =
+        new SolrResourceLoader(
+            "temp",
+            Collections.emptyList(),
+            container.solrHome,
+            container.getResourceLoader().classLoader) {
 
-      @Override
-      public CoreContainer getCoreContainer() {
-        return container;
-      }
+          @Override
+          public CoreContainer getCoreContainer() {
+            return container;
+          }
 
-      @Override
-      public InputStream openResource(String resource) throws IOException {
-        if(resource.equals("solrconfig.xml")) {
-          Stat stat = new Stat();
-          stat.setVersion(1);
-          return new ZkSolrResourceLoader.ZkByteArrayInputStream(b, new File(configSetDir, "solrconfig.xml").getAbsolutePath(), stat);
-        } else {
-          throw new FileNotFoundException(resource);
-        }
-
-      }
-    };
+          @Override
+          public InputStream openResource(String resource) throws IOException {
+            if (resource.equals("solrconfig.xml")) {
+              Stat stat = new Stat();
+              stat.setVersion(1);
+              return new ZkSolrResourceLoader.ZkByteArrayInputStream(
+                  b, new File(configSetDir, "solrconfig.xml").getAbsolutePath(), stat);
+            } else {
+              throw new FileNotFoundException(resource);
+            }
+          }
+        };
     System.gc();
     long heapSize = Runtime.getRuntime().totalMemory();
     List<SolrConfig> allConfigs = new ArrayList<>();
-    long startTime =  System.currentTimeMillis();
-    for(int i=0;i<100;i++) {
+    long startTime = System.currentTimeMillis();
+    int numReads = 100;
+    for (int i = 0; i < numReads; i++) {
       allConfigs.add(SolrConfig.readFromResourceLoader(srl, "solrconfig.xml", true, null));
-
     }
+    assertEquals(numReads, allConfigs.size());
     System.gc();
-    System.out.println("TIME_TAKEN : "+(System.currentTimeMillis()-startTime));
-    System.out.println("HEAP_SIZE : "+((Runtime.getRuntime().totalMemory()-heapSize)/(1024)));
+    System.out.println("TIME_TAKEN : " + (System.currentTimeMillis() - startTime));
+    System.out.println("HEAP_SIZE : " + ((Runtime.getRuntime().totalMemory() - heapSize) / (1024)));
   }
 }

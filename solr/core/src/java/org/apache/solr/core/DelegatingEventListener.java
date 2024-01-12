@@ -20,8 +20,7 @@ import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
- * A {@link SolrEventListener} wrapper that loads class from  a package
- * and reload if it's modified
+ * A {@link SolrEventListener} wrapper that loads class from a package and reload if it's modified
  */
 public class DelegatingEventListener implements SolrEventListener {
 
@@ -31,10 +30,9 @@ public class DelegatingEventListener implements SolrEventListener {
     this.holder = holder;
   }
 
-
   @Override
   public void postCommit() {
-   holder.getInstance().ifPresent(SolrEventListener::postCommit);
+    holder.getInstance().ifPresent(SolrEventListener::postCommit);
   }
 
   @Override

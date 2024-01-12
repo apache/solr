@@ -22,9 +22,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.spelling.suggest.LookupFactory;
 
-/**
- * Factory for {@link TSTLookup}
- */
+/** Factory for {@link TSTLookup} */
 public class TSTLookupFactory extends LookupFactory {
   private static final String FILENAME = "tst.dat";
 

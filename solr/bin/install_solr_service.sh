@@ -30,7 +30,7 @@ print_usage() {
   echo "Usage: install_solr_service.sh <path_to_solr_distribution_archive> [OPTIONS]"
   echo ""
   echo "  The first argument to the script must be a path to a Solr distribution archive, such as solr-5.0.0.tgz"
-  echo "    (only .tgz or .zip are supported formats for the archive)"
+  echo "    (only .tgz is supported format for the archive)"
   echo ""
   echo "  Supported OPTIONS include:"
   echo ""
@@ -102,14 +102,10 @@ fi
 
 # strip off path info
 SOLR_INSTALL_FILE=${SOLR_ARCHIVE##*/}
-is_tar=true
 if [ ${SOLR_INSTALL_FILE: -4} == ".tgz" ]; then
   SOLR_DIR=${SOLR_INSTALL_FILE%.tgz}
-elif [ ${SOLR_INSTALL_FILE: -4} == ".zip" ]; then
-  SOLR_DIR=${SOLR_INSTALL_FILE%.zip}
-  is_tar=false
 else
-  print_usage "Solr installation archive $SOLR_ARCHIVE is invalid, expected a .tgz or .zip file!"
+  print_usage "Solr installation archive $SOLR_ARCHIVE is invalid, expected a .tgz file!"
   exit 1
 fi
 
@@ -187,11 +183,7 @@ if [ $# -gt 1 ]; then
 fi
 
 # Test for availability of needed tools
-if [[ $is_tar ]] ; then
-  tar --version &>/dev/null     || print_error "Script requires the 'tar' command"
-else
-  unzip -hh &>/dev/null         || print_error "Script requires the 'unzip' command"
-fi
+tar --version &>/dev/null       || print_error "Script requires the 'tar' command"
 if [[ $SOLR_START == "true" ]] ; then
   service --version &>/dev/null || service --help &>/dev/null || print_error "Script requires the 'service' command"
   java -version &>/dev/null     || print_error "Solr requires java, please install or set JAVA_HOME properly"
@@ -265,11 +257,7 @@ if [ ! -d "$SOLR_INSTALL_DIR" ]; then
 
   echo -e "\nExtracting $SOLR_ARCHIVE to $SOLR_EXTRACT_DIR\n"
 
-  if $is_tar ; then
-    tar zxf "$SOLR_ARCHIVE" -C "$SOLR_EXTRACT_DIR"
-  else
-    unzip -q "$SOLR_ARCHIVE" -d "$SOLR_EXTRACT_DIR"
-  fi
+  tar zxf "$SOLR_ARCHIVE" -C "$SOLR_EXTRACT_DIR"
 
   if [ ! -d "$SOLR_INSTALL_DIR" ]; then
     echo -e "\nERROR: Expected directory $SOLR_INSTALL_DIR not found after extracting $SOLR_ARCHIVE ... script fails.\n" 1>&2
@@ -324,7 +312,8 @@ else
   cp "$SOLR_INSTALL_DIR/bin/solr.in.sh" "/etc/default/$SOLR_SERVICE.in.sh"
   mv "$SOLR_INSTALL_DIR/bin/solr.in.sh" "$SOLR_INSTALL_DIR/bin/solr.in.sh.orig"  
   mv "$SOLR_INSTALL_DIR/bin/solr.in.cmd" "$SOLR_INSTALL_DIR/bin/solr.in.cmd.orig"  
-  echo "SOLR_PID_DIR=\"$SOLR_VAR_DIR\"
+  echo "
+SOLR_PID_DIR=\"$SOLR_VAR_DIR\"
 SOLR_HOME=\"$SOLR_VAR_DIR/data\"
 LOG4J_PROPS=\"$SOLR_VAR_DIR/log4j2.xml\"
 SOLR_LOGS_DIR=\"$SOLR_VAR_DIR/logs\"
@@ -337,11 +326,6 @@ chmod 0640 "/etc/default/$SOLR_SERVICE.in.sh"
 # install data directories and files
 mkdir -p "$SOLR_VAR_DIR/data"
 mkdir -p "$SOLR_VAR_DIR/logs"
-if [ -f "$SOLR_VAR_DIR/data/solr.xml" ]; then
-  echo -e "\n$SOLR_VAR_DIR/data/solr.xml already exists. Skipping install ...\n"
-else
-  cp "$SOLR_INSTALL_DIR/server/solr/"{solr.xml,zoo.cfg} "$SOLR_VAR_DIR/data/"
-fi
 if [ -f "$SOLR_VAR_DIR/log4j2.xml" ]; then
   echo -e "\n$SOLR_VAR_DIR/log4j2.xml already exists. Skipping install ...\n"
 else

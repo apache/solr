@@ -34,24 +34,29 @@ final class UnionDISI extends SweepDISI {
     private final DocIdSetIterator sub;
     private final int index;
     private int docId;
+
     public SubIterStruct(DocIdSetIterator sub, int index) throws IOException {
       this.sub = sub;
       this.index = index;
       nextDoc();
     }
+
     public void nextDoc() throws IOException {
       docId = sub.nextDoc();
     }
   }
-  UnionDISI(DocIdSetIterator[] subIterators, CountSlotAcc[] countAccs, int size, int baseIdx) throws IOException {
+
+  UnionDISI(DocIdSetIterator[] subIterators, CountSlotAcc[] countAccs, int size, int baseIdx)
+      throws IOException {
     super(size, countAccs);
     this.maxIdx = size - 1;
-    queue = new PriorityQueue<SubIterStruct>(size) {
-      @Override
-      protected boolean lessThan(SubIterStruct a, SubIterStruct b) {
-        return a.docId < b.docId;
-      }
-    };
+    queue =
+        new PriorityQueue<>(size) {
+          @Override
+          protected boolean lessThan(SubIterStruct a, SubIterStruct b) {
+            return a.docId < b.docId;
+          }
+        };
     int i = maxIdx;
     SubIterStruct tmpBaseSub = null;
     do {
@@ -96,5 +101,4 @@ final class UnionDISI extends SweepDISI {
     } while ((top = queue.updateTop()).docId == docId);
     return i;
   }
-
 }

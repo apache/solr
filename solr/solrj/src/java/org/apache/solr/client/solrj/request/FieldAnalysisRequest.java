@@ -16,11 +16,9 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.FieldAnalysisResponse;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -29,10 +27,9 @@ import org.apache.solr.common.params.SolrParams;
 /**
  * A request for the org.apache.solr.handler.FieldAnalysisRequestHandler.
  *
- *
  * @since solr.14
  */
-public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
+public class FieldAnalysisRequest extends DataStoreSolrRequest<FieldAnalysisResponse> {
 
   private String fieldValue;
   private String query;
@@ -40,9 +37,7 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
   private List<String> fieldNames;
   private List<String> fieldTypes;
 
-  /**
-   * Constructs a new FieldAnalysisRequest with a default uri of "/fieldanalysis".
-   */
+  /** Constructs a new FieldAnalysisRequest with a default uri of "/fieldanalysis". */
   public FieldAnalysisRequest() {
     super(METHOD.GET, "/analysis/field");
   }
@@ -55,7 +50,6 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
   public FieldAnalysisRequest(String uri) {
     super(METHOD.GET, uri);
   }
-
 
   @Override
   protected FieldAnalysisResponse createResponse(SolrClient client) {
@@ -92,13 +86,12 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
     return SolrRequestType.QUERY.toString();
   }
 
-  //================================================ Helper Methods ==================================================
+  // ===== Helper Methods =====
 
   /**
    * Convers the given list of string to a comma-separated string.
    *
    * @param list The list of string.
-   *
    * @return The comma-separated string.
    */
   static String listToCommaDelimitedString(List<String> list) {
@@ -112,14 +105,12 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
     return result.toString();
   }
 
-
-  //============================================ Setter/Getter Methods ===============================================
+  // ===== Setter/Getter Methods =====
 
   /**
    * Sets the field value to be analyzed.
    *
    * @param fieldValue The field value to be analyzed.
-   *
    * @return This FieldAnalysisRequest (fluent interface support).
    */
   public FieldAnalysisRequest setFieldValue(String fieldValue) {
@@ -137,10 +128,10 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
   }
 
   /**
-   * Sets the query to be analyzed. May be {@code null} indicated that no query analysis should take place.
+   * Sets the query to be analyzed. May be {@code null} indicated that no query analysis should take
+   * place.
    *
    * @param query The query to be analyzed.
-   *
    * @return This FieldAnalysisRequest (fluent interface support).
    */
   public FieldAnalysisRequest setQuery(String query) {
@@ -149,22 +140,23 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
   }
 
   /**
-   * Returns the query that will be analyzed. May return {@code null} indicating that no query analysis will be
-   * performed.
+   * Returns the query that will be analyzed. May return {@code null} indicating that no query
+   * analysis will be performed.
    *
-   * @return The query that will be analyzed. May return {@code null} indicating that no query analysis will be
-   *         performed.
+   * @return The query that will be analyzed. May return {@code null} indicating that no query
+   *     analysis will be performed.
    */
   public String getQuery() {
     return query;
   }
 
   /**
-   * Sets whether index time tokens that match query time tokens should be marked as a "match". By default this is set
-   * to {@code false}. Obviously, this flag is ignored if when the query is set to {@code null}.
+   * Sets whether index time tokens that match query time tokens should be marked as a "match". By
+   * default this is set to {@code false}. Obviously, this flag is ignored if when the query is set
+   * to {@code null}.
    *
-   * @param showMatch Sets whether index time tokens that match query time tokens should be marked as a "match".
-   *
+   * @param showMatch Sets whether index time tokens that match query time tokens should be marked
+   *     as a "match".
    * @return This FieldAnalysisRequest (fluent interface support).
    */
   public FieldAnalysisRequest setShowMatch(boolean showMatch) {
@@ -176,7 +168,6 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
    * Returns whether index time tokens that match query time tokens should be marked as a "match".
    *
    * @return Whether index time tokens that match query time tokens should be marked as a "match".
-   *
    * @see #setShowMatch(boolean)
    */
   public boolean isShowMatch() {
@@ -187,32 +178,30 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
    * Adds the given field name for analysis.
    *
    * @param fieldName A field name on which the analysis should be performed.
-   *
    * @return this FieldAnalysisRequest (fluent interface support).
    */
   public FieldAnalysisRequest addFieldName(String fieldName) {
     if (fieldNames == null) {
-      fieldNames = new LinkedList<>();
+      fieldNames = new ArrayList<>();
     }
     fieldNames.add(fieldName);
     return this;
   }
 
   /**
-     * Sets the field names on which the analysis should be performed.
-     *
-     * @param fieldNames The field names on which the analysis should be performed.
-     *
-     * @return this FieldAnalysisRequest (fluent interface support).
-     */
+   * Sets the field names on which the analysis should be performed.
+   *
+   * @param fieldNames The field names on which the analysis should be performed.
+   * @return this FieldAnalysisRequest (fluent interface support).
+   */
   public FieldAnalysisRequest setFieldNames(List<String> fieldNames) {
     this.fieldNames = fieldNames;
     return this;
   }
 
   /**
-   * Returns a list of field names the analysis should be performed on. May return {@code null} indicating that no
-   * analysis will be performed on field names.
+   * Returns a list of field names the analysis should be performed on. May return {@code null}
+   * indicating that no analysis will be performed on field names.
    *
    * @return The field names the analysis should be performed on.
    */
@@ -224,22 +213,20 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
    * Adds the given field type for analysis.
    *
    * @param fieldTypeName A field type name on which analysis should be performed.
-   *
    * @return This FieldAnalysisRequest (fluent interface support).
    */
   public FieldAnalysisRequest addFieldType(String fieldTypeName) {
     if (fieldTypes == null) {
-      fieldTypes = new LinkedList<>();
+      fieldTypes = new ArrayList<>();
     }
     fieldTypes.add(fieldTypeName);
     return this;
   }
 
-/**
+  /**
    * Sets the field types on which analysis should be performed.
    *
    * @param fieldTypes The field type names on which analysis should be performed.
-   *
    * @return This FieldAnalysisRequest (fluent interface support).
    */
   public FieldAnalysisRequest setFieldTypes(List<String> fieldTypes) {
@@ -247,15 +234,13 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
     return this;
   }
 
-
   /**
-   * Returns a list of field types the analysis should be performed on. May return {@code null} indicating that no
-   * analysis will be peformed on field types.
+   * Returns a list of field types the analysis should be performed on. May return {@code null}
+   * indicating that no analysis will be peformed on field types.
    *
    * @return The field types the analysis should be performed on.
    */
   public List<String> getFieldTypes() {
     return fieldTypes;
   }
-
 }

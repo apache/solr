@@ -16,8 +16,16 @@
  */
 package org.apache.solr.handler.admin;
 
-import com.google.common.collect.ImmutableList;
+import static org.apache.solr.common.params.CommonParams.PATH;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -27,14 +35,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 
-import java.util.Collection;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static org.apache.solr.common.params.CommonParams.PATH;
-
-public class InfoHandler extends RequestHandlerBase  {
+public class InfoHandler extends RequestHandlerBase {
 
   protected final CoreContainer coreContainer;
   private Map<String, RequestHandlerBase> handlers = new ConcurrentHashMap<>();
@@ -47,23 +48,22 @@ public class InfoHandler extends RequestHandlerBase  {
   public InfoHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     handlers.put("threads", new ThreadDumpHandler());
-    handlers.put("properties", new PropertiesRequestHandler());
+    handlers.put("properties", new PropertiesRequestHandler(coreContainer));
     handlers.put("logging", new LoggingHandler(coreContainer));
     handlers.put("system", new SystemInfoHandler(coreContainer));
     if (coreContainer.getHealthCheckHandler() == null) {
-      throw new IllegalStateException("HealthCheckHandler needs to be initialized before creating InfoHandler");
+      throw new IllegalStateException(
+          "HealthCheckHandler needs to be initialized before creating InfoHandler");
     }
     handlers.put("health", coreContainer.getHealthCheckHandler());
-
   }
 
-
   @Override
-  final public void init(NamedList<?> args) { }
+  public final void init(NamedList<?> args) {}
 
   /**
-   * The instance of CoreContainer this handler handles. This should be the CoreContainer instance that created this
-   * handler.
+   * The instance of CoreContainer this handler handles. This should be the CoreContainer instance
+   * that created this handler.
    *
    * @return a CoreContainer instance
    */
@@ -76,8 +76,8 @@ public class InfoHandler extends RequestHandlerBase  {
     // Make sure the cores is enabled
     CoreContainer cores = getCoreContainer();
     if (cores == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Core container instance missing");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Core container instance missing");
     }
 
     String path = (String) req.getContext().get(PATH);
@@ -88,13 +88,14 @@ public class InfoHandler extends RequestHandlerBase  {
     int i = path.lastIndexOf('/');
     String name = path.substring(i + 1, path.length());
     RequestHandlerBase handler = handlers.get(name.toLowerCase(Locale.ROOT));
-    if(handler == null) {
-      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No handler by name "+name + " available names are "+ handlers.keySet());
+    if (handler == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          "No handler by name " + name + " available names are " + handlers.keySet());
     }
     handler.handleRequest(req, rsp);
     rsp.setHttpCaching(false);
   }
-
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
@@ -110,7 +111,6 @@ public class InfoHandler extends RequestHandlerBase  {
 
   public PropertiesRequestHandler getPropertiesHandler() {
     return (PropertiesRequestHandler) handlers.get("properties");
-
   }
 
   public ThreadDumpHandler getThreadDumpHandler() {
@@ -161,20 +161,31 @@ public class InfoHandler extends RequestHandlerBase  {
 
   @Override
   public Collection<Api> getApis() {
-    final ImmutableList.Builder<Api> list = new ImmutableList.Builder<>();
+    final List<Api> list = new ArrayList<>();
     list.addAll(handlers.get("threads").getApis());
     list.addAll(handlers.get("properties").getApis());
     list.addAll(handlers.get("logging").getApis());
     list.addAll(handlers.get("system").getApis());
     list.addAll(handlers.get("health").getApis());
-    return list.build();
+    return List.copyOf(list);
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    final var apis = new ArrayList<Class<? extends JerseyResource>>();
+    apis.addAll(handlers.get("threads").getJerseyResources());
+    apis.addAll(handlers.get("properties").getJerseyResources());
+    apis.addAll(handlers.get("logging").getJerseyResources());
+    apis.addAll(handlers.get("system").getJerseyResources());
+    apis.addAll(handlers.get("health").getJerseyResources());
+    return apis;
   }
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
     // Delegate permission to the actual handler
     String path = request.getResource();
-    String lastPath = path.substring(path.lastIndexOf("/") +1 );
+    String lastPath = path.substring(path.lastIndexOf('/') + 1);
     RequestHandlerBase handler = handlers.get(lastPath.toLowerCase(Locale.ROOT));
     if (handler != null) {
       return handler.getPermissionName(request);

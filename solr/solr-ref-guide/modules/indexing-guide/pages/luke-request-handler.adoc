@@ -1,0 +1,120 @@
+= Luke Request Handler
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Luke Request Handler offers programmatic access to the information provided on the xref:schema-browser-screen.adoc[] page of the Admin UI.
+It is modeled after https://github.com/apache/lucene/tree/releases/lucene/{dep-version-lucene}/lucene/luke[Luke], the Lucene Index Browser.
+It is an implicit handler, so you don't need to define it in `solrconfig.xml`.
+
+The Luke Request Handler accepts the following parameters:
+
+`show`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `all`
+|===
++
+The data about the index to include in the response.
+Options are `schema`, `index`, `doc`, `all`.
+* `all` returns all fields and high level details about the index.
+* `index` returns the high level details about the index without all fields.
+* `schema` returns details about the `schema` plus the `index` data.
+* `doc` works in conjunction with `docId` or `id` parameters and returns details about a specific document plus the `index` data.
+
+`id`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Get a document using the `uniqueKeyField` specified in the schema.
+
+`docId`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Get a document using a Lucene documentID.
+
+`fl`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Limit the returned values to a set of fields.
+This is useful if you want to increase the `numTerms` and don't want a massive response.
+
+`numTerms`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `10`
+|===
++
+The number of top terms for each field.
+
+`includeIndexFieldFlags`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Choose whether `/luke` should return the index-flags for each field.
+Fetching and returning the index-flags for each field in the index has non-zero cost, and can slow down requests to `/luke`.
+
+== LukeRequestHandler Examples
+
+All of the examples in this section assume you are running the "techproducts" Solr example:
+
+[source,bash]
+----
+bin/solr -e techproducts
+----
+
+To return summary information about the index:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/luke?numTerms=0
+
+To return schema details about the index:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/luke?show=schema
+
+To drill into a specific field `manu`, then you drop the `show` parameter and add the `fl` parameter:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/luke?fl=manu
+
+To see the specifics of a document using the Solr uniqueKeyField field:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/luke?fl=manu&id=TWINX2048-3200PRO
+
+Alternatively, to work through the Lucene native id:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/luke?fl=manu&docId=0
+
+From SolrJ, you can access /luke using the {solr-javadocs}/solrj/org/apache/solr/client/solrj/request/LukeRequest.html[`LukeRequest`] object.

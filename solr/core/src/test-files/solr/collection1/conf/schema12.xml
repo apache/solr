@@ -50,6 +50,9 @@
   <fieldType name="pfloat" class="solr.FloatPointField" docValues="true"/>
   <fieldType name="pdate" class="solr.DatePointField" docValues="true"/>
 
+  <!-- Dense Vector Fields -->
+  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
+  
   <!-- Field type demonstrating an Analyzer failure -->
   <fieldType name="failtype1" class="solr.TextField">
     <analyzer type="index">
@@ -100,6 +103,8 @@
 
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+
+  <fieldType name="binary" class="solr.BinaryField"/>
 
   <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
        seconds part (.999) is optional.
@@ -663,7 +668,9 @@
   
   <field name="shingle23" type="shingle23" indexed="true" stored="true"/>
 
-
+  <!-- Dense Vector-->
+  <field name="vector" type="knn_vector" indexed="true" stored="true"/>
+  
   <!--
      DO NOT INCLUDE _version_ in this schema file
      We explicitly want tests using this file to *NOT* have this field
@@ -679,6 +686,7 @@
   <dynamicField name="t_as_same_term_boosted_*" type="text_as_same_term_boosted" indexed="true" stored="true"/>
   <dynamicField name="t_as_distinct_*" type="text_as_distinct" indexed="true" stored="true"/>
 
+  <dynamicField name="*_bin" type="binary"/>
 
   <dynamicField name="t_*" type="text" indexed="true" stored="true"/>
   <dynamicField name="tv_*" type="text" indexed="true" stored="true"

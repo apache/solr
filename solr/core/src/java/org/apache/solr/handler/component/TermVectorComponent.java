@@ -30,7 +30,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.PostingsEnum;
@@ -53,18 +52,18 @@ import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.SolrResponseUtil;
 
 /**
  * Return term vectors for the documents in a query result set.
- * <p>
- * Info available:
- * term, frequency, position, offset, payloads, IDF.
- * <p>
- * <b>Note</b> Returning IDF can be expensive.
- * 
+ *
+ * <p>Info available: term, frequency, position, offset, payloads, IDF.
+ *
+ * <p><b>Note</b> Returning IDF can be expensive.
+ *
  * <pre class="prettyprint">
  * &lt;searchComponent name="tvComponent" class="solr.TermVectorComponent"/&gt;
- * 
+ *
  * &lt;requestHandler name="/terms" class="solr.SearchHandler"&gt;
  *   &lt;lst name="defaults"&gt;
  *     &lt;bool name="tv"&gt;true&lt;/bool&gt;
@@ -73,11 +72,8 @@ import org.apache.solr.util.SolrPluginUtils;
  *     &lt;str&gt;tvComponent&lt;/str&gt;
  *   &lt;/arr&gt;
  * &lt;/requestHandler&gt;</pre>
- *
- *
  */
 public class TermVectorComponent extends SearchComponent {
-
 
   public static final String COMPONENT_NAME = "tv";
 
@@ -88,41 +84,35 @@ public class TermVectorComponent extends SearchComponent {
   protected NamedList<?> initParams;
 
   /**
-   * Helper method for determining the list of fields that we should 
-   * try to find term vectors on.  
-   * <p>
-   * Does simple (non-glob-supporting) parsing on the 
-   * {@link TermVectorParams#FIELDS} param if specified, otherwise it returns 
-   * the concrete field values specified in {@link CommonParams#FL} -- 
-   * ignoring functions, transformers, or literals.  
-   * </p>
-   * <p>
-   * If "fl=*" is used, or neither param is specified, then <code>null</code> 
-   * will be returned.  If the empty set is returned, it means the "fl" 
-   * specified consisted entirely of things that are not real fields 
-   * (ie: functions, transformers, partial-globs, score, etc...) and not 
-   * supported by this component. 
-   * </p>
+   * Helper method for determining the list of fields that we should try to find term vectors on.
+   *
+   * <p>Does simple (non-glob-supporting) parsing on the {@link TermVectorParams#FIELDS} param if
+   * specified, otherwise it returns the concrete field values specified in {@link CommonParams#FL}
+   * -- ignoring functions, transformers, or literals.
+   *
+   * <p>If "fl=*" is used, or neither param is specified, then <code>null</code> will be returned.
+   * If the empty set is returned, it means the "fl" specified consisted entirely of things that are
+   * not real fields (ie: functions, transformers, partial-globs, score, etc...) and not supported
+   * by this component.
    */
   private Set<String> getFields(ResponseBuilder rb) {
     SolrParams params = rb.req.getParams();
     String[] fldLst = params.getParams(TermVectorParams.FIELDS);
-    if (null == fldLst || 0 == fldLst.length || 
-        (1 == fldLst.length && 0 == fldLst[0].length())) {
+    if (null == fldLst || 0 == fldLst.length || (1 == fldLst.length && 0 == fldLst[0].length())) {
 
       // no tv.fl, parse the main fl
-      ReturnFields rf = new SolrReturnFields
-        (params.getParams(CommonParams.FL), rb.req);
+      ReturnFields rf = new SolrReturnFields(params.getParams(CommonParams.FL), rb.req);
 
       if (rf.wantsAllFields()) {
         return null;
       }
 
       Set<String> fieldNames = rf.getLuceneFieldNames();
-      return (null != fieldNames) ?
-        fieldNames :
-        // return empty set indicating no fields should be used
-        Collections.emptySet();
+      return (null != fieldNames)
+          ? fieldNames
+          :
+          // return empty set indicating no fields should be used
+          Collections.emptySet();
     }
 
     // otherwise us the raw fldList as is, no special parsing or globs
@@ -151,15 +141,15 @@ public class TermVectorComponent extends SearchComponent {
     }
 
     FieldOptions allFields = new FieldOptions();
-    //figure out what options we have, and try to get the appropriate vector
+    // figure out what options we have, and try to get the appropriate vector
     allFields.termFreq = params.getBool(TermVectorParams.TF, false);
     allFields.positions = params.getBool(TermVectorParams.POSITIONS, false);
     allFields.offsets = params.getBool(TermVectorParams.OFFSETS, false);
     allFields.payloads = params.getBool(TermVectorParams.PAYLOADS, false);
     allFields.docFreq = params.getBool(TermVectorParams.DF, false);
     allFields.tfIdf = params.getBool(TermVectorParams.TF_IDF, false);
-    //boolean cacheIdf = params.getBool(TermVectorParams.IDF, false);
-    //short cut to all values.
+    // boolean cacheIdf = params.getBool(TermVectorParams.IDF, false);
+    // short cut to all values.
     if (params.getBool(TermVectorParams.ALL, false)) {
       allFields.termFreq = true;
       allFields.positions = true;
@@ -169,21 +159,21 @@ public class TermVectorComponent extends SearchComponent {
       allFields.tfIdf = true;
     }
 
-    //Build up our per field mapping
+    // Build up our per field mapping
     Map<String, FieldOptions> fieldOptions = new HashMap<>();
     NamedList<List<String>> warnings = new NamedList<>();
-    List<String>  noTV = new ArrayList<>();
-    List<String>  noPos = new ArrayList<>();
-    List<String>  noOff = new ArrayList<>();
-    List<String>  noPay = new ArrayList<>();
+    List<String> noTV = new ArrayList<>();
+    List<String> noPos = new ArrayList<>();
+    List<String> noOff = new ArrayList<>();
+    List<String> noPay = new ArrayList<>();
 
     Set<String> fields = getFields(rb);
-    if ( null != fields ) {
-      //we have specific fields to retrieve, or no fields
+    if (null != fields) {
+      // we have specific fields to retrieve, or no fields
       for (String field : fields) {
 
         // workaround SOLR-3523
-        if (null == field || "score".equals(field)) continue; 
+        if (null == field || "score".equals(field)) continue;
 
         // we don't want to issue warnings about the uniqueKey field
         // since it can cause lots of confusion in distributed requests
@@ -199,35 +189,38 @@ public class TermVectorComponent extends SearchComponent {
               option.fieldName = field;
               fieldOptions.put(field, option);
             }
-            //get the per field mappings
+            // get the per field mappings
             option.termFreq = params.getFieldBool(field, TermVectorParams.TF, allFields.termFreq);
             option.docFreq = params.getFieldBool(field, TermVectorParams.DF, allFields.docFreq);
             option.tfIdf = params.getFieldBool(field, TermVectorParams.TF_IDF, allFields.tfIdf);
-            //Validate these are even an option
-            option.positions = params.getFieldBool(field, TermVectorParams.POSITIONS, allFields.positions);
-            if (option.positions && !sf.storeTermPositions() && !fieldIsUniqueKey){
+            // Validate these are even an option
+            option.positions =
+                params.getFieldBool(field, TermVectorParams.POSITIONS, allFields.positions);
+            if (option.positions && !sf.storeTermPositions() && !fieldIsUniqueKey) {
               noPos.add(field);
             }
-            option.offsets = params.getFieldBool(field, TermVectorParams.OFFSETS, allFields.offsets);
-            if (option.offsets && !sf.storeTermOffsets() && !fieldIsUniqueKey){
+            option.offsets =
+                params.getFieldBool(field, TermVectorParams.OFFSETS, allFields.offsets);
+            if (option.offsets && !sf.storeTermOffsets() && !fieldIsUniqueKey) {
               noOff.add(field);
             }
-            option.payloads = params.getFieldBool(field, TermVectorParams.PAYLOADS, allFields.payloads);
-            if (option.payloads && !sf.storeTermPayloads() && !fieldIsUniqueKey){
+            option.payloads =
+                params.getFieldBool(field, TermVectorParams.PAYLOADS, allFields.payloads);
+            if (option.payloads && !sf.storeTermPayloads() && !fieldIsUniqueKey) {
               noPay.add(field);
             }
-          } else {//field doesn't have term vectors
+          } else { // field doesn't have term vectors
             if (!fieldIsUniqueKey) noTV.add(field);
           }
         } else {
-          //field doesn't exist
+          // field doesn't exist
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "undefined field: " + field);
         }
       }
-    } //else, deal with all fields
+    } // else, deal with all fields
 
     // NOTE: currently all types of warnings are schema driven, and guaranteed
-    // to be consistent across all shards - if additional types of warnings 
+    // to be consistent across all shards - if additional types of warnings
     // are added that might be different between shards, finishStage() needs
     // to be changed to account for that.
     if (!noTV.isEmpty()) {
@@ -258,10 +251,10 @@ public class TermVectorComponent extends SearchComponent {
     SolrIndexSearcher searcher = rb.req.getSearcher();
 
     IndexReader reader = searcher.getIndexReader();
-    //the TVMapper is a TermVectorMapper which can be used to optimize loading of Term Vectors
+    // the TVMapper is a TermVectorMapper which can be used to optimize loading of Term Vectors
 
-    //Only load the id field to get the uniqueKey of that
-    //field
+    // Only load the id field to get the uniqueKey of that
+    // field
     SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     SolrReturnFields srf = new SolrReturnFields(uniqFieldName, rb.req);
 
@@ -307,13 +300,20 @@ public class TermVectorComponent extends SearchComponent {
     }
   }
 
-  private void mapOneVector(NamedList<Object> docNL, FieldOptions fieldOptions, IndexReader reader, int docID, TermsEnum termsEnum, String field) throws IOException {
+  private void mapOneVector(
+      NamedList<Object> docNL,
+      FieldOptions fieldOptions,
+      IndexReader reader,
+      int docID,
+      TermsEnum termsEnum,
+      String field)
+      throws IOException {
     NamedList<Object> fieldNL = new NamedList<>();
     docNL.add(field, fieldNL);
 
     BytesRef text;
     PostingsEnum dpEnum = null;
-    while((text = termsEnum.next()) != null) {
+    while ((text = termsEnum.next()) != null) {
       String term = text.utf8ToString();
       NamedList<Object> termInfo = new NamedList<>();
       fieldNL.add(term, termInfo);
@@ -324,7 +324,7 @@ public class TermVectorComponent extends SearchComponent {
 
       int dpEnumFlags = 0;
       dpEnumFlags |= fieldOptions.positions ? PostingsEnum.POSITIONS : 0;
-      //payloads require offsets
+      // payloads require offsets
       dpEnumFlags |= (fieldOptions.offsets || fieldOptions.payloads) ? PostingsEnum.OFFSETS : 0;
       dpEnumFlags |= fieldOptions.payloads ? PostingsEnum.PAYLOADS : 0;
       dpEnum = termsEnum.postings(dpEnum, dpEnumFlags);
@@ -366,11 +366,17 @@ public class TermVectorComponent extends SearchComponent {
               thePayloads = new NamedList<>();
               termInfo.add("payloads", thePayloads);
             }
-            thePayloads.add("payload", new String(Base64.getEncoder().encode(ByteBuffer.wrap(payload.bytes, payload.offset, payload.length)).array(), StandardCharsets.ISO_8859_1));
+            thePayloads.add(
+                "payload",
+                new String(
+                    Base64.getEncoder()
+                        .encode(ByteBuffer.wrap(payload.bytes, payload.offset, payload.length))
+                        .array(),
+                    StandardCharsets.ISO_8859_1));
           }
         }
       }
-      
+
       int df = 0;
       if (fieldOptions.docFreq || fieldOptions.tfIdf) {
         df = reader.docFreq(new Term(field, text));
@@ -404,36 +410,40 @@ public class TermVectorComponent extends SearchComponent {
   }
 
   @Override
-  public void prepare(ResponseBuilder rb) throws IOException {
-
-  }
+  public void prepare(ResponseBuilder rb) throws IOException {}
 
   @Override
   public void finishStage(ResponseBuilder rb) {
     if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
-      
+
       NamedList<Object> termVectorsNL = new NamedList<>();
 
       @SuppressWarnings("unchecked")
-      Map.Entry<String, Object>[] arr = (NamedList.NamedListEntry<Object>[]) Array.newInstance(NamedList.NamedListEntry.class, rb.resultIds.size());
+      Map.Entry<String, Object>[] arr =
+          (NamedList.NamedListEntry<Object>[])
+              Array.newInstance(NamedList.NamedListEntry.class, rb.resultIds.size());
 
       for (ShardRequest sreq : rb.finished) {
-        if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) == 0 || !sreq.params.getBool(COMPONENT_NAME, false)) {
+        if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) == 0
+            || !sreq.params.getBool(COMPONENT_NAME, false)) {
           continue;
         }
         for (ShardResponse srsp : sreq.responses) {
           @SuppressWarnings({"unchecked"})
-          NamedList<Object> nl = (NamedList<Object>)srsp.getSolrResponse().getResponse().get(TERM_VECTORS);
+          NamedList<Object> nl =
+              (NamedList<Object>)
+                  SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, TERM_VECTORS, false);
+          if (nl != null) {
+            // Add metadata (that which isn't a uniqueKey value):
+            Object warningsNL = nl.get(TV_KEY_WARNINGS);
+            // assume if that if warnings is already present; we don't need to merge.
+            if (warningsNL != null && termVectorsNL.indexOf(TV_KEY_WARNINGS, 0) < 0) {
+              termVectorsNL.add(TV_KEY_WARNINGS, warningsNL);
+            }
 
-          // Add metadata (that which isn't a uniqueKey value):
-          Object warningsNL = nl.get(TV_KEY_WARNINGS);
-          // assume if that if warnings is already present; we don't need to merge.
-          if (warningsNL != null && termVectorsNL.indexOf(TV_KEY_WARNINGS, 0) < 0) {
-            termVectorsNL.add(TV_KEY_WARNINGS, warningsNL);
+            // UniqueKey data
+            SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(nl, rb.resultIds, arr);
           }
-
-          // UniqueKey data
-          SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(nl, rb.resultIds, arr);
         }
       }
       // remove nulls in case not all docs were able to be retrieved

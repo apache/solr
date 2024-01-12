@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -42,27 +41,28 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- *   Returns an AnalyticsQuery implementation that performs
- *   one Gradient Descent iteration of a result set to train a
- *   logistic regression model
+ * Returns an AnalyticsQuery implementation that performs one Gradient Descent iteration of a result
+ * set to train a logistic regression model
  *
- *   The TextLogitStream provides the parallel iterative framework for this class.
- **/
-
+ * <p>The TextLogitStream provides the parallel iterative framework for this class.
+ */
 public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
   public static final String NAME = "tlogit";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new TextLogisticRegressionQParser(qstr, localParams, params, req);
   }
 
-  private static class TextLogisticRegressionQParser extends QParser{
+  private static class TextLogisticRegressionQParser extends QParser {
 
-    TextLogisticRegressionQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    TextLogisticRegressionQParser(
+        String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       super(qstr, localParams, params, req);
     }
 
+    @Override
     public Query parse() {
 
       String fs = params.get("feature");
@@ -81,20 +81,22 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
         idfs[i] = Double.parseDouble(idfsArr[i]);
       }
 
-      double[] weights = new double[terms.length+1];
+      double[] weights = new double[terms.length + 1];
 
-      if(ws != null) {
+      if (ws != null) {
         String[] wa = ws.split(",");
         for (int i = 0; i < wa.length; i++) {
           weights[i] = Double.parseDouble(wa[i]);
         }
       } else {
-        for(int i=0; i<weights.length; i++) {
-          weights[i]= 1.0d;
+        for (int i = 0; i < weights.length; i++) {
+          weights[i] = 1.0d;
         }
       }
 
-      TrainingParams input = new TrainingParams(fs, terms, idfs, outcome, weights, iteration, alpha, positiveLabel, threshold);
+      TrainingParams input =
+          new TrainingParams(
+              fs, terms, idfs, outcome, weights, iteration, alpha, positiveLabel, threshold);
 
       return new TextLogisticRegressionQuery(input);
     }
@@ -107,7 +109,9 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
       this.trainingParams = trainingParams;
     }
 
-    public DelegatingCollector getAnalyticsCollector(ResponseBuilder rbsp, IndexSearcher indexSearcher) {
+    @Override
+    public DelegatingCollector getAnalyticsCollector(
+        ResponseBuilder rbsp, IndexSearcher indexSearcher) {
       return new TextLogisticRegressionCollector(rbsp, indexSearcher, trainingParams);
     }
   }
@@ -127,8 +131,8 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
     private SparseFixedBitSet docsSet;
     private IndexSearcher searcher;
 
-    TextLogisticRegressionCollector(ResponseBuilder rbsp, IndexSearcher searcher,
-                                    TrainingParams trainingParams) {
+    TextLogisticRegressionCollector(
+        ResponseBuilder rbsp, IndexSearcher searcher, TrainingParams trainingParams) {
       this.trainingParams = trainingParams;
       this.workingDeltas = new double[trainingParams.weights.length];
       this.weights = Arrays.copyOf(trainingParams.weights, trainingParams.weights.length);
@@ -139,13 +143,15 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
       docsSet = new SparseFixedBitSet(searcher.getIndexReader().numDocs());
     }
 
+    @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       leafReader = context.reader();
       leafOutcomeValue = leafReader.getNumericDocValues(trainingParams.outcome);
     }
 
-    public void collect(int doc) throws IOException{
+    @Override
+    public void collect(int doc) throws IOException {
       int outcome;
       if (leafOutcomeValue.advanceExact(doc)) {
         outcome = (int) leafOutcomeValue.longValue();
@@ -153,19 +159,20 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
         outcome = 0;
       }
 
-      outcome = trainingParams.positiveLabel == outcome? 1 : 0;
+      outcome = trainingParams.positiveLabel == outcome ? 1 : 0;
       if (outcome == 1) {
         positiveDocsSet.set(context.docBase + doc);
       }
-      docsSet.set(context.docBase+doc);
-
+      docsSet.set(context.docBase + doc);
     }
 
+    @Override
     @SuppressWarnings({"unchecked"})
-    public void finish() throws IOException {
+    public void complete() throws IOException {
 
       Map<Integer, double[]> docVectors = new HashMap<>();
-      Terms terms = ((SolrIndexSearcher)searcher).getSlowAtomicReader().terms(trainingParams.feature);
+      Terms terms =
+          ((SolrIndexSearcher) searcher).getSlowAtomicReader().terms(trainingParams.feature);
       TermsEnum termsEnum = terms == null ? TermsEnum.EMPTY : terms.iterator();
       PostingsEnum postingsEnum = null;
       int termIndex = 0;
@@ -178,11 +185,12 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
             if (docsSet.get(docId)) {
               double[] vector = docVectors.get(docId);
               if (vector == null) {
-                vector = new double[trainingParams.terms.length+1];
+                vector = new double[trainingParams.terms.length + 1];
                 vector[0] = 1.0;
                 docVectors.put(docId, vector);
               }
-              vector[termIndex + 1] = trainingParams.idfs[termIndex] * (1.0 + Math.log(postingsEnum.freq()));
+              vector[termIndex + 1] =
+                  trainingParams.idfs[termIndex] * (1.0 + Math.log(postingsEnum.freq()));
             }
           }
         }
@@ -199,11 +207,11 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
         double error = sig - outcome;
         double lastSig = sigmoid(sum(multiply(vector, trainingParams.weights)));
         totalError += Math.abs(lastSig - outcome);
-        classificationEvaluation.count(outcome,  lastSig >= trainingParams.threshold ? 1 : 0);
+        classificationEvaluation.count(outcome, lastSig >= trainingParams.threshold ? 1 : 0);
 
         workingDeltas = multiply(error * trainingParams.alpha, vector);
 
-        for(int i = 0; i< workingDeltas.length; i++) {
+        for (int i = 0; i < workingDeltas.length; i++) {
           weights[i] -= workingDeltas[i];
         }
       }
@@ -212,7 +220,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
       rbsp.rsp.add("logit", analytics);
 
       List<Double> outWeights = new ArrayList<>();
-      for(Double d : weights) {
+      for (Double d : weights) {
         outWeights.add(d);
       }
 
@@ -221,18 +229,18 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
       analytics.add("evaluation", classificationEvaluation.toMap());
       analytics.add("feature", trainingParams.feature);
       analytics.add("positiveLabel", trainingParams.positiveLabel);
-      if(this.delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector)this.delegate).finish();
+      if (this.delegate instanceof DelegatingCollector) {
+        ((DelegatingCollector) this.delegate).complete();
       }
     }
 
     private double sigmoid(double in) {
-      double d = 1.0 / (1+Math.exp(-in));
+      double d = 1.0 / (1 + Math.exp(-in));
       return d;
     }
 
     private double[] multiply(double[] vals, double[] weights) {
-      for(int i = 0; i < vals.length; ++i) {
+      for (int i = 0; i < vals.length; ++i) {
         workingDeltas[i] = vals[i] * weights[i];
       }
 
@@ -240,7 +248,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
     }
 
     private double[] multiply(double d, double[] vals) {
-      for(int i = 0; i<vals.length; ++i) {
+      for (int i = 0; i < vals.length; ++i) {
         workingDeltas[i] = vals[i] * d;
       }
 
@@ -249,13 +257,12 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
 
     private double sum(double[] vals) {
       double d = 0.0d;
-      for(double val : vals) {
+      for (double val : vals) {
         d += val;
       }
 
       return d;
     }
-
   }
 
   private static class TrainingParams {
@@ -269,7 +276,16 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
     public final double threshold;
     public final double alpha;
 
-    public TrainingParams(String feature, String[] terms, double[] idfs, String outcome, double[] weights, int interation, double alpha, int positiveLabel, double threshold) {
+    public TrainingParams(
+        String feature,
+        String[] terms,
+        double[] idfs,
+        String outcome,
+        double[] weights,
+        int interation,
+        double alpha,
+        int positiveLabel,
+        double threshold) {
       this.feature = feature;
       this.terms = terms;
       this.idfs = idfs;

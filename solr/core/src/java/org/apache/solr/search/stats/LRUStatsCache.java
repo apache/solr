@@ -24,7 +24,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
@@ -40,17 +39,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Unlike {@link ExactStatsCache} this implementation preserves term stats
- * across queries in a set of LRU caches (with the same life-cycle as SolrIndexSearcher),
- * and based on surface features of a
- * query it determines the need to send additional requests to retrieve local term
- * and collection statistics from shards. As a result the
- * additional requests may be needed much less frequently.
- * <p>
- * Query terms, their stats and field stats are maintained in LRU caches, with the size by default
- * {@link #DEFAULT_MAX_SIZE}, one cache per shard. These caches
- * are updated as needed (when term or field statistics are missing). Each instance of the component
- * keeps also a global stats cache, which is aggregated from per-shard caches.
+ * Unlike {@link ExactStatsCache} this implementation preserves term stats across queries in a set
+ * of LRU caches (with the same life-cycle as SolrIndexSearcher), and based on surface features of a
+ * query it determines the need to send additional requests to retrieve local term and collection
+ * statistics from shards. As a result the additional requests may be needed much less frequently.
+ *
+ * <p>Query terms, their stats and field stats are maintained in LRU caches, with the size by
+ * default {@link #DEFAULT_MAX_SIZE}, one cache per shard. These caches are updated as needed (when
+ * term or field statistics are missing). Each instance of the component keeps also a global stats
+ * cache, which is aggregated from per-shard caches.
+ *
  * <p>Cache entries expire after a max idle time, by default {@link #DEFAULT_MAX_IDLE_TIME}.
  */
 public class LRUStatsCache extends ExactStatsCache {
@@ -61,21 +59,24 @@ public class LRUStatsCache extends ExactStatsCache {
 
   // local stats obtained from shard servers
   // map of <shardName, <term, termStats>>
-  private final Map<String,SolrCache<String,TermStats>> perShardTermStats = new ConcurrentHashMap<>();
+  private final Map<String, SolrCache<String, TermStats>> perShardTermStats =
+      new ConcurrentHashMap<>();
   // map of <shardName, <field, collStats>>
-  private final Map<String,Map<String,CollectionStats>> perShardColStats = new ConcurrentHashMap<>();
-  
+  private final Map<String, Map<String, CollectionStats>> perShardColStats =
+      new ConcurrentHashMap<>();
+
   // global stats synchronized from the leader
 
   // cache of <term, termStats>
-  private final CaffeineCache<String,TermStats> currentGlobalTermStats = new CaffeineCache<>();
+  private final CaffeineCache<String, TermStats> currentGlobalTermStats = new CaffeineCache<>();
   // cache of <field, colStats>
-  private final CaffeineCache<String,CollectionStats> currentGlobalColStats = new CaffeineCache<>();
+  private final CaffeineCache<String, CollectionStats> currentGlobalColStats =
+      new CaffeineCache<>();
 
   // missing stats to be fetched with the next request
   private Set<String> missingColStats = ConcurrentHashMap.newKeySet();
   private Set<Term> missingTermStats = ConcurrentHashMap.newKeySet();
-  
+
   private final Map<String, String> lruCacheInitArgs = new HashMap<>();
 
   private final StatsCacheMetrics ignorableMetrics = new StatsCacheMetrics();
@@ -105,7 +106,8 @@ public class LRUStatsCache extends ExactStatsCache {
       lruCacheInitArgs.putAll(info.attributes);
     }
     lruCacheInitArgs.computeIfAbsent(SolrCache.SIZE_PARAM, s -> String.valueOf(DEFAULT_MAX_SIZE));
-    lruCacheInitArgs.computeIfAbsent(SolrCache.MAX_IDLE_TIME_PARAM, t -> String.valueOf(DEFAULT_MAX_IDLE_TIME));
+    lruCacheInitArgs.computeIfAbsent(
+        SolrCache.MAX_IDLE_TIME_PARAM, t -> String.valueOf(DEFAULT_MAX_IDLE_TIME));
     Map<String, Object> map = new HashMap<>(lruCacheInitArgs);
     map.put(CommonParams.NAME, "globalTermStats");
     currentGlobalTermStats.init(lruCacheInitArgs, null, null);
@@ -113,7 +115,8 @@ public class LRUStatsCache extends ExactStatsCache {
     map = new HashMap<>(lruCacheInitArgs);
     map.put(CommonParams.NAME, "globalColStats");
     currentGlobalColStats.init(lruCacheInitArgs, null, null);
-    currentGlobalColStats.setState(SolrCache.State.LIVE);  }
+    currentGlobalColStats.setState(SolrCache.State.LIVE);
+  }
 
   @Override
   protected ShardRequest doRetrieveStatsRequest(ResponseBuilder rb) {
@@ -126,7 +129,7 @@ public class LRUStatsCache extends ExactStatsCache {
     // force-fetched on next request and cached.
 
     // check for missing stats from previous requests
-    if (!missingColStats.isEmpty() || !missingColStats.isEmpty()) {
+    if (!missingColStats.isEmpty() || !missingTermStats.isEmpty()) {
       // needs to fetch anyway, so get the full query stats + the missing stats for caching
       ShardRequest sreq = super.doRetrieveStatsRequest(rb);
       if (!missingColStats.isEmpty()) {
@@ -148,7 +151,11 @@ public class LRUStatsCache extends ExactStatsCache {
     LongAdder missing = new LongAdder();
     try {
       // use ignorableMetrics to avoid counting this checking as real misses
-      approxCheckMissingStats(rb, new LRUStatsSource(ignorableMetrics), t -> missing.increment(), f -> missing.increment());
+      approxCheckMissingStats(
+          rb,
+          new LRUStatsSource(ignorableMetrics),
+          t -> missing.increment(),
+          f -> missing.increment());
       if (missing.sum() == 0) {
         // it should be (approximately) ok to skip the fetching
 
@@ -160,61 +167,72 @@ public class LRUStatsCache extends ExactStatsCache {
         return super.doRetrieveStatsRequest(rb);
       }
     } catch (IOException e) {
-      log.warn("Exception checking missing stats for query {}, forcing retrieving stats", rb.getQuery(), e);
+      log.warn(
+          "Exception checking missing stats for query {}, forcing retrieving stats",
+          rb.getQuery(),
+          e);
       // retrieve anyway
       return super.doRetrieveStatsRequest(rb);
     }
   }
 
   @Override
-  protected void addToGlobalTermStats(SolrQueryRequest req, Entry<String,TermStats> e) {
+  protected void addToGlobalTermStats(SolrQueryRequest req, Entry<String, TermStats> e) {
     currentGlobalTermStats.put(e.getKey(), e.getValue());
   }
-  
+
   @Override
-  protected void addToPerShardColStats(SolrQueryRequest req, String shard, Map<String,CollectionStats> colStats) {
+  protected void addToPerShardColStats(
+      SolrQueryRequest req, String shard, Map<String, CollectionStats> colStats) {
     perShardColStats.put(shard, colStats);
   }
-  
+
   @Override
-  protected Map<String,CollectionStats> getPerShardColStats(ResponseBuilder rb, String shard) {
+  protected Map<String, CollectionStats> getPerShardColStats(ResponseBuilder rb, String shard) {
     return perShardColStats.get(shard);
   }
-  
+
   @Override
-  protected void addToPerShardTermStats(SolrQueryRequest req, String shard, String termStatsString) {
-    Map<String,TermStats> termStats = StatsUtil.termStatsMapFromString(termStatsString);
+  protected void addToPerShardTermStats(
+      SolrQueryRequest req, String shard, String termStatsString) {
+    Map<String, TermStats> termStats = StatsUtil.termStatsMapFromString(termStatsString);
     if (termStats != null) {
-      SolrCache<String,TermStats> cache = perShardTermStats.computeIfAbsent(shard, s -> {
-        CaffeineCache<String, TermStats> c = new CaffeineCache<>();
-        Map<String, String> map = new HashMap<>(lruCacheInitArgs);
-        map.put(CommonParams.NAME, s);
-        c.init(map, null, null);
-        c.setState(SolrCache.State.LIVE);
-        return c;
-      });
-      for (Entry<String,TermStats> e : termStats.entrySet()) {
+      SolrCache<String, TermStats> cache =
+          perShardTermStats.computeIfAbsent(
+              shard,
+              s -> {
+                CaffeineCache<String, TermStats> c = new CaffeineCache<>();
+                Map<String, String> map = new HashMap<>(lruCacheInitArgs);
+                map.put(CommonParams.NAME, s);
+                c.init(map, null, null);
+                c.setState(SolrCache.State.LIVE);
+                return c;
+              });
+      for (Entry<String, TermStats> e : termStats.entrySet()) {
         cache.put(e.getKey(), e.getValue());
       }
     }
   }
-  
+
   @Override
   protected TermStats getPerShardTermStats(SolrQueryRequest req, String t, String shard) {
-    SolrCache<String,TermStats> cache = perShardTermStats.get(shard);
-    return (cache != null) ? cache.get(t) : null; //Term doesn't exist in shard
+    SolrCache<String, TermStats> cache = perShardTermStats.get(shard);
+    return (cache != null) ? cache.get(t) : null; // Term doesn't exist in shard
   }
-  
+
   @Override
-  protected void addToGlobalColStats(SolrQueryRequest req, Entry<String,CollectionStats> e) {
+  protected void addToGlobalColStats(SolrQueryRequest req, Entry<String, CollectionStats> e) {
     currentGlobalColStats.put(e.getKey(), e.getValue());
   }
 
   @Override
   protected void printStats(SolrQueryRequest req) {
-    log.debug("## MERGED: perShardColStats={}, perShardTermStats={}", perShardColStats, perShardTermStats);
+    log.debug(
+        "## MERGED: perShardColStats={}, perShardTermStats={}",
+        perShardColStats,
+        perShardTermStats);
   }
-  
+
   class LRUStatsSource extends StatsSource {
     private final StatsCacheMetrics metrics;
 
@@ -223,19 +241,22 @@ public class LRUStatsCache extends ExactStatsCache {
     }
 
     @Override
-    public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, int docFreq, long totalTermFreq)
+    public TermStatistics termStatistics(
+        SolrIndexSearcher localSearcher, Term term, int docFreq, long totalTermFreq)
         throws IOException {
       TermStats termStats = currentGlobalTermStats.get(term.toString());
       if (termStats == null) {
         log.debug("## Missing global termStats info: {}, using local", term);
         missingTermStats.add(term);
         metrics.missingGlobalTermStats.increment();
-        return localSearcher != null ? localSearcher.localTermStatistics(term, docFreq, totalTermFreq) : null;
+        return localSearcher != null
+            ? localSearcher.localTermStatistics(term, docFreq, totalTermFreq)
+            : null;
       } else {
         return termStats.toTermStatistics();
       }
     }
-    
+
     @Override
     public CollectionStatistics collectionStatistics(SolrIndexSearcher localSearcher, String field)
         throws IOException {

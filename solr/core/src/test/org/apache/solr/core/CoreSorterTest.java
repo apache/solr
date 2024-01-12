@@ -16,6 +16,9 @@
  */
 package org.apache.solr.core;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,7 +29,6 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.ClusterState;
@@ -35,46 +37,45 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreSorter.CountsForEachShard;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.junit.Test;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+@SolrTestCaseJ4.SuppressSSL
 public class CoreSorterTest extends SolrTestCaseJ4 {
 
-  private static final List<CountsForEachShard> inputCounts = Arrays.asList(
-      //                     DOWN LIVE  MY
-      new CountsForEachShard(1, 3, 1),
-      new CountsForEachShard(0, 3, 2),
-      new CountsForEachShard(0, 3, 3),
-      new CountsForEachShard(0, 3, 4),
-      new CountsForEachShard(1, 0, 2),
-      new CountsForEachShard(1, 0, 1),
-      new CountsForEachShard(2, 5, 1),
-      new CountsForEachShard(2, 4, 2),
-      new CountsForEachShard(2, 3, 3)
-  );
+  private static final List<CountsForEachShard> inputCounts =
+      Arrays.asList(
+          //                     DOWN LIVE  MY
+          new CountsForEachShard(1, 3, 1),
+          new CountsForEachShard(0, 3, 2),
+          new CountsForEachShard(0, 3, 3),
+          new CountsForEachShard(0, 3, 4),
+          new CountsForEachShard(1, 0, 2),
+          new CountsForEachShard(1, 0, 1),
+          new CountsForEachShard(2, 5, 1),
+          new CountsForEachShard(2, 4, 2),
+          new CountsForEachShard(2, 3, 3));
 
-  private static final List<CountsForEachShard> expectedCounts = Arrays.asList(
-      new CountsForEachShard(0, 3, 2),
-      new CountsForEachShard(0, 3, 3),
-      new CountsForEachShard(0, 3, 4),
-      new CountsForEachShard(1, 3, 1),
-      new CountsForEachShard(2, 5, 1),
-      new CountsForEachShard(2, 4, 2),
-      new CountsForEachShard(2, 3, 3),
-      new CountsForEachShard(1, 0, 1),
-      new CountsForEachShard(1, 0, 2)
-  );
+  private static final List<CountsForEachShard> expectedCounts =
+      Arrays.asList(
+          new CountsForEachShard(0, 3, 2),
+          new CountsForEachShard(0, 3, 3),
+          new CountsForEachShard(0, 3, 4),
+          new CountsForEachShard(1, 3, 1),
+          new CountsForEachShard(2, 5, 1),
+          new CountsForEachShard(2, 4, 2),
+          new CountsForEachShard(2, 3, 3),
+          new CountsForEachShard(1, 0, 1),
+          new CountsForEachShard(1, 0, 2));
 
   @Test
   public void testComparator() {
     for (int i = 0; i < 10; i++) {
       List<CountsForEachShard> copy = new ArrayList<>(inputCounts);
       Collections.shuffle(copy, random());
-      Collections.sort(copy, CoreSorter.countsComparator);
+      copy.sort(CoreSorter.countsComparator);
       for (int j = 0; j < copy.size(); j++) {
         assertEquals(expectedCounts.get(j), copy.get(j));
       }
@@ -89,21 +90,30 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     Collections.shuffle(perShardCounts, random());
 
     // compute nodes, some live, some down
-    final int maxNodesOfAType = perShardCounts.stream() // not too important how many we have, but lets have plenty
-        .mapToInt(c -> c.totalReplicasInLiveNodes + c.totalReplicasInDownNodes + c.myReplicas).max().getAsInt();
-    List<String> liveNodes = IntStream.range(0, maxNodesOfAType).mapToObj(i -> "192.168.0." + i + ":8983_").collect(Collectors.toList());
+    final int maxNodesOfAType =
+        perShardCounts.stream() // not too important how many we have, but let's have plenty
+            .mapToInt(c -> c.totalReplicasInLiveNodes + c.totalReplicasInDownNodes + c.myReplicas)
+            .max()
+            .getAsInt();
+    List<String> liveNodes =
+        IntStream.range(0, maxNodesOfAType)
+            .mapToObj(i -> "192.168.0." + i + ":8983_")
+            .collect(Collectors.toList());
     Collections.shuffle(liveNodes, random());
     String thisNode = liveNodes.get(0);
     List<String> otherLiveNodes = liveNodes.subList(1, liveNodes.size());
-    List<String> downNodes = IntStream.range(0, maxNodesOfAType).mapToObj(i -> "192.168.1." + i + ":8983_").collect(Collectors.toList());
+    List<String> downNodes =
+        IntStream.range(0, maxNodesOfAType)
+            .mapToObj(i -> "192.168.1." + i + ":8983_")
+            .collect(Collectors.toList());
 
     // divide into two collections
     int numCol1 = random().nextInt(perShardCounts.size());
-    Map<String,List<CountsForEachShard>> collToCounts = new HashMap<>();
+    Map<String, List<CountsForEachShard>> collToCounts = new HashMap<>();
     collToCounts.put("col1", perShardCounts.subList(0, numCol1));
     collToCounts.put("col2", perShardCounts.subList(numCol1, perShardCounts.size()));
 
-    Map<String,DocCollection> collToState = new HashMap<>();
+    Map<String, DocCollection> collToState = new HashMap<>();
     Map<CountsForEachShard, List<CoreDescriptor>> myCountsToDescs = new HashMap<>();
     for (Map.Entry<String, List<CountsForEachShard>> entry : collToCounts.entrySet()) {
       String collection = entry.getKey();
@@ -115,7 +125,9 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         for (int myRepNum = 0; myRepNum < shardCounts.myReplicas; myRepNum++) {
           addNewReplica(replicas, collection, slice, Collections.singletonList(thisNode));
           // save this mapping for later
-          myCountsToDescs.put(shardCounts, replicas.stream().map(this::newCoreDescriptor).collect(Collectors.toList()));
+          myCountsToDescs.put(
+              shardCounts,
+              replicas.stream().map(this::newCoreDescriptor).collect(Collectors.toList()));
         }
         for (int myRepNum = 0; myRepNum < shardCounts.totalReplicasInLiveNodes; myRepNum++) {
           addNewReplica(replicas, collection, slice, otherLiveNodes);
@@ -123,11 +135,18 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         for (int myRepNum = 0; myRepNum < shardCounts.totalReplicasInDownNodes; myRepNum++) {
           addNewReplica(replicas, collection, slice, downNodes);
         }
-        Map<String, Replica> replicaMap = replicas.stream().collect(Collectors.toMap(Replica::getName, Function.identity()));
+        Map<String, Replica> replicaMap =
+            replicas.stream().collect(Collectors.toMap(Replica::getName, Function.identity()));
         sliceMap.put(slice, new Slice(slice, replicaMap, Collections.emptyMap(), collection));
       }
       @SuppressWarnings({"unchecked"})
-      DocCollection col = new DocCollection(collection, sliceMap, Collections.singletonMap(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME), DocRouter.DEFAULT);
+      DocCollection col =
+          new DocCollection(
+              collection,
+              sliceMap,
+              Collections.singletonMap(
+                  ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+              DocRouter.DEFAULT);
       collToState.put(collection, col);
     }
     // reverse map
@@ -135,11 +154,11 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     for (Map.Entry<CountsForEachShard, List<CoreDescriptor>> entry : myCountsToDescs.entrySet()) {
       for (CoreDescriptor descriptor : entry.getValue()) {
         CountsForEachShard prev = myDescsToCounts.put(descriptor, entry.getKey());
-        assert prev == null; // sanity check
+        assertNull(prev); // sanity check
       }
     }
 
-    assert myCountsToDescs.size() == perShardCounts.size(); // just a sanity check
+    assertEquals(myCountsToDescs.size(), perShardCounts.size()); // just a sanity check
 
     CoreContainer mockCC = mock(CoreContainer.class);
     {
@@ -161,20 +180,19 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
       NodeConfig mockNodeConfig = mock(NodeConfig.class);
       when(mockNodeConfig.getNodeName()).thenReturn(thisNode);
       when(mockCC.getNodeConfig()).thenReturn(mockNodeConfig);
-
     }
 
     List<CoreDescriptor> myDescs = new ArrayList<>(myDescsToCounts.keySet());
     for (int i = 0; i < 10; i++) {
       Collections.shuffle(myDescs, random());
 
-      List<CoreDescriptor> resultDescs = CoreSorter.sortCores(mockCC, myDescs);
+      List<CoreDescriptor> resultDescs = new CoreSorter(mockCC).sort(myDescs);
       // map descriptors back to counts, removing consecutive duplicates
       List<CountsForEachShard> resultCounts = new ArrayList<>();
       CountsForEachShard lastCounts = null;
       for (CoreDescriptor resultDesc : resultDescs) {
         CountsForEachShard counts = myDescsToCounts.get(resultDesc);
-        if (counts != lastCounts) {
+        if (!counts.equals(lastCounts)) {
           resultCounts.add(counts);
         }
         lastCounts = counts;
@@ -184,20 +202,32 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   }
 
   private CoreDescriptor newCoreDescriptor(Replica r) {
-    Map<String,String> props = Map.of(
-        CoreDescriptor.CORE_SHARD, r.getShard(),
-        CoreDescriptor.CORE_COLLECTION, r.getCollection(),
-        CoreDescriptor.CORE_NODE_NAME, r.getNodeName()
-    );
-    return new CoreDescriptor(r.getCoreName(), TEST_PATH(), props , null, mock(ZkController.class));
+    Map<String, String> props =
+        Map.of(
+            CoreDescriptor.CORE_SHARD, r.getShard(),
+            CoreDescriptor.CORE_COLLECTION, r.getCollection(),
+            CoreDescriptor.CORE_NODE_NAME, r.getNodeName());
+    return new CoreDescriptor(r.getCoreName(), TEST_PATH(), props, null, mock(ZkController.class));
   }
 
-  protected Replica addNewReplica(List<Replica> replicaList, String collection, String slice, List<String> possibleNodes) {
+  protected Replica addNewReplica(
+      List<Replica> replicaList, String collection, String slice, List<String> possibleNodes) {
     String replica = "r" + replicaList.size();
-    String node = possibleNodes.get(random().nextInt(possibleNodes.size())); // place on a random node
-    Replica r = new Replica(replica, Map.of("core", replica, "node_name", node), collection, slice);
+    String node =
+        possibleNodes.get(random().nextInt(possibleNodes.size())); // place on a random node
+    Replica r =
+        new Replica(
+            replica,
+            Map.of(
+                ZkStateReader.CORE_NAME_PROP,
+                replica,
+                ZkStateReader.NODE_NAME_PROP,
+                node,
+                ZkStateReader.BASE_URL_PROP,
+                Utils.getBaseUrlForNodeName(node, "http")),
+            collection,
+            slice);
     replicaList.add(r);
     return r;
   }
-
 }

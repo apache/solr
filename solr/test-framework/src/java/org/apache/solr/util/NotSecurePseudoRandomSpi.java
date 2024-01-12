@@ -22,17 +22,14 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * A mocked up instance of SecureRandom that just uses {@link Random} under the covers.
- * This is to prevent blocking issues that arise in platform default
- * SecureRandom instances due to too many instances / not enough random entropy.
- * Tests do not need secure SSL.
+ * A mocked up instance of SecureRandom that just uses {@link Random} under the covers. This is to
+ * prevent blocking issues that arise in platform default SecureRandom instances due to too many
+ * instances / not enough random entropy. Tests do not need secure SSL.
  */
 public class NotSecurePseudoRandomSpi extends SecureRandomSpi {
 
   @Override
-  protected void engineSetSeed(byte[] seed) {
-
-  }
+  protected void engineSetSeed(byte[] seed) {}
 
   @Override
   protected void engineNextBytes(byte[] bytes) {
@@ -45,14 +42,13 @@ public class NotSecurePseudoRandomSpi extends SecureRandomSpi {
   }
 
   /**
-   * Helper method that can be used to fill an array with non-zero data.
-   * (Attempted workarround of Solaris SSL Padding bug: SOLR-9068)
+   * Helper method that can be used to fill an array with non-zero data. (Attempted workarround of
+   * Solaris SSL Padding bug: SOLR-9068)
    */
   private static final byte[] fillData(byte[] data) {
     ThreadLocalRandom.current().nextBytes(data);
     return data;
   }
-
 
   public NotSecurePseudoRandomSpi() {
     super();
@@ -73,10 +69,14 @@ public class NotSecurePseudoRandomSpi extends SecureRandomSpi {
   }
 
   /** NOOP */
-  public void setSeed(byte[] seed) { /* NOOP */ }
+  public void setSeed(byte[] seed) {
+    /* NOOP */
+  }
 
   /** NOOP */
-  public void setSeed(long seed) { /* NOOP */ }
+  public void setSeed(long seed) {
+    /* NOOP */
+  }
 
   public void reseed() {
     /* NOOP */
@@ -85,5 +85,4 @@ public class NotSecurePseudoRandomSpi extends SecureRandomSpi {
   public void reseed(SecureRandomParameters params) {
     /* NOOP */
   }
-
 }

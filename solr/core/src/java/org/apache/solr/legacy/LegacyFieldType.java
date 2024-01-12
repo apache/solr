@@ -21,6 +21,7 @@ import org.apache.lucene.index.IndexOptions;
 
 /**
  * FieldType extension with support for legacy numerics
+ *
  * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
  */
 @Deprecated
@@ -28,28 +29,22 @@ public final class LegacyFieldType extends FieldType {
   private LegacyNumericType numericType;
   private int numericPrecisionStep = LegacyNumericUtils.PRECISION_STEP_DEFAULT;
 
-  /**
-   * Create a new mutable LegacyFieldType with all of the properties from <code>ref</code>
-   */
+  /** Create a new mutable LegacyFieldType with all of the properties from <code>ref</code> */
   public LegacyFieldType(LegacyFieldType ref) {
     super(ref);
     this.numericType = ref.numericType;
     this.numericPrecisionStep = ref.numericPrecisionStep;
   }
-  
-  /**
-   * Create a new FieldType with default properties.
-   */
-  public LegacyFieldType() {
-  }
-  
+
+  /** Create a new FieldType with default properties. */
+  public LegacyFieldType() {}
+
   /**
    * Specifies the field's numeric type.
-   * @param type numeric type, or null if the field has no numeric type.
-   * @throws IllegalStateException if this FieldType is frozen against
-   *         future modifications.
-   * @see #numericType()
    *
+   * @param type numeric type, or null if the field has no numeric type.
+   * @throws IllegalStateException if this FieldType is frozen against future modifications.
+   * @see #numericType()
    * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
    */
   @Deprecated
@@ -57,30 +52,28 @@ public final class LegacyFieldType extends FieldType {
     checkIfFrozen();
     numericType = type;
   }
-  
-  /** 
-   * LegacyNumericType: if non-null then the field's value will be indexed
-   * numerically so that {@link org.apache.solr.legacy.LegacyNumericRangeQuery} can be used at
-   * search time. 
-   * <p>
-   * The default is <code>null</code> (no numeric type) 
-   * @see #setNumericType(LegacyNumericType)
+
+  /**
+   * LegacyNumericType: if non-null then the field's value will be indexed numerically so that
+   * {@link org.apache.solr.legacy.LegacyNumericRangeQuery} can be used at search time.
    *
+   * <p>The default is <code>null</code> (no numeric type)
+   *
+   * @see #setNumericType(LegacyNumericType)
    * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
    */
   @Deprecated
   public LegacyNumericType numericType() {
     return numericType;
   }
-  
+
   /**
    * Sets the numeric precision step for the field.
-   * @param precisionStep numeric precision step for the field
-   * @throws IllegalArgumentException if precisionStep is less than 1. 
-   * @throws IllegalStateException if this FieldType is frozen against
-   *         future modifications.
-   * @see #numericPrecisionStep()
    *
+   * @param precisionStep numeric precision step for the field
+   * @throws IllegalArgumentException if precisionStep is less than 1.
+   * @throws IllegalStateException if this FieldType is frozen against future modifications.
+   * @see #numericPrecisionStep()
    * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
    */
   @Deprecated
@@ -91,15 +84,15 @@ public final class LegacyFieldType extends FieldType {
     }
     this.numericPrecisionStep = precisionStep;
   }
-  
-  /** 
-   * Precision step for numeric field. 
-   * <p>
-   * This has no effect if {@link #numericType()} returns null.
-   * <p>
-   * The default is {@link org.apache.solr.legacy.LegacyNumericUtils#PRECISION_STEP_DEFAULT}
-   * @see #setNumericPrecisionStep(int)
+
+  /**
+   * Precision step for numeric field.
    *
+   * <p>This has no effect if {@link #numericType()} returns null.
+   *
+   * <p>The default is {@link org.apache.solr.legacy.LegacyNumericUtils#PRECISION_STEP_DEFAULT}
+   *
+   * @see #setNumericPrecisionStep(int)
    * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
    */
   @Deprecated
@@ -121,11 +114,10 @@ public final class LegacyFieldType extends FieldType {
     if (!super.equals(obj)) {
       return false;
     }
-    if (getClass() != obj.getClass()) return false;
+    if (!(obj instanceof LegacyFieldType)) return false;
     LegacyFieldType other = (LegacyFieldType) obj;
     if (numericPrecisionStep != other.numericPrecisionStep) return false;
-    if (numericType != other.numericType) return false;
-    return true;
+    return numericType == other.numericType;
   }
 
   /** Prints a Field for human consumption. */

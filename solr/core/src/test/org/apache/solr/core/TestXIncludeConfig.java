@@ -17,17 +17,14 @@
 package org.apache.solr.core;
 
 import javax.xml.parsers.DocumentBuilderFactory;
-
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.RegexReplaceProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 
-/** 
- * Test both XInclude as well as more old school "entity includes"
- */
+/** Test both XInclude and old school "entity includes" */
 public class TestXIncludeConfig extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -39,7 +36,7 @@ public class TestXIncludeConfig extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     try {
-      //see whether it even makes sense to run this test
+      // see whether it even makes sense to run this test
       dbf.setXIncludeAware(true);
       dbf.setNamespaceAware(true);
     } catch (UnsupportedOperationException e) {
@@ -48,36 +45,32 @@ public class TestXIncludeConfig extends SolrTestCaseJ4 {
     super.setUp();
   }
 
-  public void testXInclude() throws Exception {
+  public void testXInclude() {
     SolrCore core = h.getCore();
 
-    assertNotNull("includedHandler is null", 
-                  core.getRequestHandler("/includedHandler"));
+    assertNotNull("includedHandler is null", core.getRequestHandler("/includedHandler"));
 
-    UpdateRequestProcessorChain chain 
-      = core.getUpdateProcessingChain("special-include");
+    UpdateRequestProcessorChain chain = core.getUpdateProcessingChain("special-include");
     assertNotNull("chain is missing included processor", chain);
-    assertEquals("chain with inclued processor is wrong size", 
-                 1, chain.getProcessors().size());
-    assertEquals("chain has wrong included processor",
-                 RegexReplaceProcessorFactory.class,
-                 chain.getProcessors().get(0).getClass());
+    assertEquals("chain with included processor is wrong size", 1, chain.getProcessors().size());
+    assertEquals(
+        "chain has wrong included processor",
+        RegexReplaceProcessorFactory.class,
+        chain.getProcessors().get(0).getClass());
 
     IndexSchema schema = core.getLatestSchema();
-    
+
     // xinclude
     assertNotNull("ft-included is null", schema.getFieldTypeByName("ft-included"));
     assertNotNull("field-included is null", schema.getFieldOrNull("field-included"));
 
     // entity include
-    assertNotNull("ft-entity-include1 is null", 
-                  schema.getFieldTypeByName("ft-entity-include1"));
-    assertNotNull("ft-entity-include2 is null", 
-                  schema.getFieldTypeByName("ft-entity-include2"));
+    assertNotNull("ft-entity-include1 is null", schema.getFieldTypeByName("ft-entity-include1"));
+    assertNotNull("ft-entity-include2 is null", schema.getFieldTypeByName("ft-entity-include2"));
 
     // sanity check
-    assertNull("ft-entity-include3 is not null",  // Does Not Exist Anywhere
-               schema.getFieldTypeByName("ft-entity-include3"));
-
+    assertNull(
+        "ft-entity-include3 is not null", // Does Not Exist Anywhere
+        schema.getFieldTypeByName("ft-entity-include3"));
   }
 }

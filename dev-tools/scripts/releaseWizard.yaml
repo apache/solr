@@ -100,7 +100,7 @@ templates:
 
     Please refer to the Upgrade Notes in the Solr Ref Guide for information on upgrading from previous Solr versions:
 
-      <https://solr.apache.org/guide/{{ release_version_refguide }}/solr-upgrade-notes.html>
+      <https://solr.apache.org/guide/solr/{{ release_version_refguide }}/upgrade-notes/solr-upgrade-notes.html>
 
     Please read CHANGES.txt for a full list of {% if is_feature_release %}new features, changes and {% endif %}bugfixes:
 
@@ -205,7 +205,7 @@ groups:
   title: Prerequisites
   description: |
     Releasing software requires thorough understanding of the process and careful execution,
-    as it is easy to make mistakes. It also requires an environtment and tools such as gpg
+    as it is easy to make mistakes. It also requires an environment and tools such as gpg
     correctly setup. This section makes sure you're in good shape for the job!
   todos:
   - !Todo
@@ -242,8 +242,8 @@ groups:
     id: gpg
     title: GPG key id is configured
     description: |-
-      To sign the release you need to provide your GPG key ID. This must be
-      the same key ID that you have registered in your Apache account.
+      To sign the release you need to provide your GPG key ID/Fingerprint. This must be
+      the same key ID & Fingerprint that you have registered in your Apache account.
       The ID is the last 8 bytes of your key fingerprint, e.g. 0D8D0B93.
 
       * Make sure your gpg key is 4096 bits key or larger
@@ -289,6 +289,14 @@ groups:
     title: Select JIRA issues to be included
     description: Set the appropriate "Fix Version" in JIRA for the issues that should be included in the release.
   - !Todo
+    id: fix_build_failures
+    title: Look into common build failures
+    description: |
+      Look over recent build results sent to the builds@solr.apache.org list and try to address any recurring
+      failures. It's best to fix common failures now, so they don't pop up later and interfere with release smoke
+      testing. Build email archives are available at https://lists.apache.org/list.html?builds@solr.apache.org.
+      You can also find failure statistics at http://fucit.org/solr-jenkins-reports/
+  - !Todo
     id: decide_branch_date
     title: Decide the date for branching
     types:
@@ -299,7 +307,7 @@ groups:
       name: branch_date
   - !Todo
     id: decide_freeze_length
-    title: Decide the lenght of feature freeze
+    title: Decide the length of feature freeze
     types:
     - major
     - minor
@@ -348,8 +356,6 @@ groups:
       - !Command
         cmd: git pull --ff-only
         stdout: true
-      - !Command
-        cmd: "{{ gradle_cmd }} localSettings"
       - !Command
         cmd: "{{ gradle_cmd }} clean check -x test"
   - !Todo
@@ -410,6 +416,33 @@ groups:
         cmd: git push --set-upstream origin {{ release_branch }}
         tee: true
   - !Todo
+    id: update_minor_branch_prerelease_antora
+    title: Update Ref Guide Metadata for new Minor Branch
+    description: |
+      This will update the "solr/solr-ref-guide/antora.yml" file.
+      
+      The file shouldn't change much, but it should pick up new dependency versions, if they have changed.
+    types:
+    - major
+    - minor
+    depends: create_minor_branch
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to update the antora.yml
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        tee: true
+      - !Command
+        cmd: git pull --ff-only
+        tee: true
+      - !Command
+        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false"
+        tee: true
+      - !Command
+        cmd: git add solr/solr-ref-guide/antora.yml && git commit -m "Update Antora metadata for pre-released minor version {{ release_version }}" && git push
+        tee: true
+  - !Todo
     id: add_version_major
     title: Add a new major version on main branch
     types:
@@ -428,14 +461,17 @@ groups:
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
         tee: true
       - !Command
-        comment: Make sure the edits done by `addVersion.py` are ok, then push
+        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false"
+        tee: true
+      - !Command
+        comment: Make sure the new antora.yaml and edits done by `addVersion.py` are ok, then push
         cmd: git add -u .  && git commit -m "Add next major version {{ next_version }}"  && git push
         logfile: commit-stable.log
     post_description: |
       Make sure to follow the manual instructions printed by the script.
   - !Todo
     id: add_version_minor
-    title: Add a new minor version on stable branch
+    title: Add a new minor version on stable and unstable branches
     types:
     - major
     - minor
@@ -444,10 +480,26 @@ groups:
       next_version: "{{ release_version_major }}.{{ release_version_minor + 1 }}.0"
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Run these commands to add the new minor version {{ next_version }} to the stable branch
+      commands_text: Run these commands to add the new minor version {{ next_version }} to the stable and unstable branches
       commands:
       - !Command
         cmd: git checkout {{ stable_branch }}
+        tee: true
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
+        tee: true
+      - !Command
+        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=false"
+        tee: true
+      - !Command
+        comment: Make sure the new antora.yaml and edits done by `addVersion.py` are ok, then push
+        cmd: git add -u .  && git commit -m "Add next minor version {{ next_version }}"  && git push
+        logfile: commit-stable.log
+      - !Command
+        cmd: git checkout main
+        tee: true
+      - !Command
+        cmd: git pull --ff-only
         tee: true
       - !Command
         cmd: python3 -u dev-tools/scripts/addVersion.py {{ next_version }}
@@ -474,7 +526,7 @@ groups:
     - major
     - minor
     links:
-    - https://cwiki.apache.org/confluence/display/LUCENEJAVA/JenkinsReleaseBuilds
+    - https://cwiki.apache.org/confluence/display/SOLR/JenkinsReleaseBuilds+-+Solr
   - !Todo
     id: inform_devs
     title: Inform Devs of the new Release Branch
@@ -492,7 +544,7 @@ groups:
 
       NOTICE:
 
-      Branch {{ release_branch }} has been cut and versions updated to {{ release_version_major }}.{{ release_version_minor + 1 }} on stable branch.
+      Branch {{ release_branch }} has been cut and versions updated to {{ release_version_major }}.{{ release_version_minor + 1 }} on the stable branch.
 
       Please observe the normal rules:
 
@@ -510,7 +562,7 @@ groups:
         while the branch feature freeze is in effect, think twice: can't the
         addition wait a couple more days? Merges of bug fixes into the branch
         may become more difficult.
-      * Only Jira issues with Fix version {{ release_version_major }}.{{ release_version_minor }} and priority "Blocker" will delay
+      * Only Jira issues with Fix version {{ release_version_jira }} and priority "Blocker" will delay
         a release candidate build.
       ----
     types:
@@ -538,16 +590,41 @@ groups:
 
       * Before committing to the branch, reply to this thread and argue
         why the fix needs backporting and how long it will take.
-      * All issues accepted for backporting should be marked with {{ release_version }}
+      * All issues accepted for backporting should be marked with {{ release_version_jira }}
         in JIRA, and issues that should delay the release must be marked as Blocker
       * All patches that are intended for the branch should first be committed
         to the unstable branch, merged into the stable branch, and then into
         the current release branch.
-      * Only Jira issues with Fix version {{ release_version }} and priority "Blocker" will delay
+      * Only Jira issues with Fix version {{ release_version_jira }} and priority "Blocker" will delay
         a release candidate build.
       ----
     types:
     - bugfix
+  - !Todo
+    id: dependency_updates_changes
+    title: Add dependency updates to CHANGES.txt
+    description: Bulk add all 'solrbot' dependency updates since last release
+    depends: clean_git_checkout
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: We call out to a helper script that modifies CHANGES.txt, and then commit it.
+      confirm_each_command: true
+      commands:
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        stdout: true
+      - !Command
+        cmd: python3 -u dev-tools/scripts/addDepsToChanges.py --user solrbot --version {{ release_version }}
+        tee: true
+      - !Command
+        cmd: "{{ editor }} solr/CHANGES.txt"
+        comment: |
+          Verify that the modifications in CHANGES.txt under the 'Dependency Upgrades' are ok.
+          Look for duplicates, especially when a committer has manually added a similar entry for the same upgrade.
+        stdout: true
+      - !Command
+        cmd: git add -u .  && git commit -m "Add dependency updates to CHANGES for {{ release_version }}"  && git push
+        logfile: dependency-changes.log
   - !Todo
     id: draft_release_notes
     title: Get a draft of the release notes in place
@@ -559,7 +636,7 @@ groups:
       Ask on dev@ for input. Ideally the timing of this request mostly coincides with the
       release branch creation. It's a good idea to remind the devs of this later in the release too.
 
-      NOTE: Do not add every single JIRA issue, but distill the Release note into important changes!
+      NOTE: Do not add every single JIRA issue, but distill the release notes into important changes!
     links:
     - https://cwiki.apache.org/confluence/display/SOLR/Release+Notes
   - !Todo
@@ -583,7 +660,7 @@ groups:
     description: |-
       To make sure a new release is not announced before the reference guide is complete, add a new
       Blocker JIRA issue for version {{ release_version }} with subject
-      "Complete Major changes and Upgrade Notes in RefGudie for {{ release_version }}".
+      "Complete Major changes and Upgrade Notes in RefGuide for {{ release_version }}".
       Note that this does not block the RC and voting process, but will block announcing the release.
     types:
     - major
@@ -615,6 +692,14 @@ groups:
         cmd: git checkout {{ release_branch }}
         stdout: true
       - !Command
+        cmd: git clean -df && git checkout -- .
+        comment: Make sure checkout is clean and up to date
+        logfile: git_clean.log
+        tee: true
+      - !Command
+        cmd: git pull --ff-only
+        tee: true
+      - !Command
         cmd: "{{ gradle_cmd }} documentation"
     post_description: Check that the task passed. If it failed, commit fixes for the failures before proceeding.
   - !Todo
@@ -634,17 +719,34 @@ groups:
         cwd: .gradle/caches/modules-2
         stdout: true
   - !Todo
+    id: setup_gpg
+    title: Setup the gpg agent
+    depends:
+    - gpg
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: |-
+        In this step we will pre-set the passphrase so that the GPG Agent can cache it for use in the RC build.
+      commands:
+        - !Command
+          cmd: echo foo | gpg --detach-sign --use-agent --pinentry-mode loopback --local-user {{ gpg.gpg_fingerprint | default("<gpg_fingerprint>", True) }}
+          tee: false
+          shell: true
+          live: true
+  - !Todo
     id: build_rc
     title: Build the release candidate
     depends: 
-    - gpg
+    - setup_gpg
     - run_tests
     vars:
       logfile: '{{ [rc_folder, ''logs'', ''buildAndPushRelease.log''] | path_join }}'
       git_rev: '{{ current_git_rev }}' # Note, git_rev will be recorded in todo state AFTER completion of commands
+      git_rev_short: '{{ git_rev | truncate(7,true,"") }}' # Note, git_rev_short will be recorded in todo state AFTER completion of commands
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
     persist_vars:
-    - git_rev
+      - git_rev
+      - git_rev_short
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       commands_text: |-
@@ -670,8 +772,8 @@ groups:
         cmd: git pull --ff-only
         tee: true
       - !Command
-        cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }}  --sign {{ gpg_key | default("<gpg_key_id>", True) }}{% if gpg.use_gradle %}  --sign-method-gradle{% endif %}{% if not gpg.prompt_pass %}  --gpg-pass-noprompt{% endif %}
-        comment: "Using {% if gpg.use_gradle %}gradle{% else %}gpg command{% endif %} for signing.{% if gpg.prompt_pass %} Remember to type your GPG pass-phrase at the prompt!{% endif %}"
+        cmd: python3 -u dev-tools/scripts/buildAndPushRelease.py {{ local_keys }}  --logfile {{ logfile }}  --push-local "{{ dist_file_path }}"  --rc-num {{ rc_number }} --mf-username {{ gpg.apache_id }} --sign {{ gpg.gpg_fingerprint | default("<gpg_fingerprint>", True) }} --gpg-pass-noprompt
+        comment: "Using gpg command for signing."
         logfile: build_rc.log
         tee: true
   - !Todo
@@ -679,7 +781,7 @@ groups:
     title: Run the smoke tester
     depends: build_rc
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
       tmp_dir: '{{ [rc_folder, ''smoketest''] | path_join }}'
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
@@ -699,7 +801,7 @@ groups:
       Here we'll import the artifacts into Subversion.
     depends: smoke_tester
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
       dist_url: '{{ dist_url_base }}/{{ dist_folder}}'
     commands: !Commands
@@ -718,7 +820,7 @@ groups:
       area and checks hash and signatures, but does not re-run all tests.
     depends: import_svn
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_url: '{{ dist_url_base }}/{{ dist_folder}}'
       tmp_dir: '{{ [rc_folder, ''smoketest_staged''] | path_join }}'
       local_keys: '{% if keys_downloaded %} --local-keys "{{ [config_path, ''KEYS''] | path_join }}"{% endif %}'
@@ -752,12 +854,22 @@ groups:
       Please vote for release candidate {{ rc_number }} for Solr {{ release_version }}
 
       The artifacts can be downloaded from:
-      {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      {{ release_candidate_location }}
 
       You can run the smoke tester directly with this command:
 
       python3 -u dev-tools/scripts/smokeTestRelease.py \
-      {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      {{ release_candidate_location }}
+
+      You can build a release-candidate of the official docker images (full & slim) using the following command:
+
+      SOLR_DOWNLOAD_SERVER={{ release_candidate_location }}/solr && \
+        docker build $SOLR_DOWNLOAD_SERVER/{{ release_version }}/docker/Dockerfile.official-full \
+          --build-arg SOLR_DOWNLOAD_SERVER=$SOLR_DOWNLOAD_SERVER \
+          -t solr-rc:{{ release_version }}-{{ rc_number }} && \
+        docker build $SOLR_DOWNLOAD_SERVER/{{ release_version }}/docker/Dockerfile.official-slim \
+          --build-arg SOLR_DOWNLOAD_SERVER=$SOLR_DOWNLOAD_SERVER \
+          -t solr-rc:{{ release_version }}-{{ rc_number }}-slim
 
       The vote will be open for at least 72 hours i.e. until {{ vote_close }}.
 
@@ -780,6 +892,8 @@ groups:
     vars:
       vote_close: '{{ vote_close_72h }}'
       vote_close_epoch: '{{ vote_close_72h_epoch }}'
+      release_candidate_rc_folder: 'solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}'
+      release_candidate_location: '{{ dist_url_base }}/{{ release_candidate_rc_folder }}'
     persist_vars:
     - vote_close
     - vote_close_epoch
@@ -876,25 +990,26 @@ groups:
         tee: true
   - !Todo
     id: rm_staged_mvn
-    title: Delete mvn artifacts from staging repo
+    title: Delete mvn and docker artifacts from staging repo
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_path: '{{ [dist_file_path, dist_folder] | path_join }}'
       dist_stage_url: '{{ dist_url_base }}/{{ dist_folder}}'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       confirm_each_command: false
-      commands_text: This will remove maven artifacts so they do not end up in the Distribution Directory
+      commands_text: This will remove maven and docker artifacts so they do not end up in the Distribution Directory
       commands:
       - !Command
-        cmd: svn rm -m "Delete the solr maven artifacts"  {{ dist_stage_url }}/solr/maven
+        cmd: svn rm -m "Delete the solr maven and docker artifacts"  {{ dist_stage_url }}/solr/{{ release_version }}/maven  {{ dist_stage_url }}/solr/{{ release_version }}/docker
         logfile: svn_rm_mvn_solr.log
         tee: true
   - !Todo
     id: mv_to_release
     title: Move release artifacts to release repo
+    depends: rm_staged_mvn
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
       dist_stage_url: '{{ dist_url_base }}/{{ dist_folder}}'
       dist_release_url: https://dist.apache.org/repos/dist/release/solr
     commands: !Commands
@@ -903,50 +1018,105 @@ groups:
       commands_text: This will move the new release artifacts from staging repo to the release repo
       commands:
       - !Command
-        cmd: svn move -m "Move Solr {{ release_version }} RC{{ rc_number }} to release repo"  {{ dist_stage_url }}/solr  {{ dist_release_url }}/solr/{{ release_version }}
+        cmd: svn move -m "Move Solr {{ release_version }} RC{{ rc_number }} to release repo"  {{ dist_stage_url }}/solr/{{ release_version }}  {{ dist_release_url }}/solr/{{ release_version }}
         logfile: svn_mv_solr.log
         tee: true
       - !Command
-        cmd: svn rm -m "Clean up the RC folder for {{ release_version }} RC{{ rc_number }}"  {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+        cmd: svn rm -m "Clean up the RC folder for {{ release_version }} RC{{ rc_number }}"  {{ dist_url_base }}/solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
         logfile: svn_rm_containing.log
         comment: Clean up containing folder on the staging repo
         tee: true
-    post_description: 'Note at this point you will see the Jenkins job "Solr-SmokeRelease-main" begin to fail, until you run the "Generate Backcompat Indexes" '
+  - !Todo
+    id: docker-publish
+    title: Publish the Official Solr Dockerfile
+    depends: mv_to_release
+    description: |
+      For every release, we publish the official dockerfile for solr via the methods required by Docker.
+      
+      This will start the process, and will ultimately create a PR in https://github.com/docker-library/official-images.
+      This PR creation is automated, you do not need to do more work beyond these steps.
+      
+      When that PR is approved and merged, the Official image for this Solr version will be built and available for use.
+    vars:
+      docker_version: '{{ release_version_major }}.{{ release_version_minor }}'
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
+    commands: !Commands
+      root_folder: '{{ release_folder }}'
+      commands_text: Make sure that each command is successful. This is very imperative.
+      confirm_each_command: true
+      remove_files:
+        - '{{ git_solr_docker_folder }}'
+      commands:
+        - !Command
+          cmd: git clone --progress https://gitbox.apache.org/repos/asf/solr-docker.git solr-docker
+          comment: Run this command to clone the solr-docker git repo
+          logfile: solr_docker_git_clone.log
+        - !Command
+          cmd: git checkout main && git pull --ff-only
+          cwd: solr-docker
+          comment: Checkout the most recent main version
+          logfile: solr_docker_git_checkout.log
+        - !Command
+          cmd: "mkdir -p {{ docker_version }} && cp {{ [dist_file_path, dist_folder, 'solr', release_version, 'docker', 'Dockerfile.official-full'] | path_join }} {{ docker_version }}/Dockerfile"
+          cwd: solr-docker
+          comment: Add the new full distribution Dockerfile to the repo
+          logfile: solr_docker_add_dockerfile_full.log
+        - !Command
+          cmd: "mkdir -p {{ docker_version }}-slim && cp {{ [dist_file_path, dist_folder, 'solr', release_version, 'docker', 'Dockerfile.official-slim'] | path_join }} {{ docker_version }}-slim/Dockerfile"
+          cwd: solr-docker
+          comment: Add the new slim distribution Dockerfile to the repo
+          logfile: solr_docker_add_dockerfile_slim.log
+        - !Command
+          cmd: 'git add {{ docker_version }}/Dockerfile {{ docker_version }}-slim/Dockerfile && git commit -m "Apache Solr release {{ release_version }}"'
+          cwd: solr-docker
+          comment: Commit the new Dockerfile
+          logfile: solr_docker_commit.log
+        - !Command
+          cmd: git show HEAD
+          cwd: solr-docker
+          comment: Check that the commit looks correct. Only two Dockerfiles (full and slim) should be added or updated.
+          logfile: solr_docker_check_commit.log
+          tee: true
+        - !Command
+          cmd: git push
+          cwd: solr-docker
+          comment: Push the commit
+          logfile: solr_docker_git_push.log
+          tee: true
   - !Todo
     id: stage_maven
     title: Stage the maven artifacts for publishing
     vars:
-      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
+      git_sha: '{{ build_rc.git_rev_short | default("<git_sha>", True) }}'
+      dist_folder: solr-{{ release_version }}-RC{{ rc_number }}-rev-{{ build_rc.git_rev | default("<git_rev>", True) }}
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
       confirm_each_command: true
       commands_text: In the source checkout do the following (note that this step will prompt you for your Apache LDAP credentials)
       commands:
         - !Command
-          cmd: ant clean stage-maven-artifacts  -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'solr', 'maven'] | path_join }}  -Dm2.repository.id=apache.releases.https  -Dm2.repository.url={{ m2_repository_url }}
+          cmd: bash dev-tools/scripts/upload-maven.sh -u {{ gpg.apache_id }}  -v {{ release_version }} -c {{ git_sha }} -d "{{ [dist_file_path, dist_folder, 'solr', release_version, 'maven'] | path_join }}"
+          tee: true
           logfile: publish_solr_maven.log
     post_description: The artifacts are not published yet, please proceed with the next step to actually publish!
   - !Todo
     id: publish_maven
     depends: stage_maven
     title: Publish the staged maven artifacts
+    vars:
+      git_sha: '{{ build_rc.git_rev_short | default("<git_sha>", True) }}'
     description: |
       Once you have transferred all maven artifacts to repository.apache.org,
       you will need to do some manual steps to actually release them to Maven Central:
 
-      * Close the staging repository
+      * Release the Solr artifacts
       . Log in to https://repository.apache.org/ with your ASF credentials
       . Select "Staging Repositories" under "Build Promotion" from the navigation bar on the left
-      . Select the staging repository containing the Solr artifacts
-      . Click on the "Close" button above the repository list, then enter a description when prompted, e.g. "Solr {{ release_version }} RC{{ rc_number }}"
-      * The system will now spend some time validating the artifacts. Grab a coke and come back.
-      * Release the Solr artifacts
-      . Wait and keep clicking refresh until the "Release" button becomes available
+      . Select the staging repository containing the Solr artifacts, "Apache Solr {{ release_version }} (commit {{ git_sha }})"
       . Click on the "Release" button above the repository list, then enter a description when prompted, e.g. "Solr {{ release_version }}".
 
       Maven central should show the release after a short while
     links:
-    - https://wiki.apache.org/lucene-java/PublishMavenArtifacts
     - https://repository.apache.org/index.html
   - !Todo
     id: check_distribution_directory
@@ -994,9 +1164,53 @@ groups:
         cmd: "{{ gradle_cmd }} documentation -Dversion.release={{ release_version }}"
         comment: Build documentation
       - !Command
-        cmd: svn -m "Add docs, changes and javadocs for Solr {{ release_version }}"  import {{ git_checkout_folder }}/solr/build/docs  https://svn.apache.org/repos/infra/sites/solr/docs/{{ version }}
+        cmd: svn -m "Add docs, changes and javadocs for Solr {{ release_version }}"  import {{ git_checkout_folder }}/solr/documentation/build/site https://svn.apache.org/repos/infra/sites/solr/docs/{{ version }}
         logfile: add-docs-solr.log
         comment: Add docs for Solr
+  - !Todo
+    id: update_minor_branch_release_antora
+    title: Update Ref Guide Metadata for release
+    description: |
+      The Solr minor branches do not contain up-to-date ref-guide metadata (antora.yml).
+      Instead, they have the information from the last release.
+      This allows us to build the official documentation from these minor branches, instead of from the release tags.
+      
+      This means that we can make fixes to older ref-guides without requiring a new release for those versions.
+    depends: tag_release
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run these commands to update the ref-guide antora metadata for the released version {{ release_version }}
+      commands:
+      - !Command
+        cmd: git checkout releases/solr/{{ release_version }}
+        tee: true
+      - !Command
+        cmd: git clean -df && git checkout -- .
+        comment: Make sure checkout is clean and up to date
+        logfile: git_clean.log
+      - !Command
+        cmd: "{{ gradle_cmd }} setOfficialAntoraYaml -Prefguide.isBranchReleased=true"
+        tee: true
+      - !Command
+        cmd: git stash
+        tee: true
+      - !Command
+        cmd: git checkout {{ release_branch }}
+        tee: true
+      - !Command
+        cmd: git clean -df && git checkout -- .
+        comment: Make sure checkout is clean and up to date
+        logfile: git_clean.log
+        tee: true
+      - !Command
+        cmd: git pull --ff-only
+        tee: true
+      - !Command
+        cmd: git stash pop
+        tee: true
+      - !Command
+        cmd: git add solr/solr-ref-guide/antora.yml && git commit -m "Update Antora metadata for released minor version {{ release_version }}" && git push
+        tee: true
   - !Todo
     id: check_ref_guide_complete
     title: Check that the reference guide is ready
@@ -1008,85 +1222,38 @@ groups:
       and (if applicable) also the "Major changes in Solr ..." section must be up to date for the latest release.
       Check that the the Blocker JIRA issue created in the beginning of the release process is resolved.
   - !Todo
-    id: build_final_ref_guide
-    title: Build the ref guide
-    links:
-      - https://solr.apache.org/guide/{{ release_version_refguide }}
+    id: build_ref_guide_htaccess
+    title: Build the ref guide .htaccess file
+    depends: update_minor_branch_release_antora
+    vars:
+      antora_htaccess_file: "{{ [rc_folder, 'antora.htaccess'] | path_join }}"
+    persist_vars:
+      - 'antora_htaccess_file'
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Build the Solr Ref Guide
+      commands_text: Build the official Solr Ref Guide and store the generated .htaccess file
+      remove_files:
+        - '{{ antora_htaccess_file }}'
       commands:
+        - !Command
+          cmd: git checkout main
+          tee: true
+        - !Command
+          cmd: git clean -df && git checkout -- .
+          comment: Make sure checkout is clean and up to date
+          logfile: git_clean.log
+        - !Command
+          cmd: git pull --ff-only
+          tee: true
         - !Command
           cmd: "{{ gradle_cmd }} solr:solr-ref-guide:clean"
           comment: Clean the Ref Guide build
         - !Command
-          cmd: "{{ gradle_cmd }} solr:solr-ref-guide:buildSite -PsolrGuideDraft=false"
-          comment: Build Ref Guide
-  - !Todo
-    id: upload_final_ref_guide_new
-    title: Upload the ref guide
-    links:
-      - https://solr.apache.org/guide/{{ release_version_refguide }}
-    depends:
-      - build_final_ref_guide
-    types:
-      - major
-      - minor
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Upload the Solr Ref Guide to SVN production tree
-      commands:
+          cmd: "{{ gradle_cmd }} solr:solr-ref-guide:buildOfficialSite -Prefguide.official.includePrereleaseVersions=false"
+          comment: Build Official Ref Guide Site
         - !Command
-          cmd: svn -m "Add Solr Ref Guide {{ release_version }}" import {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site  https://svn.apache.org/repos/infra/sites/solr/guide/{{ release_version_refguide }}
-          logfile: svn-upload-ref-guide.log
-          comment: Upload Solr Ref Guide
-  - !Todo
-    id: upload_final_ref_guide_changes
-    title: Upload (and overwrite-write) the ref guide
-    links:
-      - https://solr.apache.org/guide/{{ release_version_refguide }}
-    depends:
-      - build_final_ref_guide
-    types:
-      - bugfix
-    commands: !Commands
-      root_folder: '{{ ref_guide_svn_folder }}'
-      commands_text: Upload the Solr Ref Guide to SVN production tree, overwriting the previous version
-      confirm_each_command: true
-      commands:
-        - !Command
-          cmd: svn co https://svn.apache.org/repos/infra/sites/solr/guide/{{ release_version_refguide }} "{{ ref_guide_svn_folder }}"
-          logfile: ref-guide-svn-co.log
-          comment: Checkout the existing Solr Ref Guide for version {{ ref_guide_svn_folder }}
-          cwd: '{{ git_checkout_folder }}'
-        - !Command
-          cmd: cp -r {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site {{ ref_guide_svn_folder }}
-          comment: Copy and overwrite new Solr Ref Guide
-          cwd: '{{ git_checkout_folder }}'
-        - !Command
-          cmd: svn status
-          comment: Check that the changes in the ref-guide look good for this bugfix version
-          stdout: true
-        - !Command
-          cmd: svn status | grep '^!' | awk '{print $2}'
-          comment: List files that will be deleted in online refguide
-        - !Command
-          cmd: svn status | grep '^!' | awk '{print $2}' | xargs svn delete
-          comment: Confirm delete of files in SVN (DOUBLE CHECK)
-        - !Command
-          cmd: svn add --force .
-          comment: Add new and modified files in SVN
-        - !Command
-          cmd: svn status
-          comment: There should be no staged changes left in svn, all should be ready to commit
-          stdout: true
-        - !Command
-          cmd: diff {{ git_checkout_folder }}/solr/solr-ref-guide/build/html-site {{ ref_guide_svn_folder }}
-          comment: There should be no difference between the ref-guide build and the version in svn.
-          stdout: true
-        - !Command
-          cmd: svn commit -m "Update Solr Ref Guide {{ release_version_refguide }}, for version {{ release_version }}"
-          comment: Upload Solr Ref Guide
+          cmd: cp solr/solr-ref-guide/build/site/.htaccess "{{ antora_htaccess_file }}"
+          comment: Store copy of the official Ref Guide .htaccess file
   - !Todo
     id: website_git_clone
     title: Do a clean git clone of the website repo
@@ -1113,7 +1280,7 @@ groups:
       Fortunately the only thing you need to change is a few variables in `pelicanconf.py`.
       If you release a current latest release, change the `SOLR_LATEST_RELEASE` and `SOLR_LATEST_RELEASE_DATE`
       variables.
-      If you relese a bugfix release for previos version, then change the `SOLR_PREVIOUS_MAJOR_RELEASE` variable.
+      If you relese a bugfix release for previous version, then change the `SOLR_PREVIOUS_MAJOR_RELEASE` variable.
     commands: !Commands
       root_folder: '{{ git_website_folder }}'
       commands_text: Edit pelicanconf.py to update version numbers
@@ -1129,13 +1296,44 @@ groups:
     post_description: |
       You will push and verify all changes in a later step
   - !Todo
+    id: website_update_antora_htaccess
+    title: Update website ref-guide htaccess
+    depends:
+      - website_update_versions
+      - build_ref_guide_htaccess
+    vars:
+      release_tag: releases/solr/{{ release_version }}
+      antora_htaccess_location: themes/solr/templates/htaccess.ref-guide-antora
+    description: |
+      We need to update the website so that the redirects generated by antora (for the ref-guide) are respected in solr.apache.org.
+
+      Fortunately the only thing you need to change is the `htaccess.ref-guide-antora` file, and the build will do the rest.
+    commands: !Commands
+      root_folder: '{{ git_website_folder }}'
+      commands_text: Change the ref-guide-antora htaccess
+      commands:
+        - !Command
+          cmd: cp "{{ build_ref_guide_htaccess.antora_htaccess_file }}" "{{ antora_htaccess_location }}"
+          comment: Copy the ref-guide-antora htaccess
+          stdout: true
+        - !Command
+          cmd: git commit -am "Update the htaccess.ref-guide-antora for release {{ release_version }}"
+          logfile: ref-guide-antora.log
+          stdout: true
+    post_description: |
+      You will push and verify all changes in a later step
+  - !Todo
     id: prepare_announce_solr
     title: Author the Solr release news
-    depends: website_git_clone
+    depends: website_update_antora_htaccess
     description: |
       Edit a news text for the Solr website. This text will be the basis for the release announcement email later.
       This step will open an editor with a template. You will need to copy/paste the final release announcement text
       from the Wiki page and format it as Markdown.
+
+      If the created file contains `yyyy-mm-dd`, then quit the release wizard and run it again.
+      The release wizard must be re-started (not initialized again, you want to keep all of the state),
+      in order for the release date variable to be populated.
     function: prepare_announce_solr
     commands: !Commands
       root_folder: '{{ git_website_folder }}'
@@ -1156,7 +1354,7 @@ groups:
   - !Todo
     id: update_other
     title: Update rest of webpage
-    depends: website_update_versions
+    depends: prepare_announce_solr
     description: |
       Update the rest of the web page. Please review all files in the checkout
       and consider if any need change based on what changes there are in the
@@ -1183,7 +1381,7 @@ groups:
     id: stage_website
     title: Stage the website changes
     depends:
-    - prepare_announce_solr
+    - update_other
     description: |
       Push the website changes to 'main' branch, and check the staging site.
       You will get a chance to preview the diff of all changes before you push.
@@ -1199,7 +1397,7 @@ groups:
         cmd: git checkout main && git status
         stdout: true
       - !Command
-        cmd: git diff
+        cmd: git diff origin/main
         redirect: "{{ [release_folder, 'website.diff'] | path_join }}"
         comment: Make a diff of all edits. Will open in next step
       - !Command
@@ -1246,11 +1444,11 @@ groups:
 
       Verify on https://solr.apache.org that the site is OK.
 
-      You can now also verify that https://solr.apache.org/api/solr-core/ redirects to the latest version
+      You can now also verify that https://solr.apache.org/api/core/ redirects to the latest version
     links:
       - https://ci2.apache.org/#/builders/3
       - https://solr.apache.org
-      - https://solr.apache.org/api/solr-core/
+      - https://solr.apache.org/api/core/
   - !Todo
     id: update_doap
     title: Update the DOAP file
@@ -1359,11 +1557,29 @@ groups:
     id: add_to_wikipedia
     title: Add the new version to Wikipedia
     description: |
-      Go to Wikipedia and edit the page to include the new release.
-      Major versions should have a small new paragraph under 'History'.
-      If you know other languages than English, edit those as well.
+      Go to Wikidata and edit the page to include the new release.
+
+      - Scroll down to the "software version identifier" section.
+      - Click "add value"
+      - Type {{ release_version }}
+      - Add Qualifiers
+        - Click "add qualifier"
+        - Choose the qualifier publication date
+        - Input the correct value
+      - Add a reference
+        - Click "add reference"
+        - in "Property", type "reference url", and click the auto-complete box.
+        - For the value, go to the solr news page, https://solr.apache.org/news.html, and get the link to the Solr {{ release_version }} section.
+      - Set this as the latest release
+        - To the left of the version number text box there should be an up arrow, a circle and a down arrow.
+          Click these and select "Preferred rank"
+      - Hit publish next to the first text box.
+      - Make sure the previous release is no longer "latest"
+        - Click "edit" on the previous version that is highlighted in green.
+        - Click the ranking next to the version name, and change it from "Preferred rank" to "Normal rank"
+        - Click "publish" for this past release
     links:
-    - https://en.wikipedia.org/wiki/Apache_Solr
+    - https://www.wikidata.org/wiki/Q2858103
   - !Todo
     id: add_to_apache_reporter
     title: Add the new version to the Apache Release Reporter
@@ -1372,6 +1588,7 @@ groups:
       Fill in the same date that you used for the release in previous steps.
       Do not use a product name prefix for the version, as this is the main release of the Solr PMC.
       Just use the version of this release: {{ release_version }}
+      Note: you have to be a member of the Solr PMC to be able to complete this step.
     links:
       - https://reporter.apache.org/addrelease.html?solr
 - !TodoGroup
@@ -1497,7 +1714,7 @@ groups:
     description: |-
       Go to the JIRA "Manage Versions" Administration pages.
 
-      . Next to version {{ release_version }}, click the gear pop-up menu icon and choose "Release"
+      . Next to version {{ release_version_jira }}, click the gear pop-up menu icon and choose "Release"
       . Fill in the release date ({{ release_date | formatdate }})
       . It will give the option of transitioning issues marked fix-for the released version to the 
         next version, but do not do this as it will send an email for each issue :)
@@ -1510,26 +1727,26 @@ groups:
       Go to JIRA search to find all issues that were fixed in the release
       you just made, whose Status is Resolved.
 
-      . Go to https://issues.apache.org/jira/issues/?jql=project+in+(SOLR)+AND+status=Resolved+AND+fixVersion={{ release_version }}
+      . Go to https://issues.apache.org/jira/issues/?jql=project+in+(SOLR)+AND+status=Resolved+AND+fixVersion={{ release_version_jira }}
       . Do a bulk change (Under Tools... menu) to close all of these issues. This is a workflow transition task
       . In the 'Comment' box type `Closing after the {{ release_version }} release`
       . *Uncheck* the box that says `Send mail for this update`
     links:
-    - https://issues.apache.org/jira/issues/?jql=project+in+(SOLR)+AND+status=Resolved+AND+fixVersion={{ release_version }}
+    - https://issues.apache.org/jira/issues/?jql=project+in+(SOLR)+AND+status=Resolved+AND+fixVersion={{ release_version_jira }}
   - !Todo
     id: jira_change_unresolved
     title: Remove fixVersion for unresolved
     description: |-
-      Do another JIRA search to find all issues with Resolution=_Unresolved_ and fixVersion=_{{ release_version }}_.
+      Do another JIRA search to find all issues with Resolution=_Unresolved_ and fixVersion=_{{ release_version_jira }}_.
 
-      . Open https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
+      . Open https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+resolution=Unresolved+AND+fixVersion={{ release_version_jira }}
       . In the `Tools` menu, start a bulk change - operation="Edit issues"
       . Identify issues that *are included* in the release, but are unresolved e.g. due to being REOPENED. These shall *not* be bulk changed!
-      . Check the box next to `Change Fix Version/s` and in the dropdown `Find and remove these`, selecting v {{ release_version }}
+      . Check the box next to `Change Fix Version/s` and in the dropdown `Find and remove these`, selecting v {{ release_version_jira }}
       . On the bottom of the form, uncheck the box that says `Send mail for this update`
       . Click `Next`, review the changes and click `Confirm`
     links:
-    - https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
+    - https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+resolution=Unresolved+AND+fixVersion={{ release_version_jira }}
   - !Todo
     id: jira_clear_security
     title: Clear Security Level of Public Solr JIRA Issues
@@ -1592,6 +1809,6 @@ groups:
         comment: Delete from Lucene dist area
       - !Command
         cmd: |
-          svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/solr/{{ ver }}{% endfor %}
+          svn rm -m "Stop publishing old Solr releases"{% for ver in mirrored_versions_to_delete %}  https://dist.apache.org/repos/dist/release/solr/solr/{{ ver }}{% endfor %}
         logfile: svn-rm-solr.log
         comment: Delete from new Solr dist area

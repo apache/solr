@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.io.InputStream;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -27,15 +26,16 @@ public class TestMinimalConfig extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-minimal.xml","schema-minimal.xml");
+    initCore("solrconfig-minimal.xml", "schema-minimal.xml");
   }
 
-  // Make sure the content of the lib/ core subfolder is loaded even if there is no <lib> node in the solrconfig
+  // Make sure the content of the lib/ core subfolder is loaded even if there is no <lib> node in
+  // the solrconfig
   @Test
   public void testLib() throws IOException {
     SolrResourceLoader loader = h.getCore().getResourceLoader();
     InputStream data = null;
-    String[] expectedFiles = new String[] { "empty-file-main-lib.txt"};
+    String[] expectedFiles = new String[] {"empty-file-main-lib.txt"};
     for (String f : expectedFiles) {
       data = loader.openResource(f);
       assertNotNull("Should have found file " + f, data);

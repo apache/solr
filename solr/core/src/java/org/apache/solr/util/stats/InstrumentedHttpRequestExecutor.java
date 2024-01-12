@@ -17,13 +17,13 @@
 
 package org.apache.solr.util.stats;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import static org.apache.solr.metrics.SolrMetricManager.mkName;
 
 import com.codahale.metrics.Timer;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.Locale;
+import java.util.Map;
 import org.apache.http.HttpClientConnection;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
@@ -33,16 +33,17 @@ import org.apache.http.client.methods.HttpRequestWrapper;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestExecutor;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
-
-import static org.apache.solr.metrics.SolrMetricManager.mkName;
+import org.apache.solr.util.tracing.TraceUtils;
 
 /**
- * Sub-class of HttpRequestExecutor which tracks metrics interesting to solr
- * Inspired and partially copied from dropwizard httpclient library
+ * Sub-class of HttpRequestExecutor which tracks metrics interesting to solr Inspired and partially
+ * copied from dropwizard httpclient library
  */
-public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor implements SolrMetricProducer {
+public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor
+    implements SolrMetricProducer {
   public static final HttpClientMetricNameStrategy QUERYLESS_URL_AND_METHOD =
       (scope, request) -> {
         try {
@@ -51,11 +52,21 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
           if (request instanceof HttpRequestWrapper) {
             HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
             if (wrapper.getTarget() != null) {
-              schemeHostPort = wrapper.getTarget().getSchemeName() + "://" + wrapper.getTarget().getHostName() + ":" + wrapper.getTarget().getPort();
+              schemeHostPort =
+                  wrapper.getTarget().getSchemeName()
+                      + "://"
+                      + wrapper.getTarget().getHostName()
+                      + ":"
+                      + wrapper.getTarget().getPort();
             }
           }
           final URIBuilder url = new URIBuilder(requestLine.getUri());
-          return mkName((schemeHostPort != null ? schemeHostPort : "") + url.removeQuery().build().toString() + "." + methodNameString(request), scope);
+          return mkName(
+              (schemeHostPort != null ? schemeHostPort : "")
+                  + url.removeQuery().build().toString()
+                  + "."
+                  + methodNameString(request),
+              scope);
         } catch (URISyntaxException e) {
           throw new IllegalArgumentException(e);
         }
@@ -72,19 +83,27 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
           if (request instanceof HttpRequestWrapper) {
             HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
             if (wrapper.getTarget() != null) {
-              schemeHostPort = wrapper.getTarget().getSchemeName() + "://" + wrapper.getTarget().getHostName() + ":" + wrapper.getTarget().getPort();
+              schemeHostPort =
+                  wrapper.getTarget().getSchemeName()
+                      + "://"
+                      + wrapper.getTarget().getHostName()
+                      + ":"
+                      + wrapper.getTarget().getPort();
             }
           }
           final URIBuilder url = new URIBuilder(requestLine.getUri());
-          return mkName((schemeHostPort != null ? schemeHostPort : "") + "." + methodNameString(request), scope);
+          return mkName(
+              (schemeHostPort != null ? schemeHostPort : "") + "." + methodNameString(request),
+              scope);
         } catch (URISyntaxException e) {
           throw new IllegalArgumentException(e);
         }
       };
 
-  public static final Map<String, HttpClientMetricNameStrategy> KNOWN_METRIC_NAME_STRATEGIES = new HashMap<>(3);
+  public static final Map<String, HttpClientMetricNameStrategy> KNOWN_METRIC_NAME_STRATEGIES =
+      CollectionUtil.newHashMap(3);
 
-  static  {
+  static {
     KNOWN_METRIC_NAME_STRATEGIES.put("queryLessURLAndMethod", QUERYLESS_URL_AND_METHOD);
     KNOWN_METRIC_NAME_STRATEGIES.put("hostAndMethod", HOST_AND_METHOD);
     KNOWN_METRIC_NAME_STRATEGIES.put("methodOnly", METHOD_ONLY);
@@ -94,7 +113,8 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
   protected HttpClientMetricNameStrategy nameStrategy;
   protected SolrMetricsContext solrMetricsContext;
 
-  public InstrumentedHttpRequestExecutor(int waitForContinue, HttpClientMetricNameStrategy nameStrategy) {
+  public InstrumentedHttpRequestExecutor(
+      int waitForContinue, HttpClientMetricNameStrategy nameStrategy) {
     super(waitForContinue);
     this.nameStrategy = nameStrategy;
   }
@@ -113,11 +133,13 @@ public class InstrumentedHttpRequestExecutor extends HttpRequestExecutor impleme
   }
 
   @Override
-  public HttpResponse execute(HttpRequest request, HttpClientConnection conn, HttpContext context) throws IOException, HttpException {
+  public HttpResponse execute(HttpRequest request, HttpClientConnection conn, HttpContext context)
+      throws IOException, HttpException {
     Timer.Context timerContext = null;
     if (solrMetricsContext != null) {
       timerContext = timer(request).time();
     }
+    TraceUtils.injectTraceContext(request);
     try {
       return super.execute(request, conn, context);
     } finally {

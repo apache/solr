@@ -19,9 +19,7 @@ package org.apache.solr.cluster;
 
 import java.util.Iterator;
 
-/**
- * Shard in a {@link SolrCollection}, i.e. a subset of the data indexed in that collection.
- */
+/** Shard in a {@link SolrCollection}, i.e. a subset of the data indexed in that collection. */
 public interface Shard {
   String getShardName();
 
@@ -32,6 +30,7 @@ public interface Shard {
 
   /**
    * Returns the {@link Replica} of the given name for that shard, if such a replica exists.
+   *
    * @return {@code null} if the replica does not (or does not yet) exist for the shard.
    */
   Replica getReplica(String name);
@@ -47,14 +46,19 @@ public interface Shard {
   Iterable<Replica> replicas();
 
   /**
-   * @return the current leader {@link Replica} for this {@link Shard}. Note that by the time this method returns the leader might
-   * have changed. Also, if there's no leader for any reason (don't shoot the messenger), this method will return {@code null}.
+   * @return the current leader {@link Replica} for this {@link Shard}. Note that by the time this
+   *     method returns the leader might have changed. Also, if there's no leader for any reason
+   *     (don't shoot the messenger), this method will return {@code null}.
    */
   Replica getLeader();
 
   ShardState getState();
 
   enum ShardState {
-    ACTIVE, INACTIVE, CONSTRUCTION, RECOVERY, RECOVERY_FAILED
+    ACTIVE,
+    INACTIVE,
+    CONSTRUCTION,
+    RECOVERY,
+    RECOVERY_FAILED
   }
 }

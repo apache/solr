@@ -20,38 +20,31 @@ import java.util.Date;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * 
- *
  * @since solr 1.3
  */
-public class CoreAdminResponse extends SolrResponseBase
-{ 
+public class CoreAdminResponse extends SolrResponseBase {
   @SuppressWarnings("unchecked")
-  public NamedList<NamedList<Object>> getCoreStatus()
-  {
-    return (NamedList<NamedList<Object>>) getResponse().get( "status" );
+  public NamedList<NamedList<Object>> getCoreStatus() {
+    return (NamedList<NamedList<Object>>) getResponse().get("status");
   }
 
-  public NamedList<Object> getCoreStatus( String core )
-  {
-    return getCoreStatus().get( core );
+  public NamedList<Object> getCoreStatus(String core) {
+    return getCoreStatus().get(core);
   }
-  
-  public Date getStartTime( String core )
-  {
-    NamedList<Object> v = getCoreStatus( core );
-    if( v == null ) {
+
+  public Date getStartTime(String core) {
+    NamedList<Object> v = getCoreStatus(core);
+    if (v == null) {
       return null;
     }
-    return (Date) v.get( "startTime" );
+    return (Date) v.get("startTime");
   }
-  
-  public Long getUptime( String core )
-  {
-    NamedList<Object> v = getCoreStatus( core );
-    if( v == null ) {
+
+  public Long getUptime(String core) {
+    NamedList<Object> v = getCoreStatus(core);
+    if (v == null) {
       return null;
     }
-    return (Long) v.get( "uptime" );
+    return (Long) v.get("uptime");
   }
 }

@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 package org.apache.solr.spelling;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.search.spell.LevenshteinDistance;
@@ -31,17 +31,17 @@ import org.apache.solr.client.solrj.response.SpellCheckResponse;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.SpellCheckMergeData;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 
-
 /**
- * <p>
- * Refer to <a href="https://solr.apache.org/guide/spell-checking.html">https://solr.apache.org/guide/spell-checking.html</a>
+ * Refer to <a
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html">https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html</a>
  * for more details.
- * </p>
  *
  * @since solr 1.3
  */
@@ -50,47 +50,54 @@ public abstract class SolrSpellChecker {
   public static final String DEFAULT_DICTIONARY_NAME = "default";
   public static final String FIELD = "field";
   public static final String FIELD_TYPE = "fieldType";
+
   /** Dictionary name */
   protected String name;
+
   protected Analyzer analyzer;
   protected String field;
   protected String fieldTypeName;
 
   public String init(NamedList<?> config, SolrCore core) {
-    name = (String)config.get(DICTIONARY_NAME);
+    name = (String) config.get(DICTIONARY_NAME);
     if (name == null) {
       name = DEFAULT_DICTIONARY_NAME;
     }
-    field = (String)config.get(FIELD);
+    field = (String) config.get(FIELD);
     IndexSchema schema = core.getLatestSchema();
-    if (field != null && schema.getFieldTypeNoEx(field) != null)  {
+    if (field != null && schema.getFieldTypeNoEx(field) != null) {
       analyzer = schema.getFieldType(field).getQueryAnalyzer();
     }
     fieldTypeName = (String) config.get(FIELD_TYPE);
-    if (schema.getFieldTypes().containsKey(fieldTypeName))  {
+    if (schema.getFieldTypes().containsKey(fieldTypeName)) {
       FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
       analyzer = fieldType.getQueryAnalyzer();
     }
-    if (analyzer == null)   {
+    if (analyzer == null) {
       analyzer = new WhitespaceAnalyzer();
     }
     return name;
   }
-  /**
-   * Integrate spelling suggestions from the various shards in a distributed environment.
-   */
-  public SpellingResult mergeSuggestions(SpellCheckMergeData mergeData, int numSug, int count, boolean extendedResults) {
+
+  /** modify the shard request to be used in a distributed environment. */
+  public void modifyRequest(ResponseBuilder rb, ShardRequest sreq) {
+    /* No-Op */
+  }
+
+  /** Integrate spelling suggestions from the various shards in a distributed environment. */
+  public SpellingResult mergeSuggestions(
+      SpellCheckMergeData mergeData, int numSug, int count, boolean extendedResults) {
     float min = 0.5f;
     try {
       min = getAccuracy();
-    } catch(UnsupportedOperationException uoe) {
-      //just use .5 as a default
+    } catch (UnsupportedOperationException uoe) {
+      // just use .5 as a default
     }
 
     StringDistance sd = null;
     try {
       sd = getStringDistance() == null ? new LevenshteinDistance() : getStringDistance();
-    } catch(UnsupportedOperationException uoe) {
+    } catch (UnsupportedOperationException uoe) {
       sd = new LevenshteinDistance();
     }
 
@@ -98,11 +105,12 @@ public abstract class SolrSpellChecker {
     for (Map.Entry<String, HashSet<String>> entry : mergeData.origVsSuggested.entrySet()) {
       String original = entry.getKey();
 
-      //Only use this suggestion if all shards reported it as misspelled,
-      //unless it was not a term original to the user's query
-      //(WordBreakSolrSpellChecker can add new terms to the response, and we want to keep these)
+      // Only use this suggestion if all shards reported it as misspelled,
+      // unless it was not a term original to the user's query
+      // (WordBreakSolrSpellChecker can add new terms to the response, and we want to keep these)
       Integer numShards = mergeData.origVsShards.get(original);
-      if(numShards<mergeData.totalNumberShardResponses && mergeData.isOriginalToQuery(original)) {
+      if (numShards < mergeData.totalNumberShardResponses
+          && mergeData.isOriginalToQuery(original)) {
         continue;
       }
 
@@ -126,17 +134,16 @@ public abstract class SolrSpellChecker {
       // get top 'count' suggestions out of 'sugQueue.size()' candidates
       SuggestWord[] suggestions = new SuggestWord[Math.min(count, sugQueue.size())];
       // skip the first sugQueue.size() - count elements
-      for (int k=0; k < sugQueue.size() - count; k++) sugQueue.pop();
+      for (int k = 0; k < sugQueue.size() - count; k++) sugQueue.pop();
       // now collect the top 'count' responses
-      for (int k = Math.min(count, sugQueue.size()) - 1; k >= 0; k--)  {
+      for (int k = Math.min(count, sugQueue.size()) - 1; k >= 0; k--) {
         suggestions[k] = sugQueue.pop();
       }
 
       if (extendedResults) {
         Integer o = mergeData.origVsFreq.get(original);
         if (o != null) result.addFrequency(token, o);
-        for (SuggestWord word : suggestions)
-          result.add(token, word.string, word.freq);
+        for (SuggestWord word : suggestions) result.add(token, word.string, word.freq);
       } else {
         List<String> words = new ArrayList<>(sugQueue.size());
         for (SuggestWord word : suggestions) words.add(word.string);
@@ -155,36 +162,35 @@ public abstract class SolrSpellChecker {
   }
 
   /**
-   * Reloads the index.  Useful if an external process is responsible for building the spell checker.
+   * Reloads the index. Useful if an external process is responsible for building the spell checker.
    *
    * @throws IOException If there is a low-level I/O error.
    */
   public abstract void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException;
 
   /**
-   * (re)Builds the spelling index.  May be a NOOP if the implementation doesn't require building, or can't be rebuilt.
+   * (re)Builds the spelling index. May be a NOOP if the implementation doesn't require building, or
+   * can't be rebuilt.
    */
   public abstract void build(SolrCore core, SolrIndexSearcher searcher) throws IOException;
 
   /**
-   * Get the value of {@link SpellingParams#SPELLCHECK_ACCURACY} if supported.
-   * Otherwise throws UnsupportedOperationException.
+   * Get the value of {@link SpellingParams#SPELLCHECK_ACCURACY} if supported. Otherwise throws
+   * UnsupportedOperationException.
    */
   protected float getAccuracy() {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * Get the distance implementation used by this spellchecker, or NULL if not applicable.
-   */
-  protected StringDistance getStringDistance()  {
+  /** Get the distance implementation used by this spellchecker, or NULL if not applicable. */
+  protected StringDistance getStringDistance() {
     throw new UnsupportedOperationException();
   }
 
-
   /**
-   * Get suggestions for the given query.  Tokenizes the query using a field appropriate Analyzer.
-   * The {@link SpellingResult#getSuggestions()} suggestions must be ordered by best suggestion first.
+   * Get suggestions for the given query. Tokenizes the query using a field appropriate Analyzer.
+   * The {@link SpellingResult#getSuggestions()} suggestions must be ordered by best suggestion
+   * first.
    *
    * @param options The {@link SpellingOptions} to use
    * @return The {@link SpellingResult} suggestions

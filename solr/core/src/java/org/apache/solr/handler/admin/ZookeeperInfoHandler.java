@@ -16,6 +16,10 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
+import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.params.CommonParams.WT;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -25,10 +29,9 @@ import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -37,16 +40,16 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.Slice.SliceStateProps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
@@ -60,7 +63,6 @@ import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.util.SimplePostTool.BAOS;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -70,11 +72,6 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
-import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.params.CommonParams.WT;
-
 
 /**
  * Zookeeper Info
@@ -94,7 +91,6 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   public ZookeeperInfoHandler(CoreContainer cc) {
     this.cores = cc;
   }
-
 
   @Override
   public String getDescription() {
@@ -118,16 +114,14 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     }
   }
 
-  /**
-   * Enumeration of ways to filter collections on the graph panel.
-   */
+  /** Enumeration of ways to filter collections on the graph panel. */
   static enum FilterType {
-    none, name, status
+    none,
+    name,
+    status
   }
 
-  /**
-   * Holds state of a single page of collections requested from the cloud panel.
-   */
+  /** Holds state of a single page of collections requested from the cloud panel. */
   static final class PageOfCollections {
     List<String> selected;
     int numFound = 0; // total number of matches (across all pages)
@@ -149,18 +143,14 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       selected = collections;
 
       if (rows > 0) { // paging desired
-        if (start > numFound)
-          start = 0; // this might happen if they applied a new filter
+        if (start > numFound) start = 0; // this might happen if they applied a new filter
 
         int lastIndex = Math.min(start + rows, numFound);
-        if (start > 0 || lastIndex < numFound)
-          selected = collections.subList(start, lastIndex);
+        if (start > 0 || lastIndex < numFound) selected = collections.subList(start, lastIndex);
       }
     }
 
-    /**
-     * Filters a list of collections by name if applicable.
-     */
+    /** Filters a list of collections by name if applicable. */
     List<String> applyNameFilter(List<String> collections) {
 
       if (filterType != FilterType.name || filter == null)
@@ -168,26 +158,26 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
       // typically, a user will type a prefix and then *, e.g. tj*
       // when they really mean tj.*
-      String regexFilter = (!filter.endsWith(".*") && filter.endsWith("*"))
-          ? filter.substring(0, filter.length() - 1) + ".*" : filter;
+      String regexFilter =
+          (!filter.endsWith(".*") && filter.endsWith("*"))
+              ? filter.substring(0, filter.length() - 1) + ".*"
+              : filter;
 
       // case-insensitive
-      if (!regexFilter.startsWith("(?i)"))
-        regexFilter = "(?i)" + regexFilter;
+      if (!regexFilter.startsWith("(?i)")) regexFilter = "(?i)" + regexFilter;
 
       Pattern filterRegex = Pattern.compile(regexFilter);
       List<String> filtered = new ArrayList<String>();
       for (String next : collections) {
-        if (matches(filterRegex, next))
-          filtered.add(next);
+        if (matches(filterRegex, next)) filtered.add(next);
       }
 
       return filtered;
     }
 
     /**
-     * Walk the collection state JSON object to see if it has any replicas that match
-     * the state the user is filtering by.
+     * Walk the collection state JSON object to see if it has any replicas that match the state the
+     * user is filtering by.
      */
     @SuppressWarnings("unchecked")
     final boolean matchesStatusFilter(Map<String, Object> collectionState, Set<String> liveNodes) {
@@ -199,14 +189,16 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       boolean hasDownedShard = false; // means one or more shards is down
       boolean replicaInRecovery = false;
 
-      Map<String, Object> shards = (Map<String, Object>) collectionState.get(DocCollection.SHARDS);
+      Map<String, Object> shards =
+          (Map<String, Object>) collectionState.get(CollectionStateProps.SHARDS);
       for (Object o : shards.values()) {
         boolean hasActive = false;
         Map<String, Object> shard = (Map<String, Object>) o;
-        Map<String, Object> replicas = (Map<String, Object>) shard.get(Slice.REPLICAS);
+        Map<String, Object> replicas = (Map<String, Object>) shard.get(SliceStateProps.REPLICAS);
         for (Object value : replicas.values()) {
           Map<String, Object> replicaState = (Map<String, Object>) value;
-          Replica.State coreState = Replica.State.getState((String) replicaState.get(ZkStateReader.STATE_PROP));
+          Replica.State coreState =
+              Replica.State.getState((String) replicaState.get(ZkStateReader.STATE_PROP));
           String nodeName = (String) replicaState.get(ZkStateReader.NODE_NAME_PROP);
 
           // state can lie to you if the node is offline, so need to reconcile with live_nodes too
@@ -223,8 +215,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           }
         }
 
-        if (!hasActive)
-          hasDownedShard = true; // this is bad
+        if (!hasActive) hasDownedShard = true; // this is bad
       }
 
       if ("healthy".equals(filter)) {
@@ -245,28 +236,34 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     }
 
     String getPagingHeader() {
-      return start + "|" + rows + "|" + numFound + "|" + (filterType != null ? filterType.toString() : "") + "|" + (filter != null ? filter : "");
+      return start
+          + "|"
+          + rows
+          + "|"
+          + numFound
+          + "|"
+          + (filterType != null ? filterType.toString() : "")
+          + "|"
+          + (filter != null ? filter : "");
     }
 
+    @Override
     public String toString() {
       return getPagingHeader();
     }
-
   }
 
   /**
-   * Supports paged navigation of collections on the cloud panel. To avoid serving
-   * stale collection data, this object watches the /collections znode, which will
-   * change if a collection is added or removed.
+   * Supports paged navigation of collections on the cloud panel. To avoid serving stale collection
+   * data, this object watches the /collections znode, which will change if a collection is added or
+   * removed.
    */
   static final class PagedCollectionSupport implements Watcher, Comparator<String>, OnReconnect {
 
     // this is the full merged list of collections from ZooKeeper
     private List<String> cachedCollections;
 
-    /**
-     * If the list of collections changes, mark the cache as stale.
-     */
+    /** If the list of collections changes, mark the cache as stale. */
     @Override
     public void process(WatchedEvent event) {
       // session events are not change events, and do not remove the watcher
@@ -278,31 +275,26 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       }
     }
 
-    /**
-     * Create a merged view of all collections from /collections/?/state.json
-     */
-    private synchronized List<String> getCollections(SolrZkClient zkClient) throws KeeperException, InterruptedException {
+    /** Create a merged view of all collections from /collections/?/state.json */
+    private synchronized List<String> getCollections(SolrZkClient zkClient)
+        throws KeeperException, InterruptedException {
       if (cachedCollections == null) {
         // cache is stale, rebuild the full list ...
         cachedCollections = new ArrayList<String>();
 
         List<String> fromZk = zkClient.getChildren("/collections", this, true);
-        if (fromZk != null)
-          cachedCollections.addAll(fromZk);
+        if (fromZk != null) cachedCollections.addAll(fromZk);
 
         // sort the final merged set of collections
-        Collections.sort(cachedCollections, this);
+        cachedCollections.sort(this);
       }
 
       return cachedCollections;
     }
 
-    /**
-     * Gets the requested page of collections after applying filters and offsets.
-     */
+    /** Gets the requested page of collections after applying filters and offsets. */
     public void fetchPage(PageOfCollections page, SolrZkClient zkClient)
         throws KeeperException, InterruptedException {
-
 
       List<String> children = getCollections(zkClient);
       page.selected = children; // start with the page being the full list
@@ -320,20 +312,17 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
       // a little hacky ... we can't select the page when filtering by
       // status until reading all status objects from ZK
-      if (page.filterType != FilterType.status)
-        page.selectPage(children);
+      if (page.filterType != FilterType.status) page.selectPage(children);
     }
 
     @Override
     public int compare(String left, String right) {
-      if (left == null)
-        return -1;
+      if (left == null) return -1;
 
-      if (left.equals(right))
-        return 0;
+      if (left.equals(right)) return 0;
 
       // sort lexically unless the two collection names start with the same base prefix
-      // and end in a number (which is a common enough naming scheme to have direct 
+      // and end in a number (which is a common enough naming scheme to have direct
       // support for it)
       Matcher leftMatcher = endsWithDigits.matcher(left);
       if (leftMatcher.matches()) {
@@ -353,9 +342,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       return left.compareTo(right);
     }
 
-    /**
-     * Called after a ZooKeeper session expiration occurs
-     */
+    /** Called after a ZooKeeper session expiration occurs */
     @Override
     public void command() {
       // we need to re-establish the watcher on the collections list after session expires
@@ -371,16 +358,15 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final SolrParams params = req.getParams();
-    Map<String, String> map = new HashMap<>(1);
-    map.put(WT, "raw");
-    map.put(OMIT_HEADER, "true");
+    Map<String, String> map = Map.of(WT, "raw", OMIT_HEADER, "true");
     req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), params));
     synchronized (this) {
       if (pagingSupport == null) {
         pagingSupport = new PagedCollectionSupport();
         ZkController zkController = cores.getZkController();
         if (zkController != null) {
-          // get notified when the ZK session expires (so we can clear the cached collections and rebuild)
+          // get notified when the ZK session expires (so we can clear the cached collections and
+          // rebuild)
           zkController.addOnReconnectListener(pagingSupport);
         }
       }
@@ -404,31 +390,31 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     String filterType = params.get("filterType");
     if (filterType != null) {
       filterType = filterType.trim().toLowerCase(Locale.ROOT);
-      if (filterType.length() == 0)
-        filterType = null;
+      if (filterType.length() == 0) filterType = null;
     }
     FilterType type = (filterType != null) ? FilterType.valueOf(filterType) : FilterType.none;
 
     String filter = (type != FilterType.none) ? params.get("filter") : null;
     if (filter != null) {
       filter = filter.trim();
-      if (filter.length() == 0)
-        filter = null;
+      if (filter.length() == 0) filter = null;
     }
 
     ZKPrinter printer = new ZKPrinter(cores.getZkController());
     printer.detail = detail;
     printer.dump = dump;
     boolean isGraphView = "graph".equals(params.get("view"));
-    // There is no znode /clusterstate.json (removed in Solr 9), but we do as if there's one and return collection listing
-    // Need to change services.js if cleaning up here, collection list is used from Admin UI Cloud - Graph
+    // There is no znode /clusterstate.json (removed in Solr 9), but we do as if there's one and
+    // return collection listing. Need to change services.js if cleaning up here, collection list is
+    // used from Admin UI Cloud - Graph
     boolean paginateCollections = (isGraphView && "/clusterstate.json".equals(path));
     printer.page = paginateCollections ? new PageOfCollections(start, rows, type, filter) : null;
     printer.pagingSupport = pagingSupport;
 
     try {
       if (paginateCollections) {
-        // List collections and allow pagination, but no specific znode info like when looking at a normal ZK path
+        // List collections and allow pagination, but no specific znode info like when looking at a
+        // normal ZK path
         printer.printPaginatedCollections();
       } else {
         printer.print(path);
@@ -436,12 +422,12 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     } finally {
       printer.close();
     }
-    rsp.getValues().add(RawResponseWriter.CONTENT,printer);
+    rsp.getValues().add(RawResponseWriter.CONTENT, printer);
   }
 
-  //--------------------------------------------------------------------------------------
+  // --------------------------------------------------------------------------------------
   //
-  //--------------------------------------------------------------------------------------
+  // --------------------------------------------------------------------------------------
 
   static class ZKPrinter implements ContentStream {
     static boolean FULLPATH_DEFAULT = false;
@@ -453,7 +439,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
     String keeperAddr; // the address we're connected to
 
-    final BAOS baos = new BAOS();
+    final Utils.BAOS baos = new Utils.BAOS();
     final Writer out = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
     SolrZkClient zkClient;
 
@@ -541,17 +527,19 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         for (String collection : page.selected) {
           DocCollection dc = cs.getCollectionOrNull(collection);
           if (dc != null) {
-            // TODO: for collections with perReplicaState, a ser/deser to JSON was needed to get the state to render correctly for the UI?
-            @SuppressWarnings("unchecked")
-            Map<String, Object> collectionState = dc.isPerReplicaState() ? (Map<String, Object>)Utils.fromJSONString(Utils.toJSONString(dc)) : dc.getProperties();
+            // TODO: for collections with perReplicaState, a ser/deser to JSON was needed to get the
+            // state to render correctly for the UI?
+            Map<String, Object> collectionState = dc.toMap(new LinkedHashMap<>());
             if (applyStatusFilter) {
               // verify this collection matches the filtered state
               if (page.matchesStatusFilter(collectionState, liveNodes)) {
                 matchesStatusFilter.add(collection);
-                collectionStates.put(collection, ClusterStatus.postProcessCollectionJSON(collectionState));
+                collectionStates.put(
+                    collection, ClusterStatus.postProcessCollectionJSON(collectionState));
               }
             } else {
-              collectionStates.put(collection, ClusterStatus.postProcessCollectionJSON(collectionState));
+              collectionStates.put(
+                  collection, ClusterStatus.postProcessCollectionJSON(collectionState));
             }
           }
         }
@@ -562,8 +550,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
           // rebuild the Map of state data
           SortedMap<String, Object> map = new TreeMap<String, Object>(pagingSupport);
-          for (String next : page.selected)
-            map.put(next, collectionStates.get(next));
+          for (String next : page.selected) map.put(next, collectionStates.get(next));
           collectionStates = map;
         }
       } catch (KeeperException | InterruptedException e) {
@@ -628,7 +615,8 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       json.writeString("a_attr");
       json.writeNameSeparator();
       json.startObject();
-      String href = "admin/zookeeper?detail=true&path=" + URLEncoder.encode(path, StandardCharsets.UTF_8);
+      String href =
+          "admin/zookeeper?detail=true&path=" + URLEncoder.encode(path, StandardCharsets.UTF_8);
       writeKeyValue(json, "href", href, true);
       json.endObject();
 
@@ -777,12 +765,12 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       return true;
     }
 
-   /* @Override
-    public void write(OutputStream os) throws IOException {
-      ByteBuffer bytes = baos.getByteBuffer();
-      os.write(bytes.array(),0,bytes.limit());
-    }
-*/
+    /* @Override
+        public void write(OutputStream os) throws IOException {
+          ByteBuffer bytes = baos.getByteBuffer();
+          os.write(bytes.array(),0,bytes.limit());
+        }
+    */
     @Override
     public String getName() {
       return null;

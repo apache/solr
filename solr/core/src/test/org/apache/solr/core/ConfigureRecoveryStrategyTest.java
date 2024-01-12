@@ -18,7 +18,6 @@ package org.apache.solr.core;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -26,24 +25,23 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
 
-/**
- * test that configs can override the RecoveryStrategy
- */
+/** test that configs can override the RecoveryStrategy */
 public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
 
-  private static final String solrConfigFileNameConfigure = "solrconfig-configurerecoverystrategy.xml";
+  private static final String solrConfigFileNameConfigure =
+      "solrconfig-configurerecoverystrategy.xml";
   private static final String solrConfigFileNameCustom = "solrconfig-customrecoverystrategy.xml";
 
   private static String solrConfigFileName;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrConfigFileName = (random().nextBoolean()
-        ? solrConfigFileNameConfigure : solrConfigFileNameCustom);
+    solrConfigFileName =
+        (random().nextBoolean() ? solrConfigFileNameConfigure : solrConfigFileNameCustom);
     initCore(solrConfigFileName, "schema.xml");
   }
 
-  public void testBuilder() throws Exception {
+  public void testBuilder() {
     final RecoveryStrategy.Builder recoveryStrategyBuilder =
         h.getCore().getSolrCoreState().getRecoveryStrategyBuilder();
     assertNotNull("recoveryStrategyBuilder is null", recoveryStrategyBuilder);
@@ -53,18 +51,22 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
     if (solrConfigFileName.equals(solrConfigFileNameConfigure)) {
       expectedClassName = RecoveryStrategy.Builder.class.getName();
     } else if (solrConfigFileName.equals(solrConfigFileNameCustom)) {
-      assertTrue("recoveryStrategyBuilder is wrong class (instanceof)",
+      assertTrue(
+          "recoveryStrategyBuilder is wrong class (instanceof)",
           recoveryStrategyBuilder instanceof CustomRecoveryStrategyBuilder);
-      expectedClassName = ConfigureRecoveryStrategyTest.CustomRecoveryStrategyBuilder.class.getName();
+      expectedClassName =
+          ConfigureRecoveryStrategyTest.CustomRecoveryStrategyBuilder.class.getName();
     } else {
       expectedClassName = null;
     }
 
-    assertEquals("recoveryStrategyBuilder is wrong class (name)",
-        expectedClassName, recoveryStrategyBuilder.getClass().getName());
+    assertEquals(
+        "recoveryStrategyBuilder is wrong class (name)",
+        expectedClassName,
+        recoveryStrategyBuilder.getClass().getName());
   }
 
-  public void testAlmostAllMethodsAreFinal() throws Exception {
+  public void testAlmostAllMethodsAreFinal() {
     for (Method m : RecoveryStrategy.class.getDeclaredMethods()) {
       if (Modifier.isStatic(m.getModifiers()) || Modifier.isPrivate(m.getModifiers())) continue;
       final String methodName = m.getName();
@@ -76,7 +78,7 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
     }
   }
 
-  static public class CustomRecoveryStrategy extends RecoveryStrategy {
+  public static class CustomRecoveryStrategy extends RecoveryStrategy {
 
     private String alternativeBaseUrlProp;
 
@@ -88,8 +90,8 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
       this.alternativeBaseUrlProp = alternativeBaseUrlProp;
     }
 
-    public CustomRecoveryStrategy(CoreContainer cc, CoreDescriptor cd,
-        RecoveryStrategy.RecoveryListener recoveryListener) {
+    public CustomRecoveryStrategy(
+        CoreContainer cc, CoreDescriptor cd, RecoveryStrategy.RecoveryListener recoveryListener) {
       super(cc, cd, recoveryListener);
     }
 
@@ -101,12 +103,11 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
     }
   }
 
-  static public class CustomRecoveryStrategyBuilder extends RecoveryStrategy.Builder {
+  public static class CustomRecoveryStrategyBuilder extends RecoveryStrategy.Builder {
     @Override
-    protected RecoveryStrategy newRecoveryStrategy(CoreContainer cc, CoreDescriptor cd,
-        RecoveryStrategy.RecoveryListener recoveryListener) {
+    protected RecoveryStrategy newRecoveryStrategy(
+        CoreContainer cc, CoreDescriptor cd, RecoveryStrategy.RecoveryListener recoveryListener) {
       return new CustomRecoveryStrategy(cc, cd, recoveryListener);
     }
   }
-
 }

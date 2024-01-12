@@ -16,18 +16,24 @@
  */
 package org.apache.solr.cloud;
 
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.cloud.TestPullReplica.assertNumberOfReplicas;
+import static org.apache.solr.cloud.TestPullReplica.assertUlogPresence;
+import static org.apache.solr.cloud.TestPullReplica.waitForDeletion;
+import static org.apache.solr.cloud.TestPullReplica.waitForNumDocsInAllReplicas;
+import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
+
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -43,15 +49,6 @@ import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.cloud.TestPullReplica.assertNumberOfReplicas;
-import static org.apache.solr.cloud.TestPullReplica.assertUlogPresence;
-import static org.apache.solr.cloud.TestPullReplica.waitForDeletion;
-import static org.apache.solr.cloud.TestPullReplica.waitForNumDocsInAllReplicas;
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
-
-@Slow
 public class TestPullReplicaWithAuth extends SolrCloudTestCase {
 
   private static final String USER = "solr";
@@ -60,15 +57,25 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
-    final String SECURITY_JSON = Utils.toJSONString
-        (Map.of("authorization",
-            Map.of("class", RuleBasedAuthorizationPlugin.class.getName(),
-                "user-role", singletonMap(USER, "admin"),
-                "permissions", singletonList(Map.of("name", "all", "role", "admin"))),
-            "authentication",
-            Map.of("class", BasicAuthPlugin.class.getName(),
-                "blockUnknown", true,
-                "credentials", singletonMap(USER, getSaltedHashedValue(PASS)))));
+    final String SECURITY_JSON =
+        Utils.toJSONString(
+            Map.of(
+                "authorization",
+                Map.of(
+                    "class",
+                    RuleBasedAuthorizationPlugin.class.getName(),
+                    "user-role",
+                    singletonMap(USER, "admin"),
+                    "permissions",
+                    singletonList(Map.of("name", "all", "role", "admin"))),
+                "authentication",
+                Map.of(
+                    "class",
+                    BasicAuthPlugin.class.getName(),
+                    "blockUnknown",
+                    true,
+                    "credentials",
+                    singletonMap(USER, getSaltedHashedValue(PASS)))));
 
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
@@ -81,17 +88,22 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
     return req;
   }
 
-  private QueryResponse queryWithBasicAuth(HttpSolrClient client, SolrQuery q) throws IOException, SolrServerException {
+  private QueryResponse queryWithBasicAuth(SolrClient client, SolrQuery q)
+      throws IOException, SolrServerException {
     return withBasicAuth(new QueryRequest(q)).process(client);
   }
 
   @Test
   public void testPKIAuthWorksForPullReplication() throws Exception {
     int numPullReplicas = 2;
-    withBasicAuth(CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas))
+    withBasicAuth(
+            CollectionAdminRequest.createCollection(
+                collectionName, "conf", 1, 1, 0, numPullReplicas))
         .processAndWait(cluster.getSolrClient(), 10);
-    waitForState("Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas",
-        collectionName, clusterShape(1, numPullReplicas + 1));
+    waitForState(
+        "Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas",
+        collectionName,
+        clusterShape(1, numPullReplicas + 1));
     DocCollection docCollection =
         assertNumberOfReplicas(collectionName, 1, 0, numPullReplicas, false, true);
 
@@ -105,27 +117,35 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
       ureq.commit(solrClient, collectionName);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
-        assertEquals(numDocs, queryWithBasicAuth(leaderClient, new SolrQuery("*:*")).getResults().getNumFound());
+      try (SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+        assertEquals(
+            numDocs,
+            queryWithBasicAuth(leaderClient, new SolrQuery("*:*")).getResults().getNumFound());
       }
 
       List<Replica> pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
       waitForNumDocsInAllReplicas(numDocs, pullReplicas, "*:*", USER, PASS);
 
       for (Replica r : pullReplicas) {
-        try (HttpSolrClient pullReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
-          QueryResponse statsResponse = queryWithBasicAuth(pullReplicaClient, new SolrQuery("qt", "/admin/plugins", "stats", "true"));
-          // adds is a gauge, which is null for PULL replicas
-          assertNull("Replicas shouldn't process the add document request: " + statsResponse,
+        try (SolrClient pullReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
+          QueryResponse statsResponse =
+              queryWithBasicAuth(
+                  pullReplicaClient, new SolrQuery("qt", "/admin/plugins", "stats", "true"));
+          // the 'adds' metric is a gauge, which is null for PULL replicas
+          assertNull(
+              "Replicas shouldn't process the add document request: " + statsResponse,
               getUpdateHandlerMetric(statsResponse, "UPDATE.updateHandler.adds"));
-          assertEquals("Replicas shouldn't process the add document request: " + statsResponse,
-              0L, getUpdateHandlerMetric(statsResponse, "UPDATE.updateHandler.cumulativeAdds.count"));
+          assertEquals(
+              "Replicas shouldn't process the add document request: " + statsResponse,
+              0L,
+              getUpdateHandlerMetric(statsResponse, "UPDATE.updateHandler.cumulativeAdds.count"));
         }
       }
     }
 
     CollectionAdminResponse response =
-        withBasicAuth(CollectionAdminRequest.reloadCollection(collectionName)).process(cluster.getSolrClient());
+        withBasicAuth(CollectionAdminRequest.reloadCollection(collectionName))
+            .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
     assertUlogPresence(docCollection);
 
@@ -133,26 +153,36 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
     Slice s = docCollection.getSlices().iterator().next();
     List<Replica> pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
     assertEquals(numPullReplicas, pullReplicas.size());
-    response = withBasicAuth(CollectionAdminRequest.addReplicaToShard(collectionName, s.getName(), Replica.Type.PULL)).process(cluster.getSolrClient());
+    response =
+        withBasicAuth(
+                CollectionAdminRequest.addReplicaToShard(
+                    collectionName, s.getName(), Replica.Type.PULL))
+            .process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
 
     numPullReplicas = numPullReplicas + 1; // added a PULL
-    waitForState("Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas",
-        collectionName, clusterShape(1, numPullReplicas + 1));
+    waitForState(
+        "Expected collection to be created with 1 shard and " + (numPullReplicas + 1) + " replicas",
+        collectionName,
+        clusterShape(1, numPullReplicas + 1));
 
-    docCollection =
-        assertNumberOfReplicas(collectionName, 1, 0, numPullReplicas, false, true);
+    docCollection = assertNumberOfReplicas(collectionName, 1, 0, numPullReplicas, false, true);
     s = docCollection.getSlices().iterator().next();
     pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
     assertEquals(numPullReplicas, pullReplicas.size());
     waitForNumDocsInAllReplicas(numDocs, pullReplicas, "*:*", USER, PASS);
 
-    withBasicAuth(CollectionAdminRequest.deleteCollection(collectionName)).process(cluster.getSolrClient());
+    withBasicAuth(CollectionAdminRequest.deleteCollection(collectionName))
+        .process(cluster.getSolrClient());
     waitForDeletion(collectionName);
   }
 
   @SuppressWarnings("unchecked")
   private Object getUpdateHandlerMetric(QueryResponse statsResponse, String metric) {
-    return ((Map<String, Object>) statsResponse.getResponse().findRecursive("plugins", "UPDATE", "updateHandler", "stats")).get(metric);
+    return ((Map<String, Object>)
+            statsResponse
+                .getResponse()
+                .findRecursive("plugins", "UPDATE", "updateHandler", "stats"))
+        .get(metric);
   }
 }

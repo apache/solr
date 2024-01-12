@@ -17,10 +17,11 @@
 
 package org.apache.solr.handler.designer;
 
+import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
+
 import java.io.File;
 import java.util.Collections;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -32,16 +33,17 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
-
-public class TestSchemaDesignerSettingsDAO extends SolrCloudTestCase implements SchemaDesignerConstants {
+public class TestSchemaDesignerSettingsDAO extends SolrCloudTestCase
+    implements SchemaDesignerConstants {
 
   private CoreContainer cc;
 
   @BeforeClass
   public static void createCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
-    configureCluster(1).addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath()).configure();
+    configureCluster(1)
+        .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
+        .configure();
   }
 
   @AfterClass
@@ -65,35 +67,50 @@ public class TestSchemaDesignerSettingsDAO extends SolrCloudTestCase implements 
     String configSet = DEFAULT_CONFIGSET_NAME;
 
     SolrResponse rsp =
-        CollectionAdminRequest.createCollection(collection, configSet, 1, 1).process(cluster.getSolrClient());
+        CollectionAdminRequest.createCollection(collection, configSet, 1, 1)
+            .process(cluster.getSolrClient());
     CollectionsHandler.waitForActiveCollection(collection, cc, rsp);
 
-    SchemaDesignerSettingsDAO dao = new SchemaDesignerSettingsDAO(cc);
+    SchemaDesignerConfigSetHelper csh = new SchemaDesignerConfigSetHelper(cc, null);
+    SchemaDesignerSettingsDAO dao = new SchemaDesignerSettingsDAO(cc, csh);
     SchemaDesignerSettings settings = dao.getSettings(configSet);
     assertNotNull(settings);
 
-    Map<String, Object> expSettings = Map.of(
-        DESIGNER_KEY + ENABLE_DYNAMIC_FIELDS_PARAM, true,
-        AUTO_CREATE_FIELDS, true,
-        DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM, false,
-        DESIGNER_KEY + LANGUAGES_PARAM, Collections.emptyList());
+    Map<String, Object> expSettings =
+        Map.of(
+            DESIGNER_KEY + ENABLE_DYNAMIC_FIELDS_PARAM,
+            true,
+            AUTO_CREATE_FIELDS,
+            true,
+            DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM,
+            false,
+            DESIGNER_KEY + LANGUAGES_PARAM,
+            Collections.emptyList());
 
     assertDesignerSettings(expSettings, settings);
     settings.setDisabled(false);
     settings.setCopyFrom("foo");
 
-    assertTrue("updated settings should have changed in ZK", dao.persistIfChanged(configSet, settings));
+    assertTrue(
+        "updated settings should have changed in ZK", dao.persistIfChanged(configSet, settings));
 
     settings = dao.getSettings(configSet);
     assertNotNull(settings);
 
-    expSettings = Map.of(
-        DESIGNER_KEY + DISABLED, false,
-        DESIGNER_KEY + COPY_FROM_PARAM, "foo",
-        DESIGNER_KEY + ENABLE_DYNAMIC_FIELDS_PARAM, true,
-        AUTO_CREATE_FIELDS, true,
-        DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM, false,
-        DESIGNER_KEY + LANGUAGES_PARAM, Collections.emptyList());
+    expSettings =
+        Map.of(
+            DESIGNER_KEY + DISABLED,
+            false,
+            DESIGNER_KEY + COPY_FROM_PARAM,
+            "foo",
+            DESIGNER_KEY + ENABLE_DYNAMIC_FIELDS_PARAM,
+            true,
+            AUTO_CREATE_FIELDS,
+            true,
+            DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM,
+            false,
+            DESIGNER_KEY + LANGUAGES_PARAM,
+            Collections.emptyList());
     assertDesignerSettings(expSettings, settings);
     assertFalse("should not be disabled", dao.isDesignerDisabled(configSet));
 
@@ -104,27 +121,36 @@ public class TestSchemaDesignerSettingsDAO extends SolrCloudTestCase implements 
     settings.setFieldGuessingEnabled(false);
     settings.setLanguages(Collections.singletonList("en"));
 
-    assertTrue("updated settings should have changed in ZK", dao.persistIfChanged(configSet, settings));
+    assertTrue(
+        "updated settings should have changed in ZK", dao.persistIfChanged(configSet, settings));
     settings = dao.getSettings(configSet);
     assertNotNull(settings);
 
-    expSettings = Map.of(
-        DESIGNER_KEY + DISABLED, true,
-        DESIGNER_KEY + COPY_FROM_PARAM, "bar",
-        DESIGNER_KEY + ENABLE_DYNAMIC_FIELDS_PARAM, false,
-        AUTO_CREATE_FIELDS, false,
-        DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM, true,
-        DESIGNER_KEY + LANGUAGES_PARAM, Collections.singletonList("en"));
+    expSettings =
+        Map.of(
+            DESIGNER_KEY + DISABLED,
+            true,
+            DESIGNER_KEY + COPY_FROM_PARAM,
+            "bar",
+            DESIGNER_KEY + ENABLE_DYNAMIC_FIELDS_PARAM,
+            false,
+            AUTO_CREATE_FIELDS,
+            false,
+            DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM,
+            true,
+            DESIGNER_KEY + LANGUAGES_PARAM,
+            Collections.singletonList("en"));
     assertDesignerSettings(expSettings, settings);
     assertTrue("should be disabled", dao.isDesignerDisabled(configSet));
 
     // handles booleans stored as strings in the overlay
-    Map<String,Object> stored = Map.of(AUTO_CREATE_FIELDS, "false");
+    Map<String, Object> stored = Map.of(AUTO_CREATE_FIELDS, "false");
     settings = new SchemaDesignerSettings(stored);
     assertFalse(settings.fieldGuessingEnabled());
   }
 
-  protected void assertDesignerSettings(Map<String, Object> expectedMap, SchemaDesignerSettings actual) {
+  protected void assertDesignerSettings(
+      Map<String, Object> expectedMap, SchemaDesignerSettings actual) {
     assertEquals(new SchemaDesignerSettings(expectedMap), actual);
   }
 }

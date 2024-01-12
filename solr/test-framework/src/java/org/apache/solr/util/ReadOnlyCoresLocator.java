@@ -47,4 +47,9 @@ public abstract class ReadOnlyCoresLocator implements CoresLocator {
     // no-op
   }
 
+  @Override
+  public CoreDescriptor reload(CoreDescriptor cd, CoreContainer cc) {
+    // no-op
+    return cd;
+  }
 }

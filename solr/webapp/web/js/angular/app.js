@@ -135,6 +135,10 @@ solrAdminApp.config([
         templateUrl: 'partials/documents.html',
         controller: 'DocumentsController'
       }).
+      when('/:core/paramsets', {
+        templateUrl: 'partials/paramsets.html',
+        controller: 'ParamSetsController'
+      }).
       when('/:core/files', {
         templateUrl: 'partials/files.html',
         controller: 'FilesController'
@@ -492,6 +496,11 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
       $scope.aliases = [];
   }
 
+  $scope.permissions = permissions;
+  $scope.isPermitted = function (permissions) {
+    return hasAllRequiredPermissions(permissions, $scope.usersPermissions);
+  }
+
   $scope.refresh();
   $scope.resetMenu = function(page, pageType) {
     Cores.list(function(data) {
@@ -512,9 +521,17 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
       $scope.initFailures = data.initFailures;
     });
 
-    $scope.isSchemaDesignerEnabled = true;
     System.get(function(data) {
       $scope.isCloudEnabled = data.mode.match( /solrcloud/i );
+      $scope.usersPermissions = data.security.permissions;
+      $scope.isSecurityEnabled = $scope.authenticationPlugin != null;
+
+      $scope.isSchemaDesignerEnabled = $scope.isPermitted([
+        permissions.CONFIG_EDIT_PERM,
+        permissions.SCHEMA_EDIT_PERM,
+        permissions.READ_PERM,
+        permissions.UPDATE_PERM
+      ]);
 
       var currentCollectionName = $route.current.params.core;
       delete $scope.currentCollection;
@@ -550,14 +567,6 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
               $scope.aliases_and_collections = $scope.aliases_and_collections.concat({name:'-----'});
             }
             $scope.aliases_and_collections = $scope.aliases_and_collections.concat($scope.collections);
-
-            SchemaDesigner.get({path: "configs"}, function (ignore) {
-              // no-op, just checking if we have access to this path
-            }, function(e) {
-              if (e.status === 401 || e.status === 403) {
-                $scope.isSchemaDesignerEnabled = false;
-              }
-            });
           });
         });
       }
@@ -580,6 +589,10 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     $scope.showingCloud = page.lastIndexOf("cloud", 0) === 0;
     $scope.page = page;
     $scope.currentUser = sessionStorage.getItem("auth.username");
+    $scope.http401 = sessionStorage.getItem("http401");
+  };
+
+  $scope.showHideMenu = function() {
     $scope.http401 = sessionStorage.getItem("http401");
   };
 

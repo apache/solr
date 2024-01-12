@@ -22,8 +22,8 @@ import java.io.Writer;
 import java.util.Arrays;
 
 /**
- * Use this to serialize an object into Json. This only supports standard Objects
- * and not the server-side Objects
+ * Use this to serialize an object into Json. This only supports standard Objects and not the
+ * server-side Objects
  */
 public class SolrJSONWriter implements JsonTextWriter {
   // indent up to 40 spaces
@@ -31,10 +31,10 @@ public class SolrJSONWriter implements JsonTextWriter {
 
   static {
     Arrays.fill(indentChars, ' ');
-    indentChars[0] = '\n';  // start with a newline
+    indentChars[0] = '\n'; // start with a newline
   }
 
-  final protected String namedListStyle;
+  protected final String namedListStyle;
   final FastWriter writer;
   protected int level;
   protected boolean doIndent;
@@ -53,13 +53,11 @@ public class SolrJSONWriter implements JsonTextWriter {
     return this;
   }
 
-  /**
-   * done with all writing
-   */
+  /** done with all writing */
+  @Override
   public void close() throws IOException {
     if (writer != null) writer.flushBuffer();
   }
-
 
   @Override
   public String getNamedListStyle() {
@@ -76,11 +74,11 @@ public class SolrJSONWriter implements JsonTextWriter {
     writer.write(s);
   }
 
-
   public void setLevel(int level) {
     this.level = level;
   }
 
+  @Override
   public int level() {
     return level;
   }
@@ -110,5 +108,4 @@ public class SolrJSONWriter implements JsonTextWriter {
   public Writer getWriter() {
     return writer;
   }
-
 }

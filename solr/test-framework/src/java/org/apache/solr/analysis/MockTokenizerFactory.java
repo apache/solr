@@ -18,15 +18,12 @@ package org.apache.solr.analysis;
 
 import java.util.Arrays;
 import java.util.Map;
-
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenizerFactory;
+import org.apache.lucene.tests.analysis.MockTokenizer;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
-/**
- * Factory for {@link MockTokenizer} for testing purposes.
- */
+/** Factory for {@link MockTokenizer} for testing purposes. */
 public class MockTokenizerFactory extends TokenizerFactory {
 
   /** SPI name */
@@ -34,9 +31,9 @@ public class MockTokenizerFactory extends TokenizerFactory {
 
   final CharacterRunAutomaton pattern;
   final boolean enableChecks;
-  
+
   /** Creates a new MockTokenizerFactory */
-  public MockTokenizerFactory(Map<String,String> args) {
+  public MockTokenizerFactory(Map<String, String> args) {
     super(args);
     String patternArg = get(args, "pattern", Arrays.asList("keyword", "simple", "whitespace"));
     if ("keyword".equalsIgnoreCase(patternArg)) {
@@ -46,7 +43,7 @@ public class MockTokenizerFactory extends TokenizerFactory {
     } else {
       pattern = MockTokenizer.WHITESPACE;
     }
-    
+
     enableChecks = getBoolean(args, "enableChecks", true);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

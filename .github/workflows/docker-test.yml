@@ -7,7 +7,7 @@ on:
     paths:
       - '.github/workflows/docker-test.yml'
       - 'solr/bin/**'
-      - 'solr/contrib/prometheus-exporter/bin/**'
+      - 'solr/prometheus-exporter/bin/**'
       - 'solr/docker/**'
       - 'solr/packaging/**'
 
@@ -20,14 +20,17 @@ jobs:
     env:
       SOLR_DOCKER_IMAGE_REPO: github-pr/solr
       SOLR_DOCKER_IMAGE_TAG: ${{github.event.number}}
+      GRADLE_ENTERPRISE_ACCESS_KEY: ${{ secrets.GE_ACCESS_TOKEN }}
 
     steps:
     # Setup
     - uses: actions/checkout@v2
     - name: Set up JDK 11
-      uses: actions/setup-java@v1
+      uses: actions/setup-java@v2
       with:
+        distribution: 'temurin'
         java-version: 11
+        java-package: jdk
     - name: Install ACL
       run: sudo apt-get install acl
     - name: Grant execute permission for gradlew
@@ -40,8 +43,6 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-docker-
           ${{ runner.os }}-gradle-
-    - name: Initialize gradle settings
-      run: ./gradlew localSettings
     - name: Build Docker image with Gradle
       run: ./gradlew solr:docker:docker
     - name: Run tests on Docker image

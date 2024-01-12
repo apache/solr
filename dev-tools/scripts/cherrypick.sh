@@ -166,6 +166,7 @@ for BRANCH in "${BRANCHES[@]}"; do
     fi
     if yesno "Have you resolved the merge conflict? (y/n) "; then
       LOG INFO "Continuing..."
+      $GIT_COMMAND cherry-pick --continue
     else
       if yesno "Clean up by aborting the cherry-pick? (y/n) "; then
         $GIT_COMMAND cherry-pick --abort
@@ -196,11 +197,15 @@ for BRANCH in "${BRANCHES[@]}"; do
       LOG "WARN" "Cannot auto push if tests are disabled"
       exit 1
     fi
+    if [[ -z "$REMOTE" ]]; then
+      LOG "WARN" "Remote not specified, attempting to auto detect"
+      REMOTE=$(git config --get "branch.$BRANCH.remote")
+    fi
     LOG "INFO" "Pushing changes to $REMOTE/$BRANCH"
     # shellcheck disable=SC2086
     $GIT_COMMAND push $REMOTE $BRANCH
     if [ $? -gt 0 ]; then
-      LOG "WARN" "PUSH to $REMOTE/$BRANCH failed, please clean up an proceed manually"
+      LOG "WARN" "PUSH to $REMOTE/$BRANCH failed, please clean up and proceed manually"
       exit 2
     fi
     LOG "INFO" "Pushed $BRANCH to remote. Cherry-pick complete."

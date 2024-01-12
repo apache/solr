@@ -17,36 +17,23 @@
 
 package org.apache.solr.client.solrj.response;
 
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.util.Map;
+import org.apache.solr.common.SolrException;
 
-/**
- * Delegation Token responses
- */
+/** Delegation Token responses */
 public abstract class DelegationTokenResponse extends SolrResponseBase {
 
   public static class Get extends DelegationTokenResponse {
 
-    /**
-     * Get the urlString to be used as the delegation token
-     */
+    /** Get the urlString to be used as the delegation token */
     public String getDelegationToken() {
       try {
-        Map<?,?> map = (Map<?,?>)getResponse().get("Token");
+        Map<?, ?> map = (Map<?, ?>) getResponse().get("Token");
         if (map != null) {
-          return (String)map.get("urlString");
+          return (String) map.get("urlString");
         }
       } catch (ClassCastException e) {
-        throw new SolrException (SolrException.ErrorCode.SERVER_ERROR,
-          "parsing error", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
       }
       return null;
     }
@@ -55,57 +42,12 @@ public abstract class DelegationTokenResponse extends SolrResponseBase {
   public static class Renew extends DelegationTokenResponse {
     public Long getExpirationTime() {
       try {
-        return (Long)getResponse().get("long");
+        return (Long) getResponse().get("long");
       } catch (ClassCastException e) {
-        throw new SolrException (SolrException.ErrorCode.SERVER_ERROR,
-          "parsing error", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
       }
     }
   }
 
-  public static class Cancel extends DelegationTokenResponse {
-  }
-
-  /**
-   * ResponseParser for JsonMaps.  Used for Get and Renew DelegationToken responses.
-   */
-  public static class JsonMapResponseParser extends ResponseParser {
-    @Override
-    public String getWriterType() {
-      return "json";
-    }
-
-    @Override
-    @SuppressWarnings({"unchecked"})
-    public NamedList<Object> processResponse(InputStream body, String encoding) {
-      @SuppressWarnings({"rawtypes"})
-      Map map = null;
-      try {
-        ObjectBuilder builder = new ObjectBuilder(
-            new JSONParser(new InputStreamReader(body, encoding == null? "UTF-8": encoding)));
-        map = (Map)builder.getObject();
-      } catch (IOException | JSONParser.ParseException e) {
-        throw new SolrException (SolrException.ErrorCode.SERVER_ERROR,
-          "parsing error", e);
-      }
-      NamedList<Object> list = new NamedList<Object>();
-      list.addAll(map);
-      return list;
-    }
-
-    @Override
-    public NamedList<Object> processResponse(Reader reader) {
-      throw new RuntimeException("Cannot handle character stream");
-    }
-
-    @Override
-    public String getContentType() {
-      return "application/json";
-    }
-
-    @Override
-    public String getVersion() {
-      return "1";
-    }
-  }
+  public static class Cancel extends DelegationTokenResponse {}
 }

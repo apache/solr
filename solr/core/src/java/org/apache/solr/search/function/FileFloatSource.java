@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
@@ -59,7 +58,6 @@ import org.slf4j.LoggerFactory;
  * @see org.apache.solr.schema.ExternalFileField
  * @see org.apache.solr.schema.ExternalFileFieldReloader
  */
-
 public class FileFloatSource extends ValueSource {
 
   private SchemaField field;
@@ -71,16 +69,17 @@ public class FileFloatSource extends ValueSource {
 
   /**
    * Creates a new FileFloatSource
+   *
    * @param field the source's SchemaField
    * @param keyField the field to use as a key
    * @param defVal the default value to use if a field has no entry in the external file
-   * @param datadir the directory in which to look for the external file
+   * @param dataDir the directory in which to look for the external file
    */
-  public FileFloatSource(SchemaField field, SchemaField keyField, float defVal, String datadir) {
+  public FileFloatSource(SchemaField field, SchemaField keyField, float defVal, String dataDir) {
     this.field = field;
     this.keyField = keyField;
     this.defVal = defVal;
-    this.dataDir = datadir;
+    this.dataDir = dataDir;
   }
 
   @Override
@@ -89,7 +88,8 @@ public class FileFloatSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     final int off = readerContext.docBase;
     IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(readerContext);
 
@@ -102,45 +102,49 @@ public class FileFloatSource extends ValueSource {
 
       @Override
       public Object objectVal(int doc) {
-        return floatVal(doc);   // TODO: keep track of missing values
+        return floatVal(doc); // TODO: keep track of missing values
       }
     };
   }
 
   @Override
   public boolean equals(Object o) {
-    if (o.getClass() !=  FileFloatSource.class) return false;
-    FileFloatSource other = (FileFloatSource)o;
+    if (!(o instanceof FileFloatSource)) return false;
+    FileFloatSource other = (FileFloatSource) o;
     return this.field.getName().equals(other.field.getName())
-            && this.keyField.getName().equals(other.keyField.getName())
-            && this.defVal == other.defVal
-            && this.dataDir.equals(other.dataDir);
+        && this.keyField.getName().equals(other.keyField.getName())
+        && this.defVal == other.defVal
+        && this.dataDir.equals(other.dataDir);
   }
 
   @Override
   public int hashCode() {
     return FileFloatSource.class.hashCode() + field.getName().hashCode();
-  };
+  }
+  ;
 
   @Override
   public String toString() {
-    return "FileFloatSource(field="+field.getName()+",keyField="+keyField.getName()
-            + ",defVal="+defVal+",dataDir="+dataDir+")";
-
+    return "FileFloatSource(field="
+        + field.getName()
+        + ",keyField="
+        + keyField.getName()
+        + ",defVal="
+        + defVal
+        + ",dataDir="
+        + dataDir
+        + ")";
   }
 
-  /**
-   * Remove all cached entries.  Values are lazily loaded next time getValues() is
-   * called.
-   */
-  public static void resetCache(){
+  /** Remove all cached entries. Values are lazily loaded next time getValues() is called. */
+  public static void resetCache() {
     floatCache.resetCache();
   }
 
   /**
-   * Refresh the cache for an IndexReader.  The new values are loaded in the background
-   * and then swapped in, so queries against the cache should not block while the reload
-   * is happening.
+   * Refresh the cache for an IndexReader. The new values are loaded in the background and then
+   * swapped in, so queries against the cache should not block while the reload is happening.
+   *
    * @param reader the IndexReader whose cache needs refreshing
    */
   public void refreshCache(IndexReader reader) {
@@ -154,15 +158,16 @@ public class FileFloatSource extends ValueSource {
   }
 
   private final float[] getCachedFloats(IndexReader reader) {
-    return (float[])floatCache.get(reader, new Entry(this));
+    return (float[]) floatCache.get(reader, new Entry(this));
   }
 
-  static Cache floatCache = new Cache() {
-    @Override
-    protected Object createValue(IndexReader reader, Object key) {
-      return getFloats(((Entry)key).ffs, reader);
-    }
-  };
+  static Cache floatCache =
+      new Cache() {
+        @Override
+        protected Object createValue(IndexReader reader, Object key) {
+          return getFloats(((Entry) key).ffs, reader);
+        }
+      };
 
   /** Internal cache. (from lucene FieldCache) */
   abstract static class Cache {
@@ -211,9 +216,9 @@ public class FileFloatSource extends ValueSource {
 
       return value;
     }
-    
-    public void resetCache(){
-      synchronized(readerCache){
+
+    public void resetCache() {
+      synchronized (readerCache) {
         // Map.clear() is optional and can throw UnsupportedOperationException,
         // but readerCache is WeakHashMap and it supports clear().
         readerCache.clear();
@@ -227,9 +232,10 @@ public class FileFloatSource extends ValueSource {
     Object value;
   }
 
-    /** Expert: Every composite-key in the internal cache is of this type. */
+  /** Expert: Every composite-key in the internal cache is of this type. */
   private static class Entry {
     final FileFloatSource ffs;
+
     public Entry(FileFloatSource ffs) {
       this.ffs = ffs;
     }
@@ -237,7 +243,7 @@ public class FileFloatSource extends ValueSource {
     @Override
     public boolean equals(Object o) {
       if (!(o instanceof Entry)) return false;
-      Entry other = (Entry)o;
+      Entry other = (Entry) o;
       return ffs.equals(other.ffs);
     }
 
@@ -246,8 +252,6 @@ public class FileFloatSource extends ValueSource {
       return ffs.hashCode();
     }
   }
-
-
 
   private static float[] getFloats(FileFloatSource ffs, IndexReader reader) {
     float[] vals = new float[reader.maxDoc()];
@@ -274,10 +278,10 @@ public class FileFloatSource extends ValueSource {
     // trying to use skipTo()
 
     List<String> notFound = new ArrayList<>();
-    int notFoundCount=0;
-    int otherErrors=0;
+    int notFoundCount = 0;
+    int otherErrors = 0;
 
-    char delimiter='=';
+    char delimiter = '=';
 
     BytesRefBuilder internalKey = new BytesRefBuilder();
 
@@ -288,28 +292,31 @@ public class FileFloatSource extends ValueSource {
       // removing deleted docs shouldn't matter
       // final Bits liveDocs = MultiLeafReader.getLiveDocs(reader);
 
-      for (String line; (line=r.readLine())!=null;) {
+      for (String line; (line = r.readLine()) != null; ) {
         int delimIndex = line.lastIndexOf(delimiter);
         if (delimIndex < 0) continue;
 
         int endIndex = line.length();
         String key = line.substring(0, delimIndex);
-        String val = line.substring(delimIndex+1, endIndex);
+        String val = line.substring(delimIndex + 1, endIndex);
 
         float fval;
         try {
           idType.readableToIndexed(key, internalKey);
-          fval=Float.parseFloat(val);
+          fval = Float.parseFloat(val);
         } catch (Exception e) {
-          if (++otherErrors<=10) {
-            log.error("Error loading external value source + fileName + {}{}", e
-                , (otherErrors < 10 ? "" : "\tSkipping future errors for this file."));
+          if (++otherErrors <= 10) {
+            log.error(
+                "Error loading external value source: {} {}{}",
+                fname,
+                e,
+                (otherErrors < 10 ? "" : "\tSkipping future errors for this file."));
           }
-          continue;  // go to next line in file.. leave values as default.
+          continue; // go to next line in file.. leave values as default.
         }
 
         if (!termsEnum.seekExact(internalKey.get())) {
-          if (notFoundCount<10) {  // collect first 10 not found for logging
+          if (notFoundCount < 10) { // collect first 10 not found for logging
             notFound.add(key);
           }
           notFoundCount++;
@@ -329,7 +336,10 @@ public class FileFloatSource extends ValueSource {
     } finally {
       // swallow exceptions on close so we don't override any
       // exceptions that happened in the loop
-      try{r.close();}catch(Exception e){}
+      try {
+        r.close();
+      } catch (Exception e) {
+      }
     }
     if (log.isInfoEnabled()) {
       String tmp = (notFoundCount == 0 ? "" : " :" + notFoundCount + " missing keys " + notFound);
@@ -342,12 +352,12 @@ public class FileFloatSource extends ValueSource {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp)
-        throws Exception {
+    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
       FileFloatSource.resetCache();
       log.debug("readerCache has been reset.");
 
-      UpdateRequestProcessor processor = req.getCore().getUpdateProcessingChain(null).createProcessor(req, rsp);
+      UpdateRequestProcessor processor =
+          req.getCore().getUpdateProcessingChain(null).createProcessor(req, rsp);
       try {
         RequestHandlerUtils.handleCommit(req, processor, req.getParams(), true);
       } finally {

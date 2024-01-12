@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -32,8 +31,9 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.junit.Test;
 
+@SolrTestCaseJ4.SuppressSSL
 public class SliceStateTest extends SolrTestCaseJ4 {
-  
+
   @Test
   public void testDefaultSliceState() {
     Map<String, DocCollection> collectionStates = new HashMap<>();
@@ -43,8 +43,10 @@ public class SliceStateTest extends SolrTestCaseJ4 {
     Map<String, Slice> slices = new HashMap<>();
     Map<String, Replica> sliceToProps = new HashMap<>();
     Map<String, Object> props = new HashMap<>();
-    props.put("node_name", "127.0.0.1:10000_solr");
-    props.put("core", "core1");
+    String nodeName = "127.0.0.1:10000_solr";
+    props.put(ZkStateReader.NODE_NAME_PROP, nodeName);
+    props.put(ZkStateReader.BASE_URL_PROP, Utils.getBaseUrlForNodeName(nodeName, "http"));
+    props.put(ZkStateReader.CORE_NAME_PROP, "core1");
     props.put(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME);
 
     Replica replica = new Replica("node1", props, "collection1", "shard1");
@@ -52,12 +54,16 @@ public class SliceStateTest extends SolrTestCaseJ4 {
     Slice slice = new Slice("shard1", sliceToProps, null, "collection1");
     assertSame("Default state not set to active", Slice.State.ACTIVE, slice.getState());
     slices.put("shard1", slice);
-    collectionStates.put("collection1", new DocCollection("collection1", slices, props, DocRouter.DEFAULT));
+    collectionStates.put(
+        "collection1", new DocCollection("collection1", slices, props, DocRouter.DEFAULT));
 
     ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
     byte[] bytes = Utils.toJSON(clusterState);
-    ClusterState loadedClusterState = ClusterState.createFromJson(-1, bytes, liveNodes);
+    ClusterState loadedClusterState = ClusterState.createFromJson(-1, bytes, liveNodes, null);
 
-    assertSame("Default state not set to active", Slice.State.ACTIVE, loadedClusterState.getCollection("collection1").getSlice("shard1").getState());
+    assertSame(
+        "Default state not set to active",
+        Slice.State.ACTIVE,
+        loadedClusterState.getCollection("collection1").getSlice("shard1").getState());
   }
 }

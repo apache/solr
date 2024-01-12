@@ -18,14 +18,13 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.util.List;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -35,7 +34,7 @@ import org.junit.Test;
 @SolrTestCaseJ4.SuppressSSL
 public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
   private static final int MAX_BUFFERED_DOCS = 2, ULOG_NUM_RECORDS_TO_KEEP = 2;
-  private final boolean onlyLeaderIndexes = random().nextBoolean();
+
   public RecoveryAfterSoftCommitTest() {
     sliceCount = 1;
     fixShardCount(2);
@@ -43,7 +42,9 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
   @Override
   protected boolean useTlogReplicas() {
-    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's TestInjection use
+    // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's
+    // TestInjection use
+    return false;
   }
 
   @BeforeClass
@@ -55,22 +56,25 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
   }
 
   @AfterClass
-  public static void afterTest()  {
+  public static void afterTest() {
     System.clearProperty("solr.tests.maxBufferedDocs");
     System.clearProperty("solr.ulog.numRecordsToKeep");
     System.clearProperty("useCompoundFile");
     TestInjection.reset();
   }
 
-  /**
-   * Overrides the parent implementation to install a SocketProxy in-front of the Jetty server.
-   */
+  /** Overrides the parent implementation to install a SocketProxy in-front of the Jetty server. */
   @Override
-  public JettySolrRunner createJetty(File solrHome, String dataDir,
-                                     String shardList, String solrConfigOverride, String schemaOverride, Replica.Type replicaType)
-      throws Exception
-  {
-    return createProxiedJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, replicaType);
+  public JettySolrRunner createJetty(
+      File solrHome,
+      String dataDir,
+      String shardList,
+      String solrConfigOverride,
+      String schemaOverride,
+      Replica.Type replicaType)
+      throws Exception {
+    return createProxiedJetty(
+        solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, replicaType);
   }
 
   @Test
@@ -78,7 +82,7 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
     waitForRecoveriesToFinish(DEFAULT_COLLECTION, true);
     // flush twice
     int i = 0;
-    for (; i<MAX_BUFFERED_DOCS + 1; i++) {
+    for (; i < MAX_BUFFERED_DOCS + 1; i++) {
       SolrInputDocument document = new SolrInputDocument();
       document.addField("id", String.valueOf(i));
       document.addField("a_t", "text_" + i);
@@ -86,7 +90,8 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
     }
 
     // soft-commit so searchers are open on un-committed but flushed segment files
-    AbstractUpdateRequest request = new UpdateRequest().setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true, true);
+    AbstractUpdateRequest request =
+        new UpdateRequest().setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true, true);
     cloudClient.request(request);
 
     Replica notLeader = ensureAllReplicasAreActive(DEFAULT_COLLECTION, "shard1", 1, 2, 30).get(0);
@@ -115,8 +120,6 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
     proxy.reopen();
 
-    List<Replica> notLeaders =
-        ensureAllReplicasAreActive(DEFAULT_COLLECTION, "shard1", 1, 2, 30);
+    List<Replica> notLeaders = ensureAllReplicasAreActive(DEFAULT_COLLECTION, "shard1", 1, 2, 30);
   }
 }
-

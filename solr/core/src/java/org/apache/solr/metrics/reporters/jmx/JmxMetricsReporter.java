@@ -16,6 +16,27 @@
  */
 package org.apache.solr.metrics.reporters.jmx;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metered;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.MetricRegistryListener;
+import com.codahale.metrics.Reporter;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.jmx.DefaultObjectNameFactory;
+import com.codahale.metrics.jmx.ObjectNameFactory;
+import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import javax.management.Attribute;
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.InstanceNotFoundException;
@@ -26,41 +47,21 @@ import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 import javax.management.Query;
 import javax.management.QueryExp;
-import java.io.Closeable;
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.jmx.DefaultObjectNameFactory;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Metered;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.MetricRegistryListener;
-import com.codahale.metrics.jmx.ObjectNameFactory;
-import com.codahale.metrics.Reporter;
-import com.codahale.metrics.Timer;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This is a modified copy of Dropwizard's {@link com.codahale.metrics.jmx.JmxReporter} and classes that it internally uses,
- * with a few important differences:
+ * This is a modified copy of Dropwizard's {@link com.codahale.metrics.jmx.JmxReporter} and classes
+ * that it internally uses, with a few important differences:
+ *
  * <ul>
- * <li>this class knows that it can directly use {@link MetricsMap} as a dynamic MBean.</li>
- * <li>this class allows us to "tag" MBean instances so that we can later unregister only instances registered with the
- * same tag.</li>
- * <li>this class processes all metrics already existing in the registry at the time when reporter is started.</li>
+ *   <li>this class knows that it can directly use {@link MetricsMap} as a dynamic MBean.
+ *   <li>this class allows us to "tag" MBean instances so that we can later unregister only
+ *       instances registered with the same tag.
+ *   <li>this class processes all metrics already existing in the registry at the time when reporter
+ *       is started.
  * </ul>
  */
 public class JmxMetricsReporter implements Reporter, Closeable {
@@ -72,9 +73,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
     return new Builder(registry);
   }
 
-  /**
-   * Builder for the {@link JmxMetricsReporter} class.
-   */
+  /** Builder for the {@link JmxMetricsReporter} class. */
   public static class Builder {
     private final MetricRegistry registry;
     private MBeanServer mBeanServer;
@@ -96,7 +95,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
     /**
      * Register MBeans with the given {@link MBeanServer}.
      *
-     * @param mBeanServer     an {@link MBeanServer}
+     * @param mBeanServer an {@link MBeanServer}
      * @return {@code this}
      */
     public Builder registerWith(MBeanServer mBeanServer) {
@@ -116,7 +115,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
     }
 
     public Builder createsObjectNamesWith(ObjectNameFactory onFactory) {
-      if(onFactory == null) {
+      if (onFactory == null) {
         throw new IllegalArgumentException("null objectNameFactory");
       }
       this.objectNameFactory = onFactory;
@@ -159,18 +158,18 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       if (tag == null) {
         tag = Integer.toHexString(this.hashCode());
       }
-      return new JmxMetricsReporter(mBeanServer, domain, registry, filter, rateUnit, durationUnit, objectNameFactory, tag);
+      return new JmxMetricsReporter(
+          mBeanServer, domain, registry, filter, rateUnit, durationUnit, objectNameFactory, tag);
     }
-
   }
 
   // MBean interfaces and base classes
   public interface MetricMBean {
     ObjectName objectName();
+
     // this strange-looking method name is used for producing "_instanceTag" attribute name
     String get_instanceTag();
   }
-
 
   private abstract static class AbstractBean implements MetricMBean {
     private final ObjectName objectName;
@@ -324,6 +323,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       return metric.getSnapshot().getValues();
     }
 
+    @Override
     public long getSnapshotSize() {
       return metric.getSnapshot().size();
     }
@@ -413,6 +413,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
     double get999thPercentile();
 
     long[] values();
+
     String getDurationUnit();
   }
 
@@ -421,10 +422,8 @@ public class JmxMetricsReporter implements Reporter, Closeable {
     private final double durationFactor;
     private final String durationUnit;
 
-    private JmxTimer(Timer metric,
-                     ObjectName objectName,
-                     TimeUnit rateUnit,
-                     TimeUnit durationUnit, String tag) {
+    private JmxTimer(
+        Timer metric, ObjectName objectName, TimeUnit rateUnit, TimeUnit durationUnit, String tag) {
       super(metric, objectName, rateUnit, tag);
       this.metric = metric;
       this.durationFactor = 1.0 / durationUnit.toNanos(1);
@@ -504,8 +503,14 @@ public class JmxMetricsReporter implements Reporter, Closeable {
     private final String tag;
     private final QueryExp exp;
 
-    private JmxListener(MBeanServer mBeanServer, String name, MetricFilter filter, TimeUnit rateUnit, TimeUnit durationUnit,
-                        ObjectNameFactory objectNameFactory, String tag) {
+    private JmxListener(
+        MBeanServer mBeanServer,
+        String name,
+        MetricFilter filter,
+        TimeUnit rateUnit,
+        TimeUnit durationUnit,
+        ObjectNameFactory objectNameFactory,
+        String tag) {
       this.mBeanServer = mBeanServer;
       this.name = name;
       this.filter = filter;
@@ -517,17 +522,23 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       this.exp = Query.eq(Query.attr(INSTANCE_TAG), Query.value(tag));
     }
 
-    private void registerMBean(Object mBean, ObjectName objectName) throws InstanceAlreadyExistsException, JMException {
+    private void registerMBean(Object mBean, ObjectName objectName)
+        throws InstanceAlreadyExistsException, JMException {
       // remove previous bean if exists
       if (mBeanServer.isRegistered(objectName)) {
         if (log.isDebugEnabled()) {
           Set<ObjectInstance> objects = mBeanServer.queryMBeans(objectName, null);
           if (log.isDebugEnabled()) {
-            log.debug("## removing existing {} bean(s) for {}, current tag={}:", objects.size(), objectName.getCanonicalName(), tag);
+            log.debug(
+                "## removing existing {} bean(s) for {}, current tag={}:",
+                objects.size(),
+                objectName.getCanonicalName(),
+                tag);
           }
           for (ObjectInstance inst : objects) {
             if (log.isDebugEnabled()) {
-              log.debug("## - tag={}", mBeanServer.getAttribute(inst.getObjectName(), INSTANCE_TAG));
+              log.debug(
+                  "## - tag={}", mBeanServer.getAttribute(inst.getObjectName(), INSTANCE_TAG));
             }
           }
         }
@@ -543,11 +554,13 @@ public class JmxMetricsReporter implements Reporter, Closeable {
         registered.put(objectName, objectName);
       }
       if (log.isDebugEnabled()) {
-        log.debug("## registered {}, tag={}", objectInstance.getObjectName().getCanonicalName(), tag);
+        log.debug(
+            "## registered {}, tag={}", objectInstance.getObjectName().getCanonicalName(), tag);
       }
     }
 
-    private void unregisterMBean(ObjectName originalObjectName) throws InstanceNotFoundException, MBeanRegistrationException {
+    private void unregisterMBean(ObjectName originalObjectName)
+        throws InstanceNotFoundException, MBeanRegistrationException {
       ObjectName objectName = registered.remove(originalObjectName);
       if (objectName == null) {
         objectName = originalObjectName;
@@ -566,9 +579,9 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       try {
         if (filter.matches(name, gauge)) {
           final ObjectName objectName = createName("gauges", name);
-          if (gauge instanceof SolrMetricManager.GaugeWrapper &&
-              ((SolrMetricManager.GaugeWrapper<?>)gauge).getGauge() instanceof MetricsMap) {
-            MetricsMap mm = (MetricsMap)((SolrMetricManager.GaugeWrapper<?>)gauge).getGauge();
+          if (gauge instanceof SolrMetricManager.GaugeWrapper
+              && ((SolrMetricManager.GaugeWrapper<?>) gauge).getGauge() instanceof MetricsMap) {
+            MetricsMap mm = (MetricsMap) ((SolrMetricManager.GaugeWrapper<?>) gauge).getGauge();
             mm.setAttribute(new Attribute(INSTANCE_TAG, tag));
             // don't wrap it in a JmxGauge, it already supports all necessary JMX attributes
             registerMBean(mm, objectName);
@@ -720,37 +733,41 @@ public class JmxMetricsReporter implements Reporter, Closeable {
   private final MetricRegistry registry;
   private final JmxListener listener;
 
-  private JmxMetricsReporter(MBeanServer mBeanServer,
-                             String domain,
-                             MetricRegistry registry,
-                             MetricFilter filter,
-                             TimeUnit rateUnit,
-                             TimeUnit durationUnit,
-                             ObjectNameFactory objectNameFactory,
-                             String tag) {
+  private JmxMetricsReporter(
+      MBeanServer mBeanServer,
+      String domain,
+      MetricRegistry registry,
+      MetricFilter filter,
+      TimeUnit rateUnit,
+      TimeUnit durationUnit,
+      ObjectNameFactory objectNameFactory,
+      String tag) {
     this.registry = registry;
-    this.listener = new JmxListener(mBeanServer, domain, filter, rateUnit, durationUnit, objectNameFactory, tag);
+    this.listener =
+        new JmxListener(
+            mBeanServer, domain, filter, rateUnit, durationUnit, objectNameFactory, tag);
   }
 
   public void start() {
     registry.addListener(listener);
     // process existing metrics
     Map<String, Metric> metrics = new HashMap<>(registry.getMetrics());
-    metrics.forEach((k, v) -> {
-      if (v instanceof Counter) {
-        listener.onCounterAdded(k, (Counter)v);
-      } else if (v instanceof Meter) {
-        listener.onMeterAdded(k, (Meter)v);
-      } else if (v instanceof Histogram) {
-        listener.onHistogramAdded(k, (Histogram)v);
-      } else if (v instanceof Timer) {
-        listener.onTimerAdded(k, (Timer)v);
-      } else if (v instanceof Gauge) {
-        listener.onGaugeAdded(k, (Gauge<?>)v);
-      } else {
-        log.warn("Unknown metric type {} for metric '{}', ignoring", v.getClass().getName(), k);
-      }
-    });
+    metrics.forEach(
+        (k, v) -> {
+          if (v instanceof Counter) {
+            listener.onCounterAdded(k, (Counter) v);
+          } else if (v instanceof Meter) {
+            listener.onMeterAdded(k, (Meter) v);
+          } else if (v instanceof Histogram) {
+            listener.onHistogramAdded(k, (Histogram) v);
+          } else if (v instanceof Timer) {
+            listener.onTimerAdded(k, (Timer) v);
+          } else if (v instanceof Gauge) {
+            listener.onGaugeAdded(k, (Gauge<?>) v);
+          } else {
+            log.warn("Unknown metric type {} for metric '{}', ignoring", v.getClass().getName(), k);
+          }
+        });
   }
 
   @Override

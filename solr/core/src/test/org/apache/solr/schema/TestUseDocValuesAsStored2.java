@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import java.io.File;
 import java.util.Map;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.rest.schema.TestBulkSchemaAPI;
@@ -27,10 +26,9 @@ import org.apache.solr.util.RestTestHarness;
 import org.junit.After;
 import org.junit.Before;
 
-/**
- * Tests the useDocValuesAsStored functionality.
- */
-// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
+/** Tests the useDocValuesAsStored functionality. */
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows
+// machines occasionally
 public class TestUseDocValuesAsStored2 extends RestTestBase {
 
   @Before
@@ -41,51 +39,53 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
-        "/solr", true, null);
+    createJettyAndHarness(
+        tmpSolrHome.getAbsolutePath(),
+        "solrconfig-managed-schema.xml",
+        "schema-rest.xml",
+        "/solr",
+        true,
+        null);
   }
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
-    client = null;
+    solrClientTestRule.reset();
+
     if (restTestHarness != null) {
       restTestHarness.close();
     }
     restTestHarness = null;
   }
-  
 
   public void testSchemaAPI() throws Exception {
     RestTestHarness harness = restTestHarness;
-    String payload = "{\n" +
-        "          'add-field' : {\n" +
-        "                       'name':'a1',\n" +
-        "                       'type': 'string',\n" +
-        "                       'stored':false,\n" +
-        "                       'docValues':true,\n" +
-        "                       'indexed':false\n" +
-        "                       },\n" +
-        "          'add-field' : {\n" +
-        "                       'name':'a2',\n" +
-        "                       'type': 'string',\n" +
-        "                       'stored':false,\n" +
-        "                       'useDocValuesAsStored':true,\n" +
-        "                       'docValues':true,\n" +
-        "                       'indexed':true\n" +
-        "                       },\n" +
-        "          'add-field' : {\n" +
-        "                       'name':'a3',\n" +
-        "                       'type': 'string',\n" +
-        "                       'stored':false,\n" +
-        "                       'useDocValuesAsStored':false,\n" +
-        "                       'docValues':true,\n" +
-        "                       'indexed':true\n" +
-        "                       }\n" +
-        "          }\n";
+    String payload =
+        "{\n"
+            + "          'add-field' : {\n"
+            + "                       'name':'a1',\n"
+            + "                       'type': 'string',\n"
+            + "                       'stored':false,\n"
+            + "                       'docValues':true,\n"
+            + "                       'indexed':false\n"
+            + "                       },\n"
+            + "          'add-field' : {\n"
+            + "                       'name':'a2',\n"
+            + "                       'type': 'string',\n"
+            + "                       'stored':false,\n"
+            + "                       'useDocValuesAsStored':true,\n"
+            + "                       'docValues':true,\n"
+            + "                       'indexed':true\n"
+            + "                       },\n"
+            + "          'add-field' : {\n"
+            + "                       'name':'a3',\n"
+            + "                       'type': 'string',\n"
+            + "                       'stored':false,\n"
+            + "                       'useDocValuesAsStored':false,\n"
+            + "                       'docValues':true,\n"
+            + "                       'indexed':true\n"
+            + "                       }\n"
+            + "          }\n";
 
     String response = harness.post("/schema", json(payload));
 
@@ -98,12 +98,12 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
     assertNull(m.get("useDocValuesAsStored"));
 
     // useDocValuesAsStored=true
-    m = TestBulkSchemaAPI.getObj(harness,"a2", "fields");
+    m = TestBulkSchemaAPI.getObj(harness, "a2", "fields");
     assertNotNull("field a2 not created", m);
     assertEquals(Boolean.TRUE, m.get("useDocValuesAsStored"));
 
     // useDocValuesAsStored=false
-    m = TestBulkSchemaAPI.getObj(harness,"a3", "fields");
+    m = TestBulkSchemaAPI.getObj(harness, "a3", "fields");
     assertNotNull("field a3 not created", m);
     assertEquals(Boolean.FALSE, m.get("useDocValuesAsStored"));
 
@@ -111,63 +111,68 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
     assertU(adoc("id", "myid1", "a1", "1", "a2", "2", "a3", "3"));
     assertU(commit());
 
-    RestTestBase.assertJQ("/select?q=id:myid*&fl=*",
-        "/response/docs==[{'id':'myid1', 'a1':'1', 'a2':'2'}]");
+    RestTestBase.assertJQ(
+        "/select?q=id:myid*&fl=*", "/response/docs==[{'id':'myid1', 'a1':'1', 'a2':'2'}]");
 
-    RestTestBase.assertJQ("/select?q=id:myid*&fl=id,a1,a2,a3",
+    RestTestBase.assertJQ(
+        "/select?q=id:myid*&fl=id,a1,a2,a3",
         "/response/docs==[{'id':'myid1', 'a1':'1', 'a2':'2', 'a3':'3'}]");
 
-    RestTestBase.assertJQ("/select?q=id:myid*&fl=a3",
-        "/response/docs==[{'a3':'3'}]");
+    RestTestBase.assertJQ("/select?q=id:myid*&fl=a3", "/response/docs==[{'a3':'3'}]");
 
     // this will return a3 because it is explicitly requested even if '*' is specified
-    RestTestBase.assertJQ("/select?q=id:myid*&fl=*,a3",
+    RestTestBase.assertJQ(
+        "/select?q=id:myid*&fl=*,a3",
         "/response/docs==[{'id':'myid1', 'a1':'1', 'a2':'2', 'a3':'3'}]");
 
-    // this will not return a3 because the glob 'a*' will match only stored + useDocValuesAsStored=true fields
-    RestTestBase.assertJQ("/select?q=id:myid*&fl=id,a*",
-        "/response/docs==[{'id':'myid1', 'a1':'1', 'a2':'2'}]");
-    
+    // this will not return a3 because the glob 'a*' will match only stored +
+    // useDocValuesAsStored=true fields
+    RestTestBase.assertJQ(
+        "/select?q=id:myid*&fl=id,a*", "/response/docs==[{'id':'myid1', 'a1':'1', 'a2':'2'}]");
+
     // Test replace-field
     // Explicitly set useDocValuesAsStored to false
-    payload = "{\n" +
-        "          'replace-field' : {\n" +
-        "                       'name':'a1',\n" +
-        "                       'type': 'string',\n" +
-        "                       'stored':false,\n" +
-        "                       'useDocValuesAsStored':false,\n" +
-        "                       'docValues':true,\n" +
-        "                       'indexed':false\n" +
-        "                       }}";
+    payload =
+        "{\n"
+            + "          'replace-field' : {\n"
+            + "                       'name':'a1',\n"
+            + "                       'type': 'string',\n"
+            + "                       'stored':false,\n"
+            + "                       'useDocValuesAsStored':false,\n"
+            + "                       'docValues':true,\n"
+            + "                       'indexed':false\n"
+            + "                       }}";
     response = harness.post("/schema", json(payload));
     m = TestBulkSchemaAPI.getObj(harness, "a1", "fields");
     assertNotNull("field a1 doesn't exist any more", m);
     assertEquals(Boolean.FALSE, m.get("useDocValuesAsStored"));
 
     // Explicitly set useDocValuesAsStored to true
-    payload = "{\n" +
-        "          'replace-field' : {\n" +
-        "                       'name':'a1',\n" +
-        "                       'type': 'string',\n" +
-        "                       'stored':false,\n" +
-        "                       'useDocValuesAsStored':true,\n" +
-        "                       'docValues':true,\n" +
-        "                       'indexed':false\n" +
-        "                       }}";
+    payload =
+        "{\n"
+            + "          'replace-field' : {\n"
+            + "                       'name':'a1',\n"
+            + "                       'type': 'string',\n"
+            + "                       'stored':false,\n"
+            + "                       'useDocValuesAsStored':true,\n"
+            + "                       'docValues':true,\n"
+            + "                       'indexed':false\n"
+            + "                       }}";
     response = harness.post("/schema", json(payload));
     m = TestBulkSchemaAPI.getObj(harness, "a1", "fields");
     assertNotNull("field a1 doesn't exist any more", m);
     assertEquals(Boolean.TRUE, m.get("useDocValuesAsStored"));
 
     // add a field which is stored as well as docvalues
-    payload = "{          'add-field' : {\n" +
-        "                       'name':'a4',\n" +
-        "                       'type': 'string',\n" +
-        "                       'stored':true,\n" +
-        "                       'useDocValuesAsStored':true,\n" +
-        "                       'docValues':true,\n" +
-        "                       'indexed':true\n" +
-        "                       }}";
+    payload =
+        "{          'add-field' : {\n"
+            + "                       'name':'a4',\n"
+            + "                       'type': 'string',\n"
+            + "                       'stored':true,\n"
+            + "                       'useDocValuesAsStored':true,\n"
+            + "                       'docValues':true,\n"
+            + "                       'indexed':true\n"
+            + "                       }}";
     response = harness.post("/schema", json(payload));
     m = TestBulkSchemaAPI.getObj(harness, "a4", "fields");
     assertNotNull("field a4 not found", m);
@@ -176,8 +181,8 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
     assertU(adoc("id", "myid1", "a1", "1", "a2", "2", "a3", "3", "a4", "4"));
     assertU(commit());
 
-    RestTestBase.assertJQ("/select?q=id:myid*&fl=*",
+    RestTestBase.assertJQ(
+        "/select?q=id:myid*&fl=*",
         "/response/docs==[{'id':'myid1', 'a1':'1', 'a2':'2', 'a4':'4'}]");
-
   }
 }

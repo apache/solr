@@ -16,26 +16,26 @@
  */
 package org.apache.solr.index;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SortSpecParsing;
 
-import static org.apache.solr.common.params.CommonParams.SORT;
-
-/**
- * A {@link MergePolicyFactory} for {@code SortingMergePolicy} objects.
- */
+/** A {@link MergePolicyFactory} for {@code SortingMergePolicy} objects. */
 public class SortingMergePolicyFactory extends WrapperMergePolicyFactory {
 
   protected final Sort mergeSort;
 
-  public SortingMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+  public SortingMergePolicyFactory(
+      SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
     super(resourceLoader, args, schema);
     final String sortArg = (String) args.remove(SORT);
     if (sortArg == null) {
-      throw new IllegalArgumentException(SortingMergePolicyFactory.class.getSimpleName()+" requires a '"+ SORT + "' argument.");
+      throw new IllegalArgumentException(
+          SortingMergePolicyFactory.class.getSimpleName() + " requires a '" + SORT + "' argument.");
     }
     this.mergeSort = SortSpecParsing.parseSortSpec(sortArg, schema).getSort();
   }
@@ -45,5 +45,4 @@ public class SortingMergePolicyFactory extends WrapperMergePolicyFactory {
     final MergePolicy mp = new SortingMergePolicy(wrappedMP, mergeSort);
     return mp;
   }
-
 }

@@ -21,10 +21,11 @@ import org.apache.solr.SolrTestCase;
 /**
  * Unit test for {@link CommonAdminParams CommonAdminParams}
  *
- * This class tests backwards compatibility of CommonAdminParams parameter constants.
- * If someone accidentally changes those constants then this test will flag that up. 
+ * <p>This class tests backwards compatibility of CommonAdminParams parameter constants. If someone
+ * accidentally changes those constants then this test will flag that up.
  */
-public class CommonAdminParamsTest extends SolrTestCase
-{
-  public void testAsync() { assertEquals(CommonAdminParams.ASYNC, "async"); }
+public class CommonAdminParamsTest extends SolrTestCase {
+  public void testAsync() {
+    assertEquals(CommonAdminParams.ASYNC, "async");
+  }
 }

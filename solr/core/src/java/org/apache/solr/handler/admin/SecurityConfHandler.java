@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -26,15 +28,24 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import com.google.common.collect.ImmutableList;
+import java.util.stream.Collectors;
+import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.api.ApiBag.ReqHandlerToApi;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
+import org.apache.solr.handler.admin.api.GetAuthenticationConfigAPI;
+import org.apache.solr.handler.admin.api.GetAuthorizationConfigAPI;
+import org.apache.solr.handler.admin.api.ModifyNoAuthPluginSecurityConfigAPI;
+import org.apache.solr.handler.admin.api.ModifyNoAuthzPluginSecurityConfigAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -42,17 +53,12 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.ConfigEditablePlugin;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag.ReqHandlerToApi;
-import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.util.JsonSchemaValidator;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-
-public abstract class SecurityConfHandler extends RequestHandlerBase implements PermissionNameProvider {
+public abstract class SecurityConfHandler extends RequestHandlerBase
+    implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected CoreContainer cores;
 
@@ -77,7 +83,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
     RequestHandlerUtils.setWt(req, CommonParams.JSON);
     String httpMethod = (String) req.getContext().get("httpMethod");
     String path = (String) req.getContext().get("path");
-    String key = path.substring(path.lastIndexOf('/')+1);
+    String key = path.substring(path.lastIndexOf('/') + 1);
     if ("GET".equals(httpMethod)) {
       getConf(rsp, key);
     } else if ("POST".equals(httpMethod)) {
@@ -86,12 +92,18 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
     }
   }
 
-  private void doEdit(SolrQueryRequest req, SolrQueryResponse rsp, String path, final String key, final Object plugin)
+  private void doEdit(
+      SolrQueryRequest req,
+      SolrQueryResponse rsp,
+      String path,
+      final String key,
+      final Object plugin)
       throws IOException {
     ConfigEditablePlugin configEditablePlugin = null;
 
     if (plugin == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No " + key + " plugin configured");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "No " + key + " plugin configured");
     }
     if (plugin instanceof ConfigEditablePlugin) {
       configEditablePlugin = (ConfigEditablePlugin) plugin;
@@ -102,11 +114,12 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
     if (req.getContentStreams() == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No contentStream");
     }
-    List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), rsp.getValues());
+    List<CommandOperation> ops =
+        CommandOperation.readCommands(req.getContentStreams(), rsp.getValues());
     if (ops == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No commands");
     }
-    for (int count = 1; count <= 3 ; count++ ) {
+    for (int count = 1; count <= 3; count++) {
       SecurityConfig securityConfig = getSecurityConfig(true);
       Map<String, Object> data = securityConfig.getData();
       @SuppressWarnings("unchecked")
@@ -116,7 +129,8 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
       }
       List<CommandOperation> commandsCopy = CommandOperation.clone(ops);
       @SuppressWarnings("unchecked")
-      Map<String, Object> out = configEditablePlugin.edit(Utils.getDeepCopy(latestConf, 4) , commandsCopy);
+      Map<String, Object> out =
+          configEditablePlugin.edit(Utils.getDeepCopy(latestConf, 4), commandsCopy);
       if (out == null) {
         List<Map<String, Object>> errs = CommandOperation.captureErrors(commandsCopy);
         if (!errs.isEmpty()) {
@@ -126,26 +140,31 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
         log.debug("No edits made");
         return;
       } else {
-        if(!Objects.equals(latestConf.get("class") , out.get("class"))){
+        if (!Objects.equals(latestConf.get("class"), out.get("class"))) {
           throw new SolrException(SERVER_ERROR, "class cannot be modified");
         }
         Map<String, Object> meta = getMapValue(out, "");
-        meta.put("v", securityConfig.getVersion()+1);//encode the expected zkversion
+        meta.put("v", securityConfig.getVersion() + 1); // encode the expected zkversion
         data.put(key, out);
-        
-        if(persistConf(securityConfig)) {
+
+        if (persistConf(securityConfig)) {
           securityConfEdited();
+          updateTraceOps(req, configEditablePlugin.getClass().getSimpleName(), commandsCopy);
           return;
         }
       }
       log.debug("Security edit operation failed {} time(s)", count);
     }
-    throw new SolrException(SERVER_ERROR, "Failed to persist security config after 3 attempts. Giving up");
+    throw new SolrException(
+        SERVER_ERROR, "Failed to persist security config after 3 attempts. Giving up");
   }
 
-  /**
-   * Hook where you can do stuff after a config has been edited. Defaults to NOP
-   */
+  private void updateTraceOps(SolrQueryRequest req, String clazz, List<CommandOperation> commands) {
+    TraceUtils.setOperations(
+        req, clazz, commands.stream().map(c -> c.name).collect(Collectors.toUnmodifiableList()));
+  }
+
+  /** Hook where you can do stuff after a config has been edited. Defaults to NOP */
   protected void securityConfEdited() {}
 
   Object getPlugin(String key) {
@@ -167,7 +186,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
   @SuppressWarnings({"rawtypes"})
   public static List getListValue(Map<String, Object> lookupMap, String key) {
     List l = (List) lookupMap.get(key);
-    if (l == null) lookupMap.put(key, l= new ArrayList<>());
+    if (l == null) lookupMap.put(key, l = new ArrayList<>());
     return l;
   }
 
@@ -181,20 +200,16 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
     return Category.ADMIN;
   }
 
-  /**
-   * Gets security.json from source
-   */
+  /** Gets security.json from source */
   public abstract SecurityConfig getSecurityConfig(boolean getFresh);
 
-  /**
-   * Persist security.json to the source, optionally with a version
-   */
+  /** Persist security.json to the source, optionally with a version */
   protected abstract boolean persistConf(SecurityConfig securityConfig) throws IOException;
 
   /**
-   * Object to hold security.json as nested <code>Map&lt;String,Object&gt;</code> and optionally its version.
-   * The version property is optional and defaults to -1 if not initialized.
-   * The data object defaults to EMPTY_MAP if not set
+   * Object to hold security.json as nested <code>Map&lt;String,Object&gt;</code> and optionally its
+   * version. The version property is optional and defaults to -1 if not initialized. The data
+   * object defaults to EMPTY_MAP if not set
    */
   public static class SecurityConfig {
     private Map<String, Object> data = Collections.emptyMap();
@@ -204,6 +219,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
 
     /**
      * Sets the data as a Map
+     *
      * @param data a Map
      * @return SecurityConf object (builder pattern)
      */
@@ -214,6 +230,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
 
     /**
      * Sets the data as an Object, but the object needs to be of type Map
+     *
      * @param data an Object of type Map&lt;String,Object&gt;
      * @return SecurityConf object (builder pattern)
      */
@@ -223,12 +240,14 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
         this.data = (Map<String, Object>) data;
         return this;
       } else {
-        throw new SolrException(SERVER_ERROR, "Illegal format when parsing security.json, not object");
+        throw new SolrException(
+            SERVER_ERROR, "Illegal format when parsing security.json, not object");
       }
     }
 
     /**
      * Sets version
+     *
      * @param version integer for version. Depends on underlying storage
      * @return SecurityConf object (builder pattern)
      */
@@ -247,6 +266,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
 
     /**
      * Set data from input stream
+     *
      * @param securityJsonInputStream an input stream for security.json
      * @return this (builder pattern)
      */
@@ -254,9 +274,10 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
       return setData(Utils.fromJSON(securityJsonInputStream));
     }
 
+    @Override
     public String toString() {
       return "SecurityConfig: version=" + version + ", data=" + Utils.toJSONString(data);
-    } 
+    }
   }
 
   private Collection<Api> apis;
@@ -269,46 +290,61 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
       synchronized (this) {
         if (apis == null) {
           Collection<Api> apis = new ArrayList<>();
-          final SpecProvider authcCommands = Utils.getSpec("cluster.security.authentication.Commands");
-          final SpecProvider authzCommands = Utils.getSpec("cluster.security.authorization.Commands");
-          apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authentication")));
-          apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authorization")));
-          SpecProvider authcSpecProvider = () -> {
-            AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
-            return authcPlugin != null && authcPlugin instanceof SpecProvider ?
-                ((SpecProvider) authcPlugin).getSpec() :
-                authcCommands.getSpec();
-          };
+          // GET Apis are the same regardless of which plugins are registered
+          apis.addAll(AnnotatedApi.getApis(new GetAuthenticationConfigAPI(this)));
+          apis.addAll(AnnotatedApi.getApis(new GetAuthorizationConfigAPI(this)));
 
-          apis.add(new ReqHandlerToApi(this, authcSpecProvider) {
-            @Override
-            public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
-              //it is possible that the Authentication plugin is modified since the last call. invalidate the
-              // the cached commandSchema
-              if(SecurityConfHandler.this.authcPlugin != cores.getAuthenticationPlugin()) commandSchema = null;
-              SecurityConfHandler.this.authcPlugin = cores.getAuthenticationPlugin();
-              return super.getCommandSchema();
-            }
-          });
+          // POST Apis come from the specific authc/z plugin registered (with a fallback used if
+          // the plugin isn't a SpecProvider).
+          final Api defaultAuthcApi =
+              AnnotatedApi.getApis(new ModifyNoAuthPluginSecurityConfigAPI(this)).get(0);
+          final Api defaultAuthzApi =
+              AnnotatedApi.getApis(new ModifyNoAuthzPluginSecurityConfigAPI(this)).get(0);
 
-          SpecProvider authzSpecProvider = () -> {
-            AuthorizationPlugin authzPlugin = cores.getAuthorizationPlugin();
-            return authzPlugin != null && authzPlugin instanceof SpecProvider ?
-                ((SpecProvider) authzPlugin).getSpec() :
-                authzCommands.getSpec();
-          };
-          apis.add(new ApiBag.ReqHandlerToApi(this, authzSpecProvider) {
-            @Override
-            public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
-              //it is possible that the Authorization plugin is modified since the last call. invalidate the
-              // the cached commandSchema
-              if(SecurityConfHandler.this.authzPlugin != cores.getAuthorizationPlugin()) commandSchema = null;
-              SecurityConfHandler.this.authzPlugin = cores.getAuthorizationPlugin();
-              return super.getCommandSchema();
-            }
-          });
+          SpecProvider authcSpecProvider =
+              () -> {
+                AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
+                return authcPlugin != null && authcPlugin instanceof SpecProvider
+                    ? ((SpecProvider) authcPlugin).getSpec()
+                    : defaultAuthcApi.getSpec();
+              };
 
-          this.apis = ImmutableList.copyOf(apis);
+          // TODO Can we remove this extra ReqHandlerToApi wrapping - nothing but the schema from
+          // the POST authc/authz is getting used.
+          apis.add(
+              new ReqHandlerToApi(this, authcSpecProvider) {
+                @Override
+                public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
+                  // it is possible that the Authentication plugin is modified since the last call.
+                  // invalidate the cached commandSchema
+                  if (SecurityConfHandler.this.authcPlugin != cores.getAuthenticationPlugin())
+                    commandSchema = null;
+                  SecurityConfHandler.this.authcPlugin = cores.getAuthenticationPlugin();
+                  return super.getCommandSchema();
+                }
+              });
+
+          SpecProvider authzSpecProvider =
+              () -> {
+                AuthorizationPlugin authzPlugin = cores.getAuthorizationPlugin();
+                return authzPlugin != null && authzPlugin instanceof SpecProvider
+                    ? ((SpecProvider) authzPlugin).getSpec()
+                    : defaultAuthzApi.getSpec();
+              };
+          apis.add(
+              new ApiBag.ReqHandlerToApi(this, authzSpecProvider) {
+                @Override
+                public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
+                  // it is possible that the Authorization plugin is modified since the last call.
+                  // invalidate cached commandSchema
+                  if (SecurityConfHandler.this.authzPlugin != cores.getAuthorizationPlugin())
+                    commandSchema = null;
+                  SecurityConfHandler.this.authzPlugin = cores.getAuthorizationPlugin();
+                  return super.getCommandSchema();
+                }
+              });
+
+          this.apis = List.copyOf(apis);
         }
       }
     }
@@ -320,4 +356,3 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
     return Boolean.TRUE;
   }
 }
-

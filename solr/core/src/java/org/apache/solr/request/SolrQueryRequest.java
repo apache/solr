@@ -16,18 +16,16 @@
  */
 package org.apache.solr.request;
 
+import io.opentelemetry.api.trace.Span;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.noop.NoopSpan;
-import io.opentracing.util.GlobalTracer;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -35,45 +33,44 @@ import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.util.RTimerTree;
 
 /**
- * <p>Container for a request to execute a query.</p>
- * <p><code>SolrQueryRequest</code> is not thread safe.</p>
+ * Container for a request to execute a query.
  *
- *
+ * <p><code>SolrQueryRequest</code> is not thread safe.
  */
 public interface SolrQueryRequest extends AutoCloseable {
 
   /** returns the current request parameters */
   SolrParams getParams();
 
-  /** Change the parameters for this request.  This does not affect
-   *  the original parameters returned by getOriginalParams()
+  /**
+   * Change the parameters for this request. This does not affect the original parameters returned
+   * by getOriginalParams()
    */
   void setParams(SolrParams params);
 
-  /** A Collection of ContentStreams passed to the request
-   */
+  /** A Collection of ContentStreams passed to the request */
   Iterable<ContentStream> getContentStreams();
 
-  /** Returns the original request parameters.  As this
-   * does not normally include configured defaults
+  /**
+   * Returns the original request parameters. As this does not normally include configured defaults
    * it's more suitable for logging.
    */
   SolrParams getOriginalParams();
 
-  /**
-   * Generic information associated with this request that may be both read and updated.
-   */
-  Map<Object,Object> getContext();
+  /** Generic information associated with this request that may be both read and updated. */
+  Map<Object, Object> getContext();
 
   /**
-   * This method should be called when all uses of this request are
-   * finished, so that resources can be freed.
+   * This method should be called when all uses of this request are finished, so that resources can
+   * be freed.
    */
+  @Override
   void close();
 
-  /** The start time of this request in milliseconds.
-   * Use this only if you need the absolute system time at the start of the request,
-   * getRequestTimer() provides a more accurate mechanism for timing purposes.
+  /**
+   * The start time of this request in milliseconds. Use this only if you need the absolute system
+   * time at the start of the request, getRequestTimer() provides a more accurate mechanism for
+   * timing purposes.
    */
   long getStartTime();
 
@@ -92,16 +89,14 @@ public interface SolrQueryRequest extends AutoCloseable {
   /** Replaces the current schema snapshot with the latest from the core. */
   public void updateSchemaToLatest();
 
-  /**
-   * Returns a string representing all the important parameters.
-   * Suitable for logging.
-   */
+  /** Returns a string representing all the important parameters. Suitable for logging. */
   public String getParamString();
 
-  /** Returns any associated JSON (or null if none) in deserialized generic form.
-   * Java classes used to represent the JSON are as follows: Map, List, String, Long, Double, Boolean
+  /**
+   * Returns any associated JSON (or null if none) in deserialized generic form. Java classes used
+   * to represent the JSON are as follows: Map, List, String, Long, Double, Boolean
    */
-  Map<String,Object> getJSON();
+  Map<String, Object> getJSON();
 
   void setJSON(Map<String, Object> json);
 
@@ -111,18 +106,19 @@ public interface SolrQueryRequest extends AutoCloseable {
     return (String) getContext().get("path");
   }
 
-  /** Only for V2 API.
-   * Returns a map of path segments and their values . For example ,
-   * if the path is configured as /path/{segment1}/{segment2} and a reguest is made
-   * as /path/x/y the returned map would contain {segment1:x ,segment2:y}
+  /**
+   * Only for V2 API. Returns a map of path segments and their values. For example, if the path is
+   * configured as /path/{segment1}/{segment2} and a reguest is made as /path/x/y the returned map
+   * would contain {segment1:x ,segment2:y}
    */
   default Map<String, String> getPathTemplateValues() {
     return Collections.emptyMap();
   }
 
-  /** Only for v2 API
-   * if the  request contains a command payload, it's parsed and returned as a list of
-   * CommandOperation objects
+  /**
+   * Only for v2 API if the request contains a command payload, it's parsed and returned as a list
+   * of CommandOperation objects
+   *
    * @param validateInput , If true it is validated against the json schema spec
    */
   default List<CommandOperation> getCommands(boolean validateInput) {
@@ -138,23 +134,23 @@ public interface SolrQueryRequest extends AutoCloseable {
   }
 
   /**
-   * Distributed tracing Tracer. Never null but might implement
-   * {@link io.opentracing.noop.NoopTracer}.
-   */
-  default Tracer getTracer() {
-    return GlobalTracer.get(); // default impl is only for some tests
-  }
-
-  /**
    * The distributed tracing Span for the request itself; never null. This is useful for adding tags
-   * or updating the operation name of the request span. If you need the current span, which might
-   * not necessarily be the request span, do this instead: {@code tracer.activeSpan()}.
+   * or updating the operation name of the request span. Not null.
    */
   default Span getSpan() {
-    return NoopSpan.INSTANCE;
+    final HttpSolrCall call = getHttpSolrCall();
+    if (call != null) {
+      return call.getSpan();
+    }
+    return Span.getInvalid();
+  }
+
+  default CoreContainer getCoreContainer() {
+    SolrCore core = getCore();
+    return core == null ? null : core.getCoreContainer();
+  }
+
+  default CloudDescriptor getCloudDescriptor() {
+    return getCore().getCoreDescriptor().getCloudDescriptor();
   }
 }
-
-
-
-

@@ -16,20 +16,13 @@
  */
 package org.apache.solr.core;
 
-import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.SortedMap;
@@ -37,12 +30,16 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
-
-import org.apache.commons.io.IOUtils;
+import javax.xml.namespace.QName;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
-import org.apache.solr.common.util.XMLErrorLogger;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.util.SafeXMLParsing;
 import org.apache.solr.util.SystemIdResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,119 +52,110 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 /**
- * Wrapper around an XML DOM object to provide convenient accessors to it.  Intended for XML config files.
+ * Wrapper around an XML DOM object to provide convenient accessors to it. Intended for XML config
+ * files.
  */
 public class XmlConfigFile { // formerly simply "Config"
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   static final XPathFactory xpathFactory = XPathFactory.newInstance();
 
   private final Document doc;
-  private final Document origDoc; // with unsubstituted properties
   private final String prefix;
   private final String name;
   private final SolrResourceLoader loader;
   private final Properties substituteProperties;
   private int zkVersion = -1;
 
-  /**
-   * Builds a config from a resource name with no xpath prefix.  Does no property substitution.
-   */
-  public XmlConfigFile(SolrResourceLoader loader, String name) throws ParserConfigurationException, IOException, SAXException
-  {
-    this( loader, name, null, null );
+  public XmlConfigFile(
+      SolrResourceLoader loader,
+      String name,
+      InputSource is,
+      String prefix,
+      Properties substituteProps)
+      throws IOException {
+    this(
+        loader,
+        s -> {
+          try {
+            return loader.openResource(s);
+          } catch (IOException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
+        },
+        name,
+        is,
+        prefix,
+        substituteProps);
   }
 
   /**
-   * Builds a config.  Does no property substitution.
-   */
-  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException
-  {
-    this(loader, name, is, prefix, null);
-  }
-  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, Properties substituteProps) throws ParserConfigurationException, IOException, SAXException{
-    this(loader, s -> {
-      try {
-        return loader.openResource(s);
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
-    },name, is, prefix, substituteProps);
-  }
-
-  /**
-   * Builds a config:
-   * <p>
-   * Note that the 'name' parameter is used to obtain a valid input stream if no valid one is provided through 'is'.
-   * If no valid stream is provided, a valid SolrResourceLoader instance should be provided through 'loader' so
-   * the resource can be opened (@see SolrResourceLoader#openResource); if no SolrResourceLoader instance is provided, a default one
+   * Builds a config.
+   *
+   * <p>Note that the 'name' parameter is used to obtain a valid input stream if no valid one is
+   * provided through 'is'. If no valid stream is provided, a valid SolrResourceLoader instance
+   * should be provided through 'loader' so the resource can be opened (@see
+   * SolrResourceLoader#openResource); if no SolrResourceLoader instance is provided, a default one
    * will be created.
-   * </p>
-   * <p>
-   * Consider passing a non-null 'name' parameter in all use-cases since it is used for logging &amp; exception reporting.
-   * </p>
+   *
+   * <p>Consider passing a non-null 'name' parameter in all use-cases since it is used for logging
+   * &amp; exception reporting.
+   *
    * @param loader the resource loader used to obtain an input stream if 'is' is null
    * @param name the resource name used if the input stream 'is' is null
    * @param is the resource as a SAX InputSource
    * @param prefix an optional prefix that will be prepended to all non-absolute xpath expressions
    * @param substituteProps optional property substitution
    */
-  public XmlConfigFile(SolrResourceLoader loader, Function<String, InputStream> fileSupplier, String name, InputSource is, String prefix, Properties substituteProps) throws IOException {
-    if (null == loader) throw new NullPointerException("loader");
-    this.loader = loader;
-    
+  public XmlConfigFile(
+      SolrResourceLoader loader,
+      Function<String, InputStream> fileSupplier,
+      String name,
+      InputSource is,
+      String prefix,
+      Properties substituteProps)
+      throws IOException {
+    this.loader = Objects.requireNonNull(loader);
     this.substituteProperties = substituteProps;
     this.name = name;
-    this.prefix = (prefix != null && !prefix.endsWith("/"))? prefix + '/' : prefix;
-    try {
-      javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+    this.prefix = (prefix != null && !prefix.endsWith("/")) ? prefix + '/' : prefix;
 
-      if (is == null) {
-        InputStream in = fileSupplier.apply(name);
+    InputStream in = null;
+    try {
+      if (is == null && fileSupplier != null) {
+        in = fileSupplier.apply(name);
         if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
           zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-          log.debug("loaded config {} with version {} ",name,zkVersion);
+          log.debug("loaded config {} with version {} ", name, zkVersion);
         }
         is = new InputSource(in);
         is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
       }
 
-      // only enable xinclude, if a SystemId is available
-      if (is.getSystemId() != null) {
-        try {
-          dbf.setXIncludeAware(true);
-          dbf.setNamespaceAware(true);
-        } catch(UnsupportedOperationException e) {
-          log.warn("{} XML parser doesn't support XInclude option", name);
-        }
+      if (is != null) {
+        doc = SafeXMLParsing.parseConfigXML(log, loader, is);
+      } else {
+        doc = SafeXMLParsing.parseConfigXML(log, loader, name);
       }
-      
-      final DocumentBuilder db = dbf.newDocumentBuilder();
-      db.setEntityResolver(new SystemIdResolver(loader));
-      db.setErrorHandler(xmllog);
-      try {
-        doc = db.parse(is);
-        origDoc = doc;
-      } finally {
-        // some XML parsers are broken and don't close the byte stream (but they should according to spec)
-        IOUtils.closeQuietly(is.getByteStream());
-      }
-      if (substituteProps != null) {
-        DOMUtil.substituteProperties(doc, getSubstituteProperties());
-      }
-    } catch (ParserConfigurationException | SAXException e)  {
-      SolrException.log(log, "Exception during parsing file: " + name, e);
+    } catch (SAXException e) {
+      log.error("Exception during parsing file: {}", name, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } finally {
+      // XML Parser should close but in exceptional cases might not; so let's be safe
+      IOUtils.closeQuietly(in);
+    }
+    if (substituteProps != null) {
+      DOMUtil.substituteProperties(doc, getSubstituteProperties());
     }
   }
 
   /*
-     * Assert that assertCondition is true.
-     * If not, prints reason as log warning.
-     * If failCondition is true, then throw exception instead of warning
-     */
-  public static void assertWarnOrFail(String reason, boolean assertCondition, boolean failCondition) {
+   * Assert that assertCondition is true.
+   * If not, prints reason as log warning.
+   * If failCondition is true, then throw exception instead of warning
+   */
+  public static void assertWarnOrFail(
+      String reason, boolean assertCondition, boolean failCondition) {
     if (assertCondition) {
       return;
     } else if (failCondition) {
@@ -177,17 +165,15 @@ public class XmlConfigFile { // formerly simply "Config"
     }
   }
 
-  /** Returns non-null props to substitute.  Param is the base/default set, also non-null. */
+  /** Returns non-null props to substitute. Param is the base/default set, also non-null. */
   protected Properties getSubstituteProperties() {
     return this.substituteProperties;
   }
 
-
   /**
    * @since solr 1.3
    */
-  public SolrResourceLoader getResourceLoader()
-  {
+  public SolrResourceLoader getResourceLoader() {
     return loader;
   }
 
@@ -201,7 +187,7 @@ public class XmlConfigFile { // formerly simply "Config"
   public String getName() {
     return name;
   }
-  
+
   public Document getDocument() {
     return doc;
   }
@@ -211,20 +197,21 @@ public class XmlConfigFile { // formerly simply "Config"
   }
 
   private String normalize(String path) {
-    return (prefix==null || path.startsWith("/")) ? path : prefix+path;
+    return (prefix == null || path.startsWith("/")) ? path : prefix + path;
   }
-  
+
   public Object evaluate(String path, QName type) {
     XPath xpath = xpathFactory.newXPath();
     try {
-      String xstr=normalize(path);
+      String xstr = normalize(path);
 
       // TODO: instead of prepending /prefix/, we could do the search rooted at /prefix...
       Object o = xpath.evaluate(xstr, doc, type);
       return o;
 
     } catch (XPathExpressionException e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + path +" for " + name,e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error in xpath:" + path + " for " + name, e);
     }
   }
 
@@ -237,32 +224,30 @@ public class XmlConfigFile { // formerly simply "Config"
     String xstr = normalize(path);
 
     try {
-      NodeList nodes = (NodeList)xpath.evaluate(xstr, doc, 
-                                                XPathConstants.NODESET);
-      if (nodes==null || 0 == nodes.getLength() ) {
+      NodeList nodes = (NodeList) xpath.evaluate(xstr, doc, XPathConstants.NODESET);
+      if (nodes == null || 0 == nodes.getLength()) {
         if (errIfMissing) {
-          throw new RuntimeException(name + " missing "+path);
+          throw new RuntimeException(name + " missing " + path);
         } else {
           log.trace("{} missing optional {}", name, path);
           return null;
         }
       }
-      if ( 1 < nodes.getLength() ) {
-        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-                                 name + " contains more than one value for config path: " + path);
+      if (1 < nodes.getLength()) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            name + " contains more than one value for config path: " + path);
       }
       Node nd = nodes.item(0);
       log.trace("{}:{}={}", name, path, nd);
       return nd;
 
-    } catch (XPathExpressionException e) {
-      SolrException.log(log,"Error in xpath",e);
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr + " for " + name,e);
     } catch (SolrException e) {
-      throw(e);
+      throw (e);
     } catch (Exception e) {
-      SolrException.log(log,"Error in xpath",e);
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr+ " for " + name,e);
+      log.error("Error in xpath", e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error in xpath:" + xstr + " for " + name, e);
     }
   }
 
@@ -271,11 +256,11 @@ public class XmlConfigFile { // formerly simply "Config"
     String xstr = normalize(path);
 
     try {
-      NodeList nodeList = (NodeList)xpath.evaluate(xstr, doc, XPathConstants.NODESET);
+      NodeList nodeList = (NodeList) xpath.evaluate(xstr, doc, XPathConstants.NODESET);
 
       if (null == nodeList) {
         if (errIfMissing) {
-          throw new RuntimeException(name + " missing "+path);
+          throw new RuntimeException(name + " missing " + path);
         } else {
           log.trace("{} missing optional {}", name, path);
           return null;
@@ -285,28 +270,26 @@ public class XmlConfigFile { // formerly simply "Config"
       log.trace("{}:{}={}", name, path, nodeList);
       return nodeList;
 
-    } catch (XPathExpressionException e) {
-      SolrException.log(log,"Error in xpath",e);
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr + " for " + name,e);
     } catch (SolrException e) {
-      throw(e);
+      throw (e);
     } catch (Exception e) {
-      SolrException.log(log,"Error in xpath",e);
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error in xpath:" + xstr+ " for " + name,e);
+      log.error("Error in xpath", e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error in xpath:" + xstr + " for " + name, e);
     }
   }
 
   /**
-   * Returns the set of attributes on the given element that are not among the given knownAttributes,
-   * or null if all attributes are known.
+   * Returns the set of attributes on the given element that are not among the given
+   * knownAttributes, or null if all attributes are known.
    */
   public Set<String> getUnknownAttributes(Element element, String... knownAttributes) {
     Set<String> knownAttributeSet = new HashSet<>(Arrays.asList(knownAttributes));
     Set<String> unknownAttributeSet = null;
     NamedNodeMap attributes = element.getAttributes();
-    for (int i = 0 ; i < attributes.getLength() ; ++i) {
+    for (int i = 0; i < attributes.getLength(); ++i) {
       final String attributeName = attributes.item(i).getNodeName();
-      if ( ! knownAttributeSet.contains(attributeName)) {
+      if (!knownAttributeSet.contains(attributeName)) {
         if (null == unknownAttributeSet) {
           unknownAttributeSet = new HashSet<>();
         }
@@ -318,13 +301,13 @@ public class XmlConfigFile { // formerly simply "Config"
 
   /**
    * Logs an error and throws an exception if any of the element(s) at the given elementXpath
-   * contains an attribute name that is not among knownAttributes. 
+   * contains an attribute name that is not among knownAttributes.
    */
   public void complainAboutUnknownAttributes(String elementXpath, String... knownAttributes) {
-    SortedMap<String,SortedSet<String>> problems = new TreeMap<>();
+    SortedMap<String, SortedSet<String>> problems = new TreeMap<>();
     NodeList nodeList = getNodeList(elementXpath, false);
-    for (int i = 0 ; i < nodeList.getLength() ; ++i) {
-      Element element = (Element)nodeList.item(i);
+    for (int i = 0; i < nodeList.getLength(); ++i) {
+      Element element = (Element) nodeList.item(i);
       Set<String> unknownAttributes = getUnknownAttributes(element, knownAttributes);
       if (null != unknownAttributes) {
         String elementName = element.getNodeName();
@@ -338,7 +321,7 @@ public class XmlConfigFile { // formerly simply "Config"
     }
     if (problems.size() > 0) {
       StringBuilder message = new StringBuilder();
-      for (Map.Entry<String,SortedSet<String>> entry : problems.entrySet()) {
+      for (Map.Entry<String, SortedSet<String>> entry : problems.entrySet()) {
         if (message.length() > 0) {
           message.append(", ");
         }
@@ -353,14 +336,14 @@ public class XmlConfigFile { // formerly simply "Config"
       }
       message.insert(0, "Unknown attribute(s) on element(s): ");
       String msg = message.toString();
-      SolrException.log(log, msg);
+      log.error(msg);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
     }
   }
 
   public String getVal(String path, boolean errIfMissing) {
-    Node nd = getNode(path,errIfMissing);
-    if (nd==null) return null;
+    Node nd = getNode(path, errIfMissing);
+    if (nd == null) return null;
 
     String txt = DOMUtil.getText(nd);
 
@@ -368,9 +351,8 @@ public class XmlConfigFile { // formerly simply "Config"
     return txt;
   }
 
-
   public String get(String path) {
-    return getVal(path,true);
+    return getVal(path, true);
   }
 
   public String get(String path, String def) {
@@ -387,7 +369,7 @@ public class XmlConfigFile { // formerly simply "Config"
 
   public int getInt(String path, int def) {
     String val = getVal(path, false);
-    return val!=null ? Integer.parseInt(val) : def;
+    return val != null ? Integer.parseInt(val) : def;
   }
 
   public boolean getBool(String path) {
@@ -396,7 +378,7 @@ public class XmlConfigFile { // formerly simply "Config"
 
   public boolean getBool(String path, boolean def) {
     String val = getVal(path, false);
-    return val!=null ? Boolean.parseBoolean(val) : def;
+    return val != null ? Boolean.parseBoolean(val) : def;
   }
 
   public float getFloat(String path) {
@@ -405,22 +387,20 @@ public class XmlConfigFile { // formerly simply "Config"
 
   public float getFloat(String path, float def) {
     String val = getVal(path, false);
-    return val!=null ? Float.parseFloat(val) : def;
+    return val != null ? Float.parseFloat(val) : def;
   }
 
-  public double getDouble(String path){
-     return Double.parseDouble(getVal(path, true));
-   }
+  public double getDouble(String path) {
+    return Double.parseDouble(getVal(path, true));
+  }
 
   public double getDouble(String path, double def) {
     String val = getVal(path, false);
     return val != null ? Double.parseDouble(val) : def;
   }
 
-  /**If this config is loaded from zk the version is relevant other wise -1 is returned
-   */
-  public int getZnodeVersion(){
+  /** If this config is loaded from zk the version is relevant otherwise -1 is returned */
+  public int getZnodeVersion() {
     return zkVersion;
   }
-
 }

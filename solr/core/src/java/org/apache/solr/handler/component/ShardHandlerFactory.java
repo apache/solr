@@ -18,8 +18,7 @@ package org.apache.solr.handler.component;
 
 import java.util.Collections;
 import java.util.Locale;
-
-import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
@@ -32,34 +31,45 @@ public abstract class ShardHandlerFactory {
 
   public abstract void close();
 
-  public void setSecurityBuilder(HttpClientBuilderPlugin clientBuilderPlugin){};
+  public void setSecurityBuilder(HttpClientBuilderPlugin clientBuilderPlugin) {}
+  ;
 
   /**
    * Create a new ShardHandlerFactory instance
-   * @param info    a PluginInfo object defining which type to create.  If null,
-   *                the default {@link HttpShardHandlerFactory} will be used
-   * @param loader  a SolrResourceLoader used to find the ShardHandlerFactory classes
+   *
+   * @param info a PluginInfo object defining which type to create. If null, the default {@link
+   *     HttpShardHandlerFactory} will be used
+   * @param loader a SolrResourceLoader used to find the ShardHandlerFactory classes
    * @return a new, initialized ShardHandlerFactory instance
    */
   public static ShardHandlerFactory newInstance(PluginInfo info, SolrResourceLoader loader) {
-    if (info == null)
-      info = DEFAULT_SHARDHANDLER_INFO;
+    if (info == null) info = DEFAULT_SHARDHANDLER_INFO;
 
     try {
-      ShardHandlerFactory shf = loader.findClass(info.className, ShardHandlerFactory.class).getConstructor().newInstance();
+      ShardHandlerFactory shf =
+          loader
+              .findClass(info.className, ShardHandlerFactory.class)
+              .getConstructor()
+              .newInstance();
       if (PluginInfoInitialized.class.isAssignableFrom(shf.getClass()))
         PluginInfoInitialized.class.cast(shf).init(info);
       return shf;
+    } catch (Exception e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          String.format(
+              Locale.ROOT,
+              "Error instantiating shardHandlerFactory class [%s]: %s",
+              info.className,
+              e.getMessage()),
+          e);
     }
-    catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          String.format(Locale.ROOT, "Error instantiating shardHandlerFactory class [%s]: %s",
-                        info.className, e.getMessage()), e);
-    }
-
   }
 
   public static final PluginInfo DEFAULT_SHARDHANDLER_INFO =
-      new PluginInfo("shardHandlerFactory", ImmutableMap.of("class", HttpShardHandlerFactory.class.getName()),
-          null, Collections.<PluginInfo>emptyList());
+      new PluginInfo(
+          "shardHandlerFactory",
+          Map.of("class", HttpShardHandlerFactory.class.getName()),
+          null,
+          Collections.<PluginInfo>emptyList());
 }

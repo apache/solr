@@ -16,9 +16,7 @@
  */
 package org.apache.solr.logging;
 
-/**
- * Defines the configuration of a {@link LogWatcher}
- */
+/** Defines the configuration of a {@link LogWatcher} */
 public class LogWatcherConfig {
 
   private final boolean enabled;
@@ -26,7 +24,8 @@ public class LogWatcherConfig {
   private final int watcherSize;
   private final String watcherThreshold;
 
-  public LogWatcherConfig(boolean enabled, String loggingClass, String watcherThreshold, int watcherSize) {
+  public LogWatcherConfig(
+      boolean enabled, String loggingClass, String watcherThreshold, int watcherSize) {
     this.enabled = enabled;
     this.loggingClass = loggingClass;
     this.watcherThreshold = watcherThreshold;
@@ -41,9 +40,10 @@ public class LogWatcherConfig {
   }
 
   /**
-   * Get the implementation of the LogWatcher to use.  May be "JUL" or "log4j" for the default
+   * Get the implementation of the LogWatcher to use. May be "JUL" or "log4j" for the default
    * java.util.logging or log4j implementations, or the fully-qualified name of a class extending
    * {@link LogWatcher}.
+   *
    * @return the LogWatcher class to use
    */
   public String getLoggingClass() {

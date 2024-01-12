@@ -18,10 +18,8 @@
 package org.apache.solr.cloud;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 
-@LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 @ThreadLeakLingering(linger = 10)
 public class HttpPartitionWithTlogReplicasTest extends HttpPartitionTest {
@@ -30,5 +28,4 @@ public class HttpPartitionWithTlogReplicasTest extends HttpPartitionTest {
   protected boolean useTlogReplicas() {
     return true;
   }
-
 }

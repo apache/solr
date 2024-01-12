@@ -16,21 +16,21 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import org.apache.solr.common.util.NamedList;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.util.NamedList;
 
 /**
- * A response that is returned by processing the {@link org.apache.solr.client.solrj.request.DocumentAnalysisRequest}.
- * Holds a map of {@link DocumentAnalysis} objects by a document id (unique key).
- *
+ * A response that is returned by processing the {@link
+ * org.apache.solr.client.solrj.request.DocumentAnalysisRequest}. Holds a map of {@link
+ * DocumentAnalysis} objects by a document id (unique key).
  *
  * @since solr 1.4
  */
-public class DocumentAnalysisResponse extends AnalysisResponseBase implements Iterable<Map.Entry<String, DocumentAnalysisResponse.DocumentAnalysis>> {
+public class DocumentAnalysisResponse extends AnalysisResponseBase
+    implements Iterable<Map.Entry<String, DocumentAnalysisResponse.DocumentAnalysis>> {
 
   private final Map<String, DocumentAnalysis> documentAnalysisByKey = new HashMap<>();
 
@@ -39,8 +39,8 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
     super.setResponse(response);
 
     @SuppressWarnings("unchecked")
-    NamedList<NamedList<NamedList<Object>>> analysis 
-      = (NamedList<NamedList<NamedList<Object>>>) response.get("analysis");
+    NamedList<NamedList<NamedList<Object>>> analysis =
+        (NamedList<NamedList<NamedList<Object>>>) response.get("analysis");
     for (Map.Entry<String, NamedList<NamedList<Object>>> document : analysis) {
       DocumentAnalysis documentAnalysis = new DocumentAnalysis(document.getKey());
       for (Map.Entry<String, NamedList<Object>> fieldEntry : document.getValue()) {
@@ -49,16 +49,14 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
         NamedList<Object> field = fieldEntry.getValue();
 
         @SuppressWarnings("unchecked")
-        NamedList<Object> query
-          = (NamedList<Object>) field.get("query");
+        NamedList<Object> query = (NamedList<Object>) field.get("query");
         if (query != null) {
           List<AnalysisPhase> phases = buildPhases(query);
           fieldAnalysis.setQueryPhases(phases);
         }
-        
+
         @SuppressWarnings("unchecked")
-        NamedList<NamedList<Object>> index
-          = (NamedList<NamedList<Object>>) field.get("index");
+        NamedList<NamedList<Object>> index = (NamedList<NamedList<Object>>) field.get("index");
         for (Map.Entry<String, NamedList<Object>> valueEntry : index) {
           String fieldValue = valueEntry.getKey();
           NamedList<Object> valueNL = valueEntry.getValue();
@@ -83,11 +81,10 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
   }
 
   /**
-   * Returns the document analysis for the document associated with the given unique key (id), {@code null} if no such
-   * association exists.
+   * Returns the document analysis for the document associated with the given unique key (id),
+   * {@code null} if no such association exists.
    *
    * @param documentKey The document unique key.
-   *
    * @return The document analysis for the document associated with the given unique key (id).
    */
   public DocumentAnalysis getDocumentAnalysis(String documentKey) {
@@ -104,7 +101,7 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
     return documentAnalysisByKey.entrySet().iterator();
   }
 
-  //================================================= Inner Classes ==================================================
+  // ===== Inner Classes =====
 
   /**
    * An analysis process breakdown of a document. Holds a map of field analyses by the field name.
@@ -156,9 +153,9 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
   }
 
   /**
-   * An analysis process breakdown for a specific field. Holds a list of query time analysis phases (that is, if a
-   * query analysis was requested in the first place) and a list of index time analysis phases for each field value (a
-   * field can be multi-valued).
+   * An analysis process breakdown for a specific field. Holds a list of query time analysis phases
+   * (that is, if a query analysis was requested in the first place) and a list of index time
+   * analysis phases for each field value (a field can be multi-valued).
    */
   public static class FieldAnalysis {
 
@@ -188,22 +185,22 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
     }
 
     /**
-     * Returns the number of query time analysis phases or {@code -1} if 
-     * this field analysis doesn't hold a query time analysis.
+     * Returns the number of query time analysis phases or {@code -1} if this field analysis doesn't
+     * hold a query time analysis.
      *
-     * @return Returns the number of query time analysis phases or {@code -1} 
-     *         if this field analysis doesn't hold a query time analysis.
+     * @return Returns the number of query time analysis phases or {@code -1} if this field analysis
+     *     doesn't hold a query time analysis.
      */
     public int getQueryPhasesCount() {
       return queryPhases == null ? -1 : queryPhases.size();
     }
 
     /**
-     * Returns the query time analysis phases for the field or {@code null} 
-     * if this field doesn't hold a query time analysis.
+     * Returns the query time analysis phases for the field or {@code null} if this field doesn't
+     * hold a query time analysis.
      *
-     * @return Returns the query time analysis phases for the field or 
-     *         {@code null} if this field doesn't hold a query time analysis.
+     * @return Returns the query time analysis phases for the field or {@code null} if this field
+     *     doesn't hold a query time analysis.
      */
     public Iterable<AnalysisPhase> getQueryPhases() {
       return queryPhases;
@@ -222,7 +219,6 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
      * Returns the number of index time analysis phases the given field value has.
      *
      * @param fieldValue The field value.
-     *
      * @return The number of index time analysis phases the given field value has.
      */
     public int getIndexPhasesCount(String fieldValue) {
@@ -233,7 +229,6 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
      * Returns the index time analysis phases for the given field value.
      *
      * @param fieldValue The field value.
-     *
      * @return The index time analysis phases for the given field value.
      */
     public Iterable<AnalysisPhase> getIndexPhases(String fieldValue) {
@@ -248,7 +243,5 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
     public Iterable<Map.Entry<String, List<AnalysisPhase>>> getIndexPhasesByFieldValue() {
       return indexPhasesByFieldValue.entrySet();
     }
-
   }
-
 }

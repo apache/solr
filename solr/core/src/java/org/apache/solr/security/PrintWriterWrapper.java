@@ -20,9 +20,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Locale;
 
-/**
- * Wrapper for PrintWriter that delegates to constructor arg
- */
+/** Wrapper for PrintWriter that delegates to constructor arg */
 public class PrintWriterWrapper extends PrintWriter {
   private PrintWriter printWriter;
 

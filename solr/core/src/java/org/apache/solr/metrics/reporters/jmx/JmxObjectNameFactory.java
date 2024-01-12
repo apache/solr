@@ -16,17 +16,13 @@
  */
 package org.apache.solr.metrics.reporters.jmx;
 
+import com.codahale.metrics.jmx.ObjectNameFactory;
+import java.util.Arrays;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
-
-import java.util.Arrays;
-
-import com.codahale.metrics.jmx.ObjectNameFactory;
 import org.apache.solr.metrics.SolrMetricInfo;
 
-/**
- * Factory to create MBean names for a given metric.
- */
+/** Factory to create MBean names for a given metric. */
 public class JmxObjectNameFactory implements ObjectNameFactory {
 
   private final String domain;
@@ -36,30 +32,28 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
 
   /**
    * Create ObjectName factory.
+   *
    * @param reporterName name of the reporter
    * @param domain JMX domain name
    * @param additionalProperties additional properties as key, value pairs.
    */
   public JmxObjectNameFactory(String reporterName, String domain, String... additionalProperties) {
-    this.reporterName = reporterName.replaceAll(":", "_");
+    this.reporterName = reporterName.replace(":", "_");
     this.domain = domain;
-    this.subdomains = domain.replaceAll(":", "_").split("\\.");
+    this.subdomains = domain.replace(":", "_").split("\\.");
     if (additionalProperties != null && (additionalProperties.length % 2) != 0) {
-      throw new IllegalArgumentException("additionalProperties length must be even: " + Arrays.toString(additionalProperties));
+      throw new IllegalArgumentException(
+          "additionalProperties length must be even: " + Arrays.toString(additionalProperties));
     }
     this.props = additionalProperties;
   }
 
-  /**
-   * Return current domain.
-   */
+  /** Return current domain. */
   public String getDomain() {
     return domain;
   }
 
-  /**
-   * Return current reporterName.
-   */
+  /** Return current reporterName. */
   public String getReporterName() {
     return reporterName;
   }
@@ -67,15 +61,15 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
   /**
    * Create a hierarchical name.
    *
-   * @param type    metric class, eg. "counters", may be null for non-metric MBeans
-   * @param currentDomain  JMX domain
-   * @param name    object name
+   * @param type metric class, eg. "counters", may be null for non-metric MBeans
+   * @param currentDomain JMX domain
+   * @param name object name
    */
   @Override
   public ObjectName createName(String type, String currentDomain, String name) {
     SolrMetricInfo metricInfo = SolrMetricInfo.of(name);
     String safeName = metricInfo != null ? metricInfo.name : name;
-    safeName = safeName.replaceAll(":", "_");
+    safeName = safeName.replace(":", "_");
     // It turns out that ObjectName(String) mostly preserves key ordering
     // as specified in the constructor (except for the 'type' key that ends
     // up at top level) - unlike ObjectName(String, Map) constructor
@@ -98,7 +92,7 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
         }
         sb.append(','); // separate from other properties
       } else {
-        sb.append(currentDomain.replaceAll(":", "_"));
+        sb.append(currentDomain.replace(":", "_"));
         sb.append(':');
       }
     } else {
@@ -145,7 +139,8 @@ public class JmxObjectNameFactory implements ObjectNameFactory {
         if (i > 0) {
           sb.append(',');
         }
-        sb.append("name"); sb.append(String.valueOf(i));
+        sb.append("name");
+        sb.append(String.valueOf(i));
         sb.append('=');
         sb.append(path[i]);
       }

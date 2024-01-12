@@ -16,8 +16,5 @@
  */
 package org.apache.solr.schema;
 
-/**
- * Marker interface for numeric-valued field types.
- */
-public interface NumericValueFieldType {
-}
+/** Marker interface for numeric-valued field types. */
+public interface NumericValueFieldType {}

@@ -16,28 +16,28 @@
  */
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Set;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.security.AuthorizationContext;
 
-import java.io.Reader;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Set;
-
 /**
- * Provides the ability to specify multiple field types and field names in the same request. Expected parameters:
+ * Provides the ability to specify multiple field types and field names in the same request.
+ * Expected parameters:
+ *
  * <table style="border: 1px solid">
  * <caption>table of parameters</caption>
  * <tr>
@@ -85,11 +85,13 @@ import java.util.Set;
  * <td>No</td>
  * </tr>
  * </table>
- * <p>Note that if neither analysis.fieldname and analysis.fieldtype is specified, then the default search field's
- * analyzer is used.</p>
- * <p>Note that if one of analysis.value or analysis.query or q must be specified</p>
  *
- * @since solr 1.4 
+ * <p>Note that if neither analysis.fieldname and analysis.fieldtype is specified, then the default
+ * search field's analyzer is used.
+ *
+ * <p>Note that if one of analysis.value or analysis.query or q must be specified
+ *
+ * @since solr 1.4
  */
 public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
@@ -110,9 +112,8 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
    * Resolves the AnalysisRequest based on the parameters in the given SolrParams.
    *
    * @param req the request
-   *
-   * @return AnalysisRequest containing all the information about what needs to be analyzed, and using what
-   *         fields/types
+   * @return AnalysisRequest containing all the information about what needs to be analyzed, and
+   *     using what fields/types
    */
   FieldAnalysisRequest resolveAnalysisRequest(SolrQueryRequest req) throws SolrException {
     SolrParams solrParams = req.getParams();
@@ -120,26 +121,30 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
     boolean useDefaultSearchField = true;
     if (solrParams.get(AnalysisParams.FIELD_TYPE) != null) {
-      analysisRequest.setFieldTypes(Arrays.asList(solrParams.get(AnalysisParams.FIELD_TYPE).split(",")));
+      analysisRequest.setFieldTypes(
+          Arrays.asList(solrParams.get(AnalysisParams.FIELD_TYPE).split(",")));
       useDefaultSearchField = false;
     }
     if (solrParams.get(AnalysisParams.FIELD_NAME) != null) {
-      analysisRequest.setFieldNames(Arrays.asList(solrParams.get(AnalysisParams.FIELD_NAME).split(",")));
+      analysisRequest.setFieldNames(
+          Arrays.asList(solrParams.get(AnalysisParams.FIELD_NAME).split(",")));
       useDefaultSearchField = false;
     }
     if (useDefaultSearchField) {
       if (solrParams.get(CommonParams.DF) != null) {
         analysisRequest.addFieldName(solrParams.get(CommonParams.DF));
       } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
             "Field analysis request must contain one of analysis.fieldtype, analysis.fieldname or df.");
       }
     }
     analysisRequest.setQuery(solrParams.get(AnalysisParams.QUERY, solrParams.get(CommonParams.Q)));
 
     String value = solrParams.get(AnalysisParams.FIELD_VALUE);
-    if (analysisRequest.getQuery() == null && value == null)  {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+    if (analysisRequest.getQuery() == null && value == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
           "One of analysis.fieldvalue, q, or analysis.query parameters must be specified");
     }
 
@@ -147,15 +152,10 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     if (streams != null) {
       // NOTE: Only the first content stream is currently processed
       for (ContentStream stream : streams) {
-        Reader reader = null;
         try {
-          reader = stream.getReader();
-          value = IOUtils.toString(reader);
+          value = StrUtils.stringFromReader(stream.getReader());
         } catch (IOException e) {
           // do nothing, leave value set to the request parameter
-        }
-        finally {
-          IOUtils.closeQuietly(reader);
         }
         break;
       }
@@ -167,19 +167,20 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   }
 
   /**
-   * Handles the resolved analysis request and returns the analysis breakdown response as a named list.
+   * Handles the resolved analysis request and returns the analysis breakdown response as a named
+   * list.
    *
    * @param request The request to handle.
-   * @param schema  The index schema.
-   *
+   * @param schema The index schema.
    * @return The analysis breakdown as a named list.
    */
   @SuppressWarnings({"rawtypes"})
-  protected NamedList<NamedList> handleAnalysisRequest(FieldAnalysisRequest request, IndexSchema schema) {
+  protected NamedList<NamedList> handleAnalysisRequest(
+      FieldAnalysisRequest request, IndexSchema schema) {
     NamedList<NamedList> analysisResults = new SimpleOrderedMap<>();
 
     NamedList<NamedList> fieldTypeAnalysisResults = new SimpleOrderedMap<>();
-    if (request.getFieldTypes() != null)  {
+    if (request.getFieldTypes() != null) {
       for (String fieldTypeName : request.getFieldTypes()) {
         FieldType fieldType = schema.getFieldTypes().get(fieldTypeName);
         fieldTypeAnalysisResults.add(fieldTypeName, analyzeValues(request, fieldType, null));
@@ -187,7 +188,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     }
 
     NamedList<NamedList> fieldNameAnalysisResults = new SimpleOrderedMap<>();
-    if (request.getFieldNames() != null)  {
+    if (request.getFieldNames() != null) {
       for (String fieldName : request.getFieldNames()) {
         FieldType fieldType = schema.getFieldType(fieldName);
         fieldNameAnalysisResults.add(fieldName, analyzeValues(request, fieldType, fieldName));
@@ -201,32 +202,36 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
   }
 
   /**
-   * Analyzes the index value (if it exists) and the query value (if it exists) in the given AnalysisRequest, using
-   * the Analyzers of the given field type.
+   * Analyzes the index value (if it exists) and the query value (if it exists) in the given
+   * AnalysisRequest, using the Analyzers of the given field type.
    *
    * @param analysisRequest AnalysisRequest from where the index and query values will be taken
-   * @param fieldType       Type of field whose analyzers will be used
-   * @param fieldName       Name of the field to be analyzed.  Can be {@code null}
-   *
-   * @return NamedList containing the tokens produced by the analyzers of the given field, separated into an index and
-   *         a query group
-   */ // package access for testing
+   * @param fieldType Type of field whose analyzers will be used
+   * @param fieldName Name of the field to be analyzed. Can be {@code null}
+   * @return NamedList containing the tokens produced by the analyzers of the given field, separated
+   *     into an index and a query group
+   */
+  // package access for testing
   @SuppressWarnings({"rawtypes"})
-  NamedList<NamedList> analyzeValues(FieldAnalysisRequest analysisRequest, FieldType fieldType, String fieldName) {
+  NamedList<NamedList> analyzeValues(
+      FieldAnalysisRequest analysisRequest, FieldType fieldType, String fieldName) {
 
     final String queryValue = analysisRequest.getQuery();
-    final Set<BytesRef> termsToMatch = (queryValue != null && analysisRequest.isShowMatch())
-      ? getQueryTokenSet(queryValue, fieldType.getQueryAnalyzer())
-      : EMPTY_BYTES_SET;
+    final Set<BytesRef> termsToMatch =
+        (queryValue != null && analysisRequest.isShowMatch())
+            ? getQueryTokenSet(queryValue, fieldType.getQueryAnalyzer())
+            : EMPTY_BYTES_SET;
 
     NamedList<NamedList> analyzeResults = new SimpleOrderedMap<>();
     if (analysisRequest.getFieldValue() != null) {
-      AnalysisContext context = new AnalysisContext(fieldName, fieldType, fieldType.getIndexAnalyzer(), termsToMatch);
+      AnalysisContext context =
+          new AnalysisContext(fieldName, fieldType, fieldType.getIndexAnalyzer(), termsToMatch);
       NamedList analyzedTokens = analyzeValue(analysisRequest.getFieldValue(), context);
       analyzeResults.add("index", analyzedTokens);
     }
     if (analysisRequest.getQuery() != null) {
-      AnalysisContext context = new AnalysisContext(fieldName, fieldType, fieldType.getQueryAnalyzer());
+      AnalysisContext context =
+          new AnalysisContext(fieldName, fieldType, fieldType.getQueryAnalyzer());
       NamedList analyzedTokens = analyzeValue(analysisRequest.getQuery(), context);
       analyzeResults.add("query", analyzedTokens);
     }

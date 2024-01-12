@@ -23,9 +23,11 @@ public class BadZookeeperThreadsFilter implements ThreadFilter {
   @Override
   public boolean reject(Thread t) {
     String name = t.getName();
-    
-    StackTraceElement [] stack = t.getStackTrace();
-    if (name.startsWith("Thread-") && stack.length > 1 && stack[stack.length - 2].getClassName().equals("org.apache.zookeeper.Login$1")) {
+
+    StackTraceElement[] stack = t.getStackTrace();
+    if (name.startsWith("Thread-")
+        && stack.length > 1
+        && stack[stack.length - 2].getClassName().equals("org.apache.zookeeper.Login$1")) {
       return true; // see ZOOKEEPER-2100
     }
 

@@ -16,30 +16,27 @@
  */
 package org.apache.solr.highlight;
 
+import com.codahale.metrics.Counter;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-import com.codahale.metrics.Counter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 
 /**
- * 
  * @since solr 1.3
  */
-public abstract class HighlightingPluginBase implements SolrInfoBean
-{
+public abstract class HighlightingPluginBase implements SolrInfoBean {
   protected Counter numRequests;
   protected SolrParams defaults;
   protected Set<String> metricNames = ConcurrentHashMap.newKeySet(1);
   protected SolrMetricsContext solrMetricsContext;
 
   public void init(NamedList<?> args) {
-    if( args != null ) {
+    if (args != null) {
       Object o = args.get("defaults");
-      if (o != null && o instanceof NamedList ) {
+      if (o != null && o instanceof NamedList) {
         defaults = ((NamedList) o).toSolrParams();
       }
     }
@@ -56,8 +53,7 @@ public abstract class HighlightingPluginBase implements SolrInfoBean
   public abstract String getDescription();
 
   @Override
-  public Category getCategory()
-  {
+  public Category getCategory() {
     return Category.HIGHLIGHTER;
   }
 
@@ -72,5 +68,3 @@ public abstract class HighlightingPluginBase implements SolrInfoBean
     numRequests = solrMetricsContext.counter("requests", getCategory().toString(), scope);
   }
 }
-
-

@@ -17,7 +17,6 @@
 
 package org.apache.solr.common.cloud;
 
-
 import java.util.Comparator;
 
 public class ReplicaPosition implements Comparable<ReplicaPosition> {
@@ -33,7 +32,9 @@ public class ReplicaPosition implements Comparable<ReplicaPosition> {
     this.index = replicaIdx;
     this.type = type;
   }
-  public ReplicaPosition(String collection, String shard, int replicaIdx, Replica.Type type, String node) {
+
+  public ReplicaPosition(
+      String collection, String shard, int replicaIdx, Replica.Type type, String node) {
     this.collection = collection;
     this.shard = shard;
     this.index = replicaIdx;
@@ -42,11 +43,10 @@ public class ReplicaPosition implements Comparable<ReplicaPosition> {
   }
 
   private static final Comparator<ReplicaPosition> comparator =
-          Comparator
-                  .<ReplicaPosition,String>comparing(rp -> rp.collection)
-                  .thenComparing(rp -> rp.shard)
-                  .thenComparing(rp -> rp.type)
-                  .thenComparingInt(rp -> rp.index);
+      Comparator.<ReplicaPosition, String>comparing(rp -> rp.collection)
+          .thenComparing(rp -> rp.shard)
+          .thenComparing(rp -> rp.type)
+          .thenComparingInt(rp -> rp.index);
 
   @Override
   public int compareTo(ReplicaPosition that) {
@@ -55,7 +55,7 @@ public class ReplicaPosition implements Comparable<ReplicaPosition> {
 
   @Override
   public String toString() {
-    return shard + ":" + index + "["+ type +"] @" + node;
+    return shard + ":" + index + "[" + type + "] @" + node;
   }
 
   public ReplicaPosition setNode(String node) {

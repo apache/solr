@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.DoublePredicate;
 import java.util.stream.Collectors;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -40,42 +39,48 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.request.SolrQueryRequest;
 
-/**
- * syntax fq={!hash workers=11 worker=4 keys=field1,field2}
- */
+/** syntax fq={!hash workers=11 worker=4 keys=field1,field2} */
 public class HashQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "hash";
 
-  public QParser createParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
+  @Override
+  public QParser createParser(
+      String query, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
     return new HashQParser(query, localParams, params, request);
   }
 
   private static class HashQParser extends QParser {
 
-    public HashQParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
+    public HashQParser(
+        String query, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
       super(query, localParams, params, request);
     }
 
+    @Override
     public Query parse() {
       int workers = localParams.getInt("workers", 0);
       if (workers < 2) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "workers needs to be more than 1");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "workers needs to be more than 1");
       }
       int worker = localParams.getInt("worker", 0);
       String keyParam = params.get("partitionKeys");
       String[] keys = keyParam.replace(" ", "").split(",");
-      Arrays.stream(keys).forEach(field -> req.getSchema().getField(field)); // validate all fields exist
+      // validate all fields exist
+      Arrays.stream(keys).forEach(field -> req.getSchema().getField(field));
 
       // TODO wish to provide matchCost on FunctionMatchQuery's TwoPhaseIterator -- LUCENE-9373
       return new FunctionMatchQuery(
           new HashCodeValuesSource(keys).toDoubleValuesSource(),
           new HashPartitionPredicate(workers, worker));
     }
-
   }
 
-  /** A {@link LongValuesSource} that is a hash of some fields' values.  They are fetched via DocValues */
+  /**
+   * A {@link LongValuesSource} that is a hash of some fields' values. They are fetched via
+   * DocValues
+   */
   private static class HashCodeValuesSource extends LongValuesSource {
 
     private final String[] fields;
@@ -93,43 +98,59 @@ public class HashQParserPlugin extends QParserPlugin {
         final NumericDocValues numericDocValues = ctx.reader().getNumericDocValues(field);
         if (numericDocValues != null) {
           // Numeric
-          resultValues[i] = new LongValues() {
-            // Even if not a Long field; could be int, double, float and this still works because DocValues numerics
-            //  are based on a Long.
-            final NumericDocValues values = numericDocValues;
-            boolean atDoc = false;
-            @Override
-            public boolean advanceExact(int doc) throws IOException { atDoc = values.advanceExact(doc); return true; }
-            @Override
-            public long longValue() throws IOException { return atDoc ? Long.hashCode(values.longValue()) : 0; }
-          };
+          resultValues[i] =
+              new LongValues() {
+                // Even if not a Long field; could be int, double, float and this still works
+                // because DocValues numerics are based on a Long.
+                final NumericDocValues values = numericDocValues;
+                boolean atDoc = false;
+
+                @Override
+                public boolean advanceExact(int doc) throws IOException {
+                  atDoc = values.advanceExact(doc);
+                  return true;
+                }
+
+                @Override
+                public long longValue() throws IOException {
+                  return atDoc ? Long.hashCode(values.longValue()) : 0;
+                }
+              };
           continue;
         }
         final SortedDocValues sortedDocValues = ctx.reader().getSortedDocValues(field);
         if (sortedDocValues != null) {
           // String
-          resultValues[i] = new LongValues() {
-            final SortedDocValues values = sortedDocValues;
-            boolean atDoc = false;
-            @Override
-            public boolean advanceExact(int doc) throws IOException { atDoc = values.advanceExact(doc); return true; }
-            @Override
-            public long longValue() throws IOException {
-              //TODO: maybe cache hashCode if same ord as prev doc to save lookupOrd?
-              return atDoc ? hashCode(values.lookupOrd(values.ordValue())) : 0;
-            }
+          resultValues[i] =
+              new LongValues() {
+                final SortedDocValues values = sortedDocValues;
+                boolean atDoc = false;
 
-            private int hashCode(BytesRef bytesRef) {
-              // Use deterministic hashCode.  BytesRef.hashCode() varies!
-              return Hash.murmurhash3_x86_32(bytesRef.bytes, bytesRef.offset, bytesRef.length, 0);
-            }
-          };
+                @Override
+                public boolean advanceExact(int doc) throws IOException {
+                  atDoc = values.advanceExact(doc);
+                  return true;
+                }
+
+                @Override
+                public long longValue() throws IOException {
+                  // TODO: maybe cache hashCode if same ord as prev doc to save lookupOrd?
+                  return atDoc ? hashCode(values.lookupOrd(values.ordValue())) : 0;
+                }
+
+                private int hashCode(BytesRef bytesRef) {
+                  // Use deterministic hashCode.  BytesRef.hashCode() varies!
+                  return Hash.murmurhash3_x86_32(
+                      bytesRef.bytes, bytesRef.offset, bytesRef.length, 0);
+                }
+              };
           continue;
         }
         // fail if some other DocValuesType is present
         final FieldInfo fieldInfo = ctx.reader().getFieldInfos().fieldInfo(field);
         if (fieldInfo != null && fieldInfo.getDocValuesType() != DocValuesType.NONE) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can't compute hash on field " + field);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST, "Can't compute hash on field " + field);
         }
         // fall back on zero for empty case
         resultValues[i] = LongValuesSource.constant(0).getValues(ctx, scores);
@@ -142,10 +163,12 @@ public class HashQParserPlugin extends QParserPlugin {
         // Combine
         return new LongValues() {
           private long result;
+
           @Override
           public boolean advanceExact(int doc) throws IOException {
             // compute the hash here.
-            // algorithm borrowed from Arrays.hashCode(Object[]) but without needing to call hashCode redundantly
+            // algorithm borrowed from Arrays.hashCode(Object[]) but without needing to call
+            // hashCode redundantly
             result = 1;
             for (LongValues longValues : resultValues) {
               boolean present = longValues.advanceExact(doc);
@@ -153,8 +176,11 @@ public class HashQParserPlugin extends QParserPlugin {
             }
             return true; // we always have a hash value
           }
+
           @Override
-          public long longValue() throws IOException { return result; }
+          public long longValue() throws IOException {
+            return result;
+          }
         };
       }
     }
@@ -167,7 +193,7 @@ public class HashQParserPlugin extends QParserPlugin {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof HashCodeValuesSource)) return false;
       HashCodeValuesSource that = (HashCodeValuesSource) o;
       return Arrays.equals(fields, that.fields);
     }
@@ -194,9 +220,8 @@ public class HashQParserPlugin extends QParserPlugin {
   }
 
   /**
-   * Simple modulus check against the input to see if the result is a particular value
-   * (standard hash partition approach).
-   * Can't use a lambda because need equals/hashcode
+   * Simple modulus check against the input to see if the result is a particular value (standard
+   * hash partition approach). Can't use a lambda because need equals/hashcode
    */
   private static class HashPartitionPredicate implements DoublePredicate {
     final int workers;
@@ -209,16 +234,15 @@ public class HashQParserPlugin extends QParserPlugin {
 
     @Override
     public boolean test(double hashAsDouble) {
-      return Math.abs((long)hashAsDouble) % workers == worker;
+      return Math.abs((long) hashAsDouble) % workers == worker;
     }
 
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof HashPartitionPredicate)) return false;
       HashPartitionPredicate that = (HashPartitionPredicate) o;
-      return workers == that.workers &&
-          worker == that.worker;
+      return workers == that.workers && worker == that.worker;
     }
 
     @Override
@@ -226,5 +250,4 @@ public class HashQParserPlugin extends QParserPlugin {
       return Objects.hash(workers, worker);
     }
   }
-
 }

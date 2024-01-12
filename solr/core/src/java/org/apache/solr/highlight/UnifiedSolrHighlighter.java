@@ -18,13 +18,15 @@ package org.apache.solr.highlight;
 
 import java.io.IOException;
 import java.text.BreakIterator;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-
+import java.util.function.Supplier;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
@@ -54,8 +56,9 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 /**
  * Highlighter impl that uses {@link UnifiedHighlighter}
- * <p>
- * Example configuration with default values:
+ *
+ * <p>Example configuration with default values:
+ *
  * <pre class="prettyprint">
  * &lt;requestHandler name="/select" class="solr.SearchHandler"&gt;
  * &lt;lst name="defaults"&gt;
@@ -84,33 +87,45 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  * &lt;/lst&gt;
  * &lt;/requestHandler&gt;
  * </pre>
- * <p>
- * Notes:
+ *
+ * <p>Notes:
+ *
  * <ul>
- * <li>hl.q (string) can specify the query
- * <li>hl.fl (string) specifies the field list.
- * <li>hl.snippets (int) specifies how many snippets to return.
- * <li>hl.tag.pre (string) specifies text which appears before a highlighted term.
- * <li>hl.tag.post (string) specifies text which appears after a highlighted term.
- * <li>hl.simple.pre (string) specifies text which appears before a highlighted term. (prefer hl.tag.pre)
- * <li>hl.simple.post (string) specifies text which appears before a highlighted term. (prefer hl.tag.post)
- * <li>hl.tag.ellipsis (string) specifies text which joins non-adjacent passages. The default is to retain each
- * value in a list without joining them.
- * <li>hl.defaultSummary (bool) specifies if a field should have a default summary of the leading text.
- * <li>hl.encoder (string) can be 'html' (html escapes content) or 'simple' (no escaping).
- * <li>hl.score.k1 (float) specifies bm25 scoring parameter 'k1'
- * <li>hl.score.b (float) specifies bm25 scoring parameter 'b'
- * <li>hl.score.pivot (float) specifies bm25 scoring parameter 'avgdl'
- * <li>hl.bs.type (string) specifies how to divide text into passages: [SENTENCE, LINE, WORD, CHAR, WHOLE]
- * <li>hl.bs.language (string) specifies language code for BreakIterator. default is empty string (root locale)
- * <li>hl.bs.country (string) specifies country code for BreakIterator. default is empty string (root locale)
- * <li>hl.bs.variant (string) specifies country code for BreakIterator. default is empty string (root locale)
- * <li>hl.maxAnalyzedChars (int) specifies how many characters at most will be processed in a document for any one field.
- * <li>hl.highlightMultiTerm (bool) enables highlighting for range/wildcard/fuzzy/prefix queries at some cost. default is true
- * <li>hl.usePhraseHighlighter (bool) enables phrase highlighting. default is true
- * <li>hl.cacheFieldValCharsThreshold (int) controls how many characters from a field are cached. default is 524288 (1MB in 2 byte chars)
- * <li>hl.offsetSource (string) specifies which offset source to use, prefers postings, but will use what's available if not specified
- * <li>hl.weightMatches (bool) enables Lucene Weight Matches mode</li>
+ *   <li>hl.q (string) can specify the query
+ *   <li>hl.fl (string) specifies the field list.
+ *   <li>hl.snippets (int) specifies how many snippets to return.
+ *   <li>hl.tag.pre (string) specifies text which appears before a highlighted term.
+ *   <li>hl.tag.post (string) specifies text which appears after a highlighted term.
+ *   <li>hl.simple.pre (string) specifies text which appears before a highlighted term. (prefer
+ *       hl.tag.pre)
+ *   <li>hl.simple.post (string) specifies text which appears before a highlighted term. (prefer
+ *       hl.tag.post)
+ *   <li>hl.tag.ellipsis (string) specifies text which joins non-adjacent passages. The default is
+ *       to retain each value in a list without joining them.
+ *   <li>hl.defaultSummary (bool) specifies if a field should have a default summary of the leading
+ *       text.
+ *   <li>hl.encoder (string) can be 'html' (html escapes content) or 'simple' (no escaping).
+ *   <li>hl.score.k1 (float) specifies bm25 scoring parameter 'k1'
+ *   <li>hl.score.b (float) specifies bm25 scoring parameter 'b'
+ *   <li>hl.score.pivot (float) specifies bm25 scoring parameter 'avgdl'
+ *   <li>hl.bs.type (string) specifies how to divide text into passages: [SENTENCE, LINE, WORD,
+ *       CHAR, WHOLE]
+ *   <li>hl.bs.language (string) specifies language code for BreakIterator. default is empty string
+ *       (root locale)
+ *   <li>hl.bs.country (string) specifies country code for BreakIterator. default is empty string
+ *       (root locale)
+ *   <li>hl.bs.variant (string) specifies country code for BreakIterator. default is empty string
+ *       (root locale)
+ *   <li>hl.maxAnalyzedChars (int) specifies how many characters at most will be processed in a
+ *       document for any one field.
+ *   <li>hl.highlightMultiTerm (bool) enables highlighting for range/wildcard/fuzzy/prefix queries
+ *       at some cost. default is true
+ *   <li>hl.usePhraseHighlighter (bool) enables phrase highlighting. default is true
+ *   <li>hl.cacheFieldValCharsThreshold (int) controls how many characters from a field are cached.
+ *       default is 524288 (1MB in 2 byte chars)
+ *   <li>hl.offsetSource (string) specifies which offset source to use, prefers postings, but will
+ *       use what's available if not specified
+ *   <li>hl.weightMatches (bool) enables Lucene Weight Matches mode
  * </ul>
  *
  * @lucene.experimental
@@ -120,16 +135,15 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
   protected static final String SNIPPET_SEPARATOR = "\u0000";
 
   @Override
-  public void init(PluginInfo info) {
-  }
+  public void init(PluginInfo info) {}
 
   @Override
-  public NamedList<Object> doHighlighting(DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
+  public NamedList<Object> doHighlighting(
+      DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
     final SolrParams params = req.getParams();
 
     // if highlighting isn't enabled, then why call doHighlighting?
-    if (!isHighlightingEnabled(params))
-      return null;
+    if (!isHighlightingEnabled(params)) return null;
 
     int[] docIDs = toDocIDs(docs);
 
@@ -145,13 +159,16 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     }
 
     UnifiedHighlighter highlighter = getHighlighter(req);
-    Map<String, String[]> snippets = highlighter.highlightFields(fieldNames, query, docIDs, maxPassages);
+    Map<String, String[]> snippets =
+        fieldNames.length == 0
+            ? Collections.emptyMap()
+            : highlighter.highlightFields(fieldNames, query, docIDs, maxPassages);
     return encodeSnippets(keys, fieldNames, snippets);
   }
 
   /**
-   * Creates an instance of the Lucene {@link UnifiedHighlighter}. Provided for subclass extension so that
-   * a subclass can return a subclass of {@link SolrExtendedUnifiedHighlighter}.
+   * Creates an instance of the Lucene {@link UnifiedHighlighter}. Provided for subclass extension
+   * so that a subclass can return a subclass of {@link SolrExtendedUnifiedHighlighter}.
    */
   protected UnifiedHighlighter getHighlighter(SolrQueryRequest req) {
     return new SolrExtendedUnifiedHighlighter(req);
@@ -160,19 +177,20 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
   /**
    * Encodes the resulting snippets into a namedlist
    *
-   * @param keys       the document unique keys
+   * @param keys the document unique keys
    * @param fieldNames field names to highlight in the order
-   * @param snippets   map from field name to snippet array for the docs
+   * @param snippets map from field name to snippet array for the docs
    * @return encoded namedlist of summaries
    */
-  protected NamedList<Object> encodeSnippets(String[] keys, String[] fieldNames, Map<String, String[]> snippets) {
+  protected NamedList<Object> encodeSnippets(
+      String[] keys, String[] fieldNames, Map<String, String[]> snippets) {
     NamedList<Object> list = new SimpleOrderedMap<>();
     for (int i = 0; i < keys.length; i++) {
       NamedList<Object> summary = new SimpleOrderedMap<>();
       for (String field : fieldNames) {
         String snippet = snippets.get(field)[i];
         if (snippet == null) {
-          //TODO reuse logic of DefaultSolrHighlighter.alternateField
+          // TODO reuse logic of DefaultSolrHighlighter.alternateField
         } else {
           // we used a special snippet separator char and we can now split on it.
           summary.add(field, snippet.split(SNIPPET_SEPARATOR));
@@ -183,9 +201,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     return list;
   }
 
-  /**
-   * Converts solr's DocList to the int[] docIDs
-   */
+  /** Converts solr's DocList to the int[] docIDs */
   protected int[] toDocIDs(DocList docs) {
     int[] docIDs = new int[docs.size()];
     DocIterator iterator = docs.iterator();
@@ -201,9 +217,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     return docIDs;
   }
 
-  /**
-   * Retrieves the unique keys for the topdocs to key the results
-   */
+  /** Retrieves the unique keys for the topdocs to key the results */
   protected String[] getUniqueKeys(SolrIndexSearcher searcher, int[] docIDs) throws IOException {
     IndexSchema schema = searcher.getSchema();
     SchemaField keyField = schema.getUniqueKeyField();
@@ -221,11 +235,10 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     }
   }
 
-  /**
-   * From {@link #getHighlighter(org.apache.solr.request.SolrQueryRequest)}.
-   */
+  /** From {@link #getHighlighter(org.apache.solr.request.SolrQueryRequest)}. */
   protected static class SolrExtendedUnifiedHighlighter extends UnifiedHighlighter {
-    protected final static Predicate<String> NOT_REQUIRED_FIELD_MATCH_PREDICATE = s -> true;
+    protected static final Predicate<String> NOT_REQUIRED_FIELD_MATCH_PREDICATE = s -> true;
+    private final SolrIndexSearcher solrIndexSearcher;
     protected final SolrParams params;
 
     protected final IndexSchema schema;
@@ -233,21 +246,25 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
     public SolrExtendedUnifiedHighlighter(SolrQueryRequest req) {
       super(req.getSearcher(), req.getSchema().getIndexAnalyzer());
+      this.solrIndexSearcher = req.getSearcher();
       this.params = req.getParams();
       this.schema = req.getSchema();
-      this.setMaxLength(
-          params.getInt(HighlightParams.MAX_CHARS, DEFAULT_MAX_CHARS));
+      this.setMaxLength(params.getInt(HighlightParams.MAX_CHARS, DEFAULT_MAX_CHARS));
       this.setCacheFieldValCharsThreshold(
-          params.getInt(HighlightParams.CACHE_FIELD_VAL_CHARS_THRESHOLD, DEFAULT_CACHE_CHARS_THRESHOLD));
+          params.getInt(
+              HighlightParams.CACHE_FIELD_VAL_CHARS_THRESHOLD, DEFAULT_CACHE_CHARS_THRESHOLD));
 
       final RTimerTree timerTree;
-      if (req.getRequestTimer() != null) { //It may be null if not used in a search context.
+      if (req.getRequestTimer() != null) { // It may be null if not used in a search context.
         timerTree = req.getRequestTimer();
       } else {
         timerTree = new RTimerTree(); // since null checks are annoying
       }
-      loadFieldValuesTimer = timerTree.sub("loadFieldValues"); // we assume a new timer, state of STARTED
-      loadFieldValuesTimer.pause(); // state of PAUSED now with about zero time. Will fail if state isn't STARTED.
+      loadFieldValuesTimer =
+          timerTree.sub("loadFieldValues"); // we assume a new timer, state of STARTED
+      loadFieldValuesTimer.resume(); // ensure state is STARTED (some obscure test / use-case)
+      loadFieldValuesTimer
+          .pause(); // state of PAUSED now with about zero time. Will fail if state isn't STARTED.
     }
 
     @Override
@@ -263,29 +280,34 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     // optimization for Solr which keeps a FieldInfos on-hand
     @Override
     protected FieldInfo getFieldInfo(String field) {
-      return ((SolrIndexSearcher)searcher).getFieldInfos().fieldInfo(field);
+      return ((SolrIndexSearcher) searcher).getFieldInfos().fieldInfo(field);
     }
 
     @Override
     public int getMaxNoHighlightPassages(String field) {
       boolean defaultSummary = params.getFieldBool(field, HighlightParams.DEFAULT_SUMMARY, false);
       if (defaultSummary) {
-        return -1;// signifies return first hl.snippets passages worth of the content
+        return -1; // signifies return first hl.snippets passages worth of the content
       } else {
-        return 0;// will return null
+        return 0; // will return null
       }
     }
 
     @Override
     protected PassageFormatter getFormatter(String fieldName) {
-      String preTag = params.getFieldParam(fieldName, HighlightParams.TAG_PRE,
-          params.getFieldParam(fieldName, HighlightParams.SIMPLE_PRE, "<em>")
-      );
+      String preTag =
+          params.getFieldParam(
+              fieldName,
+              HighlightParams.TAG_PRE,
+              params.getFieldParam(fieldName, HighlightParams.SIMPLE_PRE, "<em>"));
 
-      String postTag = params.getFieldParam(fieldName, HighlightParams.TAG_POST,
-          params.getFieldParam(fieldName, HighlightParams.SIMPLE_POST, "</em>")
-      );
-      String ellipsis = params.getFieldParam(fieldName, HighlightParams.TAG_ELLIPSIS, SNIPPET_SEPARATOR);
+      String postTag =
+          params.getFieldParam(
+              fieldName,
+              HighlightParams.TAG_POST,
+              params.getFieldParam(fieldName, HighlightParams.SIMPLE_POST, "</em>"));
+      String ellipsis =
+          params.getFieldParam(fieldName, HighlightParams.TAG_ELLIPSIS, SNIPPET_SEPARATOR);
       String encoder = params.getFieldParam(fieldName, HighlightParams.ENCODER, "simple");
       return new DefaultPassageFormatter(preTag, postTag, ellipsis, "html".equals(encoder));
     }
@@ -302,7 +324,9 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     protected BreakIterator getBreakIterator(String field) {
       // Use a default fragsize the same as the regex Fragmenter (original Highlighter) since we're
       //  both likely shooting for sentence-like patterns.
-      int fragsize = params.getFieldInt(field, HighlightParams.FRAGSIZE, LuceneRegexFragmenter.DEFAULT_FRAGMENT_SIZE);
+      int fragsize =
+          params.getFieldInt(
+              field, HighlightParams.FRAGSIZE, LuceneRegexFragmenter.DEFAULT_FRAGMENT_SIZE);
       String type = params.getFieldParam(field, HighlightParams.BS_TYPE);
       if (fragsize == 0 || "WHOLE".equals(type)) { // 0 is special value; no fragmenting
         return new WholeBreakIterator();
@@ -324,30 +348,28 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
         return baseBI;
       }
 
-      float fragalign = params.getFieldFloat(field, HighlightParams.FRAGALIGNRATIO, 0.5f);
+      float fragalign = params.getFieldFloat(field, HighlightParams.FRAGALIGNRATIO, 0.33f);
       if (params.getFieldBool(field, HighlightParams.FRAGSIZEISMINIMUM, true)) {
         return LengthGoalBreakIterator.createMinLength(baseBI, fragsize, fragalign);
       }
       return LengthGoalBreakIterator.createClosestToLength(baseBI, fragsize, fragalign);
     }
 
-    /**
-     * parse custom separator char for {@link CustomSeparatorBreakIterator}
-     */
+    /** parse custom separator char for {@link CustomSeparatorBreakIterator} */
     protected char parseBiSepChar(String sepChar) {
       if (sepChar == null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, HighlightParams.BS_SEP + " not passed");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, HighlightParams.BS_SEP + " not passed");
       }
       if (sepChar.length() != 1) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, HighlightParams.BS_SEP +
-            " must be a single char but got: '" + sepChar + "'");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            HighlightParams.BS_SEP + " must be a single char but got: '" + sepChar + "'");
       }
       return sepChar.charAt(0);
     }
 
-    /**
-     * parse a break iterator type for the specified locale
-     */
+    /** parse a break iterator type for the specified locale */
     protected BreakIterator parseBreakIterator(String type, Locale locale) {
       if (type == null || "SENTENCE".equals(type)) {
         return BreakIterator.getSentenceInstance(locale);
@@ -362,14 +384,13 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       }
     }
 
-    /**
-     * parse a locale from a language+country+variant spec
-     */
+    /** parse a locale from a language+country+variant spec */
     protected Locale parseLocale(String language, String country, String variant) {
       if (language == null && country == null && variant == null) {
         return Locale.ROOT;
       } else if (language == null) {
-        throw new IllegalArgumentException("language is required if country or variant is specified");
+        throw new IllegalArgumentException(
+            "language is required if country or variant is specified");
       } else if (country == null && variant != null) {
         throw new IllegalArgumentException("To specify variant, country is required");
       } else if (country != null && variant != null) {
@@ -382,8 +403,8 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     }
 
     @Override
-    protected List<CharSequence[]> loadFieldValues(String[] fields, DocIdSetIterator docIter, int
-        cacheCharsThreshold) throws IOException {
+    protected List<CharSequence[]> loadFieldValues(
+        String[] fields, DocIdSetIterator docIter, int cacheCharsThreshold) throws IOException {
       // Time loading field values.  It can be an expensive part of highlighting.
       loadFieldValuesTimer.resume();
       try {
@@ -405,7 +426,8 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       flags.add(HighlightFlag.PASSAGE_RELEVANCY_OVER_SPEED);
 
       if (params.getFieldBool(field, HighlightParams.WEIGHT_MATCHES, true)
-          && flags.contains(HighlightFlag.PHRASES) && flags.contains(HighlightFlag.MULTI_TERM_QUERY)) {
+          && flags.contains(HighlightFlag.PHRASES)
+          && flags.contains(HighlightFlag.MULTI_TERM_QUERY)) {
         flags.add(HighlightFlag.WEIGHT_MATCHES);
       }
       return flags;
@@ -413,15 +435,26 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
 
     @Override
     protected Predicate<String> getFieldMatcher(String field) {
-      // TODO define hl.queryFieldPattern as a more advanced alternative to hl.requireFieldMatch.
 
       // note that the UH at Lucene level default to effectively "true"
       if (params.getFieldBool(field, HighlightParams.FIELD_MATCH, false)) {
         return field::equals; // requireFieldMatch
-      } else {
-        return NOT_REQUIRED_FIELD_MATCH_PREDICATE;
       }
+
+      String[] queryFieldPattern =
+          params.getFieldParams(field, HighlightParams.QUERY_FIELD_PATTERN);
+      if (queryFieldPattern != null && queryFieldPattern.length != 0) {
+
+        Supplier<Collection<String>> indexedFieldsSupplier =
+            () -> solrIndexSearcher.getDocFetcher().getIndexedFieldNames();
+
+        Set<String> fields =
+            Set.of(expandWildcardsInFields(indexedFieldsSupplier, queryFieldPattern));
+
+        return fields::contains;
+      }
+
+      return NOT_REQUIRED_FIELD_MATCH_PREDICATE;
     }
   }
-
 }

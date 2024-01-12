@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.cloud;
 
-
 public class PlainIdRouter extends HashBasedRouter {
   public static final String NAME = "plain";
 

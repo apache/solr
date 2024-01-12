@@ -41,7 +41,7 @@ if [[ "$data" != /var/solr/initdb-was-here ]]; then
   echo "Test $TEST_DIR $tag failed; script did not run"
   exit 1
 fi
-data=$(docker exec --user=solr "$container_name" ls /var/solr/should-not-be; true)
+data=$(docker exec --user=solr "$container_name" ls /var/solr/should-not-be || true)
 if [[ -n "$data" ]]; then
   echo "Test $TEST_DIR $tag failed; should-not-be was"
   exit 1

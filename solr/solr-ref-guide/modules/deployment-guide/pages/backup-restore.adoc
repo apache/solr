@@ -1,0 +1,851 @@
+= Backup and Restore
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+If you are worried about data loss, and of course you _should_ be, you need a way to back up your Solr indexes so that you can recover quickly in case of catastrophic failure.
+
+Solr provides two approaches to backing up and restoring Solr cores or collections, depending on how you are running Solr.
+If you run a SolrCloud cluster, you will use the Collections API.
+If you run a user-managed cluster or a single-node installation, you will use the replication handler.
+
+[NOTE]
+====
+Backups (and Snapshots) capture data that has been xref:configuration-guide:commits-transaction-logs.adoc#hard-commits-vs-soft-commits[hard committed].
+Committing changes using `softCommit=true` may result in changes that are visible in search results but not included in subsequent backups.
+
+Likewise, committing changes using `openSearcher=false` may result in changes committed to disk and included in subsequent backups, even if they are not currently visible in search results.
+====
+
+== SolrCloud Clusters
+
+Support for backups in SolrCloud is provided with the xref:collection-management.adoc#backup[Collections API].
+This allows the backups to be generated across multiple shards, and restored to the same number of shards and replicas as the original collection.
+
+NOTE: SolrCloud Backup/Restore requires a shared file system mounted at the same path on all nodes, or HDFS.
+
+Four different API commands are supported:
+
+* `action=BACKUP`: This command backs up Solr indexes and configurations.
+More information is available in the section xref:collection-management.adoc#backup[Backup Collection].
+* `action=RESTORE`: This command restores Solr indexes and configurations.
+More information is available in the section xref:collection-management.adoc#restore[Restore Collection].
+* `action=LISTBACKUP`: This command lists the backup points available at a specified location, displaying metadata for each.
+More information is available in the section xref:collection-management.adoc#listbackup[List Backups].
+* `action=DELETEBACKUP`: This command allows deletion of backup files or whole backups.
+More information is available in the section xref:collection-management.adoc#deletebackup[Delete Backups].
+
+== User-Managed Clusters and Single-Node Installations
+
+Backups and restoration uses Solr's replication handler.
+Out of the box, Solr includes implicit support for replication so this API can be used.
+Configuration of the replication handler can, however, be customized by defining your own replication handler in `solrconfig.xml`.
+For details on configuring the replication handler, see the section xref:user-managed-index-replication.adoc#configuring-the-replicationhandler[Configuring the ReplicationHandler].
+
+=== Backup API
+
+The `backup` API requires sending a command to the `/replication` handler to back up the system.
+
+You can trigger a back-up with an HTTP command like this (replace "gettingstarted" with the name of the core you are working with):
+
+.Backup API Example
+[source,text]
+----
+http://localhost:8983/solr/gettingstarted/replication?command=backup
+----
+
+The `backup` command is an asynchronous call, and it will represent data from the latest index commit point.
+All indexing and search operations will continue to be executed against the index as usual.
+
+Only one backup call can be made against a core at one time.
+While an ongoing backup operation is happening subsequent calls for restoring will throw an exception.
+
+The backup request can also take the following additional parameters:
+
+`location`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The path where the backup will be created.
+If the path is not absolute then the backup path will be relative to Solr's instance directory.
+
+`name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The snapshot will be created in a directory called `snapshot.<name>`.
+If a name is not specified then the directory name will have the following format: `snapshot.<_yyyyMMddHHmmssSSS_>`.
+
+`numberToKeep`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The number of backups to keep.
+If `maxNumberOfBackups` has been specified on the replication handler in `solrconfig.xml`, `maxNumberOfBackups` is always used and attempts to use `numberToKeep` will cause an error.
+Also, this parameter is not taken into consideration if the backup name is specified.
+More information about `maxNumberOfBackups` can be found in the section xref:user-managed-index-replication.adoc#configuring-the-replicationhandler[Configuring the ReplicationHandler].
+
+`repository`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The name of the repository to be used for the backup.
+If no repository is specified then the local filesystem repository will be used automatically.
+
+`commitName`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The name of the commit which was used while taking a snapshot using the CREATESNAPSHOT command.
+
+=== Backup Status
+
+The `backup` operation can be monitored to see if it has completed by sending the `details` command to the `/replication` handler, as in this example:
+
+.Status API Example
+[source,text]
+----
+http://localhost:8983/solr/gettingstarted/replication?command=details&wt=xml
+----
+
+.Output Snippet
+[source,xml]
+----
+<lst name="backup">
+  <str name="startTime">2022-02-11T17:19:33.271461700Z</str>
+  <int name="fileCount">10</int>
+  <int name="indexFileCount">10</int>
+  <str name="status">success</str>
+  <str name="snapshotCompletedAt">2022-02-11T17:19:34.363859100Z</str>
+  <str name="endTime">2022-02-11T17:19:34.363859100Z</str>
+  <str name="snapshotName">my_backup</str>
+</lst>
+----
+
+If it failed then a `snapShootException` will be sent in the response.
+
+=== Restore API
+
+Restoring the backup requires sending the `restore` command to the `/replication` handler, followed by the name of the backup to restore.
+
+You can restore from a backup with a command like this:
+
+.Example Usage
+[source,text]
+----
+http://localhost:8983/solr/gettingstarted/replication?command=restore&name=backup_name
+----
+
+This will restore the named index snapshot into the current core.
+Searches will start reflecting the snapshot data once the restore is complete.
+
+The `restore` request can take these additional parameters:
+
+`location`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The location of the backup snapshot file.
+If not specified, it looks for backups in Solr's data directory.
+
+`name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The name of the backup index snapshot to be restored.
+If the name is not provided it looks for backups with `snapshot.<timestamp>` format in the location directory.
+It picks the latest timestamp backup in that case.
+
+`repository`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The name of the repository to be used for the backup.
+If no repository is specified then the local filesystem repository will be used automatically.
+
+The `restore` command is an asynchronous call.
+Once the restore is complete the data reflected will be of the backed up index which was restored.
+
+Only one `restore` call can can be made against a core at one point in time.
+While an ongoing restore operation is happening subsequent calls for restoring will throw an exception.
+
+=== Restore Status API
+
+You can also check the status of a `restore` operation by sending the `restorestatus` command to the `/replication` handler, as in this example:
+
+.Status API Example
+[source,text]
+----
+http://localhost:8983/solr/gettingstarted/replication?command=restorestatus&wt=xml
+----
+
+.Status API Output
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">0</int>
+  </lst>
+  <lst name="restorestatus">
+    <str name="snapshotName">snapshot.<name></str>
+    <str name="status">success</str>
+  </lst>
+</response>
+----
+
+The status value can be "In Progress", "success" or "failed".
+If it failed then an "exception" will also be sent in the response.
+
+[[create-snapshot-api]]
+== CREATE: Create a Snapshot
+
+The snapshot functionality is different from the backup functionality as the index files aren't copied anywhere.
+The index files are snapshotted in the same index directory and can be referenced while taking backups.
+
+You can trigger a snapshot command with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1createsnapshot]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/solr/admin/cores?action=CREATESNAPSHOT&core=techproducts&commitName=commit1
+
+----
+====
+
+[example.tab-pane#v2createsnapshot]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the core and snapshot names are part of the path instead of query parameters.
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/techproducts/snapshots/commit1
+----
+====
+--
+
+=== CREATE Parameters
+
+The CREATE action allows the following parameters:
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be processed asynchronously.
+
+=== CREATE Response
+
+The response will include the status of the request, the core name, snapshot name, index directory path, snapshot generation, and a list of file names.
+If the status is anything other than "success", an error message will explain why the request failed.
+
+[[list-snapshot-api]]
+== List: List All Snapshots for a Particular Core
+
+You can trigger a list snapshot command with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1listsnapshots]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+curl http://localhost:8983/solr/admin/cores?action=LISTSNAPSHOTS&core=techproducts&commitName=commit1
+
+----
+====
+
+[example.tab-pane#v2listsnapshots]
+====
+[.tab-label]*V2 API*
+
+With the v2 API the core name appears in the path, instead of as a query parameter.
+
+[source,bash]
+----
+curl http://localhost:8983/api/cores/techproducts/snapshots
+----
+====
+--
+
+=== LIST Parameters
+
+The LIST action allows the following parameters:
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be processed asynchronously.
+
+=== LIST Response
+
+The response will include the status of the request and all existing snapshots for the core.
+If the status is anything other than "success", an error message will explain why the request failed.
+
+[[delete-snapshot-api]]
+== DELETE: Delete a Snapshot
+
+You can trigger a delete snapshot with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletesnapshot]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+curl http://localhost:8983/solr/admin/cores?action=DELETESNAPSHOT&core=techproducts&commitName=commit1
+
+----
+====
+
+[example.tab-pane#v2deletesnapshot]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the core and snapshot names are part of the path instead of query parameters.
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/cores/techproducts/snapshots/commit1
+----
+====
+--
+
+=== DELETE Parameters
+
+The DELETE action allows the following parameters:
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be processed asynchronously.
+
+=== DELETE Response
+
+The response will include the status of the request, the core name, and the name of the snapshot that was deleted.
+If the status is anything other than "success", an error message will explain why the request failed.
+
+== Backup/Restore Storage Repositories
+
+Solr provides a repository abstraction to allow users to backup and restore their data to a variety of different storage systems.
+For example, a Solr cluster running on a local filesystem (e.g., EXT3) can store backup data on the same disk, on a remote network-mounted drive, in HDFS, or even in some popular "cloud storage" providers, depending on the 'repository' implementation chosen.
+Solr offers multiple different repository implementations out of the box (`LocalFileSystemRepository`, `HdfsBackupRepository`, `GCSBackupRepository` and `S3BackupRepository`), and allows users to create plugins for their own storage systems as needed.
+
+Users can define any number of repositories in their `solr.xml` file.
+The backup and restore APIs described above allow users to select which of these definitions they want to use at runtime via the `repository` parameter.
+When no `repository` parameter is specified, the local filesystem repository is used as a default.
+
+Repositories are defined by a `<repository>` tag nested under a `<backup>` parent tag.
+All `<repository>` tags must have a `name` attribute (defines the identifier that users can reference later to select this repository) and a `class` attribute (containing the full Java classname that implements the repository).
+They may also have a boolean `default` attribute, which may be `true` on at most one repository definition.
+Any children under the `<repository>` tag are passed as additional configuration to the repository, allowing repositories to read their own implementation-specific configuration.
+
+Information on each of the repository implementations provided with Solr is provided below.
+
+=== LocalFileSystemRepository
+
+LocalFileSystemRepository stores and retrieves backup files anywhere on the accessible filesystem.
+Files can be stored on "local" disk, or on network-mounted drives that appear local to the filesystem.
+
+WARNING: SolrCloud administrators looking to use LocalFileSystemRepository in tandem with network drives should be careful to make the drive available at the same location on each Solr node.
+Strictly speaking, the mount only needs to be present on the node doing the backup (or restore), and on the node currently serving as the "Overseer".
+However since the "overseer" role often moves from node to node in a cluster, it is generally recommended that backup drives be added to all nodes uniformly.
+
+A LocalFileSystemRepository instance is used as a default by any backup and restore commands that don't explicitly provide a `repository` parameter or have a default specified in `solr.xml`.
+
+LocalFileSystemRepository accepts the following configuration option:
+
+`location`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A valid file path (accessible to Solr locally) to use for backup storage and retrieval.
+Used as a fallback when user's don't provide a `location` parameter in their Backup or Restore API commands
+
+An example configuration using this property can be found below.
+
+[source,xml]
+----
+<backup>
+  <repository name="local_repo" class="org.apache.solr.core.backup.repository.LocalFileSystemRepository">
+    <str name="location">/solr/backup_data</str>
+  </repository>
+</backup>
+----
+
+
+=== HdfsBackupRepository
+
+Stores and retrieves backup files from HDFS directories.
+
+This is provided via the `hdfs` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
+HdfsBackupRepository accepts the following configuration options:
+
+`solr.hdfs.buffer.size`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `4096` kilobytes
+|===
++
+The size, in bytes, of the buffer used to transfer data to and from HDFS.
+Better throughput is often attainable with a larger buffer, where memory allows.
+
+`solr.hdfs.home`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+A HDFS URI in the format `hdfs://<host>:<port>/<hdfsBaseFilePath>` that points Solr to the HDFS cluster to store (or retrieve) backup files on.
+
+`solr.hdfs.permissions.umask-mode`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A permission umask used when creating files in HDFS.
+
+`location`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A valid directory path on the HDFS cluster to use for backup storage and retrieval.
+Used as a fallback when users don't provide a `location` parameter in their Backup or Restore API commands.
+
+An example configuration using these properties can be found below:
+
+[source,xml]
+----
+<backup>
+  <repository name="hdfs" class="org.apache.solr.hdfs.backup.repository.HdfsBackupRepository" default="false">
+    <str name="solr.hdfs.home">hdfs://some_hdfs_host:1234/solr/backup/data</str>
+    <int name="solr.hdfs.buffer.size">8192</int>
+    <str name="solr.hdfs.permissions.umask-mode">0022</str>
+    <str name="location">/default/hdfs/backup/location</str>
+  </repository>
+</backup>
+----
+
+=== GCSBackupRepository
+
+Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket.
+
+This is provided via the `gcs-repository` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
+GCSBackupRepository accepts the following options for overall configuration:
+
+`gcsBucket`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+The GCS bucket to read and write all backup files to.
+If not specified, GCSBackupRepository will use the value of the `GCS_BUCKET` environment variable.
+If both values are absent, the value `solrBackupsBucket` will be used as a default.
+
+`gcsCredentialPath`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+A path on the local filesystem (accessible by Solr) to a https://cloud.google.com/iam/docs/creating-managing-service-account-keys[Google Cloud service account key] file.
+If not specified, GCSBackupRepository will use the value of the `GCS_CREDENTIAL_PATH` environment variable.
+If both values are absent and Solr is running inside GCP, the GCS client will attempt to authenticate using GCP's "Compute Engine Metadata Server" or https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity[Workload Identity] features.
+If both values are absent and Solr is running outside of GCP, it will be unable to authenticate and any backup or restore operations will fail.
+
+`location`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A valid "directory" path in the given GCS bucket to us for backup storage and retrieval.
+(GCS uses a flat storage model, but Solr's backup functionality names blobs in a way that approximates hierarchical directory storage.)
+Used as a fallback when user's don't provide a `location` parameter in their Backup or Restore API commands.
+
+In addition to these properties for overall configuration, GCSBackupRepository gives users detailed control over the client used to communicate with GCS.
+These properties are unlikely to interest most users, but may be valuable for those looking to micromanage performance or subject to a flaky network.
+
+GCSBackupRepository accepts the following advanced client-configuration options:
+
+`gcsWriteBufferSizeBytes`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `16777216` bytes (16 MB)
+|===
++
+The buffer size, in bytes, to use when sending data to GCS.
+
+`gcsReadBufferSizeBytes`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2097152` bytes (2 MB)
+|===
++
+The buffer size, in bytes, to use when copying data from GCS.
+
+`gcsClientHttpConnectTimeoutMillis`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2000` milliseconds
+|===
++
+The connection timeout, in milliseconds, for all HTTP requests made by the GCS client.
+`0` may be used to request an infinite timeout.
+A negative integer, or not specifying a value at all, will result in the default value.
+
+`gcsClientHttpReadTimeoutMillis`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `20000` milliseconds
+|===
++
+The read timeout, in milliseconds, for reading data on an established connection.
+`0` may be used to request an infinite timeout.
+A negative integer, or not specifying a value at all, will result in the default value.
+
+`gcsClientMaxRetries`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `10`
+|===
++
+The maximum number of times to retry an operation upon failure.
+The GCS client will retry operations until this value is reached, or the time spent across all attempts exceeds `gcsClientMaxRequestTimeoutMillis`.
+`0` may be used to specify that no retries should be done.
+
+`gcsClientMaxRequestTimeoutMillis`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `30000` milliseconds
+|===
++
+The maximum amount of time to spend on all retries of an operation that has failed.
+The GCS client will retry operations until either this timeout has been reached, or until `gcsClientMaxRetries` attempts have failed.
+
+`gcsClientHttpInitialRetryDelayMillis`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1000` milliseconds
+|===
++
+The time, in milliseconds, to delay before the first retry of a HTTP request that has failed.
+This value also factors in to subsequent retries - see the `gcsClientHttpRetryDelayMultiplier` description below for more information.
+If `gcsClientMaxRetries` is `0`, this property is ignored as no retries are attempted.
+
+`gcsClientHttpRetryDelayMultiplier`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1.0`
+|===
++
+A floating-point multiplier used to scale the delay between each successive retry of a failed HTTP request..
+The greater this number is, the more quickly the retry delay compounds and scales.
++
+Under the covers, the GSC client uses an exponential backoff strategy between retries, governed by the formula: stem:[gcsClientH\t\tpInitialRetryDelayMillis*(gcsClientH\t\tpRetryDelayM\u\l\tiplier)^(retryNum-1)].
+The first retry will have a delay of stem:[gcsClientH\t\tpInitialRetryDelayMillis], the second a delay of stem:[gcsClientH\t\tpInitialRetryDelayMillis * gcsClientH\t\tpRetryDelayM\u\l\tiplier], the third a delay of stem:[gcsClientH\t\tpInitialRetryDelayMillis * gcsClientH\t\tpRetryDelayM\u\l\tiplier^2], and so on.
++
+If not specified the value `1.0` is used by default, ensuring that `gcsClientHttpInitialRetryDelayMillis` is used between each retry attempt.
+
+`gcsClientHttpMaxRetryDelayMillis`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `30000` milliseconds
+|===
++
+The maximum delay, in milliseconds, between retry attempts on a failed HTTP request.
+This is commonly used to cap the exponential growth in retry-delay that occurs over multiple attempts.
+See the `gcsClientHttpRetryDelayMultiplier` description above for more information on how each delay is calculated when not subject to this maximum.
+
+`gcsClientRpcInitialTimeoutMillis`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `10000` milliseconds
+|===
++
+The time, in milliseconds, to wait on a RPC request before timing out.
+This value also factors in to subsequent retries - see the `gcsClientRpcTimeoutMultiplier` description below for more information.
+If `gcsClientMaxRetries` is `0`, this property is ignored as no retries are attempted.
+
+`gcsClientRpcTimeoutMultiplier`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1.0`
+|===
++
+A floating-point multiplier used to scale the timeout on each successive attempt of a failed RPC request.
+The greater this number is, the more quickly the timeout compounds and scales.
++
+Under the covers, the GSC client uses an exponential backoff strategy for RPC timeouts, governed by the formula: stem:[gcsClientRpcInitialTimeoutMillis*(gcsClientRpcTimeoutM\u\l\tiplier)^(retryNum-1)].
+The first retry will have a delay of stem:[gcsClientRpcInitialTimeoutMillis], the second a delay of stem:[gcsClientRpcInitialTimeoutMillis * gcsClientRpcTimeoutM\u\l\tiplier], the third a delay of stem:[gcsClientRpcInitialTimeoutMillis * gcsClientRpcTimeoutM\u\l\tiplier^2], and so on.
++
+If not specified the value `1.0` is used by default, ensuring that `gcsClientRpcInitialTimeoutMillis` is used on each RPC attempt.
+
+`gcsClientRpcMaxTimeoutMillis`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `30000` milliseconds
+|===
++
+The maximum timeout, in milliseconds, for retry attempts of a failed RPC request.
+This is commonly used to cap the exponential growth in timeout that occurs over multiple attempts.
+See the `gcsClientRpcTimeoutMultiplier` description above for more information on how each timeout is calculated when not subject to this maximum.
+
+An example configuration using the overall and GCS-client properties can be seen below:
+
+[source,xml]
+----
+<backup>
+  <repository name="gcs_backup" class="org.apache.solr.gcs.GCSBackupRepository" default="false">
+    <str name="gcsBucket">solrBackups</str>
+    <str name="gcsCredentialPath">/local/path/to/credential/file</str>
+    <str name="location">/default/gcs/backup/location</str>
+
+    <int name="gcsClientMaxRetries">5</int>
+    <int name="gcsClientHttpInitialRetryDelayMillis">1500</int>
+    <double name="gcsClientHttpRetryDelayMultiplier">1.5</double>
+    <int name="gcsClientHttpMaxRetryDelayMillis">10000</int>
+  </repository>
+</backup>
+----
+
+=== S3BackupRepository
+
+Stores and retrieves backup files in an Amazon S3 bucket.
+
+This is provided via the `s3-repository` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
+This plugin uses the https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html[default AWS credentials provider chain], so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
+
+[NOTE]
+====
+There are a few nuances to using the **`location`** option with the S3 Repository.
+The `location` option specifies the sub-directory to store backup information in.
+
+Location Format::
+When using the Backup & Restore Collections API Calls, the **`location`** option can be presented in a number of ways:
++
+* `dir/in/bucket`
+* `/dir/in/bucket`
+* `s3:/dir/in/bucket`
+* `s3://dir/in/bucket`
++
+All the above options will resolve to the same directory in your S3 Bucket: `dir/in/bucket`.
+
+Pre-Creation::
+The location must already exist within your S3 bucket before you can preform any backup operations with that location.
++
+**Please note that the directory you create in S3 cannot begin with a `/`, as `locations` are stripped of any `/` prefix (shown in `Location Format`).**
+
+Empty Location::
+If you do not want to use a sub-directory within your bucket to store your backup, you can use any of the following location options: `/`, `s3:/`, `s3://`.
+However the location option is mandatory and you will recieve an error when trying to perform backup operations without it.
+====
+
+An example configuration to enable S3 backups and restore can be seen below:
+
+[source,xml]
+----
+<backup>
+  <repository name="s3" class="org.apache.solr.s3.S3BackupRepository" default="false">
+    <str name="s3.bucket.name">my-s3-bucket</str>
+    <str name="s3.region">us-west-2</str>
+  </repository>
+</backup>
+----
+
+S3BackupRepository accepts the following options (in `solr.xml`) for overall configuration:
+
+`s3.bucket.name`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The S3 bucket to read and write all backup files to. Can be overridden by setting `S3_BUCKET_NAME` environment variable.
+
+`s3.profile`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A profile to load AWS settings for from config files.
+Profiles allow for independent settings for multiple S3Repositories.
+Can be overridden by setting `AWS_PROFILE` environment variable or `-Daws.profile` system property.
+For more information on setting configuration per-profile, refer to the https://docs.aws.amazon.com/sdkref/latest/guide/file-format.html#file-format-config[AWS Java SDK documentation]
+
+`s3.region`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A valid Amazon S3 region string where your bucket is provisioned. You must have read and write permissions for this bucket.
+For a full list of regions, please reference the https://docs.aws.amazon.com/general/latest/gr/s3.html[S3 documentation].
+Can be overridden by setting `S3_REGION` environment variable, or setting the region in the AWS Configuration file.
+
+`s3.endpoint`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Explicit S3 endpoint. Not needed under normal operations when using AWS S3 (the S3 client can infer the endpoint from the `s3.region`).
+This parameter is helpful if using a mock S3 framework and want to explicitly override where S3 requests are routed, such as when using S3Mock.
+Can be overridden by setting `S3_ENDPOINT` environment variable.
+
+[NOTE]
+====
+You can use the `s3.endpoint` option to use this BackupRepository with _s3-compatible_ endpoints.
+Beware that not all _s3-compatible_ endpoints will work with the S3BackupRepository.
+Minio is an example of an _s3-compatible_ endpoint that does not work with the S3BackupRepository.
+The S3BackupRepository is only guaranteed to be compatible with AWS S3 and S3Mock.
+====
+
+`s3.proxy.url`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Proxy url for the S3 client to route requests through, if desired.
+The url should include `<scheme>://<hostname>:<port>`, however port and scheme _may_ be inferred if missing.
++
+If used, this will override any system proxy settings that are set.
+There is no need to disable the `s3.proxy.useSystemSettings` option.
+If you need to use a proxy `username`, `password` or `nonProxyHosts`, please use the system properties listed below.
+
+`s3.proxy.useSystemSettings`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: true
+|===
++
+By default use the system proxy settings if they are set when communicating with the S3 server.
+The supported proxy system properties are:
++
+* `http.proxyHost`
+* `http.proxyPort`
+* `http.nonProxyHosts`
+* `http.proxyUser`
+* `http.proxyPassword`
+
+`s3.retries.disable`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+Disable retries for all S3 operations. This is not recommended.
+
+==== S3 Client Configuration
+
+The AWS Java SDKs provide many ways of setting the configuration for an S3 Client.
+The Solr S3Repository allows these configurations to be set via:
+
+* Environment Variables
+* Java System Properties
+* AWS Configuration File (possibly per-profile)
+
+https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html[These options] include:
+
+* Region
+* Access Keys
+* Retries
+** RetryMode (`LEGACY`, `STANDARD`, `ADAPTIVE`)
+** Max Attempts

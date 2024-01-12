@@ -19,16 +19,14 @@ package org.apache.solr.servlet;
 import javax.servlet.http.HttpServlet;
 
 /**
- * All Solr servlets available to the user's webapp should
- * extend this class and not {@link HttpServlet}.
- * This class ensures that the logging configuration is correct
- * before any Solr specific code is executed.
+ * All Solr servlets available to the user's webapp should extend this class and not {@link
+ * HttpServlet}. This class ensures that the logging configuration is correct before any Solr
+ * specific code is executed.
  */
 @SuppressWarnings("serial")
 abstract class BaseSolrServlet extends HttpServlet {
-  
+
   static {
     CheckLoggingConfiguration.check();
   }
-  
 }

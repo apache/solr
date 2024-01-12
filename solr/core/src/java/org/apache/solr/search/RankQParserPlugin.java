@@ -18,26 +18,26 @@ package org.apache.solr.search;
 
 import java.util.Locale;
 import java.util.Objects;
-
 import org.apache.lucene.document.FeatureField;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.RankField;
 import org.apache.solr.schema.SchemaField;
+
 /**
  * {@code RankQParserPlugin} can be used to introduce document-depending scoring factors to ranking.
- * While this {@code QParser} delivers a (subset of) functionality already available via {@link FunctionQParser},
- * the benefit is that {@code RankQParserPlugin} can be used in combination with the {@code minExactCount} to
- * use BlockMax-WAND algorithm (skip non-competitive documents) to provide faster responses. 
- * 
- *  @see RankField
- * 
+ * While this {@code QParser} delivers a (subset of) functionality already available via {@link
+ * FunctionQParser}, the benefit is that {@code RankQParserPlugin} can be used in combination with
+ * the {@code minExactCount} to use BlockMax-WAND algorithm (skip non-competitive documents) to
+ * provide faster responses.
+ *
+ * @see RankField
  * @lucene.experimental
  * @since 8.6
  */
 public class RankQParserPlugin extends QParserPlugin {
-  
+
   public static final String NAME = "rank";
   public static final String FIELD = "f";
   public static final String FUNCTION = "function";
@@ -45,9 +45,9 @@ public class RankQParserPlugin extends QParserPlugin {
   public static final String PIVOT = "pivot";
   public static final String SCALING_FACTOR = "scalingFactor";
   public static final String EXPONENT = "exponent";
-  
-  private final static FeatureFieldFunction DEFAULT_FUNCTION = FeatureFieldFunction.SATU;
-  
+
+  private static final FeatureFieldFunction DEFAULT_FUNCTION = FeatureFieldFunction.SATU;
+
   private enum FeatureFieldFunction {
     SATU {
       @Override
@@ -59,13 +59,15 @@ public class RankQParserPlugin extends QParserPlugin {
           return FeatureField.newSaturationQuery(RankField.INTERNAL_RANK_FIELD_NAME, fieldName);
         }
         if (pivot == null) {
-          throw new SyntaxError("A pivot value needs to be provided if the weight is not 1 on \"satu\" function");
+          throw new SyntaxError(
+              "A pivot value needs to be provided if the weight is not 1 on \"satu\" function");
         }
         if (weight == null) {
           weight = Float.valueOf(1);
         }
         try {
-          return FeatureField.newSaturationQuery(RankField.INTERNAL_RANK_FIELD_NAME, fieldName, weight, pivot);
+          return FeatureField.newSaturationQuery(
+              RankField.INTERNAL_RANK_FIELD_NAME, fieldName, weight, pivot);
         } catch (IllegalArgumentException iae) {
           throw new SyntaxError(iae.getMessage());
         }
@@ -77,7 +79,8 @@ public class RankQParserPlugin extends QParserPlugin {
         float weight = params.getFloat(WEIGHT, 1f);
         float scalingFactor = params.getFloat(SCALING_FACTOR, 1f);
         try {
-          return FeatureField.newLogQuery(RankField.INTERNAL_RANK_FIELD_NAME, fieldName, weight, scalingFactor);
+          return FeatureField.newLogQuery(
+              RankField.INTERNAL_RANK_FIELD_NAME, fieldName, weight, scalingFactor);
         } catch (IllegalArgumentException iae) {
           throw new SyntaxError(iae.getMessage());
         }
@@ -93,32 +96,35 @@ public class RankQParserPlugin extends QParserPlugin {
         }
         Float exponent = params.getFloat(EXPONENT);
         if (exponent == null) {
-          throw new SyntaxError("An exponent value needs to be provided when using \"sigm\" function");
+          throw new SyntaxError(
+              "An exponent value needs to be provided when using \"sigm\" function");
         }
         try {
-          return FeatureField.newSigmoidQuery(RankField.INTERNAL_RANK_FIELD_NAME, fieldName, weight, pivot, exponent);
+          return FeatureField.newSigmoidQuery(
+              RankField.INTERNAL_RANK_FIELD_NAME, fieldName, weight, pivot, exponent);
         } catch (IllegalArgumentException iae) {
           throw new SyntaxError(iae.getMessage());
         }
       }
     };
-    
+
     public abstract Query createQuery(String fieldName, SolrParams params) throws SyntaxError;
-    
   }
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     Objects.requireNonNull(localParams, "LocalParams String can't be null");
     Objects.requireNonNull(req, "SolrQueryRequest can't be null");
     return new RankQParser(qstr, localParams, params, req);
   }
-  
+
   public static class RankQParser extends QParser {
-    
+
     private final String field;
 
-    public RankQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    public RankQParser(
+        String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       super(qstr, localParams, params, req);
       this.field = localParams.get(FIELD);
     }
@@ -135,8 +141,7 @@ public class RankQParserPlugin extends QParserPlugin {
       if (!(schemaField.getType() instanceof RankField)) {
         throw new SyntaxError("Field \"" + this.field + "\" is not a RankField");
       }
-      return getFeatureFieldFunction(localParams.get(FUNCTION))
-          .createQuery(field, localParams);
+      return getFeatureFieldFunction(localParams.get(FUNCTION)).createQuery(field, localParams);
     }
 
     private FeatureFieldFunction getFeatureFieldFunction(String function) throws SyntaxError {
@@ -152,7 +157,5 @@ public class RankQParserPlugin extends QParserPlugin {
       }
       return f;
     }
-    
   }
-
 }

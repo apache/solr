@@ -17,21 +17,16 @@
 
 package org.apache.solr.servlet;
 
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.noop.NoopSpan;
-import io.opentracing.noop.NoopTracer;
-import io.opentracing.propagation.Format;
-import io.opentracing.tag.Tags;
-import org.apache.http.HttpHeaders;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.util.tracing.HttpServletCarrier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Context;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.servlet.FilterChain;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
@@ -42,32 +37,33 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import org.apache.http.HttpHeaders;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.util.tracing.TraceUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * Various Util methods for interaction on servlet level, i.e. HttpServletRequest
- */
+/** Various Util methods for interaction on servlet level, i.e. HttpServletRequest */
 public abstract class ServletUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static String CLOSE_STREAM_MSG = "Attempted close of http request or response stream - in general you should not do this, "
-      + "you may spoil connection reuse and possibly disrupt a client. If you must close without actually needing to close, "
-      + "use a CloseShield*Stream. Closing or flushing the response stream commits the response and prevents us from modifying it. "
-      + "Closing the request stream prevents us from guaranteeing ourselves that streams are fully read for proper connection reuse."
-      + "Let the container manage the lifecycle of these streams when possible.";
+  static String CLOSE_STREAM_MSG =
+      "Attempted close of http request or response stream - in general you should not do this, "
+          + "you may spoil connection reuse and possibly disrupt a client. If you must close without actually needing to close, "
+          + "use a CloseShield*Stream. Closing or flushing the response stream commits the response and prevents us from modifying it. "
+          + "Closing the request stream prevents us from guaranteeing ourselves that streams are fully read for proper connection reuse."
+          + "Let the container manage the lifecycle of these streams when possible.";
 
-  private ServletUtils() { /* only static methods in this class */ }
+  private ServletUtils() {
+    /* only static methods in this class */
+  }
 
   /**
-   * Use this to get the full path after context path "/solr", which is a combination of
-   * servletPath and pathInfo.
+   * Use this to get the full path after context path "/solr", which is a combination of servletPath
+   * and pathInfo.
+   *
    * @param request the HttpServletRequest object
    * @return String with path starting with a "/", or empty string if no path
    */
@@ -76,11 +72,11 @@ public abstract class ServletUtils {
   }
 
   /**
-   * Wrap the request's input stream with a close shield. If this is a
-   * retry, we will assume that the stream has already been wrapped and do nothing.
+   * Wrap the request's input stream with a close shield. If this is a retry, we will assume that
+   * the stream has already been wrapped and do nothing.
    *
-   * Only the container should ever actually close the servlet output stream. This method possibly
-   * should be turned into a servlet filter
+   * <p>Only the container should ever actually close the servlet output stream. This method
+   * possibly should be turned into a servlet filter
    *
    * @param request The request to wrap.
    * @param retry If this is an original request or a retry.
@@ -96,14 +92,16 @@ public abstract class ServletUtils {
           return new ServletInputStreamWrapper(super.getInputStream()) {
             @Override
             public void close() {
-              // even though we skip closes, we let local tests know not to close so that a full understanding can take
-              // place
-              assert !Thread.currentThread().getStackTrace()[2].getClassName().matches(
-                  "org\\.apache\\.(?:solr|lucene).*") : CLOSE_STREAM_MSG;
+              // even though we skip closes, we let local tests know not to close so that a full
+              // understanding can take place
+              assert !Thread.currentThread()
+                      .getStackTrace()[2]
+                      .getClassName()
+                      .matches("org\\.apache\\.(?:solr|lucene).*")
+                  : CLOSE_STREAM_MSG;
               this.stream = ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM;
             }
           };
-
         }
       };
     } else {
@@ -112,10 +110,10 @@ public abstract class ServletUtils {
   }
 
   /**
-   * Wrap the response's output stream with a close shield. If this is a
-   * retry, we will assume that the stream has already been wrapped and do nothing.
+   * Wrap the response's output stream with a close shield. If this is a retry, we will assume that
+   * the stream has already been wrapped and do nothing.
    *
-   * Only the container should ever actually close the servlet request stream.
+   * <p>Only the container should ever actually close the servlet request stream.
    *
    * @param response The response to wrap.
    * @param retry If this response corresponds to an original request or a retry.
@@ -131,22 +129,29 @@ public abstract class ServletUtils {
           return new ServletOutputStreamWrapper(super.getOutputStream()) {
             @Override
             public void close() {
-              // even though we skip closes, we let local tests know not to close so that a full understanding can take
-              // place
-              assert !Thread.currentThread().getStackTrace()[2].getClassName().matches(
-                  "org\\.apache\\.(?:solr|lucene).*") : CLOSE_STREAM_MSG;
+              // even though we skip closes, we let local tests know not to close so that a full
+              // understanding can take place
+              assert !Thread.currentThread()
+                      .getStackTrace()[2]
+                      .getClassName()
+                      .matches("org\\.apache\\.(?:solr|lucene).*")
+                  : CLOSE_STREAM_MSG;
               stream = ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM;
             }
           };
         }
-
       };
     } else {
       return response;
     }
   }
 
-  static boolean excludedPath(List<Pattern> excludePatterns, HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
+  static boolean excludedPath(
+      List<Pattern> excludePatterns,
+      HttpServletRequest request,
+      HttpServletResponse response,
+      FilterChain chain)
+      throws IOException, ServletException {
     String requestPath = getPathAfterContext(request);
     // No need to even create the HttpSolrCall object if this path is excluded.
     if (excludePatterns != null) {
@@ -163,12 +168,14 @@ public abstract class ServletUtils {
     return false;
   }
 
-  static boolean excludedPath(List<Pattern> excludePatterns, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-    return excludedPath(excludePatterns,request,response, null);
+  static boolean excludedPath(
+      List<Pattern> excludePatterns, HttpServletRequest request, HttpServletResponse response)
+      throws IOException, ServletException {
+    return excludedPath(excludePatterns, request, response, null);
   }
 
   static void configExcludes(PathExcluder excluder, String patternConfig) {
-    if(patternConfig != null) {
+    if (patternConfig != null) {
       String[] excludeArray = patternConfig.split(",");
       List<Pattern> patterns = new ArrayList<>();
       excluder.setExcludePatterns(patterns);
@@ -179,33 +186,32 @@ public abstract class ServletUtils {
   }
 
   /**
-   * Enforces rate limiting for a request. Should be converted to a servlet filter at some point. Currently,
-   * this is tightly coupled with request tracing which is not ideal either.
+   * Enforces rate limiting for a request. Should be converted to a servlet filter at some point.
+   * Currently, this is tightly coupled with request tracing which is not ideal either.
    *
    * @param request The request to limit
    * @param response The associated response
    * @param limitedExecution code that will be traced
-   * @param trace a boolean that turns tracing on or off
    */
-  static void rateLimitRequest(HttpServletRequest request, HttpServletResponse response, Runnable limitedExecution, boolean trace) throws ServletException, IOException {
+  static void rateLimitRequest(
+      RateLimitManager rateLimitManager,
+      HttpServletRequest request,
+      HttpServletResponse response,
+      Runnable limitedExecution)
+      throws ServletException, IOException {
     boolean accepted = false;
-    RateLimitManager rateLimitManager = getRateLimitManager(request);
     try {
-      try {
-        accepted = rateLimitManager.handleRequest(request);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
-      }
-
+      accepted = rateLimitManager.handleRequest(request);
       if (!accepted) {
-        String errorMessage = "Too many requests for this request type." +
-            "Please try after some time or increase the quota for this request type";
-
-        response.sendError(429, errorMessage);
+        response.sendError(ErrorCode.TOO_MANY_REQUESTS.code, RateLimitManager.ERROR_MESSAGE);
+        return;
       }
-      // todo: this shouldn't be required, tracing and rate limiting should be independently composable
-      traceHttpRequestExecution2(request, response, limitedExecution, trace);
+      // todo: this shouldn't be required, tracing and rate limiting should be independently
+      // composable
+      traceHttpRequestExecution2(request, response, limitedExecution);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
     } finally {
       if (accepted) {
         rateLimitManager.decrementActiveRequests(request);
@@ -214,86 +220,58 @@ public abstract class ServletUtils {
   }
 
   /**
-   * Sets up tracing for an HTTP request. Perhaps should be converted to a servlet filter at some point.
+   * Sets up tracing for an HTTP request. Perhaps should be converted to a servlet filter at some
+   * point.
    *
+   * @param request The request to limit
+   * @param response The associated response
    * @param tracedExecution the executed code
    */
-  private static void traceHttpRequestExecution2(HttpServletRequest request, HttpServletResponse response, Runnable tracedExecution, boolean required) throws ServletException, IOException {
-    Tracer tracer = getTracer(request);
-    if (tracer != null) {
-      Span span = buildSpan(tracer, request);
+  private static void traceHttpRequestExecution2(
+      HttpServletRequest request, HttpServletResponse response, Runnable tracedExecution)
+      throws ServletException, IOException {
+    Context context = TraceUtils.extractContext(request);
+    Span span = TraceUtils.startHttpRequestSpan(request, context);
 
-      request.setAttribute(Span.class.getName(), span);
-      try (var scope = tracer.scopeManager().activate(span)) {
-
-        assert scope != null; // prevent javac warning about scope being unused
-        MDCLoggingContext.setTracerId(span.context().toTraceId()); // handles empty string
-        try {
-          tracedExecution.run();
-        } catch (ExceptionWhileTracing e) {
-          if (e.e instanceof SolrAuthenticationException) {
-            throw (SolrAuthenticationException) e.e;
-          }
-          if (e.e instanceof ServletException) {
-            throw (ServletException) e.e;
-          }
-          if (e.e instanceof IOException) {
-            throw (IOException) e.e;
-          }
-          if (e.e instanceof RuntimeException) {
-            throw (RuntimeException) e.e;
-          } else {
-            throw new RuntimeException(e.e);
-          }
-        }
-      } catch (SolrAuthenticationException e) {
+    final Thread currentThread = Thread.currentThread();
+    final String oldThreadName = currentThread.getName();
+    try (var scope = context.with(span).makeCurrent()) {
+      assert scope != null; // prevent javac warning about scope being unused
+      TraceUtils.setSpan(request, span);
+      TraceUtils.ifValidTraceId(
+          span, s -> MDCLoggingContext.setTracerId(s.getSpanContext().getTraceId()));
+      String traceId = MDCLoggingContext.getTraceId();
+      if (traceId != null) {
+        currentThread.setName(oldThreadName + "-" + traceId);
+      }
+      tracedExecution.run();
+    } catch (ExceptionWhileTracing e) {
+      if (e.e instanceof SolrAuthenticationException) {
         // done, the response and status code have already been sent
-      } finally {
-        consumeInputFully(request, response);
-        SolrRequestInfo.reset();
-        SolrRequestParsers.cleanupMultipartFiles(request);
-
-
-        span.setTag(Tags.HTTP_STATUS, response.getStatus());
-        span.finish();
+        return;
       }
-    } else {
-      if (required) {
-        throw new IllegalStateException("Tracing required, but could not find Tracer in request attribute:" + SolrDispatchFilter.ATTR_TRACING_TRACER);
+      if (e.e instanceof ServletException) {
+        throw (ServletException) e.e;
+      }
+      if (e.e instanceof IOException) {
+        throw (IOException) e.e;
+      }
+      if (e.e instanceof RuntimeException) {
+        throw (RuntimeException) e.e;
       } else {
-        tracedExecution.run();
+        throw new RuntimeException(e.e);
       }
+    } finally {
+      currentThread.setName(oldThreadName);
+      TraceUtils.setHttpStatus(span, response.getStatus());
+      span.end();
     }
-  }
-
-  private static Tracer getTracer(HttpServletRequest req) {
-    return (Tracer) req.getAttribute(SolrDispatchFilter.ATTR_TRACING_TRACER);
-  }
-
-  private static RateLimitManager getRateLimitManager(HttpServletRequest req) {
-    return (RateLimitManager) req.getAttribute(SolrDispatchFilter.ATTR_RATELIMIT_MANAGER);
-  }
-
-  protected static Span buildSpan(Tracer tracer, HttpServletRequest request) {
-    if (tracer instanceof NoopTracer) {
-      return NoopSpan.INSTANCE;
-    }
-    Tracer.SpanBuilder spanBuilder = tracer.buildSpan("http.request") // will be changed later
-        .asChildOf(tracer.extract(Format.Builtin.HTTP_HEADERS, new HttpServletCarrier(request)))
-        .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_SERVER)
-        .withTag(Tags.HTTP_METHOD, request.getMethod())
-        .withTag(Tags.HTTP_URL, request.getRequestURL().toString());
-    if (request.getQueryString() != null) {
-      spanBuilder.withTag("http.params", request.getQueryString());
-    }
-    spanBuilder.withTag(Tags.DB_TYPE, "solr");
-    return spanBuilder.start();
   }
 
   // we make sure we read the full client request so that the client does
   // not hit a connection reset and we can reuse the
   // connection - see SOLR-8453 and SOLR-8683
-  private static void consumeInputFully(HttpServletRequest req, HttpServletResponse response) {
+  static void consumeInputFully(HttpServletRequest req, HttpServletResponse response) {
     try {
       ServletInputStream is = req.getInputStream();
       //noinspection StatementWithEmptyBody
@@ -309,7 +287,8 @@ public abstract class ServletUtils {
 
   public static class ClosedServletInputStream extends ServletInputStream {
 
-    public static final ClosedServletInputStream CLOSED_SERVLET_INPUT_STREAM = new ClosedServletInputStream();
+    public static final ClosedServletInputStream CLOSED_SERVLET_INPUT_STREAM =
+        new ClosedServletInputStream();
 
     @Override
     public int read() {
@@ -332,7 +311,8 @@ public abstract class ServletUtils {
 
   public static class ClosedServletOutputStream extends ServletOutputStream {
 
-    public static final ClosedServletOutputStream CLOSED_SERVLET_OUTPUT_STREAM = new ClosedServletOutputStream();
+    public static final ClosedServletOutputStream CLOSED_SERVLET_OUTPUT_STREAM =
+        new ClosedServletOutputStream();
 
     @Override
     public void write(final int b) throws IOException {

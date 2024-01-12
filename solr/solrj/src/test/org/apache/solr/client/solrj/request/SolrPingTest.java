@@ -16,10 +16,8 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import java.io.File;
-
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -27,34 +25,30 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import junit.framework.Assert;
-
-/**
- * Test SolrPing in Solrj
- */
+/** Test SolrPing in Solrj */
 public class SolrPingTest extends EmbeddedSolrServerTestBase {
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File testHome = createTempDir().toFile();
-    FileUtils.copyDirectory(getFile("solrj/solr"), testHome);
-    initCore("solrconfig.xml", "schema.xml", testHome.getAbsolutePath(), "collection1");
+    solrClientTestRule.startSolr(SolrTestCaseJ4.getFile("solrj/solr").toPath());
+
+    SolrTestCaseJ4.newRandomConfig();
+    solrClientTestRule.newCollection().withConfigSet("../collection1").create();
   }
-  
+
   @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    clearIndex();
-    assertU(commit());
-    assertU(optimize());
+    solrClientTestRule.clearIndex();
+
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", 1);
     doc.setField("terms_s", "samsung");
     getSolrClient().add(doc);
     getSolrClient().commit(true, true);
   }
-  
+
   @Test
   public void testEnabledSolrPing() throws Exception {
     SolrPing ping = new SolrPing();
@@ -63,9 +57,9 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     ping.process(getSolrClient());
     ping.removeAction();
     rsp = ping.process(getSolrClient());
-    Assert.assertNotNull(rsp);
+    assertNotNull(rsp);
   }
-  
+
   @Test(expected = SolrException.class)
   public void testDisabledSolrPing() throws Exception {
     SolrPing ping = new SolrPing();
@@ -79,6 +73,6 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     ping.setActionPing();
     rsp = ping.process(getSolrClient());
     // the above line should fail with a 503 SolrException.
-    Assert.assertNotNull(rsp);
+    assertNotNull(rsp);
   }
 }

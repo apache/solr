@@ -19,7 +19,7 @@ package org.apache.solr.search.function;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
-
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -29,27 +29,28 @@ import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueStr;
 
 /**
- * Abstract {@link ValueSource} implementation which wraps multiple ValueSources
- * and applies an extendible string function to their values.
- **/
+ * Abstract {@link ValueSource} implementation which wraps multiple ValueSources and applies an
+ * extendible string function to their values.
+ */
 public abstract class MultiStringFunction extends ValueSource {
   protected final ValueSource[] sources;
-  
+
   public MultiStringFunction(ValueSource[] sources) {
     this.sources = sources;
   }
 
-  abstract protected String name();
-  abstract protected CharSequence func(int doc, FunctionValues[] valsArr) throws IOException;
+  protected abstract String name();
+
+  protected abstract CharSequence func(int doc, FunctionValues[] valsArr) throws IOException;
 
   @Override
   public String description() {
     StringBuilder sb = new StringBuilder();
     sb.append(name()).append('(');
-    boolean firstTime=true;
+    boolean firstTime = true;
     for (ValueSource source : sources) {
       if (firstTime) {
-        firstTime=false;
+        firstTime = false;
       } else {
         sb.append(',');
       }
@@ -60,9 +61,10 @@ public abstract class MultiStringFunction extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     final FunctionValues[] valsArr = new FunctionValues[sources.length];
-    for (int i=0; i<sources.length; i++) {
+    for (int i = 0; i < sources.length; i++) {
       valsArr[i] = sources[i].getValues(context, readerContext);
     }
 
@@ -70,38 +72,38 @@ public abstract class MultiStringFunction extends ValueSource {
       @Override
       public String strVal(int doc) throws IOException {
         CharSequence cs = func(doc, valsArr);
-        return  cs != null ? cs.toString() : null;
+        return cs != null ? cs.toString() : null;
       }
-      
+
       @Override
       public boolean exists(int doc) throws IOException {
         boolean exists = true;
         for (FunctionValues val : valsArr) {
-          exists = exists & val.exists(doc);
+          exists = exists && val.exists(doc);
         }
         return exists;
       }
-      
+
       @Override
       public boolean bytesVal(int doc, BytesRefBuilder bytes) throws IOException {
         bytes.clear();
         CharSequence cs = func(doc, valsArr);
-        if( cs != null ){
-          bytes.copyChars(func(doc,valsArr));
+        if (cs != null) {
+          bytes.copyChars(func(doc, valsArr));
           return true;
         } else {
           return false;
         }
       }
-      
+
       @Override
       public String toString(int doc) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append(name()).append('(');
-        boolean firstTime=true;
+        boolean firstTime = true;
         for (FunctionValues vals : valsArr) {
           if (firstTime) {
-            firstTime=false;
+            firstTime = false;
           } else {
             sb.append(',');
           }
@@ -132,15 +134,13 @@ public abstract class MultiStringFunction extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (getClass() != o.getClass()) return false;
-    MultiStringFunction other = (MultiStringFunction)o;
-    return this.name().equals(other.name())
-            && Arrays.equals(this.sources, other.sources);
+    if (!(o instanceof MultiStringFunction)) return false;
+    MultiStringFunction other = (MultiStringFunction) o;
+    return Objects.equals(this.name(), other.name()) && Arrays.equals(this.sources, other.sources);
   }
 
   @Override
   public int hashCode() {
     return Arrays.hashCode(sources) + name().hashCode();
   }
-
 }

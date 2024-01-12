@@ -17,8 +17,7 @@
 package org.apache.solr.cluster.placement;
 
 /**
- * Replica metric identifier, corresponding to one of the
- * internal replica-level metric names (as reported in <code>solr.core.[collection].[replica]</code> registry)
+ * Replica metric identifier, corresponding to one of the internal replica-level metric names (as
+ * reported in <code>solr.core.[collection].[replica]</code> registry)
  */
-public interface ReplicaMetric<T> extends Metric<T> {
-}
+public interface ReplicaMetric<T> extends Metric<T> {}

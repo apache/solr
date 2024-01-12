@@ -19,7 +19,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Map;
-
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Terms;
@@ -41,8 +41,14 @@ public class FloatPayloadValueSource extends ValueSource {
   protected final PayloadFunction payloadFunction;
   protected final ValueSource defaultValueSource;
 
-  public FloatPayloadValueSource(String field, String val, String indexedField, BytesRef indexedBytes,
-                                 PayloadDecoder decoder, PayloadFunction payloadFunction, ValueSource defaultValueSource) {
+  public FloatPayloadValueSource(
+      String field,
+      String val,
+      String indexedField,
+      BytesRef indexedBytes,
+      PayloadDecoder decoder,
+      PayloadFunction payloadFunction,
+      ValueSource defaultValueSource) {
     this.field = field;
     this.val = val;
     this.indexedField = indexedField;
@@ -53,21 +59,24 @@ public class FloatPayloadValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context
-          , LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
 
     final Terms terms = readerContext.reader().terms(indexedField);
 
     FunctionValues defaultValues = defaultValueSource.getValues(context, readerContext);
 
-    // copied the bulk of this from TFValueSource - TODO: this is a very repeated pattern - base-class this advance logic stuff?
+    // copied the bulk of this from TFValueSource - TODO: this is a very repeated pattern -
+    // base-class this advance logic stuff?
     return new FloatDocValues(this) {
-      PostingsEnum docs ;
+      PostingsEnum docs;
       int atDoc;
       int lastDocRequested = -1;
       float docScore = 0.f;
 
-      { reset(); }
+      {
+        reset();
+      }
 
       public void reset() throws IOException {
         // no one should call us for deleted docs?
@@ -85,53 +94,55 @@ public class FloatPayloadValueSource extends ValueSource {
 
         if (docs == null) {
           // dummy PostingsEnum so floatVal() can work
-          // when would this be called?  if field/val did not match?  this is called for every doc?  create once and cache?
-          docs = new PostingsEnum() {
-            @Override
-            public int freq() {
-              return 0;
-            }
+          // when would this be called?  if field/val did not match?  this is called for every doc?
+          // create once and cache?
+          docs =
+              new PostingsEnum() {
+                @Override
+                public int freq() {
+                  return 0;
+                }
 
-            @Override
-            public int nextPosition() throws IOException {
-              return -1;
-            }
+                @Override
+                public int nextPosition() throws IOException {
+                  return -1;
+                }
 
-            @Override
-            public int startOffset() throws IOException {
-              return -1;
-            }
+                @Override
+                public int startOffset() throws IOException {
+                  return -1;
+                }
 
-            @Override
-            public int endOffset() throws IOException {
-              return -1;
-            }
+                @Override
+                public int endOffset() throws IOException {
+                  return -1;
+                }
 
-            @Override
-            public BytesRef getPayload() throws IOException {
-              return null;
-            }
+                @Override
+                public BytesRef getPayload() throws IOException {
+                  return null;
+                }
 
-            @Override
-            public int docID() {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
+                @Override
+                public int docID() {
+                  return DocIdSetIterator.NO_MORE_DOCS;
+                }
 
-            @Override
-            public int nextDoc() {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
+                @Override
+                public int nextDoc() {
+                  return DocIdSetIterator.NO_MORE_DOCS;
+                }
 
-            @Override
-            public int advance(int target) {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
+                @Override
+                public int advance(int target) {
+                  return DocIdSetIterator.NO_MORE_DOCS;
+                }
 
-            @Override
-            public long cost() {
-              return 0;
-            }
-          };
+                @Override
+                public long cost() {
+                  return 0;
+                }
+              };
         }
         atDoc = -1;
       }
@@ -142,11 +153,10 @@ public class FloatPayloadValueSource extends ValueSource {
           if (doc < lastDocRequested) {
             // out-of-order access.... reset
             reset();
-          }
-          else if (doc == lastDocRequested) {
+          } else if (doc == lastDocRequested) {
             return docScore;
           }
-          
+
           lastDocRequested = doc;
 
           if (atDoc < doc) {
@@ -156,7 +166,7 @@ public class FloatPayloadValueSource extends ValueSource {
           if (atDoc > doc) {
             // term doesn't match this document... either because we hit the
             // end, or because the next doc is after this doc.
-            docScore =  defaultValues.floatVal(doc);
+            docScore = defaultValues.floatVal(doc);
             return docScore;
           }
 
@@ -164,7 +174,7 @@ public class FloatPayloadValueSource extends ValueSource {
           int freq = docs.freq();
           int numPayloadsSeen = 0;
           float currentScore = 0;
-          for (int i=0; i < freq; i++) {
+          for (int i = 0; i < freq; i++) {
             docs.nextPosition();
             BytesRef payload = docs.getPayload();
             if (payload != null) {
@@ -173,16 +183,26 @@ public class FloatPayloadValueSource extends ValueSource {
               // payloadFunction = null represents "first"
               if (payloadFunction == null) return payloadVal;
 
-              currentScore = payloadFunction.currentScore(doc, indexedField, docs.startOffset(), docs.endOffset(),
-                  numPayloadsSeen, currentScore, payloadVal);
+              currentScore =
+                  payloadFunction.currentScore(
+                      doc,
+                      indexedField,
+                      docs.startOffset(),
+                      docs.endOffset(),
+                      numPayloadsSeen,
+                      currentScore,
+                      payloadVal);
               numPayloadsSeen++;
-
             }
           }
-          docScore =  (numPayloadsSeen > 0) ? payloadFunction.docScore(doc, indexedField, numPayloadsSeen, currentScore) : defaultValues.floatVal(doc);
+          docScore =
+              (numPayloadsSeen > 0)
+                  ? payloadFunction.docScore(doc, indexedField, numPayloadsSeen, currentScore)
+                  : defaultValues.floatVal(doc);
           return docScore;
         } catch (IOException e) {
-          throw new RuntimeException("caught exception in function "+description()+" : doc="+doc, e);
+          throw new RuntimeException(
+              "caught exception in function " + description() + " : doc=" + doc, e);
         }
       }
     };
@@ -201,17 +221,14 @@ public class FloatPayloadValueSource extends ValueSource {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof FloatPayloadValueSource)) return false;
 
     FloatPayloadValueSource that = (FloatPayloadValueSource) o;
-
-    if (!indexedField.equals(that.indexedField)) return false;
-    if (indexedBytes != null ? !indexedBytes.equals(that.indexedBytes) : that.indexedBytes != null) return false;
-    if (!decoder.equals(that.decoder)) return false;
-    if (payloadFunction != null ? !payloadFunction.equals(that.payloadFunction) : that.payloadFunction != null)
-      return false;
-    return defaultValueSource.equals(that.defaultValueSource);
-
+    return Objects.equals(indexedField, that.indexedField)
+        && Objects.equals(indexedBytes, that.indexedBytes)
+        && Objects.equals(decoder, that.decoder)
+        && Objects.equals(payloadFunction, that.payloadFunction)
+        && Objects.equals(defaultValueSource, that.defaultValueSource);
   }
 
   @Override

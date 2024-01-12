@@ -84,5 +84,4 @@ public class ConditionalKeyMapWriter implements MapWriter {
   public static Predicate<CharSequence> dedupeKeyPredicate(Set<CharSequence> keys) {
     return (k) -> keys.add(k);
   }
-
 }

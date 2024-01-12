@@ -20,30 +20,32 @@ import java.security.Principal;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.common.SolrException;
 
 /**
- * Rule Based Authz plugin implementation which reads user roles from the request. This requires
- * a Principal implementing VerifiedUserRoles interface, e.g. JWTAuthenticationPlugin
+ * Rule Based Authz plugin implementation which reads user roles from the request. This requires a
+ * Principal implementing VerifiedUserRoles interface, e.g. JWTAuthenticationPlugin
  */
 public class ExternalRoleRuleBasedAuthorizationPlugin extends RuleBasedAuthorizationPluginBase {
-    @Override
+  @Override
   public void init(Map<String, Object> initInfo) {
     super.init(initInfo);
     if (initInfo.containsKey("user-role")) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Configuration should not contain 'user-role' mappings");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Configuration should not contain 'user-role' mappings");
     }
   }
 
   /**
    * Pulls roles from the Principal
+   *
    * @param principal the user Principal which should contain roles
    * @return set of roles as strings
    */
   @Override
   public Set<String> getUserRoles(Principal principal) {
-    if(principal instanceof VerifiedUserRoles) {
+    if (principal instanceof VerifiedUserRoles) {
       return ((VerifiedUserRoles) principal).getVerifiedRoles();
     } else {
       return Collections.emptySet();

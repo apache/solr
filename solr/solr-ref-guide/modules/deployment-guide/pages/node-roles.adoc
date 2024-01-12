@@ -1,0 +1,221 @@
+= Node Roles
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+A node in Solr is usually capable of performing various types of operations, e.g. hosting replicas, performing indexing and querying, collection management tasks, etc. To set up a cluster where these functions are isolated to certain dedicated nodes, we can use the concept of node roles.
+
+== Definitions
+
+=== Node role
+
+A role is a designation for a node that indicates that the node may perform a certain function.
+
+=== Mode
+Every role has a list of modes under which a node can be. It can be simple (e.g. `["on", "off"]`) or more granular (e.g. `["allowed", "preferred", "disallowed"]`).
+
+== Roles
+
+In order to specify role(s) for a node, one needs to start a Solr node with the following parameter.
+
+.Startup Parameter
+[cols="1,2,1,1"] 
+|===
+|Parameter |Value |Required? | Default
+
+|solr.node.roles
+|Comma separated list of roles (in the format: `<role>:<mode>`) for this node.
+Examples: `-Dsolr.node.roles=data:on,overseer:allowed` or `-Dsolr.node.roles=overseer:preferred`
+|No
+|`data:on,overseer:allowed`
+|===
+
+[TIP]
+====
+If a node has been started with no `solr.node.roles` parameter, it will be assumed to have the data role turned on and overseer role allowed on it. If you've never used roles before, you likely won't need to change anything in your startup parameters to accommodate the functionality associated with these roles.
+====
+
+.Supported roles
+[cols="1,1"] 
+|===
+|Role |Modes
+
+|`data`
+|on, off
+
+|`overseer`
+|allowed, preferred, disallowed
+
+|`coordinator`
+|on, off
+|===
+
+=== `data` role
+A node with this role (in mode "on") can host shards and replicas for collections.
+
+=== `overseer` role
+A node with this role can perform duties of an overseer node (unless mode is `disallowed`). When one or more nodes have the overseer role in `preferred` mode, the overseer leader will be elected from one of these nodes. In case no node is designated as a preferred overseer or no such node is live, the overseer leader will be elected from one of the nodes that have the overseer role in `allowed` mode. If all nodes that are designated with overseer role (allowed or preferred) are down, the cluster will be left without an overseer.
+
+=== `coordinator` role
+
+A node with this role can act as if it has replicas of all collections in the cluster when a query is performed. The workflow is as follows
+
+If the cluster has collections with very large no:of shards, performing distributed requests in your _`data node`_ will lead to
+
+* large heap utilization
+* frequent GC pauses
+
+In such cases, a few dedicated nodes can be started with a *`coordinator`* role and queries can be sent to that node and avoid intermittent and unpredictable load in data nodes. The coordinator node is stateless and does not host any data. So, we can create and destroy coordinator nodes without any data loass or down time.
+
+==== The work-flow in a `coordinator` node
+
+1. A request for *`coll-A`* that uses configset *`configset-A`* comes to coordinator node
+2. It checks if there is a core that uses the configset *`configset-A`* is present. If yes, that core acts as a replica of *`coll-A`* and performs a distributed request to all shards of *`coll-A`* and sends back a response
+3. if there is no such core, it checks if there is a synthetic collection *`.sys.COORDINATOR-COLL-configset-A`* and a replica for that collection is present locally. If not the collection and replica is created on the fly and it goes to *`step 1`*
+
+
+
+== Example usage
+
+Sometimes, when the nodes in a cluster are under heavy querying or indexing load, the overseer leader node might be unable to perform collection management duties efficiently. It might be reasonable to have dedicated nodes to act as the overseer. Such an effect can be achieved as follows:
+
+* Most nodes (data nodes) in the cluster start with `-Dsolr.node.roles=data:on,overseer:allowed` (or with no parameter, since the default value for `solr.node.roles` is the same).
+* One or more nodes (dedicated overseer nodes) can start with `-Dsolr.node.roles=overseer:preferred` (or `-Dsolr.node.roles=overseer:preferred,data:off`)
+* One or more dedicated coordinator nodes can start with `-Dsolr.node.roles=coordinator:on,data:off`
+
+In this arrangement, such dedicated nodes can be provisioned on hardware with lesser resources like CPU, memory or disk space than other data nodes (since these are stateless nodes) and yet the cluster will behave optimally. In case the dedicated overseer nodes go down for some reason, the overseer leader will be elected from one of the data nodes (since they have overseer in "allowed" mode), and once one of the dedicated overseer nodes are back up again, it will be re-elected for the overseer leadership.
+
+Dedicated *`coordinator`* nodes can be provisioned with enough memory but very little storage. They can also be started and stopped based on demand as they are stateless
+
+== Roles API
+
+=== GET /api/cluster/node-roles/supported
+
+Fetches the list of supported roles and their supported modes for this cluster.
+
+*Input*
+[source,text]
+----
+curl http://localhost:8983/api/cluster/node-roles/supported
+----
+
+*Output*
+[source,text]
+----
+{
+  "supported-roles":{
+    "data":{
+      "modes":["off",
+        "on"]
+    },
+    "overseer":{
+      "modes":["disallowed",
+        "allowed",
+        "preferred"]
+    }
+  }
+}
+----
+
+=== GET /api/cluster/node-roles
+
+Fetches the current node roles assignment for all the nodes in the cluster.
+
+*Input*
+[source,text]
+----
+curl http://localhost:8983/api/cluster/node-roles
+----
+
+*Output*
+[source,text]
+----
+{
+  "node-roles":{
+    "data":{
+      "off":["solr2:8983_solr"],
+      "on":["solr1:8983_solr"]
+    },
+    "overseer":{
+      "allowed":["solr1:8983_solr"],
+      "disallowed":[],
+      "preferred":["solr2:8983_solr"]
+    }
+  }
+}
+----
+
+=== GET /api/cluster/node-roles/role/\{role}
+
+Fetches the current node roles assignment for a specified role.
+
+*Input*
+[source,text]
+----
+http://localhost:8983/api/cluster/node-roles/role/data
+----
+
+*Output*
+[source,text]
+----
+{
+  "node-roles":{
+    "data":{
+      "off":["solr2:8983_solr"],
+      "on":["solr1:8983_solr"]
+    }
+  }
+}
+----
+
+*Input*
+[source,text]
+----
+http://localhost:8983/api/cluster/node-roles/role/data/off
+----
+
+*Output*
+[source,text]
+----
+{
+  "node-roles":{
+    "data":{
+      "off":["solr2:8983_solr"]
+    }
+  }
+}
+----
+
+
+
+=== GET /api/cluster/node-roles/node/\{node}
+
+Fetches the current node roles assignment for the specified node.
+
+*Input*
+[source,text]
+----
+curl http://localhost:8983/api/cluster/node-roles/node/solr1:8983_solr
+----
+
+*Output*
+[source,text]
+----
+{
+  "data":"on",
+  "overseer":"allowed"
+}
+----

@@ -26,7 +26,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.IndexSearcher;
@@ -38,10 +37,11 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 public class TestCancellableCollector extends SolrTestCase {
   Directory dir;
@@ -78,8 +78,8 @@ public class TestCancellableCollector extends SolrTestCase {
             4,
             0L,
             TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<Runnable>(),
-            new NamedThreadFactory("TestIndexSearcher"));
+            new LinkedBlockingQueue<>(),
+            new SolrNamedThreadFactory(this.getClass().getSimpleName()));
   }
 
   @Override
@@ -89,10 +89,9 @@ public class TestCancellableCollector extends SolrTestCase {
     dir.close();
 
     if (executor != null) {
-      executor.shutdown();
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+      executor = null;
     }
-
-    executor = null;
   }
 
   private CancellableCollector buildCancellableCollector(
@@ -104,7 +103,7 @@ public class TestCancellableCollector extends SolrTestCase {
   }
 
   private void executeSearchTest(
-          IndexSearcher searcher, Query query, CancellableCollector cancellableCollector, int numHits)
+      IndexSearcher searcher, Query query, CancellableCollector cancellableCollector, int numHits)
       throws Exception {
     TopDocs topDocs = searcher.search(query, numHits);
 
@@ -118,20 +117,10 @@ public class TestCancellableCollector extends SolrTestCase {
     assertEquals(topDocs.totalHits.value, topScoreDocCollector.getTotalHits());
   }
 
-  private void cancelQuery(CancellableCollector cancellableCollector, final int sleepTime) {
+  private void cancelQuery(CancellableCollector cancellableCollector) {
     executor.submit(
         () -> {
-
-          // Wait for some time to let the query start
-          try {
-            if (sleepTime > 0) {
-              Thread.sleep(sleepTime);
-            }
-
-            cancellableCollector.cancel();
-          } catch (InterruptedException e) {
-            throw new RuntimeException(e.getMessage());
-          }
+          cancellableCollector.cancel();
         });
   }
 
@@ -158,7 +147,7 @@ public class TestCancellableCollector extends SolrTestCase {
         CancellableCollector.QueryCancelledException.class,
         () -> {
           // Cancel the query before the document collection starts
-          cancelQuery(cancellableCollector, 0);
+          cancelQuery(cancellableCollector);
 
           executeSearchTest(searcher, query, cancellableCollector, 5000);
         });
@@ -173,13 +162,13 @@ public class TestCancellableCollector extends SolrTestCase {
         CancellableCollector.QueryCancelledException.class,
         () -> {
           // Cancel the query before the document collection starts
-          cancelQuery(cancellableCollector, 0);
+          cancelQuery(cancellableCollector);
 
           executeSearchTest(searcher, query, cancellableCollector, 5000);
         });
   }
 
-  public class DummyCancellableCollector extends CancellableCollector {
+  public static class DummyCancellableCollector extends CancellableCollector {
     private final CancellableCollector collector;
     private final boolean delayStart;
     private final boolean delayCollection;
@@ -200,6 +189,7 @@ public class TestCancellableCollector extends SolrTestCase {
         try {
           Thread.sleep(50);
         } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
           throw new RuntimeException(e.getMessage());
         }
       }
@@ -212,6 +202,7 @@ public class TestCancellableCollector extends SolrTestCase {
             try {
               Thread.sleep(30);
             } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
               throw new RuntimeException(e.getMessage());
             }
           }

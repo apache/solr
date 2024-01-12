@@ -17,10 +17,9 @@
 
 package org.apache.solr.search;
 
-
 import java.io.IOException;
+import java.util.Objects;
 import java.util.TreeSet;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -42,13 +41,15 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
   public static final String NAME = "igain";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new IGainTermsQParser(qstr, localParams, params, req);
   }
 
   private static class IGainTermsQParser extends QParser {
 
-    public IGainTermsQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    public IGainTermsQParser(
+        String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       super(qstr, localParams, params, req);
     }
 
@@ -98,11 +99,15 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
     private SparseFixedBitSet positiveSet;
     private SparseFixedBitSet negativeSet;
 
-
     private int numPositiveDocs;
 
-
-    public IGainTermsCollector(ResponseBuilder rb, IndexSearcher searcher, String field, String outcome, int positiveLabel, int numTerms) {
+    public IGainTermsCollector(
+        ResponseBuilder rb,
+        IndexSearcher searcher,
+        String field,
+        String outcome,
+        int positiveLabel,
+        int numTerms) {
       this.rb = rb;
       this.searcher = searcher;
       this.field = field;
@@ -131,7 +136,7 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
       } else {
         value = 0;
       }
-      
+
       if (value == positiveLabel) {
         positiveSet.set(context.docBase + doc);
         numPositiveDocs++;
@@ -141,7 +146,7 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       NamedList<Double> analytics = new NamedList<>();
       NamedList<Integer> topFreq = new NamedList<>();
       NamedList<Integer> allFreq = new NamedList<>();
@@ -156,7 +161,7 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
       double pc = numPositiveDocs / numDocs;
       double entropyC = binaryEntropy(pc);
 
-      Terms terms = ((SolrIndexSearcher)searcher).getSlowAtomicReader().terms(field);
+      Terms terms = ((SolrIndexSearcher) searcher).getSlowAtomicReader().terms(field);
       TermsEnum termsEnum = terms == null ? TermsEnum.EMPTY : terms.iterator();
       BytesRef term;
       PostingsEnum postingsEnum = null;
@@ -172,16 +177,20 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
           }
         }
 
-        int docFreq = xc+nc;
+        int docFreq = xc + nc;
 
-        double entropyContainsTerm = binaryEntropy( (double) xc / docFreq );
-        double entropyNotContainsTerm = binaryEntropy( (double) (numPositiveDocs - xc) / (numDocs - docFreq + 1) );
-        double score = entropyC - ( (docFreq / numDocs) * entropyContainsTerm + (1.0 - docFreq / numDocs) * entropyNotContainsTerm);
+        double entropyContainsTerm = binaryEntropy((double) xc / docFreq);
+        double entropyNotContainsTerm =
+            binaryEntropy((double) (numPositiveDocs - xc) / (numDocs - docFreq + 1));
+        double score =
+            entropyC
+                - ((docFreq / numDocs) * entropyContainsTerm
+                    + (1.0 - docFreq / numDocs) * entropyNotContainsTerm);
 
         topFreq.add(term.utf8ToString(), docFreq);
         if (topTerms.size() < numTerms) {
           topTerms.add(new TermWithScore(term.utf8ToString(), score));
-        } else  {
+        } else {
           if (topTerms.first().score < score) {
             topTerms.pollFirst();
             topTerms.add(new TermWithScore(term.utf8ToString(), score));
@@ -195,7 +204,7 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
       }
 
       if (this.delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) this.delegate).finish();
+        ((DelegatingCollector) this.delegate).complete();
       }
     }
 
@@ -203,12 +212,9 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
       if (prob == 0 || prob == 1) return 0;
       return (-1 * prob * Math.log(prob)) + (-1 * (1.0 - prob) * Math.log(1.0 - prob));
     }
-
   }
 
-
-
-  private static class TermWithScore implements Comparable<TermWithScore>{
+  private static class TermWithScore implements Comparable<TermWithScore> {
     public final String term;
     public final double score;
 
@@ -224,10 +230,9 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
 
     @Override
     public boolean equals(Object obj) {
-      if (obj == null) return false;
-      if (obj.getClass() != getClass()) return false;
+      if (!(obj instanceof TermWithScore)) return false;
       TermWithScore other = (TermWithScore) obj;
-      return other.term.equals(this.term);
+      return Objects.equals(this.term, other.term);
     }
 
     @Override
@@ -241,5 +246,3 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
     }
   }
 }
-
-

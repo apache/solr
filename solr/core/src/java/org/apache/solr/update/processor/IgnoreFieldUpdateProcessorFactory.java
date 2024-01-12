@@ -16,6 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
+
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -23,44 +25,35 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.FieldMutatingUpdateProcessor.FieldNameSelector;
 
-import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.mutator;
-
 /**
- * Ignores &amp; removes fields matching the specified 
- * conditions from any document being added to the index.
+ * Ignores &amp; removes fields matching the specified conditions from any document being added to
+ * the index.
  *
- * <p>
- * By default, this processor ignores any field name which does not 
- * exist according to the schema  
- * </p>
- * 
- * <p>
- * For example, in the configuration below, any field name which would cause 
- * an error because it does not exist, or match a dynamicField, in the 
- * schema.xml would be silently removed from any added documents...
- * </p>
+ * <p>By default, this processor ignores any field name which does not exist according to the schema
+ *
+ * <p>For example, in the configuration below, any field name which would cause an error because it
+ * does not exist, or match a dynamicField, in the schema.xml would be silently removed from any
+ * added documents...
  *
  * <pre class="prettyprint">
  * &lt;processor class="solr.IgnoreFieldUpdateProcessorFactory" /&gt;</pre>
  *
- * <p>
- * In this second example, any field name ending in "_raw" found in a 
- * document being added would be removed...
- * </p>
+ * <p>In this second example, any field name ending in "_raw" found in a document being added would
+ * be removed...
+ *
  * <pre class="prettyprint">
  * &lt;processor class="solr.IgnoreFieldUpdateProcessorFactory"&gt;
  *   &lt;str name="fieldRegex"&gt;.*_raw&lt;/str&gt;
  * &lt;/processor&gt;</pre>
+ *
  * @since 4.0.0
  */
 public final class IgnoreFieldUpdateProcessorFactory extends FieldMutatingUpdateProcessorFactory {
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req,
-                                            SolrQueryResponse rsp,
-                                            UpdateRequestProcessor next) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     return mutator(getSelector(), next, src -> null);
-
   }
 
   @Override
@@ -71,6 +64,4 @@ public final class IgnoreFieldUpdateProcessorFactory extends FieldMutatingUpdate
       return (null == type);
     };
   }
-  
 }
-

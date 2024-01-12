@@ -17,12 +17,12 @@
 package org.apache.solr.util.hll;
 
 /**
- * The types of algorithm/data structure that {@link HLL} can utilize. For more
- * information, see the Javadoc for {@link HLL}.
+ * The types of algorithm/data structure that {@link HLL} can utilize. For more information, see the
+ * Javadoc for {@link HLL}.
  */
 public enum HLLType {
-    EMPTY,
-    EXPLICIT,
-    SPARSE,
-    FULL;
+  EMPTY,
+  EXPLICIT,
+  SPARSE,
+  FULL;
 }

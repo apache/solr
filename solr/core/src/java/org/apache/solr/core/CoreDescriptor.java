@@ -18,32 +18,29 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.PropertiesUtil;
+import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Metadata about a {@link SolrCore}.
- * It's mostly loaded from a file on disk at the very beginning of loading a core.
+ * Metadata about a {@link SolrCore}. It's mostly loaded from a file on disk at the very beginning
+ * of loading a core.
  *
- * It's mostly but not completely immutable; we should fix this!
+ * <p>It's mostly but not completely immutable; we should fix this!
  *
  * @since solr 1.3
  */
@@ -66,18 +63,19 @@ public class CoreDescriptor {
   public static final String CORE_CONFIGSET_PROPERTIES = "configSetProperties";
   public static final String SOLR_CORE_PROP_PREFIX = "solr.core.";
 
-  public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE = "conf" + File.separator + "solrcore.properties";
+  public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE =
+      "conf" + File.separator + "solrcore.properties";
 
   /**
-   * Whether this core was configured using a configSet that was trusted.
-   * This helps in avoiding the loading of plugins that have potential
-   * vulnerabilities, when the configSet was not uploaded from a trusted
-   * user.
+   * Whether this core was configured using a configSet that was trusted. This helps in avoiding the
+   * loading of plugins that have potential vulnerabilities, when the configSet was not uploaded
+   * from a trusted user.
    */
   private boolean trustedConfigSet = true;
 
   /**
    * Get the standard properties in persistable form
+   *
    * @return the standard core properties in persistable form
    */
   public Properties getPersistableStandardProperties() {
@@ -86,43 +84,42 @@ public class CoreDescriptor {
 
   /**
    * Get user-defined core properties in persistable form
+   *
    * @return user-defined core properties in persistable form
    */
   public Properties getPersistableUserProperties() {
     return originalExtraProperties;
   }
 
-  private static ImmutableMap<String, String> defaultProperties = new ImmutableMap.Builder<String, String>()
-      .put(CORE_CONFIG, "solrconfig.xml")
-      .put(CORE_SCHEMA, "schema.xml")
-      .put(CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME)
-      .put(CORE_DATADIR, "data" + File.separator)
-      .put(CORE_TRANSIENT, "false")
-      .put(CORE_LOADONSTARTUP, "true")
-      .build();
+  private static final Map<String, String> defaultProperties =
+      Map.of(
+          CORE_CONFIG, "solrconfig.xml",
+          CORE_SCHEMA, "schema.xml",
+          CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME,
+          CORE_DATADIR, "data" + File.separator,
+          CORE_TRANSIENT, "false",
+          CORE_LOADONSTARTUP, "true");
 
-  private static ImmutableList<String> requiredProperties = ImmutableList.of(
-      CORE_NAME
-  );
+  private static final List<String> requiredProperties = List.of(CORE_NAME);
 
-  public static ImmutableList<String> standardPropNames = ImmutableList.of(
-      CORE_NAME,
-      CORE_CONFIG,
-      CORE_DATADIR,
-      CORE_ULOGDIR,
-      CORE_SCHEMA,
-      CORE_PROPERTIES,
-      CORE_CONFIGSET_PROPERTIES,
-      CORE_LOADONSTARTUP,
-      CORE_TRANSIENT,
-      CORE_CONFIGSET,
-      // cloud props
-      CORE_SHARD,
-      CORE_COLLECTION,
-      CORE_ROLES,
-      CORE_NODE_NAME,
-      CloudDescriptor.NUM_SHARDS
-  );
+  public static List<String> standardPropNames =
+      List.of(
+          CORE_NAME,
+          CORE_CONFIG,
+          CORE_DATADIR,
+          CORE_ULOGDIR,
+          CORE_SCHEMA,
+          CORE_PROPERTIES,
+          CORE_CONFIGSET_PROPERTIES,
+          CORE_LOADONSTARTUP,
+          CORE_TRANSIENT,
+          CORE_CONFIGSET,
+          // cloud props
+          CORE_SHARD,
+          CORE_COLLECTION,
+          CORE_ROLES,
+          CORE_NODE_NAME,
+          CloudDescriptor.NUM_SHARDS);
 
   private final CloudDescriptor cloudDesc;
 
@@ -142,23 +139,30 @@ public class CoreDescriptor {
   protected final Properties substitutableProperties = new Properties();
 
   /** TESTS ONLY */
-  public CoreDescriptor(String name, Path instanceDir, CoreContainer coreContainer, String... coreProps) {
-    this(name, instanceDir, toMap(coreProps), coreContainer.getContainerProperties(), coreContainer.getZkController());
+  public CoreDescriptor(
+      String name, Path instanceDir, CoreContainer coreContainer, String... coreProps) {
+    this(
+        name,
+        instanceDir,
+        toMap(coreProps),
+        coreContainer.getContainerProperties(),
+        coreContainer.getZkController());
   }
 
   private static Map<String, String> toMap(String... properties) {
     Map<String, String> props = new HashMap<>();
     assert properties.length % 2 == 0;
     for (int i = 0; i < properties.length; i += 2) {
-      props.put(properties[i], properties[i+1]);
+      props.put(properties[i], properties[i + 1]);
     }
     return props;
   }
 
   /**
    * Create a new CoreDescriptor using the properties of an existing one
+   *
    * @param coreName the new CoreDescriptor's name
-   * @param other    the CoreDescriptor to copy
+   * @param other the CoreDescriptor to copy
    */
   public CoreDescriptor(String coreName, CoreDescriptor other) {
     this.cloudDesc = other.cloudDesc;
@@ -175,21 +179,27 @@ public class CoreDescriptor {
 
   /**
    * Create a new CoreDescriptor.
-   * @param name            the CoreDescriptor's name
-   * @param instanceDir     a Path resolving to the instanceDir. Must be absolute.
-   * @param coreProps       a Map of the properties for this core
+   *
+   * @param name the CoreDescriptor's name
+   * @param instanceDir a Path resolving to the instanceDir. Must be absolute.
+   * @param coreProps a Map of the properties for this core
    * @param containerProperties the properties from the enclosing container.
-   * @param zkController    the ZkController in SolrCloud mode, otherwise null.
+   * @param zkController the ZkController in SolrCloud mode, otherwise null.
    */
-  public CoreDescriptor(String name, Path instanceDir, Map<String, String> coreProps,
-                        Properties containerProperties, ZkController zkController) {
+  public CoreDescriptor(
+      String name,
+      Path instanceDir,
+      Map<String, String> coreProps,
+      Properties containerProperties,
+      ZkController zkController) {
     this.instanceDir = instanceDir;
     assert instanceDir.isAbsolute();
 
     originalCoreProperties.setProperty(CORE_NAME, name);
 
-    name = PropertiesUtil.substituteProperty(checkPropertyIsNotEmpty(name, CORE_NAME),
-                                             containerProperties);
+    name =
+        PropertiesUtil.substituteProperty(
+            checkPropertyIsNotEmpty(name, CORE_NAME), containerProperties);
 
     coreProperties.putAll(defaultProperties);
     coreProperties.put(CORE_NAME, name);
@@ -198,14 +208,14 @@ public class CoreDescriptor {
       String propname = entry.getKey();
       String propvalue = entry.getValue();
 
-      if (isUserDefinedProperty(propname))
-        originalExtraProperties.put(propname, propvalue);
-      else
-        originalCoreProperties.put(propname, propvalue);
+      if (isUserDefinedProperty(propname)) originalExtraProperties.put(propname, propvalue);
+      else originalCoreProperties.put(propname, propvalue);
 
-      if (!requiredProperties.contains(propname))   // Required props are already dealt with
-        coreProperties.setProperty(propname,
-            PropertiesUtil.substituteProperty(propvalue, containerProperties));
+      // Required props are already dealt with
+      if (!requiredProperties.contains(propname)) {
+        coreProperties.setProperty(
+            propname, PropertiesUtil.substituteProperty(propvalue, containerProperties));
+      }
     }
 
     loadExtraProperties();
@@ -223,48 +233,46 @@ public class CoreDescriptor {
   /**
    * Load properties specified in an external properties file.
    *
-   * The file to load can be specified in a {@code properties} property on
-   * the original Properties object used to create this CoreDescriptor.  If
-   * this has not been set, then we look for {@code conf/solrcore.properties}
-   * underneath the instance dir.
+   * <p>The file to load can be specified in a {@code properties} property on the original
+   * Properties object used to create this CoreDescriptor. If this has not been set, then we look
+   * for {@code conf/solrcore.properties} underneath the instance dir.
    *
-   * File paths are taken as read from the core's instance directory
-   * if they are not absolute.
+   * <p>File paths are taken as read from the core's instance directory if they are not absolute.
    */
   protected void loadExtraProperties() {
     String filename = coreProperties.getProperty(CORE_PROPERTIES, DEFAULT_EXTERNAL_PROPERTIES_FILE);
     Path propertiesFile = instanceDir.resolve(filename);
     if (Files.exists(propertiesFile)) {
-      try (InputStream is = Files.newInputStream(propertiesFile)) {
+      try (Reader r = Files.newBufferedReader(propertiesFile, StandardCharsets.UTF_8)) {
         Properties externalProps = new Properties();
-        externalProps.load(new InputStreamReader(is, StandardCharsets.UTF_8));
+        externalProps.load(r);
         coreProperties.putAll(externalProps);
       } catch (IOException e) {
-        String message = String.format(Locale.ROOT, "Could not load properties from %s: %s:",
-            propertiesFile.toString(), e.toString());
+        String message =
+            String.format(Locale.ROOT, "Could not load properties from %s: %s:", propertiesFile, e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);
       }
     }
   }
 
   /**
-   * Create the properties object used by resource loaders, etc, for property
-   * substitution.  The default solr properties are prefixed with 'solr.core.', so,
-   * e.g., 'name' becomes 'solr.core.name'
+   * Create the properties object used by resource loaders, etc., for property substitution. The
+   * default solr properties are prefixed with 'solr.core.', so, e.g., 'name' becomes
+   * 'solr.core.name'
    */
   protected void buildSubstitutableProperties() {
     for (String propName : coreProperties.stringPropertyNames()) {
       String propValue = coreProperties.getProperty(propName);
-      if (!isUserDefinedProperty(propName))
-        propName = SOLR_CORE_PROP_PREFIX + propName;
+      if (!isUserDefinedProperty(propName)) propName = SOLR_CORE_PROP_PREFIX + propName;
       substitutableProperties.setProperty(propName, propValue);
     }
     substitutableProperties.setProperty("solr.core.instanceDir", instanceDir.toString());
   }
 
   /**
-   * Is this property a Solr-standard property, or is it an extra property
-   * defined per-core by the user?
+   * Is this property a Solr-standard property, or is it an extra property defined per-core by the
+   * user?
+   *
    * @param propName the Property name
    * @return {@code true} if this property is user-defined
    */
@@ -273,8 +281,9 @@ public class CoreDescriptor {
   }
 
   public static String checkPropertyIsNotEmpty(String value, String propName) {
-    if (StringUtils.isEmpty(value)) {
-      String message = String.format(Locale.ROOT, "Cannot create core with empty %s value", propName);
+    if (StrUtils.isNullOrEmpty(value)) {
+      String message =
+          String.format(Locale.ROOT, "Cannot create core with empty %s value", propName);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);
     }
     return value;
@@ -287,7 +296,7 @@ public class CoreDescriptor {
   public String getDataDir() {
     return coreProperties.getProperty(CORE_DATADIR);
   }
-  
+
   public boolean usingDefaultDataDir() {
     return defaultProperties.get(CORE_DATADIR).equals(coreProperties.getProperty(CORE_DATADIR));
   }
@@ -297,17 +306,23 @@ public class CoreDescriptor {
     return instanceDir;
   }
 
-  /**@return the core configuration resource name. */
+  /**
+   * @return the core configuration resource name.
+   */
   public String getConfigName() {
     return coreProperties.getProperty(CORE_CONFIG);
   }
 
-  /**@return the core schema resource name.  Not actually used if schema is managed mode. */
+  /**
+   * @return the core schema resource name. Not actually used if schema is managed mode.
+   */
   public String getSchemaName() {
     return coreProperties.getProperty(CORE_SCHEMA);
   }
 
-  /**@return the initial core name */
+  /**
+   * @return the initial core name
+   */
   public String getName() {
     return coreProperties.getProperty(CORE_NAME);
   }
@@ -345,8 +360,9 @@ public class CoreDescriptor {
 
   /**
    * Returns a specific property defined on this CoreDescriptor
-   * @param prop    - value to read from the properties structure.
-   * @param defVal  - return if no property found.
+   *
+   * @param prop - value to read from the properties structure.
+   * @param defVal - return if no property found.
    * @return associated string. May be null.
    */
   public String getCoreProperty(String prop, String defVal) {
@@ -355,6 +371,7 @@ public class CoreDescriptor {
 
   /**
    * Returns all substitutable properties defined on this CoreDescriptor
+   *
    * @return all substitutable properties defined on this CoreDescriptor
    */
   public Properties getSubstitutableProperties() {
@@ -367,7 +384,7 @@ public class CoreDescriptor {
   }
 
   public String getConfigSet() {
-    //TODO consider falling back on "collection.configName" ( CollectionAdminParams.COLL_CONF )
+    // TODO consider falling back on "collection.configName" ( CollectionAdminParams.COLL_CONF )
     return coreProperties.getProperty(CORE_CONFIGSET);
   }
 

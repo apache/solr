@@ -17,48 +17,41 @@
 
 package org.apache.solr.handler;
 
-import java.lang.invoke.MethodHandles;
-
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.util.LogListener;
-import org.apache.solr.SolrTestCaseJ4;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
-
-import org.junit.BeforeClass;
-
 import static org.hamcrest.core.StringContains.containsString;
 
-@SuppressForbidden(reason="We need to use log4J2 classes directly to test MDC impacts")
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.LogListener;
+import org.hamcrest.MatcherAssert;
+import org.junit.BeforeClass;
+import org.slf4j.MDC;
+
+@SuppressForbidden(reason = "We need to use log4J2 classes directly to test MDC impacts")
 public class TestRequestId extends SolrTestCaseJ4 {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
   @BeforeClass
   public static void beforeTests() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig.xml", "schema.xml");
   }
 
   public void testRequestId() {
-    
+
     try (LogListener reqLog = LogListener.info(SolrCore.class.getName() + ".Request")) {
-      
-      // Sanity check that the our MDC doesn't already have some sort of rid set in it
+
+      // Check that our MDC doesn't already have some sort of rid set in it
       assertNull(MDC.get(CommonParams.REQUEST_ID));
 
       // simple request that should successfully be logged ...
       assertQ("xxx", req("q", "*:*", CommonParams.REQUEST_ID, "xxx"), "//*[@numFound='0']");
 
-      // Sanity check that the test framework didn't let our "request" MDC info "leak" out of assertQ..
+      // Sanity check that the test framework didn't let our "request" MDC info "leak" out of
+      // assertQ...
       assertNull(MDC.get(CommonParams.REQUEST_ID));
 
-      { 
+      {
         var reqEvent = reqLog.getQueue().poll();
         assertNotNull(reqEvent);
         assertEquals("xxx", reqEvent.getContextData().getValue("rid"));
@@ -66,18 +59,26 @@ public class TestRequestId extends SolrTestCaseJ4 {
       }
 
       // request that should cause some ERROR logging...
-      // NOTE: we can't just listen for errors at the 'root' logger because assertQEx will 'mute' them before we can intercept
+      // NOTE: we can't just listen for errors at the 'root' logger because assertQEx will 'mute'
+      // them before we can intercept
       try (LogListener errLog = LogListener.error(RequestHandlerBase.class)) {
-        assertQEx("yyy", "bogus_yyy", req("q", "*:*", "sort", "bogus_yyy", CommonParams.REQUEST_ID, "yyy"), ErrorCode.BAD_REQUEST);
-                
-        // Sanity check that the test framework didn't let our "request" MDC info "leak" out of assertQEx..
+        assertQEx(
+            "yyy",
+            "bogus_yyy",
+            req("q", "*:*", "sort", "bogus_yyy", CommonParams.REQUEST_ID, "yyy"),
+            ErrorCode.BAD_REQUEST);
+
+        // Sanity check that the test framework didn't let our "request" MDC info "leak" out of
+        // assertQEx...
         assertNull(MDC.get(CommonParams.REQUEST_ID));
 
-        { 
+        {
           var reqEvent = reqLog.getQueue().poll();
           assertNotNull(reqEvent);
           assertEquals("yyy", reqEvent.getContextData().getValue("rid"));
-          assertThat(reqEvent.getMessage().getFormattedMessage(), containsString("status="+ErrorCode.BAD_REQUEST.code));
+          MatcherAssert.assertThat(
+              reqEvent.getMessage().getFormattedMessage(),
+              containsString("status=" + ErrorCode.BAD_REQUEST.code));
         }
         {
           var errEvent = errLog.getQueue().poll();
@@ -88,5 +89,4 @@ public class TestRequestId extends SolrTestCaseJ4 {
       }
     }
   }
-
 }

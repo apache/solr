@@ -16,15 +16,14 @@
  */
 package org.apache.solr.search;
 
-
 /**
- * A struct whose only purpose is to hold both a {@link DocList} and a {@link DocSet}
- * so that both may be returned from a single method.
- * <p>
- * The DocList and DocSet returned should <b>not</b> be modified as they may
- * have been retrieved or inserted into a cache and should be considered shared.
- * <p>
- * Oh, if only java had "out" parameters or multiple return args...
+ * A struct whose only purpose is to hold both a {@link DocList} and a {@link DocSet} so that both
+ * may be returned from a single method.
+ *
+ * <p>The DocList and DocSet returned should <b>not</b> be modified as they may have been retrieved
+ * or inserted into a cache and should be considered shared.
+ *
+ * <p>Oh, if only java had "out" parameters or multiple return args...
  *
  * @since solr 0.9
  */

@@ -17,31 +17,31 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.security.PermissionNameProvider.Name.METRICS_READ_PERM;
+
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.admin.ThreadDumpHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.security.PermissionNameProvider.Name.METRICS_READ_PERM;
-
 /**
  * V2 API for triggering a thread dump on the receiving node.
  *
- * This API (GET /v2/node/threads) is analogous to the v1 /admin/info/threads.
+ * <p>This API (GET /v2/node/threads) is analogous to the v1 /admin/info/threads.
  */
 public class NodeThreadsAPI {
-    private final ThreadDumpHandler handler;
+  private final ThreadDumpHandler handler;
 
-    public NodeThreadsAPI(ThreadDumpHandler handler) {
-        this.handler = handler;
-    }
+  public NodeThreadsAPI(ThreadDumpHandler handler) {
+    this.handler = handler;
+  }
 
-    @EndPoint(
-            path = {"/node/threads"},
-            method = GET,
-            permission = METRICS_READ_PERM)
-    public void triggerThreadDump(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        handler.handleRequestBody(req, rsp);
-    }
+  @EndPoint(
+      path = {"/node/threads"},
+      method = GET,
+      permission = METRICS_READ_PERM)
+  public void triggerThreadDump(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    handler.handleRequestBody(req, rsp);
+  }
 }

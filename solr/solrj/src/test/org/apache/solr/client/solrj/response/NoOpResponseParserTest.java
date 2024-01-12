@@ -16,16 +16,13 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.ReaderInputStream;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -44,13 +41,14 @@ import org.junit.Test;
 
 /**
  * A test for parsing Solr response from query by NoOpResponseParser.
+ *
  * @see org.apache.solr.client.solrj.impl.NoOpResponseParser
  * @see <a href="https://issues.apache.org/jira/browse/SOLR-5530">SOLR-5530</a>
  */
 public class NoOpResponseParserTest extends SolrJettyTestBase {
 
-  private static InputStream getResponse() throws IOException {
-    return new ReaderInputStream(new StringReader("NO-OP test response"), StandardCharsets.UTF_8);
+  private static InputStream getResponse() {
+    return new ByteArrayInputStream("NO-OP test response".getBytes(StandardCharsets.UTF_8));
   }
 
   @BeforeClass
@@ -60,7 +58,7 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
 
   @Before
   public void doBefore() throws IOException, SolrServerException {
-    //add document and commit, and ensure it's there
+    // add document and commit, and ensure it's there
     SolrClient client = getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "1234");
@@ -68,36 +66,36 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
     client.commit();
   }
 
-  /**
-   * Parse response from query using NoOpResponseParser.
-   */
+  /** Parse response from query using NoOpResponseParser. */
   @Test
   public void testQueryParse() throws Exception {
 
-    try (HttpSolrClient client = (HttpSolrClient) createNewSolrClient()) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(getCoreUrl())
+            .withResponseParser(new NoOpResponseParser())
+            .build()) {
       SolrQuery query = new SolrQuery("id:1234");
       QueryRequest req = new QueryRequest(query);
-      client.setParser(new NoOpResponseParser());
       NamedList<Object> resp = client.request(req);
       String responseString = (String) resp.get("response");
       assertResponse(responseString);
     }
-
   }
 
   private void assertResponse(String responseString) throws IOException {
     ResponseParser xmlResponseParser = new XMLResponseParser();
-    NamedList<?> expectedResponse = xmlResponseParser.processResponse(IOUtils.toInputStream(responseString, "UTF-8"), "UTF-8");
+    NamedList<?> expectedResponse =
+        xmlResponseParser.processResponse(
+            new ByteArrayInputStream(responseString.getBytes(StandardCharsets.UTF_8)), "UTF-8");
     @SuppressWarnings({"unchecked"})
-    List<SolrDocument> documentList = (List<SolrDocument>) expectedResponse.getAll("response").get(0);
+    List<SolrDocument> documentList =
+        (List<SolrDocument>) expectedResponse.getAll("response").get(0);
     assertEquals(1, documentList.size());
     SolrDocument solrDocument = documentList.get(0);
     assertEquals("1234", String.valueOf(solrDocument.getFieldValue("id")));
   }
 
-  /**
-   * Parse response from java.io.Reader.
-   */
+  /** Parse response from java.io.Reader. */
   @Test
   public void testReaderResponse() throws Exception {
     NoOpResponseParser parser = new NoOpResponseParser();
@@ -106,15 +104,12 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
       Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
       NamedList<Object> response = parser.processResponse(in);
       assertNotNull(response.get("response"));
-      String expectedResponse = IOUtils.toString(getResponse(), "UTF-8");
+      String expectedResponse = new String(getResponse().readAllBytes(), StandardCharsets.UTF_8);
       assertEquals(expectedResponse, response.get("response"));
     }
-
   }
 
-  /**
-   * Parse response from java.io.InputStream.
-   */
+  /** Parse response from java.io.InputStream. */
   @Test
   public void testInputStreamResponse() throws Exception {
     NoOpResponseParser parser = new NoOpResponseParser();
@@ -123,7 +118,7 @@ public class NoOpResponseParserTest extends SolrJettyTestBase {
       NamedList<Object> response = parser.processResponse(is, "UTF-8");
 
       assertNotNull(response.get("response"));
-      String expectedResponse = IOUtils.toString(getResponse(), "UTF-8");
+      String expectedResponse = new String(getResponse().readAllBytes(), StandardCharsets.UTF_8);
       assertEquals(expectedResponse, response.get("response"));
     }
   }

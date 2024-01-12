@@ -1,0 +1,50 @@
+= Streaming Expressions and Math Expressions
+:page-toclevels: 0
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+== A Visual Guide
+
+image::math-expressions/searchiris.png[]
+
+== Table of Contents
+
+[cols="1,1",frame=none,grid=none,stripes=none]
+|===
+| *xref:visualization.adoc[]*: Gallery of streaming expression and math expression visualizations.
+| *xref:math-start.adoc[]*: Getting started with streaming expressions, math expressions, and visualization.
+| *xref:loading.adoc[]*: Visualizing, transforming and loading CSV files.
+| *xref:search-sample.adoc[]*: Searching, sampling, aggregation and visualization of result sets.
+| *xref:transform.adoc[]*: Transforming and filtering result sets.
+| *xref:scalar-math.adoc[]*: Math functions and visualization applied to numbers.
+| *xref:vector-math.adoc[]*: Vector math, manipulation and visualization.
+| *xref:variables.adoc[]*: Vectorizing result sets and assigning and visualizing variables.
+| *xref:matrix-math.adoc[]*: Matrix math, manipulation and visualization.
+| *xref:term-vectors.adoc[]*: Text analysis and TF-IDF term vectors.
+| *xref:probability-distributions.adoc[]*: Continuous and discrete probability distribution functions.
+| *xref:statistics.adoc[]*: Descriptive statistics, histograms, percentiles, correlation, inference tests and other stats functions.
+| *xref:regression.adoc[]*: Simple and multivariate linear regression.
+| *xref:curve-fitting.adoc[]*: Polynomial, harmonic and Gaussian curve fitting.
+| *xref:time-series.adoc[]*: Time series aggregation, visualization, smoothing, differencing, anomaly detection and forecasting.
+| *xref:numerical-analysis.adoc[]*: Interpolation, derivatives and integrals.
+| *xref:dsp.adoc[]*: Convolution, cross-correlation, autocorrelation and fast Fourier transforms.
+| *xref:simulations.adoc[]*: Monte Carlo simulations and random walks.
+| *xref:machine-learning.adoc[]*: Distance, KNN, DBSCAN, K-means, fuzzy K-means and other ML functions.
+| *xref:graph.adoc[]*: Bipartite graphs, in-degree centrality, graph recommenders, temporal graphs and event correlation.
+| *xref:computational-geometry.adoc[]*: Convex Hulls and Enclosing Disks.
+| *xref:logs.adoc[]*: Solr log analytics and visualization.
+|===

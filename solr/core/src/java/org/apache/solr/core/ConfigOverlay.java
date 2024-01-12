@@ -16,36 +16,33 @@
  */
 package org.apache.solr.core;
 
+import static org.apache.solr.common.util.Utils.toJSONString;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 
-import static org.apache.solr.common.util.Utils.toJSONString;
-
 /**
- * This class encapsulates the config overlay json file. It is immutable
- * and any edit operations performed on tbhis gives a new copy of the object
- * with the changed value
+ * This class encapsulates the config overlay json file. It is immutable and any edit operations
+ * performed on this gives a new copy of the object with the changed value
  */
 public class ConfigOverlay implements MapSerializable {
-  private final int znodeVersion;
+  private final int version;
   private final Map<String, Object> data;
   private Map<String, Object> props;
   private Map<String, Object> userProps;
 
   @SuppressWarnings({"unchecked"})
-  public ConfigOverlay(Map<String, Object> jsonObj, int znodeVersion) {
+  public ConfigOverlay(Map<String, Object> jsonObj, int version) {
     if (jsonObj == null) jsonObj = Collections.emptyMap();
-    this.znodeVersion = znodeVersion;
+    this.version = version;
     data = Collections.unmodifiableMap(jsonObj);
     props = (Map<String, Object>) data.get("props");
     if (props == null) props = Collections.emptyMap();
@@ -65,7 +62,7 @@ public class ConfigOverlay implements MapSerializable {
 
   public Object getXPathProperty(List<String> path) {
     List<String> hierarchy = new ArrayList<>();
-    if(isEditable(true, hierarchy, path) == null) return null;
+    if (isEditable(true, hierarchy, path) == null) return null;
     return Utils.getObjectByPath(props, true, hierarchy);
   }
 
@@ -74,7 +71,7 @@ public class ConfigOverlay implements MapSerializable {
     copy.put(key, val);
     Map<String, Object> jsonObj = new LinkedHashMap<>(this.data);
     jsonObj.put("userProps", copy);
-    return new ConfigOverlay(jsonObj, znodeVersion);
+    return new ConfigOverlay(jsonObj, version);
   }
 
   public ConfigOverlay unsetUserProperty(String key) {
@@ -83,7 +80,7 @@ public class ConfigOverlay implements MapSerializable {
     copy.remove(key);
     Map<String, Object> jsonObj = new LinkedHashMap<>(this.data);
     jsonObj.put("userProps", copy);
-    return new ConfigOverlay(jsonObj, znodeVersion);
+    return new ConfigOverlay(jsonObj, version);
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -106,21 +103,20 @@ public class ConfigOverlay implements MapSerializable {
     Map<String, Object> jsonObj = new LinkedHashMap<>(this.data);
     jsonObj.put("props", deepCopy);
 
-    return new ConfigOverlay(jsonObj, znodeVersion);
+    return new ConfigOverlay(jsonObj, version);
   }
-
 
   public static final String NOT_EDITABLE = "''{0}'' is not an editable property";
 
   private List<String> checkEditable(String propName, boolean isXPath, boolean failOnError) {
-    LinkedList<String> hierarchy = new LinkedList<>();
+    List<String> hierarchy = new ArrayList<>();
     if (!isEditableProp(propName, isXPath, hierarchy)) {
       if (failOnError)
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, StrUtils.formatString(NOT_EDITABLE, propName));
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, StrUtils.formatString(NOT_EDITABLE, propName));
       else return null;
     }
     return hierarchy;
-
   }
 
   @SuppressWarnings({"rawtypes"})
@@ -143,23 +139,21 @@ public class ConfigOverlay implements MapSerializable {
     Map<String, Object> jsonObj = new LinkedHashMap<>(this.data);
     jsonObj.put("props", deepCopy);
 
-    return new ConfigOverlay(jsonObj, znodeVersion);
+    return new ConfigOverlay(jsonObj, version);
   }
 
   public byte[] toByteArray() {
     return Utils.toJSON(data);
   }
 
-
-  public int getZnodeVersion() {
-    return znodeVersion;
+  public int getVersion() {
+    return version;
   }
 
   @Override
   public String toString() {
     return toJSONString(data);
   }
-
 
   public static final String RESOURCE_NAME = "configoverlay.json";
 
@@ -171,15 +165,17 @@ public class ConfigOverlay implements MapSerializable {
   private static final Long INT_NODE = 21L;
   private static final Long FLOAT_ATTR = 30L;
   private static final Long FLOAT_NODE = 31L;*/
-  //The path maps to the xml xpath and value of 1 means it is a tag with a string value and value
+  // The path maps to the xml xpath and value of 1 means it is a tag with a string value and value
   // of 0 means it is an attribute with string value
 
-  private static Map<?, ?> editable_prop_map = (Map<?, ?>) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
+  private static Map<?, ?> editable_prop_map =
+      (Map<?, ?>)
+          Utils.fromJSONResource(
+              ConfigOverlay.class.getClassLoader(), "EditableSolrConfigAttributes.json");
 
   public static boolean isEditableProp(String path, boolean isXpath, List<String> hierarchy) {
     return !(checkEditable(path, isXpath, hierarchy) == null);
   }
-
 
   public static Class<?> checkEditable(String path, boolean isXpath, List<String> hierarchy) {
     List<String> parts = StrUtils.splitSmart(path, isXpath ? '/' : '.');
@@ -197,19 +193,20 @@ public class ConfigOverlay implements MapSerializable {
       if (hierarchy != null) hierarchy.add(part);
       if (obj == null) return null;
       if (i == parts.size() - 1) {
-        if (obj instanceof Map<?,?>) {
-          Map<?,?> map = (Map<?,?>) obj;
+        if (obj instanceof Map<?, ?>) {
+          Map<?, ?> map = (Map<?, ?>) obj;
           Object o = map.get(part);
           return checkType(o, isXpath, isAttr);
         }
         return null;
       }
-      obj = ((Map<?,?>) obj).get(part);
+      obj = ((Map<?, ?>) obj).get(part);
     }
     return null;
   }
 
-  static Class<?>[] types = new Class<?>[]{String.class, Boolean.class, Integer.class, Float.class};
+  static Class<?>[] types =
+      new Class<?>[] {String.class, Boolean.class, Integer.class, Float.class};
 
   private static Class<?> checkType(Object o, boolean isXpath, boolean isAttr) {
     if (o instanceof Long) {
@@ -239,7 +236,7 @@ public class ConfigOverlay implements MapSerializable {
 
   @Override
   public Map<String, Object> toMap(Map<String, Object> map) {
-    map.put(ZNODEVER, znodeVersion);
+    map.put(ZNODEVER, version);
     map.putAll(data);
     return map;
   }
@@ -255,27 +252,24 @@ public class ConfigOverlay implements MapSerializable {
     return props.containsKey(key);
   }
 
-
   @SuppressWarnings({"unchecked"})
   public ConfigOverlay addNamedPlugin(Map<String, Object> info, String typ) {
     Map<String, Object> dataCopy = Utils.getDeepCopy(data, 4);
     Map<String, Object> existing = (Map<String, Object>) dataCopy.get(typ);
     if (existing == null) dataCopy.put(typ, existing = new LinkedHashMap<>());
     existing.put(info.get(CoreAdminParams.NAME).toString(), info);
-    return new ConfigOverlay(dataCopy, this.znodeVersion);
+    return new ConfigOverlay(dataCopy, this.version);
   }
 
   @SuppressWarnings({"unchecked"})
   public ConfigOverlay deleteNamedPlugin(String name, String typ) {
     Map<String, Object> dataCopy = Utils.getDeepCopy(data, 4);
-    Map<?,?> reqHandler = (Map<?,?>) dataCopy.get(typ);
+    Map<?, ?> reqHandler = (Map<?, ?>) dataCopy.get(typ);
     if (reqHandler == null) return this;
     reqHandler.remove(name);
-    return new ConfigOverlay(dataCopy, this.znodeVersion);
-
+    return new ConfigOverlay(dataCopy, this.version);
   }
 
   public static final String ZNODEVER = "znodeVersion";
   public static final String NAME = "overlay";
-
 }

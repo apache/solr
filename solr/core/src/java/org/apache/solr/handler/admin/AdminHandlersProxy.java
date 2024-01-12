@@ -29,7 +29,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -48,14 +47,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Static methods to proxy calls to an Admin (GET) API to other nodes in the cluster and return a combined response
+ * Static methods to proxy calls to an Admin (GET) API to other nodes in the cluster and return a
+ * combined response
  */
 public class AdminHandlersProxy {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_NODES = "nodes";
 
   // Proxy this request to a different remote node if 'node' parameter is provided
-  public static boolean maybeProxyToNodes(SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer container)
+  public static boolean maybeProxyToNodes(
+      SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer container)
       throws IOException, SolrServerException, InterruptedException {
     String nodeNames = req.getParams().get(PARAM_NODES);
     if (nodeNames == null || nodeNames.isEmpty()) {
@@ -63,14 +64,17 @@ public class AdminHandlersProxy {
     }
 
     if (!container.isZooKeeperAware()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Parameter " + PARAM_NODES + " only supported in Cloud mode");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Parameter " + PARAM_NODES + " only supported in Cloud mode");
     }
-    
+
     Set<String> nodes;
     String pathStr = req.getPath();
 
-    Set<String> liveNodes = container.getZkController().zkStateReader.getClusterState().getLiveNodes();
-    
+    Set<String> liveNodes =
+        container.getZkController().zkStateReader.getClusterState().getLiveNodes();
+
     if (nodeNames.equals("all")) {
       nodes = liveNodes;
       log.debug("All live nodes requested");
@@ -78,17 +82,21 @@ public class AdminHandlersProxy {
       nodes = new HashSet<>(Arrays.asList(nodeNames.split(",")));
       for (String nodeName : nodes) {
         if (!nodeName.matches("^[^/:]+:\\d+_[\\w/]+$")) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Parameter " + PARAM_NODES + " has wrong format");
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Parameter " + PARAM_NODES + " has wrong format");
         }
 
         if (!liveNodes.contains(nodeName)) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Requested node " + nodeName + " is not part of cluster");
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Requested node " + nodeName + " is not part of cluster");
         }
-      }       
+      }
       log.debug("Nodes requested: {}", nodes);
     }
     if (log.isDebugEnabled()) {
-      log.debug("{} parameter {} specified on {} request", PARAM_NODES, nodeNames, pathStr);
+      log.debug("{} parameter {} specified on {} request", PARAM_NODES, nodeNames, pathStr);
     }
 
     ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
@@ -97,8 +105,9 @@ public class AdminHandlersProxy {
     for (String node : nodes) {
       responses.put(node, callRemoteNode(node, pathStr, params, container.getZkController()));
     }
-    
-    for (Map.Entry<String, Pair<Future<NamedList<Object>>, SolrClient>> entry : responses.entrySet()) {
+
+    for (Map.Entry<String, Pair<Future<NamedList<Object>>, SolrClient>> entry :
+        responses.entrySet()) {
       try {
         NamedList<Object> resp = entry.getValue().first().get(10, TimeUnit.SECONDS);
         entry.getValue().second().close();
@@ -110,16 +119,18 @@ public class AdminHandlersProxy {
       }
     }
     if (log.isDebugEnabled()) {
-      log.debug("Fetched response from {} nodes: {}", responses.keySet().size(), responses.keySet());
+      log.debug(
+          "Fetched response from {} nodes: {}", responses.keySet().size(), responses.keySet());
     }
     return true;
-  } 
+  }
 
   /**
-   * Makes a remote request and returns a future and the solr client. The caller is responsible for closing the client 
+   * Makes a remote request and returns a future and the solr client. The caller is responsible for
+   * closing the client
    */
-  public static Pair<Future<NamedList<Object>>, SolrClient> callRemoteNode(String nodeName, String endpoint, 
-                                                                           SolrParams params, ZkController zkController) 
+  public static Pair<Future<NamedList<Object>>, SolrClient> callRemoteNode(
+      String nodeName, String endpoint, SolrParams params, ZkController zkController)
       throws IOException, SolrServerException {
     log.debug("Proxying {} request to node {}", endpoint, nodeName);
     URL baseUrl = new URL(zkController.zkStateReader.getBaseUrlForNodeName(nodeName));

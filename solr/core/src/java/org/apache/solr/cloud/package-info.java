@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Classes for dealing with ZooKeeper when operating in SolrCloud mode.
- */
+/** Classes for dealing with ZooKeeper when operating in SolrCloud mode. */
 package org.apache.solr.cloud;

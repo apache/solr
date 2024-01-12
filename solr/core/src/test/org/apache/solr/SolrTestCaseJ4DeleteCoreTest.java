@@ -21,16 +21,13 @@ package org.apache.solr;
 public class SolrTestCaseJ4DeleteCoreTest extends SolrTestCaseJ4 {
 
   public void testDeleteCore() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig.xml", "schema.xml");
     assertU(adoc("id", "1"));
     assertU(commit());
     assertQ(req("q", "*:*"), "//*[@numFound='1']");
 
     deleteCore();
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig.xml", "schema.xml");
     assertQ(req("q", "*:*"), "//*[@numFound='0']");
   }
-
-
-
 }

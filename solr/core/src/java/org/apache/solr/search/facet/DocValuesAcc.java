@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.function.IntFunction;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -34,7 +33,8 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.schema.SchemaField;
 
 /**
- * Accumulates stats separated by slot number for the fields with {@link org.apache.lucene.index.DocValues}
+ * Accumulates stats separated by slot number for the fields with {@link
+ * org.apache.lucene.index.DocValues}
  */
 public abstract class DocValuesAcc extends SlotAcc {
   SchemaField sf;
@@ -54,16 +54,13 @@ public abstract class DocValuesAcc extends SlotAcc {
   protected abstract void collectValues(int doc, int slot) throws IOException;
 
   /**
-   * Wrapper to {@code org.apache.lucene.index.DocValuesIterator#advanceExact(int)}
-   * returns whether or not given {@code doc} has value
+   * Wrapper to {@code org.apache.lucene.index.DocValuesIterator#advanceExact(int)} returns whether
+   * or not given {@code doc} has value
    */
   protected abstract boolean advanceExact(int doc) throws IOException;
 
-
-  /**
-   * Accumulator for {@link NumericDocValues}
-   */
-  abstract class NumericDVAcc extends DocValuesAcc {
+  /** Accumulator for {@link NumericDocValues} */
+  abstract static class NumericDVAcc extends DocValuesAcc {
     NumericDocValues values;
 
     public NumericDVAcc(FacetContext fcontext, SchemaField sf) throws IOException {
@@ -82,13 +79,12 @@ public abstract class DocValuesAcc extends SlotAcc {
     }
   }
 
-  /**
-   * Accumulator for {@link SortedNumericDocValues}
-   */
+  /** Accumulator for {@link SortedNumericDocValues} */
   abstract static class SortedNumericDVAcc extends DocValuesAcc {
     SortedNumericDocValues values;
 
-    public SortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public SortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots)
+        throws IOException {
       super(fcontext, sf);
     }
 
@@ -108,7 +104,8 @@ public abstract class DocValuesAcc extends SlotAcc {
     long[] result;
     long initialValue;
 
-    public LongSortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
+    public LongSortedNumericDVAcc(
+        FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
       super(fcontext, sf, numSlots);
       this.result = new long[numSlots];
       this.initialValue = initialValue;
@@ -134,16 +131,17 @@ public abstract class DocValuesAcc extends SlotAcc {
 
     @Override
     public void resize(Resizer resizer) {
-    this.result = resizer.resize(result, initialValue);
+      this.result = resizer.resize(result, initialValue);
     }
-
   }
 
   abstract static class DoubleSortedNumericDVAcc extends SortedNumericDVAcc {
     double[] result;
     double initialValue;
 
-    public DoubleSortedNumericDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, double initialValue) throws IOException {
+    public DoubleSortedNumericDVAcc(
+        FacetContext fcontext, SchemaField sf, int numSlots, double initialValue)
+        throws IOException {
       super(fcontext, sf, numSlots);
       this.result = new double[numSlots];
       this.initialValue = initialValue;
@@ -169,12 +167,10 @@ public abstract class DocValuesAcc extends SlotAcc {
 
     @Override
     public void resize(Resizer resizer) {
-    this.result = resizer.resize(result, initialValue);
+      this.result = resizer.resize(result, initialValue);
     }
 
-    /**
-     * converts given long value to double based on field type
-     */
+    /** converts given long value to double based on field type */
     protected double getDouble(long val) {
       switch (sf.getType().getNumberType()) {
         case INTEGER:
@@ -190,17 +186,18 @@ public abstract class DocValuesAcc extends SlotAcc {
           return 0.0d;
       }
     }
-
   }
 
   /**
-   * Base class for standard deviation and variance computation for fields with {@link SortedNumericDocValues}
+   * Base class for standard deviation and variance computation for fields with {@link
+   * SortedNumericDocValues}
    */
   abstract static class SDVSortedNumericAcc extends DoubleSortedNumericDVAcc {
     int[] counts;
     double[] sum;
 
-    public SDVSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+    public SDVSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots)
+        throws IOException {
       super(fcontext, sf, numSlots, 0);
       this.counts = new int[numSlots];
       this.sum = new double[numSlots];
@@ -246,15 +243,13 @@ public abstract class DocValuesAcc extends SlotAcc {
     @Override
     public void resize(Resizer resizer) {
       super.resize(resizer);
-    this.counts = resizer.resize(counts, 0);
-    this.sum = resizer.resize(sum, 0);
+      this.counts = resizer.resize(counts, 0);
+      this.sum = resizer.resize(sum, 0);
     }
   }
 
-  /**
-   * Accumulator for {@link SortedDocValues}
-   */
-  abstract class SortedDVAcc extends DocValuesAcc {
+  /** Accumulator for {@link SortedDocValues} */
+  abstract static class SortedDVAcc extends DocValuesAcc {
     SortedDocValues values;
 
     public SortedDVAcc(FacetContext fcontext, SchemaField sf) throws IOException {
@@ -273,9 +268,7 @@ public abstract class DocValuesAcc extends SlotAcc {
     }
   }
 
-  /**
-   * Accumulator for {@link SortedSetDocValues}
-   */
+  /** Accumulator for {@link SortedSetDocValues} */
   abstract static class SortedSetDVAcc extends DocValuesAcc {
     SortedSetDocValues values;
 
@@ -299,7 +292,8 @@ public abstract class DocValuesAcc extends SlotAcc {
     long[] result;
     long initialValue;
 
-    public LongSortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
+    public LongSortedSetDVAcc(
+        FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
       super(fcontext, sf, numSlots);
       result = new long[numSlots];
       this.initialValue = initialValue;
@@ -325,7 +319,7 @@ public abstract class DocValuesAcc extends SlotAcc {
 
     @Override
     public void resize(Resizer resizer) {
-    this.result = resizer.resize(result, initialValue);
+      this.result = resizer.resize(result, initialValue);
     }
   }
 
@@ -333,7 +327,9 @@ public abstract class DocValuesAcc extends SlotAcc {
     double[] result;
     double initialValue;
 
-    public DoubleSortedSetDVAcc(FacetContext fcontext, SchemaField sf, int numSlots, long initialValue) throws IOException {
+    public DoubleSortedSetDVAcc(
+        FacetContext fcontext, SchemaField sf, int numSlots, double initialValue)
+        throws IOException {
       super(fcontext, sf, numSlots);
       result = new double[numSlots];
       this.initialValue = initialValue;
@@ -359,12 +355,13 @@ public abstract class DocValuesAcc extends SlotAcc {
 
     @Override
     public void resize(Resizer resizer) {
-    this.result = resizer.resize(result, initialValue);
+      this.result = resizer.resize(result, initialValue);
     }
   }
 
   /**
-   * Base class for standard deviation and variance computation for fields with {@link SortedSetDocValues}
+   * Base class for standard deviation and variance computation for fields with {@link
+   * SortedSetDocValues}
    */
   abstract static class SDVSortedSetAcc extends DoubleSortedSetDVAcc {
     int[] counts;
@@ -419,8 +416,8 @@ public abstract class DocValuesAcc extends SlotAcc {
     @Override
     public void resize(Resizer resizer) {
       super.resize(resizer);
-    this.counts = resizer.resize(counts, 0);
-    this.sum = resizer.resize(sum, 0);
+      this.counts = resizer.resize(counts, 0);
+      this.sum = resizer.resize(sum, 0);
     }
   }
 }

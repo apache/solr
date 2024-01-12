@@ -16,25 +16,18 @@
  */
 package org.apache.solr;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.IOUtils;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Properties;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.Properties;
-
 /**
- * <p> Test for Loading core properties from a properties file </p>
- *
+ * Test for Loading core properties from a properties file
  *
  * @since solr 1.4
  */
@@ -44,52 +37,52 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    File homeDir = createTempDir().toFile();
+    Path homeDir = createTempDir();
 
-    File collDir = new File(homeDir, "collection1");
-    File dataDir = new File(collDir, "data");
-    File confDir = new File(collDir, "conf");
+    Path collDir = homeDir.resolve("collection1");
+    Path dataDir = collDir.resolve("data");
+    Path confDir = collDir.resolve("conf");
 
-    homeDir.mkdirs();
-    collDir.mkdirs();
-    dataDir.mkdirs();
-    confDir.mkdirs();
+    Files.createDirectories(homeDir);
+    Files.createDirectories(collDir);
+    Files.createDirectories(dataDir);
+    Files.createDirectories(confDir);
 
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(homeDir, "solr.xml"));
+    Files.copy(Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), homeDir.resolve("solr.xml"));
     String src_dir = TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(src_dir, "schema-tiny.xml"), 
-                       new File(confDir, "schema.xml"));
-    FileUtils.copyFile(new File(src_dir, "solrconfig-solcoreproperties.xml"), 
-                       new File(confDir, "solrconfig.xml"));
-    FileUtils.copyFile(new File(src_dir, "solrconfig.snippet.randomindexconfig.xml"), 
-                       new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
+    Files.copy(Path.of(src_dir, "schema-tiny.xml"), confDir.resolve("schema.xml"));
+    Files.copy(
+        Path.of(src_dir, "solrconfig-coreproperties.xml"), confDir.resolve("solrconfig.xml"));
+    Files.copy(
+        Path.of(src_dir, "solrconfig.snippet.randomindexconfig.xml"),
+        confDir.resolve("solrconfig.snippet.randomindexconfig.xml"));
 
     Properties p = new Properties();
     p.setProperty("foo.foo1", "f1");
     p.setProperty("foo.foo2", "f2");
-    Writer fos = new OutputStreamWriter(new FileOutputStream(new File(confDir, "solrcore.properties")), StandardCharsets.UTF_8);
-    p.store(fos, null);
-    IOUtils.close(fos);
+    try (Writer fos =
+        Files.newBufferedWriter(confDir.resolve("solrcore.properties"), StandardCharsets.UTF_8)) {
+      p.store(fos, null);
+    }
 
-    Files.createFile(collDir.toPath().resolve("core.properties"));
-
+    Files.createFile(collDir.resolve("core.properties"));
 
     Properties nodeProperties = new Properties();
     // this sets the property for jetty starting SolrDispatchFilter
-    if (System.getProperty("solr.data.dir") == null && System.getProperty("solr.hdfs.home") == null) {
+    if (System.getProperty("solr.data.dir") == null) {
       nodeProperties.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
     }
-    jetty = new JettySolrRunner(homeDir.getAbsolutePath(), nodeProperties, buildJettyConfig("/solr"));
 
-    jetty.start();
-    port = jetty.getLocalPort();
+    solrClientTestRule.startSolr(homeDir, nodeProperties, buildJettyConfig());
 
-    //createJetty(homeDir.getAbsolutePath(), null, null);
+    // createJetty(homeDir.getAbsolutePath(), null, null);
   }
 
   public void testSimple() throws Exception {
-    SolrParams params = params("q", "*:*", 
-                               "echoParams", "all");
+    SolrParams params =
+        params(
+            "q", "*:*",
+            "echoParams", "all");
     QueryResponse res = getSolrClient().query(params);
     assertEquals(0, res.getResults().getNumFound());
 
@@ -97,5 +90,4 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     assertEquals("f1", echoedParams.get("p1"));
     assertEquals("f2", echoedParams.get("p2"));
   }
-
 }

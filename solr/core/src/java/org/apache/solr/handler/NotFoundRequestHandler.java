@@ -16,20 +16,19 @@
  */
 package org.apache.solr.handler;
 
+import static org.apache.solr.common.params.CommonParams.PATH;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 
-import static org.apache.solr.common.params.CommonParams.PATH;
-
-/**
- * Does nothing other than showing a 404 message
- */
-public class NotFoundRequestHandler extends RequestHandlerBase{
+/** Does nothing other than showing a 404 message */
+public class NotFoundRequestHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "" + req.getContext().get(PATH) + " is not found");
+    throw new SolrException(
+        SolrException.ErrorCode.NOT_FOUND, "" + req.getContext().get(PATH) + " is not found");
   }
 
   @Override

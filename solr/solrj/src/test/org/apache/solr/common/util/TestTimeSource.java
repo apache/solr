@@ -20,9 +20,7 @@ package org.apache.solr.common.util;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
-/**
- *
- */
+/** */
 public class TestTimeSource extends SolrTestCaseJ4 {
 
   @Test
@@ -47,7 +45,9 @@ public class TestTimeSource extends SolrTestCaseJ4 {
       long[] curTimeAndEpoch = ts.getTimeAndEpochNs();
       long diffTime = prevTimeAndEpoch[0] + delta - curTimeAndEpoch[0];
       long diffEpoch = prevTimeAndEpoch[1] + delta - curTimeAndEpoch[1];
-      assertTrue(ts + " diffTime=" + diffTime + ", diffEpoch=" + diffEpoch, Math.abs(diffTime - diffEpoch) < maxDiff);
+      assertTrue(
+          ts + " diffTime=" + diffTime + ", diffEpoch=" + diffEpoch,
+          Math.abs(diffTime - diffEpoch) < maxDiff);
       prevTimeAndEpoch = curTimeAndEpoch;
     }
   }

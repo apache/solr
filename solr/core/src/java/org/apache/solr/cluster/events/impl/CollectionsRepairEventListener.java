@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cluster.events.impl;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -31,8 +32,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -42,7 +41,7 @@ import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.NodesDownEvent;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
@@ -50,16 +49,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This is an illustration how to re-implement the combination of Solr 8x
- * NodeLostTrigger and AutoAddReplicasPlanAction to maintain the collection's replicas when
- * nodes are lost.
- * <p>The notion of <code>waitFor</code> delay between detection and repair action is
- * implemented as a scheduled execution of the repair method, which is called every 1 sec
- * to check whether there are any lost nodes that exceeded their <code>waitFor</code> period.</p>
- * <p>NOTE: this functionality would be probably more reliable when executed also as a
- * periodically scheduled check - both as a reactive (listener) and proactive (scheduled) measure.</p>
+ * This is an illustration how to re-implement the combination of Solr 8x NodeLostTrigger and
+ * AutoAddReplicasPlanAction to maintain the collection's replicas when nodes are lost.
+ *
+ * <p>The notion of <code>waitFor</code> delay between detection and repair action is implemented as
+ * a scheduled execution of the repair method, which is called every 1 sec to check whether there
+ * are any lost nodes that exceeded their <code>waitFor</code> period.
+ *
+ * <p>NOTE: this functionality would be probably more reliable when executed also as a periodically
+ * scheduled check - both as a reactive (listener) and proactive (scheduled) measure.
  */
-public class CollectionsRepairEventListener implements ClusterEventListener, ClusterSingleton, Closeable {
+public class CollectionsRepairEventListener
+    implements ClusterEventListener, ClusterSingleton, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String PLUGIN_NAME = "collectionsRepairListener";
@@ -80,7 +81,9 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
 
   public CollectionsRepairEventListener(CoreContainer cc) {
     this.cc = cc;
-    this.solrClient = cc.getSolrClientCache().getCloudSolrClient(cc.getZkController().getZkClient().getZkServerAddress());
+    this.solrClient =
+        cc.getSolrClientCache()
+            .getCloudSolrClient(cc.getZkController().getZkClient().getZkServerAddress());
     this.solrCloudManager = cc.getZkController().getSolrCloudManager();
   }
 
@@ -123,7 +126,12 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
     Set<String> trackingKeySet = nodeNameVsTimeRemoved.keySet();
     trackingKeySet.removeAll(solrCloudManager.getClusterStateProvider().getLiveNodes());
     // add any new lost nodes (old lost nodes are skipped)
-    event.getNodeNames().forEachRemaining(lostNode -> nodeNameVsTimeRemoved.computeIfAbsent(lostNode, n -> solrCloudManager.getTimeSource().getTimeNs()));
+    event
+        .getNodeNames()
+        .forEachRemaining(
+            lostNode ->
+                nodeNameVsTimeRemoved.computeIfAbsent(
+                    lostNode, n -> solrCloudManager.getTimeSource().getTimeNs()));
   }
 
   private void runRepair() {
@@ -135,65 +143,63 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
       log.debug("-- runRepair for {} lost nodes", nodeNameVsTimeRemoved.size());
     }
     Set<String> reallyLostNodes = new HashSet<>();
-    nodeNameVsTimeRemoved.forEach((lostNode, timeRemoved) -> {
-      long now = solrCloudManager.getTimeSource().getTimeNs();
-      long te = TimeUnit.SECONDS.convert(now - timeRemoved, TimeUnit.NANOSECONDS);
-      if (te >= waitForSecond) {
-        reallyLostNodes.add(lostNode);
-      }
-    });
+    nodeNameVsTimeRemoved.forEach(
+        (lostNode, timeRemoved) -> {
+          long now = solrCloudManager.getTimeSource().getTimeNs();
+          long te = TimeUnit.SECONDS.convert(now - timeRemoved, TimeUnit.NANOSECONDS);
+          if (te >= waitForSecond) {
+            reallyLostNodes.add(lostNode);
+          }
+        });
     if (reallyLostNodes.isEmpty()) {
       if (log.isDebugEnabled()) {
-        log.debug("--- skipping repair, {} nodes are still in waitFor period", nodeNameVsTimeRemoved.size());
+        log.debug(
+            "--- skipping repair, {} nodes are still in waitFor period",
+            nodeNameVsTimeRemoved.size());
       }
       return;
     } else {
       if (log.isDebugEnabled()) {
-        log.debug("--- running repair for nodes that are still lost after waitFor: {}", reallyLostNodes);
+        log.debug(
+            "--- running repair for nodes that are still lost after waitFor: {}", reallyLostNodes);
       }
     }
     // collect all lost replicas
     // collection / positions
     Map<String, List<ReplicaPosition>> newPositions = new HashMap<>();
     try {
-      ClusterState clusterState = solrCloudManager.getClusterStateProvider().getClusterState();
-      clusterState.forEachCollection(coll -> {
-        // shard / type / count
-        Map<String, Map<Replica.Type, AtomicInteger>> lostReplicas = new HashMap<>();
-        coll.forEachReplica((shard, replica) -> {
-          if (reallyLostNodes.contains(replica.getNodeName())) {
-            lostReplicas.computeIfAbsent(shard, s -> new HashMap<>())
-                .computeIfAbsent(replica.type, t -> new AtomicInteger())
-                .incrementAndGet();
-          }
-        });
-        Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(cc);
-        lostReplicas.forEach((shard, types) -> {
-          Assign.AssignRequestBuilder assignRequestBuilder = new Assign.AssignRequestBuilder()
-              .forCollection(coll.getName())
-              .forShard(Collections.singletonList(shard));
-          types.forEach((type, count) -> {
-            switch (type) {
-              case NRT:
-                assignRequestBuilder.assignNrtReplicas(count.get());
-                break;
-              case PULL:
-                assignRequestBuilder.assignPullReplicas(count.get());
-                break;
-              case TLOG:
-                assignRequestBuilder.assignTlogReplicas(count.get());
-                break;
-            }
+      ClusterState clusterState = solrCloudManager.getClusterState();
+      clusterState.forEachCollection(
+          coll -> {
+            // shard / number of replicas per type
+            Map<String, ReplicaCount> lostReplicas = new HashMap<>();
+            coll.forEachReplica(
+                (shard, replica) -> {
+                  if (reallyLostNodes.contains(replica.getNodeName())) {
+                    lostReplicas
+                        .computeIfAbsent(shard, s -> ReplicaCount.empty())
+                        .increment(replica.type);
+                  }
+                });
+            Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(cc);
+            lostReplicas.forEach(
+                (shard, types) -> {
+                  Assign.AssignRequest assignRequest =
+                      new Assign.AssignRequestBuilder()
+                          .forCollection(coll.getName())
+                          .forShard(Collections.singletonList(shard))
+                          .assignReplicas(types)
+                          .build();
+                  try {
+                    List<ReplicaPosition> positions =
+                        assignStrategy.assign(solrCloudManager, assignRequest);
+                    newPositions.put(coll.getName(), positions);
+                  } catch (Exception e) {
+                    log.warn(
+                        "Exception computing positions for {}/{}: {}", coll.getName(), shard, e);
+                  }
+                });
           });
-          Assign.AssignRequest assignRequest = assignRequestBuilder.build();
-          try {
-            List<ReplicaPosition> positions = assignStrategy.assign(solrCloudManager, assignRequest);
-            newPositions.put(coll.getName(), positions);
-          } catch (Exception e) {
-            log.warn("Exception computing positions for {}/{}: {}", coll.getName(), shard, e);
-          }
-        });
-      });
     } catch (IOException e) {
       log.warn("Exception getting cluster state", e);
       return;
@@ -205,27 +211,35 @@ public class CollectionsRepairEventListener implements ClusterEventListener, Clu
     // send ADDREPLICA admin requests for each lost replica
     // XXX should we use 'async' for that, to avoid blocking here?
     List<CollectionAdminRequest.AddReplica> addReplicas = new ArrayList<>();
-    newPositions.forEach((collection, positions) -> positions.forEach(position -> {
-      CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest
-          .addReplicaToShard(collection, position.shard, position.type);
-      addReplica.setNode(position.node);
-      addReplica.setAsyncId(ASYNC_ID_PREFIX + counter.incrementAndGet());
-      addReplicas.add(addReplica);
-    }));
-    addReplicas.forEach(addReplica -> {
-      try {
-        solrClient.request(addReplica);
-      } catch (Exception e) {
-        log.warn("Exception calling ADDREPLICA {}: {}", addReplica.getParams().toQueryString(), e);
-      }
-    });
+    newPositions.forEach(
+        (collection, positions) ->
+            positions.forEach(
+                position -> {
+                  CollectionAdminRequest.AddReplica addReplica =
+                      CollectionAdminRequest.addReplicaToShard(
+                          collection, position.shard, position.type);
+                  addReplica.setNode(position.node);
+                  addReplica.setAsyncId(ASYNC_ID_PREFIX + counter.incrementAndGet());
+                  addReplicas.add(addReplica);
+                }));
+    addReplicas.forEach(
+        addReplica -> {
+          try {
+            solrClient.request(addReplica);
+          } catch (Exception e) {
+            log.warn(
+                "Exception calling ADDREPLICA {}: {}", addReplica.getParams().toQueryString(), e);
+          }
+        });
   }
 
   @Override
   public void start() throws Exception {
     state = State.STARTING;
-    waitForExecutor = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1,
-        new SolrNamedThreadFactory("collectionsRepair_waitFor"));
+    waitForExecutor =
+        (ScheduledThreadPoolExecutor)
+            Executors.newScheduledThreadPool(
+                1, new SolrNamedThreadFactory("collectionsRepair_waitFor"));
     waitForExecutor.setRemoveOnCancelPolicy(true);
     waitForExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     waitForExecutor.scheduleAtFixedRate(this::runRepair, 0, waitForSecond, TimeUnit.SECONDS);

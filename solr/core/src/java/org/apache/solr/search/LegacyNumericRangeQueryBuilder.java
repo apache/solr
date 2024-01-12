@@ -16,20 +16,21 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.search.Query;
-import org.apache.solr.legacy.LegacyNumericRangeQuery;
-import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.apache.lucene.queryparser.xml.builders.PointRangeQueryBuilder;
+import org.apache.lucene.search.Query;
+import org.apache.solr.legacy.LegacyNumericRangeQuery;
+import org.apache.solr.legacy.LegacyNumericUtils;
 import org.w3c.dom.Element;
 
 /**
- * Creates a {@link org.apache.solr.legacy.LegacyNumericRangeQuery}. The table below specifies the required
- * attributes and the defaults if optional attributes are omitted. For more
- * detail on what each of the attributes actually do, consult the documentation
- * for {@link org.apache.solr.legacy.LegacyNumericRangeQuery}:
+ * Creates a {@link org.apache.solr.legacy.LegacyNumericRangeQuery}. The table below specifies the
+ * required attributes and the defaults if optional attributes are omitted. For more detail on what
+ * each of the attributes actually do, consult the documentation for {@link
+ * org.apache.solr.legacy.LegacyNumericRangeQuery}:
+ *
  * <table>
  * <caption>supported attributes</caption>
  * <tr>
@@ -81,11 +82,11 @@ import org.w3c.dom.Element;
  * <td>4</td>
  * </tr>
  * </table>
- * <p>
- * A {@link ParserException} will be thrown if an error occurs parsing the
- * supplied <code>lowerTerm</code> or <code>upperTerm</code> into the numeric type
- * specified by <code>type</code>.
- * @deprecated Index with points and use {@link PointRangeQueryBuilder} instead 
+ *
+ * <p>A {@link ParserException} will be thrown if an error occurs parsing the supplied <code>
+ * lowerTerm</code> or <code>upperTerm</code> into the numeric type specified by <code>type</code>.
+ *
+ * @deprecated Index with points and use {@link PointRangeQueryBuilder} instead
  */
 @Deprecated
 public class LegacyNumericRangeQueryBuilder implements QueryBuilder {
@@ -97,35 +98,48 @@ public class LegacyNumericRangeQueryBuilder implements QueryBuilder {
     final String upperTerm = DOMUtils.getAttribute(e, "upperTerm", null);
     boolean lowerInclusive = DOMUtils.getAttribute(e, "includeLower", true);
     boolean upperInclusive = DOMUtils.getAttribute(e, "includeUpper", true);
-    int precisionStep = DOMUtils.getAttribute(e, "precisionStep", LegacyNumericUtils.PRECISION_STEP_DEFAULT);
+    int precisionStep =
+        DOMUtils.getAttribute(e, "precisionStep", LegacyNumericUtils.PRECISION_STEP_DEFAULT);
 
     String type = DOMUtils.getAttribute(e, "type", "int");
     try {
       Query filter;
       if (type.equalsIgnoreCase("int")) {
-        filter = LegacyNumericRangeQuery.newIntRange(field, precisionStep,
-            (lowerTerm == null ? null : Integer.valueOf(lowerTerm)),
-            (upperTerm == null ? null : Integer.valueOf(upperTerm)),
-            lowerInclusive,
-            upperInclusive);
+        filter =
+            LegacyNumericRangeQuery.newIntRange(
+                field,
+                precisionStep,
+                (lowerTerm == null ? null : Integer.valueOf(lowerTerm)),
+                (upperTerm == null ? null : Integer.valueOf(upperTerm)),
+                lowerInclusive,
+                upperInclusive);
       } else if (type.equalsIgnoreCase("long")) {
-        filter = LegacyNumericRangeQuery.newLongRange(field, precisionStep,
-            (lowerTerm == null ? null : Long.valueOf(lowerTerm)),
-            (upperTerm == null ? null : Long.valueOf(upperTerm)),
-            lowerInclusive,
-            upperInclusive);
+        filter =
+            LegacyNumericRangeQuery.newLongRange(
+                field,
+                precisionStep,
+                (lowerTerm == null ? null : Long.valueOf(lowerTerm)),
+                (upperTerm == null ? null : Long.valueOf(upperTerm)),
+                lowerInclusive,
+                upperInclusive);
       } else if (type.equalsIgnoreCase("double")) {
-        filter = LegacyNumericRangeQuery.newDoubleRange(field, precisionStep,
-            (lowerTerm == null ? null : Double.valueOf(lowerTerm)),
-            (upperTerm == null ? null : Double.valueOf(upperTerm)),
-            lowerInclusive,
-            upperInclusive);
+        filter =
+            LegacyNumericRangeQuery.newDoubleRange(
+                field,
+                precisionStep,
+                (lowerTerm == null ? null : Double.valueOf(lowerTerm)),
+                (upperTerm == null ? null : Double.valueOf(upperTerm)),
+                lowerInclusive,
+                upperInclusive);
       } else if (type.equalsIgnoreCase("float")) {
-        filter = LegacyNumericRangeQuery.newFloatRange(field, precisionStep,
-            (lowerTerm == null ? null : Float.valueOf(lowerTerm)),
-            (upperTerm == null ? null : Float.valueOf(upperTerm)),
-            lowerInclusive,
-            upperInclusive);
+        filter =
+            LegacyNumericRangeQuery.newFloatRange(
+                field,
+                precisionStep,
+                (lowerTerm == null ? null : Float.valueOf(lowerTerm)),
+                (upperTerm == null ? null : Float.valueOf(upperTerm)),
+                lowerInclusive,
+                upperInclusive);
       } else {
         throw new ParserException("type attribute must be one of: [long, int, double, float]");
       }

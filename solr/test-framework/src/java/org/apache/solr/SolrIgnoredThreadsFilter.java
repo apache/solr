@@ -16,16 +16,11 @@
  */
 package org.apache.solr;
 
+import com.carrotsearch.randomizedtesting.ThreadFilter;
 import java.lang.Thread.State;
 import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
 
-import com.carrotsearch.randomizedtesting.ThreadFilter;
-
-
-/**
- * This ignores those threads in Solr for which there is no way to
- * clean up after a suite.
- */
+/** This ignores those threads in Solr for which there is no way to clean up after a suite. */
 public class SolrIgnoredThreadsFilter implements ThreadFilter {
   @Override
   public boolean reject(Thread t) {
@@ -65,12 +60,12 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-
     if (threadName.startsWith("SessionTracker")) {
       return true;
     }
 
-    if (threadName.startsWith("zkConnectionManagerCallback") && t.getState() == State.TIMED_WAITING) {
+    if (threadName.startsWith("zkConnectionManagerCallback")
+        && t.getState() == State.TIMED_WAITING) {
       return true;
     }
 
@@ -81,7 +76,12 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
     if (threadName.startsWith("async-check-index-")) {
       return true;
     }
-    
+
+    // ZOOKEEPER-4608, yes it's spelled with 3 n's
+    if (threadName.equals("ConnnectionExpirer")) {
+      return true;
+    }
+
     return threadName.startsWith("closeThreadPool");
   }
 }

@@ -16,22 +16,23 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocsCollector;
-import org.apache.lucene.search.Query;
 import org.apache.solr.handler.component.MergeStrategy;
 
-import java.io.IOException;
-
 /**
- *  <b>Note: This API is experimental and may change in non backward-compatible ways in the future</b>
- **/
-
+ * <b>Note: This API is experimental and may change in non backward-compatible ways in the
+ * future</b>
+ */
 public abstract class RankQuery extends ExtendedQueryBase {
 
-  public abstract TopDocsCollector<ScoreDoc> getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException;
-  public abstract MergeStrategy getMergeStrategy();
-  public abstract RankQuery wrap(Query mainQuery);
+  public abstract TopDocsCollector<ScoreDoc> getTopDocsCollector(
+      int len, QueryCommand cmd, IndexSearcher searcher) throws IOException;
 
+  public abstract MergeStrategy getMergeStrategy();
+
+  public abstract RankQuery wrap(Query mainQuery);
 }

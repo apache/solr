@@ -19,8 +19,7 @@ package org.apache.solr.highlight;
 import org.apache.lucene.search.vectorhighlight.FragListBuilder;
 import org.apache.solr.common.params.SolrParams;
 
-public class SingleFragListBuilder extends HighlightingPluginBase implements
-    SolrFragListBuilder {
+public class SingleFragListBuilder extends HighlightingPluginBase implements SolrFragListBuilder {
 
   @Override
   public FragListBuilder getFragListBuilder(SolrParams params) {

@@ -16,29 +16,29 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.solr.common.SolrException;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Function;
-
+import org.apache.solr.common.SolrException;
 
 /**
- * Breaking out some utility methods into a separate class as part of SOLR-4196. These utils have nothing to do with
- * the DOM (they came from DomUtils) and it's really confusing to see them in something labeled DOM
+ * Breaking out some utility methods into a separate class as part of SOLR-4196. These utils have
+ * nothing to do with the DOM (they came from DomUtils) and it's really confusing to see them in
+ * something labeled DOM
  */
 public class PropertiesUtil {
   public static String substituteProperty(String value, Properties coreProperties) {
-    if(coreProperties == null) return substitute(value, null);
+    if (coreProperties == null) return substitute(value, null);
     return substitute(value, coreProperties::getProperty);
   }
+
   /*
-  * This method borrowed from Ant's PropertyHelper.replaceProperties:
-  *   http://svn.apache.org/repos/asf/ant/core/trunk/src/main/org/apache/tools/ant/PropertyHelper.java
-  */
-  public static String substitute(String value, Function<String,String> coreProperties) {
+   * This method borrowed from Ant's PropertyHelper.replaceProperties:
+   *   http://svn.apache.org/repos/asf/ant/core/trunk/src/main/org/apache/tools/ant/PropertyHelper.java
+   */
+  public static String substitute(String value, Function<String, String> coreProperties) {
     if (value == null || value.indexOf('$') == -1) {
       return value;
     }
@@ -68,7 +68,12 @@ public class PropertiesUtil {
           fragment = System.getProperty(propertyName, defaultValue);
         }
         if (fragment == null) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No system property or default value specified for " + propertyName + " value:" + value);
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "No system property or default value specified for "
+                  + propertyName
+                  + " value:"
+                  + value);
         }
       }
       sb.append(fragment);
@@ -80,43 +85,44 @@ public class PropertiesUtil {
    * This method borrowed from Ant's PropertyHelper.parsePropertyStringDefault:
    *   http://svn.apache.org/repos/asf/ant/core/trunk/src/main/org/apache/tools/ant/PropertyHelper.java
    */
-  private static void parsePropertyString(String value, List<String> fragments, List<String> propertyRefs) {
+  private static void parsePropertyString(
+      String value, List<String> fragments, List<String> propertyRefs) {
     int prev = 0;
     int pos;
-    //search for the next instance of $ from the 'prev' position
-    while ((pos = value.indexOf("$", prev)) >= 0) {
+    // search for the next instance of $ from the 'prev' position
+    while ((pos = value.indexOf('$', prev)) >= 0) {
 
-      //if there was any text before this, add it as a fragment
-      //TODO, this check could be modified to go if pos>prev;
-      //seems like this current version could stick empty strings
-      //into the list
+      // if there was any text before this, add it as a fragment
+      // TODO, this check could be modified to go if pos>prev;
+      // seems like this current version could stick empty strings
+      // into the list
       if (pos > 0) {
         fragments.add(value.substring(prev, pos));
       }
-      //if we are at the end of the string, we tack on a $
-      //then move past it
+      // if we are at the end of the string, we tack on a $
+      // then move past it
       if (pos == (value.length() - 1)) {
         fragments.add("$");
         prev = pos + 1;
       } else if (value.charAt(pos + 1) != '{') {
-        //peek ahead to see if the next char is a property or not
-        //not a property: insert the char as a literal
-              /*
-              fragments.addElement(value.substring(pos + 1, pos + 2));
-              prev = pos + 2;
-              */
+        // peek ahead to see if the next char is a property or not
+        // not a property: insert the char as a literal
+        /*
+        fragments.addElement(value.substring(pos + 1, pos + 2));
+        prev = pos + 2;
+        */
         if (value.charAt(pos + 1) == '$') {
-          //backwards compatibility two $ map to one mode
+          // backwards compatibility two $ map to one mode
           fragments.add("$");
           prev = pos + 2;
         } else {
-          //new behaviour: $X maps to $X for all values of X!='$'
+          // new behaviour: $X maps to $X for all values of X!='$'
           fragments.add(value.substring(pos, pos + 2));
           prev = pos + 2;
         }
 
       } else {
-        //property found, extract its name or bail on a typo
+        // property found, extract its name or bail on a typo
         int endName = value.indexOf('}', pos);
         if (endName < 0) {
           throw new RuntimeException("Syntax error in property: " + value);
@@ -127,25 +133,24 @@ public class PropertiesUtil {
         prev = endName + 1;
       }
     }
-    //no more $ signs found
-    //if there is any tail to the string, append it
+    // no more $ signs found
+    // if there is any tail to the string, append it
     if (prev < value.length()) {
       fragments.add(value.substring(prev));
     }
   }
 
   /**
-   * Parse the given String value as an integer.  If the string cannot
-   * be parsed, returns the default
-   * @param value    the value to parse
+   * Parse the given String value as an integer. If the string cannot be parsed, returns the default
+   *
+   * @param value the value to parse
    * @param defValue the default to return if the value cannot be parsed
    * @return an integer version of the passed in value
    */
   public static Integer toInteger(String value, Integer defValue) {
     try {
       return Integer.parseInt(value);
-    }
-    catch (NumberFormatException e) {
+    } catch (NumberFormatException e) {
       return defValue;
     }
   }
@@ -153,5 +158,4 @@ public class PropertiesUtil {
   public static boolean toBoolean(String value) {
     return "true".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value);
   }
-
 }

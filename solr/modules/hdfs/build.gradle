@@ -1,0 +1,96 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'java-library'
+
+description = 'HDFS Module'
+
+dependencies {
+  implementation project(':solr:core')
+  implementation project(':solr:solrj')
+
+  implementation 'org.apache.lucene:lucene-core'
+
+  implementation 'org.slf4j:slf4j-api'
+
+  api 'org.apache.hadoop:hadoop-client-api'
+  runtimeOnly 'org.apache.hadoop:hadoop-client-runtime'
+
+  // Guava implements Preconditions, caches, and VisibleForTesting annotations
+  implementation 'com.google.guava:guava'
+
+  // Caffeine cache to implement HDFS block caching  
+  implementation 'com.github.ben-manes.caffeine:caffeine'
+
+  implementation 'commons-cli:commons-cli'
+
+  testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:solrj-zookeeper')
+  testImplementation 'org.apache.lucene:lucene-test-framework'
+  testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+  testImplementation 'junit:junit'
+
+  // hadoop dependencies for tests
+  testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
+  testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
+  testImplementation 'org.apache.hadoop.thirdparty:hadoop-shaded-guava'
+  testRuntimeOnly 'org.apache.hadoop:hadoop-client-minicluster'
+
+  testImplementation 'org.slf4j:jcl-over-slf4j'
+  testRuntimeOnly 'org.apache.logging.log4j:log4j-1.2-api'
+
+  // classes like solr.ICUCollationField, used by NNFailoverTest for example.
+  testRuntimeOnly project(':solr:modules:analysis-extras')
+
+  // used by the hadoop-specific test framework classes
+  testImplementation 'commons-io:commons-io'
+  testImplementation 'org.apache.commons:commons-compress'
+  testImplementation 'org.apache.commons:commons-collections4'
+  testImplementation 'org.apache.commons:commons-lang3'
+  testImplementation 'io.dropwizard.metrics:metrics-core'
+
+  // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
+  permitTestUnusedDeclared 'org.apache.zookeeper:zookeeper'
+  testImplementation('org.apache.zookeeper:zookeeper', {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+  })
+  // required for instantiating a Zookeeper server in tests or embedded
+  testRuntimeOnly 'org.xerial.snappy:snappy-java'
+}
+
+
+// Copy all the test resource files from core to the build/resources/test directory
+// of the HDFS module so we can avoid duplication of the test resource files like
+// schemas and SolrConfigs. This can be improved later by making the test classes
+// load the resources from core directories directly.
+tasks.register('copySolrCoreTestResources', Copy) {
+  from(project(':solr:core').sourceSets.test.resources.srcDirs) {
+    exclude '**/*.java'
+  }
+  into sourceSets.test.output.resourcesDir
+}
+
+tasks.named('processTestResources').configure {
+  dependsOn copySolrCoreTestResources
+}
+
+// Hadoop mini cluster doesn't handle reflection properly in JDK 16+
+// https://docs.gradle.org/current/userguide/upgrading_version_7.html#removes_implicit_add_opens_for_test_workers
+tasks.withType(Test).configureEach {
+  jvmArgs(["--add-opens=java.base/java.lang=ALL-UNNAMED",
+           "--add-opens=java.base/java.util=ALL-UNNAMED"])
+}

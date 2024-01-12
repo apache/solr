@@ -21,33 +21,37 @@ import org.apache.solr.common.SolrDocument;
 /**
  * Return a field with a name that is different that what is indexed
  *
- *
  * @since solr 4.0
  */
-public class RenameFieldTransformer extends DocTransformer
-{
+public class RenameFieldTransformer extends DocTransformer {
   final String from;
   final String to;
   final boolean copy;
+  final String[] ensureFromFieldPresent;
 
-  public RenameFieldTransformer( String from, String to, boolean copy )
-  {
+  public RenameFieldTransformer(String from, String to, boolean copy) {
     this.from = from;
     this.to = to;
     this.copy = copy;
+    this.ensureFromFieldPresent = new String[] {from};
+    assert !from.equals(to);
   }
 
   @Override
-  public String getName()
-  {
-    return "Rename["+from+">>"+to+"]";
+  public String getName() {
+    return "Rename[" + from + ">>" + to + "]";
   }
 
   @Override
   public void transform(SolrDocument doc, int docid) {
-    Object v = (copy)?doc.get(from) : doc.remove( from );
-    if( v != null ) {
+    Object v = (copy) ? doc.get(from) : doc.remove(from);
+    if (v != null) {
       doc.setField(to, v);
     }
+  }
+
+  @Override
+  public String[] getExtraRequestFields() {
+    return ensureFromFieldPresent;
   }
 }

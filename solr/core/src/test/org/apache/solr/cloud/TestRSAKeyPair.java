@@ -16,45 +16,52 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.solr.SolrTestCase;
-import org.apache.solr.util.CryptoKeys;
-import org.junit.Test;
-
-import java.net.URL;
-import java.nio.ByteBuffer;
-
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.util.CryptoKeys;
+import org.hamcrest.MatcherAssert;
+import org.junit.Test;
+
 public class TestRSAKeyPair extends SolrTestCase {
-    @Test
-    public void testGenKeyPair() throws Exception {
-        testRoundTrip(new CryptoKeys.RSAKeyPair());
-    }
+  @Test
+  public void testGenKeyPair() throws Exception {
+    testRoundTrip(new CryptoKeys.RSAKeyPair());
+  }
 
-    @Test
-    public void testReadKeysFromDisk() throws Exception {
-        URL privateKey = getClass().getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem");
-        URL publicKey = getClass().getClassLoader().getResource("cryptokeys/pub_key512.der");
+  @Test
+  public void testReadKeysFromDisk() throws Exception {
+    URL privateKey = getClass().getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem");
+    URL publicKey = getClass().getClassLoader().getResource("cryptokeys/pub_key512.der");
+    assertNotNull(privateKey);
+    assertNotNull(publicKey);
+    testRoundTrip(new CryptoKeys.RSAKeyPair(privateKey, publicKey));
+  }
 
-        testRoundTrip(new CryptoKeys.RSAKeyPair(privateKey, publicKey));
-    }
+  private void testRoundTrip(CryptoKeys.RSAKeyPair kp) throws Exception {
+    int keySizeInBytes = kp.getKeySizeInBytes();
+    // Max size of the plaintext can only be as big as the key in bytes with no padding
+    String plaintextString = TestUtil.randomSimpleString(random(), keySizeInBytes);
+    final byte[] plaintext = plaintextString.getBytes(StandardCharsets.UTF_8);
 
-    private void testRoundTrip(CryptoKeys.RSAKeyPair kp) throws Exception {
-        final byte[] plaintext = new byte[random().nextInt(64)];
-        random().nextBytes(plaintext);
+    byte[] encrypted = kp.encrypt(ByteBuffer.wrap(plaintext));
+    MatcherAssert.assertThat(plaintext, not(equalTo(encrypted)));
 
-        byte[] encrypted = kp.encrypt(ByteBuffer.wrap(plaintext));
-        assertThat(plaintext, not(equalTo(encrypted)));
+    byte[] decrypted = CryptoKeys.decryptRSA(encrypted, kp.getPublicKey());
 
-        byte[] decrypted = CryptoKeys.decryptRSA(encrypted, kp.getPublicKey());
+    assertTrue(
+        "Decrypted text is shorter than original text.", decrypted.length >= plaintext.length);
 
-        assertTrue("Decrypted text is shorter than original text.", decrypted.length >= plaintext.length);
-
-        // Pad with null bytes because RSAKeyPair uses RSA/ECB/NoPadding
-        int pad = decrypted.length - plaintext.length;
-        final byte[] padded = new byte[decrypted.length];
-        System.arraycopy(plaintext, 0, padded, pad, plaintext.length);
-        assertArrayEquals(padded, decrypted);
-    }
+    // Strip off any null bytes RSAKeyPair uses RSA/ECB/NoPadding and during decryption null bytes
+    // can be left.
+    // Under "Known Limitations"
+    // https://www.ibm.com/docs/en/sdk-java-technology/8?topic=guide-ibmjceplus-ibmjceplusfips-providers
+    assertArrayEquals(plaintext, Arrays.copyOf(decrypted, plaintext.length));
+  }
 }

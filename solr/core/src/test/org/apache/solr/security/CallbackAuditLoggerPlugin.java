@@ -22,27 +22,28 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.Semaphore;
 import java.util.HashMap;
 import java.util.Map;
-
+import java.util.concurrent.Semaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Special test-only audit logger which will send the path (e.g. /select) as a callback to the running test
+ * Special test-only audit logger which will send the path (e.g. /select) as a callback to the
+ * running test
  */
 public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final Map<String,Semaphore> BLOCKING_SEMAPHORES = new HashMap<>();
-  
+  public static final Map<String, Semaphore> BLOCKING_SEMAPHORES = new HashMap<>();
+
   private int callbackPort;
   private Socket socket;
   private PrintWriter out;
   private Semaphore semaphore = null;
-    
+
   /**
    * Opens a socket to send a callback, e.g. to a running test client
+   *
    * @param event the audit event
    */
   @Override
@@ -52,16 +53,18 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
       try {
         semaphore.acquire();
       } catch (InterruptedException e) {
-        log.warn("audit() interrupted while waiting for ticket, probably due to shutdown, aborting");
+        log.warn(
+            "audit() interrupted while waiting for ticket, probably due to shutdown, aborting");
         return;
       }
     }
     out.write(formatter.formatEvent(event) + "\n");
-    if (! out.checkError()) {
+    if (!out.checkError()) {
       log.error("Output stream has an ERROR!");
     }
     if (log.isInfoEnabled()) {
-      log.info("Sent audit callback {} to localhost:{}", formatter.formatEvent(event), callbackPort);
+      log.info(
+          "Sent audit callback {} to localhost:{}", formatter.formatEvent(event), callbackPort);
     }
   }
 
@@ -73,19 +76,22 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
     if (null != semaphoreName) {
       semaphore = BLOCKING_SEMAPHORES.get(semaphoreName);
       if (null == semaphore) {
-        throw new RuntimeException("Test did not setup semaphore of specified name: " + semaphoreName);
+        throw new RuntimeException(
+            "Test did not setup semaphore of specified name: " + semaphoreName);
       }
     }
     try {
       socket = new Socket("localhost", callbackPort);
-      out = new PrintWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
+      out =
+          new PrintWriter(
+              new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8), true);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
-  public void close() throws IOException { 
+  public void close() throws IOException {
     super.close();
     if (socket != null) socket.close();
   }

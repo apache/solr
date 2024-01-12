@@ -91,7 +91,7 @@ def getGitRev():
   return os.popen('git rev-parse HEAD').read().strip()
 
 
-def prepare(root, version, gpg_key_id, gpg_password, gpg_home=None, sign_gradle=False):
+def prepare(root, version, pause_before_sign, mf_username, gpg_key_id, gpg_password, gpg_home=None, sign_gradle=False):
   print()
   print('Prepare release...')
   if os.path.exists(LOG):
@@ -117,12 +117,19 @@ def prepare(root, version, gpg_key_id, gpg_password, gpg_home=None, sign_gradle=
   else:
     print('  skipping precommit check due to dev-mode')
 
+  if pause_before_sign:
+    input("Tests complete! Please press ENTER to proceed to assembleRelease: ")
+
   print('  prepare-release')
   cmd = './gradlew --no-daemon assembleRelease' \
         ' -Dversion.release=%s' % version
+  if mf_username is not None:
+    cmd += ' -Dmanifest.username=%s' % mf_username
   if dev_mode:
     cmd += ' -Pvalidation.git.failOnModified=false'
-  if gpg_key_id is not None:
+  if gpg_key_id is None:
+    cmd += ' -Psign=false'  # Disable signing if no key provided to script
+  else:
     cmd += ' -Psign --max-workers 2'
     if sign_gradle:
       print("  Signing method is gradle java-plugin")
@@ -210,7 +217,7 @@ def pushLocal(version, root, rcNum, localDir):
   rev = open('%s/solr/distribution/build/release/.gitrev' % root, encoding='UTF-8').read()
 
   dir = 'solr-%s-RC%d-rev-%s' % (version, rcNum, rev)
-  os.makedirs('%s/%s/solr' % (localDir, dir))
+  os.makedirs('%s/%s/solr/%s' % (localDir, dir, version))
   print('  Solr')
   solr_dist_dir = '%s/solr/distribution/build/release' % root
   os.chdir(solr_dist_dir)
@@ -220,7 +227,7 @@ def pushLocal(version, root, rcNum, localDir):
   run('tar cf solr.tar *')
 
   print('    extract...')
-  os.chdir('%s/%s/solr' % (localDir, dir))
+  os.chdir('%s/%s/solr/%s' % (localDir, dir, version))
   run('tar xf "%s/solr.tar"' % solr_dist_dir)
   os.remove('%s/solr.tar' % solr_dist_dir)
   os.chdir('..')
@@ -239,7 +246,7 @@ def read_version(path): # pylint: disable=unused-argument
 def parse_config():
   epilogue = textwrap.dedent('''
     Example usage for a Release Manager:
-    python3 -u dev-tools/scripts/buildAndPushRelease.py --push-local /tmp/releases/6.0.1 --sign 6E68DA61 --rc-num 1
+    python3 -u dev-tools/scripts/buildAndPushRelease.py --push-local /tmp/releases/6.0.1 --sign 3782CBB60147010B330523DD26FBCC7836BF353A --rc-num 1
   ''')
   description = 'Utility to build, push, and test a release.'
   parser = argparse.ArgumentParser(description=description, epilog=epilogue,
@@ -250,8 +257,12 @@ def parse_config():
                       help='Uses local KEYS file to validate presence of RM\'s gpg key')
   parser.add_argument('--push-local', metavar='PATH',
                       help='Push the release to the local path')
-  parser.add_argument('--sign', metavar='KEYID',
-                      help='Sign the release with the given gpg key')
+  parser.add_argument('--mf-username', metavar='ID',
+                      help='Use the specified username in the Implementation-Version for jar MANIFEST.MF files (e.g., Apache ID).')
+  parser.add_argument('--pause-before-sign', default=False, action='store_true',
+                      help='Pause for user confirmation before the assembleRelease step (to prevent timeout on gpg pinentry')
+  parser.add_argument('--sign', metavar='FINGERPRINT',
+                      help='Sign the release with the given gpg key. This must be the full GPG fingerprint, not just the last 8 characters.')
   parser.add_argument('--sign-method-gradle', dest='sign_method_gradle', default=False, action='store_true',
                       help='Use Gradle built-in GPG signing instead of gpg command for signing artifacts. '
                       ' This may require --gpg-secring argument if your keychain cannot be resolved automatically.')
@@ -392,7 +403,7 @@ def main():
     c.key_password = None
 
   if c.prepare:
-    prepare(c.root, c.version, c.key_id, c.key_password, gpg_home=gpg_home, sign_gradle=c.sign_method_gradle)
+    prepare(c.root, c.version, c.pause_before_sign, c.mf_username, c.key_id, c.key_password, gpg_home=gpg_home, sign_gradle=c.sign_method_gradle)
   else:
     os.chdir(c.root)
 

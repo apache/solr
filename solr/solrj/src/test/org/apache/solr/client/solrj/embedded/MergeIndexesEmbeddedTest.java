@@ -24,7 +24,6 @@ import org.apache.solr.core.SolrCore;
  * Test for merge indexes command
  *
  * @since solr 1.4
- *
  */
 public class MergeIndexesEmbeddedTest extends MergeIndexesExampleTestBase {
 

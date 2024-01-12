@@ -17,38 +17,33 @@
 
 package org.apache.solr.core;
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.IOContext;
-
-import org.apache.solr.common.util.NamedList;
-
-import org.apache.solr.SolrTestCaseJ4;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.NamedList;
 
 /**
- * Test some expected equivilencies of all DirectoryFactory implementations.
- * <p>
- * TODO: test more methods besides exists(String)
- * </p>
+ * Test some expected equivalencies of all DirectoryFactory implementations.
+ *
+ * <p>TODO: test more methods besides exists(String)
  */
 public class DirectoryFactoriesTest extends SolrTestCaseJ4 {
+  public static final List<Class<? extends DirectoryFactory>> ALL_CLASSES =
+      Arrays.asList(
+          MMapDirectoryFactory.class,
+          MockDirectoryFactory.class,
+          MockFSDirectoryFactory.class,
+          NRTCachingDirectoryFactory.class,
+          NIOFSDirectoryFactory.class,
+          RAMDirectoryFactory.class,
+          StandardDirectoryFactory.class);
 
-  // TODO: what do we need to setup to be able to test HdfsDirectoryFactory?
-  public static final List<Class<? extends DirectoryFactory>> ALL_CLASSES
-    = Arrays.asList(MMapDirectoryFactory.class,
-                    MockDirectoryFactory.class,
-                    MockFSDirectoryFactory.class,
-                    NRTCachingDirectoryFactory.class,
-                    NIOFSDirectoryFactory.class,
-                    RAMDirectoryFactory.class,
-                    StandardDirectoryFactory.class);
-  
   /* Test that MockDirectoryFactory's exist method behaves consistent w/other impls */
-  public void testExistsEquivilence() throws Exception {
+  public void testExistsEquivalence() throws Exception {
     // TODO: ideally we'd init all of these using DirectoryFactory.loadDirectoryFactory() ...
     // ...but the scaffolding needed for dealing with the CoreContainer/SolrConfig is a PITA
 
@@ -62,12 +57,12 @@ public class DirectoryFactoriesTest extends SolrTestCaseJ4 {
     DirectoryFactory dirFac = null;
     try {
       dirFac = clazz.getConstructor().newInstance();
-      dirFac.initCoreContainer(null); // greybox testing directly against path
+      dirFac.initCoreContainer(null); // grey box testing directly against path
       dirFac.init(new NamedList<>());
 
       assertFalse(path + " should not exist yet", dirFac.exists(path));
-      Directory dir = dirFac.get(path, DirectoryFactory.DirContext.DEFAULT,
-                                 DirectoryFactory.LOCK_TYPE_SINGLE);
+      Directory dir =
+          dirFac.get(path, DirectoryFactory.DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
       try {
         assertFalse(path + " should still not exist", dirFac.exists(path));
         try (IndexOutput file = dir.createOutput("test_file", IOContext.DEFAULT)) {
@@ -76,24 +71,24 @@ public class DirectoryFactoriesTest extends SolrTestCaseJ4 {
           // TODO: even StandardDirectoryFactory & NRTCachingDirectoryFactory can't agree on this...
           // ... should we consider this explicitly undefined?
           // ... or should *all* Caching DirFactories consult the cache as well as the disk itself?
-          // assertFalse(path + " should still not exist until file is closed", dirFac.exists(path));
-          
+          // assertFalse(path + " should still not exist until file is closed",
+          // dirFac.exists(path));
+
         } // implicitly close file...
-        
+
         // TODO: even StandardDirectoryFactory & NRTCachingDirectoryFactory can't agree on this...
         // ... should we consider this explicitly undefined?
         // ... or should *all* Caching DirFactories consult the cache as well as the disk itself?
         // assertTrue(path + " should exist once file is closed", dirFac.exists(path));
-        
+
         dir.sync(Collections.singleton("test_file"));
         assertTrue(path + " should exist once file is synced", dirFac.exists(path));
 
-        
       } finally {
         dirFac.release(dir);
       }
       assertTrue(path + " should still exist even after being released", dirFac.exists(path));
-      
+
     } catch (AssertionError ae) {
       throw new AssertionError("Failed with " + clazz.getName(), ae);
     } finally {

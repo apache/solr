@@ -17,16 +17,15 @@
 package org.apache.solr.update.processor;
 
 import java.io.IOException;
-
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 
-
 /**
  * A base class for writing a very simple UpdateProcessor without worrying too much about the API.
  * This is deliberately made to support only the add operation
+ *
  * @since 5.1.0
  */
 public abstract class SimpleUpdateProcessorFactory extends UpdateRequestProcessorFactory {
@@ -34,9 +33,7 @@ public abstract class SimpleUpdateProcessorFactory extends UpdateRequestProcesso
   protected NamedList<?> initArgs = new NamedList<>();
   private static ThreadLocal<SolrQueryRequest> REQ = new ThreadLocal<>();
 
-  protected SimpleUpdateProcessorFactory() {
-
-  }
+  protected SimpleUpdateProcessorFactory() {}
 
   @Override
   public void init(NamedList<?> args) {
@@ -45,7 +42,8 @@ public abstract class SimpleUpdateProcessorFactory extends UpdateRequestProcesso
   }
 
   @Override
-  public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+  public UpdateRequestProcessor getInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     return new UpdateRequestProcessor(next) {
       @Override
       public void processAdd(AddUpdateCommand cmd) throws IOException {
@@ -65,16 +63,16 @@ public abstract class SimpleUpdateProcessorFactory extends UpdateRequestProcesso
     return v == null || v.length == 0 ? null : v[0];
   }
 
-  /**returns value from init args or request parameter. the request parameter must have the
-   * URP shortname prefixed
+  /**
+   * returns value from init args or request parameter. the request parameter must have the URP
+   * shortname prefixed
    */
   protected String[] getParams(String name) {
     Object v = REQ.get().getParams().getParams(_param(name));
     if (v == null) v = initArgs.get(name);
     if (v == null) return null;
     if (v instanceof String[]) return (String[]) v;
-    return new String[]{v.toString()};
-
+    return new String[] {v.toString()};
   }
 
   private String _param(String name) {
@@ -91,9 +89,10 @@ public abstract class SimpleUpdateProcessorFactory extends UpdateRequestProcesso
     return myName;
   }
 
-
   /**
-   * This object is reused across requests. So,this method should not store anything in the instance variable.
+   * This object is reused across requests. So,this method should not store anything in the instance
+   * variable.
    */
-  protected abstract void process(AddUpdateCommand cmd, SolrQueryRequest req, SolrQueryResponse rsp);
+  protected abstract void process(
+      AddUpdateCommand cmd, SolrQueryRequest req, SolrQueryResponse rsp);
 }

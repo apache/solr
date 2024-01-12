@@ -18,30 +18,28 @@ package org.apache.solr.spelling;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.List;
-
+import java.util.Map;
 
 /**
- * Implementations of SolrSpellChecker must return suggestions as SpellResult instance.
- * This is converted into the required NamedList format in SpellCheckComponent.
- * 
+ * Implementations of SolrSpellChecker must return suggestions as SpellResult instance. This is
+ * converted into the required NamedList format in SpellCheckComponent.
+ *
  * @since solr 1.3
  */
 public class SpellingResult {
   private Collection<Token> tokens;
 
   /**
-   * Key == token
-   * Value = Map  -> key is the suggestion, value is the frequency of the token in the collection
+   * Key == token Value = Map -> key is the suggestion, value is the frequency of the token in the
+   * collection
    */
   private Map<Token, LinkedHashMap<String, Integer>> suggestions = new LinkedHashMap<>();
+
   private Map<Token, Integer> tokenFrequency;
   public static final int NO_FREQUENCY_INFO = -1;
 
-
-  public SpellingResult() {
-  }
+  public SpellingResult() {}
 
   public SpellingResult(Collection<Token> tokens) {
     this.tokens = tokens;
@@ -55,7 +53,7 @@ public class SpellingResult {
    */
   public void add(Token token, List<String> suggestions) {
     LinkedHashMap<String, Integer> map = this.suggestions.get(token);
-    if (map == null ) {
+    if (map == null) {
       map = new LinkedHashMap<>();
       this.suggestions.put(token, map);
     }
@@ -66,7 +64,7 @@ public class SpellingResult {
 
   /**
    * Adds an original token with its document frequency
-   * 
+   *
    * @param token original token
    * @param docFreq original token's document frequency
    */
@@ -78,14 +76,15 @@ public class SpellingResult {
   }
 
   /**
-   * Suggestions must be added with the best suggestion first.  ORDER is important.
+   * Suggestions must be added with the best suggestion first. ORDER is important.
+   *
    * @param token The {@link Token}
    * @param suggestion The suggestion for the Token
    * @param docFreq The document frequency
    */
   public void add(Token token, String suggestion, int docFreq) {
     LinkedHashMap<String, Integer> map = this.suggestions.get(token);
-    //Don't bother adding if we already have this token
+    // Don't bother adding if we already have this token
     if (map == null) {
       map = new LinkedHashMap<>();
       this.suggestions.put(token, map);
@@ -97,9 +96,10 @@ public class SpellingResult {
    * Gets the suggestions for the given token.
    *
    * @param token The {@link Token} to look up
-   * @return A LinkedHashMap of the suggestions.  Key is the suggestion, value is the token frequency in the index, else {@link #NO_FREQUENCY_INFO}.
-   *
-   * The suggestions are added in sorted order (i.e. best suggestion first) then the iterator will return the suggestions in order
+   * @return A LinkedHashMap of the suggestions. Key is the suggestion, value is the token frequency
+   *     in the index, else {@link #NO_FREQUENCY_INFO}.
+   *     <p>The suggestions are added in sorted order (i.e. best suggestion first) then the iterator
+   *     will return the suggestions in order
    */
   public LinkedHashMap<String, Integer> get(Token token) {
     return suggestions.get(token);
@@ -120,9 +120,11 @@ public class SpellingResult {
   }
 
   /**
-   * All the suggestions.  The ordering of the inner LinkedHashMap is by best suggestion first.
-   * @return The Map of suggestions for each Token.  Key is the token, value is a LinkedHashMap whose key is the Suggestion and the value is the frequency or {@link #NO_FREQUENCY_INFO} if frequency info is not available.
+   * All the suggestions. The ordering of the inner LinkedHashMap is by best suggestion first.
    *
+   * @return The Map of suggestions for each Token. Key is the token, value is a LinkedHashMap whose
+   *     key is the Suggestion and the value is the frequency or {@link #NO_FREQUENCY_INFO} if
+   *     frequency info is not available.
    */
   public Map<Token, LinkedHashMap<String, Integer>> getSuggestions() {
     return suggestions;

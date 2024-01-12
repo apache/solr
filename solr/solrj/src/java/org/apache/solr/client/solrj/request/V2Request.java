@@ -17,6 +17,9 @@
 
 package org.apache.solr.client.solrj.request;
 
+import static org.apache.solr.common.params.CommonParams.JAVABIN_MIME;
+import static org.apache.solr.common.params.CommonParams.JSON_MIME;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,7 +27,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -34,11 +36,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
 
-import static org.apache.solr.common.params.CommonParams.JAVABIN_MIME;
-import static org.apache.solr.common.params.CommonParams.JSON_MIME;
-
 public class V2Request extends SolrRequest<V2Response> implements MapWriter {
-  //only for debugging purposes
+  // only for debugging purposes
   public static final ThreadLocal<AtomicLong> v2Calls = new ThreadLocal<>();
   static final Pattern COLL_REQ_PATTERN = Pattern.compile("/(c|collections)/([^/]+)/(?!shards)");
   private Object payload;
@@ -58,7 +57,6 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
       isPerCollectionRequest = true;
     }
     this.useBinary = useBinary;
-
   }
 
   public boolean isForceV2() {
@@ -149,8 +147,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     private String mimeType;
 
     /**
-     * Create a Builder object based on the provided resource.
-     * The default method is GET.
+     * Create a Builder object based on the provided resource. The default method is GET.
      *
      * @param resource resource of the request for example "/collections" or "/cores/core-name"
      */
@@ -184,9 +181,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
       return this;
     }
 
-    /**
-     * Only for testing. It's always true otherwise
-     */
+    /** Only for testing. It's always true otherwise */
     public Builder forceV2(boolean flag) {
       forceV2EndPoint = flag;
       return this;
@@ -210,7 +205,6 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
       return this;
     }
 
-
     public Builder withParams(SolrParams params) {
       this.params = params;
       return this;
@@ -229,7 +223,6 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     public Builder withMimeType(String mimeType) {
       this.mimeType = mimeType;
       return this;
-
     }
 
     public V2Request build() {

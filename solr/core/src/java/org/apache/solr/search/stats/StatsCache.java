@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionStatistics;
@@ -43,34 +42,27 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 /**
- * This class represents a cache of global document frequency information for
- * selected terms. This information is periodically updated from all shards,
- * either through scheduled events of some kind, or on every request when there
- * is no global stats available for terms involved in the query (or if this
- * information is stale due to changes in the shards).
- * <p>
- * There are instances of this class at the aggregator node (where the partial
- * data from shards is aggregated), and on each core involved in a shard request
- * (where this data is maintained and updated from the aggregator's cache).
- * </p>
+ * This class represents a cache of global document frequency information for selected terms. This
+ * information is periodically updated from all shards, either through scheduled events of some
+ * kind, or on every request when there is no global stats available for terms involved in the query
+ * (or if this information is stale due to changes in the shards).
+ *
+ * <p>There are instances of this class at the aggregator node (where the partial data from shards
+ * is aggregated), and on each core involved in a shard request (where this data is maintained and
+ * updated from the aggregator's cache).
  */
 public abstract class StatsCache implements PluginInfoInitialized {
   // TODO: decouple use in response from use in request context for these keys
-  /**
-   * Map of terms and {@link TermStats}.
-   */
+  /** Map of terms and {@link TermStats}. */
   public static final String TERM_STATS_KEY = "solr.stats.term";
-  /**
-   * Value of {@link CollectionStats}.
-   */
+
+  /** Value of {@link CollectionStats}. */
   public static final String COL_STATS_KEY = "solr.stats.col";
-  /**
-   * List of terms in the query.
-   */
+
+  /** List of terms in the query. */
   public static final String TERMS_KEY = "solr.stats.terms";
-  /**
-   * List of fields in the query.
-   */
+
+  /** List of fields in the query. */
   public static final String FIELDS_KEY = "solr.stats.fields";
 
   public static final class StatsCacheMetrics {
@@ -108,6 +100,7 @@ public abstract class StatsCache implements PluginInfoInitialized {
       consumer.accept("missingGlobalFieldStats", missingGlobalFieldStats.longValue());
     }
 
+    @Override
     public String toString() {
       Map<String, Object> map = new HashMap<>();
       getSnapshot(map::put);
@@ -128,14 +121,16 @@ public abstract class StatsCache implements PluginInfoInitialized {
   }
 
   /**
-   * Creates a {@link ShardRequest} to retrieve per-shard stats related to the
-   * current query and the current state of the requester's {@link StatsCache}.
-   * <p>This method updates the cache metrics and calls {@link #doRetrieveStatsRequest(ResponseBuilder)}.</p>
+   * Creates a {@link ShardRequest} to retrieve per-shard stats related to the current query and the
+   * current state of the requester's {@link StatsCache}.
+   *
+   * <p>This method updates the cache metrics and calls {@link
+   * #doRetrieveStatsRequest(ResponseBuilder)}.
    *
    * @param rb contains current request
-   * @return shard request to retrieve stats for terms in the current request,
-   * or null if no additional request is needed (e.g. if the information
-   * in global cache is already sufficient to satisfy this request).
+   * @return shard request to retrieve stats for terms in the current request, or null if no
+   *     additional request is needed (e.g. if the information in global cache is already sufficient
+   *     to satisfy this request).
    */
   public ShardRequest retrieveStatsRequest(ResponseBuilder rb) {
     statsCacheMetrics.retrieveStats.increment();
@@ -145,11 +140,12 @@ public abstract class StatsCache implements PluginInfoInitialized {
   protected abstract ShardRequest doRetrieveStatsRequest(ResponseBuilder rb);
 
   /**
-   * Prepare a local (from the local shard) response to a "retrieve stats" shard
-   * request.
-   * <p>This method updates the cache metrics and calls {@link #doReturnLocalStats(ResponseBuilder, SolrIndexSearcher)}.</p>
+   * Prepare a local (from the local shard) response to a "retrieve stats" shard request.
    *
-   * @param rb       response builder
+   * <p>This method updates the cache metrics and calls {@link #doReturnLocalStats(ResponseBuilder,
+   * SolrIndexSearcher)}.
+   *
+   * @param rb response builder
    * @param searcher current local searcher
    */
   public void returnLocalStats(ResponseBuilder rb, SolrIndexSearcher searcher) {
@@ -160,15 +156,16 @@ public abstract class StatsCache implements PluginInfoInitialized {
   protected abstract void doReturnLocalStats(ResponseBuilder rb, SolrIndexSearcher searcher);
 
   /**
-   * Process shard responses that contain partial local stats. Usually this
-   * entails combining per-shard stats for each term.
-   * <p>This method updates the cache metrics and calls {@link #doMergeToGlobalStats(SolrQueryRequest, List)}.</p>
+   * Process shard responses that contain partial local stats. Usually this entails combining
+   * per-shard stats for each term.
    *
-   * @param req       query request
+   * <p>This method updates the cache metrics and calls {@link
+   * #doMergeToGlobalStats(SolrQueryRequest, List)}.
+   *
+   * @param req query request
    * @param responses responses from shards containing local stats for each shard
    */
-  public void mergeToGlobalStats(SolrQueryRequest req,
-                                          List<ShardResponse> responses) {
+  public void mergeToGlobalStats(SolrQueryRequest req, List<ShardResponse> responses) {
     statsCacheMetrics.mergeToGlobalStats.increment();
     doMergeToGlobalStats(req, responses);
   }
@@ -176,12 +173,13 @@ public abstract class StatsCache implements PluginInfoInitialized {
   protected abstract void doMergeToGlobalStats(SolrQueryRequest req, List<ShardResponse> responses);
 
   /**
-   * Receive global stats data from the leader and update a local cache of global stats
-   * with this global data. This event occurs either as a separate request, or
-   * together with the regular query request, in which case this method is
-   * called first, before preparing a {@link QueryCommand} to be submitted to
-   * the local {@link SolrIndexSearcher}.
-   * <p>This method updates the cache metrics and calls {@link #doReceiveGlobalStats(SolrQueryRequest)}.</p>
+   * Receive global stats data from the leader and update a local cache of global stats with this
+   * global data. This event occurs either as a separate request, or together with the regular query
+   * request, in which case this method is called first, before preparing a {@link QueryCommand} to
+   * be submitted to the local {@link SolrIndexSearcher}.
+   *
+   * <p>This method updates the cache metrics and calls {@link
+   * #doReceiveGlobalStats(SolrQueryRequest)}.
    *
    * @param req query request with global stats data
    */
@@ -194,9 +192,11 @@ public abstract class StatsCache implements PluginInfoInitialized {
 
   /**
    * Prepare global stats data to be sent out to shards in this request.
-   * <p>This method updates the cache metrics and calls {@link #doSendGlobalStats(ResponseBuilder, ShardRequest)}.</p>
    *
-   * @param rb       response builder
+   * <p>This method updates the cache metrics and calls {@link #doSendGlobalStats(ResponseBuilder,
+   * ShardRequest)}.
+   *
+   * @param rb response builder
    * @param outgoing shard request to be sent
    */
   public void sendGlobalStats(ResponseBuilder rb, ShardRequest outgoing) {
@@ -207,14 +207,13 @@ public abstract class StatsCache implements PluginInfoInitialized {
   protected abstract void doSendGlobalStats(ResponseBuilder rb, ShardRequest outgoing);
 
   /**
-   * Prepare a {@link StatsSource} that provides stats information to perform
-   * local scoring (to be precise, to build a local {@link Weight} from the
-   * query).
-   * <p>This method updates the cache metrics and calls {@link #doGet(SolrQueryRequest)}.</p>
+   * Prepare a {@link StatsSource} that provides stats information to perform local scoring (to be
+   * precise, to build a local {@link Weight} from the query).
+   *
+   * <p>This method updates the cache metrics and calls {@link #doGet(SolrQueryRequest)}.
    *
    * @param req query request
-   * @return an instance of {@link StatsSource} to use in creating a query
-   * {@link Weight}
+   * @return an instance of {@link StatsSource} to use in creating a query {@link Weight}
    */
   public StatsSource get(SolrQueryRequest req) {
     statsCacheMetrics.lookups.increment();
@@ -223,29 +222,40 @@ public abstract class StatsCache implements PluginInfoInitialized {
 
   protected abstract StatsSource doGet(SolrQueryRequest req);
 
-  /**
-   * Clear cached statistics.
-   */
+  /** Clear cached statistics. */
   public void clear() {
     statsCacheMetrics.clear();
-  };
+  }
+  ;
 
   /**
-   * Check if the <code>statsSource</code> is missing some term or field statistics info,
-   * which then needs to be retrieved.
-   * <p>NOTE: this uses the local IndexReader for query rewriting, which may expand to less (or different)
-   * terms as rewriting the same query on other shards' readers. This in turn may falsely fail to inform the consumers
-   * about possibly missing stats, which may lead consumers to skip the fetching of full stats. Consequently
-   * this would lead to incorrect global IDF data for the missing terms (because for these terms only local stats
-   * would be used).</p>
+   * Check if the <code>statsSource</code> is missing some term or field statistics info, which then
+   * needs to be retrieved.
+   *
+   * <p>NOTE: this uses the local IndexReader for query rewriting, which may expand to less (or
+   * different) terms as rewriting the same query on other shards' readers. This in turn may falsely
+   * fail to inform the consumers about possibly missing stats, which may lead consumers to skip the
+   * fetching of full stats. Consequently this would lead to incorrect global IDF data for the
+   * missing terms (because for these terms only local stats would be used).
+   *
    * @param rb request to evaluate against the statsSource
    * @param statsSource stats source to check
    * @param missingTermStats consumer of missing term stats
    * @param missingFieldStats consumer of missing field stats
    * @return approximate number of missing term stats and field stats combined
    */
-  public int approxCheckMissingStats(ResponseBuilder rb, StatsSource statsSource, Consumer<Term> missingTermStats, Consumer<String> missingFieldStats) throws IOException {
-    CheckingIndexSearcher checkingSearcher = new CheckingIndexSearcher(statsSource, rb.req.getSearcher().getIndexReader(), missingTermStats, missingFieldStats);
+  public int approxCheckMissingStats(
+      ResponseBuilder rb,
+      StatsSource statsSource,
+      Consumer<Term> missingTermStats,
+      Consumer<String> missingFieldStats)
+      throws IOException {
+    CheckingIndexSearcher checkingSearcher =
+        new CheckingIndexSearcher(
+            statsSource,
+            rb.req.getSearcher().getIndexReader(),
+            missingTermStats,
+            missingFieldStats);
     Query q = rb.getQuery();
     q = checkingSearcher.rewrite(q);
     checkingSearcher.createWeight(q, ScoreMode.COMPLETE, 1);
@@ -258,7 +268,11 @@ public abstract class StatsCache implements PluginInfoInitialized {
     final Consumer<String> missingFieldStats;
     int missingTermsCount, missingFieldsCount;
 
-    CheckingIndexSearcher(StatsSource statsSource, IndexReader reader, Consumer<Term> missingTermStats, Consumer<String> missingFieldStats) {
+    CheckingIndexSearcher(
+        StatsSource statsSource,
+        IndexReader reader,
+        Consumer<Term> missingTermStats,
+        Consumer<String> missingFieldStats) {
       super(reader);
       this.statsSource = statsSource;
       this.missingTermStats = missingTermStats;
@@ -266,7 +280,8 @@ public abstract class StatsCache implements PluginInfoInitialized {
     }
 
     @Override
-    public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
+    public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq)
+        throws IOException {
       if (statsSource.termStatistics(null, term, docFreq, totalTermFreq) == null) {
         missingTermStats.accept(term);
         missingTermsCount++;

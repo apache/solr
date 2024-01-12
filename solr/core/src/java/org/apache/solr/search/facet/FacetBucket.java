@@ -20,24 +20,31 @@ package org.apache.solr.search.facet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class FacetBucket {
   @SuppressWarnings("rawtypes")
   final FacetModule.FacetBucketMerger parent;
+
   @SuppressWarnings({"rawtypes"})
   final Comparable bucketValue;
-  final int bucketNumber;  // this is just for internal correlation (the first bucket created is bucket 0, the next bucket 1, across all field buckets)
+
+  // this is just for internal correlation (the first bucket created is bucket 0,
+  // the next bucket 1, across all field buckets)
+  final int bucketNumber;
 
   long count;
   Map<String, FacetMerger> subs;
 
-  public FacetBucket(@SuppressWarnings("rawtypes") FacetModule.FacetBucketMerger parent
-      , @SuppressWarnings("rawtypes") Comparable bucketValue, FacetMerger.Context mcontext) {
+  public FacetBucket(
+      @SuppressWarnings("rawtypes") FacetModule.FacetBucketMerger parent,
+      @SuppressWarnings("rawtypes") Comparable bucketValue,
+      FacetMerger.Context mcontext) {
     this.parent = parent;
     this.bucketValue = bucketValue;
-    this.bucketNumber = mcontext.getNewBucketNumber(); // TODO: we don't need bucket numbers for all buckets...
+    // TODO: we don't need bucket numbers for all buckets...
+    this.bucketNumber = mcontext.getNewBucketNumber();
   }
 
   public long getCount() {
@@ -75,11 +82,11 @@ public class FacetBucket {
     mcontext.setShardFlag(bucketNumber);
 
     // drive merging off the received bucket?
-    for (int i=0; i<bucket.size(); i++) {
+    for (int i = 0; i < bucket.size(); i++) {
       String key = bucket.getName(i);
       Object val = bucket.getVal(i);
       if ("count".equals(key)) {
-        count += ((Number)val).longValue();
+        count += ((Number) val).longValue();
         continue;
       }
       if ("val".equals(key)) {
@@ -90,20 +97,19 @@ public class FacetBucket {
       FacetMerger merger = getMerger(key, val);
 
       if (merger != null) {
-        merger.merge( val , mcontext );
+        merger.merge(val, mcontext);
       }
     }
   }
 
-
   public SimpleOrderedMap<Object> getMergedBucket() {
-    SimpleOrderedMap<Object> out = new SimpleOrderedMap<>( (subs == null ? 0 : subs.size()) + 2 );
+    SimpleOrderedMap<Object> out = new SimpleOrderedMap<>((subs == null ? 0 : subs.size()) + 2);
     if (bucketValue != null) {
       out.add("val", bucketValue);
     }
     out.add("count", count);
     if (subs != null) {
-      for (Map.Entry<String,FacetMerger> mergerEntry : subs.entrySet()) {
+      for (Map.Entry<String, FacetMerger> mergerEntry : subs.entrySet()) {
         FacetMerger subMerger = mergerEntry.getValue();
         Object mergedResult = subMerger.getMergedResult();
         if (null != mergedResult) {
@@ -115,18 +121,19 @@ public class FacetBucket {
     return out;
   }
 
-  public Map<String, Object> getRefinement(FacetMerger.Context mcontext, Collection<String> refineTags) {
+  public Map<String, Object> getRefinement(
+      FacetMerger.Context mcontext, Collection<String> refineTags) {
     if (subs == null) {
       return null;
     }
-    Map<String,Object> refinement = null;
+    Map<String, Object> refinement = null;
     for (String tag : refineTags) {
       FacetMerger subMerger = subs.get(tag);
       if (subMerger != null) {
-        Map<String,Object> subRef = subMerger.getRefinement(mcontext);
+        Map<String, Object> subRef = subMerger.getRefinement(mcontext);
         if (subRef != null) {
           if (refinement == null) {
-            refinement = new HashMap<>(refineTags.size());
+            refinement = CollectionUtil.newHashMap(refineTags.size());
           }
           refinement.put(tag, subRef);
         }
@@ -135,7 +142,8 @@ public class FacetBucket {
     return refinement;
   }
 
-  public Map<String, Object> getRefinement2(FacetMerger.Context mcontext, Collection<String> refineTags) {
+  public Map<String, Object> getRefinement2(
+      FacetMerger.Context mcontext, Collection<String> refineTags) {
     // TODO - partial results should turn off refining!!!
 
     boolean parentMissing = mcontext.bucketWasMissing();
@@ -153,7 +161,7 @@ public class FacetBucket {
       assert !mcontext.getShardFlag(bucketNumber);
     }
 
-    Map<String,Object> refinement = null;
+    Map<String, Object> refinement = null;
 
     if (!mcontext.bucketWasMissing()) {
       // this is just a pass-through bucket... see if there is anything to do at all
@@ -163,33 +171,31 @@ public class FacetBucket {
     } else {
       // for missing bucket, go over all sub-facts
       refineTags = null;
-      refinement = new HashMap<>(4);
+      refinement = CollectionUtil.newHashMap(4);
       if (bucketValue != null) {
         refinement.put("_v", bucketValue);
       }
-      refinement.put("_m",1);
+      refinement.put("_m", 1);
     }
 
     // TODO: listing things like sub-facets that have no field facets are redundant
     // (we only need facet that have variable values)
 
-    for (Map.Entry<String,FacetMerger> sub : subs.entrySet()) {
+    for (Map.Entry<String, FacetMerger> sub : subs.entrySet()) {
       if (refineTags != null && !refineTags.contains(sub.getKey())) {
         continue;
       }
-      Map<String,Object> subRef = sub.getValue().getRefinement(mcontext);
+      Map<String, Object> subRef = sub.getValue().getRefinement(mcontext);
       if (subRef != null) {
         if (refinement == null) {
-          refinement = new HashMap<>(4);
+          refinement = CollectionUtil.newHashMap(4);
         }
         refinement.put(sub.getKey(), subRef);
       }
     }
 
-
     // reset the "bucketMissing" flag on the way back out.
     mcontext.setBucketWasMissing(parentMissing);
     return refinement;
   }
-
 }

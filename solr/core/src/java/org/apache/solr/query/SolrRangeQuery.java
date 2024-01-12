@@ -19,7 +19,7 @@ package org.apache.solr.query;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Objects;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexReader;
@@ -60,7 +60,9 @@ import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.TestInjection;
 
-/** @lucene.experimental */
+/**
+ * @lucene.experimental
+ */
 public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetProducer {
   private final String field;
   private final BytesRef lower;
@@ -69,19 +71,28 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   private static byte FLAG_INC_LOWER = 0x01;
   private static byte FLAG_INC_UPPER = 0x02;
 
-  public SolrRangeQuery(String field, BytesRef lower, BytesRef upper, boolean includeLower, boolean includeUpper) {
+  public SolrRangeQuery(
+      String field, BytesRef lower, BytesRef upper, boolean includeLower, boolean includeUpper) {
     this.field = field;
     this.lower = lower;
     this.upper = upper;
-    this.flags = (byte)((this.lower != null && includeLower ? FLAG_INC_LOWER : 0) | (this.upper != null && includeUpper ? FLAG_INC_UPPER : 0));
+    this.flags =
+        (byte)
+            ((this.lower != null && includeLower ? FLAG_INC_LOWER : 0)
+                | (this.upper != null && includeUpper ? FLAG_INC_UPPER : 0));
   }
 
   public String getField() {
     return field;
   }
 
-  public BytesRef getLower() { return lower; }
-  public BytesRef getUpper() { return upper; }
+  public BytesRef getLower() {
+    return lower;
+  }
+
+  public BytesRef getUpper() {
+    return upper;
+  }
 
   public boolean includeLower() {
     return (flags & FLAG_INC_LOWER) != 0;
@@ -93,8 +104,8 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
   @Override
   public int hashCode() {
-    int hash = 0x8f2c9ba7 * (flags+1);  // avoid multiplying by 0
-    hash = hash * 29 + ((lower == null) ? 0 : lower.hashCode());  // TODO: simpler hash code here?
+    int hash = 0x8f2c9ba7 * (flags + 1); // avoid multiplying by 0
+    hash = hash * 29 + ((lower == null) ? 0 : lower.hashCode()); // TODO: simpler hash code here?
     hash = hash * 29 + ((upper == null) ? 0 : upper.hashCode());
     return hash;
   }
@@ -107,13 +118,12 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     if (!(obj instanceof SolrRangeQuery)) {
       return false;
     }
-    SolrRangeQuery other = (SolrRangeQuery)obj;
+    SolrRangeQuery other = (SolrRangeQuery) obj;
 
     return (this.flags == other.flags)
         && (this.field.equals(other.field))
-        && (this.lower == other.lower || (this.lower != null && other.lower != null && this.lower.equals(other.lower)))
-        && (this.upper == other.upper || (this.upper != null && other.upper != null && this.upper.equals(other.upper)))
-        ;
+        && (Objects.equals(this.lower, other.lower))
+        && (Objects.equals(this.upper, other.upper));
   }
 
   @Override
@@ -153,7 +163,8 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new ConstWeight(searcher, scoreMode, boost);
     /*
     DocSet docs = createDocSet(searcher.getIndexReader().leaves(), searcher.getIndexReader().maxDoc());
@@ -164,7 +175,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
   @Override
   public DocSet createDocSet(SolrIndexSearcher searcher) throws IOException {
-    return createDocSet( searcher, Math.min(64,(searcher.maxDoc()>>>10)+4) );
+    return createDocSet(searcher, Math.min(64, (searcher.maxDoc() >>> 10) + 4));
   }
 
   private DocSet createDocSet(SolrIndexSearcher searcher, long cost) throws IOException {
@@ -184,10 +195,10 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       maxTermsPerSegment = Math.max(maxTermsPerSegment, termsVisited);
     }
 
-    DocSet set =  maxTermsPerSegment <= 1 ? builder.buildUniqueInOrder(liveBits) : builder.build(liveBits);
+    DocSet set =
+        maxTermsPerSegment <= 1 ? builder.buildUniqueInOrder(liveBits) : builder.build(liveBits);
     return DocSetUtil.getDocSet(set, searcher);
   }
-
 
   private class RangeTermsEnum extends BaseTermsEnum {
 
@@ -269,7 +280,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
 
       if (upper != null) {
         int cmp = curr.compareTo(upper);
-        if (cmp < 0 || cmp == 0 && includeUpper()) {
+        if (cmp < 0 || (cmp == 0 && includeUpper())) {
           return curr;
         } else {
           curr = null;
@@ -299,11 +310,9 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     }
   }
 
-
   public TermsEnum getTermsEnum(LeafReaderContext ctx) throws IOException {
-    return new RangeTermsEnum( ctx.reader().terms(getField()) );
+    return new RangeTermsEnum(ctx.reader().terms(getField()));
   }
-
 
   private static class TermAndState {
     final BytesRef term;
@@ -337,19 +346,23 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
   private static class SegmentDocIdSet extends DocIdSet {
     private final DocSet docs;
     private final LeafReaderContext ctx;
+
     private SegmentDocIdSet(DocSet docs, LeafReaderContext ctx) {
       this.docs = docs;
       this.ctx = ctx;
     }
+
     @Override
     public long ramBytesUsed() {
       return docs.ramBytesUsed();
     }
+
     @Override
     public DocIdSetIterator iterator() throws IOException {
       return docs.iterator(ctx);
     }
   }
+
   // adapted from MultiTermQueryConstantScoreWrapper
   class ConstWeight extends ConstantScoreWeight {
 
@@ -361,11 +374,10 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     DocSet answer;
     final SegState[] segStates;
 
-
     protected ConstWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
-      super( SolrRangeQuery.this, boost );
+      super(SolrRangeQuery.this, boost);
       this.searcher = searcher;
-      this.segStates = new SegState[ searcher.getIndexReader().leaves().size() ];
+      this.segStates = new SegState[searcher.getIndexReader().leaves().size()];
       this.scoreMode = scoreMode;
     }
 
@@ -380,16 +392,24 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       if (terms.hasPositions() == false) {
         return super.matches(context, doc);
       }
-      return MatchesUtils.forField(query.field, () -> MatchesUtils.disjunction(context, doc, query, query.field, query.getTermsEnum(context)));
+      return MatchesUtils.forField(
+          query.field,
+          () ->
+              MatchesUtils.disjunction(
+                  context, doc, query, query.field, query.getTermsEnum(context)));
     }
 
-    /** Try to collect terms from the given terms enum and return count=sum(df) for terms visited so far
-     *  or (-count - 1) if this should be rewritten into a boolean query.
-     *  The termEnum will already be positioned on the next term if not exhausted.
+    /**
+     * Try to collect terms from the given terms enum and return count=sum(df) for terms visited so
+     * far or (-count - 1) if this should be rewritten into a boolean query. The termEnum will
+     * already be positioned on the next term if not exhausted.
      */
-    private long collectTerms(LeafReaderContext context, TermsEnum termsEnum, List<TermAndState> terms) throws IOException {
+    private long collectTerms(
+        LeafReaderContext context, TermsEnum termsEnum, List<TermAndState> terms)
+        throws IOException {
       long count = 0;
-      final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, IndexSearcher.getMaxClauseCount());
+      final int threshold =
+          Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, IndexSearcher.getMaxClauseCount());
       for (int i = 0; i < threshold; ++i) {
         final BytesRef term = termsEnum.next();
         if (term == null) {
@@ -398,7 +418,8 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
         TermState state = termsEnum.termState();
         int df = termsEnum.docFreq();
         count += df;
-        terms.add(new TermAndState(BytesRef.deepCopyOf(term), state, df, termsEnum.totalTermFreq()));
+        terms.add(
+            new TermAndState(BytesRef.deepCopyOf(term), state, df, termsEnum.totalTermFreq()));
       }
       return termsEnum.next() == null ? (-count - 1) : count;
     }
@@ -422,7 +443,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
         doCheck = false;
         solrSearcher = null;
       }
-      
+
       if (answer != null) {
         // I'm not sure this ever happens
         return segStates[context.ord] = new SegState(new SegmentDocIdSet(answer, context));
@@ -444,7 +465,9 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
         for (TermAndState t : collectedTerms) {
           final TermStates termStates = new TermStates(searcher.getTopReaderContext());
           termStates.register(t.state, context.ord, t.docFreq, t.totalTermFreq);
-          bq.add(new TermQuery(new Term( SolrRangeQuery.this.getField(), t.term), termStates), BooleanClause.Occur.SHOULD);
+          bq.add(
+              new TermQuery(new Term(SolrRangeQuery.this.getField(), t.term), termStates),
+              BooleanClause.Occur.SHOULD);
         }
         Query q = new ConstantScoreQuery(bq.build());
         final Weight weight = searcher.rewrite(q).createWeight(searcher, scoreMode, score());
@@ -461,25 +484,25 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       }
 
       /* FUTURE: reuse term states in the future to help build DocSet, use collected count so far...
-      Bits liveDocs = context.reader().getLiveDocs();
-      int base = context.docBase;
-      int termsVisited = collectedTerms.size();
+       Bits liveDocs = context.reader().getLiveDocs();
+       int base = context.docBase;
+       int termsVisited = collectedTerms.size();
 
-      DocSetBuilder builder = new DocSetBuilder(searcher.getIndexReader().maxDoc());
-      if (!collectedTerms.isEmpty()) {
-        TermsEnum termsEnum2 = terms.iterator();
-        for (TermAndState t : collectedTerms) {
-          termsEnum2.seekExact(t.term, t.state);
-          docs = termsEnum2.postings(docs, PostingsEnum.NONE);
-          builder.add(docs, context.docBase, liveDocs);
-        }
-      }
+       DocSetBuilder builder = new DocSetBuilder(searcher.getIndexReader().maxDoc());
+       if (!collectedTerms.isEmpty()) {
+         TermsEnum termsEnum2 = terms.iterator();
+         for (TermAndState t : collectedTerms) {
+           termsEnum2.seekExact(t.term, t.state);
+           docs = termsEnum2.postings(docs, PostingsEnum.NONE);
+           builder.add(docs, context.docBase, liveDocs);
+         }
+       }
 
-      termsVisited += builder.add(termsEnum, base, liveDocs);
-     */
+       termsVisited += builder.add(termsEnum, base, liveDocs);
+      */
 
       DocIdSetBuilder builder = new DocIdSetBuilder(context.reader().maxDoc(), terms);
-      builder.grow((int)Math.min(Integer.MAX_VALUE,count));
+      builder.grow((int) Math.min(Integer.MAX_VALUE, count));
       if (collectedTerms.isEmpty() == false) {
         TermsEnum termsEnum2 = terms.iterator();
         for (TermAndState t : collectedTerms) {
@@ -538,13 +561,5 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
     public boolean isCacheable(LeafReaderContext ctx) {
       return true;
     }
-
   }
 }
-
-
-
-
-
-
-

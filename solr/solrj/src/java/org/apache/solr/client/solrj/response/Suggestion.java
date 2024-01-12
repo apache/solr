@@ -15,49 +15,48 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.response;
+
 /**
- * This class models a Suggestion coming from Solr Suggest Component.
- * It is a direct mapping fo the Json object Solr is returning.
+ * This class models a Suggestion coming from Solr Suggest Component. It is a direct mapping fo the
+ * Json object Solr is returning.
  */
 public class Suggestion {
-    private String term;
-    private long weight;
-    private String payload;
+  private String term;
+  private long weight;
+  private String payload;
 
-    public Suggestion(String term, long weight, String payload) {
-        this.term = term;
-        this.weight = weight;
-        this.payload = payload;
-    }
+  public Suggestion(String term, long weight, String payload) {
+    this.term = term;
+    this.weight = weight;
+    this.payload = payload;
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Suggestion)) return false;
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Suggestion)) return false;
 
-        Suggestion that = (Suggestion) o;
+    Suggestion that = (Suggestion) o;
 
-        return payload.equals(that.payload) && term.equals(that.term);
+    return payload.equals(that.payload) && term.equals(that.term);
+  }
 
-    }
+  @Override
+  public int hashCode() {
+    int result = term.hashCode();
+    result = 31 * result + payload.hashCode();
+    return result;
+  }
 
-    @Override
-    public int hashCode() {
-        int result = term.hashCode();
-        result = 31 * result + payload.hashCode();
-        return result;
-    }
+  public String getTerm() {
+    return term;
+  }
 
-    public String getTerm() {
-        return term;
-    }
+  public long getWeight() {
+    return weight;
+  }
 
-    public long getWeight() {
-        return weight;
-    }
-
-    public String getPayload() {
-        return payload;
-    }
-
+  public String getPayload() {
+    return payload;
+  }
 }

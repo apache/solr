@@ -16,12 +16,6 @@
  */
 package org.apache.solr.metrics.reporters;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.concurrent.TimeUnit;
-
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
@@ -30,6 +24,11 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Slf4jReporter;
 import com.codahale.metrics.Timer;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
@@ -37,16 +36,17 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
- * Metrics reporter that wraps {@link com.codahale.metrics.Slf4jReporter}.
- * The following init arguments are supported:
+ * Metrics reporter that wraps {@link com.codahale.metrics.Slf4jReporter}. The following init
+ * arguments are supported:
+ *
  * <ul>
- *   <li><code>period</code>: (optional, int) number of seconds between reports, default is 60,</li>
- *   <li><code>prefix</code>: (optional, str) prefix for metric names, in addition to
- *   registry name. Default is none, ie. just registry name.</li>
- *   <li><code>filter</code>: (optional, str) if not empty only metric names that start
- *   with this value will be reported, default is all metrics from a registry,</li>
- *   <li><code>logger</code>: (optional, str) logger name to use. Default is the
- *   metrics group, eg. <code>solr.jvm</code>, <code>solr.core</code>, etc</li>
+ *   <li><code>period</code>: (optional, int) number of seconds between reports, default is 60,
+ *   <li><code>prefix</code>: (optional, str) prefix for metric names, in addition to registry name.
+ *       Default is none, ie. just registry name.
+ *   <li><code>filter</code>: (optional, str) if not empty only metric names that start with this
+ *       value will be reported, default is all metrics from a registry,
+ *   <li><code>logger</code>: (optional, str) logger name to use. Default is the metrics group, eg.
+ *       <code>solr.jvm</code>, <code>solr.core</code>, etc
  * </ul>
  */
 public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
@@ -66,7 +66,12 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
     final Slf4jReporter delegate;
     final Map<String, String> mdcContext;
 
-    Slf4jReporterWrapper(String logger, Map<String, String> mdcContext, Slf4jReporter delegate, TimeUnit rateUnit, TimeUnit durationUnit) {
+    Slf4jReporterWrapper(
+        String logger,
+        Map<String, String> mdcContext,
+        Slf4jReporter delegate,
+        TimeUnit rateUnit,
+        TimeUnit durationUnit) {
       super(metricManager.registry(registryName), logger, null, rateUnit, durationUnit);
       this.delegate = delegate;
       this.mdcContext = mdcContext;
@@ -85,8 +90,14 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
     }
 
     @Override
-    @SuppressWarnings("rawtypes") // super uses raw Gauge, so we're stuck with it until DropWizard 5.0
-    public void report(SortedMap<String, Gauge> gauges, SortedMap<String, Counter> counters, SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers) {
+    @SuppressWarnings(
+        "rawtypes") // super uses raw Gauge, so we're stuck with it until DropWizard 5.0
+    public void report(
+        SortedMap<String, Gauge> gauges,
+        SortedMap<String, Counter> counters,
+        SortedMap<String, Histogram> histograms,
+        SortedMap<String, Meter> meters,
+        SortedMap<String, Timer> timers) {
       throw new UnsupportedOperationException("this method should never be called here!");
     }
 
@@ -96,12 +107,12 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
       delegate.close();
     }
   }
+
   /**
    * Create a SLF4J reporter for metrics managed in a named registry.
    *
    * @param metricManager metric manager instance that manages the selected registry
-   * @param registryName  registry to use, one of registries managed by
-   *                      {@link SolrMetricManager}
+   * @param registryName registry to use, one of registries managed by {@link SolrMetricManager}
    */
   public SolrSlf4jReporter(SolrMetricManager metricManager, String registryName) {
     super(metricManager, registryName);
@@ -119,10 +130,10 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
   protected void doInit() {
     mdcContext = MDC.getCopyOfContextMap();
     mdcContext.put("registry", "m:" + registryName);
-    Slf4jReporter.Builder builder = Slf4jReporter
-        .forRegistry(metricManager.registry(registryName))
-        .convertRatesTo(TimeUnit.SECONDS)
-        .convertDurationsTo(TimeUnit.MILLISECONDS);
+    Slf4jReporter.Builder builder =
+        Slf4jReporter.forRegistry(metricManager.registry(registryName))
+            .convertRatesTo(TimeUnit.SECONDS)
+            .convertDurationsTo(TimeUnit.MILLISECONDS);
 
     final MetricFilter filter = newMetricFilter();
     builder = builder.filter(filter);
@@ -146,7 +157,9 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
     builder = builder.outputTo(LoggerFactory.getLogger(logger));
     // build BUT don't start - scheduled execution is handled by the wrapper
     Slf4jReporter delegate = builder.build();
-    reporter = new Slf4jReporterWrapper(logger, mdcContext, delegate, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
+    reporter =
+        new Slf4jReporterWrapper(
+            logger, mdcContext, delegate, TimeUnit.SECONDS, TimeUnit.MILLISECONDS);
     reporter.start(period, TimeUnit.SECONDS);
     active = true;
   }
@@ -154,7 +167,8 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
   @Override
   protected void validate() throws IllegalStateException {
     if (period < 1) {
-      throw new IllegalStateException("Init argument 'period' is in time unit 'seconds' and must be at least 1.");
+      throw new IllegalStateException(
+          "Init argument 'period' is in time unit 'seconds' and must be at least 1.");
     }
   }
 

@@ -1,0 +1,96 @@
+{
+  "racerd-ignore-classes": [
+    "org.apache.solr.common.util.ObjectReleaseTracker",
+    "org.noggit.CharArr"
+  ],
+  "external-java-packages": [
+    "org.slf4j"
+  ],
+  "quandary-sources": [
+    {
+      "procedure": "javax.servlet.http.HttpServletRequest.getParameter",
+      "kind": "UserControlledString"
+    },
+    {
+      "procedure": "javax.servlet.http.HttpServletRequest.getHeader",
+      "kind": "UserControlledString"
+    },
+    {
+      "procedure": "java.io.BufferedReader.read",
+      "kind": "UserControlledString"
+    },
+    {
+      "procedure": "javax.servlet.http.HttpServletRequest.getAttribute",
+      "kind": "UserControlledString"
+    }
+  ],
+  "quandary-sanitizers": [
+    {
+      "procedure": "org.owasp.encoder.Encode.forHtml"
+    },
+    {
+      "procedure": "org.owasp.esapi.Encoder.encodeForSQL"
+    },
+    {
+      "procedure": "org.apache.commons.lang.StringEscapeUtils.escapeHtml"
+    }
+  ],
+  "quandary-sinks": [
+    {
+      "procedure": "java.util.logging.Logger.info",
+      "kind": "Logging"
+    },
+    {
+      "procedure": "java.util.logging.Logger.log",
+      "kind": "Logging"
+    },
+    {
+      "procedure": "java.io.PrintWriter.write",
+      "kind": "Other"
+    },
+    {
+      "procedure": "org.springframework.jdbc.core.JdbcTemplate.queryForObject",
+      "kind": "SQLRead"
+    },
+    {
+      "procedure": "javax.jdo.PersistenceManager.newQuery",
+      "kind": "SQLWrite"
+    },
+    {
+      "procedure": "org.hibernate.Session.createQuery",
+      "kind": "SQLWrite"
+    },
+    {
+      "procedure": "org.apache.turbine.om.peer.BasePeer.executeQuery",
+      "kind": "SQLWrite"
+    },
+    {
+      "procedure": "javax.persistence.EntityManager.createQuery",
+      "kind": "SQLWrite"
+    },
+    {
+      "procedure": "java.sql.Statement.executeQuery",
+      "kind": "SQLWrite"
+    },
+    {
+      "procedure": "java.sql.PreparedStatement.executeUpdate",
+      "kind": "SQLWrite"
+    },
+    {
+      "procedure": "java.sql.PreparedStatement.executeQuery",
+      "kind": "SQLWrite"
+    },
+    {
+      "procedure": "com.google.codeu.data.Datastore.storeMessage",
+      "kind": "HTML"
+    },
+    {
+      "procedure": "org.springframework.web.servlet.ModelAndView",
+      "kind": "HTML"
+    },
+    {
+      "procedure": "javax.servlet.http.HttpSession.setAttribute",
+      "kind": "HTML"
+    }
+  ]
+}

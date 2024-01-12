@@ -77,6 +77,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
 
     Thread closeThread =
         new Thread() {
+          @Override
           public void run() {
             try {
               df.close();

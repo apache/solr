@@ -21,13 +21,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
 import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.ConfigNode;
 
-/**A config node impl which has an overlay
- *
- */
+/** A config node impl which has an overlay */
 class OverlaidConfigNode implements ConfigNode {
 
   private final ConfigOverlay overlay;
@@ -35,7 +32,8 @@ class OverlaidConfigNode implements ConfigNode {
   private final ConfigNode delegate;
   private final OverlaidConfigNode parent;
 
-  OverlaidConfigNode(ConfigOverlay overlay, String name, OverlaidConfigNode parent, ConfigNode delegate) {
+  OverlaidConfigNode(
+      ConfigOverlay overlay, String name, OverlaidConfigNode parent, ConfigNode delegate) {
     this.overlay = overlay;
     this._name = name;
     this.delegate = delegate;
@@ -43,7 +41,7 @@ class OverlaidConfigNode implements ConfigNode {
   }
 
   private List<String> path(List<String> path) {
-    if(path== null) path = new ArrayList<>(5);
+    if (path == null) path = new ArrayList<>(5);
     try {
       if (parent != null) return parent.path(path);
     } finally {
@@ -58,7 +56,7 @@ class OverlaidConfigNode implements ConfigNode {
   }
 
   private ConfigNode wrap(ConfigNode n, String name) {
-    return new OverlaidConfigNode(overlay, name,this, n);
+    return new OverlaidConfigNode(overlay, name, this, n);
   }
 
   @Override
@@ -80,6 +78,7 @@ class OverlaidConfigNode implements ConfigNode {
   public String name() {
     return delegate.name();
   }
+
   @Override
   public SimpleMap<String> attributes() {
     return delegate.attributes();
@@ -92,14 +91,14 @@ class OverlaidConfigNode implements ConfigNode {
 
   @Override
   public String attr(String name) {
-    return overlayText(delegate.attr(name),name);
+    return overlayText(delegate.attr(name), name);
   }
 
   private String overlayText(String def, String appendToPath) {
     List<String> path = path(null);
-    if(appendToPath !=null) path.add(appendToPath);
+    if (appendToPath != null) path.add(appendToPath);
     Object val = overlay.getXPathProperty(path);
-    return val ==null? def: val.toString();
+    return val == null ? def : val.toString();
   }
 
   @Override
