@@ -18,8 +18,15 @@ github:
     merge:  false
     rebase: false
 
+  # TODO: Add to this list for each new minor release
   protected_branches:
     main: {}
+    branch_9_0: {}
+    branch_9_1: {}
+    branch_9_2: {}
+    branch_9_3: {}
+    branch_9_4: {}
+    branch_9x: {}
 
   protected_tags:
     - "releases/*"
