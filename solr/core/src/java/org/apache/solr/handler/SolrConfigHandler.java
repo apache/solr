@@ -59,6 +59,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.request.DataStoreSolrRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapSerializable;
@@ -958,7 +959,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     }
   }
 
-  private static class PerReplicaCallable extends SolrRequest<SolrResponse>
+  private static class PerReplicaCallable extends DataStoreSolrRequest<SolrResponse>
       implements Callable<Boolean> {
     Replica replica;
     String prop;

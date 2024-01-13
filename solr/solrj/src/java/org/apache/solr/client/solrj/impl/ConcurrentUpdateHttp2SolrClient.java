@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Update;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -149,7 +150,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
     this.basePath = builder.baseSolrUrl;
-    this.defaultCollection = builder.defaultCollection;
+    this.defaultCollection = builder.defaultDataStore;
     this.pollQueueTimeMillis = builder.pollQueueTimeMillis;
     this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
 
@@ -360,7 +361,8 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
-    if (collection == null) collection = defaultCollection;
+    if (ClientUtils.shouldApplyDefaultDataStore(collection, request))
+      collection = defaultCollection;
     if (!(request instanceof UpdateRequest)) {
       request.setBasePath(basePath);
       return client.request(request, collection);
@@ -699,7 +701,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   public static class Builder {
     protected Http2SolrClient client;
     protected String baseSolrUrl;
-    protected String defaultCollection;
+    protected String defaultDataStore;
     protected int queueSize = 10;
     protected int threadCount;
     protected ExecutorService executorService;
@@ -790,9 +792,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       return this;
     }
 
-    /** Sets a default collection for collection-based requests. */
-    public Builder withDefaultCollection(String defaultCollection) {
-      this.defaultCollection = defaultCollection;
+    /** Sets a default data store for core- or collection-based requests. */
+    public Builder withDefaultDataStore(String defaultCoreOrCollection) {
+      this.defaultDataStore = defaultCoreOrCollection;
       return this;
     }
 

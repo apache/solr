@@ -74,6 +74,9 @@ Due to changes in Lucene 9, that isn't possible any more.
 === Global Circuit Breakers
 * Circuit breakers can now be configured globally, not only per collection. See xref:deployment-guide:circuit-breakers.adoc[Configuring Circuit Breakers] for more information.
 
+=== Environment variables and syste properties
+* Solr will now automatically resolve all environment variables with `SOLR_` prefix, and set the corresponding system property. This is useful for configuring more aspects of Solr through environment variables, such as for containers. Underscores are replaced with dots and strings are lowercased. For example, while you earlier had to set the system property `-Dsolr.clustering.enabled=true` to enable clustering, you can now set the equivalent environment variable `SOLR_CLUSTERING_ENABLED=true` instead.
+
 == Solr 9.4
 === The Built-In Config Sets
 * The build in ConfigSets (`_default` and `sample_techproducts_configs`), now use a default `autoSoftCommit` time of 3 seconds,
