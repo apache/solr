@@ -375,7 +375,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     public Integer call() throws Exception {
       int remoteVersion = -1;
       try (HttpSolrClient solr =
-          new HttpSolrClient.Builder(baseUrl).withDefaultCollection(coreName).build()) {
+          new HttpSolrClient.Builder(baseUrl).withDefaultDataStore(coreName).build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (remoteVersion == -1
             || (remoteVersion < expectedZkVersion

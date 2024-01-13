@@ -71,11 +71,12 @@ public class StreamingSolrClients {
       // NOTE: increasing to more than 1 threadCount for the client could cause updates to be
       // reordered on a greater scale since the current behavior is to only increase the number of
       // connections/Runners when the queue is more than half full.
+      final var defaultCore =
+          StrUtils.isNotBlank(req.node.getCoreName()) ? req.node.getCoreName() : null;
       client =
           new ErrorReportingConcurrentUpdateSolrClient.Builder(
                   req.node.getBaseUrl(), httpClient, req, errors)
-              .withDefaultCollection(
-                  StrUtils.isNotBlank(req.node.getCoreName()) ? req.node.getCoreName() : null)
+              .withDefaultDataStore(defaultCore)
               .withQueueSize(100)
               .withThreadCount(runnerCount)
               .withExecutorService(updateExecutor)

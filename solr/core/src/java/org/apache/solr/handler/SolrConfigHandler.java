@@ -988,7 +988,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       int attempts = 0;
       try (HttpSolrClient solr =
           new HttpSolrClient.Builder(replica.getBaseUrl())
-              .withDefaultCollection(replica.getCoreName())
+              .withDefaultDataStore(replica.getCoreName())
               .build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (true) {

@@ -181,7 +181,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // (even though getRecoveryOnlyHttpClient() already has them set)
     final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
     return (new HttpSolrClient.Builder(baseUrl)
-        .withDefaultCollection(leaderCoreName)
+        .withDefaultDataStore(leaderCoreName)
         .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
         .withSocketTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
         .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient()));

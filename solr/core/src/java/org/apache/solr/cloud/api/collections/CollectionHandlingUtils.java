@@ -260,7 +260,7 @@ public class CollectionHandlingUtils {
 
     try (SolrClient client =
         new HttpSolrClient.Builder(baseUrl)
-            .withDefaultCollection(coreName)
+            .withDefaultDataStore(coreName)
             .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(120000, TimeUnit.MILLISECONDS)
             .build()) {
