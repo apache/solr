@@ -54,7 +54,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -62,6 +61,7 @@ import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -237,8 +237,10 @@ public final class ManagedIndexSchema extends IndexSchema {
     // get a list of active replica cores to query for the schema zk version (skipping this core of
     // course)
     List<GetZkSchemaVersionCallable> concurrentTasks = new ArrayList<>();
-    for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection, localCoreNodeName))
-      concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion, zkController));
+    for (Replica core : getActiveReplicas(zkController, collection, localCoreNodeName))
+      concurrentTasks.add(
+          new GetZkSchemaVersionCallable(
+              core.getBaseUrl(), core.getCoreName(), schemaZkVersion, zkController));
     if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
 
     if (log.isInfoEnabled()) {
@@ -274,7 +276,8 @@ public final class ManagedIndexSchema extends IndexSchema {
         }
 
         if (vers == -1) {
-          String coreUrl = concurrentTasks.get(f).coreUrl;
+          final String coreUrl =
+              URLUtil.buildCoreUrl(concurrentTasks.get(f).baseUrl, concurrentTasks.get(f).coreName);
           log.warn(
               "Core {} version mismatch! Expected {} but got {}", coreUrl, schemaZkVersion, vers);
           if (failedList == null) failedList = new ArrayList<>();
@@ -318,9 +321,9 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
   }
 
-  private static List<String> getActiveReplicaCoreUrls(
+  private static List<Replica> getActiveReplicas(
       ZkController zkController, String collection, String localCoreNodeName) {
-    List<String> activeReplicaCoreUrls = new ArrayList<>();
+    List<Replica> activeReplicas = new ArrayList<>();
     ZkStateReader zkStateReader = zkController.getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
     Set<String> liveNodes = clusterState.getLiveNodes();
@@ -335,27 +338,29 @@ public final class ManagedIndexSchema extends IndexSchema {
             if (!localCoreNodeName.equals(replica.getName())
                 && replica.getState() == Replica.State.ACTIVE
                 && liveNodes.contains(replica.getNodeName())) {
-              ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(replica);
-              activeReplicaCoreUrls.add(replicaCoreProps.getCoreUrl());
+              activeReplicas.add(replica);
             }
           }
         }
       }
     }
-    return activeReplicaCoreUrls;
+    return activeReplicas;
   }
 
   private static class GetZkSchemaVersionCallable extends DataStoreSolrRequest<SolrResponse>
       implements Callable<Integer> {
 
     private final ZkController zkController;
-    private String coreUrl;
+    private String baseUrl;
+    private String coreName;
     private int expectedZkVersion;
 
-    GetZkSchemaVersionCallable(String coreUrl, int expectedZkVersion, ZkController zkController) {
+    GetZkSchemaVersionCallable(
+        String baseUrl, String coreName, int expectedZkVersion, ZkController zkController) {
       super(METHOD.GET, "/schema/zkversion");
       this.zkController = zkController;
-      this.coreUrl = coreUrl;
+      this.baseUrl = baseUrl;
+      this.coreName = coreName;
       this.expectedZkVersion = expectedZkVersion;
     }
 
@@ -369,7 +374,8 @@ public final class ManagedIndexSchema extends IndexSchema {
     @Override
     public Integer call() throws Exception {
       int remoteVersion = -1;
-      try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
+      try (HttpSolrClient solr =
+          new HttpSolrClient.Builder(baseUrl).withDefaultDataStore(coreName).build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (remoteVersion == -1
             || (remoteVersion < expectedZkVersion
@@ -385,7 +391,7 @@ public final class ManagedIndexSchema extends IndexSchema {
               // Thread.sleep(1000); // slight delay before requesting version again
               log.error(
                   "Replica {} returned schema version {} and has not applied schema version {}",
-                  coreUrl,
+                  coreName,
                   remoteVersion,
                   expectedZkVersion);
             }
@@ -395,7 +401,7 @@ public final class ManagedIndexSchema extends IndexSchema {
               Thread.currentThread().interrupt();
               break; // stop looping
             } else {
-              log.warn("Failed to get /schema/zkversion from {} due to: ", coreUrl, e);
+              log.warn("Failed to get /schema/zkversion from {} due to: ", baseUrl, e);
             }
           }
         }

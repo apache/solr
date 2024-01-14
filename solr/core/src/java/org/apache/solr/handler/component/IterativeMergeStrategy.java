@@ -35,6 +35,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,9 +91,14 @@ public abstract class IterativeMergeStrategy implements MergeStrategy {
     private ShardResponse originalShardResponse;
 
     public CallBack(ShardResponse originalShardResponse, QueryRequest req) {
-
+      final String shardBaseUrl = URLUtil.extractBaseUrl(originalShardResponse.getShardAddress());
+      final String shardCoreName =
+          URLUtil.extractCoreFromCoreUrl(originalShardResponse.getShardAddress());
       this.solrClient =
-          new Builder(originalShardResponse.getShardAddress()).withHttpClient(httpClient).build();
+          new Builder(shardBaseUrl)
+              .withDefaultDataStore(shardCoreName)
+              .withHttpClient(httpClient)
+              .build();
       this.req = req;
       this.originalShardResponse = originalShardResponse;
       req.setMethod(SolrRequest.METHOD.POST);
