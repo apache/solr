@@ -113,11 +113,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.nodeNameLeaderReplicas = new HashMap<>();
     this.nodeNameReplicas = new HashMap<>();
     this.replicationFactor = (Integer) verifyProp(props, CollectionStateProps.REPLICATION_FACTOR);
-    this.numReplicas =
-        new ReplicaCount(
-            (Integer) verifyProp(props, CollectionStateProps.NRT_REPLICAS, 0),
-            (Integer) verifyProp(props, CollectionStateProps.TLOG_REPLICAS, 0),
-            (Integer) verifyProp(props, CollectionStateProps.PULL_REPLICAS, 0));
+    this.numReplicas = ReplicaCount.fromProps(props);
     this.perReplicaState =
         (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
     if (this.perReplicaState) {
@@ -262,18 +258,24 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public static Object verifyProp(Map<String, Object> props, String propName, Object def) {
     Object o = props.get(propName);
-    if (o == null) return def;
+    if (o == null) {
+      return def;
+    }
     switch (propName) {
       case CollectionStateProps.REPLICATION_FACTOR:
-      case CollectionStateProps.NRT_REPLICAS:
-      case CollectionStateProps.PULL_REPLICAS:
-      case CollectionStateProps.TLOG_REPLICAS:
         return Integer.parseInt(o.toString());
       case CollectionStateProps.PER_REPLICA_STATE:
       case CollectionStateProps.READ_ONLY:
         return Boolean.parseBoolean(o.toString());
       case "snitch":
+        return o;
       default:
+        // Properties associated with a number of replicas are parsed as integers.
+        for (Replica.Type replicaType : Replica.Type.values()) {
+          if (replicaType.numReplicasPropertyName.equals(propName)) {
+            return Integer.parseInt(o.toString());
+          }
+        }
         return o;
     }
   }
@@ -559,9 +561,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   /** JSON properties related to a collection's state. */
   public interface CollectionStateProps {
-    String NRT_REPLICAS = "nrtReplicas";
-    String PULL_REPLICAS = "pullReplicas";
-    String TLOG_REPLICAS = "tlogReplicas";
     String REPLICATION_FACTOR = "replicationFactor";
     String READ_ONLY = "readOnly";
     String CONFIGNAME = "configName";

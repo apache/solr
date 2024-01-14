@@ -28,7 +28,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,14 +97,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
       } else {
         log.error("ConfigSet: {} operation: {} failed", configSetName, operation, e);
       }
-
       addExceptionToNamedList(operation, e, results);
-
-      results.add("Operation " + operation + " caused exception:", e);
-      SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
-      nl.add("msg", e.getMessage());
-      nl.add("rspCode", e instanceof SolrException ? ((SolrException) e).code() : -1);
-      results.add("exception", nl);
     }
     return new OverseerSolrResponse(results);
   }

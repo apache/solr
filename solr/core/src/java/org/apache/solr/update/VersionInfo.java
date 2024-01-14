@@ -19,41 +19,32 @@ package org.apache.solr.update;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.Terms;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.index.SlowCompositeReaderWrapper;
-import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class VersionInfo {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS =
       "bucketVersionLockTimeoutMs";
 
   private final UpdateLog ulog;
-  private final VersionBucket[] buckets;
-  private SchemaField versionField;
+  private final int numBuckets;
+  private volatile VersionBucket[] buckets;
+  private final Object bucketsSync = new Object();
+  private final SchemaField versionField;
   final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
-  private int versionBucketLockTimeoutMs;
+  private final int versionBucketLockTimeoutMs;
 
   /**
    * Gets and returns the {@link org.apache.solr.common.params.CommonParams#VERSION_FIELD} from the
@@ -103,14 +94,7 @@ public class VersionInfo {
             .get("versionBucketLockTimeoutMs")
             .intVal(
                 Integer.parseInt(System.getProperty(SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS, "0")));
-    buckets = new VersionBucket[BitUtil.nextHighestPowerOfTwo(nBuckets)];
-    for (int i = 0; i < buckets.length; i++) {
-      if (versionBucketLockTimeoutMs > 0) {
-        buckets[i] = new TimedVersionBucket();
-      } else {
-        buckets[i] = new VersionBucket();
-      }
-    }
+    numBuckets = BitUtil.nextHighestPowerOfTwo(nBuckets);
   }
 
   public int getVersionBucketLockTimeoutMs() {
@@ -205,9 +189,23 @@ public class VersionInfo {
     // Make sure high bits are moved down, since only the low bits will matter.
     // int h = hash + (hash >>> 8) + (hash >>> 16) + (hash >>> 24);
     // Assume good hash codes for now.
-
-    int slot = hash & (buckets.length - 1);
+    int slot = hash & (numBuckets - 1);
+    if (buckets == null) {
+      synchronized (bucketsSync) {
+        if (buckets == null) {
+          buckets = createVersionBuckets();
+        }
+      }
+    }
     return buckets[slot];
+  }
+
+  private VersionBucket[] createVersionBuckets() {
+    VersionBucket[] buckets = new VersionBucket[numBuckets];
+    for (int i = 0; i < buckets.length; i++) {
+      buckets[i] = versionBucketLockTimeoutMs > 0 ? new TimedVersionBucket() : new VersionBucket();
+    }
+    return buckets;
   }
 
   public Long lookupVersion(BytesRef idBytes) {
@@ -245,86 +243,5 @@ public class VersionInfo {
         newestSearcher.decref();
       }
     }
-  }
-
-  /** Returns the highest version from the index, or 0L if no versions can be found in the index. */
-  @SuppressWarnings({"unchecked"})
-  public Long getMaxVersionFromIndex(IndexSearcher searcher) throws IOException {
-
-    final String versionFieldName = versionField.getName();
-
-    log.debug(
-        "Refreshing highest value of {} for {} version buckets from index",
-        versionFieldName,
-        buckets.length);
-    // if indexed, then we have terms to get the max from
-    if (versionField.indexed()) {
-      if (versionField.getType().isPointField()) {
-        return getMaxVersionFromIndexedPoints(searcher);
-      } else {
-        return getMaxVersionFromIndexedTerms(searcher);
-      }
-    }
-    // else: not indexed, use docvalues via value source ...
-
-    long maxVersionInIndex = 0L;
-    ValueSource vs = versionField.getType().getValueSource(versionField, null);
-    Map<Object, Object> funcContext = ValueSource.newContext(searcher);
-    vs.createWeight(funcContext, searcher);
-    // TODO: multi-thread this
-    for (LeafReaderContext ctx : searcher.getTopReaderContext().leaves()) {
-      int maxDoc = ctx.reader().maxDoc();
-      FunctionValues fv = vs.getValues(funcContext, ctx);
-      for (int doc = 0; doc < maxDoc; doc++) {
-        long v = fv.longVal(doc);
-        maxVersionInIndex = Math.max(v, maxVersionInIndex);
-      }
-    }
-    return maxVersionInIndex;
-  }
-
-  public void seedBucketsWithHighestVersion(long highestVersion) {
-    for (int i = 0; i < buckets.length; i++) {
-      // should not happen, but in case other threads are calling updateHighest on the version
-      // bucket
-      synchronized (buckets[i]) {
-        if (buckets[i].highest < highestVersion) buckets[i].highest = highestVersion;
-      }
-    }
-  }
-
-  private long getMaxVersionFromIndexedTerms(IndexSearcher searcher) throws IOException {
-    assert !versionField.getType().isPointField();
-
-    final String versionFieldName = versionField.getName();
-    final LeafReader leafReader = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader());
-    final Terms versionTerms = leafReader.terms(versionFieldName);
-    final Long max = (versionTerms != null) ? LegacyNumericUtils.getMaxLong(versionTerms) : null;
-    if (null != max) {
-      log.debug("Found MAX value {} from Terms for {} in index", max, versionFieldName);
-      return max.longValue();
-    }
-    return 0L;
-  }
-
-  private long getMaxVersionFromIndexedPoints(IndexSearcher searcher) throws IOException {
-    assert versionField.getType().isPointField();
-
-    final String versionFieldName = versionField.getName();
-    final byte[] maxBytes =
-        PointValues.getMaxPackedValue(searcher.getIndexReader(), versionFieldName);
-    if (null == maxBytes) {
-      return 0L;
-    }
-    final Object maxObj = versionField.getType().toObject(versionField, new BytesRef(maxBytes));
-    if (null == maxObj || !(maxObj instanceof Number)) {
-      // HACK: aparently nothing asserts that the FieldType is numeric (let alone a Long???)
-      log.error("Unable to convert MAX byte[] from Points for {} in index", versionFieldName);
-      return 0L;
-    }
-
-    final long max = ((Number) maxObj).longValue();
-    log.debug("Found MAX value {} from Points for {} in index", max, versionFieldName);
-    return max;
   }
 }

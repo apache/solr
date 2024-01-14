@@ -17,6 +17,9 @@
 package org.apache.solr.client.solrj.util;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.junit.Test;
 
 /**
  * @since solr 1.3
@@ -29,5 +32,21 @@ public class ClientUtilsTest extends SolrTestCase {
     assertEquals("with\\ space", ClientUtils.escapeQueryChars("with space"));
     assertEquals("h\\:ello\\!", ClientUtils.escapeQueryChars("h:ello!"));
     assertEquals("h\\~\\!", ClientUtils.escapeQueryChars("h~!"));
+  }
+
+  @Test
+  public void testDeterminesWhenToUseDefaultDataStore() {
+    final var noDefaultNeededRequest = new CollectionAdminRequest.List();
+    final var defaultNeededRequest = new UpdateRequest();
+
+    assertFalse(
+        "Expected default-coll to be skipped for collection-agnostic request",
+        ClientUtils.shouldApplyDefaultDataStore(null, noDefaultNeededRequest));
+    assertTrue(
+        "Expected default-coll to be used for collection-based request",
+        ClientUtils.shouldApplyDefaultDataStore(null, defaultNeededRequest));
+    assertFalse(
+        "Expected default-coll to be skipped when a collection is explicitly provided",
+        ClientUtils.shouldApplyDefaultDataStore("someCollection", defaultNeededRequest));
   }
 }

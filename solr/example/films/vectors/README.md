@@ -23,6 +23,12 @@ We present in this directory the Python scripts that were used to create the `fi
 
 To replicate the example you have to run the `create_model.py` script first, followed by `create_dataset.py`. We will describe and discuss each of these scripts below.
 
+## Setup
+
+```
+pip install sentence-transformers
+```
+
 ## Creating the Model (`create_model.py`)
 
 There are several approaches that one could use to create vectors (embeddings) to represent documents. In the case of our example we decided to use a _textual_ approach, where we use the text of the document as input for calculating its vector.

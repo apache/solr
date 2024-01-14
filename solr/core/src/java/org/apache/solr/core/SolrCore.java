@@ -259,6 +259,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private Counter newSearcherCounter;
   private Counter newSearcherMaxReachedCounter;
   private Counter newSearcherOtherErrorsCounter;
+  private volatile boolean newSearcherReady = false;
 
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private final SolrMetricsContext solrMetricsContext;
@@ -1199,10 +1200,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
             .initializeMetrics(solrMetricsContext, "directoryFactory");
       }
 
-      // seed version buckets with max from index during core initialization ... requires a
-      // searcher!
-      seedVersionBuckets();
-
       bufferUpdatesIfConstructing(coreDescriptor);
 
       this.ruleExpiryLock = new ReentrantLock();
@@ -1236,22 +1233,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     assert ObjectReleaseTracker.track(this);
-  }
-
-  public void seedVersionBuckets() {
-    UpdateHandler uh = getUpdateHandler();
-    if (uh != null && uh.getUpdateLog() != null) {
-      RefCounted<SolrIndexSearcher> newestSearcher = getRealtimeSearcher();
-      if (newestSearcher != null) {
-        try {
-          uh.getUpdateLog().seedBucketsWithHighestVersion(newestSearcher.get());
-        } finally {
-          newestSearcher.decref();
-        }
-      } else {
-        log.warn("No searcher available! Cannot seed version buckets with max from index.");
-      }
-    }
   }
 
   /** Set UpdateLog to buffer updates if the slice is in construction. */
@@ -1358,14 +1339,14 @@ public class SolrCore implements SolrInfoBean, Closeable {
         "sizeInBytes",
         Category.INDEX.toString());
     parentContext.gauge(
-        () -> isClosed() ? parentContext.nullNumber() : getSegmentCount(),
-        true,
-        "segments",
-        Category.INDEX.toString());
-    parentContext.gauge(
         () -> isClosed() ? parentContext.nullString() : NumberUtils.readableSize(getIndexSize()),
         true,
         "size",
+        Category.INDEX.toString());
+    parentContext.gauge(
+        () -> isReady() ? getSegmentCount() : parentContext.nullNumber(),
+        true,
+        "segments",
         Category.INDEX.toString());
 
     final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
@@ -1919,6 +1900,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return refCount.get() <= 0;
   }
 
+  /** Returns true if the core is ready for use. It is not initializing or closing/closed. */
+  public boolean isReady() {
+    return !isClosed() && newSearcherReady;
+  }
+
   private Collection<CloseHook> closeHooks = null;
 
   /** Add a close callback hook */
@@ -2127,6 +2113,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * because it might be closed soon after this method returns; it really depends.
    */
   public <R> R withSearcher(IOFunction<SolrIndexSearcher, R> lambda) throws IOException {
+    assert isReady();
     final RefCounted<SolrIndexSearcher> refCounted = getSearcher();
     try {
       return lambda.apply(refCounted.get());
@@ -2724,7 +2711,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       if (!success) {
         newSearcherOtherErrorsCounter.inc();
-        ;
         synchronized (searcherLock) {
           onDeckSearchers--;
 
@@ -2754,6 +2740,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
       // we want to do this after we decrement onDeckSearchers so another thread
       // doesn't increment first and throw a false warning.
       openSearcherLock.unlock();
+      newSearcherReady = true;
     }
   }
 

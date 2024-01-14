@@ -218,8 +218,11 @@ public class RequestUtil {
         if ("query".equals(key)) {
           out = "q";
           isQuery = true;
-          String[] queryParsers = {"lucene"};
-          newMap.put(QueryParsing.DEFTYPE, queryParsers);
+          // if the value is not a String, then it'll get converted to a localParams query String.
+          // Only the "lucene" query parser can parse it.  Ignore anything else that may exist.
+          if (!(entry.getValue() instanceof String)) {
+            newMap.put(QueryParsing.DEFTYPE, new String[] {"lucene"});
+          }
         } else if ("filter".equals(key)) {
           out = "fq";
           arr = true;
