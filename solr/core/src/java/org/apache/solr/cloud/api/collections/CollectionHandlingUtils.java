@@ -216,12 +216,13 @@ public class CollectionHandlingUtils {
 
   static void commit(NamedList<Object> results, String slice, Replica parentShardLeader) {
     log.debug("Calling soft commit to make sub shard updates visible");
+    final var zkCoreProps = new ZkCoreNodeProps(parentShardLeader);
     String coreUrl = new ZkCoreNodeProps(parentShardLeader).getCoreUrl();
     // HttpShardHandler is hard coded to send a QueryRequest hence we go direct
     // and we force open a searcher so that we have documents to show upon switching states
     UpdateResponse updateResponse = null;
     try {
-      updateResponse = softCommit(coreUrl);
+      updateResponse = softCommit(zkCoreProps.getBaseUrl(), zkCoreProps.getCoreName());
       CollectionHandlingUtils.processResponse(
           results, null, coreUrl, updateResponse, slice, Collections.emptySet());
     } catch (Exception e) {
@@ -234,10 +235,12 @@ public class CollectionHandlingUtils {
     }
   }
 
-  static UpdateResponse softCommit(String url) throws SolrServerException, IOException {
+  static UpdateResponse softCommit(String baseUrl, String coreName)
+      throws SolrServerException, IOException {
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(url)
+        new HttpSolrClient.Builder(baseUrl)
+            .withDefaultDataStore(coreName)
             .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(120000, TimeUnit.MILLISECONDS)
             .build()) {

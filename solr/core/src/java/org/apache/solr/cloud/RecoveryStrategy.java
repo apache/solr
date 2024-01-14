@@ -48,6 +48,7 @@ import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -175,11 +176,12 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   /** Builds a new HttpSolrClient for use in recovery. Caller must close */
-  private final HttpSolrClient.Builder recoverySolrClientBuilder(final String leaderUrl) {
+  private HttpSolrClient.Builder recoverySolrClientBuilder(String baseUrl, String leaderCoreName) {
     // workaround for SOLR-13605: get the configured timeouts & set them directly
     // (even though getRecoveryOnlyHttpClient() already has them set)
     final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
-    return (new HttpSolrClient.Builder(leaderUrl)
+    return (new HttpSolrClient.Builder(baseUrl)
+        .withDefaultDataStore(leaderCoreName)
         .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
         .withSocketTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
         .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient()));
@@ -216,16 +218,17 @@ public class RecoveryStrategy implements Runnable, Closeable {
     return new ZkCoreNodeProps(leaderprops).getCoreUrl();
   }
 
-  private final void replicate(String nodeName, SolrCore core, ZkNodeProps leaderprops)
+  private void replicate(String nodeName, SolrCore core, ZkNodeProps leaderprops)
       throws SolrServerException, IOException {
 
-    final String leaderUrl = getReplicateLeaderUrl(leaderprops);
+    final String leaderBaseUrl = URLUtil.extractBaseUrl(getReplicateLeaderUrl(leaderprops));
+    final String leaderCore = URLUtil.extractCoreFromCoreUrl(getReplicateLeaderUrl(leaderprops));
 
-    log.info("Attempting to replicate from [{}].", leaderUrl);
+    log.info("Attempting to replicate from core [{}] on node [{}].", leaderCore, leaderBaseUrl);
 
     // send commit if replica could be a leader
     if (Replica.Type.isLeaderType(replicaType)) {
-      commitOnLeader(leaderUrl);
+      commitOnLeader(leaderBaseUrl, leaderCore);
     }
 
     // use rep handler directly, so we can do this sync rather than async
@@ -239,7 +242,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
 
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    solrParams.set(ReplicationHandler.LEADER_URL, leaderUrl);
+    solrParams.set(ReplicationHandler.LEADER_URL, URLUtil.buildCoreUrl(leaderBaseUrl, leaderCore));
     solrParams.set(
         ReplicationHandler.SKIP_COMMIT_ON_LEADER_VERSION_ZERO, replicaType == Replica.Type.TLOG);
 
@@ -261,10 +264,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
           final IndexCommit commit = core.getDeletionPolicy().getLatestCommit();
           if (log.isDebugEnabled()) {
             log.debug(
-                "{} replicated {} from {} gen: {} data: {} index: {} newIndex: {} files: {}",
+                "{} replicated {} from core {} on node {} gen: {} data: {} index: {} newIndex: {} files: {}",
                 core.getCoreContainer().getZkController().getNodeName(),
                 searcher.count(new MatchAllDocsQuery()),
-                leaderUrl,
+                leaderCore,
+                leaderBaseUrl,
                 (null == commit ? "null" : commit.getGeneration()),
                 core.getDataDir(),
                 core.getIndexDir(),
@@ -281,8 +285,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
   }
 
-  private final void commitOnLeader(String leaderUrl) throws SolrServerException, IOException {
-    try (SolrClient client = recoverySolrClientBuilder(leaderUrl).build()) {
+  private void commitOnLeader(String leaderBaseUrl, String coreName)
+      throws SolrServerException, IOException {
+    try (SolrClient client = recoverySolrClientBuilder(leaderBaseUrl, coreName).build()) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       // ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -801,7 +806,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
       }
 
       try (SolrClient httpSolrClient =
-          recoverySolrClientBuilder(leaderReplica.getCoreUrl()).build()) {
+          recoverySolrClientBuilder(leaderReplica.getBaseUrl(), leaderReplica.getCoreName())
+              .build()) {
         httpSolrClient.ping();
         return leaderReplica;
       } catch (IOException e) {
@@ -906,7 +912,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
         conflictWaitMs
             + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "8000"));
     try (HttpSolrClient client =
-        recoverySolrClientBuilder(leaderBaseUrl)
+        recoverySolrClientBuilder(
+                leaderBaseUrl,
+                null) // leader core omitted since client only used for 'admin' request
             .withSocketTimeout(readTimeout, TimeUnit.MILLISECONDS)
             .build()) {
       HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);
