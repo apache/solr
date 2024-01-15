@@ -28,7 +28,7 @@ plugins {
   id 'net.ltgt.errorprone' version '3.1.0' apply false
   id 'com.diffplug.spotless' version '6.5.2' apply false
   id 'com.github.node-gradle.node' version '7.0.1' apply false
-  id 'org.cyclonedx.bom' version '1.7.4'
+  id 'org.cyclonedx.bom' version '1.8.1'
 }
 
 apply from: file('gradle/globals.gradle')
