@@ -690,7 +690,7 @@ public class SearchHandler extends RequestHandlerBase
     }
     return totalShardCpuTime;
   }
-  
+
   private static void throwSolrException(Throwable shardResponseException) throws SolrException {
     if (shardResponseException instanceof SolrException) {
       throw (SolrException) shardResponseException;

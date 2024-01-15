@@ -39,8 +39,8 @@ public class TestCpuTimeSearch extends SolrTestCaseJ4 {
 
   @ClassRule public static final SolrJettyTestRule solrRule = new SolrJettyTestRule();
 
-  private static SolrClient collection1;
-  private static SolrClient collection2;
+  private static SolrClient clientCore1;
+  private static SolrClient clientCore2;
   private static String shard1;
   private static String shard2;
 
@@ -53,42 +53,39 @@ public class TestCpuTimeSearch extends SolrTestCaseJ4 {
     copyMinConf(configSet.toFile());
     solrRule.startSolr(LuceneTestCase.createTempDir());
 
-    solrRule.newCollection("collection1").withConfigSet(configSet.toString()).create();
-    solrRule.newCollection("collection2").withConfigSet(configSet.toString()).create();
-    collection1 = solrRule.getSolrClient("collection1");
-    collection2 = solrRule.getSolrClient("collection2");
+    solrRule.newCollection("core1").withConfigSet(configSet.toString()).create();
+    solrRule.newCollection("core2").withConfigSet(configSet.toString()).create();
+    clientCore1 = solrRule.getSolrClient("core1");
+    clientCore2 = solrRule.getSolrClient("core2");
 
-    String urlCollection1 = solrRule.getBaseUrl() + "/" + "collection1";
-    String urlCollection2 = solrRule.getBaseUrl() + "/" + "collection2";
-    shard1 = urlCollection1.replaceAll("https?://", "");
-    shard2 = urlCollection2.replaceAll("https?://", "");
+    String urlCore1 = solrRule.getBaseUrl() + "/" + "core1";
+    String urlCore2 = solrRule.getBaseUrl() + "/" + "core2";
+    shard1 = urlCore1.replaceAll("https?://", "");
+    shard2 = urlCore2.replaceAll("https?://", "");
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
     doc.setField("subject", "batman");
     doc.setField("title", "foo bar");
-    collection1.add(doc);
-    collection1.commit();
+    clientCore1.add(doc);
+    clientCore1.commit();
 
     doc.setField("id", "2");
     doc.setField("subject", "superman");
-    collection2.add(doc);
-    collection2.commit();
+    clientCore2.add(doc);
+    clientCore2.commit();
   }
 
   @AfterClass
   public static void cleanup() throws Exception {
-    if (null != collection1) {
-      collection1.close();
-      collection1 = null;
+    if (null != clientCore1) {
+      clientCore1.close();
+      clientCore1 = null;
     }
-    if (null != collection2) {
-      collection2.close();
-      collection2 = null;
+    if (null != clientCore2) {
+      clientCore2.close();
+      clientCore2 = null;
     }
-
-    System.setProperty(ThreadStats.ENABLE_CPU_TIME, "false");
-    System.setProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST, "false");
   }
 
   public void testWithoutDistrib() throws SolrServerException, IOException {
@@ -97,7 +94,7 @@ public class TestCpuTimeSearch extends SolrTestCaseJ4 {
     query.addField("id");
     query.addField("subject");
 
-    QueryResponse response = collection1.query(query);
+    QueryResponse response = clientCore1.query(query);
 
     SolrDocumentList results = response.getResults();
     int size = results.size();
@@ -124,7 +121,7 @@ public class TestCpuTimeSearch extends SolrTestCaseJ4 {
     query.set("stats.field", "id");
     query.set(ShardParams.SHARDS_TOLERANT, "true");
 
-    QueryResponse response = collection1.query(query);
+    QueryResponse response = clientCore1.query(query);
 
     SolrDocumentList results = response.getResults();
     int size = results.size();
