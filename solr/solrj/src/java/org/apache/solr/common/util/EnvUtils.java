@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,8 +31,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
 
 /**
  * This class is a unified provider of environment variables and system properties. It exposes a
