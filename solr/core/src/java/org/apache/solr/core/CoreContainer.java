@@ -62,7 +62,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.api.ClusterPluginsSource;
-import org.apache.solr.api.ClusterPluginsSourceConfigurator;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -771,7 +770,7 @@ public class CoreContainer {
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
     ClusterPluginsSource pluginsSource =
-        ClusterPluginsSourceConfigurator.loadClusterPluginsSource(this, loader);
+        ClusterPluginsSource.loadClusterPluginsSource(this, loader);
     containerPluginsRegistry =
         new ContainerPluginsRegistry(this, containerHandlers.getApiBag(), pluginsSource);
 

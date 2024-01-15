@@ -21,10 +21,34 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.function.Function;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.admin.ContainerPluginsApi;
 
 /** A source for Cluster Plugin configurations */
 public interface ClusterPluginsSource {
+
+  /**
+   * Resolves the name of the class that will be used to provide cluster plugins.
+   *
+   * @return The name of the class to use as the {@link ClusterPluginsSource}
+   */
+  public static String resolveClassName() {
+    return EnvUtils.getPropAsBool(ContainerPluginsRegistry.MUTABLE_CLUSTER_PLUGINS, true)
+        ? ZkClusterPluginsSource.class.getName()
+        : NodeConfigClusterPluginsSource.class.getName();
+  }
+
+  public static ClusterPluginsSource loadClusterPluginsSource(
+      CoreContainer cc, SolrResourceLoader loader) {
+    return loader.newInstance(
+        resolveClassName(),
+        ClusterPluginsSource.class,
+        new String[0],
+        new Class<?>[] {CoreContainer.class},
+        new Object[] {cc});
+  }
 
   /**
    * Get the Read Api for this plugin source

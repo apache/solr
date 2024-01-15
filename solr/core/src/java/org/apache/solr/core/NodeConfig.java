@@ -34,7 +34,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.solr.api.ClusterPluginsSourceConfigurator;
+import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.NodeConfigClusterPluginsSource;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
@@ -217,7 +217,7 @@ public class NodeConfig {
 
     if (this.clusterPlugins != null
         && this.clusterPlugins.length > 0
-        && !ClusterPluginsSourceConfigurator.resolveClassName()
+        && !ClusterPluginsSource.resolveClassName()
             .equals(NodeConfigClusterPluginsSource.class.getName())) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,
