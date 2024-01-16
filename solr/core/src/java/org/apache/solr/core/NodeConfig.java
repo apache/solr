@@ -222,7 +222,7 @@ public class NodeConfig {
       throw new SolrException(
           ErrorCode.SERVER_ERROR,
           "Cluster plugins found in solr.xml but the property "
-              + ContainerPluginsRegistry.MUTABLE_CLUSTER_PLUGINS
+              + ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED
               + " is set to true. Cluster plugins may only be declared in solr.xml with immutable configs.");
     }
 

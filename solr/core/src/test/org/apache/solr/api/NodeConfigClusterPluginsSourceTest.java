@@ -42,7 +42,7 @@ public class NodeConfigClusterPluginsSourceTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty(ContainerPluginsRegistry.MUTABLE_CLUSTER_PLUGINS, "false");
+    System.setProperty(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, "false");
     CFG_VAL = random().nextInt();
     configureCluster(1)
         .withSolrXml(

@@ -33,7 +33,7 @@ public class NodeConfigPlacementPluginTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty(ContainerPluginsRegistry.MUTABLE_CLUSTER_PLUGINS, "false");
+    System.setProperty(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, "false");
     String pluginXml =
         "<replicaPlacementFactory class=\"org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory\"><int name=\"minimalFreeDiskGB\">10</int><int name=\"prioritizedFreeDiskGB\">200</int></replicaPlacementFactory>";
 
