@@ -35,7 +35,7 @@ public class ThreadStats {
   private static final long UNSUPPORTED = -1;
   public static final String CPU_TIME = "cpuTime";
   public static final String LOCAL_CPU_TIME = "localCpuTime";
-  public static final String ENABLE_CPU_TIME = "solr.enableCpuTime";
+  public static final String ENABLE_CPU_TIME = "solr.log.cputime";
 
   private static ThreadMXBean THREAD_MX_BEAN;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
