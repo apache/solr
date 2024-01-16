@@ -19,13 +19,15 @@ package org.apache.solr.client.solrj.request;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 
-public abstract class DataStoreSolrRequest<T extends SolrResponse> extends SolrRequest<T> {
-  public DataStoreSolrRequest(METHOD m, String path) {
+/** Parent {@link SolrRequest} class that requires a (target) collection or core. */
+public abstract class CollectionRequiringSolrRequest<T extends SolrResponse>
+    extends SolrRequest<T> {
+  public CollectionRequiringSolrRequest(METHOD m, String path) {
     super(m, path);
   }
 
   @Override
-  public boolean requiresDataStore() {
+  public boolean requiresCollection() {
     return true;
   }
 }

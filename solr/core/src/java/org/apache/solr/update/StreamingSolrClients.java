@@ -76,7 +76,7 @@ public class StreamingSolrClients {
       client =
           new ErrorReportingConcurrentUpdateSolrClient.Builder(
                   req.node.getBaseUrl(), httpClient, req, errors)
-              .withDefaultDataStore(defaultCore)
+              .withDefaultCollection(defaultCore)
               .withQueueSize(100)
               .withThreadCount(runnerCount)
               .withExecutorService(updateExecutor)

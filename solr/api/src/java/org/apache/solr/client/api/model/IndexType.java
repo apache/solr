@@ -16,13 +16,13 @@
  */
 package org.apache.solr.client.api.model;
 
-public enum StoreType {
+public enum IndexType {
   COLLECTION("collections"),
   CORE("cores");
 
   private final String pathString;
 
-  StoreType(String pathString) {
+  IndexType(String pathString) {
     this.pathString = pathString;
   }
 

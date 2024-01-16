@@ -37,7 +37,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  *
  * @since solr 1.4
  */
-public class DocumentAnalysisRequest extends DataStoreSolrRequest<DocumentAnalysisResponse> {
+public class DocumentAnalysisRequest
+    extends CollectionRequiringSolrRequest<DocumentAnalysisResponse> {
 
   private List<SolrInputDocument> documents = new ArrayList<>();
   private String query;
