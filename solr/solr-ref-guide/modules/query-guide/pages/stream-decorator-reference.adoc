@@ -1187,6 +1187,7 @@ Worker collections can be empty collections that exist only to execute streaming
 * `StreamExpression`: Expression to send to the worker collection.
 * `workers`: Number of workers in the worker collection to send the expression to.
 * `zkHost`: (Optional) The ZooKeeper connect string where the worker collection resides.
+Zookeeper Credentials and ACLs will only be included if the same ZkHost is used as the Solr instance that you are connecting to (the `chroot` can be different).
 * `sort`: The sort criteria for ordering tuples returned by the worker nodes.
 
 === parallel Syntax
@@ -1375,7 +1376,7 @@ One can provide a list of operations and evaluators to perform on any fields, su
 === select Parameters
 
 * `StreamExpression`
-* `fieldName`: name of field to include in the output tuple (can include multiple of these), such as `outputTuple[fieldName] = inputTuple[fieldName]`
+* `fieldName`: name of field to include in the output tuple (can include multiple of these), such as `outputTuple[fieldName] = inputTuple[fieldName]`. The `fieldName` can be a wildcard pattern, e.g. `a_*` to select all fields that start with `a_`.
 * `fieldName as aliasFieldName`: aliased field name to include in the output tuple (can include multiple of these), such as `outputTuple[aliasFieldName] = incomingTuple[fieldName]`
 * `replace(fieldName, value, withValue=replacementValue)`: if `incomingTuple[fieldName] == value` then `outgoingTuple[fieldName]` will be set to `replacementValue`.
 `value` can be the string "null" to replace a null value with some other value.

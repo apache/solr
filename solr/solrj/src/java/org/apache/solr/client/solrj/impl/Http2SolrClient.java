@@ -191,6 +191,7 @@ public class Http2SolrClient extends SolrClient {
       this.parser = builder.responseParser;
     }
     updateDefaultMimeTypeForParser();
+    this.defaultCollection = builder.defaultDataStore;
     if (builder.requestTimeoutMillis != null) {
       this.requestTimeoutMillis = builder.requestTimeoutMillis;
     } else {
@@ -554,7 +555,8 @@ public class Http2SolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
-
+    if (ClientUtils.shouldApplyDefaultDataStore(collection, solrRequest))
+      collection = defaultCollection;
     String url = getRequestPath(solrRequest, collection);
     Throwable abortCause = null;
     Request req = null;
@@ -1070,6 +1072,7 @@ public class Http2SolrClient extends SolrClient {
     private ExecutorService executor;
     protected RequestWriter requestWriter;
     protected ResponseParser responseParser;
+    protected String defaultDataStore;
     private Set<String> urlParamNames;
     private CookieStore cookieStore = getDefaultCookieStore();
     private String proxyHost;
@@ -1191,6 +1194,12 @@ public class Http2SolrClient extends SolrClient {
     /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
     public Builder withResponseParser(ResponseParser responseParser) {
       this.responseParser = responseParser;
+      return this;
+    }
+
+    /** Sets a default data store for core- or collection-based requests. */
+    public Builder withDefaultDataStore(String defaultCoreOrCollection) {
+      this.defaultDataStore = defaultCoreOrCollection;
       return this;
     }
 

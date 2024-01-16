@@ -70,7 +70,10 @@ It can get worse otherwise.
 The `fl` property defines the fields that will be exported with the result set.
 Any of the field types that can be sorted (i.e., int, long, float, double, string, date, boolean) can be used in the field list.
 The fields can be single or multi-valued.
-However, returning scores and wildcards are not supported at this time.
+
+Wildcard patterns can be used for the field list (e.g. `fl=*_i`) and will be expanded to the list of fields that match the pattern and are able to be exported, see <<Field Requirements>>.
+
+Returning scores is not supported at this time.
 
 === Specifying the Local Streaming Expression
 

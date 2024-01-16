@@ -905,7 +905,7 @@ public class ReplicationHandler extends RequestHandlerBase
             map -> {
               IndexFetcher fetcher = currentIndexFetcher;
               if (fetcher != null) {
-                map.put(LEADER_URL, fetcher.getLeaderUrl());
+                map.put(LEADER_URL, fetcher.getLeaderCoreUrl());
                 if (getPollInterval() != null) {
                   map.put(POLL_INTERVAL, getPollInterval());
                 }
@@ -987,7 +987,7 @@ public class ReplicationHandler extends RequestHandlerBase
           follower.add(ERR_STATUS, "invalid_leader");
         }
       }
-      follower.add(LEADER_URL, fetcher.getLeaderUrl());
+      follower.add(LEADER_URL, fetcher.getLeaderCoreUrl());
       if (getPollInterval() != null) {
         follower.add(POLL_INTERVAL, getPollInterval());
       }

@@ -124,11 +124,26 @@ Improvements
 
 * SOLR-17063: Do not retain log param references in LogWatcher (Michael Gibney)
 
+* SOLR-17066: SolrClient builders now allow users to specify a "default" collection or core
+  using the `withDefaultDataStore` method  ("Cloud" client builders retain the more specific
+  `withDefaultCollection`).  Use of the Builder methods is preferable to including the
+  collection in the base URL accepted by certain client implementations. (Jason Gerlowski)
+
+* SOLR-15960: Unified use of system properties and environment variables (janhoy)
+
+* SOLR-16397: The MERGEINDEXES v2 endpoint has been updated to be more REST-ful.
+  MERGEINDEXES is now available at `POST /api/cores/coreName/merge-indices` (Sanjay Dutt via Jason Gerlowski)
+
+* PR#2186: Include the external file name in the log instead of the hard-coded value in FileFloatSource.java. (Hamzeh Aldmour via Uwe Schindler)
+
 Optimizations
 ---------------------
 * SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
   instead of the full list of cores.  This list is potentially as long as the number of cores.  When there are many
   cores, this leads to high CPU and memory usage. (Gilles Bellaton, David Smiley)
+
+* SOLR-17036: UpdateLog lazy creates VersionBucket large array, and VersionBucket do not keep the highest version anymore.
+  This optimization reduces the memory usage, specially when the SolrCore is not used for indexing (Bruno Roustant)
 
 Bug Fixes
 ---------------------
@@ -151,6 +166,13 @@ Bug Fixes
 
 * SOLR-17057: JSON Query regression: If "query" is specified with a String (not JSON structure),
   "defType" should parse it.  Since 9.4 defType was ignored.  (David Smiley)
+
+* SOLR-17060: CoreContainer#create may deadlock with concurrent requests for metrics (Alex Deparvu, David Smiley)
+
+* SOLR-17098: ZK Credentials and ACLs are no longer sent to all ZK Servers when using Streaming Expressions.
+  They will only be used when sent to the default ZK Host. (Houston Putman, Jan Høydahl, David Smiley, Gus Heck, Qing Xu)
+
+* SOLR-16203: Properly initialize schema plugins loaded by SPI name (janhoy, hossman, Uwe Schindler)
 
 Dependency Upgrades
 ---------------------

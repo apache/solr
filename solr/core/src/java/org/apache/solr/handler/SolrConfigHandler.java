@@ -59,6 +59,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.request.DataStoreSolrRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapSerializable;
@@ -844,8 +845,8 @@ public class SolrConfigHandler extends RequestHandlerBase
     // course)
     List<PerReplicaCallable> concurrentTasks = new ArrayList<>();
 
-    for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection)) {
-      PerReplicaCallable e = new PerReplicaCallable(coreUrl, prop, expectedVersion, maxWaitSecs);
+    for (Replica replica : getActiveReplicas(zkController, collection)) {
+      PerReplicaCallable e = new PerReplicaCallable(replica, prop, expectedVersion, maxWaitSecs);
       concurrentTasks.add(e);
     }
     if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
@@ -881,7 +882,7 @@ public class SolrConfigHandler extends RequestHandlerBase
         }
 
         if (!success) {
-          String coreUrl = concurrentTasks.get(f).coreUrl;
+          String coreUrl = concurrentTasks.get(f).replica.getCoreUrl();
           log.warn("Core {} could not get the expected version {}", coreUrl, expectedVersion);
           if (failedList == null) failedList = new ArrayList<>();
           failedList.add(coreUrl);
@@ -921,9 +922,8 @@ public class SolrConfigHandler extends RequestHandlerBase
     }
   }
 
-  public static List<String> getActiveReplicaCoreUrls(
-      ZkController zkController, String collection) {
-    List<String> activeReplicaCoreUrls = new ArrayList<>();
+  public static List<Replica> getActiveReplicas(ZkController zkController, String collection) {
+    List<Replica> activeReplicas = new ArrayList<>();
     ClusterState clusterState = zkController.getZkStateReader().getClusterState();
     Set<String> liveNodes = clusterState.getLiveNodes();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
@@ -938,13 +938,13 @@ public class SolrConfigHandler extends RequestHandlerBase
             Replica replica = entry.getValue();
             if (replica.getState() == Replica.State.ACTIVE
                 && liveNodes.contains(replica.getNodeName())) {
-              activeReplicaCoreUrls.add(replica.getCoreUrl());
+              activeReplicas.add(replica);
             }
           }
         }
       }
     }
-    return activeReplicaCoreUrls;
+    return activeReplicas;
   }
 
   @Override
@@ -959,17 +959,17 @@ public class SolrConfigHandler extends RequestHandlerBase
     }
   }
 
-  private static class PerReplicaCallable extends SolrRequest<SolrResponse>
+  private static class PerReplicaCallable extends DataStoreSolrRequest<SolrResponse>
       implements Callable<Boolean> {
-    String coreUrl;
+    Replica replica;
     String prop;
     int expectedZkVersion;
     Number remoteVersion = null;
     int maxWait;
 
-    PerReplicaCallable(String coreUrl, String prop, int expectedZkVersion, int maxWait) {
+    PerReplicaCallable(Replica replica, String prop, int expectedZkVersion, int maxWait) {
       super(METHOD.GET, "/config/" + ZNODEVER);
-      this.coreUrl = coreUrl;
+      this.replica = replica;
       this.expectedZkVersion = expectedZkVersion;
       this.prop = prop;
       this.maxWait = maxWait;
@@ -986,7 +986,10 @@ public class SolrConfigHandler extends RequestHandlerBase
     public Boolean call() throws Exception {
       final RTimer timer = new RTimer();
       int attempts = 0;
-      try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
+      try (HttpSolrClient solr =
+          new HttpSolrClient.Builder(replica.getBaseUrl())
+              .withDefaultDataStore(replica.getCoreName())
+              .build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (true) {
           try {
@@ -1011,13 +1014,13 @@ public class SolrConfigHandler extends RequestHandlerBase
               log.info(
                   formatString(
                       "Could not get expectedVersion {0} from {1} for prop {2}   after {3} attempts",
-                      expectedZkVersion, coreUrl, prop, attempts));
+                      expectedZkVersion, replica.getCoreUrl(), prop, attempts));
             }
           } catch (Exception e) {
             if (e instanceof InterruptedException) {
               break; // stop looping
             } else {
-              log.warn("Failed to get /schema/zkversion from {} due to: ", coreUrl, e);
+              log.warn("Failed to get /schema/zkversion from {} due to: ", replica.getCoreUrl(), e);
             }
           }
         }
