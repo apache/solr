@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.SolrException;
@@ -77,6 +78,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       } else {
         req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 2, 2, 0, 1);
       }
+      req.setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
       client.request(req);
       createCollection(null, COLLECTION_NAME1, 1, 1, client, null, "conf1");
     }
@@ -197,6 +199,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       // Create it again correctly
       CollectionAdminRequest.Create req =
           CollectionAdminRequest.createCollection("test_repFactorColl", "conf1", 1, 3, 0, 0);
+      req.setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
       client.request(req);
 
       waitForCollection(ZkStateReader.from(client), "test_repFactorColl", 1);
@@ -499,7 +502,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void clusterStatusZNodeVersion() throws Exception {
     String cname = "clusterStatusZNodeVersion";
     try (CloudSolrClient client = createCloudClient(null)) {
-      CollectionAdminRequest.createCollection(cname, "conf1", 1, 1).process(client);
+      CollectionAdminRequest.createCollection(cname, "conf1", 1, 1)
+              .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+              .process(client);
       waitForRecoveriesToFinish(cname, true);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -1268,7 +1273,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotSame(0, rse.code());
 
       CollectionAdminResponse rsp =
-          CollectionAdminRequest.createCollection("testcollection", "conf1", 1, 2).process(client);
+          CollectionAdminRequest.createCollection("testcollection", "conf1", 1, 2)
+                  .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+                  .process(client);
       assertNull(rsp.getErrorMessages());
       assertSame(0, rsp.getStatus());
     }
@@ -1290,7 +1297,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
             if ("schema.xml".equals(s)) schemaMisses.increment();
             if ("solrconfig.xml".equals(s)) configMisses.increment();
           };
-      CollectionAdminRequest.createCollection(COLL, "conf", 5, 1).process(cl.getSolrClient());
+      CollectionAdminRequest.createCollection(COLL, "conf", 5, 1)
+              .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+              .process(cl.getSolrClient());
       assertEquals(2, schemaMisses.longValue());
       assertEquals(2, configMisses.longValue());
     } finally {

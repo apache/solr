@@ -25,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.OverseerCollectionConfigSetProcessor;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -60,6 +61,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
     String collectionName = "SimpleCollectionCreateDeleteTest";
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(collectionName, 1, 1)
+                .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .setCreateNodeSet(overseerNode);
 
     NamedList<Object> request = create.process(cloudClient).getResponse();
@@ -104,6 +106,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
       // create collection again on a node other than the overseer leader
       create =
           CollectionAdminRequest.createCollection(collectionName, 1, 1)
+                  .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
               .setCreateNodeSet(notOverseerNode);
       request = create.process(cloudClient).getResponse();
       assertNotNull("Collection creation should not have failed", request.get("success"));
@@ -143,6 +146,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
         "SimpleCollectionCreateDeleteTest.testDeleteAlsoDeletesAutocreatedConfigSet";
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(collectionName, 1, 1);
+    create.setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
 
     NamedList<Object> request = create.process(cloudClient).getResponse();
 
@@ -180,6 +184,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
     String collectionNameInitial = "SimpleCollectionCreateDeleteTest.initialCollection";
     CollectionAdminRequest.Create createInitial =
         CollectionAdminRequest.createCollection(collectionNameInitial, 1, 1);
+    createInitial.setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
 
     NamedList<Object> requestInitial = createInitial.process(cloudClient).getResponse();
 
@@ -205,6 +210,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
       CollectionAdminRequest.Create createWithSharedConfig =
           CollectionAdminRequest.createCollection(collectionNameWithSharedConfig, configName, 1, 1);
 
+      createWithSharedConfig.setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
       NamedList<Object> requestWithSharedConfig =
           createWithSharedConfig.process(cloudClient).getResponse();
       assertNotNull(

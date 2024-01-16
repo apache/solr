@@ -77,6 +77,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
     RequestStatusState state =
         CollectionAdminRequest.createCollection("testasynccollectioncreation", "conf1", 1, 1)
+                .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .processAndWait(client, MAX_TIMEOUT_SECONDS);
     assertSame("CreateCollection task did not complete!", RequestStatusState.COMPLETED, state);
 
@@ -110,6 +111,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
 
     RequestStatusState state =
         CollectionAdminRequest.createCollection(collection, "conf1", 1, 1)
+                .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .setRouterName("implicit")
             .setShards("shard1")
             .processAndWait(client, MAX_TIMEOUT_SECONDS);
@@ -244,6 +246,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
         CollectionAdminRequest.createCollection("testAsyncIdRaceCondition", "conf1", 1, 1)
             .setRouterName("implicit")
             .setShards("shard1")
+                .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .processAndWait(cluster.getSolrClient(), MAX_TIMEOUT_SECONDS);
     assertSame("CreateCollection task did not complete!", RequestStatusState.COMPLETED, state);
 

@@ -95,9 +95,11 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   @SuppressWarnings({"unchecked"})
   public void testProperties() throws Exception {
     CollectionAdminRequest.createCollection("collection1meta", "conf", 2, 1)
-        .process(cluster.getSolrClient());
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+            .process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2meta", "conf", 1, 1)
-        .process(cluster.getSolrClient());
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+            .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection("collection1meta", 2, 2);
     cluster.waitForActiveCollection("collection2meta", 1, 1);
@@ -477,9 +479,11 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   private ZkStateReader createColectionsAndAlias(String aliasName)
       throws SolrServerException, IOException, KeeperException, InterruptedException {
     CollectionAdminRequest.createCollection("collection1meta", "conf", 2, 1)
-        .process(cluster.getSolrClient());
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+            .process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2meta", "conf", 1, 1)
-        .process(cluster.getSolrClient());
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+            .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection("collection1meta", 2, 2);
     cluster.waitForActiveCollection("collection2meta", 1, 1);
@@ -542,8 +546,10 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testDeleteAliasWithExistingCollectionName() throws Exception {
     CollectionAdminRequest.createCollection("collection_old", "conf", 2, 1)
-        .process(cluster.getSolrClient());
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+            .process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection_new", "conf", 1, 1)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection("collection_old", 2, 2);
@@ -660,9 +666,11 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testDeleteOneOfTwoCollectionsAliased() throws Exception {
     CollectionAdminRequest.createCollection("collection_one", "conf", 2, 1)
-        .process(cluster.getSolrClient());
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+            .process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection_two", "conf", 1, 1)
-        .process(cluster.getSolrClient());
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+            .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection("collection_one", 2, 2);
     cluster.waitForActiveCollection("collection_two", 1, 1);
@@ -789,9 +797,11 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   @Test
   public void test() throws Exception {
     CollectionAdminRequest.createCollection("collection1", "conf", 2, 1)
-        .process(cluster.getSolrClient());
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+            .process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("collection2", "conf", 1, 1)
-        .process(cluster.getSolrClient());
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+            .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection("collection1", 2, 2);
     cluster.waitForActiveCollection("collection2", 1, 1);
@@ -993,7 +1003,8 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testErrorChecks() throws Exception {
     CollectionAdminRequest.createCollection("testErrorChecks-collection", "conf", 2, 1)
-        .process(cluster.getSolrClient());
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+            .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection("testErrorChecks-collection", 2, 2);
     waitForState(
