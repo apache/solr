@@ -16,7 +16,6 @@
  */
 package org.apache.solr.request;
 
-import io.opentelemetry.api.trace.Span;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
@@ -131,18 +130,6 @@ public interface SolrQueryRequest extends AutoCloseable {
 
   default HttpSolrCall getHttpSolrCall() {
     return null;
-  }
-
-  /**
-   * The distributed tracing Span for the request itself; never null. This is useful for adding tags
-   * or updating the operation name of the request span. Not null.
-   */
-  default Span getSpan() {
-    final HttpSolrCall call = getHttpSolrCall();
-    if (call != null) {
-      return call.getSpan();
-    }
-    return Span.getInvalid();
   }
 
   default CoreContainer getCoreContainer() {

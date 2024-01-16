@@ -20,7 +20,6 @@ package org.apache.solr.handler.admin.api;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.opentelemetry.api.trace.Span;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -53,7 +52,6 @@ public class CoreReplicationAPITest extends SolrTestCaseJ4 {
     super.setUp();
     setUpMocks();
     mockQueryRequest = mock(SolrQueryRequest.class);
-    when(mockQueryRequest.getSpan()).thenReturn(Span.getInvalid());
     queryResponse = new SolrQueryResponse();
     coreReplicationAPI = new CoreReplicationAPIMock(mockCore, mockQueryRequest, queryResponse);
   }

@@ -22,9 +22,11 @@ import static org.apache.solr.opentelemetry.TestDistributedTracing.getAndClearSp
 import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.TracerProvider;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -109,7 +111,12 @@ public class BasicAuthIntegrationTracingTest extends SolrCloudTestCase {
     req.setBasicAuthCredentials(USER, PASS);
     assertEquals(0, req.process(cloudClient, COLLECTION).getStatus());
 
-    var finishedSpans = getAndClearSpans();
+    // ignoring extra internal spans
+    var finishedSpans =
+        getAndClearSpans().stream()
+            .filter(span -> span.getKind().equals(SpanKind.SERVER))
+            .collect(Collectors.toUnmodifiableList());
+
     assertEquals(1, finishedSpans.size());
     var span = finishedSpans.get(0);
     assertEquals("post:/cluster/security/authentication", span.getName());
