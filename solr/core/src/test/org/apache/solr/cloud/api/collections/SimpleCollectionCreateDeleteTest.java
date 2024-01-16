@@ -61,7 +61,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
     String collectionName = "SimpleCollectionCreateDeleteTest";
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(collectionName, 1, 1)
-                .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .setCreateNodeSet(overseerNode);
 
     NamedList<Object> request = create.process(cloudClient).getResponse();
@@ -106,7 +106,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
       // create collection again on a node other than the overseer leader
       create =
           CollectionAdminRequest.createCollection(collectionName, 1, 1)
-                  .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+              .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
               .setCreateNodeSet(notOverseerNode);
       request = create.process(cloudClient).getResponse();
       assertNotNull("Collection creation should not have failed", request.get("success"));

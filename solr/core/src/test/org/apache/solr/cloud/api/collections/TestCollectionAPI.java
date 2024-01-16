@@ -503,8 +503,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     String cname = "clusterStatusZNodeVersion";
     try (CloudSolrClient client = createCloudClient(null)) {
       CollectionAdminRequest.createCollection(cname, "conf1", 1, 1)
-              .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
-              .process(client);
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .process(client);
       waitForRecoveriesToFinish(cname, true);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -1274,8 +1274,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
       CollectionAdminResponse rsp =
           CollectionAdminRequest.createCollection("testcollection", "conf1", 1, 2)
-                  .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
-                  .process(client);
+              .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+              .process(client);
       assertNull(rsp.getErrorMessages());
       assertSame(0, rsp.getStatus());
     }
@@ -1298,8 +1298,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
             if ("solrconfig.xml".equals(s)) configMisses.increment();
           };
       CollectionAdminRequest.createCollection(COLL, "conf", 5, 1)
-              .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
-              .process(cl.getSolrClient());
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .process(cl.getSolrClient());
       assertEquals(2, schemaMisses.longValue());
       assertEquals(2, configMisses.longValue());
     } finally {

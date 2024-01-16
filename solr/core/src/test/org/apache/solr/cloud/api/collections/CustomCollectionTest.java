@@ -152,7 +152,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollectionWithImplicitRouter(
             collection, "conf", "a,b,c,d", replicationFactor)
-            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setRouterField(shard_fld)
         .process(cluster.getSolrClient());
 
@@ -190,7 +190,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, replicationFactor)
         .setRouterField(shard_fld)
-            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, numShards, numShards * replicationFactor);
@@ -250,8 +250,8 @@ public class CustomCollectionTest extends SolrCloudTestCase {
   public void testCreateShardRepFactor() throws Exception {
     final String collectionName = "testCreateShardRepFactor";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "a,b", 1)
-            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
-            .process(cluster.getSolrClient());
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
 
     CollectionAdminRequest.createShard(collectionName, "x").process(cluster.getSolrClient());
 
