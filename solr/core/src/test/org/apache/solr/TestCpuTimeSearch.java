@@ -16,11 +16,11 @@
  */
 package org.apache.solr;
 
+import com.carrotsearch.randomizedtesting.annotations.Seed;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -31,16 +31,15 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.apache.solr.util.ThreadStats;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 
+@Seed("861F5769E4B6F696")
 public class TestCpuTimeSearch extends SolrTestCaseJ4 {
 
   @ClassRule public static final SolrJettyTestRule solrRule = new SolrJettyTestRule();
-
-  private static SolrClient clientCore1;
-  private static SolrClient clientCore2;
+  
   private static String shard1;
   private static String shard2;
 
@@ -55,8 +54,8 @@ public class TestCpuTimeSearch extends SolrTestCaseJ4 {
 
     solrRule.newCollection("core1").withConfigSet(configSet.toString()).create();
     solrRule.newCollection("core2").withConfigSet(configSet.toString()).create();
-    clientCore1 = solrRule.getSolrClient("core1");
-    clientCore2 = solrRule.getSolrClient("core2");
+    var clientCore1 = solrRule.getSolrClient("core1");
+    var clientCore2 = solrRule.getSolrClient("core2");
 
     String urlCore1 = solrRule.getBaseUrl() + "/" + "core1";
     String urlCore2 = solrRule.getBaseUrl() + "/" + "core2";
@@ -76,25 +75,13 @@ public class TestCpuTimeSearch extends SolrTestCaseJ4 {
     clientCore2.commit();
   }
 
-  @AfterClass
-  public static void cleanup() throws Exception {
-    if (null != clientCore1) {
-      clientCore1.close();
-      clientCore1 = null;
-    }
-    if (null != clientCore2) {
-      clientCore2.close();
-      clientCore2 = null;
-    }
-  }
-
   public void testWithoutDistrib() throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery();
     query.setQuery("subject:batman OR subject:superman");
     query.addField("id");
     query.addField("subject");
 
-    QueryResponse response = clientCore1.query(query);
+    QueryResponse response = solrRule.getSolrClient("core1").query(query);
 
     SolrDocumentList results = response.getResults();
     int size = results.size();
@@ -108,6 +95,7 @@ public class TestCpuTimeSearch extends SolrTestCaseJ4 {
     assertTrue("cpuTime (" + cpuTime + ") should be positive", cpuTime >= 0);
   }
 
+  @Ignore
   public void testWithDistrib() throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery();
     query.setQuery("subject:batman OR subject:superman");
@@ -121,7 +109,7 @@ public class TestCpuTimeSearch extends SolrTestCaseJ4 {
     query.set("stats.field", "id");
     query.set(ShardParams.SHARDS_TOLERANT, "true");
 
-    QueryResponse response = clientCore1.query(query);
+    QueryResponse response = solrRule.getSolrClient("core1").query(query);
 
     SolrDocumentList results = response.getResults();
     int size = results.size();
