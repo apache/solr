@@ -24,6 +24,7 @@ import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
@@ -48,6 +49,7 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.ThreadStats;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +75,8 @@ public abstract class RequestHandlerBase
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private PluginInfo pluginInfo;
+
+  protected boolean publishCpuTime = Boolean.getBoolean(ThreadStats.ENABLE_CPU_TIME);
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
   public RequestHandlerBase() {
@@ -212,6 +216,11 @@ public abstract class RequestHandlerBase
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
+    ThreadStats cpuStats = null;
+    if (publishCpuTime) {
+      cpuStats = new ThreadStats();
+    }
+
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
 
@@ -240,6 +249,20 @@ public abstract class RequestHandlerBase
     } finally {
       long elapsed = timer.stop();
       metrics.totalTime.inc(elapsed);
+
+      if (cpuStats != null) {
+        Optional<Long> cpuTime = cpuStats.getCpuTimeMs();
+        if (cpuTime.isPresent()) {
+          // add CPU_TIME if not already added by SearchHandler
+          NamedList<Object> header = rsp.getResponseHeader();
+          if (header != null) {
+            if (header.get(ThreadStats.CPU_TIME) == null) {
+              header.add(ThreadStats.CPU_TIME, cpuTime.get());
+            }
+          }
+          rsp.addToLog(ThreadStats.LOCAL_CPU_TIME, cpuTime.get());
+        }
+      }
     }
   }
 
