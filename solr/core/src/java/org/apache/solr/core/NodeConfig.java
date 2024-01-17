@@ -35,6 +35,9 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.solr.api.ClusterPluginsSource;
+import org.apache.solr.api.ContainerPluginsRegistry;
+import org.apache.solr.api.NodeConfigClusterPluginsSource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -80,7 +83,6 @@ public class NodeConfig {
 
   private final PluginInfo shardHandlerFactoryConfig;
   private final UpdateShardHandlerConfig updateShardHandlerConfig;
-  private final PluginInfo replicaPlacementFactoryConfig;
 
   private final String configSetServiceClass;
 
@@ -118,6 +120,8 @@ public class NodeConfig {
 
   private final PluginInfo tracerConfig;
 
+  private final PluginInfo[] clusterPlugins;
+
   // Track if this config was loaded from zookeeper so that we can skip validating the zookeeper
   // connection later. If it becomes necessary to track multiple potential sources in the future,
   // replace this with an Enum
@@ -135,7 +139,6 @@ public class NodeConfig {
       String sharedLibDirectory,
       PluginInfo shardHandlerFactoryConfig,
       UpdateShardHandlerConfig updateShardHandlerConfig,
-      PluginInfo replicaPlacementFactoryConfig,
       String coreAdminHandlerClass,
       Map<String, String> coreAdminHandlerActions,
       String collectionsAdminHandlerClass,
@@ -156,6 +159,7 @@ public class NodeConfig {
       MetricsConfig metricsConfig,
       Map<String, CacheConfig> cachesConfig,
       PluginInfo tracerConfig,
+      PluginInfo[] clusterPlugins,
       boolean fromZookeeper,
       String defaultZkHost,
       Set<Path> allowPaths,
@@ -175,7 +179,6 @@ public class NodeConfig {
     this.sharedLibDirectory = sharedLibDirectory;
     this.shardHandlerFactoryConfig = shardHandlerFactoryConfig;
     this.updateShardHandlerConfig = updateShardHandlerConfig;
-    this.replicaPlacementFactoryConfig = replicaPlacementFactoryConfig;
     this.coreAdminHandlerClass = coreAdminHandlerClass;
     this.coreAdminHandlerActions = coreAdminHandlerActions;
     this.collectionsAdminHandlerClass = collectionsAdminHandlerClass;
@@ -196,6 +199,7 @@ public class NodeConfig {
     this.metricsConfig = metricsConfig;
     this.cachesConfig = cachesConfig == null ? Collections.emptyMap() : cachesConfig;
     this.tracerConfig = tracerConfig;
+    this.clusterPlugins = clusterPlugins;
     this.fromZookeeper = fromZookeeper;
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
@@ -217,6 +221,17 @@ public class NodeConfig {
     }
     if (null == this.solrHome) throw new NullPointerException("solrHome");
     if (null == this.loader) throw new NullPointerException("loader");
+
+    if (this.clusterPlugins != null
+        && this.clusterPlugins.length > 0
+        && !ClusterPluginsSource.resolveClassName()
+            .equals(NodeConfigClusterPluginsSource.class.getName())) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Cluster plugins found in solr.xml but the property "
+              + ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED
+              + " is set to true. Cluster plugins may only be declared in solr.xml with immutable configs.");
+    }
 
     setupSharedLib();
     initModules();
@@ -323,10 +338,6 @@ public class NodeConfig {
     return updateShardHandlerConfig;
   }
 
-  public PluginInfo getReplicaPlacementFactoryConfig() {
-    return replicaPlacementFactoryConfig;
-  }
-
   public int getCoreLoadThreadCount(boolean zkAware) {
     return coreLoadThreads == null
         ? (zkAware
@@ -430,6 +441,10 @@ public class NodeConfig {
 
   public PluginInfo getTracerConfiguratorPluginInfo() {
     return tracerConfig;
+  }
+
+  public PluginInfo[] getClusterPlugins() {
+    return clusterPlugins;
   }
 
   /**
@@ -622,7 +637,6 @@ public class NodeConfig {
     private String hiddenSysProps;
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
-    private PluginInfo replicaPlacementFactoryConfig;
     private String configSetServiceClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
     private Map<String, String> coreAdminHandlerActions = Collections.emptyMap();
@@ -642,6 +656,7 @@ public class NodeConfig {
     private MetricsConfig metricsConfig;
     private Map<String, CacheConfig> cachesConfig;
     private PluginInfo tracerConfig;
+    private PluginInfo[] clusterPlugins;
     private boolean fromZookeeper = false;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
@@ -741,12 +756,6 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setReplicaPlacementFactoryConfig(
-        PluginInfo replicaPlacementFactoryConfig) {
-      this.replicaPlacementFactoryConfig = replicaPlacementFactoryConfig;
-      return this;
-    }
-
     public NodeConfigBuilder setCoreAdminHandlerClass(String coreAdminHandlerClass) {
       this.coreAdminHandlerClass = coreAdminHandlerClass;
       return this;
@@ -838,6 +847,11 @@ public class NodeConfig {
 
     public NodeConfigBuilder setTracerConfig(PluginInfo tracerConfig) {
       this.tracerConfig = tracerConfig;
+      return this;
+    }
+
+    public NodeConfigBuilder setClusterPlugins(PluginInfo[] clusterPlugins) {
+      this.clusterPlugins = clusterPlugins;
       return this;
     }
 
@@ -937,7 +951,6 @@ public class NodeConfig {
           sharedLibDirectory,
           shardHandlerFactoryConfig,
           updateShardHandlerConfig,
-          replicaPlacementFactoryConfig,
           coreAdminHandlerClass,
           coreAdminHandlerActions,
           collectionsAdminHandlerClass,
@@ -958,6 +971,7 @@ public class NodeConfig {
           metricsConfig,
           cachesConfig,
           tracerConfig,
+          clusterPlugins,
           fromZookeeper,
           defaultZkHost,
           allowPaths,

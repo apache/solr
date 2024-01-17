@@ -63,6 +63,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -110,7 +111,6 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
-import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.HealthCheckHandler;
@@ -205,8 +205,7 @@ public class CoreContainer {
   /** Minimize exposure to CoreContainer. Mostly only ZK interface is required */
   public final Supplier<SolrZkClient> zkClientSupplier = () -> getZkController().getZkClient();
 
-  private final ContainerPluginsRegistry containerPluginsRegistry =
-      new ContainerPluginsRegistry(this, containerHandlers.getApiBag());
+  private ContainerPluginsRegistry containerPluginsRegistry;
 
   protected final Map<String, CoreLoadFailure> coreInitFailures = new ConcurrentHashMap<>();
 
@@ -730,7 +729,7 @@ public class CoreContainer {
   }
 
   private void registerV2ApiIfEnabled(Object apiObject) {
-    if (containerHandlers.getApiBag() == null) {
+    if (apiObject == null || containerHandlers.getApiBag() == null) {
       return;
     }
 
@@ -772,12 +771,17 @@ public class CoreContainer {
     }
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
+    ClusterPluginsSource pluginsSource =
+        ClusterPluginsSource.loadClusterPluginsSource(this, loader);
+    containerPluginsRegistry =
+        new ContainerPluginsRegistry(this, containerHandlers.getApiBag(), pluginsSource);
+
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
     clusterEventProducer = clusterEventProducerFactory;
 
     placementPluginFactory =
         new DelegatingPlacementPluginFactory(
-            PlacementPluginFactoryLoader.getDefaultPlacementPluginFactory(cfg, loader));
+            PlacementPluginFactoryLoader.getDefaultPlacementPluginFactory());
 
     containerPluginsRegistry.registerListener(clusterSingletons.getPluginRegistryListener());
     containerPluginsRegistry.registerListener(
@@ -1087,9 +1091,8 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       containerPluginsRegistry.refresh();
       getZkController().zkStateReader.registerClusterPropertiesListener(containerPluginsRegistry);
-      ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
-      registerV2ApiIfEnabled(containerPluginsApi.readAPI);
-      registerV2ApiIfEnabled(containerPluginsApi.editAPI);
+      registerV2ApiIfEnabled(pluginsSource.getReadApi());
+      registerV2ApiIfEnabled(pluginsSource.getEditApi());
 
       // initialize the placement plugin factory wrapper
       // with the plugin configuration from the registry

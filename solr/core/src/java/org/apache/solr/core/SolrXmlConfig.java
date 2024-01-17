@@ -38,8 +38,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.cloud.ClusterSingleton;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -167,14 +170,13 @@ public class SolrXmlConfig {
     configBuilder.setSolrResourceLoader(loader);
     configBuilder.setUpdateShardHandlerConfig(updateConfig);
     configBuilder.setShardHandlerFactoryConfig(getPluginInfo(root.get("shardHandlerFactory")));
-    configBuilder.setReplicaPlacementFactoryConfig(
-        getPluginInfo(root.get("replicaPlacementFactory")));
     configBuilder.setTracerConfig(getPluginInfo(root.get("tracerConfig")));
     configBuilder.setLogWatcherConfig(loadLogWatcherConfig(root.get("logging")));
     configBuilder.setSolrProperties(loadProperties(root, substituteProperties));
     if (cloudConfig != null) configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(
         getBackupRepositoryPluginInfos(root.get("backup").getAll("repository")));
+    configBuilder.setClusterPlugins(getClusterPlugins(loader, root));
     // <metrics><hiddenSysProps></metrics> will be removed in Solr 10, but until then, use it if a
     // <hiddenSysProps> is not provided under <solr>.
     // Remove this line in 10.0
@@ -664,6 +666,68 @@ public class SolrXmlConfig {
     }
 
     return configs;
+  }
+
+  private static PluginInfo[] getClusterPlugins(SolrResourceLoader loader, ConfigNode root) {
+    List<PluginInfo> clusterPlugins = new ArrayList<>();
+
+    Collections.addAll(
+        clusterPlugins, getClusterSingletonPluginInfos(loader, root.getAll("clusterSingleton")));
+
+    PluginInfo replicaPlacementFactory = getPluginInfo(root.get("replicaPlacementFactory"));
+    if (replicaPlacementFactory != null) {
+      if (replicaPlacementFactory.name != null
+          && !replicaPlacementFactory.name.equals(PlacementPluginFactory.PLUGIN_NAME)) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "The replicaPlacementFactory name attribute must be "
+                + PlacementPluginFactory.PLUGIN_NAME);
+      }
+      clusterPlugins.add(replicaPlacementFactory);
+    }
+
+    return clusterPlugins.toArray(new PluginInfo[0]);
+  }
+
+  private static PluginInfo[] getClusterSingletonPluginInfos(
+      SolrResourceLoader loader, List<ConfigNode> nodes) {
+    if (nodes == null || nodes.isEmpty()) {
+      return new PluginInfo[0];
+    }
+
+    List<PluginInfo> plugins =
+        nodes.stream()
+            .map(n -> new PluginInfo(n, n.name(), true, true))
+            .collect(Collectors.toList());
+
+    // Cluster plugin names must be unique
+    Set<String> names = CollectionUtil.newHashSet(nodes.size());
+    Set<String> duplicateNames =
+        plugins.stream()
+            .filter(p -> !names.add(p.name))
+            .map(p -> p.name)
+            .collect(Collectors.toSet());
+    if (!duplicateNames.isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Multiple clusterSingleton sections with name '"
+              + String.join("', '", duplicateNames)
+              + "' found in solr.xml");
+    }
+
+    try {
+      plugins.forEach(
+          p -> {
+            loader.findClass(p.className, ClusterSingleton.class);
+          });
+    } catch (ClassCastException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "clusterSingleton plugins must implement the interface "
+              + ClusterSingleton.class.getName());
+    }
+
+    return plugins.toArray(new PluginInfo[0]);
   }
 
   private static MetricsConfig getMetricsConfig(ConfigNode metrics) {
