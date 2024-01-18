@@ -172,14 +172,9 @@ public class EnvUtils {
   }
 
   private static String camelCaseToDotSeparated(String key) {
-    if (camelCaseToDotsMap.containsKey(key)) {
-      return camelCaseToDotsMap.get(key);
-    } else {
-      String converted =
-          String.join(".", key.split("(?=[A-Z])")).replace("..", ".").toLowerCase(Locale.ROOT);
-      camelCaseToDotsMap.put(key, converted);
-      return converted;
-    }
+    return camelCaseToDotsMap.computeIfAbsent(
+        key,
+        (k) -> String.join(".", k.split("(?=[A-Z])")).replace("..", ".").toLowerCase(Locale.ROOT));
   }
 
   /** Get property as integer */
