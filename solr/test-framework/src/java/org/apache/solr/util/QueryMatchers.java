@@ -27,7 +27,7 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
+import org.apache.solr.parser.TermQueryWithOffset;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
@@ -81,7 +81,7 @@ public class QueryMatchers {
 
   public static Matcher<Query> termQuery(String field, String text) {
     // TODO Use a better matcher for more descriptive results?
-    return is(new TermQuery(new Term(field, text)));
+    return is(new TermQueryWithOffset(new Term(field, text), null));
   }
 
   public static Matcher<Query> boosted(String field, String text, float boost) {

@@ -36,6 +36,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.legacy.LegacyNumericRangeQuery;
+import org.apache.solr.parser.TermQueryWithOffset;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.BeforeClass;
@@ -53,10 +54,10 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
   @Test
   public void testFallbackToLucene() {
     q = parse("foo");
-    assertEquals(new TermQuery(new Term("text", "foo")), q);
+    assertEquals(new TermQueryWithOffset(new Term("text", "foo"), null), q);
 
     q = parse("foo^3.0");
-    assertEquals(new BoostQuery(new TermQuery(new Term("text", "foo")), 3f), q);
+    assertEquals(new BoostQuery(new TermQueryWithOffset(new Term("text", "foo"), null), 3f), q);
 
     q = parse("price:[0 TO 10]");
     Class<? extends Query> expected = LegacyNumericRangeQuery.class;

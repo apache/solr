@@ -38,7 +38,6 @@ import java.util.TimeZone;
 import org.apache.commons.math3.util.Combinations;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -51,6 +50,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.StatsField.HllOptions;
 import org.apache.solr.handler.component.StatsField.Stat;
+import org.apache.solr.parser.TermQueryWithOffset;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -1297,7 +1297,10 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
             sf.getValueSource().getClass() + " is vs type of: " + param,
             sf.getValueSource() instanceof QueryValueSource);
         QueryValueSource qvs = (QueryValueSource) sf.getValueSource();
-        assertEquals("query of :" + param, new TermQuery(new Term("foo_t", "cow")), qvs.getQuery());
+        assertEquals(
+            "query of :" + param,
+            new TermQueryWithOffset(new Term("foo_t", "cow"), null),
+            qvs.getQuery());
       }
     }
   }

@@ -52,7 +52,6 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
@@ -74,7 +73,7 @@ import org.apache.solr.search.SyntaxError;
  * This class is overridden by QueryParser in QueryParser.jj and acts to separate the majority of
  * the Java code from the .jj grammar file.
  */
-public abstract class SolrQueryParserBase extends QueryBuilder {
+public abstract class SolrQueryParserBase extends SolrQueryBuilder {
 
   protected static final String REVERSE_WILDCARD_LOWER_BOUND =
       new String(new char[] {ReverseStringFilter.START_OF_HEADING_MARKER + 1});
@@ -559,6 +558,16 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         }
         builder.setSlop(slop);
         query = builder.build();
+      } else if (query instanceof PhraseQueryWithOffset) {
+        PhraseQueryWithOffset pq = (PhraseQueryWithOffset) query;
+        Term[] terms = pq.getTerms();
+        int[] positions = pq.getPositions();
+        PhraseQuery.Builder builder = new PhraseQuery.Builder();
+        for (int i = 0; i < terms.length; ++i) {
+          builder.add(terms[i], positions[i]);
+        }
+        builder.setSlop(slop);
+        query = new PhraseQueryWithOffset(builder.build(), pq.getStartOffset());
       } else if (query instanceof MultiPhraseQuery) {
         MultiPhraseQuery mpq = (MultiPhraseQuery) query;
 
@@ -632,7 +641,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
       case PICK_BEST:
         List<Query> currPosnClauses = new ArrayList<>(terms.length);
         for (TermAndBoost term : terms) {
-          currPosnClauses.add(newTermQuery(new Term(field, term.term), term.boost));
+          currPosnClauses.add(
+              newTermQuery(new Term(field, term.term), term.boost, term.startOffset));
         }
         DisjunctionMaxQuery dm = new DisjunctionMaxQuery(currPosnClauses, 0.0f);
         return dm;
@@ -640,7 +650,8 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for (TermAndBoost term : terms) {
           builder.add(
-              newTermQuery(new Term(field, term.term), term.boost), BooleanClause.Occur.SHOULD);
+              newTermQuery(new Term(field, term.term), term.boost, term.startOffset),
+              BooleanClause.Occur.SHOULD);
         }
         return builder.build();
       case AS_SAME_TERM:

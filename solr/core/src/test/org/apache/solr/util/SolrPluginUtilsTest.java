@@ -28,11 +28,11 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
-import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.parser.PhraseQueryWithOffset;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
@@ -170,9 +170,13 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     t = "subject:\"simple phrase\"";
     out = qp.parse(t);
     assertNotNull(t + " sanity test gave back null", out);
-    assertTrue(t + " sanity test isn't PhraseQuery: " + out.getClass(), out instanceof PhraseQuery);
+    assertTrue(
+        t + " sanity test isn't PhraseQuery: " + out.getClass(),
+        out instanceof PhraseQueryWithOffset);
     assertEquals(
-        t + " sanity test is wrong field", "subject", ((PhraseQuery) out).getTerms()[0].field());
+        t + " sanity test is wrong field",
+        "subject",
+        ((PhraseQueryWithOffset) out).getTerms()[0].field());
 
     /* now some tests that use aliasing */
 

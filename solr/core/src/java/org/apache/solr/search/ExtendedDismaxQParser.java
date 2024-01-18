@@ -25,6 +25,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
@@ -43,6 +45,8 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SynonymQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -51,8 +55,11 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.parser.OffsetHolder;
+import org.apache.solr.parser.PhraseQueryWithOffset;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.parser.SolrQueryParserBase.MagicFieldName;
+import org.apache.solr.parser.SynonymQueryWithOffset;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -1221,39 +1228,27 @@ public class ExtendedDismaxQParser extends QParser {
         // DisMaxQuery.rewrite() removes itself if there is just a single clause anyway.
         // if (lst.size()==1) return lst.get(0);
         if (makeDismax) {
+
+          // if possible, rewrite the field-centric queries as term-centric ones
+          // by regrouping clauses according to startOffset
+          if (canRewriteUsingStartOffset(lst)) {
+            return QueryUtils.build(rewriteUsingStartOffset(lst, a.tie), parser);
+          }
+
+          // apply the original heuristic of regrouping clauses by position,
+          // if all queries have the same structure
           Query firstQuery = lst.get(0);
           if ((firstQuery instanceof BooleanQuery
                   || (firstQuery instanceof BoostQuery
                       && ((BoostQuery) firstQuery).getQuery() instanceof BooleanQuery))
               && allSameQueryStructure(lst)) {
-            BooleanQuery.Builder q = new BooleanQuery.Builder();
-            List<Query> subs = new ArrayList<>(lst.size());
-            BooleanQuery firstBooleanQuery =
-                firstQuery instanceof BoostQuery
-                    ? (BooleanQuery) ((BoostQuery) firstQuery).getQuery()
-                    : (BooleanQuery) firstQuery;
-            for (int c = 0; c < firstBooleanQuery.clauses().size(); ++c) {
-              subs.clear();
-              // Make a dismax query for each clause position in the boolean per-field queries.
-              for (int n = 0; n < lst.size(); ++n) {
-                if (lst.get(n) instanceof BoostQuery) {
-                  BoostQuery boostQuery = (BoostQuery) lst.get(n);
-                  BooleanQuery booleanQuery = (BooleanQuery) boostQuery.getQuery();
-                  subs.add(
-                      new BoostQuery(
-                          booleanQuery.clauses().get(c).getQuery(), boostQuery.getBoost()));
-                } else {
-                  subs.add(((BooleanQuery) lst.get(n)).clauses().get(c).getQuery());
-                }
-              }
-              q.add(
-                  newBooleanClause(
-                      new DisjunctionMaxQuery(subs, a.tie), BooleanClause.Occur.SHOULD));
-            }
+            BooleanQuery.Builder q = rewriteUsingClausePosition(lst, a.tie);
             return QueryUtils.build(q, parser);
-          } else {
-            return new DisjunctionMaxQuery(lst, a.tie);
           }
+
+          // give up on rewriting the field-centric queries as term-centric ones
+          return new DisjunctionMaxQuery(lst, a.tie);
+
         } else {
           BooleanQuery.Builder q = new BooleanQuery.Builder();
           for (Query sub : lst) {
@@ -1276,6 +1271,124 @@ public class ExtendedDismaxQParser extends QParser {
     }
 
     /**
+     * Determines whether a list of field-centric queries can be rewritten as term-centric ones by
+     * regrouping clauses according to startOffset. Requires taht each query is a BooleanQuery (or
+     * BoostQuery containing a BooleanQuery) with clauses of type SynonymQueryWithOffset or
+     * TermQueryWithOffset and that each clause has a non-null offset.
+     */
+    private boolean canRewriteUsingStartOffset(List<Query> lst) {
+      for (Query q : lst) {
+
+        Query unwrappedQuery = q;
+        if (q instanceof BoostQuery) {
+          unwrappedQuery = ((BoostQuery) q).getQuery();
+        }
+
+        if (!(unwrappedQuery instanceof BooleanQuery)) {
+          return false;
+        }
+        BooleanQuery bq = (BooleanQuery) unwrappedQuery;
+
+        for (BooleanClause clause : bq.clauses()) {
+          Query innerQuery = clause.getQuery();
+          if (OffsetHolder.getStartOffset(innerQuery) == null) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    /**
+     * Rewrites a list of field-centric queries as term-centric queries by creating a term-centric
+     * query for each unique startOffset found in the clauses inside the field-centric queries.
+     *
+     * <p>Assumes the list contains only instance BooleanQuery or BoostQuery containing
+     * BooleanQuery, and that each BooleanQuery has clauses of type TermQueryWithOffset or
+     * SynonymQueryWithOffset, as confirmed via canRewriteUsingStartOffset()
+     */
+    private BooleanQuery.Builder rewriteUsingStartOffset(List<Query> lst, float tie) {
+
+      // create a map of startOffsets to the Queries that have a particular startOffset
+      SortedMap<Integer, List<Query>> offsets = new TreeMap<>();
+      for (Query q : lst) {
+
+        Float boost = null;
+        BooleanQuery bq = null;
+        if (q instanceof BoostQuery) {
+          boost = ((BoostQuery) q).getBoost();
+          bq = (BooleanQuery) ((BoostQuery) q).getQuery();
+        } else {
+          bq = (BooleanQuery) q;
+        }
+
+        for (BooleanClause bc : bq.clauses()) {
+          Query innerQuery = bc.getQuery();
+          Integer offset = OffsetHolder.getStartOffset(innerQuery);
+          if (offset == null) {
+            // offset should always be non-null because this rewriting method should only
+            // be called when canRewriteUsingStartOffset() returns true
+            throw new RuntimeException("startOffset expected but not found");
+          }
+          Query boostedInnerQuery = innerQuery;
+          if (boost != null) {
+            boostedInnerQuery = new BoostQuery(innerQuery, boost);
+          }
+
+          if (offsets.containsKey(offset)) {
+            offsets.get(offset).add(boostedInnerQuery);
+          } else {
+            ArrayList<Query> myList = new ArrayList<>();
+            myList.add(boostedInnerQuery);
+            offsets.put(offset, myList);
+          }
+        }
+      }
+
+      // create a boolean clause for each unique startOffset
+      BooleanQuery.Builder q = new BooleanQuery.Builder();
+      Collection<Integer> keys = offsets.keySet();
+      for (Integer key : keys) {
+        List<Query> queries = offsets.get(key);
+        q.add(newBooleanClause(new DisjunctionMaxQuery(queries, tie), BooleanClause.Occur.SHOULD));
+      }
+      return q;
+    }
+
+    /**
+     * Rewrites a list of field-centric queries as term-centric queries by creating a term-centric
+     * query for each clause position in the field-centric queries.
+     *
+     * <p>Assumes the list contains only instance BooleanQuery or BoostQuery containing BooleanQuery
+     * and that all queries have the same structure as confirmed by allSameQueryStructure()
+     */
+    private BooleanQuery.Builder rewriteUsingClausePosition(List<Query> lst, float tie) {
+      Query firstQuery = lst.get(0);
+      BooleanQuery.Builder q = new BooleanQuery.Builder();
+      List<Query> subs = new ArrayList<>(lst.size());
+      BooleanQuery firstBooleanQuery =
+          firstQuery instanceof BoostQuery
+              ? (BooleanQuery) ((BoostQuery) firstQuery).getQuery()
+              : (BooleanQuery) firstQuery;
+      for (int c = 0; c < firstBooleanQuery.clauses().size(); ++c) {
+        subs.clear();
+        // Make a dismax query for each clause position in the boolean per-field queries.
+        for (int n = 0; n < lst.size(); ++n) {
+          if (lst.get(n) instanceof BoostQuery) {
+            BoostQuery boostQuery = (BoostQuery) lst.get(n);
+            BooleanQuery booleanQuery = (BooleanQuery) boostQuery.getQuery();
+            subs.add(
+                new BoostQuery(booleanQuery.clauses().get(c).getQuery(), boostQuery.getBoost()));
+          } else {
+            subs.add(((BooleanQuery) lst.get(n)).clauses().get(c).getQuery());
+          }
+        }
+        q.add(newBooleanClause(new DisjunctionMaxQuery(subs, tie), BooleanClause.Occur.SHOULD));
+      }
+      return q;
+    }
+
+    /**
      * Recursively examines the given query list for identical structure in all queries. Boosts on
      * BoostQuery-s are ignored, and the contained queries are instead used as the basis for
      * comparison.
@@ -1291,7 +1404,14 @@ public class ExtendedDismaxQParser extends QParser {
         if (nthQuery instanceof BoostQuery) {
           nthQuery = ((BoostQuery) nthQuery).getQuery();
         }
-        if (nthQuery.getClass() != firstQuery.getClass()) {
+
+        if ((nthQuery instanceof TermQuery && firstQuery instanceof TermQuery)
+            || (nthQuery instanceof SynonymQueryWithOffset && firstQuery instanceof SynonymQuery)
+            || (nthQuery instanceof SynonymQuery && firstQuery instanceof SynonymQueryWithOffset)) {
+          // bypass class equality requirement when dealing with a TermQuery with and without
+          // offset,
+          // or a SynonymQuery with and without offset
+        } else if (nthQuery.getClass() != firstQuery.getClass()) {
           allSame = false;
           break;
         }
@@ -1303,9 +1423,21 @@ public class ExtendedDismaxQParser extends QParser {
             break;
           }
           for (int c = 0; c < firstBooleanClauses.size(); ++c) {
-            if (nthBooleanClauses.get(c).getQuery().getClass()
-                    != firstBooleanClauses.get(c).getQuery().getClass()
-                || nthBooleanClauses.get(c).getOccur() != firstBooleanClauses.get(c).getOccur()) {
+            if ((nthBooleanClauses.get(c).getQuery() instanceof TermQuery
+                    && firstBooleanClauses.get(c).getQuery() instanceof TermQuery)
+                || (nthBooleanClauses.get(c).getQuery() instanceof SynonymQueryWithOffset
+                    && firstBooleanClauses.get(c).getQuery() instanceof SynonymQuery)
+                || (nthBooleanClauses.get(c).getQuery() instanceof SynonymQuery
+                    && firstBooleanClauses.get(c).getQuery() instanceof SynonymQueryWithOffset)) {
+              // bypass class equality requirement when dealing with a TermQuery with and without
+              // offset,
+              // or a SynonymQuery with and without offset
+            } else if (nthBooleanClauses.get(c).getQuery().getClass()
+                != firstBooleanClauses.get(c).getQuery().getClass()) {
+              allSame = false;
+              break;
+            }
+            if (nthBooleanClauses.get(c).getOccur() != firstBooleanClauses.get(c).getOccur()) {
               allSame = false;
               break;
             }
@@ -1451,6 +1583,17 @@ public class ExtendedDismaxQParser extends QParser {
               }
               builder.setSlop(slop);
               query = builder.build();
+            } else if (query instanceof PhraseQueryWithOffset) {
+              PhraseQueryWithOffset pq = (PhraseQueryWithOffset) query;
+              if (minClauseSize > 1 && pq.getTerms().length < minClauseSize) return null;
+              PhraseQuery.Builder builder = new PhraseQuery.Builder();
+              Term[] terms = pq.getTerms();
+              int[] positions = pq.getPositions();
+              for (int i = 0; i < terms.length; ++i) {
+                builder.add(terms[i], positions[i]);
+              }
+              builder.setSlop(slop);
+              query = new PhraseQueryWithOffset(builder.build(), pq.getStartOffset());
             } else if (query instanceof MultiPhraseQuery) {
               MultiPhraseQuery mpq = (MultiPhraseQuery) query;
               if (minClauseSize > 1 && mpq.getTermArrays().length < minClauseSize) return null;
