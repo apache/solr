@@ -133,6 +133,15 @@ Other Changes
 * SOLR-16880: Solr now produces an OpenAPI Specification artifact on releases ("solr-openapi-x.y.z.json") that covers
   Solr's v2 APIs. (Jason Gerlowski, Houston Putman)
 
+==================  9.4.1 ==================
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
 ==================  9.4.0 ==================
 New Features
 ---------------------
