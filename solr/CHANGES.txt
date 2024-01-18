@@ -30,8 +30,6 @@ Optimizations
 Bug Fixes
 ---------------------
 
-* SOLR-17074: Fixed not correctly escaped quote in bin/solr script
-
 Deprecation Removals
 ----------------------
 
@@ -175,6 +173,8 @@ Bug Fixes
   They will only be used when sent to the default ZK Host. (Houston Putman, Jan Høydahl, David Smiley, Gus Heck, Qing Xu)
 
 * SOLR-16203: Properly initialize schema plugins loaded by SPI name (janhoy, hossman, Uwe Schindler)
+
+* SOLR-17074: Fixed not correctly escaped quote in bin/solr script (Dominique Béjean, Vincenzo D'Amore)
 
 Dependency Upgrades
 ---------------------
