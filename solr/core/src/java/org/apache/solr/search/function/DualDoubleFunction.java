@@ -63,6 +63,7 @@ public abstract class DualDoubleFunction extends ValueSource {
       public double doubleVal(int doc) throws IOException {
         return func(doc, aVals, bVals);
       }
+
       /**
        * True if and only if <em>all</em> of the wrapped {@link FunctionValues} <code>exists</code>
        * for the specified doc

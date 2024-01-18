@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +24,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -34,6 +35,8 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientBuilder;
+import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +57,8 @@ public class SolrClientCache implements Closeable {
   private final Map<String, SolrClient> solrClients = new HashMap<>();
   private final HttpClient apacheHttpClient;
   private final Http2SolrClient http2SolrClient;
+  private final AtomicBoolean isClosed = new AtomicBoolean(false);
+  private final AtomicReference<String> defaultZkHost = new AtomicReference<>();
 
   public SolrClientCache() {
     this.apacheHttpClient = null;
@@ -71,43 +76,76 @@ public class SolrClientCache implements Closeable {
     this.http2SolrClient = http2SolrClient;
   }
 
+  public void setDefaultZKHost(String zkHost) {
+    if (zkHost != null) {
+      zkHost = zkHost.split("/")[0];
+      if (!zkHost.isEmpty()) {
+        defaultZkHost.set(zkHost);
+      } else {
+        defaultZkHost.set(null);
+      }
+    }
+  }
+
   public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
+    ensureOpen();
     Objects.requireNonNull(zkHost, "ZooKeeper host cannot be null!");
     if (solrClients.containsKey(zkHost)) {
       return (CloudSolrClient) solrClients.get(zkHost);
     }
+    // Can only use ZK ACLs if there is a default ZK Host, and the given ZK host contains that
+    // default.
+    // Basically the ZK ACLs are assumed to be only used for the default ZK host,
+    // thus we should only provide the ACLs to that Zookeeper instance.
+    String zkHostNoChroot = zkHost.split("/")[0];
+    boolean canUseACLs =
+        Optional.ofNullable(defaultZkHost.get()).map(zkHostNoChroot::equals).orElse(false);
     final CloudSolrClient client;
     if (apacheHttpClient != null) {
-      client = newCloudLegacySolrClient(zkHost, apacheHttpClient);
+      client = newCloudLegacySolrClient(zkHost, apacheHttpClient, canUseACLs);
     } else {
-      client = newCloudHttp2SolrClient(zkHost, http2SolrClient);
+      client = newCloudHttp2SolrClient(zkHost, http2SolrClient, canUseACLs);
     }
     solrClients.put(zkHost, client);
     return client;
   }
 
   @Deprecated
-  private static CloudSolrClient newCloudLegacySolrClient(String zkHost, HttpClient httpClient) {
+  private static CloudSolrClient newCloudLegacySolrClient(
+      String zkHost, HttpClient httpClient, boolean canUseACLs) {
     final List<String> hosts = List.of(zkHost);
     var builder = new CloudLegacySolrClient.Builder(hosts, Optional.empty());
+    builder.canUseZkACLs(canUseACLs);
     adjustTimeouts(builder, httpClient);
     var client = builder.build();
-    client.connect();
+    try {
+      client.connect();
+    } catch (Exception e) {
+      IOUtils.closeQuietly(client);
+      throw e;
+    }
     return client;
   }
 
   private static CloudHttp2SolrClient newCloudHttp2SolrClient(
-      String zkHost, Http2SolrClient http2SolrClient) {
+      String zkHost, Http2SolrClient http2SolrClient, boolean canUseACLs) {
     final List<String> hosts = List.of(zkHost);
     var builder = new CloudHttp2SolrClient.Builder(hosts, Optional.empty());
+    builder.canUseZkACLs(canUseACLs);
     // using internal builder to ensure the internal client gets closed
     builder = builder.withInternalClientBuilder(newHttp2SolrClientBuilder(null, http2SolrClient));
     var client = builder.build();
-    client.connect();
+    try {
+      client.connect();
+    } catch (Exception e) {
+      IOUtils.closeQuietly(client);
+      throw e;
+    }
     return client;
   }
 
   public synchronized SolrClient getHttpSolrClient(String baseUrl) {
+    ensureOpen();
     Objects.requireNonNull(baseUrl, "Url cannot be null!");
     if (solrClients.containsKey(baseUrl)) {
       return solrClients.get(baseUrl);
@@ -159,13 +197,17 @@ public class SolrClientCache implements Closeable {
 
   @Override
   public synchronized void close() {
-    for (Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
-      try {
-        entry.getValue().close();
-      } catch (IOException e) {
-        log.error("Error closing SolrClient for {}", entry.getKey(), e);
+    if (isClosed.compareAndSet(false, true)) {
+      for (Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
+        IOUtils.closeQuietly(entry.getValue());
       }
+      solrClients.clear();
     }
-    solrClients.clear();
+  }
+
+  private void ensureOpen() {
+    if (isClosed.get()) {
+      throw new AlreadyClosedException();
+    }
   }
 }

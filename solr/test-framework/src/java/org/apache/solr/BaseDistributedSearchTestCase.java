@@ -454,16 +454,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   }
 
   protected SolrClient createNewSolrClient(int port) {
-    return getHttpSolrClient(getServerUrl(port));
-  }
-
-  protected String getServerUrl(int port) {
-    String baseUrl = buildUrl(port);
-    if (baseUrl.endsWith("/")) {
-      return baseUrl + DEFAULT_TEST_CORENAME;
-    } else {
-      return baseUrl + "/" + DEFAULT_TEST_CORENAME;
-    }
+    return getHttpSolrClient(buildUrl(port), DEFAULT_TEST_CORENAME);
   }
 
   protected static void addFields(SolrInputDocument doc, Object... fields) {

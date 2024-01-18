@@ -664,6 +664,7 @@ public class StatsField {
       this.regwidth = regwidth;
       this.hasher = hasher;
     }
+
     /**
      * Creates an HllOptions based on the (local) params specified (if appropriate).
      *
@@ -778,18 +779,21 @@ public class StatsField {
       // if we're still here, then we need an HLL...
       return new HllOptions(log2m, regwidth, hasher);
     }
+
     /**
      * @see HLL
      */
     public int getLog2m() {
       return log2m;
     }
+
     /**
      * @see HLL
      */
     public int getRegwidth() {
       return regwidth;
     }
+
     /** May be null if user has indicated that field values are pre-hashed */
     public HashFunction getHasher() {
       return hasher;

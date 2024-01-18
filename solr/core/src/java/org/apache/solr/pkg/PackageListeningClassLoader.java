@@ -40,6 +40,7 @@ public class PackageListeningClassLoader implements SolrClassLoader, PackageList
   private final CoreContainer coreContainer;
   private final SolrClassLoader fallbackClassLoader;
   private final Function<String, String> pkgVersionSupplier;
+
   /** package name and the versions that we are tracking */
   private Map<String, PackageAPI.PkgVersion> packageVersions = new ConcurrentHashMap<>(1);
 

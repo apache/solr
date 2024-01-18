@@ -340,7 +340,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new SumFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new SumFloatFunction(sources.toArray(new ValueSource[0]));
           }
         });
     alias("sum", "add");
@@ -385,7 +385,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new ProductFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new ProductFloatFunction(sources.toArray(new ValueSource[0]));
           }
         });
     alias("product", "mul");
@@ -750,7 +750,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new MaxFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new MaxFloatFunction(sources.toArray(new ValueSource[0]));
           }
         });
     addParser(
@@ -759,7 +759,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new MinFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new MinFloatFunction(sources.toArray(new ValueSource[0]));
           }
         });
 
@@ -1190,7 +1190,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new ConcatStringFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new ConcatStringFunction(sources.toArray(new ValueSource[0]));
           }
         });
 

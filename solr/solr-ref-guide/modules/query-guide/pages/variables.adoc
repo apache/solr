@@ -185,7 +185,7 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-Using this approach variables can by visualized using Zeppelin-Solr.
+Using this approach variables can be visualized using Zeppelin-Solr.
 In the example below the arrays are shown in table format.
 
 image::math-expressions/variables.png[]

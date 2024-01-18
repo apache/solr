@@ -116,6 +116,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.soTimeout = builder.socketTimeoutMillis;
     this.pollQueueTimeMillis = builder.pollQueueTime;
     this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
+    this.defaultCollection = builder.defaultDataStore;
 
     // make sure the stall time is larger than the polling time
     // to give a chance for the queue to change
@@ -439,6 +440,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   static class Update {
     UpdateRequest request;
     String collection;
+
     /**
      * @param request the update request.
      * @param collection The collection, can be null.
@@ -447,6 +449,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
       this.request = request;
       this.collection = collection;
     }
+
     /**
      * @return the update request.
      */
@@ -457,6 +460,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     public void setRequest(UpdateRequest request) {
       this.request = request;
     }
+
     /**
      * @return the collection, can be null.
      */
@@ -472,6 +476,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
+    if (ClientUtils.shouldApplyDefaultDataStore(collection, request))
+      collection = defaultCollection;
     if (!(request instanceof UpdateRequest)) {
       return client.request(request, collection);
     }

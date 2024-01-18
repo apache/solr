@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -29,7 +28,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  *
  * @since solr 1.3
  */
-public class SolrPing extends SolrRequest<SolrPingResponse> {
+public class SolrPing extends DataStoreSolrRequest<SolrPingResponse> {
 
   /** serialVersionUID. */
   private static final long serialVersionUID = 5828246236669090017L;

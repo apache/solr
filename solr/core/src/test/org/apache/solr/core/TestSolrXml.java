@@ -30,6 +30,9 @@ import java.util.stream.Collectors;
 import org.apache.commons.exec.OS;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.ContainerPluginsRegistry;
+import org.apache.solr.cloud.ClusterSingleton;
+import org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.CaffeineCache;
@@ -56,6 +59,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
     System.setProperty(
         "solr.allowPaths", OS.isFamilyWindows() ? "C:\\tmp,C:\\home\\john" : "/tmp,/home/john");
+    System.setProperty(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, "false");
     NodeConfig cfg = SolrXmlConfig.fromSolrHome(solrHome, new Properties());
     CloudConfig ccfg = cfg.getCloudConfig();
     UpdateShardHandlerConfig ucfg = cfg.getUpdateShardHandlerConfig();
@@ -78,6 +82,8 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("info handler class", "testInfoHandler", cfg.getInfoHandlerClass());
     assertEquals(
         "config set handler class", "testConfigSetsHandler", cfg.getConfigSetsHandlerClass());
+    assertEquals("cores locator class", "testCoresLocator", cfg.getCoresLocatorClass());
+    assertEquals("core sorter class", "testCoreSorter", cfg.getCoreSorterClass());
     assertEquals("core load threads", 11, cfg.getCoreLoadThreadCount(false));
     assertEquals("replay update threads", 100, cfg.getReplayUpdatesThreads());
     MatcherAssert.assertThat(
@@ -137,11 +143,30 @@ public class TestSolrXml extends SolrTestCaseJ4 {
                         .collect(Collectors.toSet())));
     assertTrue("hideStackTrace", cfg.hideStackTraces());
     System.clearProperty("solr.allowPaths");
+
+    PluginInfo[] clusterPlugins = cfg.getClusterPlugins();
+    assertEquals(3, clusterPlugins.length);
+
+    PluginInfo cs1 = cfg.getClusterPlugins()[0];
+    assertEquals("testSingleton1", cs1.name);
+    assertEquals(CS.class.getName(), cs1.className);
+
+    PluginInfo cs2 = cfg.getClusterPlugins()[1];
+    assertEquals("testSingleton2", cs2.name);
+    assertEquals(CS.class.getName(), cs2.className);
+
+    PluginInfo replicaPlacementFactoryConfig = cfg.getClusterPlugins()[2];
+    assertEquals(
+        "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
+        replicaPlacementFactoryConfig.className);
+    assertEquals(1, replicaPlacementFactoryConfig.initArgs.size());
+    assertEquals(10, replicaPlacementFactoryConfig.initArgs.get("minimalFreeDiskGB"));
   }
 
   // Test  a few property substitutions that happen to be in solr-50-all.xml.
   public void testPropertySub() throws IOException {
 
+    System.setProperty(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, "false");
     System.setProperty("coreRootDirectory", "myCoreRoot" + File.separator);
     System.setProperty("hostPort", "8888");
     System.setProperty("shareSchema", "false");
@@ -303,11 +328,11 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   public void testFailAtConfigParseTimeWhenBoolTypeIsExpectedAndValueIsInvalidString() {
     String solrXml =
-        "<solr><solrcloud><bool name=\"genericCoreNodeNames\">NOT_A_BOOLEAN</bool></solrcloud></solr>";
+        "<solr><solrcloud><bool name=\"genericCoreNodeNames\">FOO</bool></solrcloud></solr>";
 
     SolrException thrown =
         assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
-    assertEquals("invalid boolean value: NOT_A_BOOLEAN", thrown.getMessage());
+    assertEquals("invalid boolean value: FOO", thrown.getMessage());
   }
 
   public void testFailAtConfigParseTimeWhenIntTypeIsExpectedAndBoolTypeIsGiven() {
@@ -474,4 +499,112 @@ public class TestSolrXml extends SolrTestCaseJ4 {
         assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
     assertEquals("Multiple instances of backup section found in solr.xml", thrown.getMessage());
   }
+
+  public void testFailAtConfigParseTimeWhenClusterSingletonHasNoName() {
+    System.setProperty(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, "false");
+    String solrXml =
+        "<solr><clusterPluginsSource class=\"org.apache.solr.api.NodeConfigClusterPluginsSource\"/><clusterSingleton class=\"k1\"/></solr>";
+    RuntimeException thrown =
+        assertThrows(RuntimeException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(
+        "java.lang.RuntimeException: clusterSingleton: missing mandatory attribute 'name'",
+        thrown.getMessage());
+  }
+
+  public void testFailAtConfigParseTimeWhenClusterSingletonHasDuplicateName() {
+    System.setProperty(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, "false");
+    String solrXml =
+        "<solr><clusterPluginsSource class=\"org.apache.solr.api.NodeConfigClusterPluginsSource\"/><clusterSingleton name=\"a\" class=\"k1\"/><clusterSingleton name=\"a\" class=\"k2\"/></solr>";
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(
+        "Multiple clusterSingleton sections with name 'a' found in solr.xml", thrown.getMessage());
+  }
+
+  public void testFailAtConfigParseTimeWhenClusterSingletonHasNoClass() {
+    System.setProperty(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, "false");
+    String solrXml =
+        "<solr><clusterPluginsSource class=\"org.apache.solr.api.NodeConfigClusterPluginsSource\"/><clusterSingleton name=\"a\"/></solr>";
+    RuntimeException thrown =
+        assertThrows(RuntimeException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(
+        "java.lang.RuntimeException: clusterSingleton: missing mandatory attribute 'class'",
+        thrown.getMessage());
+  }
+
+  public void testFailAtConfigParseTimeWhenClusterSingletonWithWrongPluginsSource() {
+    String solrXml =
+        "<solr><clusterSingleton name=\"a\" class=\"" + CS.class.getName() + "\"/></solr>";
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(
+        "Cluster plugins found in solr.xml but the property solr.cluster.plugin.edit.enabled is set to true. Cluster plugins may only be declared in solr.xml with immutable configs.",
+        thrown.getMessage());
+  }
+
+  public void testFailAtConfigParseTimeWhenClusterSingletonClassNotFound() {
+    System.setProperty(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, "false");
+    String solrXml = "<solr><clusterSingleton name=\"a\" class=\"class.not.found.Class\"/></solr>";
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(" Error loading class 'class.not.found.Class'", thrown.getMessage());
+  }
+
+  public void testFailAtConfigParseTimeWhenClusterSingletonClassHierarchyIllegal() {
+    System.setProperty(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, "false");
+    String solrXml =
+        "<solr><clusterSingleton name=\"a\" class=\"" + NotCS.class.getName() + "\"/></solr>";
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(
+        "clusterSingleton plugins must implement the interface " + ClusterSingleton.class.getName(),
+        thrown.getMessage());
+  }
+
+  /**
+   * It is not necessary to set the name attribute, but if it is set, ".placement-plugin" is
+   * acceptable
+   */
+  public void testReplicaPlacementFactoryNameCanBeSet() {
+    System.setProperty(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, "false");
+    String solrXml =
+        "<solr><replicaPlacementFactory name=\".placement-plugin\" class=\""
+            + AffinityPlacementFactory.class.getName()
+            + "\"/></solr>";
+    SolrXmlConfig.fromString(solrHome, solrXml);
+  }
+
+  public void testFailAtConfigParseTimeWhenReplicaPlacementFactoryNameIsInvalid() {
+    System.setProperty(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, "false");
+    String solrXml =
+        "<solr><replicaPlacementFactory name=\".must-be-placement-plugin\" class=\""
+            + AffinityPlacementFactory.class.getName()
+            + "\"/></solr>";
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
+    assertEquals(
+        "The replicaPlacementFactory name attribute must be .placement-plugin",
+        thrown.getMessage());
+  }
+
+  public static class CS implements ClusterSingleton {
+
+    @Override
+    public String getName() {
+      return null;
+    }
+
+    @Override
+    public void start() throws Exception {}
+
+    @Override
+    public State getState() {
+      return null;
+    }
+
+    @Override
+    public void stop() {}
+  }
+
+  public static class NotCS {}
 }

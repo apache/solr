@@ -19,35 +19,42 @@ package org.apache.solr.core;
 import io.opentelemetry.api.trace.TracerProvider;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.tracing.TraceUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestTracerConfigurator extends SolrTestCaseJ4 {
 
-  @Test
-  public void configuratorClassDoesNotExistTest() {
+  @BeforeClass
+  public static void setUpProperties() throws Exception {
     System.setProperty("otel.service.name", "something");
     System.setProperty("solr.otelDefaultConfigurator", "configuratorClassDoesNotExistTest");
-    try {
-      assertTrue(TracerConfigurator.shouldAutoConfigOTEL());
-      SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
-      TracerConfigurator.loadTracer(loader, null);
-      assertEquals(
-          "Expecting noop otel after failure to auto-init",
-          TracerProvider.noop().get(null),
-          TraceUtils.getGlobalTracer());
-    } finally {
-      System.clearProperty("solr.otelDefaultConfigurator");
-      System.clearProperty("otel.service.name");
-    }
+  }
+
+  @AfterClass
+  public static void clearProperties() throws Exception {
+    System.clearProperty("solr.otelDefaultConfigurator");
+    System.clearProperty("otel.service.name");
+  }
+
+  @Test
+  public void configuratorClassDoesNotExistTest() {
+    assertTrue(TracerConfigurator.shouldAutoConfigOTEL());
+    SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
+    TracerConfigurator.loadTracer(loader, null);
+    assertEquals(
+        "Expecting noop otel after failure to auto-init",
+        TracerProvider.noop().get(null),
+        TraceUtils.getGlobalTracer());
   }
 
   @Test
   public void otelDisabledByProperty() {
-    System.setProperty("OTEL_SDK_DISABLED", "true");
+    System.setProperty("otel.sdk.disabled", "true");
     try {
       assertFalse(TracerConfigurator.shouldAutoConfigOTEL());
     } finally {
-      System.clearProperty("OTEL_SDK_DISABLED");
+      System.clearProperty("otel.sdk.disabled");
     }
   }
 }

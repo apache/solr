@@ -17,6 +17,7 @@
 package org.apache.solr.servlet;
 
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
@@ -65,7 +66,11 @@ public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
     // Test using the Stream body parameter
     for (String cmd : cmds) {
       direct.request(
-          "/update?" + CommonParams.STREAM_BODY + "=" + URLEncoder.encode(cmd, "UTF-8"), null);
+          "/update?"
+              + CommonParams.STREAM_BODY
+              + "="
+              + URLEncoder.encode(cmd, StandardCharsets.UTF_8),
+          null);
     }
     String got = direct.request(getIt, null);
     assertTrue(got.indexOf(value) > 0);

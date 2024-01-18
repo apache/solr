@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.client.solrj.io.stream.StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
 
@@ -33,8 +34,6 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.io.ClassificationEvaluation;
@@ -55,9 +54,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 /**
  * @since 6.2.0
@@ -85,7 +82,6 @@ public class TextLogitStream extends TupleStream implements Expressible {
   private transient boolean doCloseCache;
 
   protected transient StreamContext streamContext;
-  protected transient ExecutorService executorService;
   protected TupleStream termsStream;
   private List<String> terms;
 
@@ -367,9 +363,6 @@ public class TextLogitStream extends TupleStream implements Expressible {
     } else {
       doCloseCache = false;
     }
-
-    this.executorService =
-        ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("TextLogitSolrStream"));
   }
 
   @Override
@@ -410,9 +403,8 @@ public class TextLogitStream extends TupleStream implements Expressible {
     }
   }
 
-  private List<Future<Tuple>> callShards(List<String> baseUrls) throws IOException {
-
-    List<Future<Tuple>> futures = new ArrayList<>();
+  private Collection<Tuple> callShards(List<String> baseUrls) throws IOException {
+    List<LogitCall> tasks = new ArrayList<>();
     for (String baseUrl : baseUrls) {
       LogitCall lc =
           new LogitCall(
@@ -428,22 +420,15 @@ public class TextLogitStream extends TupleStream implements Expressible {
               this.threshold,
               this.idfs,
               this.clientCache);
-
-      Future<Tuple> future = executorService.submit(lc);
-      futures.add(future);
+      tasks.add(lc);
     }
-
-    return futures;
+    return submitAllAndAwaitAggregatingExceptions(tasks, "TextLogitSolrStream");
   }
 
   @Override
   public void close() throws IOException {
     if (doCloseCache) {
       clientCache.close();
-    }
-
-    if (executorService != null) {
-      executorService.shutdown();
     }
     termsStream.close();
   }
@@ -511,9 +496,7 @@ public class TextLogitStream extends TupleStream implements Expressible {
         this.evaluation = new ClassificationEvaluation();
 
         this.error = 0;
-        for (Future<Tuple> logitCall : callShards(getShardUrls())) {
-
-          Tuple tuple = logitCall.get();
+        for (Tuple tuple : callShards(getShardUrls())) {
           @SuppressWarnings({"unchecked"})
           List<Double> shardWeights = (List<Double>) tuple.get("weights");
           allWeights.add(shardWeights);

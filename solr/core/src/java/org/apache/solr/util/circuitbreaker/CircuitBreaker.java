@@ -17,6 +17,8 @@
 
 package org.apache.solr.util.circuitbreaker;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -41,7 +43,10 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  *
  * @lucene.experimental
  */
-public abstract class CircuitBreaker implements NamedListInitializedPlugin {
+public abstract class CircuitBreaker implements NamedListInitializedPlugin, Closeable {
+  public static final String SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE =
+      "solr.circuitbreaker.errorcode";
+  private static SolrException.ErrorCode errorCode = resolveExceptionErrorCode();
   // Only query requests are checked by default
   private Set<SolrRequestType> requestTypes = Set.of(SolrRequestType.QUERY);
   private final List<SolrRequestType> SUPPORTED_TYPES =
@@ -52,16 +57,53 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin {
     SolrPluginUtils.invokeSetters(this, args);
   }
 
-  public CircuitBreaker() {}
+  public CircuitBreaker() {
+    // Early abort if custom error code system property is wrong
+    errorCode = resolveExceptionErrorCode();
+  }
 
   /** Check if circuit breaker is tripped. */
   public abstract boolean isTripped();
 
-  /** Get debug useful info. */
-  public abstract String getDebugInfo();
-
   /** Get error message when the circuit breaker triggers */
   public abstract String getErrorMessage();
+
+  /**
+   * Get http error code, defaults to 429 (TOO_MANY_REQUESTS) but can be overridden with system
+   * property {@link #SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE}
+   */
+  public static SolrException.ErrorCode getExceptionErrorCode() {
+    return errorCode;
+  }
+
+  private static SolrException.ErrorCode resolveExceptionErrorCode() {
+    int intCode = SolrException.ErrorCode.TOO_MANY_REQUESTS.code;
+    String strCode = System.getProperty(SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE);
+    if (strCode != null) {
+      try {
+        intCode = Integer.parseInt(strCode);
+      } catch (NumberFormatException nfe) {
+        intCode = SolrException.ErrorCode.UNKNOWN.code;
+      }
+    }
+    SolrException.ErrorCode errorCode = SolrException.ErrorCode.getErrorCode(intCode);
+    if (errorCode != SolrException.ErrorCode.UNKNOWN) {
+      return errorCode;
+    } else {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          String.format(
+              Locale.ROOT,
+              "Invalid error code %s specified for circuit breaker system property %s.",
+              strCode,
+              SYSPROP_SOLR_CIRCUITBREAKER_ERRORCODE));
+    }
+  }
+
+  @Override
+  public void close() throws IOException {
+    // Nothing to do by default
+  }
 
   /**
    * Set the request types for which this circuit breaker should be checked. If not called, the
@@ -89,21 +131,5 @@ public abstract class CircuitBreaker implements NamedListInitializedPlugin {
 
   public Set<SolrRequestType> getRequestTypes() {
     return requestTypes;
-  }
-
-  /**
-   * Return the proper error code to use in exception. For legacy use of {@link CircuitBreaker} we
-   * return 503 for backward compatibility, else return 429.
-   *
-   * @deprecated Remove in 10.0
-   */
-  @Deprecated(since = "9.4")
-  public static SolrException.ErrorCode getErrorCode(List<CircuitBreaker> trippedCircuitBreakers) {
-    if (trippedCircuitBreakers != null
-        && trippedCircuitBreakers.stream().anyMatch(cb -> cb instanceof CircuitBreakerManager)) {
-      return SolrException.ErrorCode.SERVICE_UNAVAILABLE;
-    } else {
-      return SolrException.ErrorCode.TOO_MANY_REQUESTS;
-    }
   }
 }
