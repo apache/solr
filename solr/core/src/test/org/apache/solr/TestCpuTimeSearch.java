@@ -16,7 +16,6 @@
  */
 package org.apache.solr;
 
-import com.carrotsearch.randomizedtesting.annotations.Seed;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
@@ -35,11 +34,11 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 
-@Seed("861F5769E4B6F696")
+// TODO @Seed("861F5769E4B6F696")
 public class TestCpuTimeSearch extends SolrTestCaseJ4 {
 
   @ClassRule public static final SolrJettyTestRule solrRule = new SolrJettyTestRule();
-  
+
   private static String shard1;
   private static String shard2;
 
