@@ -29,6 +29,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
+* SOLR-17112: bin/solr script doesn't do ps properly on some systems
 
 Deprecation Removals
 ----------------------
