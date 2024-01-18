@@ -30,6 +30,8 @@ Optimizations
 Bug Fixes
 ---------------------
 
+* SOLR-17074: Fixed not correctly escaped quote in bin/solr script
+
 Deprecation Removals
 ----------------------
 
