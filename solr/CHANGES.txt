@@ -5,6 +5,15 @@ Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
 
+==================  9.4.2 ==================
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
 ==================  9.4.1 ==================
 Bug Fixes
 ---------------------
