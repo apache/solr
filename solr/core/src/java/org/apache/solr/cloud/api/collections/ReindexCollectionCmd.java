@@ -806,7 +806,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     try (SolrClient solrClient =
         new HttpSolrClient.Builder()
             .withHttpClient(client)
-            .withDefaultDataStore(daemonReplica.getCoreName())
+            .withDefaultCollection(daemonReplica.getCoreName())
             .withBaseSolrUrl(daemonReplica.getBaseUrl())
             .build()) {
       ModifiableSolrParams q = new ModifiableSolrParams();

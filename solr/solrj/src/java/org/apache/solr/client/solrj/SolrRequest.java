@@ -202,15 +202,15 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public abstract SolrParams getParams();
 
   /**
-   * Determines whether this request should use or ignore any specified data stores (esp. {@link
+   * Determines whether this request should use or ignore any specified collections (esp. {@link
    * SolrClient#defaultCollection})
    *
-   * <p>Many Solr requests target a particular data store (i.e. core or collection). But not all of
-   * them - many Solr APIs (e.g. security or other admin APIs) are agnostic of data stores entirely.
-   * This method gives these requests a way to opt out of using {@link SolrClient#defaultCollection}
-   * or other specified data stores.
+   * <p>Many Solr requests target a particular core or collection. But not all of them - many Solr
+   * APIs (e.g. security or other admin APIs) are agnostic of collections entirely. This method
+   * gives these requests a way to opt out of using {@link SolrClient#defaultCollection} or other
+   * specified collections.
    */
-  public boolean requiresDataStore() {
+  public boolean requiresCollection() {
     return false;
   }
 

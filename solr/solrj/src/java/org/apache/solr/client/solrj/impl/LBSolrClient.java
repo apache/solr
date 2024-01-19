@@ -617,7 +617,7 @@ public abstract class LBSolrClient extends SolrClient {
     final int maxTries = (numServersToTry == null ? serverList.length : numServersToTry.intValue());
     int numServersTried = 0;
     Map<String, ServerWrapper> justFailed = null;
-    if (ClientUtils.shouldApplyDefaultDataStore(collection, request))
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
       collection = defaultCollection;
 
     boolean timeAllowedExceeded = false;

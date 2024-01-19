@@ -17,7 +17,7 @@
 package org.apache.solr.client.api.endpoint;
 
 import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
-import static org.apache.solr.client.api.util.Constants.STORE_PATH_PREFIX;
+import static org.apache.solr.client.api.util.Constants.INDEX_PATH_PREFIX;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -42,7 +42,7 @@ import org.apache.solr.client.api.util.StoreApiParameters;
  * Solr's OAS (and the clients generated from that) an approximate view of the endpoint until its
  * inputs and outputs can be understood more fully.
  */
-@Path(STORE_PATH_PREFIX + "/select")
+@Path(INDEX_PATH_PREFIX + "/select")
 public interface SelectApi {
   @GET
   @StoreApiParameters

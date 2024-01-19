@@ -98,7 +98,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     super(Arrays.asList(builder.baseSolrUrls));
     this.solrClient = builder.http2SolrClient;
     this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
-    this.defaultCollection = builder.defaultDataStore;
+    this.defaultCollection = builder.defaultCollection;
   }
 
   @Override
@@ -320,7 +320,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     private final String[] baseSolrUrls;
     private long aliveCheckIntervalMillis =
         TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
-    protected String defaultDataStore;
+    protected String defaultCollection;
 
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
       this.http2SolrClient = http2Client;
@@ -342,9 +342,9 @@ public class LBHttp2SolrClient extends LBSolrClient {
       return this;
     }
 
-    /** Sets a default data store for core- or collection-based requests. */
-    public LBHttp2SolrClient.Builder withDefaultDataStore(String defaultCoreOrCollection) {
-      this.defaultDataStore = defaultCoreOrCollection;
+    /** Sets a default for core or collection based requests. */
+    public LBHttp2SolrClient.Builder withDefaultCollection(String defaultCoreOrCollection) {
+      this.defaultCollection = defaultCoreOrCollection;
       return this;
     }
 

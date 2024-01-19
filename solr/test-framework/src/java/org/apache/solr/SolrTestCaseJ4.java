@@ -2702,7 +2702,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * should use the {@link org.apache.solr.client.solrj.impl.Http2SolrClient.Builder} class directly
    */
   public static HttpSolrClient getHttpSolrClient(String url, String defaultCoreName) {
-    return new HttpSolrClient.Builder(url).withDefaultDataStore(defaultCoreName).build();
+    return new HttpSolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
   }
 
   /**

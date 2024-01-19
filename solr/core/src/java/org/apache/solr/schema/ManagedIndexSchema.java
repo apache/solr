@@ -44,7 +44,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.DataStoreSolrRequest;
+import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -347,8 +347,8 @@ public final class ManagedIndexSchema extends IndexSchema {
     return activeReplicas;
   }
 
-  private static class GetZkSchemaVersionCallable extends DataStoreSolrRequest<SolrResponse>
-      implements Callable<Integer> {
+  private static class GetZkSchemaVersionCallable
+      extends CollectionRequiringSolrRequest<SolrResponse> implements Callable<Integer> {
 
     private final ZkController zkController;
     private String baseUrl;
@@ -375,7 +375,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     public Integer call() throws Exception {
       int remoteVersion = -1;
       try (HttpSolrClient solr =
-          new HttpSolrClient.Builder(baseUrl).withDefaultDataStore(coreName).build()) {
+          new HttpSolrClient.Builder(baseUrl).withDefaultCollection(coreName).build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (remoteVersion == -1
             || (remoteVersion < expectedZkVersion
