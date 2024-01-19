@@ -14,18 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.request;
+package org.apache.solr.client.api.model;
 
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
+public enum IndexType {
+  COLLECTION("collections"),
+  CORE("cores");
 
-public abstract class DataStoreSolrRequest<T extends SolrResponse> extends SolrRequest<T> {
-  public DataStoreSolrRequest(METHOD m, String path) {
-    super(m, path);
+  private final String pathString;
+
+  IndexType(String pathString) {
+    this.pathString = pathString;
   }
 
   @Override
-  public boolean requiresDataStore() {
-    return true;
+  public String toString() {
+    return pathString;
   }
 }

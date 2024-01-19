@@ -144,7 +144,7 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
         random().nextBoolean() ? new BinaryResponseParser() : new XMLResponseParser();
     return new HttpSolrClient.Builder()
         .withBaseSolrUrl(getBaseUrl())
-        .withDefaultDataStore(DEFAULT_TEST_CORENAME)
+        .withDefaultCollection(DEFAULT_TEST_CORENAME)
         .withResponseParser(randomParser)
         .build();
   }
