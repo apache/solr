@@ -173,6 +173,8 @@ Dependency Upgrades
 
 * SOLR-17026: Upgrade to Gradle 8.4 (Kevin Risden)
 
+* SOLR-17089: Upgrade Jersey to 3.1.5 (Jason Gerlowski)
+
 Other Changes
 ---------------------
 * SOLR-17024: Remove support for the long-defunct "collectionDefaults" clusterprops key (Jason Gerlowski)
