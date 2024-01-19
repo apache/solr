@@ -59,6 +59,7 @@ dependencies {
 
   implementation('org.glassfish.jersey.containers:jersey-container-jetty-http', {
     exclude group: "org.eclipse.jetty", module: "jetty-continuation"
+    exclude group: "org.glassfish.hk2.external", module: "jakarta.inject"
   })
   permitUnusedDeclared 'org.glassfish.jersey.containers:jersey-container-jetty-http'
   implementation 'org.glassfish.jersey.inject:jersey-hk2'
