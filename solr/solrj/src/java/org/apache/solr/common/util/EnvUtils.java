@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,10 +29,9 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
 
 /**
  * This class is a unified provider of environment variables and system properties. It exposes a
@@ -42,7 +41,7 @@ import org.apache.solr.common.util.Utils;
 public class EnvUtils {
   private static final SortedMap<String, String> ENV = new TreeMap<>(System.getenv());
   private static final Map<String, String> CUSTOM_MAPPINGS = new HashMap<>();
-  private static final Map<String, String> camelCaseToDotsMap = new HashMap<>();
+  private static final Map<String, String> camelCaseToDotsMap = new ConcurrentHashMap<>();
 
   static {
     try {
@@ -173,14 +172,9 @@ public class EnvUtils {
   }
 
   private static String camelCaseToDotSeparated(String key) {
-    if (camelCaseToDotsMap.containsKey(key)) {
-      return camelCaseToDotsMap.get(key);
-    } else {
-      String converted =
-          String.join(".", key.split("(?=[A-Z])")).replace("..", ".").toLowerCase(Locale.ROOT);
-      camelCaseToDotsMap.put(key, converted);
-      return converted;
-    }
+    return camelCaseToDotsMap.computeIfAbsent(
+        key,
+        (k) -> String.join(".", k.split("(?=[A-Z])")).replace("..", ".").toLowerCase(Locale.ROOT));
   }
 
   /** Get property as integer */

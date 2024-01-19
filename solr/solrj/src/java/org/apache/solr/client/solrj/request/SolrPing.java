@@ -28,7 +28,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  *
  * @since solr 1.3
  */
-public class SolrPing extends DataStoreSolrRequest<SolrPingResponse> {
+public class SolrPing extends CollectionRequiringSolrRequest<SolrPingResponse> {
 
   /** serialVersionUID. */
   private static final long serialVersionUID = 5828246236669090017L;
