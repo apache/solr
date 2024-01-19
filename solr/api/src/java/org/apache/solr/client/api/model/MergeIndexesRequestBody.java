@@ -16,18 +16,23 @@
  */
 package org.apache.solr.client.api.model;
 
-public enum StoreType {
-  COLLECTION("collections"),
-  CORE("cores");
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.List;
 
-  private final String pathString;
+/** Request body for endpoints {@link org.apache.solr.client.api.endpoint.MergeIndexesApi} */
+public class MergeIndexesRequestBody {
+  @Schema(description = "Multi-valued, directories that would be merged.", name = "indexDirs")
+  @JsonProperty
+  public List<String> indexDirs;
 
-  StoreType(String pathString) {
-    this.pathString = pathString;
-  }
+  @Schema(description = "Multi-valued, source cores that would be merged.", name = "srcCores")
+  @JsonProperty
+  public List<String> srcCores;
 
-  @Override
-  public String toString() {
-    return pathString;
-  }
+  @Schema(description = "Request ID to track this action which will be processed asynchronously.")
+  @JsonProperty
+  public String async;
+
+  @JsonProperty public String updateChain;
 }

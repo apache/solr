@@ -16,7 +16,7 @@
  */
 package org.apache.solr.client.api.endpoint;
 
-import static org.apache.solr.client.api.util.Constants.STORE_PATH_PREFIX;
+import static org.apache.solr.client.api.util.Constants.INDEX_PATH_PREFIX;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.ws.rs.DefaultValue;
@@ -31,7 +31,7 @@ import org.apache.solr.client.api.model.SchemaVersionResponse;
 import org.apache.solr.client.api.model.SchemaZkVersionResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
-@Path(STORE_PATH_PREFIX + "/schema")
+@Path(INDEX_PATH_PREFIX + "/schema")
 public interface GetSchemaApi {
 
   @GET
