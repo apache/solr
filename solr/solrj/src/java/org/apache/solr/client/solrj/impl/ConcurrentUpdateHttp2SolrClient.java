@@ -792,7 +792,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       return this;
     }
 
-    /** Sets a default for core- or collection-based requests. */
+    /** Sets a default for core or collection based requests. */
     public Builder withDefaultCollection(String defaultCoreOrCollection) {
       this.defaultCollection = defaultCoreOrCollection;
       return this;
