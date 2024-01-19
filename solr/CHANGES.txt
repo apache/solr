@@ -165,6 +165,8 @@ Bug Fixes
 
 * SOLR-17121: Fix SchemaCodecFactory to get PostingsFormat and DocValues from field. (Bruno Roustant, David Smiley)
 
+* SOLR-17116: The INSTALLSHARDDATA "collection-admin" API now reports errors correctly when run asynchronously. (Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
