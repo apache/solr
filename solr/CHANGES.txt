@@ -93,6 +93,8 @@ Bug Fixes
 
 * SOLR-17090: The v2 "delete alias" API no longer errantly returns a 405 status code (Jason Gerlowski)
 
+* SOLR-17121: Fix SchemaCodecFactory to get PostingsFormat and DocValues from field. (Bruno Roustant, David Smiley)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
