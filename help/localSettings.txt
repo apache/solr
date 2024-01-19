@@ -6,3 +6,15 @@ and save a project-local 'gradle.properties' file from a template,
 with some default settings which you can modify.
 
 See your 'gradle.properties' file for more details of those settings.
+
+Building without access to the internet
+---------------------------------------
+
+-- Node --
+There are a few tasks that rely on downloading node tools from NPM.
+These include the Reference Guide build, the integration (e2e) tests and the webapp build.
+Some of these can be disabled, however other tasks such as building the solr webapp often cannot be disabled.
+
+In order to set a NPM registry for Gradle to connect to, please use either:
+- The "SOLR_NPM_REGISTRY" environment variable
+- The "-Psolr.npm.registry" Gradle property.
