@@ -545,18 +545,14 @@ public class TestContainerPlugin extends SolrCloudTestCase {
       implements ConfigurablePlugin<ValidatableConfig> {
     @Override
     public void configure(ValidatableConfig cfg) {
-      cfg.validate();
+      if (!cfg.willPassValidation) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "invalid config");
+      }
     }
   }
 
   public static class ValidatableConfig implements ReflectMapWriter {
     @JsonProperty public boolean willPassValidation;
-
-    public void validate() {
-      if (!willPassValidation) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "invalid config");
-      }
-    }
   }
 
   private Callable<V2Response> getPlugin(String path) {
