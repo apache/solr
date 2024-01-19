@@ -48,7 +48,7 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
       CloudReplicaSource cloudReplicaSource =
           new CloudReplicaSource.Builder()
               .collection("collection1")
-              .onlyNrt(false)
+              .onlyRealTime(false)
               .zkStateReader(zkStateReader)
               .replicaListTransformer(replicaListTransformer)
               .allowListUrlChecker(checker)
@@ -79,7 +79,7 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
       CloudReplicaSource cloudReplicaSource =
           new CloudReplicaSource.Builder()
               .collection("collection1")
-              .onlyNrt(false)
+              .onlyRealTime(false)
               .zkStateReader(zkStateReader)
               .replicaListTransformer(replicaListTransformer)
               .allowListUrlChecker(checker)
@@ -108,7 +108,7 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
       CloudReplicaSource cloudReplicaSource =
           new CloudReplicaSource.Builder()
               .collection("collection1")
-              .onlyNrt(false)
+              .onlyRealTime(false)
               .zkStateReader(zkStateReader)
               .replicaListTransformer(replicaListTransformer)
               .allowListUrlChecker(checker)
@@ -139,7 +139,7 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
       CloudReplicaSource cloudReplicaSource =
           new CloudReplicaSource.Builder()
               .collection("collection1")
-              .onlyNrt(false)
+              .onlyRealTime(false)
               .zkStateReader(zkStateReader)
               .replicaListTransformer(replicaListTransformer)
               .allowListUrlChecker(checker)
@@ -186,7 +186,7 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
       CloudReplicaSource cloudReplicaSource =
           new CloudReplicaSource.Builder()
               .collection("collection1")
-              .onlyNrt(false)
+              .onlyRealTime(false)
               .zkStateReader(zkStateReader)
               .replicaListTransformer(replicaListTransformer)
               .allowListUrlChecker(checker)
@@ -228,7 +228,7 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
       CloudReplicaSource cloudReplicaSource =
           new CloudReplicaSource.Builder()
               .collection("collection1")
-              .onlyNrt(true) // enable only nrt mode
+              .onlyRealTime(true) // enable only nrt mode
               .zkStateReader(zkStateReader)
               .replicaListTransformer(replicaListTransformer)
               .allowListUrlChecker(checker)
@@ -273,7 +273,7 @@ public class CloudReplicaSourceTest extends SolrTestCaseJ4 {
       CloudReplicaSource cloudReplicaSource =
           new CloudReplicaSource.Builder()
               .collection("collection1")
-              .onlyNrt(true) // enable only nrt mode
+              .onlyRealTime(true) // enable only nrt mode
               .zkStateReader(zkStateReader)
               .replicaListTransformer(replicaListTransformer)
               .allowListUrlChecker(checker)

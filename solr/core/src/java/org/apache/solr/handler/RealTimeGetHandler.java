@@ -38,8 +38,9 @@ public class RealTimeGetHandler extends SearchHandler {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    // Tell HttpShardHandlerthat this request should only be distributed to NRT replicas
-    req.getContext().put(HttpShardHandler.ONLY_NRT_REPLICAS, Boolean.TRUE);
+    // Tell HttpShardHandler that this request should only be distributed to replicas
+    // that support real-time  requests.
+    req.getContext().put(HttpShardHandler.ONLY_REAL_TIME, Boolean.TRUE);
     super.handleRequestBody(req, rsp);
   }
 

@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
@@ -108,6 +109,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private LeaderRequestReplicationTracker leaderReplicationTracker = null;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final EnumSet<Replica.Type> followerReplicaTypes =
+      Arrays.stream(Replica.Type.values())
+          .filter(t -> t.follower)
+          .collect(Collectors.toCollection(() -> EnumSet.noneOf(Replica.Type.class)));
 
   public DistributedZkUpdateProcessor(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
@@ -193,9 +198,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                 && node.getNodeProps().getCoreName().equals(req.getCore().getName()));
 
     if (!isLeader && req.getParams().get(COMMIT_END_POINT, "").equals("replicas")) {
-      if (replicaType == Replica.Type.PULL) {
-        log.warn("Commit not supported on replicas of type {}", Replica.Type.PULL);
-      } else if (replicaType == Replica.Type.NRT) {
+      if (!replicaType.follower) {
+        log.warn("Commit not supported on replicas of type {}", replicaType);
+      } else if (!replicaType.followerSkipCommit) {
         doLocalCommit(cmd);
       }
     } else {
@@ -545,7 +550,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         String myShardId = cloudDesc.getShardId();
         Replica leaderReplica =
             zkController.getZkStateReader().getLeaderRetry(collection, myShardId);
-        // DBQ forwarded to NRT and TLOG replicas
+        // DBQ forwarded to follower replicas
         List<ZkCoreNodeProps> replicaProps =
             zkController
                 .getZkStateReader()
@@ -555,7 +560,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                     leaderReplica.getName(),
                     null,
                     Replica.State.DOWN,
-                    EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
+                    followerReplicaTypes);
         if (replicaProps != null) {
           final List<SolrCmdDistributor.Node> myReplicas = new ArrayList<>(replicaProps.size());
           for (ZkCoreNodeProps replicaProp : replicaProps) {
@@ -629,7 +634,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                   leaderReplica.getName(),
                   null,
                   Replica.State.DOWN,
-                  EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
+                  followerReplicaTypes);
       if (replicaProps != null) {
         nodes = new ArrayList<>(replicaProps.size());
         for (ZkCoreNodeProps props : replicaProps) {
@@ -897,10 +902,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       String shardId, Replica leaderReplica, int maxRetries) {
     String leaderCoreNodeName = leaderReplica.getName();
     List<Replica> replicas =
-        clusterState
-            .getCollection(collection)
-            .getSlice(shardId)
-            .getReplicas(EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
+        clusterState.getCollection(collection).getSlice(shardId).getReplicas(followerReplicaTypes);
     replicas.removeIf((replica) -> replica.getName().equals(leaderCoreNodeName));
     if (replicas.isEmpty()) {
       return null;
@@ -1278,7 +1280,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         List<ZkCoreNodeProps> myReplicas =
             zkController
                 .getZkStateReader()
-                .getReplicaProps(collection, cloudDesc.getShardId(), cloudDesc.getCoreNodeName());
+                .getReplicaProps(
+                    collection,
+                    cloudDesc.getShardId(),
+                    cloudDesc.getCoreNodeName(),
+                    null,
+                    null,
+                    followerReplicaTypes);
         boolean foundErrorNodeInReplicaList = false;
         if (myReplicas != null) {
           for (ZkCoreNodeProps replicaProp : myReplicas) {

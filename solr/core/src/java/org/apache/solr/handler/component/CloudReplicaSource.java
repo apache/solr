@@ -170,10 +170,9 @@ class CloudReplicaSource implements ReplicaSource {
               .filter(replica -> replica.isActive(clusterState.getLiveNodes()))
               .filter(
                   replica ->
-                      !builder.onlyNrt
-                          || (replica.getType() == Replica.Type.NRT
-                              || (replica.getType() == Replica.Type.TLOG
-                                  && isShardLeader.test(replica))))
+                      !builder.onlyRealTime
+                          || (replica.getType().follower && !replica.getType().followerSkipCommit)
+                          || (replica.getType().leaderEligible && isShardLeader.test(replica)))
               .collect(Collectors.toList());
       builder.replicaListTransformer.transform(list);
       List<String> coreUrls = list.stream().map(Replica::getCoreUrl).collect(Collectors.toList());
@@ -269,7 +268,7 @@ class CloudReplicaSource implements ReplicaSource {
     private String collection;
     private ZkStateReader zkStateReader;
     private SolrParams params;
-    private boolean onlyNrt;
+    private boolean onlyRealTime;
     private ReplicaListTransformer replicaListTransformer;
     private AllowListUrlChecker urlChecker;
 
@@ -288,8 +287,8 @@ class CloudReplicaSource implements ReplicaSource {
       return this;
     }
 
-    public Builder onlyNrt(boolean onlyNrt) {
-      this.onlyNrt = onlyNrt;
+    public Builder onlyRealTime(boolean onlyRealTime) {
+      this.onlyRealTime = onlyRealTime;
       return this;
     }
 
