@@ -23,6 +23,9 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(
         tasks.npmSetup {
             args.addAll(['--registry', npmRegistry])
         }
+        tasks.nodeSetup {
+            args.addAll(['--registry', npmRegistry])
+        }
     }
 
     ext {
