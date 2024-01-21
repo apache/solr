@@ -52,7 +52,7 @@ public class Krb5HttpClientUtils {
             return this.getType().equals(type);
           }
         };
-    String clientAppName = EnvUtils.getProp("solr.kerberos.jaas.appname", "Client");
+    String clientAppName = EnvUtils.getProperty("solr.kerberos.jaas.appname", "Client");
     AppConfigurationEntry[] entries = jaasConfig.getAppConfigurationEntry(clientAppName);
     if (entries == null) {
       log.warn(

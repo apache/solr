@@ -41,7 +41,7 @@ public class HadoopSSLCredentialProvider extends AbstractSSLCredentialProvider {
   }
 
   public HadoopSSLCredentialProvider(Configuration hadoopConfigurationProvider) {
-    if (StrUtils.isNullOrEmpty(EnvUtils.getProp(CREDENTIAL_PROVIDER_PATH))) {
+    if (StrUtils.isNullOrEmpty(EnvUtils.getProperty(CREDENTIAL_PROVIDER_PATH))) {
       throw new RuntimeException(
           "Cannot initialize Hadoop configuration provider without credential provider path. Use "
               + CREDENTIAL_PROVIDER_PATH
@@ -49,7 +49,7 @@ public class HadoopSSLCredentialProvider extends AbstractSSLCredentialProvider {
     }
     this.hadoopConfigurationProvider = hadoopConfigurationProvider;
     hadoopConfigurationProvider.set(
-        CREDENTIAL_PROVIDER_PATH, EnvUtils.getProp(CREDENTIAL_PROVIDER_PATH));
+        CREDENTIAL_PROVIDER_PATH, EnvUtils.getProperty(CREDENTIAL_PROVIDER_PATH));
   }
 
   @Override

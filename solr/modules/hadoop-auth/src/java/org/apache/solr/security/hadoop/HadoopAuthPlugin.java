@@ -162,7 +162,7 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
     for (String configName : authConfigNames) {
       String systemProperty = sysPropPrefix + configName;
       String defaultConfigVal = authConfigDefaults.get(configName);
-      String configVal = EnvUtils.getProp(systemProperty, defaultConfigVal);
+      String configVal = EnvUtils.getProperty(systemProperty, defaultConfigVal);
       if (configVal != null) {
         params.put(configName, configVal);
       }

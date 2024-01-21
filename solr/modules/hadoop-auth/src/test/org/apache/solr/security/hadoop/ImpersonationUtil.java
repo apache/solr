@@ -39,7 +39,7 @@ public class ImpersonationUtil {
       org.apache.hadoop.security.Groups hGroups =
           new org.apache.hadoop.security.Groups(new Configuration());
       try {
-        List<String> g = hGroups.getGroups(EnvUtils.getProp("user.name"));
+        List<String> g = hGroups.getGroups(EnvUtils.getProperty("user.name"));
         if (g != null && g.size() > 0) {
           group = g.get(0);
         }

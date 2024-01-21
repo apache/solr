@@ -186,7 +186,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
     if (kerberosEnabled) {
       initKerberos();
     }
-    if (StrUtils.isNullOrEmpty(EnvUtils.getProp(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
+    if (StrUtils.isNullOrEmpty(EnvUtils.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
       System.setProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED, "false");
     }
   }
@@ -293,7 +293,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   boolean getConfig(String name, boolean defaultValue) {
     Boolean value = params.getBool(name);
     if (value == null) {
-      String sysValue = EnvUtils.getProp(name);
+      String sysValue = EnvUtils.getProperty(name);
       if (sysValue != null) {
         value = Boolean.valueOf(sysValue);
       }
@@ -304,7 +304,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   int getConfig(String name, int defaultValue) {
     Integer value = params.getInt(name);
     if (value == null) {
-      String sysValue = EnvUtils.getProp(name);
+      String sysValue = EnvUtils.getProperty(name);
       if (sysValue != null) {
         value = Integer.parseInt(sysValue);
       }
@@ -315,7 +315,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   String getConfig(String name, String defaultValue) {
     String value = params.get(name);
     if (value == null) {
-      value = EnvUtils.getProp(name);
+      value = EnvUtils.getProperty(name);
     }
     return value == null ? defaultValue : value;
   }

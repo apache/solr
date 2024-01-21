@@ -168,13 +168,13 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     // Special handling for the "cookie.domain" based on whether port should be
     // appended to the domain. Useful for situations where multiple solr nodes are
     // on the same host.
-    String usePortStr = EnvUtils.getProp(COOKIE_PORT_AWARE_PARAM, null);
+    String usePortStr = EnvUtils.getProperty(COOKIE_PORT_AWARE_PARAM, null);
     boolean needPortAwareCookies = (usePortStr == null) ? false : Boolean.parseBoolean(usePortStr);
 
     if (!needPortAwareCookies || !coreContainer.isZooKeeperAware()) {
       putParam(params, "cookie.domain", COOKIE_DOMAIN_PARAM, null);
     } else { // we need port aware cookies and we are in SolrCloud mode.
-      String host = EnvUtils.getProp(COOKIE_DOMAIN_PARAM, null);
+      String host = EnvUtils.getProperty(COOKIE_DOMAIN_PARAM, null);
       if (host == null) {
         throw new SolrException(
             ErrorCode.SERVER_ERROR, "Missing required parameter '" + COOKIE_DOMAIN_PARAM + "'.");
@@ -184,7 +184,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     }
 
     // check impersonator config
-    EnvUtils.getProps()
+    EnvUtils.getProperties()
         .forEach(
             (key, value) -> {
               if (key.startsWith(IMPERSONATOR_PREFIX)) {
@@ -248,7 +248,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
       String internalParamName,
       String externalParamName,
       String defaultValue) {
-    String value = EnvUtils.getProp(externalParamName, defaultValue);
+    String value = EnvUtils.getProperty(externalParamName, defaultValue);
     if (value == null) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Missing required parameter '" + externalParamName + "'.");
@@ -258,7 +258,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
 
   private void putParamOptional(
       Map<String, String> params, String internalParamName, String externalParamName) {
-    String value = EnvUtils.getProp(externalParamName);
+    String value = EnvUtils.getProperty(externalParamName);
     if (value != null) {
       params.put(internalParamName, value);
     }

@@ -81,7 +81,7 @@ public class HadoopSSLConfigurationsTest extends SolrTestCaseJ4 {
     getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_KEY_STORE_PASSWORD, SAMPLE_PW1)
         .init();
-    MatcherAssert.assertThat(EnvUtils.getProp(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW1));
+    MatcherAssert.assertThat(EnvUtils.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW1));
   }
 
   @Test
@@ -90,7 +90,7 @@ public class HadoopSSLConfigurationsTest extends SolrTestCaseJ4 {
     getSutWithMockedHadoopCredentialProvider(
             SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD, SAMPLE_PW2)
         .init();
-    MatcherAssert.assertThat(EnvUtils.getProp(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW2));
+    MatcherAssert.assertThat(EnvUtils.getProperty(CLIENT_KEY_STORE_PASSWORD), is(SAMPLE_PW2));
   }
 
   @Test

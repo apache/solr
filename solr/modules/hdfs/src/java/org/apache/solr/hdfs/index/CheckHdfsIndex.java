@@ -75,7 +75,7 @@ public class CheckHdfsIndex {
 
   private static Configuration getConf(Path path) {
     Configuration conf = new Configuration();
-    String confDir = EnvUtils.getProp(HdfsDirectoryFactory.CONFIG_DIRECTORY);
+    String confDir = EnvUtils.getProperty(HdfsDirectoryFactory.CONFIG_DIRECTORY);
     HdfsUtil.addHdfsResources(conf, confDir);
 
     String fsScheme = path.toUri().getScheme();

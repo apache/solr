@@ -43,7 +43,7 @@ public class HadoopTestUtil {
     if (System.getenv("HADOOP_HOME") != null) {
       SolrTestCase.fail("Ensure that HADOOP_HOME environment variable is not set.");
     }
-    if (EnvUtils.getProp("hadoop.home.dir") != null) {
+    if (EnvUtils.getProperty("hadoop.home.dir") != null) {
       SolrTestCase.fail("Ensure that \"hadoop.home.dir\" Java property is not set.");
     }
   }

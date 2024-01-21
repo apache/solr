@@ -171,7 +171,7 @@ public class TestImpersonationWithHadoopAuth extends SolrCloudTestCase {
   @Test
   public void testProxyValidateGroup() throws Exception {
     try (SolrClient solrClient = newSolrClient()) {
-      solrClient.request(getProxyRequest("anyHostUsersGroup", EnvUtils.getProp("user.name")));
+      solrClient.request(getProxyRequest("anyHostUsersGroup", EnvUtils.getProperty("user.name")));
       assertTrue(ImpersonatorCollectionsHandler.called.get());
     }
   }

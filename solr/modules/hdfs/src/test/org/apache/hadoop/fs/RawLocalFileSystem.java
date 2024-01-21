@@ -707,7 +707,7 @@ public class RawLocalFileSystem extends FileSystem {
 
   @Override
   public Path getHomeDirectory() {
-    return this.makeQualified(new Path(EnvUtils.getProp("user.home")));
+    return this.makeQualified(new Path(EnvUtils.getProperty("user.home")));
   }
 
   /**
@@ -726,7 +726,7 @@ public class RawLocalFileSystem extends FileSystem {
 
   @Override
   protected Path getInitialWorkingDirectory() {
-    return this.makeQualified(new Path(EnvUtils.getProp("user.dir")));
+    return this.makeQualified(new Path(EnvUtils.getProperty("user.dir")));
   }
 
   @Override

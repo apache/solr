@@ -60,7 +60,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     org.apache.hadoop.security.Groups hGroups =
         new org.apache.hadoop.security.Groups(new Configuration());
     try {
-      List<String> g = hGroups.getGroups(EnvUtils.getProp("user.name"));
+      List<String> g = hGroups.getGroups(EnvUtils.getProperty("user.name"));
       if (g != null && g.size() > 0) {
         group = g.get(0);
       }
@@ -280,7 +280,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @Test
   public void testProxyValidateGroup() throws Exception {
-    solrClient.request(getProxyRequest("anyHostUsersGroup", EnvUtils.getProp("user.name"), null));
+    solrClient.request(getProxyRequest("anyHostUsersGroup", EnvUtils.getProperty("user.name"), null));
     assertTrue(ImpersonatorCollectionsHandler.called.get());
   }
 

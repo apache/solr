@@ -711,6 +711,6 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     plugin.init(testConfig);
     assertEquals(
         "http://acmepaymentscorp/oauth/oauth20/token",
-        EnvUtils.getProp(LoadAdminUiServlet.SYSPROP_CSP_CONNECT_SRC_URLS));
+        EnvUtils.getProperty(LoadAdminUiServlet.SYSPROP_CSP_CONNECT_SRC_URLS));
   }
 }

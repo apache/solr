@@ -93,7 +93,7 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
     instance.prepareConfiguration(new NamedList<>());
     assertEquals(
         List.of("host.name=my.solr.host", "foo=bar"),
-        List.of(EnvUtils.getProp("otel.resource.attributes").split(",")));
+        List.of(EnvUtils.getProperty("otel.resource.attributes").split(",")));
   }
 
   @Test

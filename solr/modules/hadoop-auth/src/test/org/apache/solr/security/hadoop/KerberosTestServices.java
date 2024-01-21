@@ -140,7 +140,7 @@ public class KerberosTestServices {
       clientOptions.put("storeKey", "true");
       clientOptions.put("useTicketCache", "false");
       clientOptions.put("refreshKrb5Config", "true");
-      String jaasProp = EnvUtils.getProp("solr.jaas.debug");
+      String jaasProp = EnvUtils.getProperty("solr.jaas.debug");
       if (jaasProp != null && "true".equalsIgnoreCase(jaasProp)) {
         clientOptions.put("debug", "true");
       }

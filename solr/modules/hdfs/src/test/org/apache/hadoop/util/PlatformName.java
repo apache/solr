@@ -33,15 +33,15 @@ public class PlatformName {
    * per the java-vm.
    */
   public static final String PLATFORM_NAME =
-      (EnvUtils.getProp("os.name").startsWith("Windows")
-          ? System.getenv("os") : EnvUtils.getProp("os.name"))
-          + "-" + EnvUtils.getProp("os.arch")
-          + "-" + EnvUtils.getProp("sun.arch.data.model");
+      (EnvUtils.getProperty("os.name").startsWith("Windows")
+          ? System.getenv("os") : EnvUtils.getProperty("os.name"))
+          + "-" + EnvUtils.getProperty("os.arch")
+          + "-" + EnvUtils.getProperty("sun.arch.data.model");
 
   /**
    * The java vendor name used in this platform.
    */
-  public static final String JAVA_VENDOR_NAME = EnvUtils.getProp("java.vendor");
+  public static final String JAVA_VENDOR_NAME = EnvUtils.getProperty("java.vendor");
 
   /**
    * A public static variable to indicate the current java vendor is

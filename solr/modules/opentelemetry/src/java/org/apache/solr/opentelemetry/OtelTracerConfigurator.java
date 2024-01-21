@@ -66,8 +66,8 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     setDefaultIfNotConfigured("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc");
     setDefaultIfNotConfigured("OTEL_TRACES_SAMPLER", "parentbased_always_on");
     setDefaultIfNotConfigured("OTEL_PROPAGATORS", "tracecontext,baggage");
-    if (EnvUtils.getProp("host") != null) {
-      addOtelResourceAttributes(Map.of("host.name", EnvUtils.getProp("host")));
+    if (EnvUtils.getProperty("host") != null) {
+      addOtelResourceAttributes(Map.of("host.name", EnvUtils.getProperty("host")));
     }
 
     final String currentConfig = getCurrentOtelConfigAsString();
@@ -140,7 +140,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
     currentEnv.entrySet().stream()
         .filter(e -> e.getKey().startsWith("OTEL_"))
         .forEach(entry -> currentConfig.put(entry.getKey(), entry.getValue()));
-    EnvUtils.getProps().entrySet().stream()
+    EnvUtils.getProperties().entrySet().stream()
         .filter(e -> e.getKey().startsWith("otel."))
         .forEach(
             entry -> {
