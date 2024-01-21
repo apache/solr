@@ -18,6 +18,16 @@
 configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(":solr:webapp")]) {
     apply plugin: "com.github.node-gradle.node"
 
+    def npmRegistry = "${ -> propertyOrEnvOrDefault("solr.npm.registry", "SOLR_NPM_REGISTRY", '') }"
+    if (!npmRegistry.isEmpty()) {
+        tasks.npmSetup {
+            args.addAll(['--registry', npmRegistry])
+        }
+        tasks.nodeSetup {
+            args.addAll(['--registry', npmRegistry])
+        }
+    }
+
     ext {
         rootNodeDir = "$rootDir/.gradle/node"
         nodeProjectDir = file("$rootNodeDir/$project.name")

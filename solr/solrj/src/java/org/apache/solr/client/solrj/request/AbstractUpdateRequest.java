@@ -22,7 +22,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 
 /** */
-public abstract class AbstractUpdateRequest extends DataStoreSolrRequest<UpdateResponse>
+public abstract class AbstractUpdateRequest extends CollectionRequiringSolrRequest<UpdateResponse>
     implements IsUpdateRequest {
   protected ModifiableSolrParams params;
   protected int commitWithin = -1;

@@ -17,11 +17,11 @@
 package org.apache.solr.client.solrj.request.schema;
 
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.request.DataStoreSolrRequest;
+import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
 import org.apache.solr.common.params.SolrParams;
 
 public abstract class AbstractSchemaRequest<T extends SolrResponse>
-    extends DataStoreSolrRequest<T> {
+    extends CollectionRequiringSolrRequest<T> {
   private SolrParams params = null;
 
   public AbstractSchemaRequest(METHOD m, String path) {
