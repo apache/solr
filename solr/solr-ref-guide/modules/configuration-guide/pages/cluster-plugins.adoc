@@ -23,7 +23,7 @@ Cluster plugins are pluggable components that are defined and instantiated at th
 These components usually provide admin-level functionality and APIs for additional functionality at the Solr node level.
 
 === Plugin Configurations
-Plugin configurations are maintained using `/cluster/plugin` API.
+If the `solr.cluster.plugin.edit.enabled` property is set to true (the default), then plugin configurations can be maintained using `/cluster/plugin` API.
 
 This API endpoint allows adding, removing and updating plugin configurations.
 
@@ -155,6 +155,8 @@ However, their start/stop life-cycle, as defined in the interface, is controlled
 
 Any plugin can implement this interface to indicate to Solr that
 it requires this cluster singleton behavior.
+
+`ClusterSingleton` plugins can also be configured by declaring them in xref:configuring-solr-xml.adoc[solr.xml].
 
 === ClusterEventProducer Plugins
 
