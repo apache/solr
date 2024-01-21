@@ -39,10 +39,10 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final boolean TRACE_ID_GEN_ENABLED =
-      Boolean.parseBoolean(EnvUtils.getProp("solr.alwaysOnTraceId", "true"));
+      Boolean.parseBoolean(EnvUtils.getProperty("solr.alwaysOnTraceId", "true"));
 
   private static final String DEFAULT_CLASS_NAME =
-      EnvUtils.getProp(
+      EnvUtils.getProperty(
           "solr.otelDefaultConfigurator", "org.apache.solr.opentelemetry.OtelTracerConfigurator");
 
   public abstract Tracer getTracer();

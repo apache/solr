@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
 
 /** This implements the public end points (/api/cluster/package) of package API. */
 public class PackageAPI {
-  public final boolean enablePackages = EnvUtils.getPropAsBool("enable.packages", false);
+  public final boolean enablePackages = EnvUtils.getPropertyAsBool("enable.packages", false);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ERR_MSG =

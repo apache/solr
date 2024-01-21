@@ -122,7 +122,7 @@ public class SolrTestCase extends LuceneTestCase {
   @BeforeClass
   public static void beforeSolrTestCase() {
     final String existingValue =
-        EnvUtils.getProp(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
+        EnvUtils.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
     if (null != existingValue) {
       log.info(
           "Test env includes configset dir system property '{}'='{}'",
