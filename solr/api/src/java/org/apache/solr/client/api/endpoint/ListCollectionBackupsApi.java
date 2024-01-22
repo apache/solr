@@ -20,11 +20,11 @@ import static org.apache.solr.client.api.model.Constants.BACKUP_LOCATION;
 import static org.apache.solr.client.api.model.Constants.BACKUP_REPOSITORY;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import java.io.IOException;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.ListCollectionBackupsResponse;
 
 /** V2 API definitions for collection-backup "listing". */

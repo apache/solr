@@ -20,7 +20,7 @@ import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTrack
 import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.FAILED;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.RUNNING;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import org.apache.solr.client.api.endpoint.GetNodeCommandStatusApi;
 import org.apache.solr.client.api.model.GetNodeCommandStatusResponse;
 import org.apache.solr.common.params.CoreAdminParams;
