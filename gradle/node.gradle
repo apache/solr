@@ -23,9 +23,6 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(
         tasks.npmSetup {
             args.addAll(['--registry', npmRegistry])
         }
-        tasks.nodeSetup {
-            args.addAll(['--registry', npmRegistry])
-        }
     }
 
     ext {
@@ -36,6 +33,11 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(
     node {
         download = true
         version = "16.15.1" // LTS
+
+        def nodeDistUrl = "${ -> propertyOrEnvOrDefault("solr.node.distUrl", "SOLR_NODE_DIST_URL", '') }"
+        if (!nodeDistUrl.isEmpty()) {
+            distBaseUrl = nodeDistUrl
+        }
 
         // The directory where Node.js is unpacked (when download is true)
         workDir = file("${project.ext.rootNodeDir}/nodejs")
