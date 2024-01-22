@@ -31,7 +31,7 @@ dependencies {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
   }
 
-  implementation 'io.swagger.core.v3:swagger-annotations'
+  implementation 'io.swagger.core.v3:swagger-annotations-jakarta'
 
   // Export these dependencies so that they're imported transitively by
   // other modules.
@@ -59,16 +59,19 @@ dependencies {
 
   implementation('org.glassfish.jersey.containers:jersey-container-jetty-http', {
     exclude group: "org.eclipse.jetty", module: "jetty-continuation"
+    exclude group: "org.glassfish.hk2.external", module: "jakarta.inject"
   })
   permitUnusedDeclared 'org.glassfish.jersey.containers:jersey-container-jetty-http'
   implementation 'org.glassfish.jersey.inject:jersey-hk2'
   permitUnusedDeclared 'org.glassfish.jersey.inject:jersey-hk2'
-  implementation 'org.glassfish.jersey.media:jersey-media-json-jackson'
+  implementation ('org.glassfish.jersey.media:jersey-media-json-jackson', {
+    exclude group: "jakarta.xml.bind", module: "jakarta.xml.bind-api"
+  })
   permitUnusedDeclared 'org.glassfish.jersey.media:jersey-media-json-jackson'
   implementation 'org.glassfish.jersey.core:jersey-common'
   implementation 'org.glassfish.jersey.core:jersey-server'
   implementation 'org.glassfish.hk2:hk2-api'
-  implementation 'org.glassfish.hk2.external:jakarta.inject'
+  implementation 'jakarta.inject:jakarta.inject-api'
   implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
   implementation 'jakarta.annotation:jakarta.annotation-api'
 
@@ -182,11 +185,6 @@ dependencies {
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
   testImplementation 'org.hamcrest:hamcrest'
-
-  testImplementation 'org.glassfish.jersey.test-framework:jersey-test-framework-core'
-  testImplementation 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2'
-  permitTestUnusedDeclared 'org.glassfish.jersey.test-framework.providers:jersey-test-framework-provider-grizzly2'
-
 
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"

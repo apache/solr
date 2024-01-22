@@ -16,7 +16,7 @@
  */
 package org.apache.solr.jersey;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 
 /** Jersey binder for APIConfigProvider */
