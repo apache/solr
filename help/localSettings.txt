@@ -11,9 +11,13 @@ Building without access to the internet
 ---------------------------------------
 
 -- Node --
-There are a few tasks that rely on downloading node tools from NPM.
+There are a few tasks that rely on downloading node itself and node tools from NPM.
 These include the Reference Guide build, the integration (e2e) tests and the webapp build.
 Some of these can be disabled, however other tasks such as building the solr webapp often cannot be disabled.
+
+In order to set a Node Distribution base URL for Gradle to download Node from, please use either:
+- The "SOLR_NODE_DIST_URL" environment variable
+- The "-Psolr.node.distUrl" Gradle property.
 
 In order to set a NPM registry for Gradle to connect to, please use either:
 - The "SOLR_NPM_REGISTRY" environment variable
