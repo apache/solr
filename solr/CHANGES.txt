@@ -76,6 +76,31 @@ Other Changes
 
 * SOLR-16995: Add a ReplicaCount class to keep track of replicas per type (Vincent Primault)
 
+==================  9.6.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  9.5.0 ==================
 New Features
 ---------------------
