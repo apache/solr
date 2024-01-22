@@ -172,7 +172,7 @@ public class OtelTracerConfigurator extends TracerConfigurator {
   void setDefaultIfNotConfigured(String envName, String defaultValue) {
     String incomingValue = getEnvOrSysprop(envName);
     if (incomingValue == null) {
-      EnvUtils.setProp(envNameToSyspropName(envName), defaultValue);
+      EnvUtils.setProperty(envNameToSyspropName(envName), defaultValue);
       if (log.isDebugEnabled()) {
         log.debug("Using default setting {}={}", envName, getEnvOrSysprop(envName));
       }
