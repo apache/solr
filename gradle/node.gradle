@@ -23,6 +23,15 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(
         tasks.npmSetup {
             args.addAll(['--registry', npmRegistry])
         }
+
+        afterEvaluate {
+            tasks.withType(NpmTask).each { npmTask ->
+                npmTask.environment.put('NPM_CONFIG_REGISTRY', npmRegistry)
+            }
+            tasks.withType(NpxTask).each { npxTask ->
+                npxTask.environment.put('NPM_CONFIG_REGISTRY', npmRegistry)
+            }
+        }
     }
 
     ext {
@@ -32,7 +41,7 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(
 
     node {
         download = true
-        version = "16.15.1" // LTS
+        version = "16.20.2" // LTS
 
         def nodeDistUrl = "${ -> propertyOrEnvOrDefault("solr.node.distUrl", "SOLR_NODE_DIST_URL", '') }"
         if (!nodeDistUrl.isEmpty()) {
