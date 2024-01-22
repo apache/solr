@@ -69,7 +69,9 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
     System.setProperty("solr.tests.numeric.points.dv", "true");
     configureCluster(2).addConfig("conf", configset("cloud-dynamic")).configure();
     solrClient = cluster.getSolrClient();
-    CollectionAdminRequest.createCollection(collection, "conf", 2, 2).process(solrClient);
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(solrClient);
     cluster.waitForActiveCollection(collection, 2, 4);
     SolrInputDocument lastDoc = addDocs(collection, NUM_DOCS);
     HashSet<String> docFields = new HashSet<>(lastDoc.keySet());

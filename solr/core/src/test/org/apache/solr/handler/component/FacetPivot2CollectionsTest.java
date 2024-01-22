@@ -72,6 +72,7 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
     try {
       CollectionAdminResponse responseA =
           CollectionAdminRequest.createCollection(COLL_A, COLL_A, 1, 1)
+              .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
               .process(cluster.getSolrClient());
       NamedList<Object> result = responseA.getResponse();
       if (result.get("failure") != null) {
@@ -84,6 +85,7 @@ public class FacetPivot2CollectionsTest extends SolrCloudTestCase {
     try {
       CollectionAdminResponse responseB =
           CollectionAdminRequest.createCollection(COLL_B, COLL_B, 1, 1)
+              .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
               .process(cluster.getSolrClient());
       NamedList<Object> result = responseB.getResponse();
       if (result.get("failure") != null) {

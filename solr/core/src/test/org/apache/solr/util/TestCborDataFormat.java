@@ -67,7 +67,9 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     try {
       System.setProperty("managed.schema.mutable", "true");
       CloudSolrClient client = cluster.getSolrClient();
-      CollectionAdminRequest.createCollection(testCollection, "conf", 1, 1).process(client);
+      CollectionAdminRequest.createCollection(testCollection, "conf", 1, 1)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .process(client);
       modifySchema(testCollection, client);
 
       byte[] b =

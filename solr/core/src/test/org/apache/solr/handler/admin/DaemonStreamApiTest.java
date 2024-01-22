@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
@@ -76,9 +77,11 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
         .process(cluster.getSolrClient());
 
     CollectionAdminRequest.createCollection(TARGET_COLL, CONF_NAME, 1, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     CollectionAdminRequest.createCollection(CHECKPOINT_COLL, CONF_NAME, 1, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     for (int idx = 0; idx < numDaemons; ++idx) {

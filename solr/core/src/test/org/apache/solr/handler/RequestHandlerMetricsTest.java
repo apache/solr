@@ -68,6 +68,7 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collection1, 1, 1);
 
     create = CollectionAdminRequest.createCollection(collection2, "conf1", 1, 1);
+    create.setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
     cloudClient.request(create);
     cluster.waitForActiveCollection(collection2, 1, 1);
 

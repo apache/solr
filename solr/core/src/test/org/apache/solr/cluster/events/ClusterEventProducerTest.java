@@ -182,7 +182,8 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     eventsListener.setExpectedType(ClusterEvent.EventType.COLLECTIONS_ADDED);
     String collection = "testNodesEvent_collection";
     CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection(collection, "conf", 1, 1);
+        CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
     cluster.getSolrClient().request(create);
     cluster.waitForActiveCollection(collection, 1, 1);
     eventsListener.waitForExpectedEvent(30);
@@ -365,7 +366,8 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
 
     String collection = "testListenerPlugins_collection";
     CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection(collection, "conf", 1, 1);
+        CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
     cluster.getSolrClient().request(create);
     cluster.waitForActiveCollection(collection, 1, 1);
     boolean await = dummyEventLatch.await(30, TimeUnit.SECONDS);

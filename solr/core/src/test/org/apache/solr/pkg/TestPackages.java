@@ -154,6 +154,7 @@ public class TestPackages extends SolrCloudTestCase {
             FILE1));
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 2)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
@@ -223,6 +224,7 @@ public class TestPackages extends SolrCloudTestCase {
     req.process(cluster.getSolrClient());
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 2)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
@@ -784,6 +786,7 @@ public class TestPackages extends SolrCloudTestCase {
             FILE1));
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 2, 2)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 

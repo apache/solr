@@ -62,6 +62,7 @@ public class TestManagedSchemaWithMultipleAdd extends SolrCloudTestCase {
   public void test() throws Exception {
     String collection = "testschemaapi";
     CollectionAdminRequest.createCollection(collection, "conf1", 1, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     testAddFieldAndMultipleDocument(collection);
   }

@@ -38,6 +38,7 @@ public class TestPackageManager extends SolrCloudTestCase {
     super.setUp();
     configureCluster(1).addConfig("conf", configset("conf3")).configure();
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 1, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
   }

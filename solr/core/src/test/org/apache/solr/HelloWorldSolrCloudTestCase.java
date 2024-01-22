@@ -49,6 +49,7 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
 
     // create an empty collection
     CollectionAdminRequest.createCollection(COLLECTION, "conf", numShards, numReplicas)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     // add a document

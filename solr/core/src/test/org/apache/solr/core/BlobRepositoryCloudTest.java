@@ -46,6 +46,7 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
         .configure();
     //    Thread.sleep(2000);
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     // test component will fail if it can't find a blob with this data by this name
     TestBlobHandler.postData(
@@ -56,6 +57,7 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
     //    Thread.sleep(2000);
     // if these don't load we probably failed to post the blob above
     CollectionAdminRequest.createCollection("col1", "configname", 1, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("col2", "configname", 1, 1)
         .process(cluster.getSolrClient());

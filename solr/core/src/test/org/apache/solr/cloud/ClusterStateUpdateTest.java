@@ -51,6 +51,7 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase {
     assertEquals(
         0,
         CollectionAdminRequest.createCollection("testcore", "conf", 1, 1)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .setCreateNodeSet(cluster.getJettySolrRunner(0).getNodeName())
             .process(cluster.getSolrClient())
             .getStatus());

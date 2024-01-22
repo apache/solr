@@ -729,6 +729,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     RTimer timer = new RTimer();
     SolrResponse rsp =
         CollectionAdminRequest.createCollection(collection, configSet, numShards, numReplicas)
+            .setPerReplicaState(true)
             .process(cloudClient());
     try {
       CollectionsHandler.waitForActiveCollection(collection, cc, rsp);

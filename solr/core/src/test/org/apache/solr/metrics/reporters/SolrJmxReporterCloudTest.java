@@ -53,6 +53,7 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
     mBeanServer = ManagementFactory.getPlatformMBeanServer();
     configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
   }
 

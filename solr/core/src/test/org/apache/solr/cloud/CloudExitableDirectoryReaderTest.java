@@ -88,6 +88,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
     client = cluster.getRandomJetty(random()).newClient();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster
         .getZkStateReader()

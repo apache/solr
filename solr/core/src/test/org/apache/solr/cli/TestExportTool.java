@@ -53,6 +53,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
     try {
       CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 1)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
@@ -145,6 +146,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
     try {
       CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 8, 1)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 8, 8);
 

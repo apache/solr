@@ -132,7 +132,8 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
     eventsListener.setExpectedType(ClusterEvent.EventType.COLLECTIONS_ADDED);
     String collection = "testCollectionRepair_collection";
     CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection(collection, "conf", 1, 3);
+        CollectionAdminRequest.createCollection(collection, "conf", 1, 3)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
     cluster.getSolrClient().request(create);
     cluster.waitForActiveCollection(collection, 1, 3);
     eventsListener.waitForExpectedEvent(10);
