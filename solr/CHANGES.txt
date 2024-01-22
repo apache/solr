@@ -167,6 +167,8 @@ Bug Fixes
 
 * SOLR-17116: The INSTALLSHARDDATA "collection-admin" API now reports errors correctly when run asynchronously. (Jason Gerlowski)
 
+* SOLR-17074: Fixed not correctly escaped quote in bin/solr script (Dominique Béjean, Vincenzo D'Amore)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
