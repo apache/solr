@@ -280,7 +280,8 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @Test
   public void testProxyValidateGroup() throws Exception {
-    solrClient.request(getProxyRequest("anyHostUsersGroup", EnvUtils.getProperty("user.name"), null));
+    solrClient.request(
+        getProxyRequest("anyHostUsersGroup", EnvUtils.getProperty("user.name"), null));
     assertTrue(ImpersonatorCollectionsHandler.called.get());
   }
 

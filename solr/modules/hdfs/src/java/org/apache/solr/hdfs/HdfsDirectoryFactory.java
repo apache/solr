@@ -186,7 +186,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
     if (kerberosEnabled) {
       initKerberos();
     }
-    if (StrUtils.isNullOrEmpty(EnvUtils.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
+    if (StrUtils.isNullOrEmpty(
+        EnvUtils.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
       System.setProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED, "false");
     }
   }

@@ -97,7 +97,8 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
 
       assertTrue(dataHome.endsWith("/solr1/mock/data"));
       assertFalse(
-          Boolean.parseBoolean(EnvUtils.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED)));
+          Boolean.parseBoolean(
+              EnvUtils.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED)));
 
       System.clearProperty(HdfsDirectoryFactory.HDFS_HOME);
 
