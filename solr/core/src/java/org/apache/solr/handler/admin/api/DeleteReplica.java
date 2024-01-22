@@ -31,9 +31,9 @@ import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.DeleteReplicaApi;
 import org.apache.solr.client.api.model.ScaleCollectionRequestBody;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
