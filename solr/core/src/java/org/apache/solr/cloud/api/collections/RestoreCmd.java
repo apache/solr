@@ -21,6 +21,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.ZERO_INDEX;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -214,11 +215,24 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
    */
   private class RestoreOnANewCollection {
     private final ReplicaCount numReplicas;
+    private final boolean zeroIndex;
     private final ZkNodeProps message;
 
     private RestoreOnANewCollection(ZkNodeProps message, DocCollection backupCollectionState) {
       this.message = message;
-      this.numReplicas = ReplicaCount.fromMessage(message, backupCollectionState);
+
+      this.zeroIndex = message.getBool(CollectionAdminParams.ZERO_INDEX, false);
+      if (zeroIndex == backupCollectionState.isZeroIndex()) {
+        // Use the replica counts specified in the message and for those not present, in the backup
+        this.numReplicas = ReplicaCount.fromMessage(message, backupCollectionState, zeroIndex);
+      } else {
+        // Restoring a backed up Zero collection into a non Zero collection or the other way around.
+        // Can't use the replica counts in the backed up collection, they are not compatible with
+        // the collection being created.
+        // Use whatever the message asks for and if the message says nothing, ask for 2 replicas
+        // for the default type.
+        this.numReplicas = ReplicaCount.fromMessage(message, null, 2, zeroIndex);
+      }
     }
 
     public void process(NamedList<Object> results, RestoreContext rc) throws Exception {
@@ -318,11 +332,25 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       propMap.put(Overseer.QUEUE_OPERATION, CREATE.toString());
       // mostly true. Prevents autoCreated=true in the collection state.
       propMap.put("fromApi", "true");
-      propMap.put(REPLICATION_FACTOR, numReplicas.get(Replica.Type.defaultType()));
-      numReplicas.writeProps(propMap);
+      propMap.put(REPLICATION_FACTOR, numReplicas.get(Replica.Type.defaultType(zeroIndex)));
+
+      if (zeroIndex == backupCollectionState.isZeroIndex()) {
+        // When restoring into same type of collection, inherit from backed up collection replica
+        // counts not specified in the message (forces specifying zero counts for undesired replica)
+        numReplicas.writeProps(propMap);
+      } else {
+        // When restoring a ZERO collection into a non ZERO collection and vice versa, can't use
+        // incompatible defaults coming from the backed up collection as done in the loop below.
+        propMap.put(ZERO_INDEX, zeroIndex);
+        numReplicas.writePropsOrZeros(propMap);
+      }
 
       // inherit settings from input API, defaulting to the backup's setting.  Ex: replicationFactor
-      for (String collProp : CollectionHandlingUtils.COLLECTION_PROPS_AND_DEFAULTS.keySet()) {
+      for (String collProp :
+          (zeroIndex
+                  ? CollectionHandlingUtils.ZERO_INDEX_COLLECTION_PROPS_AND_DEFAULTS
+                  : CollectionHandlingUtils.COLLECTION_PROPS_AND_DEFAULTS)
+              .keySet()) {
         Object val =
             message.getProperties().getOrDefault(collProp, backupCollectionState.get(collProp));
         if (val != null && propMap.get(collProp) == null) {
@@ -401,6 +429,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
               .forCollection(restoreCollection)
               .forShard(sliceNames)
               .assignReplicas(numReplicas)
+              .setZeroIndex(zeroIndex)
               .onNodes(nodeList)
               .build();
       Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());

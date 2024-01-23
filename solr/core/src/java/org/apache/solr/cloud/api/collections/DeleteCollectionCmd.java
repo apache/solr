@@ -47,6 +47,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
+import org.apache.solr.zero.process.ZeroStoreManager;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,6 +138,14 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
           removeCounterNode = false;
           break;
         }
+      }
+
+      // Delete the collection files from Zero store. We want to delete all the files before we
+      // delete the collection state from ZooKeeper.
+      DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collection);
+      if (docCollection != null && docCollection.isZeroIndex()) {
+        ZeroStoreManager zeroStoreManager = ccc.getCoreContainer().getZeroStoreManager();
+        zeroStoreManager.deleteCollection(collection);
       }
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);

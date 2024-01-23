@@ -33,6 +33,8 @@ import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFI
 import static org.apache.solr.common.params.CollectionAdminParams.PULL_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.CollectionAdminParams.TLOG_REPLICAS;
+import static org.apache.solr.common.params.CollectionAdminParams.ZERO_INDEX;
+import static org.apache.solr.common.params.CollectionAdminParams.ZERO_REPLICAS;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
@@ -198,16 +200,31 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
     } else {
       rawProperties.put(CREATE_NODE_SET, "EMPTY");
     }
-    // 'nrtReplicas' and 'replicationFactor' are both set on the remote message, despite being
-    // functionally equivalent.
-    if (reqBody.replicationFactor != null) {
-      rawProperties.put(REPLICATION_FACTOR, reqBody.replicationFactor);
-      if (reqBody.nrtReplicas == null) rawProperties.put(NRT_REPLICAS, reqBody.replicationFactor);
-    }
-    if (reqBody.nrtReplicas != null) {
-      rawProperties.put(NRT_REPLICAS, reqBody.nrtReplicas);
-      if (reqBody.replicationFactor == null)
-        rawProperties.put(REPLICATION_FACTOR, reqBody.nrtReplicas);
+    if (reqBody.isZeroIndex == null || !reqBody.isZeroIndex) {
+      // 'nrtReplicas' and 'replicationFactor' are both set on the remote message, despite being
+      // functionally equivalent.
+      if (reqBody.replicationFactor != null) {
+        rawProperties.put(REPLICATION_FACTOR, reqBody.replicationFactor);
+        if (reqBody.nrtReplicas == null) rawProperties.put(NRT_REPLICAS, reqBody.replicationFactor);
+      }
+      if (reqBody.nrtReplicas != null) {
+        rawProperties.put(NRT_REPLICAS, reqBody.nrtReplicas);
+        if (reqBody.replicationFactor == null)
+          rawProperties.put(REPLICATION_FACTOR, reqBody.nrtReplicas);
+      }
+    } else {
+      rawProperties.put(ZERO_INDEX, true);
+      // Zero Index, there are only ZERO replicas
+      if (reqBody.replicationFactor != null) {
+        rawProperties.put(REPLICATION_FACTOR, reqBody.replicationFactor);
+        if (reqBody.zeroReplicas == null)
+          rawProperties.put(ZERO_REPLICAS, reqBody.replicationFactor);
+      }
+      if (reqBody.zeroReplicas != null) {
+        rawProperties.put(ZERO_REPLICAS, reqBody.zeroReplicas);
+        if (reqBody.replicationFactor == null)
+          rawProperties.put(REPLICATION_FACTOR, reqBody.zeroReplicas);
+      }
     }
 
     if (reqBody.properties != null) {
@@ -314,6 +331,10 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
     requestBody.tlogReplicas = params.getInt(ZkStateReader.TLOG_REPLICAS);
     requestBody.pullReplicas = params.getInt(ZkStateReader.PULL_REPLICAS);
     requestBody.nrtReplicas = params.getInt(ZkStateReader.NRT_REPLICAS);
+    requestBody.zeroReplicas = params.getInt(ZkStateReader.ZERO_REPLICAS);
+    // At collection creation (only) we can decide if it is Zero store based (i.e. having only
+    // ZERO replicas)
+    requestBody.isZeroIndex = params.getBool(ZkStateReader.ZERO_INDEX);
     requestBody.waitForFinalState = params.getBool(WAIT_FOR_FINAL_STATE);
     requestBody.perReplicaState = params.getBool(PER_REPLICA_STATE);
     requestBody.alias = params.get(ALIAS);
@@ -337,6 +358,14 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Cannot specify both replicationFactor and nrtReplicas as they mean the same thing");
+    }
+
+    if (requestBody.replicationFactor != null
+        && requestBody.zeroReplicas != null
+        && (!requestBody.replicationFactor.equals(requestBody.zeroReplicas))) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Cannot specify both replicationFactor and zeroReplicas as they mean the same thing");
     }
 
     SolrIdentifierValidator.validateCollectionName(requestBody.name);

@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.cloud.ZkStateReader.ZERO_INDEX;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
@@ -39,6 +40,7 @@ import java.util.NoSuchElementException;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DelegatingCloudManager;
@@ -104,11 +106,20 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     if (ccc.getZkStateReader().aliasesManager != null) { // not a mock ZkStateReader
       ccc.getZkStateReader().aliasesManager.update();
     }
+    final boolean isZeroIndex = message.getBool(ZERO_INDEX, false);
     final Aliases aliases = ccc.getZkStateReader().getAliases();
     final String collectionName = message.getStr(NAME);
     final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
+
+    if (isZeroIndex && !ccc.getCoreContainer().isZeroStoreEnabled()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Collection "
+              + collectionName
+              + " cannot be created because Zero store is not enabled on this cluster.");
+    }
     final boolean isPRS = message.getBool(CollectionStateProps.PER_REPLICA_STATE, false);
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(
@@ -134,7 +145,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
     // fail fast if parameters are wrong or incomplete
     List<String> shardNames = populateShardNames(message, router);
-    ReplicaCount numReplicas = getNumReplicas(message);
+    ReplicaCount numReplicas = getNumReplicas(message, isZeroIndex);
 
     DocCollection newColl = null;
     final String collectionPath = DocCollection.getCollectionPath(collectionName);
@@ -221,6 +232,15 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
               "Could not fully create collection: " + collectionName);
+        }
+
+        if (isZeroIndex) {
+          for (String shardName : shardNames) {
+            ccc.getCoreContainer()
+                .getZeroStoreManager()
+                .getZeroMetadataController()
+                .createMetadataNode(collectionName, shardName);
+          }
         }
 
         // refresh cluster state (value read below comes from Zookeeper watch firing following the
@@ -521,10 +541,16 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             "It's unusual to run two replica of the same slice on the same Solr-instance.");
       }
 
+      // true if the collection is backed by Zero store.
+      // In which case only org.apache.solr.common.cloud.Replica.Type#Zero
+      // replicas matter and no other replicas should be defined.
+      final boolean zeroIndex = message.getBool(ZERO_INDEX, false);
+
       Assign.AssignRequest assignRequest =
           new Assign.AssignRequestBuilder()
               .forCollection(collectionName)
               .forShard(shardNames)
+              .setZeroIndex(zeroIndex)
               .assignReplicas(numReplicas)
               .onNodes(nodeList)
               .build();
@@ -580,18 +606,34 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         throw new SolrException(
             ErrorCode.BAD_REQUEST, CollectionHandlingUtils.NUM_SLICES + " must be > 0");
       }
+
+      // TODO unclear if the following bloc of code should be here (belongs directly in main?)
+      // When specified, retrieve shard names from the request
+      // If the list length does not match the parameter for number of shards, fallback to the
+      // default names
+      // This is mostly used when creating a collection for a restore
+      Object shards = message.get(CollectionHandlingUtils.SHARDS_PROP);
+      if (shards instanceof Map) {
+        List<String> providedNames =
+            ((Map<?, ?>) shards)
+                .keySet().stream().map(Object::toString).collect(Collectors.toList());
+        if (providedNames.size() == numSlices) {
+          return providedNames;
+        }
+      }
+
       ClusterStateMutator.getShardNames(numSlices, shardNames);
     }
     return shardNames;
   }
 
-  private ReplicaCount getNumReplicas(ZkNodeProps message) {
-    ReplicaCount numReplicas = ReplicaCount.fromMessage(message);
+  private ReplicaCount getNumReplicas(ZkNodeProps message, boolean isZeroIndex) {
+    ReplicaCount numReplicas = ReplicaCount.fromMessage(message, isZeroIndex);
     boolean hasLeaderEligibleReplica = numReplicas.hasLeaderReplica();
-    if (!hasLeaderEligibleReplica && !numReplicas.contains(Replica.Type.defaultType())) {
+    if (!hasLeaderEligibleReplica && !numReplicas.contains(Replica.Type.defaultType(isZeroIndex))) {
       // Ensure that there is at least one replica that can become leader if the user did
       // not force a replica count.
-      numReplicas.put(Replica.Type.defaultType(), 1);
+      numReplicas.put(Replica.Type.defaultType(isZeroIndex), 1);
     } else if (!hasLeaderEligibleReplica) {
       // This can still fail if the user manually forced "0" replica counts.
       throw new SolrException(

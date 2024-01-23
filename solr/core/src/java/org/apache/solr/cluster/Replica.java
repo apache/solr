@@ -36,11 +36,15 @@ public interface Replica {
   /** {@link Node} on which this {@link Replica} is located. */
   Node getNode();
 
-  /** The order of this enum is important from the most to least "important" replica type. */
+  /**
+   * The order of this enum is important from the most to least "important" replica type. {@link
+   * ReplicaType#ZERO} is different though, its position in the enum does not matter.
+   */
   enum ReplicaType {
     NRT('n'),
     TLOG('t'),
-    PULL('p');
+    PULL('p'),
+    ZERO('z');
 
     private final char suffixChar;
 

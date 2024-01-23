@@ -1,0 +1,890 @@
+////
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+////
+
+= Zero replica type and storage
+:toc: macro
+:toclevels: 3
+
+January 2024
+
+toc::[]
+
+== Introduction
+
+The code in this branch https://github.com/apache/solr/tree/jira/solr-17125-zero-replicas[[.underline]#jira/solr-17125-zero-replicas#] is an initial and work in progress contribution
+proposal allowing for a separation of compute and storage in SolrCloud,
+as introduced by
+https://cwiki.apache.org/confluence/display/SOLR/SIP-20%3A+Separation+of+Compute+and+Storage+in+SolrCloud[[.underline]#SIP-20#]
+and referenced in Jira ticket
+https://issues.apache.org/jira/browse/SOLR-17125[[.underline]#SOLR-17125#]
+- _SIP-20 ZERO replicas, separation of compute and storage_.
+
+See <<Past plans>> on previous attempts at
+implementing this (or something similar).
+
+== Very high level overview
+
+The proposal is architected around:
+
+* Introduction of a new replica type called `ZERO` (`Replica.Type.ZERO`)
+augmenting the existing set of `NRT`, `TLOG` and `PULL` types, and a way to
+create collections based on this new replica type.
+* A shared repository called the Zero store in which the segments of each
+shard with `ZERO` replicas are persisted (each shard is persisted only
+once).
+* Local SolrCloud node disks used as caches (a better wording might be
+“non-persistent disks”). No data loss happens if a node is shut down at
+any given time or if all nodes are shut down at any given time and
+restart with empty disks
+* A guarantee that there is no data loss if two nodes consider themselves
+leaders of the same shard and try to update the Zero store concurrently.
+
+`ZERO` replicas use a local disk like other replicas usually do, push
+(write) data to the Zero store after indexing and pull (read) data from
+the Zero store when the local disk is not up to date (for serving
+queries, for indexing or any other need). This enables the local disk
+used by `ZERO` replicas to be ephemeral (i.e. can start empty on each node
+restart). By extension, a `ZERO` shard is a shard having replicas of type
+`ZERO` (and then they are all of type ZERO, mix and match with standard
+replica types is not supported) and being part of a `ZERO` collection (a
+collection that again has only `ZERO` shards).
+
+The principles governing how that new replica type is used and the
+design of the Zero store integration:
+
+* `ZERO` replicas read from and write to the Zero store (e.g. AWS S3, Google
+GCS etc.) and do not directly communicate with each other like standard
+SolrCloud replicas do. There is no Solr-to-Solr replication for these
+replicas.
+* *The Zero store content is the source of truth for index (segment)
+data*. No node specific state is ever needed to recover an index,
+regardless of how the cluster or the node was shut down or crashed.
+Nodes are stateless.
+* There is a single image on the Zero store per shard (one image and zero
+copies, hence the naming, and it also sounded cool), as opposed to an
+image per replica which implies data duplication, and in the SolrCloud
+context requires peer to peer communication between replicas.
+
+In a nutshell, the cores (replicas) that are expected on each node are
+identified by looking at ZooKeeper collection states. Replicas of type
+`ZERO` that are assigned to a given node but do not exist on its disk are
+created empty at startup (the node might have started with an empty
+disk). SolrCloud is then happy and can do the usual core opening, shard
+leader election etc. Actual data for the replica is fetched (pulled)
+from the Zero store when and if needed.
+
+Pulls may happen asynchronously when queries are served by non leader
+replicas (to refresh the locally cached state of the replica) and
+synchronously when a leader replica processes an indexing batch if that
+replica is not up to date: the replica first gets itself up to date with
+the Zero store if needed, processes locally the indexing work, pushes
+the updated segments and metadata to the Zero store and only then
+acknowledges the batch to the client.
+
+This is a current limitation whereas each indexing batch is committed
+then pushed to the Zero store before being acknowledged to the client.
+Work is planned to remedy this, see <<Future plans>>.
+
+Because in a SolrCloud cluster two replicas can consider themselves
+shard leaders at the same time (a replica might still be executing code
+assuming leadership after the quorum has voted it out, this is
+unavoidable unless leadership change waits for the outgoing leader to
+acknowledge, which does not work if the outgoing leader is really gone),
+a strategy was put in place for writes in which two concurrent replicas
+writing to the Zero store for a given shard do not overwrite each other
+and only one succeeds. This strategy uses unique filenames on the Zero
+store (no opportunity for overwrites at that level) and uses a compare
+and set operation in ZooKeeper (a.k.a. conditional update) to pick which
+one wins the race. The non winner reports a failure to the client that
+would then retry. This is expected to be a rare occurrence.
+
+== The Zero store
+
+The Zero store is a shared store accessible from all the nodes and
+stores for each `ZERO` shard the different files that constitute the
+corresponding core (segments files and `segments_N` file).
+
+The `BackupRepository` implementation is reused (it should be renamed if
+this code is merged since it would no longer be backup specific).
+Various implementations already exist in Solr code, for example for AWS
+S3 (`S3BackupRepository`), Google GCS (`GCSBackupRepository`) or a local
+file system implementation (`LocalFileSystemRepository`) for testing.
+
+The storage structure for each shard is described in
+<<The Zero store shard storage structure>>.
+
+== The Zero implementation
+
+An attempt was made to isolate Zero code in specific classes to make
+integration easier. This section describes the new classes introduced by
+the Zero implementation.
+
+These classes (and tests for that matter) are in subpackages of
+`org.apache.solr.zero` (in module `core`). This is a new package that does
+not exist in stock SolrCloud.
+
+The only new class being elsewhere is `*ZeroConfig*` which is in
+`org.apache.solr.core` like other configuration classes. It allows
+tweaking parameters of the Zero implementation and defining the
+`BackupRepository` to use for the Zero store.
+
+* In `org.apache.solr.zero.*client*`:
+** `*ZeroStoreClient*` is an “internal” client for Zero operations used
+within the Zero code.
+** `*ZeroStoreClientFactory*` this class instantiates `ZeroStoreClient` and
+also builds the `BackupRepository` used for the Zero store.
+** `*ZeroFile*` represents a file on the Zero store, possibly with a mapping
+to its local cached copy.
+* In `org.apache.solr.zero.*exception*`: Zero operations related exceptions.
+** `*CorruptedCoreException*`: used when a core pulled from the Zero store
+can’t be opened
+** `*ZeroException*`: generic exception for Zero implementation issues
+** `*ZeroLockException*`: inability to acquire a lock
+* In `org.apache.solr.zero.*metadata*`: classes dealing with Zero store and
+local metadata of a core.
+** `*ZeroStoreShardMetadata*` is a class serialized into (or deserialized
+from) a file stored in the Zero store that is the “root” file for
+finding the structure and content of a shard. This metadata includes the
+list of all files (with their Zero store names and local disk names)
+that make up the shard and can be used to create a replica of the
+shard. +
+This class also contains a list of files from prior commit points of the
+shard still present in the Zero store but no longer used and that should
+be deleted (they eventually are).
+** `*ServerSideMetadata*` the Solr node view of a replica (core) index.
+Whereas the Zero equivalent class `ZeroStoreShardMetadata` is “pure”
+metadata class, `ServerSideMetadata` also contains utility methods to
+build an instance from a local core and other helpers.
+** `*ZeroMetadataController*` deals with tracking shard metadata in ZooKeeper
+(needed in addition to actual data store in the Zero store) and provides
+comparison methods for instances of `ServerSideMetadata` and of
+`ZeroStoreShardMetadata` to compute which files need to be pulled from the
+Zero store (`diffMetadataForPull()`) or pushed from the local core to the
+Zero store (`diffMetadataForPush()`).
+** `*ZeroMetadataVersion*` a very simple class capturing the metadata suffix
+value and ZooKeeper node version, used for tracking in ZooKeeper which
+Zero store file (representing `ZeroStoreShardMetadata`) is the current
+version of the shard.
+** `*CoreMetadataComparisonResult*` captures the result of the comparison of
+the local server core and the remote Zero store metadata version of that
+shard.
+** `*MetadataCacheManager*` manages the per shard metadata cache for the
+cores (i.e. replicas) present on a node as well as some local core
+lifecycle wrt the Zero store.
+* In `org.apache.solr.zero.*process*`:
+** [red]#`*ZeroStoreManager*` is the entry point for interactions of Solr code with
+the Zero store. It is the class accessed from existing SolrCloud classes
+to do Zero store related operations.#
+** `*CorePuller*` deals with pulling a core from the Zero store and creating
+or updating a local copy.
+** `*CorePullStatus*`: an enum of the different ways a pull can end (happily
+or not).
+** `*CorePullerBlockingQueue*` provides a wrapper around a `DeduplicatingList`
+to be used in an `Executor` executing the pulls by calling `CorePuller`.
+This allows enqueuing (too) many pulls for a core without redundantly
+executing all of them. Pulls are currently enqueued from `HttpSolrCall`
+(for query requests) using
+`ZeroStoreManager.enqueueCorePullFromZeroStore`.
+** `*CorePusher*` deals with pushing a local core (or parts of it) from the
+local file system to the Zero store.
+** `*CorePusherExecutionInfo*`: captures the outcome of a core push
+** `*DeleteProcessor*` deals with deleting files on the Zero store. It
+enqueues for asynchronous execution delete tasks for different types of
+Zero file removal. Steady state file removal uses `deleteFiles()`,
+Overseer command execution uses `deleteShard()` and `deleteCollection()`.
+** `*DeleterTask*`, `*FilesDeletionTask*`, `*ShardDeletionTask*` and
+`*CollectionDeletionTask*` are different strategies to delete files by the
+`DeleteProcessor`.
+** `*ZeroAccessLocks*`: the locking logic to protect pull and push operations
+as well as indexing
+** `*ZeroCoreIndexingBatchProcessor*`: methods used at different stages of
+indexing into Zero replicas.
+* In `org.apache.solr.zero.*util*`:
+** `*DeduplicatingList*` a list-like data structure that deduplicates
+inserted entries by merging with existing entries.
+** `*FileTransferCounter*`: stats for core push and pulls
+** `*IndexInputStream*`: the stream used to push a local file to the Zero
+store
+** `*ToFromJson*`: the class converting `ZeroStoreShardMetadata` instances to
+files and vice versa
+
+== Configuring SolrCloud to support `ZERO` collections
+
+A SolrCloud cluster can support normal replica types (`NRT`, `TLOG` and
+`PULL`) and also Zero store based collections using replicas of type
+`Replica.Type.ZERO` (`ZERO` replicas for short). By extension, a collection
+based on `ZERO` replicas is referred to as a `ZERO` collection.
+
+SolrCloud needs to be configured with a Zero store to enable `ZERO`
+replicas. This is done by setting system property `zeroStoreEnabled=true`.
+During initialization of `CoreContainer` in `loadInternal()`, if that
+property is `true` the Zero implementation is initialized by creating an
+instance of `ZeroStoreManager`. The decision to enable or not the Zero
+implementation is only done at startup.
+
+In order to enable the Zero store, a repository must also be configured
+for it. This is using the configuration section `<repository>` in section
+`<repositories>` in section `<zero>` of `solr.xml`. That configuration
+contains the class of the repository implementation as well as
+additional parameters. See the backup-restore section of the deployment
+guide for details.
+
+== The Zero store shard storage structure
+
+All files of a shard, for the lifetime of that shard storage on the Zero
+store, are stored under a single “repository” (path or directory).
+
+All files corresponding to the current (latest) acknowledged commit
+point of that shard are present (using different names than the local
+file names) as well as a file that is specific to the Zero store called
+`shard.metadata._xxx_` (the `_xxx_` is a random UUID suffix) that contains
+the serialization of an instance of `ZeroStoreShardMetadata` for the
+shard. This structure contains the mapping between the Zero store names
+of the shard files and the local file system names of these files as
+expected by Solr.
+
+The Zero store file names are the Solr file names (for example
+`_y45.cfs`) to which a random suffix is added so that two nodes pushing
+Solr files with identical names do not collide or overwrite each other.
+The Zero store file name for the above file could for example be
+`_y45.cfs.84d9443a-62f8-45a7-9015-64dff429c6ca`.
+
+The suffix is the same type of suffix used for the `shard.metadata` file.
+Even though all such suffixes could be different, to make debugging
+easier, all files pushed to the Zero store in a single push “session”
+are using the same random suffix.
+
+This means that `shard.metadata.84d9443a-62f8-45a7-9015-64dff429c6ca`
+corresponds to the version of the index in which
+`_y45.cfs.84d9443a-62f8-45a7-9015-64dff429c6ca` was initially
+introduced. Of course, each `shard.metadata.xxx` can (and usually does
+except the first one for a shard) contain references to files having
+been initially added in different push sessions and therefore having
+different suffixes.
+
+The role of the suffix is to guarantee correct behavior when (unlikely
+and rare but does happen) two nodes concurrently update the same shard.
+See section
+<<Locking and managing concurrent Zero activity>>.
+
+== Creating `ZERO` collections
+
+The admin UI is changed to allow the creation of a `ZERO` collection which
+is a collection of shards having only `ZERO` replicas. A `zeroIndex`
+attribute (defaulting to `false`) is added to the `showAddCollection`
+function in `collections.js` which is referenced from the `collections.html`
+Solr admin interface.
+
+`Create` (in `CollectionAdminRequest`) is invoked by the `CollectionsHandler`
+when creating a collection. A flag is added indicating if the collection
+is `ZERO` and the number of `ZERO` replicas it should have. Collections
+backed by the Zero store can only have `ZERO` replicas.
+
+`CreateCollectionCmd`, `CreateShardCmd` and `AddReplicaCmd` (the Overseer side
+of Collection API commands) are modified accordingly to deal with the
+new replica type and attributes.
+
+The path to the data stored on the Zero store is composed of the
+collection name and the shard name. No replica or core specific names
+given the storage is per shard.
+See method `ZeroFile.getShardDirectoryURI()` that delegates part of the
+work to the underlying `BackupRepository` (the actual name/path is
+therefore implementation dependent).
+
+Note that the first push to the Zero store after collection creation is
+done when processing the first indexing batch for the shard. Remains to
+be verified if the cluster correctly deals with shards never pushed to
+the Zero store (in case of node restart, or backup being done etc).
+
+== Node startup
+
+When a node starts, it might not contain the data of its `ZERO` replicas
+and might not even contain the directory structure where these
+cores/replicas would go. The replicas assigned to a node are listed in
+ZooKeeper (in the various collections’ `state.json` files) and the
+corresponding data is available in the Zero store for `ZERO` replicas
+(after some resolution process involving Zero related metadata stored in
+ZooKeeper, see <<Access to Zero store>>).
+
+Given SolrCloud opens all cores (a replica is
+[line-through]#materialized by# a core) at startup and makes the
+replicas participate in the shard leader election for their shard, in
+order not to overwhelm the system and load large amount of data from the
+Zero store then open many “real” cores (i.e. cores with data) that might
+never get used, a tradeoff was implemented. All cores for `ZERO` replicas
+(or a shorthand: `ZERO` cores) are created empty locally and opened. That
+way they can participate in shard leader election as expected. These
+replicas are marked `ACTIVE`, even though initially they are empty! See
+also section <<Querying>>.
+
+When/if replicas are accessed and require the actual data, that data
+will be fetched (pulled) from the Zero store. Note that if the local
+disk already has data for a `ZERO` core (from a previous run of the Solr
+JVM if the volume is persistent) then the core will be open as is. It
+will eventually get refreshed to the data corresponding to it in the
+Zero store (the state of the Zero store for a shard is the source of
+truth, not the state on the local disk) if it is queried or indexed.
+
+Method `CoreContainer.discoverAdditionalCoreDescriptorsForZeroReplicas()`
+is called from `CoreContainer.loadInternal()`, it iterates over all the
+collections of the cluster and for `ZERO` collections creates a
+`CoreDescriptor` for each replica (if any) that should be on the local
+node (unless that replica was already found locally), adds it to the set
+of cores discovered locally (returned by
+`CorePropertiesLocator.discover()`) and creates the `core.properties` file
+locally at the appropriate path (this file is a standard Solr file that
+is unrelated to the `shard.metadata.xxx` file used by `ZERO` replicas).
+
+At a later stage of `CoreContainer.loadInternal()`, all cores (found
+locally and added for `ZERO` replicas) are opened (if so configured using
+`loadOnStartup` defaulting to `true`, with `false` not a recommended setting
+in SolrCloud mode).
+
+== Access to Zero store
+
+Writes to the Zero store are done by the leader replica of a shard for
+pushing newly/recently indexed documents. It is possible to have more
+than one replica considering itself as a shard leader (for the same
+shard) as leadership changes. In such a case there’s a need to both
+protect the consistency of data in the Zero store (to avoid corruption
+due to a mix and match of incompatible core files written by different
+nodes) and also make sure no data is lost due to being overwritten (e.g.
+node A write a segment, node B then overwrites that segment with an
+identically named segment, causing the data written by node A to be
+lost, even though node A might have acknowledged to the client the
+received indexing batch).
+
+In a nutshell (see
+<<The Zero store shard storage structure>>), writes to the Zero store use unique names
+and never overwrite any file (the uniqueness is guaranteed by adding a
+random suffix to the file names). The `shard.metadata._suffix_` file
+contains the list of all files on the Zero store that constitute the
+core (it references files previously pushed and still needed as well as
+the new set of files just written). Once all these writes (the segment
+files and `shard.metadata._suffix_`) have successfully completed, an
+update is made to a shard specific node in ZooKeeper to capture the
+`suffix` of the latest version of the `shard.metadata` file. That update is
+made by the indexing thread as a conditional update (checking that the
+version of the pre update ZooKeeper node hasn’t change from when
+indexing started), to make sure no update from another node sneaked in
+between the moment the indexing thread pulled the latest content from
+the Zero store before starting indexing and when it pushes its updates
+back to the Zero store after finishing indexing.
+
+If the conditional update succeeds, the indexing content and changes to
+the core have been correctly persisted and will not get overwritten. If
+the conditional update to ZooKeeper fails, the indexing batch fails. It
+will have to be executed again after having pulled the latest copy of
+the core from the Zero store. This means some other update from another
+node sneaked in and made an update to that shard on the Zero store, and
+given we don’t want to lose (overwrite) that update, the new indexing
+batch has to be redone on top of that update (the retry is not automatic
+although it could be made to be, the client gets a failure return for
+its indexing batch and has to resubmit).
+
+The above protects concurrent updates from different SolrCloud nodes to
+a shard on the Zero store. This should not happen often, but it does
+happen when a shard leader loses leadership while processing an indexing
+batch and continues processing while the new leader starts processing
+another indexing batch.
+
+Management of the ZooKeeper `metadataSuffix` node for the shard is done in
+`ZeroMetadataController`. The actual metadata is stored in
+`ZeroMetadataVersion` (the suffix itself and the corresponding ZooKeeper
+version for the conditional update), a cache of the data is maintained
+in `MetadataCacheManager`.
+
+In addition to the correctness guarantees based on the above, we don’t
+want inefficiency in the access to the Zero store from within a single
+Solr node, which is the most common case.
+
+For example when two indexing batches are executed concurrently on a
+given replica, we don’t want both to try to push data concurrently
+knowing one of the batches will have to fail. Also when two concurrent
+requests arrive for the same replica that both need to pull data from
+the Zero store, we don’t want to pull files twice.
+
+Therefore we need synchronization on pulls and pushes that happen for a
+replica on a given node. This is described in the next section.
+
+Synchronization with or more precisely protection against what happens
+through a different replica of the same shard on another node is taken
+care of by the mechanism described above.
+
+== Per core Zero related metadata
+
+`MetadataCacheManager` is the class managing the state of a core (replica)
+related to Zero store interactions as seen from a SolrCloud node. It
+tracks failures pulling a core from the Zero store (to avoid retrying
+forever). For each core it caches an instance of static inner class
+`MetadataCacheEntry`.
+
+For each local replica, the last known `metadataSuffix` and associated
+ZooKeeper node `version` are tracked. The version will be used for
+conditional updates when writes (pushes) are done to the Zero store in
+order to detect if the Zero store content has changed (in which case the
+conditional update fails). A boolean `cacheLikelyUpToDate` is a hint
+indicating the server considers that the cached `metadataSuffix` and
+version of MetadataCacheEntry are current (to skip re-reading them from
+ZooKeeper). If the values end up being not current, a conditional update
+failure will trigger a refresh from ZooKeeper and when needed retrieving
+latest content from the Zero store..
+
+=== Locking and managing concurrent Zero activity
+
+==== Overview
+
+Locks must be acquired to manipulate a replica. Locks are defined and
+used via class `ZeroAccessLocks`. An inner class `CloseableLock` wrapping
+locks allows acquiring the lock in a try-with-resources to have it
+released automatically (this is not always possible so locks are also
+acquired and released in a more usual way).
+
+There are 3 locks: for pulling, for pushing and for indexing. Internally
+these are implemented using a read-write lock for indexing and pull, and
+a simple lock for push.
+
+The idea is to allow parallel indexing batches (multiple threads can
+acquire the indexing lock concurrently), but disallow any pull while
+indexing takes place. Also only allow a single push at a time.
+
+Follows a summary of the ways different operations interact when they
+happen at the same time on the same or different nodes. The following
+sections then get into more details.
+
+Locking within a node:
+
+[width="100%",cols="26%,37%,37%",]
+|===
+| |Pull |Indexing
+
+|Pull a|
+For efficiency, serialize pulls (to avoid pulling twice the same files).
+
+_→ Pulls use a lock for mutual exclusion_
+
+a|
+No pulls while indexing is in progress to allow indexing to rely on the
+cached `metadataSuffix` node version.
+
+_→ Indexing uses a lock that allows other indexing but prohibits pulls_
+
+|Indexing >|Same as top right ↗️ a|
+Actual indexing can proceed in parallel (like stock SolrCloud), pushes
+are serialized.
+
+_→ Indexing uses a lock that allows other indexing but prohibits pulls_
+
+_→ The push to Zero store phase is done under *another mutual exclusion*
+lock_
+
+|===
+
+Interactions between two different nodes:
+
+[width="100%",cols="26%,37%,37%",]
+|===
+| |Pull on node B |Indexing on node B
+
+|Pull on node A |No limitations, can proceed in parallel |No
+limitations, can proceed in parallel
+
+|Indexing on node A >|Same as top right ↗️ |Edge case of shard leader tenure overlap. One
+batch succeeds, the other one fails. No data loss.
+|===
+
+==== Locking for pushing
+
+For pushes, acquiring the push lock guarantees there is no more than a
+single push at a time. If multiple pushes were allowed in parallel they
+would be pushing the same data and only one of them would succeed
+anyway.
+
+This lock exists for efficiency, not correctness.
+
+==== Locking for indexing and pulling
+
+Locking for indexing allows parallel indexing but prevents pulling while
+indexing is in progress (think indexing locking acquires a read lock and
+pulling acquires the write lock). If new shard content on the Zero store
+is becoming available from another node while a node is indexing (should
+be relatively rare), the indexing batch will eventually fail: the
+`metadataSuffix` node in ZooKeeper will not have the expected version due
+to the update done by another node.
+
+If pulling was allowed during indexing and updated the `version` of the
+cached `metadataSuffix` node, the ZooKeeper conditional update at the end
+of indexing could succeed. There would be a risk of data loss or
+conflict between the pulled content and locally written content (locally
+generated segment with same number as pulled segment). If pulling was
+allowed without updating the cached `version`, indexing would fail anyway.
+That’s why pulling is not permitted while indexing is in progress. The
+case this is protecting against is rare to very rare (two leaders for
+the same shard writing at more or less the same time) so no lock
+contention expected here.
+
+A naive solution to that issue would be to have each indexing batch
+record the version of the `metadataSuffix` node at the start of indexing
+(representing the version of the shard on top of which the indexing is
+done), and at the end of indexing do the conditional update using this
+version, regardless of pulls that might have occurred in the meantime on
+that node. This would work, and in case of a remote update to the Zero
+store shard data, the indexing batch would fail as expected.
+
+But this approach would be causing local inefficiencies and is not
+realistic if concurrent indexing batches on a replica are allowed: when
+two such batches run (starting from the same initial state of the
+`metadataSuffix` node), the first to finish would succeed and update the
+`metadataSuffix` node and the second would systematically fail. In
+practice this would mean no concurrent indexing.
+
+This is the reason that multiple indexing batches can proceed in
+parallel but no pulling from Zero store is allowed while an indexing is
+in progress.
+
+The indexing lock must be continuously held from before indexing starts
+to after the push that occurs at the end of indexing has completed.
+Before the push starts, the push lock must be acquired.
+
+If the indexing lock was released at the end of local indexing and
+commit and before the push to Zero store started, a pull could then
+happen. The pulled data could conflict with local core data, and
+regardless of the resolution choice (keeping the local segments or
+remote ones coming from the Zero store) the subsequent push - if not
+made to fail - would be causing some loss of data.
+
+Therefore, for correctness it is required to either prevent pulls from
+happening during indexing or making sure indexing fails if a pull does
+happen during indexing. The proposed implementation picked the first
+option but both are equivalent really (the indexing batch would fail in
+both if there was a need to do a pull, whether or not that pull was
+done).
+
+==== Indexing lifecycle with `ZERO` replicas
+
+The way concurrent indexing works with the Zero store is that
+Solr/Lucene is managing segment numbering and writes to the local index
+in the normal way. When a commit completes and the first of concurrent
+indexing batches completes, local files are pushed to the Zero store
+using unique filenames and a conditional update to the `metadataSuffix`
+ZooKeeper node is done with the `version` cached on this Solr node. This
+causes an increase of the `metadataSuffix` node version (`metadataSuffix` is
+always updated at the end of a push, this is what makes the pushed data
+visible - note this means each indexing batch with `ZERO` replicas does a
+write to ZooKeeper, this is not the case with existing replica types). A
+second indexing thread that has completed and committed waits for the
+push lock and for the first thread to complete the push and release the
+lock. The second thread then pushes to the Zero store the new content
+(diff between local index commit point and Zero store contents) and
+updates again the `metadataSuffix` node. It’s quite possible and even
+probable that the push at the end of the first batch did write to the
+Zero store the updates done by both batches (which might have resulted
+in one or more segments on disk), in which case the second thread, after
+waiting for the first push to finish, will discover that no additional
+files need to be pushed, will quickly complete and acknowledge the
+second batch.
+
+Note that when two different nodes push to the Zero store at the same
+time, only one batch succeeds and the other one fails, no data is lost
+nor overwritten. Current implementation will return a failure to the
+client (in the future the batch could be retried after refreshing the
+local replica state so it succeeds).
+
+==== Locking summary
+
+To sum it up, locking on a given SolrCloud node allows using updated
+versions of the `metadataSuffix` ZooKeeper node by indexing batches and
+therefore allows concurrent indexing on a node.
+
+Writing files with unique names to the Zero store and validating the
+actual write by a conditional update to the ZooKeeper `metadataSuffix`
+node allows managing consistency and guaranteeing no data loss in the
+Zero store when multiple nodes attempt to update the same shard on the
+Zero store (rare but not impossible, has been observed in production).
+
+Here’s a summary of the ways different operations interact when they
+happen at the same time on the same or different nodes.
+
+== Querying
+
+As described in <<Node startup>>, cores
+might start their life empty (local disk is a cache, source of truth is
+the Zero store). Currently, loading a core from the Zero store is
+triggered by either a query or an indexing request addressed to the
+core.
+
+Pulls triggered by queries are done asynchronously. When receiving a
+request which is not an `/update`, a pull is enqueued. This is done very
+early in the request lifecycle in `HttpSolrCall.init()` (this should be
+changed and moved to the handlers/components that actually need the core
+content).
+
+In `SearchHandler.handleRequestBody()`, there’s a stopgap check to ensure
+the core was pulled from Zero store at least once. If it wasn’t, the
+query is rejected right away. This ensures we never answer to a query
+with no results, mostly because we create empty cores at node startup
+for all the replicas that are discovered from ZooKeeper. An outright
+rejection causes other layers of SolrCloud to query (for a while)
+replicas on other nodes, letting the node with missing data refresh
+itself and be able to then handle queries. Rolling cluster restarts need
+somewhat more work to guarantee that there’s always at least one up to
+date replica to serve queries (if all nodes restart in quick sequence,
+all replicas of a shard might not have refreshed themselves from the
+Zero store, causing an outage). Code handling this case is not too
+complex and can be contributed later.
+
+This does not ensure the local core on a non-leader replica is always
+up-to-date. We may still process a query without having the very recent
+updates to the replica if they were done in another node. This is not so
+different from what happens with `TLOG` or `PULL` replicas, where
+replication between Solr nodes is not real time.
+
+In the Zero store case though, the update could be much older. For
+example the non leader replica got updated a week ago when it was
+leader. It will be non empty from that point on, but the quality of
+results it will be able to serve might not be very high. If queries
+target all replicas and there is a constant stream, then non leader
+replicas will always be more or less up to date. If there’s only
+indexing and no queries, the first queries on the non leader replica
+might be served based on old replica contents.
+
+Pull requests are enqueued after each query (this should be improved),
+but as they’re waiting in a queue to be executed, new requests are
+deduplicated. This means there is at most a single outstanding pull
+request for a replica, a subsequent pull request will only be enqueued
+if a new query arrives.
+
+== Indexing
+
+The first location in code where we have custom code for indexing for
+`ZERO` replicas is class `DistributedUpdateProcessorFactory`. For ZERO
+replicas, instead of using the standard `DistributedZkUpdateProcessor`,
+subclass `ZeroStoreUpdateProcessor` is used. This is mostly a hook to make
+sure the core is pulled from Zero store before processing the batch, and
+then pushed back to Zero store when the batch is complete. This happens
+respectively:
+
+[arabic]
+. In `postSetupHook()` (added in the parent class and overridden in the
+subclass) that invokes
+`ZeroCoreIndexingBatchProcessor.addOrDeleteGoingToBeIndexedLocally()`.
+. In `processCommit()` (standard method overridden from the parent class)
+that invokes
+`ZeroCoreIndexingBatchProcessor.hardCommitCompletedLocally()`.
+
+
+There is also code specific to `ZERO` replica in class `HttpSolrCall` to
+always add the `commit=true` parameter to the indexing batch. This code
+will be removed once the Transaction Log is adapted to work at the shard
+level with `ZERO` replicas. See <<Future plans>>.
+
+Indexing itself proceeds normally all the way to the commit. Push to
+Zero store happens after the new segments have been created on the local
+file system.
+
+== Shard leader elections
+
+The differences in leader election for `ZERO` replicas are minimal, and
+reside in whether we allow the replica that wins the election to
+actually become the leader replica (normal upstream leader election
+first elects a replica *then* decides if it is fit to become the leader
+based on shard terms) and as a consequence how long/if a replica waits
+for other replicas to join the election (with `ZERO` replicas no need to
+wait).
+
+When indexing to a `ZERO` replica, the latest available data will always
+be available since the source of truth (Zero store) is available to all
+replicas. Therefore the `ZERO` replica that wins the leader election is
+always legitimate to actually be the leader. In the method
+`ShardLeaderElectionContext.runLeaderProcess()`, we skip checks related to
+shard terms for `ZERO` replicas (and given that unlike `NRT` and `TLOG` there
+is no forwarding of indexing batches with `ZERO` replicas, shard terms are
+not even maintained, so it’s good news they’re not needed).
+
+Strictly speaking, for correctness and durability there is no need to
+even do shard leader elections for `ZERO` replicas. The protections around
+how the Zero store can be updated guarantees that any replica doing
+indexing will end up doing the right thing: reject an indexing request
+if it doesn’t have the last data of the shard and update itself with the
+latest data to be able to process subsequent indexing requests. But
+given shard leader election is so pervasive in SolrCloud, the ZERO
+replica implementation at least in its current state conforms to the
+general logic with only small adjustments as described above.
+
+== Admin operations
+
+=== Collection creation
+
+Collection creation in `CreateCollectionCmd` creates the `metadataSuffix`
+ZooKeeper node when creating a `ZERO` collection.
+
+=== Restore
+
+`RestoreCmd` can restore a "normal" collection as `ZERO` (this can be used
+for testing the `ZERO` feature) and vice versa.
+
+There aren’t many changes to the restore code overall to support `ZERO`.
+`RestoreCore` does push the restored core to the Zero store though.
+
+=== Shard Splits
+
+Core (shard) split requires the index. Before processing the split for a
+`ZERO` replica, the index is pulled from the Zero store in a similar way
+to pulls done before processing an indexing batch. In `SplitOp`, a wrapper
+method is executed before calling the split code, makes sure the index
+is up to date from the Zero store, then grabs the `ZERO` indexing lock on
+the parent core and executes the standard split method.
+
+That split method got slightly modified to return the list of created
+subcores (and not close them) so that the wrapper method can push these
+new cores to the Zero store then close them.
+
+Indexing batches received (and pushed to the Zero store) while a split
+is in progress might be lost if they update the Zero store after its
+contents were fetched in `SplitOp` on the node where the split happens. In
+order to prevent this from happening, indexing is rejected while a split
+is in progress (remains to be seen if that can be changed once the
+Transaction Log is adapted to the `ZERO` replicas). The rejection is
+implemented by checking if there is a splitting “lock” in ZooKeeper (a
+path of the form `/collections/_collectionName_/_shardName_-splitting`).
+The method that performs the check is
+`SplitShardCmd.shardSplitLockHeld()`.
+
+The `...-splitting` path is created in `SplitShardCmd.lockForSplit` before
+the `SplitOp` is called on the node.
+
+Note there is a race window here (a small one) in which an indexing
+batch is not rejected because no split is in progress when the check is
+done, but assuming the indexing is slow to process, by the time it
+updates the Zero store image of the shard, the split has started and
+that batch is going to be lost (not present on any of the children). A
+possible fix would be to update the `version` of the `metadataSuffix` node
+before pulling the contents of the core for the split, and making sure
+rejection during indexing in case of a split happens after the indexing
+node has pulled the core (the increased `version` would make sure the
+indexing batch ends up failing). This would have to be reconsidered once
+`ZERO` replicas use the transaction log (see
+<<Future plans>>).
+
+== Random implementation notes
+
+Listing current limitations and/or work to do.
+
+=== CollectionsHandler
+
+`MODIFYCOLLECTION` does not work with `ZERO` collections
+
+=== CoreCorruptionTest
+
+`testIndexFilePullFailure()` and `testCorruptedIndexFile()` seem to fail
+sometimes.
+
+=== CorePusherTest
+
+The cluster is shutdown in `@After` but is built at the start of
+individual tests, and not all of them...
+
+=== CreateCollectionCmd
+
+In `populateShardNames()` there’s a change (with `TODO`) that likely needs
+to be contributed to the `main` branch independently of the Zero code
+implementation (it is a general fix).
+
+=== CreateCollectionRequestBody
+
+`TODO` regarding other places related to v2 API that might need changes
+
+=== CreateShardRequestBody
+
+`TODO` regarding other places related to v2 API that might need changes
+
+=== DocCollection
+
+Checks for collection vs. replica type might be redundant
+
+=== HttpSolrCall
+
+Hard coding of the request paths that trigger a pull. This should be
+changed and delegated to the specific handlers/components that require a
+pull.
+
+=== MigrateCmd
+
+`MIGRATE` does not work with `ZERO` replicas
+
+=== ReindexCollectionCmd
+
+`REINDEXCOLLECTION` does not work with `ZERO` replicas
+
+=== SearchHandler
+
+Rejecting query if core never pulled from Zero store. Need something
+more elegant
+
+=== SplitShardCmd
+
+Method `shardSplitLockHeld()` checks the presence of a lock using a
+`ZkController` whereas existing methods `lockForSplit()` and
+`unlockForSplit()` use a `SolrCloudManager`. Unfortunately the caller of
+`shardSplitLockHeld()` does not have an instance of `SolrCloudManager`.
+
+=== ZeroCoreConcurrencyTest
+
+Flapping (and disabled) test `todoTestIndexingQueriesDeletesFailovers()`.
+
+=== ZeroCoreIndexingBatchProcessor
+
+Indexing does happen on `INACTIVE` shards when split happens, this should
+not be the case. See `ZeroCoreIndexingBatchProcessor` and run tests in
+`ZeroStoreSplitTest`.
+
+== Future plans
+
+The `ZERO` code as of this writing (January 2024) has known limitations
+forcing commits with each indexing batch and basically bypassing
+anything that relies on the transaction log (nodes are stateless, the
+transaction log is assumed to not survive a restart). Moreover (but
+relatively minor drawback), each such indexing batch also includes a
+write to a ZooKeeper node (updating `metadataSuffix`).
+
+The next step is to adapt the transaction log from its current per
+replica state and make it a per shard abstraction that is stored in the
+Zero store in a way that makes any `ZERO` replica able to add to it and to
+consume it (like any `ZERO` replica can update itself from the Zero
+store). Once this is available, some aspects of the current
+implementation of `ZERO` replicas would have to be reconsidered.
+
+== Past plans
+
+First found trace of an intention to implement something similar to the
+proposal in this branch dates back to July 2014.
+https://issues.apache.org/jira/browse/SOLR-6237[[.underline]#SOLR-6237#]
+- _An option to have only leaders write and replicas read when using a
+shared file system with SolrCloud_.
+
+A more recent attempt to contribute the code that evolved into the
+current `ZERO` replicas proposal was made in January 2019. The new replica
+type was then called SHARED. The umbrella ticket is
+https://issues.apache.org/jira/browse/SOLR-13101[[.underline]#SOLR-13101#]
+- _Shared storage via a new SHARED replica type,_ and its (long
+abandoned) branch is
+https://github.com/apache/lucene-solr/tree/jira/SOLR-13101[[.underline]#lucene-solr
+jira/SOLR-13101#].
+
+The two tickets are marked as “Unresolved” and “Won't Fix”.
+
+Hopefully history doesn’t *always* repeat itself.

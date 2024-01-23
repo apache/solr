@@ -50,6 +50,7 @@ public class BuildersTest extends SolrTestCaseJ4 {
                 NUM_NRT_REPLICAS,
                 NUM_NRT_REPLICAS + 1,
                 NUM_NRT_REPLICAS + 2,
+                NUM_NRT_REPLICAS + 3,
                 clusterBuilder.getLiveNodeBuilders(),
                 List.of(10, 20));
     clusterBuilder.addCollection(collectionBuilder);
@@ -61,7 +62,7 @@ public class BuildersTest extends SolrTestCaseJ4 {
     for (String shardName : collection.getShardNames()) {
       Shard shard = collection.getShard(shardName);
       assertNotNull("shard leader", shard.getLeader());
-      int[] counts = new int[3];
+      int[] counts = new int[4];
       shard
           .iterator()
           .forEachRemaining(
@@ -75,11 +76,15 @@ public class BuildersTest extends SolrTestCaseJ4 {
                     break;
                   case PULL:
                     counts[2]++;
+                    break;
+                  case ZERO:
+                    counts[3]++;
                 }
               });
       assertEquals("numNrt", NUM_NRT_REPLICAS, counts[0]);
       assertEquals("numTlog", NUM_NRT_REPLICAS + 1, counts[1]);
       assertEquals("numPull", NUM_NRT_REPLICAS + 2, counts[2]);
+      assertEquals("numZero", NUM_NRT_REPLICAS + 3, counts[3]);
     }
     // AttributeFetcher
     AttributeFetcher attributeFetcher = clusterBuilder.buildAttributeFetcher();

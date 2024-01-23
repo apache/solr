@@ -105,6 +105,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   private boolean debug = log.isDebugEnabled();
   private boolean trace = log.isTraceEnabled();
   private boolean usableForChildDocs;
+  private boolean rejectUpdatesWhileBuffering;
 
   public enum SyncLevel {
     NONE,
@@ -349,9 +350,12 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     dataDir = (String) info.initArgs.get("dir");
     defaultSyncLevel = SyncLevel.getSyncLevel((String) info.initArgs.get("syncLevel"));
 
+    rejectUpdatesWhileBuffering =
+        Boolean.TRUE.equals(info.initArgs.getBooleanArg("rejectUpdatesWhileBuffering"));
     numRecordsToKeep = objToInt(info.initArgs.get("numRecordsToKeep"), 100);
     maxNumLogsToKeep = objToInt(info.initArgs.get("maxNumLogsToKeep"), 10);
     numVersionBuckets = objToInt(info.initArgs.get("numVersionBuckets"), 65536);
+
     if (numVersionBuckets <= 0)
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
@@ -591,6 +595,18 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     return Long.parseLong(last.substring(TLOG_NAME.length() + 1));
   }
 
+  /**
+   * Throw an exception if rejectUpdatesWhileBuffering=true. Method called while in BUFFERING state.
+   */
+  private void throwIfRejectUpdatesWhileBuffering() {
+    if (rejectUpdatesWhileBuffering) {
+      throw new SolrException(
+          ErrorCode.SERVICE_UNAVAILABLE,
+          "UpdateLog initialized with "
+              + "rejectUpdatesWhileBuffering=true, and we are in BUFFERING state. Rejecting update.");
+    }
+  }
+
   public void add(AddUpdateCommand cmd) {
     add(cmd, false);
   }
@@ -602,6 +618,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     synchronized (this) {
       if ((cmd.getFlags() & UpdateCommand.BUFFERING) != 0) {
+        throwIfRejectUpdatesWhileBuffering();
         ensureBufferTlog();
         bufferTlog.write(cmd);
         return;
@@ -671,6 +688,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     synchronized (this) {
       if ((cmd.getFlags() & UpdateCommand.BUFFERING) != 0) {
+        throwIfRejectUpdatesWhileBuffering();
         ensureBufferTlog();
         bufferTlog.writeDelete(cmd);
         return;
@@ -700,6 +718,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public void deleteByQuery(DeleteUpdateCommand cmd) {
     synchronized (this) {
       if ((cmd.getFlags() & UpdateCommand.BUFFERING) != 0) {
+        throwIfRejectUpdatesWhileBuffering();
         ensureBufferTlog();
         bufferTlog.writeDeleteByQuery(cmd);
         return;
@@ -1740,7 +1759,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       recoveryInfo = new RecoveryInfo();
 
       if (log.isInfoEnabled()) {
-        log.info("Starting to buffer updates. {}", this);
+        log.info(
+            "Starting to {} updates. {}", rejectUpdatesWhileBuffering ? "reject" : "buffer", this);
       }
 
       state = State.BUFFERING;

@@ -166,6 +166,7 @@ public class SolrXmlConfig {
     if (cloudConfig != null) configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(
         getBackupRepositoryPluginInfos(root.get("backup").getAll("repository")));
+    configBuilder.setZeroConfig(getZeroConfig(root.get("zero")));
     configBuilder.setClusterPlugins(getClusterPlugins(loader, root));
     // <metrics><hiddenSysProps></metrics> will be removed in Solr 10, but until then, use it if a
     // <hiddenSysProps> is not provided under <solr>.
@@ -253,6 +254,7 @@ public class SolrXmlConfig {
     assertSingleInstance(root.getAll("logging"), "logging");
     assertSingleInstance(root.get("logging").getAll("watcher"), "logging/watcher");
     assertSingleInstance(root.getAll("backup"), "backup");
+    assertSingleInstance(root.getAll("zero"), "zero");
     assertSingleInstance(root.getAll("coreAdminHandlerActions"), "coreAdminHandlerActions");
   }
 
@@ -649,6 +651,22 @@ public class SolrXmlConfig {
     return configs;
   }
 
+  private static ZeroConfig getZeroConfig(ConfigNode zero) {
+    ZeroConfig.ZeroConfigBuilder builder = new ZeroConfig.ZeroConfigBuilder();
+    boolean enabled = zero.boolAttr("enabled", true);
+    builder.setEnabled(enabled);
+    if (enabled) {
+      builder.setBackupRepositoryPlugins(
+          getPluginsInfo(zero.get("repositories").getAll("repository")));
+    } else {
+      if (log.isInfoEnabled()) {
+        log.info("Zero store (ZERO replica) type is disabled.");
+      }
+    }
+
+    return builder.build();
+  }
+
   private static PluginInfo[] getClusterPlugins(SolrResourceLoader loader, ConfigNode root) {
     List<PluginInfo> clusterPlugins = new ArrayList<>();
 
@@ -826,5 +844,14 @@ public class SolrXmlConfig {
   private static PluginInfo getPluginInfo(ConfigNode cfg) {
     if (cfg == null || !cfg.exists()) return null;
     return new PluginInfo(cfg, cfg.name(), false, true);
+  }
+
+  private static PluginInfo[] getPluginsInfo(List<ConfigNode> cfgs) {
+    List<PluginInfo> configs = new ArrayList<>();
+    for (ConfigNode cfg : cfgs) {
+      PluginInfo pluginInfo = getPluginInfo(cfg);
+      if (pluginInfo != null) configs.add(pluginInfo);
+    }
+    return configs.toArray(new PluginInfo[0]);
   }
 }

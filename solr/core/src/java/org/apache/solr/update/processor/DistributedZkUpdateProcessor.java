@@ -76,12 +76,12 @@ import org.slf4j.LoggerFactory;
 
 public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
-  private final CloudDescriptor cloudDesc;
-  private final ZkController zkController;
+  protected final CloudDescriptor cloudDesc;
+  protected final ZkController zkController;
   private final SolrCmdDistributor cmdDistrib;
   protected List<SolrCmdDistributor.Node> nodes;
   private Set<String> skippedCoreNodeNames;
-  private final String collection;
+  protected final String collection;
   private boolean readOnlyCollection = false;
   private boolean broadcastDeleteById = false;
 
@@ -127,7 +127,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
   }
 
-  private boolean isReadOnly() {
+  protected boolean isReadOnly() {
     return readOnlyCollection || req.getCore().readOnly;
   }
 
@@ -270,6 +270,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // replicationTracker to null if we aren't the leader or subShardLeader
     checkReplicationTracker(cmd);
 
+    postSetupHook();
+
     super.processAdd(cmd);
   }
 
@@ -366,6 +368,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // replicationTracker to null if we aren't the leader or subShardLeader
     checkReplicationTracker(cmd);
 
+    postSetupHook();
+
     super.doDeleteById(cmd);
   }
 
@@ -459,6 +463,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     // check if client has requested minimum replication factor information. will set
     // replicationTracker to null if we aren't the leader or subShardLeader
     checkReplicationTracker(cmd);
+
+    postSetupHook();
+
     super.doDeleteByQuery(cmd, replicas, coll);
   }
 
@@ -712,27 +719,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     clusterState = zkController.getClusterState();
     DocCollection coll = clusterState.getCollection(collection);
-    Slice slice = coll.getRouter().getTargetSlice(id, doc, route, req.getParams(), coll);
-
-    if (slice == null) {
-      // No slice found.  Most strict routers will have already thrown an exception, so a null
-      // return is a signal to use the slice of this core.
-      // TODO: what if this core is not in the targeted collection?
-      String shardId = cloudDesc.getShardId();
-      slice = coll.getSlice(shardId);
-      if (slice == null) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "No shard " + shardId + " in " + coll);
-      }
-      // if doc == null, then this is a DeleteById request with missing route, flag for forwarding
-      // to all shard leaders
-      if (doc == null
-          && coll.getRouter() instanceof CompositeIdRouter
-          && coll.getActiveSlicesMap().size() > 1) {
-        broadcastDeleteById = true;
-      }
-    }
-
+    Slice slice = getTargetSlice(coll, id, doc, route);
     DistribPhase phase = DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
 
     if (DistribPhase.FROMLEADER == phase && !couldIbeSubShardLeader(coll)) {
@@ -798,6 +785,36 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       Thread.currentThread().interrupt();
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
     }
+  }
+
+  protected void postSetupHook() {}
+
+  protected Slice getTargetSlice(
+      DocCollection coll, String id, SolrInputDocument doc, String route) {
+    Slice slice = coll.getRouter().getTargetSlice(id, doc, route, req.getParams(), coll);
+
+    if (slice == null) {
+      // No slice found.  Most strict routers will have already thrown an exception, so a null
+      // return is a signal to use the slice of this core.
+      // TODO: what if this core is not in the targeted collection?
+      String shardId = cloudDesc.getShardId();
+      slice = coll.getSlice(shardId);
+
+      if (slice == null) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "No shard " + shardId + " in " + coll);
+      }
+
+      // if doc == null, then this is a DeleteById request with missing route, flag for forwarding
+      // to all shard leaders
+      if (doc == null
+          && coll.getRouter() instanceof CompositeIdRouter
+          && coll.getActiveSlicesMap().size() > 1) {
+        broadcastDeleteById = true;
+      }
+    }
+
+    return slice;
   }
 
   @Override

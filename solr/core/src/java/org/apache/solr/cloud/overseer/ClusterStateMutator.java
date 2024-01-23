@@ -71,6 +71,8 @@ public class ClusterStateMutator {
 
     Object messageShardsObj = message.get("shards");
 
+    boolean isZeroIndex = message.getBool(ZkStateReader.ZERO_INDEX, false);
+
     Map<String, Slice> slices;
     // we are being explicitly told the slice data (e.g. coll restore)
     if (messageShardsObj instanceof Map) {
@@ -104,11 +106,15 @@ public class ClusterStateMutator {
 
     Map<String, Object> collectionProps = new HashMap<>();
 
-    for (Map.Entry<String, Object> e :
-        CollectionHandlingUtils.COLLECTION_PROPS_AND_DEFAULTS.entrySet()) {
+    Map<String, Object> collectionDefaults =
+        isZeroIndex
+            ? CollectionHandlingUtils.ZERO_INDEX_COLLECTION_PROPS_AND_DEFAULTS
+            : CollectionHandlingUtils.COLLECTION_PROPS_AND_DEFAULTS;
+
+    for (Map.Entry<String, Object> e : collectionDefaults.entrySet()) {
       Object val = message.get(e.getKey());
       if (val == null) {
-        val = CollectionHandlingUtils.COLLECTION_PROPS_AND_DEFAULTS.get(e.getKey());
+        val = collectionDefaults.get(e.getKey());
       }
       if (val != null) collectionProps.put(e.getKey(), val);
     }

@@ -112,7 +112,7 @@ public class NodeConfig {
   private final String managementPath;
 
   private final PluginInfo[] backupRepositoryPlugins;
-
+  private final ZeroConfig zeroConfig;
   private final MetricsConfig metricsConfig;
 
   private final Map<String, CacheConfig> cachesConfig;
@@ -151,6 +151,7 @@ public class NodeConfig {
       SolrResourceLoader loader,
       Properties solrProperties,
       PluginInfo[] backupRepositoryPlugins,
+      ZeroConfig zeroConfig,
       MetricsConfig metricsConfig,
       Map<String, CacheConfig> cachesConfig,
       PluginInfo tracerConfig,
@@ -190,6 +191,7 @@ public class NodeConfig {
     this.loader = loader;
     this.solrProperties = solrProperties;
     this.backupRepositoryPlugins = backupRepositoryPlugins;
+    this.zeroConfig = zeroConfig;
     this.metricsConfig = metricsConfig;
     this.cachesConfig = cachesConfig == null ? Collections.emptyMap() : cachesConfig;
     this.tracerConfig = tracerConfig;
@@ -416,6 +418,10 @@ public class NodeConfig {
     return backupRepositoryPlugins;
   }
 
+  public ZeroConfig getZeroConfig() {
+    return zeroConfig;
+  }
+
   public MetricsConfig getMetricsConfig() {
     return metricsConfig;
   }
@@ -602,6 +608,7 @@ public class NodeConfig {
     private String managementPath;
     private Properties solrProperties = new Properties();
     private PluginInfo[] backupRepositoryPlugins;
+    private ZeroConfig zeroConfig;
     private MetricsConfig metricsConfig;
     private Map<String, CacheConfig> cachesConfig;
     private PluginInfo tracerConfig;
@@ -653,6 +660,7 @@ public class NodeConfig {
       setSolrDataHome(System.getProperty(SolrXmlConfig.SOLR_DATA_HOME));
       setConfigSetBaseDirectory("configsets");
       this.metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
+      this.zeroConfig = new ZeroConfig.ZeroConfigBuilder().build();
     }
 
     public NodeConfigBuilder setCoreRootDirectory(String coreRootDirectory) {
@@ -780,6 +788,11 @@ public class NodeConfig {
 
     public NodeConfigBuilder setBackupRepositoryPlugins(PluginInfo[] backupRepositoryPlugins) {
       this.backupRepositoryPlugins = backupRepositoryPlugins;
+      return this;
+    }
+
+    public NodeConfigBuilder setZeroConfig(ZeroConfig zeroConfig) {
+      this.zeroConfig = zeroConfig;
       return this;
     }
 
@@ -911,6 +924,7 @@ public class NodeConfig {
           loader,
           solrProperties,
           backupRepositoryPlugins,
+          zeroConfig,
           metricsConfig,
           cachesConfig,
           tracerConfig,

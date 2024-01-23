@@ -138,6 +138,8 @@ public class ZkStateReader implements SolrCloseable {
   public static final String PULL_REPLICAS = "pullReplicas";
   public static final String NRT_REPLICAS = "nrtReplicas";
   public static final String TLOG_REPLICAS = "tlogReplicas";
+  public static final String ZERO_REPLICAS = CollectionAdminParams.ZERO_REPLICAS;
+  public static final String ZERO_INDEX = CollectionAdminParams.ZERO_INDEX;
   public static final String READ_ONLY = "readOnly";
 
   public static final String CONFIGS_ZKNODE = "/configs";

@@ -107,6 +107,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       throws KeeperException, InterruptedException {
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
     ActionThrottle lt;
+    boolean isZeroReplica;
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null) {
         // shutdown or removed
@@ -114,6 +115,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
       MDCLoggingContext.setCore(core);
       lt = core.getUpdateHandler().getSolrCoreState().getLeaderThrottle();
+      isZeroReplica =
+          core.getCoreDescriptor().getCloudDescriptor().getReplicaType() == Replica.Type.ZERO;
     }
 
     try {
@@ -151,7 +154,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
       }
 
-      if (!weAreReplacement) {
+      // Do not wait for other replicas when type is ZERO.
+      // Since we can pull data from Zero store, we don't require an up-to-date leader
+      if (!isZeroReplica && !weAreReplacement) {
         waitForReplicasToComeUp(leaderVoteWait);
       }
 
@@ -173,98 +178,104 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
         replicaType = core.getCoreDescriptor().getCloudDescriptor().getReplicaType();
         coreNodeName = core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
-        // should I be leader?
-        ZkShardTerms zkShardTerms = zkController.getShardTerms(collection, shardId);
-        if (zkShardTerms.registered(coreNodeName) && !zkShardTerms.canBecomeLeader(coreNodeName)) {
-          if (!waitForEligibleBecomeLeaderAfterTimeout(
-              zkShardTerms, coreNodeName, leaderVoteWait)) {
+
+        // if ZERO replica, skip sync and recovery stages. a ZERO replica that is not up-to-date
+        // can still become leader; it will sync the latest from Zero store with the next request.
+        if (replicaType != Replica.Type.ZERO) {
+          // should I be leader?
+          ZkShardTerms zkShardTerms = zkController.getShardTerms(collection, shardId);
+          if (zkShardTerms.registered(coreNodeName)
+              && !zkShardTerms.canBecomeLeader(coreNodeName)) {
+            if (!waitForEligibleBecomeLeaderAfterTimeout(
+                zkShardTerms, coreNodeName, leaderVoteWait)) {
+              rejoinLeaderElection(core);
+              return;
+            } else {
+              // only log an error if this replica win the election
+              setTermToMax = true;
+            }
+          }
+
+          if (isClosed) {
+            return;
+          }
+
+          log.info("I may be the new leader - try and sync");
+
+          // we are going to attempt to be the leader
+          // first cancel any current recovery
+          core.getUpdateHandler().getSolrCoreState().cancelRecovery();
+
+          if (weAreReplacement) {
+            // wait a moment for any floating updates to finish
+            try {
+              Thread.sleep(2500);
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
+            }
+          }
+
+          PeerSync.PeerSyncResult result = null;
+          boolean success = false;
+          try {
+            result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
+            success = result.isSuccess();
+          } catch (Exception e) {
+            log.error("Exception while trying to sync", e);
+            result = PeerSync.PeerSyncResult.failure();
+          }
+
+          UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+
+          if (!success) {
+            boolean hasRecentUpdates = false;
+            if (ulog != null) {
+              // TODO: we could optimize this if necessary
+              try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
+                hasRecentUpdates = !recentUpdates.getVersions(1).isEmpty();
+              }
+            }
+
+            if (!hasRecentUpdates) {
+              // we failed sync, but we have no versions - we can't sync in that case
+              // - we were active
+              // before, so become leader anyway if no one else has any versions either
+              if (result.getOtherHasVersions().orElse(false)) {
+                log.info(
+                    "We failed sync, but we have no versions - we can't sync in that case. But others have some versions, so we should not become leader");
+                success = false;
+              } else {
+                log.info(
+                    "We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
+                success = true;
+              }
+            }
+          }
+
+          // solrcloud_debug
+          if (log.isDebugEnabled()) {
+            try {
+              RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
+              SolrIndexSearcher searcher = searchHolder.get();
+              try {
+                if (log.isDebugEnabled()) {
+                  log.debug(
+                      "{} synched {}",
+                      core.getCoreContainer().getZkController().getNodeName(),
+                      searcher.count(new MatchAllDocsQuery()));
+                }
+              } finally {
+                searchHolder.decref();
+              }
+            } catch (Exception e) {
+              log.error("Error in solrcloud_debug block", e);
+            }
+          }
+          if (!success) {
             rejoinLeaderElection(core);
             return;
-          } else {
-            // only log an error if this replica win the election
-            setTermToMax = true;
           }
-        }
-
-        if (isClosed) {
-          return;
-        }
-
-        log.info("I may be the new leader - try and sync");
-
-        // we are going to attempt to be the leader
-        // first cancel any current recovery
-        core.getUpdateHandler().getSolrCoreState().cancelRecovery();
-
-        if (weAreReplacement) {
-          // wait a moment for any floating updates to finish
-          try {
-            Thread.sleep(2500);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
-          }
-        }
-
-        PeerSync.PeerSyncResult result = null;
-        boolean success = false;
-        try {
-          result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
-          success = result.isSuccess();
-        } catch (Exception e) {
-          log.error("Exception while trying to sync", e);
-          result = PeerSync.PeerSyncResult.failure();
-        }
-
-        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-
-        if (!success) {
-          boolean hasRecentUpdates = false;
-          if (ulog != null) {
-            // TODO: we could optimize this if necessary
-            try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-              hasRecentUpdates = !recentUpdates.getVersions(1).isEmpty();
-            }
-          }
-
-          if (!hasRecentUpdates) {
-            // we failed sync, but we have no versions - we can't sync in that case
-            // - we were active
-            // before, so become leader anyway if no one else has any versions either
-            if (result.getOtherHasVersions().orElse(false)) {
-              log.info(
-                  "We failed sync, but we have no versions - we can't sync in that case. But others have some versions, so we should not become leader");
-              success = false;
-            } else {
-              log.info(
-                  "We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
-              success = true;
-            }
-          }
-        }
-
-        // solrcloud_debug
-        if (log.isDebugEnabled()) {
-          try {
-            RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
-            SolrIndexSearcher searcher = searchHolder.get();
-            try {
-              if (log.isDebugEnabled()) {
-                log.debug(
-                    "{} synched {}",
-                    core.getCoreContainer().getZkController().getNodeName(),
-                    searcher.count(new MatchAllDocsQuery()));
-              }
-            } finally {
-              searchHolder.decref();
-            }
-          } catch (Exception e) {
-            log.error("Error in solrcloud_debug block", e);
-          }
-        }
-        if (!success) {
-          rejoinLeaderElection(core);
-          return;
         }
       }
 
@@ -463,6 +474,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
 
         // on startup and after connection timeout, wait for all known shards
+        // We also wait here for Replica.Type.ZERO but none will appear since we don't mix ZERO
+        // with other replica types, and we don't execute that method when current replica is ZERO
         if (found >= slices.getReplicas(leaderEligibleReplicaTypes).size()) {
           log.info("Enough replicas found to continue.");
           return true;

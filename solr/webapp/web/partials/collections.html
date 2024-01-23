@@ -26,7 +26,14 @@ limitations under the License.
         <p class="clearfix"><label for="add_name">name:</label>
           <input type="text" name="name" id="add_name" ng-model="newCollection.name" placeholder="new collection"></p>
 
-        <p class="clearfix"><label for="add_config">config set:</label>&nbsp;
+          <p class="clearfix"><label for="add_zeroIndex">Zero store based:</label>
+            <select name="zeroIndex" id="add_zeroIndex" ng-model="newCollection.zeroIndex">
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          </p>
+
+          <p class="clearfix"><label for="add_config">config set:</label>&nbsp;
           <select chosen ng-options="config.name as config.name for config in configs" name="config_name" id="add_config" ng-model="newCollection.configName">
           </select>
         </p>
@@ -214,7 +221,14 @@ limitations under the License.
 
           <ul>
 
-            <li>
+              <li>
+                <dl class="clearfix">
+                  <dt><span>Zero store based:</span></dt>
+                  <dd>{{collection.zeroIndex}}</dd>
+                </dl>
+              </li>
+
+              <li>
                 <dl class="clearfix">
                     <dt><span>Shard count:</span></dt>
                     <dd>{{collection.shards.length}}</dd>

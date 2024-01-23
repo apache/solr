@@ -1053,7 +1053,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             DocCollection.verifyProp(m, prop);
           }
           if (m.get(REPLICATION_FACTOR) != null) {
-            m.put(Replica.Type.defaultType().numReplicasPropertyName, m.get(REPLICATION_FACTOR));
+            // TODO assuming a non Zero index collection here! MODIFYCOLLECTION doesn't work on ZERO
+            // yet
+            m.put(
+                Replica.Type.defaultType(false).numReplicasPropertyName, m.get(REPLICATION_FACTOR));
           }
           return m;
         }),

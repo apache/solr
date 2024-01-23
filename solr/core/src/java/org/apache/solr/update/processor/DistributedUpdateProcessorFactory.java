@@ -19,6 +19,7 @@ package org.apache.solr.update.processor;
 import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -56,9 +57,17 @@ public class DistributedUpdateProcessorFactory extends UpdateRequestProcessorFac
 
     DistributedUpdateProcessor distribUpdateProcessor =
         isZkAware
-            ? new DistributedZkUpdateProcessor(req, rsp, next)
+            ? getZkAwareInstance(req, rsp, next)
             : new DistributedUpdateProcessor(req, rsp, next);
     // note: will sometimes return DURP (no overhead) instead of wrapping
     return RoutedAliasUpdateProcessor.wrap(req, distribUpdateProcessor);
+  }
+
+  private static DistributedUpdateProcessor getZkAwareInstance(
+      SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    return req.getCore().getCoreDescriptor().getCloudDescriptor().getReplicaType()
+            == Replica.Type.ZERO
+        ? new ZeroStoreUpdateProcessor(req, rsp, next)
+        : new DistributedZkUpdateProcessor(req, rsp, next);
   }
 }

@@ -69,6 +69,7 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -82,6 +83,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -266,6 +268,10 @@ public class ReplicationHandler extends RequestHandlerBase
     final SolrParams solrParams = req.getParams();
     String command = solrParams.required().get(COMMAND);
 
+    if (isZeroReplica(core)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "ZERO replicas should never peer replicate!");
+    }
+
     // This command does not give the current index version of the leader
     // It gives the current 'replicateable' index version
     if (command.equals(CMD_INDEX_VERSION)) {
@@ -310,6 +316,13 @@ public class ReplicationHandler extends RequestHandlerBase
       replicationEnabled.set(false);
       rsp.add(STATUS, OK_STATUS);
     }
+  }
+
+  private boolean isZeroReplica(SolrCore core) {
+    CoreDescriptor cd = core.getCoreDescriptor();
+    return cd != null
+        && cd.getCloudDescriptor() != null
+        && cd.getCloudDescriptor().getReplicaType() == Replica.Type.ZERO;
   }
 
   static boolean getBoolWithBackwardCompatibility(

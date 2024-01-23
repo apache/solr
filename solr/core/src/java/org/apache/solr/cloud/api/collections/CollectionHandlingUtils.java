@@ -55,6 +55,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -109,9 +110,16 @@ public class CollectionHandlingUtils {
 
   // Immutable Maps are null-hostile, so build our own
   public static final Map<String, Object> COLLECTION_PROPS_AND_DEFAULTS =
-      Collections.unmodifiableMap(makeCollectionPropsAndDefaults());
+      Collections.unmodifiableMap(makeCollectionPropsAndDefaults(false));
 
-  private static Map<String, Object> makeCollectionPropsAndDefaults() {
+  /**
+   * Default values for a collection based on Zero store ({@link DocCollection#isZeroIndex()}
+   * returns {@code true}, replicas are {@link Type#ZERO}).
+   */
+  public static final Map<String, Object> ZERO_INDEX_COLLECTION_PROPS_AND_DEFAULTS =
+      Collections.unmodifiableMap(makeCollectionPropsAndDefaults(true));
+
+  private static Map<String, Object> makeCollectionPropsAndDefaults(boolean zeroIndex) {
     Map<String, Object> propsAndDefaults =
         Utils.makeMap(
             CollectionStateProps.DOC_ROUTER,
@@ -119,11 +127,13 @@ public class CollectionHandlingUtils {
             CollectionStateProps.REPLICATION_FACTOR,
             "1",
             CollectionStateProps.PER_REPLICA_STATE,
-            null);
+            null,
+            ZkStateReader.ZERO_INDEX,
+            Boolean.toString(zeroIndex));
     for (Replica.Type replicaType : Replica.Type.values()) {
       propsAndDefaults.put(
           replicaType.numReplicasPropertyName,
-          replicaType == Replica.Type.defaultType() ? "1" : "0");
+          replicaType == Replica.Type.defaultType(zeroIndex) ? "1" : "0");
     }
     return propsAndDefaults;
   }

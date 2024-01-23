@@ -34,6 +34,11 @@ public class CreateShardRequestBody {
 
   @JsonProperty public Integer pullReplicas;
 
+  @JsonProperty public Integer zeroReplicas;
+  // TODO other "v2" places where ZERO needs to be added?
+
+  @JsonProperty public Boolean isZeroIndex;
+
   @JsonProperty("createReplicas")
   public Boolean createReplicas;
 

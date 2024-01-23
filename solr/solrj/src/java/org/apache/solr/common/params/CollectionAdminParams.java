@@ -46,6 +46,9 @@ public interface CollectionAdminParams {
   String NRT_REPLICAS = "nrtReplicas";
   String PULL_REPLICAS = "pullReplicas";
   String TLOG_REPLICAS = "tlogReplicas";
+  String ZERO_REPLICAS = "zeroReplicas";
+
+  String ZERO_INDEX = "zeroIndex";
 
   String REPLICATION_FACTOR = "replicationFactor";
 

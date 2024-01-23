@@ -26,6 +26,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SE
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.REPLICATION_FACTOR;
+import static org.apache.solr.common.params.CollectionAdminParams.ZERO_INDEX;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
@@ -77,7 +78,8 @@ public class RestoreCollectionAPI extends BackupAPIBase {
                   COLL_CONF,
                   REPLICATION_FACTOR,
                   CREATE_NODE_SET_PARAM,
-                  CREATE_NODE_SET_SHUFFLE_PARAM))
+                  CREATE_NODE_SET_SHUFFLE_PARAM,
+                  ZERO_INDEX))
           .collect(Collectors.toUnmodifiableSet());
 
   @Inject

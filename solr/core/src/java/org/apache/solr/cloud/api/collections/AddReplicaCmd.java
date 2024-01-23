@@ -131,7 +131,9 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     int timeout = message.getInt(TIMEOUT, 10 * 60); // 10 minutes
     boolean parallel = message.getBool("parallel", false);
 
-    ReplicaCount numReplicas = ReplicaCount.fromMessage(message, null, 1);
+    // Default replica type is NRT in SolrCloud, but if collection is Zero store based,
+    // default (and only acceptable type) is Replica.Type.ZERO
+    ReplicaCount numReplicas = ReplicaCount.fromMessage(message, null, 1, coll.isZeroIndex());
 
     int totalReplicas = numReplicas.total();
     if (totalReplicas > 1) {
@@ -236,6 +238,18 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       boolean skipCreateReplicaInClusterState,
       CreateReplica createReplica)
       throws InterruptedException, KeeperException {
+    // Fail fast if adding wrong replicas to a collection
+    if (!coll.isZeroIndex() && createReplica.replicaType == Replica.Type.ZERO) {
+      throw new RuntimeException(
+          "Can't add a Replica.Type.ZERO to a collection not backed by Zero store");
+    }
+    if (coll.isZeroIndex() && createReplica.replicaType != Replica.Type.ZERO) {
+      throw new RuntimeException(
+          "Can't add a "
+              + createReplica.replicaType
+              + " replica to a collection backed by Zero store");
+    }
+
     if (!skipCreateReplicaInClusterState) {
       Map<String, Object> replicaProps =
           Utils.makeMap(
@@ -397,7 +411,22 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
     boolean skipNodeAssignment = message.getBool(CollectionAdminParams.SKIP_NODE_ASSIGNMENT, false);
     String sliceName = message.getStr(SHARD_ID_PROP);
     DocCollection collection = clusterState.getCollection(collectionName);
+
     int totalReplicas = numReplicas.total();
+    int numZeroReplicas = numReplicas.get(Replica.Type.ZERO);
+    if (numZeroReplicas != 0 && numZeroReplicas != totalReplicas) {
+      throw new RuntimeException(
+          "ZERO and non ZERO replica types specified for collection "
+              + collectionName
+              + ". ZERO: "
+              + numZeroReplicas
+              + " NRT: "
+              + numReplicas.get(Replica.Type.NRT)
+              + " PULL: "
+              + numReplicas.get(Replica.Type.PULL)
+              + " TLOG: "
+              + numReplicas.get(Replica.Type.TLOG));
+    }
 
     String node = message.getStr(CoreAdminParams.NODE);
     Object createNodeSetStr = message.get(CollectionHandlingUtils.CREATE_NODE_SET);
@@ -417,6 +446,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
               collection.getName(),
               sliceName,
               numReplicas,
+              collection.isZeroIndex(),
               createNodeSetStr,
               cloudManager,
               coreContainer);

@@ -186,4 +186,7 @@ public interface DistribStateManager extends SolrCloseable {
       }
     }
   }
+
+  VersionedData setAndGetResult(String path, byte[] data, int version)
+      throws BadVersionException, KeeperException;
 }

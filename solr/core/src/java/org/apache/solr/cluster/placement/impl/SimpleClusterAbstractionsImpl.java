@@ -392,6 +392,8 @@ class SimpleClusterAbstractionsImpl {
           return Replica.ReplicaType.TLOG;
         case PULL:
           return Replica.ReplicaType.PULL;
+        case ZERO:
+          return Replica.ReplicaType.ZERO;
         default:
           throw new RuntimeException("Unexpected " + type);
       }
@@ -456,6 +458,8 @@ class SimpleClusterAbstractionsImpl {
           return org.apache.solr.common.cloud.Replica.Type.TLOG;
         case PULL:
           return org.apache.solr.common.cloud.Replica.Type.PULL;
+        case ZERO:
+          return org.apache.solr.common.cloud.Replica.Type.ZERO;
         default:
           throw new IllegalArgumentException("Unknown " + type);
       }

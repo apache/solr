@@ -37,6 +37,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -152,6 +153,7 @@ import org.apache.solr.util.OrderedExecutor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.stats.MetricUtils;
+import org.apache.solr.zero.process.ZeroStoreManager;
 import org.apache.zookeeper.KeeperException;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ApplicationHandler;
@@ -269,6 +271,8 @@ public class CoreContainer {
   protected volatile Tracer tracer;
 
   protected MetricsHandler metricsHandler;
+
+  protected ZeroStoreManager zeroStoreManager;
 
   private volatile SolrClientCache solrClientCache;
 
@@ -1009,6 +1013,12 @@ public class CoreContainer {
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
+
+      ZeroConfig zeroConfig = getNodeConfig().getZeroConfig();
+      if (zeroConfig.isZeroStoreEnabled()) {
+        log.info("Zero store is enabled in Solr Cloud. Building ZeroStoreManager.");
+        zeroStoreManager = new ZeroStoreManager(this, zeroConfig);
+      }
     }
 
     // setup executor to load cores in parallel
@@ -1031,6 +1041,23 @@ public class CoreContainer {
             new Object[] {this});
     try {
       List<CoreDescriptor> cds = coresLocator.discover(this);
+      if (isZeroStoreEnabled()) {
+        // We can start on a clean node and might be missing cores of ZERO replicas that belong to
+        // this node.
+        // We will make sure we create those missing core descriptors (if any) and add to the list
+        // of discovered core descriptors.
+        // Later in this method the cores will be created for those additional core descriptors
+        // because isLoadOnStartup is set to true for them
+        List<CoreDescriptor> additionalCoreDescriptors =
+            getZeroStoreManager().discoverAdditionalCoreDescriptorsForZeroReplicas(cds, this);
+
+        if (!additionalCoreDescriptors.isEmpty()) {
+          // enhance the list of discovered cores with the additional ones we just
+          // discovered/created
+          cds = new ArrayList<>(cds);
+          cds.addAll(additionalCoreDescriptors);
+        }
+      }
       cds = coreSorter.sort(cds);
       checkForDuplicateCoreNames(cds);
       status |= CORE_DISCOVERY_COMPLETE;
@@ -1339,6 +1366,10 @@ public class CoreContainer {
         if (metricManager != null) {
           metricManager.closeReporters(
               SolrMetricManager.getRegistryName(SolrInfoBean.Group.cluster));
+        }
+
+        if (zeroStoreManager != null) {
+          zeroStoreManager.shutdown();
         }
       }
 
@@ -1740,6 +1771,11 @@ public class CoreContainer {
         throw e;
       }
       solrCores.removeCoreDescriptor(dcore);
+
+      if (isZeroStoreEnabled()) {
+        zeroStoreManager.evictCoreZeroMetadata(dcore);
+      }
+
       final SolrException solrException =
           new SolrException(
               ErrorCode.SERVER_ERROR, "Unable to create core [" + dcore.getName() + "]", e);
@@ -1753,6 +1789,11 @@ public class CoreContainer {
               t);
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       solrCores.removeCoreDescriptor(dcore);
+
+      if (isZeroStoreEnabled()) {
+        zeroStoreManager.evictCoreZeroMetadata(dcore);
+      }
+
       if (core != null && !core.isClosed()) IOUtils.closeQuietly(core);
       throw t;
     } finally {
@@ -2122,7 +2163,6 @@ public class CoreContainer {
    */
   public void unload(
       String name, boolean deleteIndexDir, boolean deleteDataDir, boolean deleteInstanceDir) {
-
     CoreDescriptor cd = solrCores.getCoreDescriptor(name);
 
     if (name != null) {
@@ -2136,6 +2176,9 @@ public class CoreContainer {
         // If last time around we didn't successfully load, make sure that all traces of the
         // coreDescriptor are gone.
         if (cd != null) {
+          if (isZeroStoreEnabled()) {
+            zeroStoreManager.evictCoreZeroMetadata(cd);
+          }
           solrCores.removeCoreDescriptor(cd);
           coresLocator.delete(this, cd);
         }
@@ -2152,6 +2195,9 @@ public class CoreContainer {
     boolean close = solrCores.isLoadedNotPendingClose(name);
     SolrCore core = solrCores.remove(name);
 
+    if (isZeroStoreEnabled()) {
+      zeroStoreManager.evictCoreZeroMetadata(cd);
+    }
     solrCores.removeCoreDescriptor(cd);
     coresLocator.delete(this, cd);
     if (core == null) {
@@ -2205,6 +2251,9 @@ public class CoreContainer {
         // The old coreDescriptor is obsolete, so remove it. registerCore will put it back.
         CoreDescriptor cd = core.getCoreDescriptor();
         solrCores.removeCoreDescriptor(cd);
+        if (isZeroStoreEnabled()) {
+          zeroStoreManager.evictCoreZeroMetadata(cd);
+        }
         cd.setProperty("name", toName);
         solrCores.addCoreDescriptor(cd);
         core.setName(toName);
@@ -2414,6 +2463,10 @@ public class CoreContainer {
     return zkSys.getZkController();
   }
 
+  public ZeroStoreManager getZeroStoreManager() {
+    return zeroStoreManager;
+  }
+
   public NodeConfig getConfig() {
     return cfg;
   }
@@ -2505,6 +2558,10 @@ public class CoreContainer {
     }
 
     return tragicException != null;
+  }
+
+  public boolean isZeroStoreEnabled() {
+    return getZeroStoreManager() != null;
   }
 
   public ContainerPluginsRegistry getContainerPluginsRegistry() {

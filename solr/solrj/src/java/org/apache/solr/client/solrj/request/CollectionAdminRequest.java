@@ -421,7 +421,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
 
   /**
    * Returns a SolrRequest for creating a collection with the implicit router and specific types of
-   * replicas
+   * replicas.
+   *
+   * <p>Note that {@link org.apache.solr.common.cloud.Replica.Type#ZERO} replicas need to be added
+   * separately by calling {@link Create#setZeroReplicas(Integer)} on the returned instance.
    *
    * @param collection the collection name
    * @param config the collection config
@@ -473,6 +476,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected Boolean perReplicaState;
 
     protected Properties properties;
+
+    /**
+     * True if collection is Zero store based (replicas are of type ZERO). null or false if
+     * collection of replicas of types NRT/TLOG/PULL.
+     */
+    protected Boolean zeroIndex;
+
     protected String alias;
     protected String[] rule, snitch;
 
@@ -554,6 +564,30 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return setNumReplicas(Replica.Type.PULL, pullReplicas);
     }
 
+    public Create setZeroReplicas(Integer zeroReplicas) {
+      return setNumReplicas(Replica.Type.ZERO, zeroReplicas);
+    }
+
+    /**
+     * By default, collections are created to be non backed by the Zero store. SolrCloud then
+     * manages multiple replicas, replication and leader election to guarantee data persistence in
+     * presence of failures.
+     *
+     * <p>Call this method with {@code true} to make the collection being created to be backed by
+     * the Zero sture (and the collection is then considered a "Zero index collection").
+     *
+     * <p>In such a case, <code>numNrtReplicas</code> (a.k.a. <code>numReplicas</code> in <code>
+     * createCollection...</code> calls) as well as TLOG and PULL replicas should be null/0, and
+     * number of {@link org.apache.solr.common.cloud.Replica.Type#ZERO} set by calling {@link
+     * #setZeroReplicas(Integer)} should be non-zero.
+     *
+     * @param zeroIndex pass {@code true} here to make the collection backed by Zero store
+     */
+    public Create setZeroIndex(boolean zeroIndex) {
+      this.zeroIndex = zeroIndex;
+      return this;
+    }
+
     public Create setNumReplicas(Replica.Type type, Integer count) {
       this.numReplicas.put(type, count);
       return this;
@@ -623,6 +657,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return numReplicas.get(type);
     }
 
+    public Boolean getZeroIndex() {
+      return zeroIndex;
+    }
+
     public Boolean getPerReplicaState() {
       return perReplicaState;
     }
@@ -684,6 +722,26 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         addProperties(params, properties);
       }
       numReplicas.writeProps(params);
+      if (zeroIndex != null) {
+        params.set(CollectionAdminParams.ZERO_INDEX, zeroIndex);
+      }
+
+      // zeroIndex collections can have only ZERO replicas. Non zeroIndex collections cannot
+      // have ZERO replicas
+      if (Boolean.TRUE.equals(zeroIndex)) {
+        if (numReplicas.get(Replica.Type.NRT) != 0
+            || numReplicas.get(Replica.Type.TLOG) != 0
+            || numReplicas.get(Replica.Type.PULL) != 0) {
+          throw new RuntimeException(
+              "Illegal to have NRT, TLOG or PULL replicas for Zero index collection backed by Zero store");
+        }
+      } else {
+        if (numReplicas.get(Replica.Type.ZERO) != 0) {
+          throw new RuntimeException(
+              "Illegal to have ZERO replicas for collection not backed by Zero store");
+        }
+      }
+
       if (Boolean.TRUE.equals(perReplicaState)) {
         params.set(CollectionAdminParams.PER_REPLICA_STATE, perReplicaState);
       }
@@ -1238,6 +1296,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String configName;
     protected Integer replicationFactor;
     protected ReplicaCount numReplicas;
+    protected Boolean zeroIndex;
     protected Optional<String> createNodeSet = Optional.empty();
     protected Optional<Boolean> createNodeSetShuffle = Optional.empty();
     protected Properties properties;
@@ -1335,6 +1394,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return this;
     }
 
+    public Boolean getZeroIndex() {
+      return zeroIndex;
+    }
+
+    public Restore setZeroIndex(boolean zeroIndex) {
+      this.zeroIndex = zeroIndex;
+      return this;
+    }
+
     public Properties getProperties() {
       return properties;
     }
@@ -1376,6 +1444,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         params.set(CollectionAdminParams.REPLICATION_FACTOR, replicationFactor);
       }
       numReplicas.writeProps(params);
+      if (zeroIndex != null) {
+        params.set(CollectionAdminParams.ZERO_INDEX, zeroIndex);
+      }
       if (properties != null) {
         addProperties(params, properties);
       }
@@ -1575,6 +1646,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       if (properties != null) {
         addProperties(params, properties);
       }
+
       return params;
     }
   }

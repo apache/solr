@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.zero.process.ZeroStoreManager;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -181,6 +182,11 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
       }
       log.debug("Waiting for delete shard action to complete");
       cleanupLatch.await(1, TimeUnit.MINUTES);
+
+      if (clusterState.getCollection(collectionName).isZeroIndex()) {
+        ZeroStoreManager zeroStoreManager = ccc.getCoreContainer().getZeroStoreManager();
+        zeroStoreManager.deleteShard(collectionName, slice.getName());
+      }
 
       ZkNodeProps m =
           new ZkNodeProps(

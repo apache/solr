@@ -25,6 +25,7 @@ import org.apache.solr.client.api.model.RestoreCoreRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -143,6 +144,14 @@ public class RestoreCore extends CoreAdminAPIBase implements RestoreCoreApi {
       UpdateLog updateLog = core.getUpdateHandler().getUpdateLog();
       if (updateLog != null) {
         updateLog.applyBufferedUpdates();
+      }
+
+      // Now push the core to the Zero store if applicable
+      if (core.getCoreDescriptor()
+          .getCloudDescriptor()
+          .getReplicaType()
+          .equals(Replica.Type.ZERO)) {
+        core.getCoreContainer().getZeroStoreManager().initialCorePushToZeroStore(core);
       }
     }
   }

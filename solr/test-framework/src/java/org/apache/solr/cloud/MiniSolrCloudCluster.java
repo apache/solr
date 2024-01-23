@@ -535,7 +535,20 @@ public class MiniSolrCloudCluster {
    * @throws Exception on error
    */
   public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty) throws Exception {
-    jetty.start(false);
+    return startJettySolrRunner(jetty, false);
+  }
+
+  /**
+   * Add a previously stopped node back to the cluster
+   *
+   * @param jetty a {@link JettySolrRunner} previously returned by {@link #stopJettySolrRunner(int)}
+   * @param reusePort true if you want to reuse the port
+   * @return the started node
+   * @throws Exception on error
+   */
+  public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty, boolean reusePort)
+      throws Exception {
+    jetty.start(reusePort);
     if (!jettys.contains(jetty)) jettys.add(jetty);
     return jetty;
   }
@@ -652,7 +665,10 @@ public class MiniSolrCloudCluster {
 
       IOUtils.closeQuietly(solrClient);
 
-      solrClientByCollection.values().parallelStream()
+      // See
+      // https://issues.apache.org/jira/browse/SOLR-10466?focusedCommentId=17783004&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-17783004
+      solrClientByCollection
+          .values() // .parallelStream()
           .forEach(
               c -> {
                 IOUtils.closeQuietly(c);

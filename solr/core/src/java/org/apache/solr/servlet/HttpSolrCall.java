@@ -88,6 +88,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.JsonSchemaValidator;
@@ -331,6 +332,27 @@ public class HttpSolrCall {
           solrReq = parser.parse(core, path, req);
         }
 
+        if (cores.isZooKeeperAware()) {
+          String collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
+          DocCollection collection = getCollection(collectionName);
+          if (collection != null && collection.isZeroIndex()) {
+            // TODO this is not clean, the decision to pull from Zero store should not be made here
+            // Needs to be moved to the appropriate handlers/components (enqueue pull by default
+            // from all handlers and allow handlers to disable that enqueue, in which case allow
+            // components in that handler to explicitly pull)
+            if (doesPathContainUpdate()) {
+              // Zero collection only supports hard commits therefore we always ensure one
+              addCommitIfAbsent();
+              // don't enqueue a pull on updates as those will already trigger their own synchronous
+              // pulls
+            } else {
+              if (pathRequiresZeroStorePulling(path)) {
+                cores.getZeroStoreManager().enqueueCorePullFromZeroStore(core);
+              }
+            }
+          }
+        }
+
         invalidStates =
             checkStateVersionsAreValid(solrReq.getParams().get(CloudSolrClient.STATE_VERSION));
 
@@ -343,6 +365,46 @@ public class HttpSolrCall {
     log.debug("no handler or core retrieved for {}, follow through...", path);
 
     action = PASSTHROUGH;
+  }
+
+  private void addCommitIfAbsent() {
+    Boolean currentValue = solrReq.getParams().getBool(UpdateParams.COMMIT);
+    if (currentValue == null || !currentValue) {
+      ModifiableSolrParams params = new ModifiableSolrParams(solrReq.getParams());
+      params.set(UpdateParams.COMMIT, "true");
+      // normally commits wait for a searcher, but we only need durability here so don't wait
+      if (params.get(UpdateParams.WAIT_SEARCHER) == null) {
+        params.set(UpdateParams.WAIT_SEARCHER, false);
+      }
+
+      solrReq.setParams(params);
+    }
+  }
+
+  /** TODO this is ugly we shouldn't hard code a path that could change */
+  protected boolean doesPathContainUpdate() {
+    return path.endsWith("/update") || path.contains("/update/");
+  }
+
+  /**
+   * Find out if our request should trigger a pull from Zero store when local core is stale.
+   *
+   * <p>TODO this is ugly we shouldn't hard code a path that could change
+   */
+  protected boolean pathRequiresZeroStorePulling(String servletPath) {
+    // get the request handler from the path (taken from SolrDispatchFilter)
+    int idx = servletPath.indexOf('/');
+    if (idx != -1) {
+      String action = servletPath.substring(idx);
+      return action.startsWith("/select")
+          || action.startsWith("/spellcheck")
+          || action.startsWith("/result_promotion")
+          || action.startsWith("/indexLookup")
+          || action.startsWith("/highlight")
+          || action.startsWith("/backup");
+    } else {
+      return false;
+    }
   }
 
   protected void autoCreateSystemColl(String corename) throws Exception {
@@ -1030,16 +1092,20 @@ public class HttpSolrCall {
     return result;
   }
 
-  protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
+  protected DocCollection getCollection(String collectionName) {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
-
     ClusterState clusterState = zkStateReader.getClusterState();
-    DocCollection collection = clusterState.getCollectionOrNull(collectionName, true);
+
+    return clusterState.getCollectionOrNull(collectionName, true);
+  }
+
+  protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
+    DocCollection collection = getCollection(collectionName);
     if (collection == null) {
       return null;
     }
 
-    Set<String> liveNodes = clusterState.getLiveNodes();
+    Set<String> liveNodes = cores.getZkController().getClusterState().getLiveNodes();
 
     if (isPreferLeader) {
       List<Replica> leaderReplicas =

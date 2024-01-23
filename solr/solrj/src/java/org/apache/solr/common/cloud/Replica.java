@@ -118,7 +118,14 @@ public class Replica extends ZkNodeProps implements MapWriter {
      * are only pull replicas in the collection at some point, updates will fail same as if there is
      * no leaders, queries continue to work), so they don’t even participate in elections.
      */
-    PULL(false, CollectionAdminParams.PULL_REPLICAS);
+    PULL(false, CollectionAdminParams.PULL_REPLICAS),
+    /**
+     * Indexes locally and pushes segments to Zero store, or gets segments from Zero store to serve
+     * queries or index. Replicas of type {@link Type#ZERO} for a Collection are exclusive of any
+     * other replica type for the collection. Any {@link Type#ZERO} replica can become a leader. A
+     * shard leader will update itself from the Zero store if needed.
+     */
+    ZERO(true, CollectionAdminParams.ZERO_REPLICAS);
 
     public final boolean leaderEligible;
     public final String numReplicasPropertyName;
@@ -135,9 +142,12 @@ public class Replica extends ZkNodeProps implements MapWriter {
     /**
      * Returns a default replica type. It is most notably used by the replica factor, which maps
      * onto this replica type. This replica type needs to be leader-eligible.
+     *
+     * @param zeroIndex {@code true} to get the default replica type for ZERO collections, {@code
+     *     false} otherwise
      */
-    public static Type defaultType() {
-      return NRT;
+    public static Type defaultType(boolean zeroIndex) {
+      return zeroIndex ? ZERO : NRT;
     }
   }
 

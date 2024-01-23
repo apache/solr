@@ -59,6 +59,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   private final Integer replicationFactor;
   private final ReplicaCount numReplicas;
+  private final Boolean zeroIndex;
   private final Boolean readOnly;
   private final Boolean perReplicaState;
   private final Map<String, Replica> replicaMap = new HashMap<>();
@@ -114,6 +115,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.nodeNameReplicas = new HashMap<>();
     this.replicationFactor = (Integer) verifyProp(props, CollectionStateProps.REPLICATION_FACTOR);
     this.numReplicas = ReplicaCount.fromProps(props);
+    Boolean zeroIndex = (Boolean) verifyProp(props, CollectionStateProps.ZERO_INDEX);
+    this.zeroIndex = Boolean.TRUE.equals(zeroIndex);
     this.perReplicaState =
         (Boolean) verifyProp(props, CollectionStateProps.PER_REPLICA_STATE, Boolean.FALSE);
     if (this.perReplicaState) {
@@ -235,6 +238,17 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   private void addNodeNameReplica(Replica replica) {
+    // Fail fast: make sure collections replica types are consistent
+    // TODO is this still needed? We might have checks elsewhere
+    if (!zeroIndex && replica.getType() == Replica.Type.ZERO) {
+      throw new RuntimeException(
+          "Can't add a Replica.Type.ZERO to a collection not backed by Zero store");
+    }
+    if (zeroIndex && replica.getType() != Replica.Type.ZERO) {
+      throw new RuntimeException(
+          "Can't add a " + replica.getType() + " replica to a collection backed by Zero store");
+    }
+
     List<Replica> replicas = nodeNameReplicas.get(replica.getNodeName());
     if (replicas == null) {
       replicas = new ArrayList<>();
@@ -265,6 +279,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       case CollectionStateProps.REPLICATION_FACTOR:
         return Integer.parseInt(o.toString());
       case CollectionStateProps.PER_REPLICA_STATE:
+      case CollectionStateProps.ZERO_INDEX:
       case CollectionStateProps.READ_ONLY:
         return Boolean.parseBoolean(o.toString());
       case "snitch":
@@ -371,6 +386,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    */
   public Integer getReplicationFactor() {
     return replicationFactor;
+  }
+
+  public boolean isZeroIndex() {
+    return zeroIndex;
   }
 
   public String getZNode() {
@@ -535,6 +554,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /**
+   * @return the number of replicas of type {@link org.apache.solr.common.cloud.Replica.Type#ZERO}
+   *     this collection was created with
+   */
+  public Integer getNumZeroReplicas() {
+    return getNumReplicas(Replica.Type.ZERO);
+  }
+
+  /**
    * @return the number of replicas of a given type this collection was created with
    */
   public Integer getNumReplicas(Replica.Type type) {
@@ -567,6 +594,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     String DOC_ROUTER = "router";
     String SHARDS = "shards";
     String PER_REPLICA_STATE = "perReplicaState";
+    String ZERO_INDEX = "zeroIndex";
   }
 
   public interface PrsSupplier extends Supplier<PerReplicaStates> {}

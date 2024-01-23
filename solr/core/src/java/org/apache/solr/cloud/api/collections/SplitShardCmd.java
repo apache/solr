@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -274,6 +275,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         params.set(CoreAdminParams.GET_RANGES, "true");
         params.set(CommonAdminParams.SPLIT_METHOD, splitMethod.toLower());
         params.set(CoreAdminParams.CORE, parentShardLeader.getStr("core"));
+        params.set(CoreAdminParams.REPLICA_TYPE, leaderReplicaType.toString());
         // only 2 sub-shards are currently supported
         // int numSubShards = message.getInt(NUM_SUB_SHARDS, DEFAULT_NUM_SUB_SHARDS);
         // params.set(NUM_SUB_SHARDS, Integer.toString(numSubShards));
@@ -370,7 +372,6 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         String subSlice = subSlices.get(i);
         String subShardName = subShardNames.get(i);
         DocRouter.Range subRange = subRanges.get(i);
-
         log.debug("Creating slice {} of collection {} on {}", subSlice, collectionName, nodeName);
 
         LinkedHashMapWriter<Object> propMap = new LinkedHashMapWriter<>();
@@ -382,6 +383,13 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         propMap.put(ZkStateReader.SHARD_PARENT_PROP, parentSlice.getName());
         propMap.put("shard_parent_node", nodeName);
         propMap.put("shard_parent_zk_session", leaderZnodeStat.getEphemeralOwner());
+
+        if (collection.isZeroIndex()) {
+          ccc.getCoreContainer()
+              .getZeroStoreManager()
+              .getZeroMetadataController()
+              .createMetadataNode(collectionName, subSlice);
+        }
 
         if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           ccc.getDistributedClusterStateUpdater()
@@ -488,6 +496,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.SPLIT.toString());
       params.set(CommonAdminParams.SPLIT_METHOD, splitMethod.toLower());
       params.set(CoreAdminParams.CORE, parentShardLeader.getStr("core"));
+      params.set(CoreAdminParams.REPLICA_TYPE, leaderReplicaType.toString());
       for (int i = 0; i < subShardNames.size(); i++) {
         String subShardName = subShardNames.get(i);
         params.add(CoreAdminParams.TARGET_CORE, subShardName);
@@ -551,6 +560,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
               .forCollection(collectionName)
               .forShard(subSlices)
               .assignReplicas(numReplicas)
+              .setZeroIndex(collection.isZeroIndex())
               .onNodes(
                   Assign.getLiveOrLiveAndCreateNodeSetList(
                       clusterState.getLiveNodes(),
@@ -1241,5 +1251,13 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         // ignore
       }
     }
+  }
+
+  public static boolean shardSplitLockHeld(
+      ZkController zkController, String collection, String shard) throws Exception {
+    // Would have been better to use a SolrCloudManager instance for the check rather than a
+    // ZkController but caller doesn't have such a reference
+    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + "/" + shard + "-splitting";
+    return zkController.pathExists(path);
   }
 }

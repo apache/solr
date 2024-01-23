@@ -116,12 +116,12 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
 
     if (hasExistingCollection) {
       // Existing collection has replicas for its shards and is visible in the cluster state
-      collectionBuilder.initializeShardsReplicas(1, 1, 0, 0, nodeBuilders);
+      collectionBuilder.initializeShardsReplicas(1, 1, 0, 0, 0, nodeBuilders);
       clusterBuilder.addCollection(collectionBuilder);
     } else {
       // New collection to create has the shards defined but no replicas and is not present in
       // cluster state
-      collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, List.of());
+      collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, 0, List.of());
     }
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
@@ -135,7 +135,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             solrCollection,
             Set.of(solrCollection.shards().iterator().next().getShardName()),
             new HashSet<>(liveNodes),
-            ReplicaCount.of(1, 0, 0));
+            ReplicaCount.of(1, 0, 0, 0));
 
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
 
@@ -152,8 +152,9 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
     final int LOW_SPACE_NODE_INDEX = 0;
     final int NO_SPACE_NODE_INDEX = 1;
 
-    // Cluster nodes and their attributes
-    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(8);
+    // Cluster nodes and their attributes. Placing 8 then 9 replicas on 10 nodes 2 of which have
+    // low/no space
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(10);
     List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < nodeBuilders.size(); i++) {
       if (i == LOW_SPACE_NODE_INDEX) {
@@ -171,21 +172,22 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
 
     // The collection to create (shards are defined but no replicas)
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
-    collectionBuilder.initializeShardsReplicas(3, 0, 0, 0, List.of());
+    collectionBuilder.initializeShardsReplicas(3, 0, 0, 0, 0, List.of());
     SolrCollection solrCollection = collectionBuilder.build();
 
-    // Place two replicas of each type for each shard
+    // Place two replicas of each type for each shard (this is really just a theoretical placement
+    // test, ZERO replicas cannot coexist with other replica types in a collection)
     PlacementRequestImpl placementRequest =
         new PlacementRequestImpl(
             solrCollection,
             solrCollection.getShardNames(),
             new HashSet<>(liveNodes),
-            ReplicaCount.of(2, 2, 2));
+            ReplicaCount.of(2, 2, 2, 2));
 
     PlacementPlan pp =
         plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
 
-    assertEquals(18, pp.getReplicaPlacements().size()); // 3 shards, 6 replicas total each
+    assertEquals(24, pp.getReplicaPlacements().size()); // 3 shards, 8 replicas total each
     Set<Pair<String, Node>> placements = new HashSet<>();
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
       assertTrue(
@@ -201,15 +203,15 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
           liveNodes.get(NO_SPACE_NODE_INDEX));
     }
 
-    // Verify that if we ask for 7 replicas, the placement will use the low free space node
+    // Verify that if we ask for 9 replicas, the placement will use the low free space node
     placementRequest =
         new PlacementRequestImpl(
             solrCollection,
             solrCollection.getShardNames(),
             new HashSet<>(liveNodes),
-            ReplicaCount.of(7, 0, 0));
+            ReplicaCount.of(9, 0, 0));
     pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
-    assertEquals(21, pp.getReplicaPlacements().size()); // 3 shards, 7 replicas each
+    assertEquals(27, pp.getReplicaPlacements().size()); // 3 shards, 9 replicas each
     placements = new HashSet<>();
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
       assertEquals(
@@ -223,16 +225,16 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
           liveNodes.get(NO_SPACE_NODE_INDEX));
     }
 
-    // Verify that if we ask for 8 replicas, the placement fails
+    // Verify that if we ask for 10 replicas, the placement fails
     try {
       placementRequest =
           new PlacementRequestImpl(
               solrCollection,
               solrCollection.getShardNames(),
               new HashSet<>(liveNodes),
-              ReplicaCount.of(8, 0, 0));
+              ReplicaCount.of(10, 0, 0));
       plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
-      fail("Placing 8 replicas should not be possible given only 7 nodes have enough space");
+      fail("Placing 10 replicas should not be possible given only 9 nodes have enough space");
     } catch (PlacementException e) {
       // expected
     }
@@ -567,7 +569,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
     }
 
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
-    collectionBuilder.initializeShardsReplicas(2, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    collectionBuilder.initializeShardsReplicas(2, 0, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
@@ -622,7 +624,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
   @Test
   public void testReplicaType() throws Exception {
     String collectionName = "replicaTypeCollection";
-    int NUM_NODES = 6;
+    int NUM_NODES = 8;
     Builders.ClusterBuilder clusterBuilder =
         Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
     for (int i = 0; i < NUM_NODES; i++) {
@@ -633,13 +635,13 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
         nodeBuilder.setSysprop(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP, "Nrt, TlOg");
         nodeBuilder.setSysprop("group", "one");
       } else {
-        nodeBuilder.setSysprop(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP, "Pull,foobar");
+        nodeBuilder.setSysprop(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP, "Pull,Zero,foobar");
         nodeBuilder.setSysprop("group", "two");
       }
     }
 
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
-    collectionBuilder.initializeShardsReplicas(2, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    collectionBuilder.initializeShardsReplicas(2, 0, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
@@ -654,11 +656,11 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
                 .map(Shard::getShardName)
                 .collect(Collectors.toSet()),
             cluster.getLiveNodes(),
-            ReplicaCount.of(2, 2, 2));
+            ReplicaCount.of(2, 2, 2, 2));
 
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
-    // 2 shards, 6 replicas
-    assertEquals(12, pp.getReplicaPlacements().size());
+    // 2 shards, 8 replicas
+    assertEquals(16, pp.getReplicaPlacements().size());
     // shard -> group -> replica count
     Map<Replica.ReplicaType, Map<String, Map<String, AtomicInteger>>> replicas = new HashMap<>();
     AttributeValues attributeValues = placementContext.getAttributeFetcher().fetchAttributes();
@@ -674,8 +676,10 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             (rp.getReplicaType() == Replica.ReplicaType.NRT)
                 || rp.getReplicaType() == Replica.ReplicaType.TLOG);
       } else {
-        assertEquals(
-            "wrong replica type in group two", Replica.ReplicaType.PULL, rp.getReplicaType());
+        assertTrue(
+            "wrong replica type in group two",
+            (rp.getReplicaType() == Replica.ReplicaType.PULL)
+                || rp.getReplicaType() == Replica.ReplicaType.ZERO);
       }
       replicas
           .computeIfAbsent(rp.getReplicaType(), type -> new HashMap<>())
@@ -718,7 +722,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
     }
 
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
-    collectionBuilder.initializeShardsReplicas(2, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    collectionBuilder.initializeShardsReplicas(2, 0, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
@@ -760,6 +764,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
     collectionBuilder.initializeShardsReplicas(
         3,
         1,
+        0,
         0,
         0,
         clusterBuilder.getLiveNodeBuilders(), // .subList(1, 3),
@@ -831,11 +836,11 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
         Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
     Builders.CollectionBuilder collectionBuilder =
         Builders.newCollectionBuilder(secondaryCollectionName);
-    collectionBuilder.initializeShardsReplicas(1, 2, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    collectionBuilder.initializeShardsReplicas(1, 2, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
     collectionBuilder = Builders.newCollectionBuilder(primaryCollectionName);
-    collectionBuilder.initializeShardsReplicas(0, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    collectionBuilder.initializeShardsReplicas(0, 0, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
@@ -893,11 +898,11 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
         Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
     Builders.CollectionBuilder collectionBuilder =
         Builders.newCollectionBuilder(secondaryCollectionName);
-    collectionBuilder.initializeShardsReplicas(2, 1, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    collectionBuilder.initializeShardsReplicas(2, 1, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
     collectionBuilder = Builders.newCollectionBuilder(primaryCollectionName);
-    collectionBuilder.initializeShardsReplicas(0, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    collectionBuilder.initializeShardsReplicas(0, 0, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
@@ -980,11 +985,11 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
         Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
     Builders.CollectionBuilder collectionBuilder =
         Builders.newCollectionBuilder(secondaryCollectionName);
-    collectionBuilder.initializeShardsReplicas(1, 4, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    collectionBuilder.initializeShardsReplicas(1, 4, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
     collectionBuilder = Builders.newCollectionBuilder(primaryCollectionName);
-    collectionBuilder.initializeShardsReplicas(2, 2, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    collectionBuilder.initializeShardsReplicas(2, 2, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
@@ -1054,12 +1059,12 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
         Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
     Builders.CollectionBuilder collectionBuilder =
         Builders.newCollectionBuilder(secondaryCollectionName);
-    collectionBuilder.initializeShardsReplicas(2, 3, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    collectionBuilder.initializeShardsReplicas(2, 3, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
     collectionBuilder = Builders.newCollectionBuilder(primaryCollectionName);
     collectionBuilder.initializeShardsReplicas(
-        2, random().nextBoolean() ? 1 : 2, 0, 0, clusterBuilder.getLiveNodeBuilders());
+        2, random().nextBoolean() ? 1 : 2, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
@@ -1143,7 +1148,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
 
     String collectionName = "nodeTypeCollection";
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
-    collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
 
     // test single node type in collection
     AffinityPlacementConfig config =
@@ -1274,36 +1279,46 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
 
     int numShards = TEST_NIGHTLY ? 100 : 10;
     int nrtReplicas = TEST_NIGHTLY ? 40 : 4;
-    int tlogReplicas = TEST_NIGHTLY ? 40 : 4;
+    int tlogReplicas = TEST_NIGHTLY ? 30 : 3;
     int pullReplicas = TEST_NIGHTLY ? 20 : 2;
+    int zeroReplicas = TEST_NIGHTLY ? 10 : 1;
 
     log.info("==== numNodes ====");
-    runTestScalability(1000, numShards, nrtReplicas, tlogReplicas, pullReplicas, false);
-    runTestScalability(2000, numShards, nrtReplicas, tlogReplicas, pullReplicas, false);
-    runTestScalability(5000, numShards, nrtReplicas, tlogReplicas, pullReplicas, false);
-    runTestScalability(10000, numShards, nrtReplicas, tlogReplicas, pullReplicas, false);
-    runTestScalability(20000, numShards, nrtReplicas, tlogReplicas, pullReplicas, false);
+    runTestScalability(
+        1000, numShards, nrtReplicas, tlogReplicas, pullReplicas, zeroReplicas, false);
+    runTestScalability(
+        2000, numShards, nrtReplicas, tlogReplicas, pullReplicas, zeroReplicas, false);
+    runTestScalability(
+        5000, numShards, nrtReplicas, tlogReplicas, pullReplicas, zeroReplicas, false);
+    runTestScalability(
+        10000, numShards, nrtReplicas, tlogReplicas, pullReplicas, zeroReplicas, false);
+    runTestScalability(
+        20000, numShards, nrtReplicas, tlogReplicas, pullReplicas, zeroReplicas, false);
 
     log.info("==== numShards ====");
     int numNodes = TEST_NIGHTLY ? 5000 : 500;
-    runTestScalability(numNodes, 100, nrtReplicas, tlogReplicas, pullReplicas, false);
-    runTestScalability(numNodes, 200, nrtReplicas, tlogReplicas, pullReplicas, false);
-    runTestScalability(numNodes, 500, nrtReplicas, tlogReplicas, pullReplicas, false);
+    runTestScalability(numNodes, 100, nrtReplicas, tlogReplicas, pullReplicas, zeroReplicas, false);
+    runTestScalability(numNodes, 200, nrtReplicas, tlogReplicas, pullReplicas, zeroReplicas, false);
+    runTestScalability(numNodes, 500, nrtReplicas, tlogReplicas, pullReplicas, zeroReplicas, false);
     if (TEST_NIGHTLY) {
-      runTestScalability(numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas, false);
-      runTestScalability(numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas, false);
+      runTestScalability(
+          numNodes, 1000, nrtReplicas, tlogReplicas, pullReplicas, zeroReplicas, false);
+      runTestScalability(
+          numNodes, 2000, nrtReplicas, tlogReplicas, pullReplicas, zeroReplicas, false);
     }
 
     log.info("==== numReplicas ====");
-    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 100 : 10, 0, 0, false);
-    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 200 : 20, 0, 0, false);
-    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 500 : 50, 0, 0, false);
-    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 1000 : 30, 0, 0, false);
-    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 2000 : 50, 0, 0, false);
+    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 100 : 10, 0, 0, 0, false);
+    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 200 : 20, 0, 0, 0, false);
+    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 500 : 50, 0, 0, 0, false);
+    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 1000 : 30, 0, 0, 0, false);
+    runTestScalability(numNodes, numShards, TEST_NIGHTLY ? 2000 : 50, 0, 0, 0, false);
 
     log.info("==== spread domains ====");
-    runTestScalability(numNodes, numShards, nrtReplicas, tlogReplicas, pullReplicas, false);
-    runTestScalability(numNodes, numShards, nrtReplicas, tlogReplicas, pullReplicas, true);
+    runTestScalability(
+        numNodes, numShards, nrtReplicas, tlogReplicas, pullReplicas, zeroReplicas, false);
+    runTestScalability(
+        numNodes, numShards, nrtReplicas, tlogReplicas, pullReplicas, zeroReplicas, true);
   }
 
   private void runTestScalability(
@@ -1312,6 +1327,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
       int nrtReplicas,
       int tlogReplicas,
       int pullReplicas,
+      int zeroReplicas,
       boolean useSpreadDomains)
       throws Exception {
     String collectionName = "scaleCollection";
@@ -1338,7 +1354,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
     }
 
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
-    collectionBuilder.initializeShardsReplicas(numShards, 0, 0, 0, List.of());
+    collectionBuilder.initializeShardsReplicas(numShards, 0, 0, 0, 0, List.of());
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
     SolrCollection solrCollection = collectionBuilder.build();
@@ -1353,13 +1369,13 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
             solrCollection,
             solrCollection.getShardNames(),
             new HashSet<>(liveNodes),
-            ReplicaCount.of(nrtReplicas, tlogReplicas, pullReplicas));
+            ReplicaCount.of(nrtReplicas, tlogReplicas, pullReplicas, zeroReplicas));
 
     long start = System.nanoTime();
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
     long end = System.nanoTime();
 
-    final int REPLICAS_PER_SHARD = nrtReplicas + tlogReplicas + pullReplicas;
+    final int REPLICAS_PER_SHARD = nrtReplicas + tlogReplicas + pullReplicas + zeroReplicas;
     final int TOTAL_REPLICAS = numShards * REPLICAS_PER_SHARD;
 
     log.info(
@@ -1430,7 +1446,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
         .setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
 
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
-    collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, List.of());
+    collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, 0, List.of());
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
 
@@ -1509,12 +1525,12 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
 
     if (hasExistingCollection) {
       // Existing collection has replicas for its shards and is visible in the cluster state
-      collectionBuilder.initializeShardsReplicas(1, 1, 0, 0, nodeBuilders);
+      collectionBuilder.initializeShardsReplicas(1, 1, 0, 0, 0, nodeBuilders);
       clusterBuilder.addCollection(collectionBuilder);
     } else {
       // New collection to create has the shards defined but no replicas and is not present in
       // cluster state
-      collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, List.of());
+      collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, 0, List.of());
     }
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
@@ -1573,7 +1589,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
     nodeBuilders.get(2).setSysprop(AffinityPlacementConfig.SPREAD_DOMAIN_SYSPROP, "A");
 
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
-    collectionBuilder.initializeShardsReplicas(1, 2, 0, 0, nodeBuilders);
+    collectionBuilder.initializeShardsReplicas(1, 2, 0, 0, 0, nodeBuilders);
     clusterBuilder.addCollection(collectionBuilder);
     clusterBuilder.getLiveNodeBuilders().remove(0);
 

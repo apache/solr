@@ -66,13 +66,22 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     }
     DocCollection collection = clusterState.getCollection(collectionName);
 
-    ReplicaCount numReplicas = ReplicaCount.fromMessage(message, collection, 1);
+    boolean isZeroIndex = collection.isZeroIndex();
+    ReplicaCount numReplicas = ReplicaCount.fromMessage(message, collection, 1, isZeroIndex);
     if (!numReplicas.hasLeaderReplica()) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Unexpected number of replicas ("
               + numReplicas
               + "), there must be at least one leader-eligible replica");
+    }
+
+    if (isZeroIndex) {
+      // create the shard metadataSuffix znode
+      ccc.getCoreContainer()
+          .getZeroStoreManager()
+          .getZeroMetadataController()
+          .createMetadataNode(extCollectionName, sliceName);
     }
 
     if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {

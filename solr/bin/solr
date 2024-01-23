@@ -1669,6 +1669,22 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
     CLOUD_MODE_OPTS+=("-DcreateZkChroot=$ZK_CREATE_CHROOT")
   fi
 
+  if [ -n "$ZERO_STORE_ENABLED" ]; then
+    CLOUD_MODE_OPTS+=("-DzeroStoreEnabled=$ZERO_STORE_ENABLED")
+  fi
+
+  if [ -n "$ZERO_STORE_NUM_FILE_PUSHER_THREADS" ]; then
+    CLOUD_MODE_OPTS+=("-DzeroStoreNumFilePusherThreads=$ZERO_STORE_NUM_FILE_PUSHER_THREADS")
+  fi
+
+  if [ -n "$ZERO_STORE_NUM_FILE_PULLER_THREADS" ]; then
+    CLOUD_MODE_OPTS+=("-DzeroStoreNumFilePullerThreads=$ZERO_STORE_NUM_FILE_PULLER_THREADS")
+  fi
+
+  if [ -n "$ZERO_STORE_MAX_ASYNC_CORE_PULLS" ]; then
+    CLOUD_MODE_OPTS+=("-DzeroStoreNumCorePullerThreads=$ZERO_STORE_MUM_CORE_PULLER_THREADS")
+  fi
+
   # and if collection1 needs to be bootstrapped
   if [ -e "$SOLR_HOME/collection1/core.properties" ]; then
     CLOUD_MODE_OPTS+=('-Dbootstrap_confdir=./solr/collection1/conf' '-Dcollection.configName=myconf' '-DnumShards=1')

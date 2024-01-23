@@ -324,6 +324,7 @@ public class Assign {
       String collectionName,
       String shard,
       ReplicaCount numReplicas,
+      boolean isZeroIndex,
       Object createNodeSet,
       SolrCloudManager cloudManager,
       CoreContainer coreContainer)
@@ -358,6 +359,7 @@ public class Assign {
             .forCollection(collectionName)
             .forShard(Collections.singletonList(shard))
             .assignReplicas(numReplicas)
+            .setZeroIndex(isZeroIndex)
             .onNodes(createNodeList)
             .build();
     AssignStrategy assignStrategy = createAssignStrategy(coreContainer);
@@ -496,16 +498,38 @@ public class Assign {
     public final List<String> shardNames;
     public final List<String> nodes;
     public final ReplicaCount numReplicas;
+    public final boolean zeroIndex;
 
     public AssignRequest(
         String collectionName,
         List<String> shardNames,
         List<String> nodes,
-        ReplicaCount numReplicas) {
+        ReplicaCount numReplicas,
+        boolean zeroIndex) {
       this.collectionName = collectionName;
       this.shardNames = shardNames;
       this.nodes = nodes;
       this.numReplicas = numReplicas;
+      this.zeroIndex = zeroIndex;
+
+      // ZERO replica related verifications
+      int totalReplicas = numReplicas.total();
+      int numZeroReplicas = numReplicas.get(Replica.Type.ZERO);
+      if (numZeroReplicas != 0 && numZeroReplicas != totalReplicas) {
+        throw new RuntimeException(
+            "Illegal combination of ZERO ("
+                + numZeroReplicas
+                + ") and non ZERO ("
+                + (totalReplicas - numZeroReplicas)
+                + ") replicas for collection "
+                + collectionName);
+      }
+      if (!zeroIndex && numZeroReplicas != 0) {
+        throw new RuntimeException(
+            "Can't specify ZERO replicas for collection "
+                + collectionName
+                + " non backed by Zero store");
+      }
     }
   }
 
@@ -514,6 +538,7 @@ public class Assign {
     private List<String> shardNames;
     private List<String> nodes;
     private ReplicaCount numReplicas;
+    private boolean zeroIndex;
 
     public AssignRequestBuilder() {
       this.numReplicas = ReplicaCount.empty();
@@ -539,10 +564,15 @@ public class Assign {
       return this;
     }
 
+    public AssignRequestBuilder setZeroIndex(boolean zeroIndex) {
+      this.zeroIndex = zeroIndex;
+      return this;
+    }
+
     public AssignRequest build() {
       Objects.requireNonNull(collectionName, "The collectionName cannot be null");
       Objects.requireNonNull(shardNames, "The shard names cannot be null");
-      return new AssignRequest(collectionName, shardNames, nodes, numReplicas);
+      return new AssignRequest(collectionName, shardNames, nodes, numReplicas, zeroIndex);
     }
   }
 

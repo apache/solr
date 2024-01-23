@@ -113,7 +113,7 @@ public class ReplicaCountTest {
     replicaCount.put(Replica.Type.NRT, 1);
     replicaCount.put(Replica.Type.TLOG, 2);
 
-    assertEquals("nrt=1, tlog=2, pull=0", replicaCount.toString());
+    assertEquals("nrt=1, tlog=2, pull=0, zero=0", replicaCount.toString());
   }
 
   @Test
@@ -136,6 +136,8 @@ public class ReplicaCountTest {
   public void testHasLeaderReplica() {
     assertTrue(ReplicaCount.of(Replica.Type.NRT, 1).hasLeaderReplica());
     assertTrue(ReplicaCount.of(Replica.Type.TLOG, 1).hasLeaderReplica());
+    assertTrue(ReplicaCount.of(Replica.Type.ZERO, 1).hasLeaderReplica());
+
     assertFalse(ReplicaCount.of(Replica.Type.PULL, 1).hasLeaderReplica());
   }
 
@@ -158,15 +160,25 @@ public class ReplicaCountTest {
   public void createFromMessage() {
     ReplicaCount numReplicas =
         ReplicaCount.fromMessage(
-            new ZkNodeProps(Map.of("nrtReplicas", "1", "tlogReplicas", "2", "pullReplicas", "3")));
-    assertEquals(ReplicaCount.of(1, 2, 3), numReplicas);
+            new ZkNodeProps(
+                Map.of(
+                    "nrtReplicas",
+                    "1",
+                    "tlogReplicas",
+                    "2",
+                    "pullReplicas",
+                    "3",
+                    "zeroReplicas",
+                    "4")),
+            false);
+    assertEquals(ReplicaCount.of(1, 2, 3, 4), numReplicas);
 
     numReplicas =
         ReplicaCount.fromMessage(
-            new ZkNodeProps(Map.of("nrtReplicas", 1, "tlogReplicas", 2, "pullReplicas", 3)));
+            new ZkNodeProps(Map.of("nrtReplicas", 1, "tlogReplicas", 2, "pullReplicas", 3)), false);
     assertEquals(ReplicaCount.of(1, 2, 3), numReplicas);
 
-    numReplicas = ReplicaCount.fromMessage(new ZkNodeProps(Map.of("tlogReplicas", 1)));
+    numReplicas = ReplicaCount.fromMessage(new ZkNodeProps(Map.of("tlogReplicas", 1)), false);
     assertEquals(Set.of(Replica.Type.TLOG), numReplicas.keySet());
   }
 
@@ -175,7 +187,8 @@ public class ReplicaCountTest {
     // "replicationFactor" in message
     ReplicaCount numReplicas =
         ReplicaCount.fromMessage(
-            new ZkNodeProps(Map.of("replicationFactor", 10, "tlogReplicas", 2, "pullReplicas", 3)));
+            new ZkNodeProps(Map.of("replicationFactor", 10, "tlogReplicas", 2, "pullReplicas", 3)),
+            false);
     assertEquals(ReplicaCount.of(10, 2, 3), numReplicas);
 
     // "replicationFactor" and "type" in message
@@ -183,7 +196,8 @@ public class ReplicaCountTest {
         ReplicaCount.fromMessage(
             new ZkNodeProps(
                 Map.of(
-                    "type", "tlog", "replicationFactor", 10, "nrtReplicas", 1, "pullReplicas", 3)));
+                    "type", "tlog", "replicationFactor", 10, "nrtReplicas", 1, "pullReplicas", 3)),
+            false);
     assertEquals(ReplicaCount.of(1, 10, 3), numReplicas);
   }
 
@@ -192,13 +206,16 @@ public class ReplicaCountTest {
     // default replication factor specified
     ReplicaCount numReplicas =
         ReplicaCount.fromMessage(
-            new ZkNodeProps(Map.of("tlogReplicas", 2, "pullReplicas", 3)), null, 10);
+            new ZkNodeProps(Map.of("tlogReplicas", 2, "pullReplicas", 3)), null, 10, false);
     assertEquals(ReplicaCount.of(10, 2, 3), numReplicas);
 
     // default replication factor specified and "type" in message
     numReplicas =
         ReplicaCount.fromMessage(
-            new ZkNodeProps(Map.of("type", "tlog", "nrtReplicas", 1, "pullReplicas", 3)), null, 10);
+            new ZkNodeProps(Map.of("type", "tlog", "nrtReplicas", 1, "pullReplicas", 3)),
+            null,
+            10,
+            false);
     assertEquals(ReplicaCount.of(1, 10, 3), numReplicas);
   }
 
@@ -213,7 +230,7 @@ public class ReplicaCountTest {
             1,
             null);
     ReplicaCount numReplicas =
-        ReplicaCount.fromMessage(new ZkNodeProps(Map.of("tlogReplicas", 1)), collection);
+        ReplicaCount.fromMessage(new ZkNodeProps(Map.of("tlogReplicas", 1)), collection, false);
     assertEquals(ReplicaCount.of(1, 1, 3), numReplicas);
   }
 }

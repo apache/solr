@@ -1326,87 +1326,102 @@ public class ZkController implements Closeable {
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
       }
 
-      // in this case, we want to wait for the leader as long as the leader might
-      // wait for a vote, at least - but also long enough that a large cluster has
-      // time to get its act together
-      String leaderUrl = getLeader(cloudDesc, leaderVoteWait + 600000);
+      if (replica.getType() == Type.ZERO) {
+        // ZERO replicas: leadership is only needed during indexing.
+        // Replicas need to register for potential leadership on startup but that's it.
+        // As any ZERO replica can become leader at any time, no need to wait in an election
+        // ZERO replicas do not use the update log.
+        publish(desc, Replica.State.ACTIVE);
+      } else {
+        // Non ZERO replica types (NRT, TLOG, PULL): leadership is important.  On startup,
+        // a replica needs to be designated as the leader or to synchronize with the leader.
+        // Until either happen, a replica can't be considered ACTIVE.
 
-      String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
-      log.debug("We are {} and leader is {}", ourUrl, leaderUrl);
-      boolean isLeader = leaderUrl.equals(ourUrl);
-      assert !isLeader || replica.getType().leaderEligible
-          : replica.getType().name() + " replica became leader!";
+        // in this case, we want to wait for the leader as long as the leader might
+        // wait for a vote, at least - but also long enough that a large cluster has
+        // time to get its act together
+        String leaderUrl = getLeader(cloudDesc, leaderVoteWait + 600000);
 
-      try (SolrCore core = cc.getCore(desc.getName())) {
+        String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
+        log.debug("We are {} and leader is {}", ourUrl, leaderUrl);
+        boolean isLeader = leaderUrl.equals(ourUrl);
+        assert !isLeader || replica.getType().leaderEligible
+            : replica.getType().name() + " replica became leader!";
 
-        // recover from local transaction log and wait for it to complete before
-        // going active
-        // TODO: should this be moved to another thread? To recoveryStrat?
-        // TODO: should this actually be done earlier, before (or as part of)
-        // leader election perhaps?
+        try (SolrCore core = cc.getCore(desc.getName())) {
 
-        if (core == null) {
-          throw new SolrException(
-              ErrorCode.SERVICE_UNAVAILABLE, "SolrCore is no longer available to register");
-        }
+          // recover from local transaction log and wait for it to complete before
+          // going active
+          // TODO: should this be moved to another thread? To recoveryStrat?
+          // TODO: should this actually be done earlier, before (or as part of)
+          // leader election perhaps?
 
-        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-        boolean isTlogReplicaAndNotLeader = replica.getType() == Replica.Type.TLOG && !isLeader;
-        if (isTlogReplicaAndNotLeader) {
-          String commitVersion = ReplicateFromLeader.getCommitVersion(core);
-          if (commitVersion != null) {
-            ulog.copyOverOldUpdates(Long.parseLong(commitVersion));
+          if (core == null) {
+            throw new SolrException(
+                ErrorCode.SERVICE_UNAVAILABLE, "SolrCore is no longer available to register");
           }
-        }
-        // we will call register again after zk expiration and on reload
-        if (!afterExpiration && !core.isReloaded() && ulog != null && !isTlogReplicaAndNotLeader) {
-          // disable recovery in case shard is in construction state (for shard splits)
-          Slice slice = getClusterState().getCollection(collection).getSlice(shardId);
-          if (slice.getState() != Slice.State.CONSTRUCTION || !isLeader) {
-            Future<UpdateLog.RecoveryInfo> recoveryFuture =
-                core.getUpdateHandler().getUpdateLog().recoverFromLog();
-            if (recoveryFuture != null) {
-              log.info(
-                  "Replaying tlog for {} during startup... NOTE: This can take a while.", ourUrl);
-              recoveryFuture.get(); // NOTE: this could potentially block for
-              // minutes or more!
-              // TODO: public as recovering in the mean time?
-              // TODO: in the future we could do peersync in parallel with recoverFromLog
-            } else {
-              if (log.isDebugEnabled()) {
-                log.debug("No LogReplay needed for core={} baseURL={}", core.getName(), baseUrl);
+
+          UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+          boolean isTlogReplicaAndNotLeader = replica.getType() == Replica.Type.TLOG && !isLeader;
+          if (isTlogReplicaAndNotLeader) {
+            String commitVersion = ReplicateFromLeader.getCommitVersion(core);
+            if (commitVersion != null) {
+              ulog.copyOverOldUpdates(Long.parseLong(commitVersion));
+            }
+          }
+          // we will call register again after zk expiration and on reload
+          if (!afterExpiration
+              && !core.isReloaded()
+              && ulog != null
+              && !isTlogReplicaAndNotLeader) {
+            // disable recovery in case shard is in construction state (for shard splits)
+            Slice slice = getClusterState().getCollection(collection).getSlice(shardId);
+            if (slice.getState() != Slice.State.CONSTRUCTION || !isLeader) {
+              Future<UpdateLog.RecoveryInfo> recoveryFuture =
+                  core.getUpdateHandler().getUpdateLog().recoverFromLog();
+              if (recoveryFuture != null) {
+                log.info(
+                    "Replaying tlog for {} during startup... NOTE: This can take a while.", ourUrl);
+                recoveryFuture.get(); // NOTE: this could potentially block for
+                // minutes or more!
+                // TODO: public as recovering in the mean time?
+                // TODO: in the future we could do peersync in parallel with recoverFromLog
+              } else {
+                if (log.isDebugEnabled()) {
+                  log.debug("No LogReplay needed for core={} baseURL={}", core.getName(), baseUrl);
+                }
               }
             }
           }
-        }
-        boolean didRecovery =
-            checkRecovery(
-                recoverReloadedCores,
-                isLeader,
-                skipRecovery,
-                collection,
-                coreZkNodeName,
-                shardId,
-                core,
-                cc,
-                afterExpiration);
-        if (!didRecovery) {
-          if (isTlogReplicaAndNotLeader) {
-            startReplicationFromLeader(coreName, true);
+          boolean didRecovery =
+              checkRecovery(
+                  recoverReloadedCores,
+                  isLeader,
+                  skipRecovery,
+                  collection,
+                  coreZkNodeName,
+                  shardId,
+                  core,
+                  cc,
+                  afterExpiration);
+          if (!didRecovery) {
+            if (isTlogReplicaAndNotLeader) {
+              startReplicationFromLeader(coreName, true);
+            }
+            publish(desc, Replica.State.ACTIVE);
           }
-          publish(desc, Replica.State.ACTIVE);
-        }
 
-        if (replica.getType().leaderEligible) {
-          // the watcher is added to a set so multiple calls of this method will left only one
-          // watcher
-          shardTerms.addListener(
-              new RecoveringCoreTermWatcher(core.getCoreDescriptor(), getCoreContainer()));
+          if (replica.getType().leaderEligible) {
+            // the watcher is added to a set so multiple calls of this method will left only one
+            // watcher
+            shardTerms.addListener(
+                new RecoveringCoreTermWatcher(core.getCoreDescriptor(), getCoreContainer()));
+          }
+          core.getCoreDescriptor().getCloudDescriptor().setHasRegistered(true);
+        } catch (Exception e) {
+          unregister(coreName, desc, false);
+          throw e;
         }
-        core.getCoreDescriptor().getCloudDescriptor().setHasRegistered(true);
-      } catch (Exception e) {
-        unregister(coreName, desc, false);
-        throw e;
       }
 
       // make sure we have an update cluster state right away

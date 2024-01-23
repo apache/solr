@@ -73,6 +73,7 @@ import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.zero.process.ZeroStoreManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -460,6 +461,24 @@ public class SearchHandler extends RequestHandlerBase
 
       SolrQueryTimeoutImpl.set(req);
       try {
+        /*
+         * Stopgap: This is not an end-to-end query freshness solution for ZERO replica. Rather,
+         * it is just taking care of a special case: if a core has never synced with the Zero
+         * store then it should fail the query.
+         *
+         * This stopgap is only taking care of the query path that goes through SearchHandler. This
+         * is not a generic enough place.
+         * A cleaner solution would have to find a more central place to take care of different
+         * entry points where we care about freshness.
+         *
+         * See also comment in HttpSolrCall.init()
+         */
+        CoreContainer coreContainer = core.getCoreContainer();
+        if (coreContainer.isZeroStoreEnabled()) {
+          ZeroStoreManager zeroStoreManager = coreContainer.getZeroStoreManager();
+          zeroStoreManager.ensureZeroCoreFreshness(core);
+        }
+
         // The semantics of debugging vs not debugging are different enough that
         // it makes sense to have two control loops
         if (!rb.isDebug()) {

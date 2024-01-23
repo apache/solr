@@ -43,10 +43,12 @@ import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -56,6 +58,7 @@ import org.apache.solr.update.SplitIndexCommand;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.zero.process.ZeroStoreManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,8 +78,51 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
     return true;
   }
 
+  /**
+   * This method delegates the actual split work to {@link
+   * #executeInternal(CoreAdminHandler.CallInfo)} and does additional work for ZERO replicas.
+   */
+  @SuppressWarnings("try")
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
+    SolrParams params = it.req.getParams();
+    List<SolrCore> newCores = null;
+    try {
+      if (!Replica.Type.ZERO.name().equals(params.get(CoreAdminParams.REPLICA_TYPE))) {
+        // Not a ZERO replica? Or not even SolrCloud? delegate without doing anything else
+        newCores = executeInternal(it);
+      } else {
+        // ZERO replica: need to pull from Zero store first and hold the indexing lock during the
+        // whole process
+        CoreContainer coreContainer = it.handler.getCoreContainer();
+        try (SolrCore core = coreContainer.getCore(params.get(CoreAdminParams.CORE))) {
+          ZeroStoreManager storeManager = coreContainer.getZeroStoreManager();
+          storeManager.pullCoreFromZeroStore(core);
+          try (AutoCloseable ignore = storeManager.acquireIndexingLockForSplit(core)) {
+            newCores = executeInternal(it);
+          }
+          // Now push the new cores to Zero store (if parent is ZERO, so are the children)
+          if (newCores != null) {
+            for (SolrCore newCore : newCores) {
+              newCore.getCoreContainer().getZeroStoreManager().initialCorePushToZeroStore(newCore);
+            }
+          }
+        }
+      }
+    } finally {
+      if (newCores != null) {
+        for (SolrCore newCore : newCores) {
+          newCore.close();
+        }
+      }
+    }
+  }
+
+  /**
+   * @return the list of created {@link SolrCore} or possibly <code>null</code>. If returns
+   *     non-null, caller must close all the cores.
+   */
+  private List<SolrCore> executeInternal(CoreAdminHandler.CallInfo it) throws Exception {
     SolrParams params = it.req.getParams();
     String splitKey = params.get("split.key");
     String[] newCoreNames = params.getParams("targetCore");
@@ -86,7 +132,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
     // to calculate the prefix ranges, and do the actual split in a separate request
     if (params.getBool(GET_RANGES, false)) {
       handleGetRanges(it, cname);
-      return;
+      return null;
     }
 
     // if not using splitByPrefix, determine split partitions
@@ -231,12 +277,10 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
     } finally {
       if (req != null) req.close();
       if (parentCore != null) parentCore.close();
-      if (newCores != null) {
-        for (SolrCore newCore : newCores) {
-          newCore.close();
-        }
-      }
+      // closing newCores is caller's responsibility
     }
+
+    return newCores;
   }
 
   /**

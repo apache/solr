@@ -66,6 +66,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Reindex a collection, usually in order to change the index schema.
  *
+ * <p><b>TODO Reindex is NOT working with Zero store based collections (having replicas of type
+ * {@link org.apache.solr.common.cloud.Replica.Type#ZERO}). <br>
+ * If/once we make it work, delete this comment.</b>
+ *
  * <p>WARNING: Reindexing is potentially a lossy operation - some indexed data that is not available
  * as stored fields may be irretrievably lost, so users should use this command with caution,
  * evaluating the potential impact by using different source and target collection names first, and
@@ -249,7 +253,8 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     String query = message.getStr(CommonParams.Q, "*:*");
     String fl = message.getStr(CommonParams.FL, "*");
     Integer rf = message.getInt(ZkStateReader.REPLICATION_FACTOR, coll.getReplicationFactor());
-    ReplicaCount numReplicas = ReplicaCount.fromMessage(message, coll);
+    // TODO REINDEXCOLLECTION currently doesn't work with ZERO collections
+    ReplicaCount numReplicas = ReplicaCount.fromMessage(message, coll, false);
     int numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, coll.getActiveSlices().size());
     DocRouter router = coll.getRouter();
     if (router == null) {

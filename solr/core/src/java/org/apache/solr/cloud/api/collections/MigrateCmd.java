@@ -56,6 +56,11 @@ import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * TODO Migration is NOT working with Zero store based collections (having replicas of type {@link
+ * org.apache.solr.common.cloud.Replica.Type#ZERO}). <br>
+ * If/once we make it work, delete this comment.
+ */
 public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CollectionCommandContext ccc;
@@ -307,7 +312,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
             CREATE.toLower(),
             NAME,
             tempSourceCollectionName,
-            Replica.Type.defaultType().numReplicasPropertyName,
+            Replica.Type.defaultType(false).numReplicasPropertyName, // TODO does not work for ZERO
             1,
             CollectionHandlingUtils.NUM_SLICES,
             1,
@@ -393,7 +398,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
             ccc.getSolrCloudManager().getDistribStateManager(),
             zkStateReader.getClusterState().getCollection(tempSourceCollectionName),
             tempSourceSlice.getName(),
-            Replica.Type.defaultType());
+            Replica.Type.defaultType(false)); // TODO does not work for ZERO
     props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
     props.put(COLLECTION_PROP, tempSourceCollectionName);

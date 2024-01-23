@@ -62,6 +62,7 @@ public class CollectionMutator {
     String shardId = message.getStr(ZkStateReader.SHARD_ID_PROP);
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shardId);
+
     if (slice == null) {
       Map<String, Replica> replicas = Collections.emptyMap();
       Map<String, Object> sliceProps = new HashMap<>();
@@ -149,7 +150,8 @@ public class CollectionMutator {
         // SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in sync
         if (prop.equals(REPLICATION_FACTOR)) {
           props.put(
-              Replica.Type.defaultType().numReplicasPropertyName, message.get(REPLICATION_FACTOR));
+              Replica.Type.defaultType(coll.isZeroIndex()).numReplicasPropertyName,
+              message.get(REPLICATION_FACTOR));
         }
       }
     }

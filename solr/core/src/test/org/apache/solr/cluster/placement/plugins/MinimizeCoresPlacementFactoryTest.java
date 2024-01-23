@@ -83,12 +83,12 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
 
     if (hasExistingCollection) {
       // Existing collection has replicas for its shards and is visible in the cluster state
-      collectionBuilder.initializeShardsReplicas(1, 1, 0, 0, nodeBuilders);
+      collectionBuilder.initializeShardsReplicas(1, 1, 0, 0, 0, nodeBuilders);
       clusterBuilder.addCollection(collectionBuilder);
     } else {
       // New collection to create has the shards defined but no replicas and is not present in
       // cluster state
-      collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, List.of());
+      collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, 0, List.of());
     }
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();

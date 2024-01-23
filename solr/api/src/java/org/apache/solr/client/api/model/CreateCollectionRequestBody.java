@@ -38,6 +38,11 @@ public class CreateCollectionRequestBody {
 
   @JsonProperty public Integer nrtReplicas;
 
+  @JsonProperty public Integer zeroReplicas;
+  // TODO other "v2" places where ZERO needs to be added?
+
+  @JsonProperty public Boolean isZeroIndex;
+
   @JsonProperty public Boolean waitForFinalState;
 
   @JsonProperty public Boolean perReplicaState;

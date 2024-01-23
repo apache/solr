@@ -31,6 +31,10 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 public final class ReplicaCount {
   private final EnumMap<Replica.Type, Integer> countByType;
 
+  // TODO move checks somewhere in this class that if there are ZERO replicas there are no other
+  //  replicas and vice versa? Will have to change tests that break this rule. Need to inventory
+  //  all places where we test this currently.
+
   private ReplicaCount() {
     this.countByType = new EnumMap<>(Replica.Type.class);
   }
@@ -46,19 +50,50 @@ public final class ReplicaCount {
   }
 
   public static ReplicaCount of(Integer nrtReplicas, Integer tlogReplicas, Integer pullReplicas) {
+    return of(nrtReplicas, tlogReplicas, pullReplicas, null);
+  }
+
+  public static ReplicaCount of(
+      Integer nrtReplicas, Integer tlogReplicas, Integer pullReplicas, Integer zeroReplicas) {
     ReplicaCount replicaCount = new ReplicaCount();
     replicaCount.put(Replica.Type.NRT, nrtReplicas);
     replicaCount.put(Replica.Type.TLOG, tlogReplicas);
     replicaCount.put(Replica.Type.PULL, pullReplicas);
+    replicaCount.put(Replica.Type.ZERO, zeroReplicas);
     return replicaCount;
   }
 
-  public static ReplicaCount fromMessage(ZkNodeProps message) {
-    return fromMessage(message, null);
+  public static ReplicaCount fromMessage(ZkNodeProps message, boolean isZeroIndex) {
+    return fromMessage(message, null, isZeroIndex);
   }
 
-  public static ReplicaCount fromMessage(ZkNodeProps message, DocCollection collection) {
-    return fromMessage(message, collection, null);
+  public static ReplicaCount fromMessage(
+      ZkNodeProps message, DocCollection collection, boolean isZeroIndex) {
+    return fromMessage(message, collection, null, isZeroIndex);
+  }
+
+  /**
+   * The default replica type can be provided as a property, or else comes from {@link
+   * Replica.Type#defaultType(boolean)}. Note there currently is no "per collection default replica
+   * type" but it might be useful to introduce one. Given the default replica type depends on the
+   * type of collection (Zero Index or not), a boolean is passed.
+   */
+  public static ReplicaCount fromMessage(
+      ZkNodeProps message,
+      DocCollection collection,
+      Integer defaultReplicationFactor,
+      boolean isZeroIndex) {
+    // Default replica type can be overridden by a property.
+    return fromMessage(
+        message,
+        collection,
+        defaultReplicationFactor,
+        Replica.Type.valueOf(
+            message
+                .getStr(
+                    CollectionAdminParams.REPLICA_TYPE,
+                    Replica.Type.defaultType(isZeroIndex).name())
+                .toUpperCase(Locale.ROOT)));
   }
 
   /**
@@ -66,8 +101,7 @@ public final class ReplicaCount {
    *
    * <p>This method has a rich logic for defaulting parameters. A collection can optionally be
    * provided as a fallback for all properties. Among all properties, replica factor is applied as
-   * the number of replicas for the default replica type. The default replica type can be provided
-   * as a property, or else comes from {@link Replica.Type#defaultType()}.
+   * the number of replicas for the default replica type.
    *
    * <p>Not all capabilities apply on every call of this method. For example, the message may not
    * contain any replication factor.
@@ -76,15 +110,15 @@ public final class ReplicaCount {
    * @param collection an optional collection providing defaults.
    * @param defaultReplicationFactor an additional optional default replica factor, if none is found
    *     in the collection.
+   * @param defaultReplicaType which replica is concerned by the collection's {@link
+   *     CollectionAdminParams#REPLICATION_FACTOR} when no counts are specified for that replica in
+   *     the message or in the collection properties.
    */
   public static ReplicaCount fromMessage(
-      ZkNodeProps message, DocCollection collection, Integer defaultReplicationFactor) {
-    // Default replica type can be overridden by a property.
-    Replica.Type defaultReplicaType =
-        Replica.Type.valueOf(
-            message
-                .getStr(CollectionAdminParams.REPLICA_TYPE, Replica.Type.defaultType().name())
-                .toUpperCase(Locale.ROOT));
+      ZkNodeProps message,
+      DocCollection collection,
+      Integer defaultReplicationFactor,
+      Replica.Type defaultReplicaType) {
     ReplicaCount replicaCount = new ReplicaCount();
     for (Replica.Type replicaType : Replica.Type.values()) {
       final Integer count;
@@ -164,6 +198,17 @@ public final class ReplicaCount {
   public void writeProps(Map<String, Object> propMap) {
     for (Map.Entry<Replica.Type, Integer> entry : countByType.entrySet()) {
       propMap.put(entry.getKey().numReplicasPropertyName, entry.getValue());
+    }
+  }
+
+  /**
+   * Add properties for replica counts as integers to a properties map. Similar to {@link
+   * #writeProps} but puts zero for replicas without counts
+   */
+  public void writePropsOrZeros(Map<String, Object> propMap) {
+    for (Replica.Type type : Replica.Type.values()) {
+      Integer count = countByType.get(type);
+      propMap.put(type.numReplicasPropertyName, count == null ? 0 : count);
     }
   }
 

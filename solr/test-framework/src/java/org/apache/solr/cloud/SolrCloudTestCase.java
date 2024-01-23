@@ -47,6 +47,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -334,6 +335,16 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       }
     }
     fail("Tried " + i + " times , could not succeed. " + messageOnFail);
+    return null;
+  }
+
+  /** Gets core container by node name. */
+  protected static CoreContainer getCoreContainer(String nodeName) {
+    for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
+      if (solrRunner.getNodeName().equals(nodeName)) {
+        return solrRunner.getCoreContainer();
+      }
+    }
     return null;
   }
 

@@ -465,6 +465,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     AtomicInteger actualNrt = new AtomicInteger();
     AtomicInteger actualTlog = new AtomicInteger();
     AtomicInteger actualPull = new AtomicInteger();
+    AtomicInteger actualZero = new AtomicInteger();
     s.getReplicas()
         .forEach(
             r -> {
@@ -478,11 +479,15 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                 case PULL:
                   actualPull.incrementAndGet();
                   break;
+                case ZERO:
+                  actualZero.incrementAndGet();
+                  break;
               }
             });
     assertEquals("actual NRT", numNrt, actualNrt.get());
     assertEquals("actual TLOG", numTlog, actualTlog.get());
     assertEquals("actual PULL", numPull, actualPull.get());
+    assertEquals("actual ZERO", 0, actualZero.get());
   }
 
   @Test

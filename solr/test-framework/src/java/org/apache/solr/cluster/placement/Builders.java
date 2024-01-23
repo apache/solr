@@ -350,6 +350,7 @@ public class Builders {
      * @param countNrtReplicas number of NRT replicas per shard
      * @param countTlogReplicas number of TLOG replicas per shard
      * @param countPullReplicas number of PULL replicas per shard
+     * @param countZeroReplicas number of ZERO replicas per shard
      * @param nodes list of nodes to place replicas on.
      */
     public CollectionBuilder initializeShardsReplicas(
@@ -357,9 +358,16 @@ public class Builders {
         int countNrtReplicas,
         int countTlogReplicas,
         int countPullReplicas,
+        int countZeroReplicas,
         List<NodeBuilder> nodes) {
       return initializeShardsReplicas(
-          countShards, countNrtReplicas, countTlogReplicas, countPullReplicas, nodes, null);
+          countShards,
+          countNrtReplicas,
+          countTlogReplicas,
+          countPullReplicas,
+          countZeroReplicas,
+          nodes,
+          null);
     }
 
     /**
@@ -372,6 +380,7 @@ public class Builders {
      * @param countNrtReplicas number of NRT replicas per shard
      * @param countTlogReplicas number of TLOG replicas per shard
      * @param countPullReplicas number of PULL replicas per shard
+     * @param countZeroReplicas number of ZERO replicas per shard
      * @param nodes list of nodes to place replicas on.
      * @param initialSizeGBPerShard initial replica size (in GB) per shard
      */
@@ -380,6 +389,7 @@ public class Builders {
         int countNrtReplicas,
         int countTlogReplicas,
         int countPullReplicas,
+        int countZeroReplicas,
         List<NodeBuilder> nodes,
         List<Integer> initialSizeGBPerShard) {
       Iterator<NodeBuilder> nodeIterator = nodes.iterator();
@@ -400,13 +410,14 @@ public class Builders {
         ReplicaBuilder leader = null;
         CollectionMetricsBuilder.ReplicaMetricsBuilder leaderMetrics = null;
 
-        // Iterate on requested counts, NRT then TLOG then PULL. Leader chosen as first NRT (or
-        // first TLOG if no NRT)
+        // Iterate on requested counts, NRT then TLOG then PULL then ZERO.
+        // Leader chosen as first NRT (or first TLOG if no NRT) or first ZERO
         List<Pair<Replica.ReplicaType, Integer>> replicaTypes =
             List.of(
                 new Pair<>(Replica.ReplicaType.NRT, countNrtReplicas),
                 new Pair<>(Replica.ReplicaType.TLOG, countTlogReplicas),
-                new Pair<>(Replica.ReplicaType.PULL, countPullReplicas));
+                new Pair<>(Replica.ReplicaType.PULL, countPullReplicas),
+                new Pair<>(Replica.ReplicaType.ZERO, countZeroReplicas));
 
         for (Pair<Replica.ReplicaType, Integer> tc : replicaTypes) {
           Replica.ReplicaType type = tc.first();
