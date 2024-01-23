@@ -199,6 +199,18 @@ public class ExtendedDismaxQParser extends QParser {
       topQuery = FunctionScoreQuery.boostByValue(topQuery, boosts.get(0).asDoubleValuesSource());
     }
 
+    // If topQuery is a boolean query, unwrap the boolean query to check if it is just
+    // a MatchAllDocsQuery. Using MatchAllDocsQuery by itself enables later optimizations
+    if (topQuery instanceof BooleanQuery) {
+      BooleanQuery topQueryBoolean = (BooleanQuery) topQuery;
+      if (topQueryBoolean.clauses().size() == 1) {
+        Query onlyQuery = topQueryBoolean.clauses().get(0).getQuery();
+        if (onlyQuery instanceof MatchAllDocsQuery) {
+          return onlyQuery;
+        }
+      }
+    }
+
     return topQuery;
   }
 
