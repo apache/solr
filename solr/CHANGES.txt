@@ -28,7 +28,7 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-17126: Cut over System.getProperty to EnvUtils.getProperty (janhoy)
 
 ==================  9.5.0 ==================
 New Features
