@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
@@ -117,7 +118,7 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
           GlobalTracer.get().toString().contains("ClosableTracerShim"));
       assertEquals(
           List.of("host.name=my.solr.host", "foo=bar"),
-          List.of(System.getProperty("otel.resource.attributes").split(",")));
+          List.of(EnvUtils.getProperty("otel.resource.attributes").split(",")));
     } finally {
       cluster.shutdown();
       System.clearProperty("otel.resource.attributes");
