@@ -164,6 +164,9 @@ Bug Fixes
 
 * SOLR-17090: The v2 "delete alias" API no longer errantly returns a 405 status code (Jason Gerlowski)
 
+* SOLR-17120: Fix NullPointerException in UpdateLog.applyOlderUpdates that can occur if there are multiple partial
+  updates of the same document in separate requests using commitWithin. (Calvin Smith, Christine Poerschke)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
