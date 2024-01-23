@@ -19,7 +19,7 @@ package org.apache.solr.response;
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.PrettyPrinter;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -32,10 +32,11 @@ import org.apache.solr.request.SolrQueryRequest;
 public class JacksonJsonWriter extends BinaryResponseWriter {
 
   protected final JsonFactory jsonfactory;
-  protected static final PrettyPrinter pretty =
+  protected static final DefaultPrettyPrinter pretty =
       new DefaultPrettyPrinter()
           .withoutSpacesInObjectEntries()
-          .withArrayIndenter(DefaultPrettyPrinter.NopIndenter.instance);
+          .withArrayIndenter(DefaultPrettyPrinter.NopIndenter.instance)
+          .withObjectIndenter(new DefaultIndenter().withLinefeed("\n"));
 
   public JacksonJsonWriter() {
     super();
@@ -59,6 +60,7 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     return JSONResponseWriter.CONTENT_TYPE_JSON_UTF8;
   }
+
   // So we extend JSONWriter and override the relevant methods
 
   public static class WriterImpl extends JSONWriter {
@@ -71,7 +73,7 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
       try {
         gen = j.createGenerator(out, JsonEncoding.UTF8);
         if (doIndent) {
-          gen.setPrettyPrinter(pretty);
+          gen.setPrettyPrinter(pretty.createInstance());
         }
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -80,7 +82,13 @@ public class JacksonJsonWriter extends BinaryResponseWriter {
 
     @Override
     public void writeResponse() throws IOException {
+      if (wrapperFunction != null) {
+        writeStr(null, wrapperFunction + "(", false);
+      }
       super.writeNamedList(null, rsp.getValues());
+      if (wrapperFunction != null) {
+        writeStr(null, ")", false);
+      }
       gen.close();
     }
 

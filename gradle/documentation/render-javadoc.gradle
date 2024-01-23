@@ -68,6 +68,8 @@ allprojects {
 
       relativeProjectLinks = true
 
+      enableSearch = true
+
       // Place the documentation under Lucene or Solr's documentation directory.
       // docroot is defined in 'documentation.gradle'
       outputDir = project.docroot.toPath().resolve(project.relativeDocPath).toFile()
@@ -112,17 +114,6 @@ configure(project(":solr:modules:analysis-extras")) {
     javadocMissingIgnore = [
         "org.apache.solr.schema",
         "org.apache.solr.update.processor"
-    ]
-  }
-}
-
-configure(project(":solr:modules:analytics")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages SOLR-15604
-    javadocMissingIgnore = [
-        "org.apache.solr.handler",
-        "org.apache.solr.handler.component",
-        "org.apache.solr.response"
     ]
   }
 }
@@ -230,6 +221,9 @@ class RenderJavadocTask extends DefaultTask {
   boolean linksource = false
 
   @Input
+  boolean enableSearch = false
+
+  @Input
   boolean relativeProjectLinks = false
 
   @Input
@@ -297,7 +291,9 @@ class RenderJavadocTask extends DefaultTask {
     opts << [ '-encoding', 'UTF-8' ]
     opts << [ '-charset', 'UTF-8' ]
     opts << [ '-docencoding', 'UTF-8' ]
-    opts << '-noindex'
+    if (!enableSearch) {
+      opts << '-noindex'
+    }
     opts << '-author'
     opts << '-version'
     if (linksource) {

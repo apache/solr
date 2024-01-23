@@ -219,6 +219,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
       try {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
+        break;
       }
     }
     // Return last state?

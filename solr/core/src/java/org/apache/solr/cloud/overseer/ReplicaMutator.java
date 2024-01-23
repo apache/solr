@@ -421,12 +421,15 @@ public class ReplicaMutator {
     Map<String, Object> sliceProps = null;
     Map<String, Replica> replicas;
 
+    boolean sliceChanged = true;
     if (slice != null) {
+      Slice.State originalState = slice.getState();
       collection =
           checkAndCompleteShardSplit(prevState, collection, coreNodeName, sliceName, replica);
       // get the current slice again because it may have been updated due to
       // checkAndCompleteShardSplit method
       slice = collection.getSlice(sliceName);
+      sliceChanged = originalState != slice.getState();
       sliceProps = slice.getProperties();
       replicas = slice.getReplicasCopy();
     } else {
@@ -442,7 +445,7 @@ public class ReplicaMutator {
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
     log.debug("Collection is now: {}", newCollection);
     if (collection.isPerReplicaState() && oldReplica != null) {
-      if (!persistStateJson(replica, oldReplica, collection)) {
+      if (!sliceChanged && !persistStateJson(replica, oldReplica, collection)) {
         if (log.isDebugEnabled()) {
           log.debug(
               "state.json is not persisted slice/replica : {}/{} \n , old : {}, \n new {}",
@@ -462,6 +465,7 @@ public class ReplicaMutator {
     if (!Objects.equals(newReplica.getBaseUrl(), oldReplica.getBaseUrl())) return true;
     if (!Objects.equals(newReplica.getCoreName(), oldReplica.getCoreName())) return true;
     if (!Objects.equals(newReplica.getNodeName(), oldReplica.getNodeName())) return true;
+    if (!Objects.equals(newReplica.getState(), oldReplica.getState())) return true;
     if (!Objects.equals(
         newReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP),
         oldReplica.getProperties().get(ZkStateReader.FORCE_SET_STATE_PROP))) {

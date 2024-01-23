@@ -32,9 +32,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.util.CollectionUtil;
-import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,6 +91,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     replicasCopy.put(modified.getName(), modified);
     return new Slice(name, replicasCopy, propMap, collection);
   }
+
   /** The slice's state. */
   public enum State {
 
@@ -181,7 +180,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     }
     range = tmpRange;
 
-    /**
+    /*
      * debugging. this isn't an error condition for custom sharding. if (range == null) {
      * System.out.println("###### NO RANGE for " + name + " props=" + props); }
      */
@@ -242,8 +241,8 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   private Replica findLeader() {
     for (Replica replica : replicas.values()) {
       if (replica.isLeader()) {
-        assert replica.getType() == Type.TLOG || replica.getType() == Type.NRT
-            : "Pull replica should not become leader!";
+        assert replica.getType().leaderEligible
+            : replica.getType().toString() + " replica should not become leader!";
         return replica;
       }
     }
@@ -253,6 +252,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   public String getCollection() {
     return collection;
   }
+
   /** Return slice name (shard id). */
   public String getName() {
     return name;
@@ -325,11 +325,6 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   @Override
   public String toString() {
     return name + ':' + toJSONString(propMap);
-  }
-
-  @Override
-  public void write(JSONWriter jsonWriter) {
-    jsonWriter.write(propMap);
   }
 
   /** JSON properties related to a slice's state. */

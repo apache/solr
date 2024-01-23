@@ -45,4 +45,41 @@ public class URLUtil {
 
     return null;
   }
+
+  /**
+   * @param coreUrl a URL pointing to a specific "core" or collection (i.e. that adheres loosely to
+   *     the form "scheme://host:port/solr/coreName")
+   * @return a URL pointing to the Solr node's root path
+   */
+  public static String extractBaseUrl(String coreUrl) {
+    coreUrl = removeTrailingSlashIfPresent(coreUrl);
+
+    // Remove the core name and return
+    return coreUrl.substring(0, coreUrl.lastIndexOf("/"));
+  }
+
+  public static String extractCoreFromCoreUrl(String coreUrl) {
+    coreUrl = removeTrailingSlashIfPresent(coreUrl);
+
+    return coreUrl.substring(coreUrl.lastIndexOf("/") + 1);
+  }
+
+  /**
+   * Create a core URL (e.g. "http://localhost:8983/solr/myCore") from its individual components
+   *
+   * @param baseUrl a Solr "base URL" (e.g. "http://localhost:8983/solr/")
+   * @param coreName the name of a Solr core or collection (with no leading or trailing slashes)
+   */
+  public static String buildCoreUrl(String baseUrl, String coreName) {
+    baseUrl = removeTrailingSlashIfPresent(baseUrl);
+    return baseUrl + "/" + coreName;
+  }
+
+  private static String removeTrailingSlashIfPresent(String url) {
+    if (url.endsWith("/")) {
+      return url.substring(0, url.length() - 1);
+    }
+
+    return url;
+  }
 }

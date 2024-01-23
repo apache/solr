@@ -52,7 +52,6 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -91,7 +90,6 @@ public abstract class CloudSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected volatile String defaultCollection;
   // no of times collection state to be reloaded if stale state error is received
   private static final int MAX_STALE_RETRIES =
       Integer.parseInt(System.getProperty("cloudSolrClientMaxStaleRetries", "5"));
@@ -291,11 +289,6 @@ public abstract class CloudSolrClient extends SolrClient {
 
   public RequestWriter getRequestWriter() {
     return getLbClient().getRequestWriter();
-  }
-
-  /** Gets the default collection for request */
-  public String getDefaultCollection() {
-    return defaultCollection;
   }
 
   /** Gets whether direct updates are sent in parallel */
@@ -785,9 +778,6 @@ public abstract class CloudSolrClient extends SolrClient {
     String stateVerParam = null;
     List<DocCollection> requestedCollections = null;
     boolean isCollectionRequestOfV2 = false;
-    if (request instanceof V2RequestSupport) {
-      request = ((V2RequestSupport) request).getV2Request();
-    }
     if (request instanceof V2Request) {
       isCollectionRequestOfV2 = ((V2Request) request).isPerCollectionRequest();
     }
@@ -1117,8 +1107,14 @@ public abstract class CloudSolrClient extends SolrClient {
       sortedReplicas.forEach(
           replica -> {
             if (seenNodes.add(replica.getNodeName())) {
-              theUrlList.add(
-                  ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+              if (inputCollections.size() == 1 && collectionNames.size() == 1) {
+                // If we have a single collection name (and not a alias to multiple collection),
+                // send the query directly to a replica of this collection.
+                theUrlList.add(replica.getCoreUrl());
+              } else {
+                theUrlList.add(
+                    ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+              }
             }
           });
 

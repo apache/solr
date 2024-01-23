@@ -37,10 +37,10 @@ public class V2StandaloneTest extends SolrTestCaseJ4 {
     Files.copy(Path.of(TEST_HOME(), "solr.xml"), solrHomeTmp.resolve("solr.xml"));
 
     JettySolrRunner jetty =
-        new JettySolrRunner(solrHomeTmp.toAbsolutePath().toString(), buildJettyConfig("/solr"));
+        new JettySolrRunner(solrHomeTmp.toAbsolutePath().toString(), buildJettyConfig());
     jetty.start();
 
-    try (SolrClient client = getHttpSolrClient(buildUrl(jetty.getLocalPort(), "/solr/"))) {
+    try (SolrClient client = getHttpSolrClient(buildUrl(jetty.getLocalPort()))) {
       NamedList<?> res = client.request(new V2Request.Builder("/").build());
       NamedList<?> header = (NamedList<?>) res.get("responseHeader");
       assertEquals(0, header.get("status"));

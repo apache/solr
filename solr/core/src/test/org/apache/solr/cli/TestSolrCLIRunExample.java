@@ -123,7 +123,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
                   Files.readAllBytes(Paths.get(solrHomeDir).resolve("solr.xml")),
                   Charset.defaultCharset());
 
-          JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(port).build();
+          JettyConfig jettyConfig = JettyConfig.builder().setPort(port).build();
           try {
             if (solrCloudCluster == null) {
               Path logDir = createTempDir("solr_logs");
@@ -230,7 +230,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       System.setProperty("jetty.port", String.valueOf(port));
       System.setProperty("solr.log.dir", createTempDir("solr_logs").toString());
 
-      standaloneSolr = new JettySolrRunner(solrHomeDir.getAbsolutePath(), "/solr", port);
+      standaloneSolr = new JettySolrRunner(solrHomeDir.getAbsolutePath(), port);
       Thread bg =
           new Thread() {
             @Override
@@ -503,7 +503,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // verify Solr is running on the expected port and verify the collection exists
     String solrUrl = "http://localhost:" + bindPort + "/solr";
-    if (!SolrCLI.safeCheckCollectionExists(solrUrl, collectionName)) {
+    if (!SolrCLI.safeCheckCollectionExists(solrUrl, collectionName, null)) {
       fail(
           "After running Solr cloud example, test collection '"
               + collectionName

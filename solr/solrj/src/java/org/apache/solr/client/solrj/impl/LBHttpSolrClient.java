@@ -91,8 +91,12 @@ public class LBHttpSolrClient extends LBSolrClient {
     this.httpSolrClientBuilder = builder.httpSolrClientBuilder;
     this.httpClient =
         builder.httpClient == null
-            ? constructClient(builder.baseSolrUrls.toArray(new String[builder.baseSolrUrls.size()]))
+            ? constructClient(builder.baseSolrUrls.toArray(new String[0]))
             : builder.httpClient;
+    this.defaultCollection = builder.defaultCollection;
+    if (httpSolrClientBuilder != null && this.defaultCollection != null) {
+      httpSolrClientBuilder.defaultCollection = this.defaultCollection;
+    }
     this.connectionTimeoutMillis = builder.connectionTimeoutMillis;
     this.soTimeoutMillis = builder.socketTimeoutMillis;
     this.parser = builder.responseParser;

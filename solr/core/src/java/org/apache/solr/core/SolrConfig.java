@@ -90,7 +90,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.DOMConfigNode;
 import org.apache.solr.util.DataConfigNode;
-import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
+import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -346,7 +346,8 @@ public class SolrConfig implements MapSerializable {
       for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
 
       Map<String, CacheConfig> userCacheConfigs =
-          CacheConfig.getMultipleConfigs(this, "query/cache", get("query").getAll("cache"));
+          CacheConfig.getMultipleConfigs(
+              getResourceLoader(), this, "query/cache", get("query").getAll("cache"));
       List<PluginInfo> caches = getPluginInfos(SolrCache.class.getName());
       if (!caches.isEmpty()) {
         for (PluginInfo c : caches) {
@@ -408,6 +409,7 @@ public class SolrConfig implements MapSerializable {
 
   private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
 
+  @SuppressWarnings("ReferenceEquality") // Use of == is intentional here
   public static final Version parseLuceneVersionString(final String matchVersion) {
     final Version version;
     try {
@@ -419,7 +421,9 @@ public class SolrConfig implements MapSerializable {
           pe);
     }
 
-    if (Objects.equals(version, Version.LATEST) && !versionWarningAlreadyLogged.getAndSet(true)) {
+    // The use of == is intentional here because the latest 'V.V.V' version will be equal() to
+    // Version.LATEST, but will not be == to Version.LATEST unless 'LATEST' was supplied.
+    if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
       log.warn(
           "You should not use LATEST as luceneMatchVersion property: "
               + "if you use this setting, and then Solr upgrades to a newer release of Lucene, "
@@ -503,7 +507,7 @@ public class SolrConfig implements MapSerializable {
           new SolrPluginInfo(IndexSchemaFactory.class, "schemaFactory", REQUIRE_CLASS),
           new SolrPluginInfo(RestManager.class, "restManager"),
           new SolrPluginInfo(StatsCache.class, "statsCache", REQUIRE_CLASS),
-          new SolrPluginInfo(CircuitBreakerManager.class, "circuitBreaker"));
+          new SolrPluginInfo(CircuitBreaker.class, "circuitBreaker", REQUIRE_CLASS, MULTI_OK));
   public static final Map<String, SolrPluginInfo> classVsSolrPluginInfo;
 
   static {
@@ -586,17 +590,7 @@ public class SolrConfig implements MapSerializable {
   }
 
   protected UpdateHandlerInfo loadUpdatehandlerInfo() {
-    ConfigNode updateHandler = get("updateHandler");
-    ConfigNode autoCommit = updateHandler.get("autoCommit");
-    return new UpdateHandlerInfo(
-        updateHandler.attr("class"),
-        autoCommit.get("maxDocs").intVal(-1),
-        autoCommit.get("maxTime").intVal(-1),
-        convertHeapOptionStyleConfigStringToBytes(autoCommit.get("maxSize").txt()),
-        autoCommit.get("openSearcher").boolVal(true),
-        updateHandler.get("autoSoftCommit").get("maxDocs").intVal(-1),
-        updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1),
-        updateHandler.get("commitWithin").get("softCommit").boolVal(true));
+    return new UpdateHandlerInfo(get("updateHandler"));
   }
 
   /**
@@ -815,6 +809,7 @@ public class SolrConfig implements MapSerializable {
     public final long autoCommitMaxSizeBytes;
     public final boolean openSearcher; // is opening a new searcher part of hard autocommit?
     public final boolean commitWithinSoftCommit;
+    public final boolean aggregateNodeLevelMetricsEnabled;
 
     /**
      * @param autoCommmitMaxDocs set -1 as default
@@ -840,6 +835,23 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = autoSoftCommmitMaxTime;
 
       this.commitWithinSoftCommit = commitWithinSoftCommit;
+      this.aggregateNodeLevelMetricsEnabled = false;
+    }
+
+    public UpdateHandlerInfo(ConfigNode updateHandler) {
+      ConfigNode autoCommit = updateHandler.get("autoCommit");
+      this.className = updateHandler.attr("class");
+      this.autoCommmitMaxDocs = autoCommit.get("maxDocs").intVal(-1);
+      this.autoCommmitMaxTime = autoCommit.get("maxTime").intVal(-1);
+      this.autoCommitMaxSizeBytes =
+          convertHeapOptionStyleConfigStringToBytes(autoCommit.get("maxSize").txt());
+      this.openSearcher = autoCommit.get("openSearcher").boolVal(true);
+      this.autoSoftCommmitMaxDocs = updateHandler.get("autoSoftCommit").get("maxDocs").intVal(-1);
+      this.autoSoftCommmitMaxTime = updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1);
+      this.commitWithinSoftCommit =
+          updateHandler.get("commitWithin").get("softCommit").boolVal(true);
+      this.aggregateNodeLevelMetricsEnabled =
+          updateHandler.boolAttr("aggregateNodeLevelMetricsEnabled", false);
     }
 
     @Override

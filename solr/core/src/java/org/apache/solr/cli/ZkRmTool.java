@@ -24,10 +24,12 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Supports zk rm command in the bin/solr script. */
 public class ZkRmTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -83,7 +85,7 @@ public class ZkRmTool extends ToolBase {
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
             .withUrl(zkHost)
-            .withTimeout(30000, TimeUnit.MILLISECONDS)
+            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
       if (!recurse && zkClient.getChildren(znode, null, true).size() != 0) {
         throw new SolrServerException(

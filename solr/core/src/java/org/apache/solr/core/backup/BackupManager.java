@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.util.FileTypeMagicUtil;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -254,7 +255,7 @@ public class BackupManager {
       throws IOException {
     URI source = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, sourceConfigName);
     if (!repository.exists(source)) {
-      throw new IllegalArgumentException("Path " + source + " does not exist");
+      throw new IllegalArgumentException("Configset expected at " + source + " does not exist");
     }
     uploadConfigToSolrCloud(configSetService, source, targetConfigName, "");
   }
@@ -270,7 +271,6 @@ public class BackupManager {
   public void downloadConfigDir(String configName, ConfigSetService configSetService)
       throws IOException {
     URI dest = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, configName);
-    repository.createDirectory(getZkStateDir());
     repository.createDirectory(repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR));
     repository.createDirectory(dest);
 
@@ -346,8 +346,20 @@ public class BackupManager {
           log.debug("Writing file {}", filePath);
           // ConfigSetService#downloadFileFromConfig requires '/' in fle path separator
           byte[] data = configSetService.downloadFileFromConfig(configName, filePath);
-          try (OutputStream os = repository.createOutput(uri)) {
-            os.write(data);
+          // replace empty zk node (data==null) with empty array
+          if (data == null) {
+            data = new byte[0];
+          }
+          if (!FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
+            try (OutputStream os = repository.createOutput(uri)) {
+              os.write(data);
+            }
+          } else {
+            String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(data);
+            log.warn(
+                "Not including zookeeper file {} in backup, as it matched the MAGIC signature of a forbidden mime type {}",
+                filePath,
+                mimeType);
           }
         }
       } else {
@@ -376,7 +388,15 @@ public class BackupManager {
                 // probably ok since the config file should be small.
                 byte[] arr = new byte[(int) is.length()];
                 is.readBytes(arr, 0, (int) is.length());
-                configSetService.uploadFileToConfig(configName, filePath, arr, false);
+                if (!FileTypeMagicUtil.isFileForbiddenInConfigset(arr)) {
+                  configSetService.uploadFileToConfig(configName, filePath, arr, false);
+                } else {
+                  String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(arr);
+                  log.warn(
+                      "Not including zookeeper file {} in restore, as it matched the MAGIC signature of a forbidden mime type {}",
+                      filePath,
+                      mimeType);
+                }
               }
             }
             break;
@@ -403,5 +423,9 @@ public class BackupManager {
       zkStateDir = repository.resolveDirectory(backupPath, ZK_STATE_DIR);
     }
     return zkStateDir;
+  }
+
+  public void createZkStateDir() throws IOException {
+    repository.createDirectory(getZkStateDir());
   }
 }

@@ -757,7 +757,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
               }
             }
           });
-      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[list.size()]);
+      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[0]);
       return new TopDocs(new TotalHits(list.size(), TotalHits.Relation.EQUAL_TO), scoreDocs);
     }
 
@@ -824,7 +824,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
               }
             }
           });
-      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[list.size()]);
+      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[0]);
       return new TopDocs(new TotalHits(list.size(), TotalHits.Relation.EQUAL_TO), scoreDocs);
     }
 

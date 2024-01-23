@@ -42,6 +42,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.solr.cli.CLIO;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -85,6 +86,7 @@ public class ZkCLI implements CLIO {
   private static final String CMD = "cmd";
   private static final String CLUSTERPROP = "clusterprop";
   private static final String UPDATEACLS = "updateacls";
+  private static final String VERBOSE = "verbose";
 
   @VisibleForTesting
   public static void setStdout(PrintStream stdout) {
@@ -108,8 +110,12 @@ public class ZkCLI implements CLIO {
    * machine, multi node tests.
    */
   public static void main(String[] args)
-      throws InterruptedException, TimeoutException, IOException, ParserConfigurationException,
-          SAXException, KeeperException {
+      throws InterruptedException,
+          TimeoutException,
+          IOException,
+          ParserConfigurationException,
+          SAXException,
+          KeeperException {
 
     CommandLineParser parser = new PosixParser();
     Options options = new Options();
@@ -173,12 +179,14 @@ public class ZkCLI implements CLIO {
     options.addOption("h", HELP, false, "bring up this help page");
     options.addOption(NAME, true, "name of the cluster property to set");
     options.addOption(VALUE_LONG, true, "value of the cluster to set");
+    options.addOption("v", VERBOSE, false, "enable verbose mode");
 
     try {
       // parse the command line arguments
       CommandLine line = parser.parse(options, args);
 
-      if (line.hasOption(HELP) || !line.hasOption(ZKHOST) || !line.hasOption(CMD)) {
+      if ((line.hasOption(HELP) || !line.hasOption(ZKHOST) || !line.hasOption(CMD))
+          && !line.hasOption(VERBOSE)) {
         // automatically generate the help statement
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp(ZK_CLI_NAME, options);
@@ -217,10 +225,12 @@ public class ZkCLI implements CLIO {
         stdout.println(
             "zkcli.sh -zkhost localhost:9983 -cmd "
                 + PUT_FILE
-                + " /solr.xml /User/myuser/solr/solr.xml");
-        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + GET + " /solr.xml");
+                + " /clusterprops.json /User/myuser/solr/clusterprops.json");
+        stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + GET + " /clusterprops.json");
         stdout.println(
-            "zkcli.sh -zkhost localhost:9983 -cmd " + GET_FILE + " /solr.xml solr.xml.file");
+            "zkcli.sh -zkhost localhost:9983 -cmd "
+                + GET_FILE
+                + " /clusterprops.json clusterprops.json");
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLEAR + " /solr");
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + LIST);
         stdout.println("zkcli.sh -zkhost localhost:9983 -cmd " + LS + " /solr/live_nodes");
@@ -241,6 +251,10 @@ public class ZkCLI implements CLIO {
       String solrHome = line.getOptionValue(SOLRHOME);
       if (StrUtils.isNullOrEmpty(solrHome)) {
         solrHome = System.getProperty("solr.home");
+      }
+      if (line.hasOption(VERBOSE)) {
+        stdout.println("Using " + SOLRHOME + "=" + solrHome);
+        return;
       }
 
       String solrPort = null;
@@ -299,8 +313,9 @@ public class ZkCLI implements CLIO {
       try (SolrZkClient zkClient =
           new SolrZkClient.Builder()
               .withUrl(zkServerAddress)
-              .withTimeout(30000, TimeUnit.MILLISECONDS)
-              .withConnTimeOut(30000, TimeUnit.MILLISECONDS)
+              .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+              .withConnTimeOut(
+                  SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT, TimeUnit.MILLISECONDS)
               .withReconnectListener(() -> {})
               .withCompressor(compressor)
               .build()) {
@@ -389,6 +404,10 @@ public class ZkCLI implements CLIO {
             stdout.println("-" + MAKEPATH + " requires one arg - the path to make");
             System.exit(1);
           }
+          if (!ZkController.checkChrootPath(zkServerAddress, true)) {
+            stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
+            System.exit(1);
+          }
           zkClient.makePath(arglist.get(0), true);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT)) {
           List<String> arglist = line.getArgList();
@@ -406,7 +425,7 @@ public class ZkCLI implements CLIO {
           if (zkClient.exists(path, true)) {
             zkClient.setData(path, data, true);
           } else {
-            zkClient.create(path, data, CreateMode.PERSISTENT, true);
+            zkClient.makePath(path, data, CreateMode.PERSISTENT, true);
           }
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(PUT_FILE)) {
           List<String> arglist = line.getArgList();
@@ -427,7 +446,11 @@ public class ZkCLI implements CLIO {
           if (zkClient.exists(path, true)) {
             zkClient.setData(path, data, true);
           } else {
-            zkClient.create(path, data, CreateMode.PERSISTENT, true);
+            if (!ZkController.checkChrootPath(zkServerAddress, true)) {
+              stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
+              System.exit(1);
+            }
+            zkClient.makePath(path, data, CreateMode.PERSISTENT, true);
           }
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(GET)) {
           List<String> arglist = line.getArgList();
@@ -456,6 +479,10 @@ public class ZkCLI implements CLIO {
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(CLUSTERPROP)) {
           if (!line.hasOption(NAME)) {
             stdout.println("-" + NAME + " is required for " + CLUSTERPROP);
+          }
+          if (!ZkController.checkChrootPath(zkServerAddress, true)) {
+            stdout.println("A chroot was specified in zkHost but the znode doesn't exist. ");
+            System.exit(1);
           }
           String propertyName = line.getOptionValue(NAME);
           // If -val option is missing, we will use the null value. This is required to maintain

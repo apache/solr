@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.addExceptionToNamedList;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.logFailedOperation;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -49,7 +51,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -81,6 +82,7 @@ public class DistributedCollectionConfigSetCommandRunner {
   private static final String ZK_ASYNC_ROOT = ZK_DISTRIBUTED_API_ROOT + "/async";
 
   private final ExecutorService distributedCollectionApiExecutorService;
+
   /**
    * All Collection API commands are executed as if they are asynchronous to stick to the same
    * behavior as the Overseer based Collection API execution. The difference between sync and async
@@ -275,10 +277,9 @@ public class DistributedCollectionConfigSetCommandRunner {
     // Happens either in the CollectionCommandRunner below or in the catch when the runner would not
     // execute.
     if (!asyncTaskTracker.createNewAsyncJobTracker(asyncId)) {
-      NamedList<Object> resp = new NamedList<>();
-      resp.add("error", "Task with the same requestid already exists. (" + asyncId + ")");
-      resp.add(CoreAdminParams.REQUESTID, asyncId);
-      return new OverseerSolrResponse(resp);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Task with the same requestid already exists. (" + asyncId + ")");
     }
 
     CollectionCommandRunner commandRunner = new CollectionCommandRunner(message, action, asyncId);
@@ -452,18 +453,8 @@ public class DistributedCollectionConfigSetCommandRunner {
         if (e instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
-        // Output some error logs
-        if (collName == null) {
-          log.error("Operation {} failed", action, e);
-        } else {
-          log.error("Collection {}}, operation {} failed", collName, action, e);
-        }
-
-        results.add("Operation " + action + " caused exception:", e);
-        SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
-        nl.add("msg", e.getMessage());
-        nl.add("rspCode", e instanceof SolrException ? ((SolrException) e).code() : -1);
-        results.add("exception", nl);
+        logFailedOperation(action, e, collName);
+        addExceptionToNamedList(action, e, results);
       }
 
       OverseerSolrResponse res = new OverseerSolrResponse(results);

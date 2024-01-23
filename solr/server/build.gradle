@@ -37,7 +37,9 @@ configurations {
 }
 
 dependencies {
-  serverLib 'org.eclipse.jetty:jetty-deploy'
+  serverLib('org.eclipse.jetty:jetty-deploy', {
+    exclude group: "org.awaitility", module: "awaitility"
+  })
   serverLib 'org.eclipse.jetty:jetty-http'
   serverLib 'org.eclipse.jetty:jetty-io'
   serverLib 'org.eclipse.jetty:jetty-jmx'
@@ -67,6 +69,7 @@ dependencies {
   libExt 'org.apache.logging.log4j:log4j-1.2-api'
   libExt 'org.apache.logging.log4j:log4j-api'
   libExt 'org.apache.logging.log4j:log4j-core'
+  libExt 'org.apache.logging.log4j:log4j-jul'
   libExt 'org.apache.logging.log4j:log4j-layout-template-json'
   libExt 'org.apache.logging.log4j:log4j-slf4j2-impl'
   libExt 'org.apache.logging.log4j:log4j-web'

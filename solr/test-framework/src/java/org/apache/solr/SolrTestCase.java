@@ -33,6 +33,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.tests.util.VerifyTestClassNamingConvention;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
@@ -85,9 +86,6 @@ public class SolrTestCase extends LuceneTestCase {
       RuleChain.outerRule(new SystemPropertiesRestoreRule())
           .around(
               new VerifyTestClassNamingConvention(
-                  "org.apache.solr.analytics", NAMING_CONVENTION_TEST_SUFFIX))
-          .around(
-              new VerifyTestClassNamingConvention(
                   "org.apache.solr.ltr", NAMING_CONVENTION_TEST_PREFIX))
           .around(new RevertDefaultThreadHandlerRule())
           .around(
@@ -121,7 +119,7 @@ public class SolrTestCase extends LuceneTestCase {
   @BeforeClass
   public static void beforeSolrTestCase() {
     final String existingValue =
-        System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
+        EnvUtils.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
     if (null != existingValue) {
       log.info(
           "Test env includes configset dir system property '{}'='{}'",

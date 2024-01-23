@@ -27,6 +27,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
@@ -74,7 +75,9 @@ import org.apache.solr.schema.LongValueFieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SortableTextField;
 import org.apache.solr.schema.StrField;
+import org.apache.solr.search.DocValuesIteratorCache;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SyntaxError;
 import org.slf4j.Logger;
@@ -99,6 +102,14 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   public static final int DEFAULT_BATCH_SIZE = 30000;
   public static final int DEFAULT_QUEUE_SIZE = 150000;
+  private static final FieldWriter EMPTY_FIELD_WRITER =
+      new FieldWriter() {
+        @Override
+        public boolean write(
+            SortDoc sortDoc, LeafReaderContext readerContext, EntryWriter out, int fieldIndex) {
+          return false;
+        }
+      };
 
   private OutputStreamWriter respWriter;
   final SolrQueryRequest req;
@@ -112,7 +123,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   private int priorityQueueSize;
   StreamExpression streamExpression;
   StreamContext streamContext;
-  FieldWriter[] fieldWriters;
+  List<FieldWriter> fieldWriters;
   int totalHits = 0;
   FixedBitSet[] sets = null;
   PushWriter writer;
@@ -284,7 +295,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
 
     try {
-      fieldWriters = getFieldWriters(fields, req.getSearcher());
+      fieldWriters = getFieldWriters(fields, req);
     } catch (Exception e) {
       writeException(e, writer, true);
       return;
@@ -464,7 +475,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   void writeDoc(
-      SortDoc sortDoc, List<LeafReaderContext> leaves, EntryWriter ew, FieldWriter[] writers)
+      SortDoc sortDoc, List<LeafReaderContext> leaves, EntryWriter ew, List<FieldWriter> writers)
       throws IOException {
     int ord = sortDoc.ord;
     LeafReaderContext context = leaves.get(ord);
@@ -476,77 +487,89 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
-  public FieldWriter[] getFieldWriters(String[] fields, SolrIndexSearcher searcher)
+  public List<FieldWriter> getFieldWriters(String[] fields, SolrQueryRequest req)
       throws IOException {
-    IndexSchema schema = searcher.getSchema();
-    FieldWriter[] writers = new FieldWriter[fields.length];
-    for (int i = 0; i < fields.length; i++) {
-      String field = fields[i];
-      SchemaField schemaField = null;
+    DocValuesIteratorCache dvIterCache = new DocValuesIteratorCache(req.getSearcher(), false);
 
-      try {
-        schemaField = schema.getField(field);
-      } catch (Exception e) {
-        throw new IOException(e);
+    SolrReturnFields solrReturnFields = new SolrReturnFields(fields, req);
+
+    List<FieldWriter> writers = new ArrayList<>();
+    for (String field : req.getSearcher().getFieldNames()) {
+      if (!solrReturnFields.wantsField(field)) {
+        continue;
       }
-
+      SchemaField schemaField = req.getSchema().getField(field);
       if (!schemaField.hasDocValues()) {
         throw new IOException(schemaField + " must have DocValues to use this feature.");
       }
       boolean multiValued = schemaField.multiValued();
       FieldType fieldType = schemaField.getType();
+      FieldWriter writer;
 
-      if (fieldType instanceof SortableTextField && schemaField.useDocValuesAsStored() == false) {
-        throw new IOException(
-            schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
+      if (fieldType instanceof SortableTextField && !schemaField.useDocValuesAsStored()) {
+        if (solrReturnFields.getRequestedFieldNames() != null
+            && solrReturnFields.getRequestedFieldNames().contains(field)) {
+          // Explicitly requested field cannot be used due to not having useDocValuesAsStored=true,
+          // throw exception
+          throw new IOException(
+              schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
+        } else {
+          // Glob pattern matched field cannot be used due to not having useDocValuesAsStored=true
+          continue;
+        }
       }
 
-      if (fieldType instanceof IntValueFieldType) {
+      DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache = dvIterCache.getSupplier(field);
+
+      if (docValuesCache == null) {
+        writer = EMPTY_FIELD_WRITER;
+      } else if (fieldType instanceof IntValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
+          writer = new MultiFieldWriter(field, fieldType, schemaField, true, docValuesCache);
         } else {
-          writers[i] = new IntFieldWriter(field);
+          writer = new IntFieldWriter(field, docValuesCache);
         }
       } else if (fieldType instanceof LongValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
+          writer = new MultiFieldWriter(field, fieldType, schemaField, true, docValuesCache);
         } else {
-          writers[i] = new LongFieldWriter(field);
+          writer = new LongFieldWriter(field, docValuesCache);
         }
       } else if (fieldType instanceof FloatValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
+          writer = new MultiFieldWriter(field, fieldType, schemaField, true, docValuesCache);
         } else {
-          writers[i] = new FloatFieldWriter(field);
+          writer = new FloatFieldWriter(field, docValuesCache);
         }
       } else if (fieldType instanceof DoubleValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
+          writer = new MultiFieldWriter(field, fieldType, schemaField, true, docValuesCache);
         } else {
-          writers[i] = new DoubleFieldWriter(field);
+          writer = new DoubleFieldWriter(field, docValuesCache);
         }
       } else if (fieldType instanceof StrField || fieldType instanceof SortableTextField) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false);
+          writer = new MultiFieldWriter(field, fieldType, schemaField, false, docValuesCache);
         } else {
-          writers[i] = new StringFieldWriter(field, fieldType);
+          writer = new StringFieldWriter(field, fieldType, docValuesCache);
         }
       } else if (fieldType instanceof DateValueFieldType) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, false);
+          writer = new MultiFieldWriter(field, fieldType, schemaField, false, docValuesCache);
         } else {
-          writers[i] = new DateFieldWriter(field);
+          writer = new DateFieldWriter(field, docValuesCache);
         }
       } else if (fieldType instanceof BoolField) {
         if (multiValued) {
-          writers[i] = new MultiFieldWriter(field, fieldType, schemaField, true);
+          writer = new MultiFieldWriter(field, fieldType, schemaField, true, docValuesCache);
         } else {
-          writers[i] = new BoolFieldWriter(field, fieldType);
+          writer = new BoolFieldWriter(field, fieldType, docValuesCache);
         }
       } else {
         throw new IOException(
             "Export fields must be one of the following types: int,float,long,double,string,date,boolean,SortableText");
       }
+      writers.add(writer);
     }
     return writers;
   }

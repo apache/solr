@@ -41,12 +41,17 @@
       "description": "Workaround for https://github.com/renovatebot/renovate/issues/19226",
       "matchPackageNames": ["solr:modules", "HH:mm"],
       "enabled": false
+    },
+    {
+      "description": "Lucene dependencies should be skipped",
+      "matchPackageNames": ["org.apache.lucene"],
+      "enabled": false
     }
   ],
   "schedule": [
-    "* * * * 0"
+    "* * * * *"
   ],
-  "prConcurrentLimit": 30,
+  "prConcurrentLimit": 50,
   "prHourlyLimit": 10,
   "stabilityDays": 5
 }

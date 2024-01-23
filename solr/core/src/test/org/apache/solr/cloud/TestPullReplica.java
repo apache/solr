@@ -128,7 +128,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   @Repeat(iterations = 30)
   public void testCreateDelete() throws Exception {
     try {
-      switch (2 /*random().nextInt(3)*/) {
+      switch (random().nextInt(3)) {
         case 0:
           // Sometimes use SolrJ
           CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1, 0, 3)
@@ -867,11 +867,11 @@ public class TestPullReplica extends SolrCloudTestCase {
         url =
             String.format(
                 Locale.ROOT,
-                "%s/____v2/c/%s/shards",
+                "%s/____v2/collections/%s/shards/%s/replicas",
                 cluster.getRandomJetty(random()).getBaseUrl(),
-                collectionName);
-        String requestBody =
-            String.format(Locale.ROOT, "{add-replica:{shard:%s, type:%s}}", shardName, type);
+                collectionName,
+                shardName);
+        String requestBody = String.format(Locale.ROOT, "{\"type\": \"%s\"}", type);
         HttpPost addReplicaPost = new HttpPost(url);
         addReplicaPost.setHeader("Content-type", "application/json");
         addReplicaPost.setEntity(new StringEntity(requestBody));

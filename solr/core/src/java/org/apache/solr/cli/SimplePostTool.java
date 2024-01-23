@@ -36,7 +36,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -66,6 +65,8 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RTimer;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -76,12 +77,14 @@ import org.xml.sax.SAXException;
  * A simple utility class for posting raw updates to a Solr server. It has a main method, so it can
  * be run on the command line. View this not as a best-practice code example, but as a standalone
  * example built with an explicit purpose of not having external jar dependencies.
+ *
+ * @deprecated This class is being replaced with bin/solr tool. Please use {@link PostTool} instead.
  */
+@Deprecated(since = "9.2")
 public class SimplePostTool {
   private static final String DEFAULT_POST_HOST = "localhost";
   private static final String DEFAULT_POST_PORT = "8983";
-  private static final String VERSION_OF_THIS_TOOL =
-      "5.0.0"; // TODO: hardcoded for now, but eventually to sync with actual Solr version
+  private static final String VERSION_OF_THIS_TOOL = SolrVersion.LATEST_STRING;
 
   private static final String DEFAULT_COMMIT = "yes";
   private static final String DEFAULT_OPTIMIZE = "no";
@@ -90,8 +93,8 @@ public class SimplePostTool {
   private static final String DEFAULT_RECURSIVE = "0";
   private static final int DEFAULT_WEB_DELAY = 10;
   private static final int MAX_WEB_DEPTH = 10;
-  private static final String DEFAULT_CONTENT_TYPE = "application/xml";
-  private static final String DEFAULT_FILE_TYPES =
+  public static final String DEFAULT_CONTENT_TYPE = "application/json";
+  public static final String DEFAULT_FILE_TYPES =
       "xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log";
   private static final String BASIC_AUTH = "basicauth";
 
@@ -101,12 +104,15 @@ public class SimplePostTool {
   static final String DATA_MODE_WEB = "web";
   static final String DEFAULT_DATA_MODE = DATA_MODE_FILES;
 
+  static final String FORMAT_SOLR = "solr";
+
   // Input args
   boolean auto = false;
   int recursive = 0;
   int delay = 0;
   String fileTypes;
   URL solrUrl;
+  String credentials;
   OutputStream out = null;
   String type;
   String format;
@@ -141,7 +147,7 @@ public class SimplePostTool {
     mimeMap.put("xml", "application/xml");
     mimeMap.put("csv", "text/csv");
     mimeMap.put("json", "application/json");
-    mimeMap.put("jsonl", "application/json");
+    mimeMap.put("jsonl", "application/jsonl");
     mimeMap.put("pdf", "application/pdf");
     mimeMap.put("rtf", "text/rtf");
     mimeMap.put("html", "text/html");
@@ -198,8 +204,12 @@ public class SimplePostTool {
       return;
     }
 
-    if (commit) commit();
-    if (optimize) optimize();
+    if (commit) {
+      commit();
+    }
+    if (optimize) {
+      optimize();
+    }
     displayTiming((long) timer.getTime());
   }
 
@@ -230,7 +240,6 @@ public class SimplePostTool {
       }
 
       String params = System.getProperty("params", "");
-
       String host = System.getProperty("host", DEFAULT_POST_HOST);
       String port = System.getProperty("port", DEFAULT_POST_PORT);
       String core = System.getProperty("c");
@@ -244,15 +253,20 @@ public class SimplePostTool {
       if (urlStr == null) {
         urlStr = String.format(Locale.ROOT, "http://%s:%s/solr/%s/update", host, port, core);
       }
+
       urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
       String user = null;
+      String credentials = null;
       if (url.getUserInfo() != null && url.getUserInfo().trim().length() > 0) {
         user = url.getUserInfo().split(":")[0];
       } else if (System.getProperty(BASIC_AUTH) != null) {
         user = System.getProperty(BASIC_AUTH).trim().split(":")[0];
+        credentials = System.getProperty(BASIC_AUTH).trim();
       }
-      if (user != null) info("Basic Authentication enabled, user=" + user);
+      if (user != null) {
+        info("Basic Authentication enabled, user=" + user);
+      }
 
       boolean auto = isOn(System.getProperty("auto", DEFAULT_AUTO));
       String type = System.getProperty("type");
@@ -263,7 +277,9 @@ public class SimplePostTool {
       try {
         recursive = Integer.parseInt(r);
       } catch (Exception e) {
-        if (isOn(r)) recursive = DATA_MODE_WEB.equals(mode) ? 1 : 999;
+        if (isOn(r)) {
+          recursive = DATA_MODE_WEB.equals(mode) ? 1 : 999;
+        }
       }
       // Delay
       int delay = DATA_MODE_WEB.equals(mode) ? DEFAULT_WEB_DELAY : 0;
@@ -277,7 +293,19 @@ public class SimplePostTool {
       boolean optimize = isOn(System.getProperty("optimize", DEFAULT_OPTIMIZE));
 
       return new SimplePostTool(
-          mode, url, auto, type, format, recursive, delay, fileTypes, out, commit, optimize, args);
+          mode,
+          url,
+          credentials,
+          auto,
+          type,
+          format,
+          recursive,
+          delay,
+          fileTypes,
+          out,
+          commit,
+          optimize,
+          args);
     } catch (MalformedURLException e) {
       fatal("System Property 'url' is not a valid URL: " + urlStr);
       return null;
@@ -303,6 +331,7 @@ public class SimplePostTool {
   public SimplePostTool(
       String mode,
       URL url,
+      String credentials,
       boolean auto,
       String type,
       String format,
@@ -315,6 +344,7 @@ public class SimplePostTool {
       String[] args) {
     this.mode = mode;
     this.solrUrl = url;
+    this.credentials = credentials;
     this.auto = auto;
     this.type = type;
     this.format = format;
@@ -343,9 +373,12 @@ public class SimplePostTool {
               + solrUrl
               + (!auto ? " using content-type " + (type == null ? DEFAULT_CONTENT_TYPE : type) : "")
               + "...");
-      if (auto) info("Entering auto mode. File endings considered are " + fileTypes);
-      if (recursive > 0)
+      if (auto) {
+        info("Entering auto mode. File endings considered are " + fileTypes);
+      }
+      if (recursive > 0) {
         info("Entering recursive mode, max depth=" + recursive + ", delay=" + delay + "s");
+      }
       int numFilesPosted = postFiles(args, 0, out, type);
       info(numFilesPosted + " files indexed.");
     }
@@ -382,9 +415,10 @@ public class SimplePostTool {
           recursive = MAX_WEB_DEPTH;
           warn("Too large recursion depth for web mode, limiting to " + MAX_WEB_DEPTH + "...");
         }
-        if (delay < DEFAULT_WEB_DELAY)
+        if (delay < DEFAULT_WEB_DELAY) {
           warn(
               "Never crawl an external web site faster than every 10 seconds, your IP will probably be blocked");
+        }
         info("Entering recursive mode, depth=" + recursive + ", delay=" + delay + "s");
       }
       numPagesPosted = postWebPages(args, 0, out);
@@ -392,7 +426,6 @@ public class SimplePostTool {
     } catch (MalformedURLException e) {
       fatal("Wrong URL trying to append /extract to " + solrUrl);
     }
-    return;
   }
 
   private void doStdinMode() {
@@ -425,8 +458,8 @@ public class SimplePostTool {
             + ")\n"
             + "  -Dtype=<content-type> (default="
             + DEFAULT_CONTENT_TYPE
-            + ")\n"
             + "  -Dhost=<host> (default: "
+            + ")\n"
             + DEFAULT_POST_HOST
             + ")\n"
             + "  -Dport=<port> (default: "
@@ -502,14 +535,7 @@ public class SimplePostTool {
     int filesPosted = 0;
     for (int j = startIndexInArgs; j < args.length; j++) {
       File srcFile = new File(args[j]);
-      boolean isValidPath = checkIsValidPath(srcFile);
-      if (isValidPath && srcFile.isDirectory() && srcFile.canRead()) {
-        filesPosted += postDirectory(srcFile, out, type);
-      } else if (isValidPath && srcFile.isFile() && srcFile.canRead()) {
-        filesPosted += postFiles(new File[] {srcFile}, out, type);
-      } else {
-        filesPosted += handleGlob(srcFile, out, type);
-      }
+      filesPosted = getFilesPosted(out, type, srcFile);
     }
     return filesPosted;
   }
@@ -527,14 +553,20 @@ public class SimplePostTool {
     reset();
     int filesPosted = 0;
     for (File srcFile : files) {
-      boolean isValidPath = checkIsValidPath(srcFile);
-      if (isValidPath && srcFile.isDirectory() && srcFile.canRead()) {
-        filesPosted += postDirectory(srcFile, out, type);
-      } else if (isValidPath && srcFile.isFile() && srcFile.canRead()) {
-        filesPosted += postFiles(new File[] {srcFile}, out, type);
-      } else {
-        filesPosted += handleGlob(srcFile, out, type);
-      }
+      filesPosted = getFilesPosted(out, type, srcFile);
+    }
+    return filesPosted;
+  }
+
+  private int getFilesPosted(final OutputStream out, final String type, final File srcFile) {
+    int filesPosted = 0;
+    boolean isValidPath = checkIsValidPath(srcFile);
+    if (isValidPath && srcFile.isDirectory() && srcFile.canRead()) {
+      filesPosted += postDirectory(srcFile, out, type);
+    } else if (isValidPath && srcFile.isFile() && srcFile.canRead()) {
+      filesPosted += postFiles(new File[] {srcFile}, out, type);
+    } else {
+      filesPosted += handleGlob(srcFile, out, type);
     }
     return filesPosted;
   }
@@ -545,7 +577,9 @@ public class SimplePostTool {
    * @return number of files posted total
    */
   private int postDirectory(File dir, OutputStream out, String type) {
-    if (dir.isHidden() && !dir.getName().equals(".")) return (0);
+    if (dir.isHidden() && !dir.getName().equals(".")) {
+      return (0);
+    }
     info(
         "Indexing directory "
             + dir.getPath()
@@ -577,7 +611,9 @@ public class SimplePostTool {
     int filesPosted = 0;
     for (File srcFile : files) {
       try {
-        if (!srcFile.isFile() || srcFile.isHidden()) continue;
+        if (!srcFile.isFile() || srcFile.isHidden()) {
+          continue;
+        }
         postFile(srcFile, out, type);
         Thread.sleep(delay * 1000L);
         filesPosted++;
@@ -599,7 +635,9 @@ public class SimplePostTool {
   int handleGlob(File globFile, OutputStream out, String type) {
     int filesPosted = 0;
     File parent = globFile.getParentFile();
-    if (parent == null) parent = new File(".");
+    if (parent == null) {
+      parent = new File(".");
+    }
     String fileGlob = globFile.getName();
     GlobFileFilter ff = new GlobFileFilter(fileGlob, false);
     File[] fileList = parent.listFiles(ff);
@@ -642,9 +680,15 @@ public class SimplePostTool {
    * @return the normalized URL string
    */
   protected static String normalizeUrlEnding(String link) {
-    if (link.contains("#")) link = link.substring(0, link.indexOf('#'));
-    if (link.endsWith("?")) link = link.substring(0, link.length() - 1);
-    if (link.endsWith("/")) link = link.substring(0, link.length() - 1);
+    if (link.contains("#")) {
+      link = link.substring(0, link.indexOf('#'));
+    }
+    if (link.endsWith("?")) {
+      link = link.substring(0, link.length() - 1);
+    }
+    if (link.endsWith("/")) {
+      link = link.substring(0, link.length() - 1);
+    }
     return link;
   }
 
@@ -731,37 +775,6 @@ public class SimplePostTool {
     return numPages;
   }
 
-  public static class BAOS extends ByteArrayOutputStream {
-    public ByteBuffer getByteBuffer() {
-      return ByteBuffer.wrap(super.buf, 0, super.count);
-    }
-  }
-
-  public static ByteBuffer inputStreamToByteArray(InputStream is) throws IOException {
-    return inputStreamToByteArray(is, Integer.MAX_VALUE);
-  }
-
-  /**
-   * Reads an input stream into a byte array
-   *
-   * @param is the input stream
-   * @return the byte array
-   * @throws IOException If there is a low-level I/O error.
-   */
-  public static ByteBuffer inputStreamToByteArray(InputStream is, long maxSize) throws IOException {
-    try (BAOS bos = new BAOS()) {
-      long sz = 0;
-      int next = is.read();
-      while (next > -1) {
-        if (++sz > maxSize) throw new BufferOverflowException();
-        bos.write(next);
-        next = is.read();
-      }
-      bos.flush();
-      return bos.getByteBuffer();
-    }
-  }
-
   /**
    * Computes the full URL based on a base url and a possibly relative link found in the href param
    * of an HTML anchor.
@@ -785,7 +798,9 @@ public class SimplePostTool {
         if (!path.endsWith("/")) {
           int sep = path.lastIndexOf('/');
           String file = path.substring(sep + 1);
-          if (file.contains(".") || file.contains("?")) path = path.substring(0, sep);
+          if (file.contains(".") || file.contains("?")) {
+            path = path.substring(0, sep);
+          }
         }
         link = baseUrl.getProtocol() + "://" + baseUrl.getAuthority() + path + "/" + link;
       }
@@ -809,7 +824,9 @@ public class SimplePostTool {
   protected boolean typeSupported(String type) {
     for (Map.Entry<String, String> entry : mimeMap.entrySet()) {
       if (entry.getValue().equals(type)) {
-        if (fileTypes.contains(entry.getKey())) return true;
+        if (fileTypes.contains(entry.getKey())) {
+          return true;
+        }
       }
     }
     return false;
@@ -860,7 +877,9 @@ public class SimplePostTool {
   public static String appendParam(String url, String param) {
     String[] pa = param.split("&");
     for (String p : pa) {
-      if (p.trim().length() == 0) continue;
+      if (p.trim().length() == 0) {
+        continue;
+      }
       String[] kv = p.split("=");
       if (kv.length == 2) {
         url = url + (url.contains("?") ? "&" : "?") + kv[0] + "=" + kv[1];
@@ -884,7 +903,7 @@ public class SimplePostTool {
         // TODO: Add a flag that disables /update and sends all to /update/extract, to avoid CSV,
         // JSON, and XML files
         // TODO: from being interpreted as Solr documents internally
-        if (type.equals("application/json") && !"solr".equals(format)) {
+        if (type.equals("application/json") && !FORMAT_SOLR.equals(format)) {
           suffix = "/json/docs";
           String urlStr = appendUrlPath(solrUrl, suffix).toString();
           url = new URL(urlStr);
@@ -896,18 +915,22 @@ public class SimplePostTool {
           // SolrCell
           suffix = "/extract";
           String urlStr = appendUrlPath(solrUrl, suffix).toString();
-          if (!urlStr.contains("resource.name"))
+          if (!urlStr.contains("resource.name")) {
             urlStr =
                 appendParam(
                     urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
-          if (!urlStr.contains("literal.id"))
+          }
+          if (!urlStr.contains("literal.id")) {
             urlStr =
                 appendParam(
                     urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
+          }
           url = new URL(urlStr);
         }
       } else {
-        if (type == null) type = DEFAULT_CONTENT_TYPE;
+        if (type == null) {
+          type = DEFAULT_CONTENT_TYPE;
+        }
       }
       info(
           "POSTing file "
@@ -922,7 +945,9 @@ public class SimplePostTool {
       warn("Can't open/read file: " + file);
     } finally {
       try {
-        if (is != null) is.close();
+        if (is != null) {
+          is.close();
+        }
       } catch (IOException e) {
         fatal("IOException while closing file: " + e);
       }
@@ -972,7 +997,9 @@ public class SimplePostTool {
   /** Performs a simple get on the given URL */
   public void doGet(URL url) {
     try {
-      if (mockMode) return;
+      if (mockMode) {
+        return;
+      }
       HttpURLConnection urlc = (HttpURLConnection) url.openConnection();
       basicAuth(urlc);
       urlc.connect();
@@ -991,30 +1018,35 @@ public class SimplePostTool {
    */
   public boolean postData(
       InputStream data, Long length, OutputStream output, String type, URL url) {
-    if (mockMode) return true;
+    if (mockMode) {
+      return true;
+    }
+
     boolean success = true;
-    if (type == null) type = DEFAULT_CONTENT_TYPE;
-    HttpURLConnection urlc = null;
+    if (type == null) {
+      type = DEFAULT_CONTENT_TYPE;
+    }
+    HttpURLConnection urlConnection = null;
     try {
       try {
-        urlc = (HttpURLConnection) url.openConnection();
+        urlConnection = (HttpURLConnection) url.openConnection();
         try {
-          urlc.setRequestMethod("POST");
+          urlConnection.setRequestMethod("POST");
         } catch (ProtocolException e) {
           fatal("Shouldn't happen: HttpURLConnection doesn't support POST??" + e);
         }
-        urlc.setDoOutput(true);
-        urlc.setDoInput(true);
-        urlc.setUseCaches(false);
-        urlc.setAllowUserInteraction(false);
-        urlc.setRequestProperty("Content-type", type);
-        basicAuth(urlc);
+        urlConnection.setDoOutput(true);
+        urlConnection.setDoInput(true);
+        urlConnection.setUseCaches(false);
+        urlConnection.setAllowUserInteraction(false);
+        urlConnection.setRequestProperty("Content-type", type);
+        basicAuth(urlConnection);
         if (null != length) {
-          urlc.setFixedLengthStreamingMode(length);
+          urlConnection.setFixedLengthStreamingMode(length);
         } else {
-          urlc.setChunkedStreamingMode(-1); // use JDK default chunkLen, 4k in Java 8.
+          urlConnection.setChunkedStreamingMode(-1); // use JDK default chunkLen, 4k in Java 8.
         }
-        urlc.connect();
+        urlConnection.connect();
       } catch (IOException e) {
         fatal("Connection error (is Solr running at " + solrUrl + " ?): " + e);
         success = false;
@@ -1022,15 +1054,15 @@ public class SimplePostTool {
         fatal("POST failed with error " + e.getMessage());
       }
 
-      try (final OutputStream out = urlc.getOutputStream()) {
+      try (final OutputStream out = urlConnection.getOutputStream()) {
         pipe(data, out);
       } catch (IOException e) {
         fatal("IOException while posting data: " + e);
       }
 
       try {
-        success &= checkResponseCode(urlc);
-        try (final InputStream in = urlc.getInputStream()) {
+        success &= checkResponseCode(urlConnection);
+        try (final InputStream in = urlConnection.getInputStream()) {
           pipe(in, output);
         }
       } catch (IOException e) {
@@ -1041,24 +1073,28 @@ public class SimplePostTool {
             "Looks like Solr is secured and would not let us in. Try with another user in '-u' parameter");
       }
     } finally {
-      if (urlc != null) urlc.disconnect();
+      if (urlConnection != null) {
+        urlConnection.disconnect();
+      }
     }
     return success;
   }
 
-  private static void basicAuth(HttpURLConnection urlc) throws Exception {
+  private void basicAuth(HttpURLConnection urlc) throws Exception {
     if (urlc.getURL().getUserInfo() != null) {
       String encoding =
           Base64.getEncoder().encodeToString(urlc.getURL().getUserInfo().getBytes(US_ASCII));
       urlc.setRequestProperty("Authorization", "Basic " + encoding);
-    } else if (System.getProperty(BASIC_AUTH) != null) {
-      String basicauth = System.getProperty(BASIC_AUTH).trim();
-      if (!basicauth.contains(":")) {
-        throw new Exception("System property '" + BASIC_AUTH + "' must be of format user:pass");
+    } else if (credentials != null) {
+      if (!credentials.contains(":")) {
+        throw new Exception("credentials '" + credentials + "' must be of format user:pass");
       }
+      // urlc.setRequestProperty(
+      //    "Authorization",
+      //    "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(UTF_8)));
       urlc.setRequestProperty(
           "Authorization",
-          "Basic " + Base64.getEncoder().encodeToString(basicauth.getBytes(UTF_8)));
+          "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(UTF_8)));
     }
   }
 
@@ -1124,15 +1160,22 @@ public class SimplePostTool {
     byte[] buf = new byte[1024];
     int read = 0;
     while ((read = source.read(buf)) >= 0) {
-      if (null != dest) dest.write(buf, 0, read);
+      if (null != dest) {
+        dest.write(buf, 0, read);
+      }
     }
-    if (null != dest) dest.flush();
+    if (null != dest) {
+      dest.flush();
+    }
   }
 
   public FileFilter getFileFilterFromFileTypes(String fileTypes) {
     String glob;
-    if (fileTypes.equals("*")) glob = ".*";
-    else glob = "^.*\\.(" + fileTypes.replace(",", "|") + ")$";
+    if (fileTypes.equals("*")) {
+      glob = ".*";
+    } else {
+      glob = "^.*\\.(" + fileTypes.replace(",", "|") + ")$";
+    }
     return new GlobFileFilter(glob, true);
   }
 
@@ -1163,7 +1206,9 @@ public class SimplePostTool {
     if (nodes.getLength() > 0) {
       for (int i = 0; i < nodes.getLength(); i++) {
         sb.append(nodes.item(i).getNodeValue()).append(' ');
-        if (!concatAll) break;
+        if (!concatAll) {
+          break;
+        }
       }
       return sb.toString().trim();
     } else return "";
@@ -1264,7 +1309,7 @@ public class SimplePostTool {
             }
 
             // Read into memory, so that we later can pull links from the page without re-fetching
-            res.content = inputStreamToByteArray(is);
+            res.content = Utils.toByteArray(is);
             is.close();
           } else {
             warn("Skipping URL with unsupported type " + type);
@@ -1339,11 +1384,12 @@ public class SimplePostTool {
      * @return a set of URIs parsed from the page
      */
     protected Set<URI> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {
-      Set<URI> l = new HashSet<>();
+      Set<URI> linksFromPage = new HashSet<>();
       URL url = null;
       try {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         URL extractUrl = new URL(appendParam(postUrl.toString(), "extractOnly=true"));
+        extractUrl = new URL(appendParam(extractUrl.toString(), "wt=xml"));
         boolean success = postData(is, null, os, type, extractUrl);
         if (success) {
           Document d = makeDom(os.toByteArray());
@@ -1353,10 +1399,12 @@ public class SimplePostTool {
           for (int i = 0; i < links.getLength(); i++) {
             String link = links.item(i).getTextContent();
             link = computeFullUrl(u, link);
-            if (link == null) continue;
+            if (link == null) {
+              continue;
+            }
             URI newUri = new URI(link);
             if (newUri.getAuthority() == null || !newUri.getAuthority().equals(u.getAuthority())) {
-              l.add(newUri);
+              linksFromPage.add(newUri);
             }
           }
         }
@@ -1368,7 +1416,7 @@ public class SimplePostTool {
         throw new RuntimeException(e);
       }
 
-      return l;
+      return linksFromPage;
     }
   }
 

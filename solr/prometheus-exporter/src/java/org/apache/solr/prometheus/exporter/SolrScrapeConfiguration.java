@@ -29,6 +29,8 @@ public class SolrScrapeConfiguration {
   private final ConnectionType type;
   private final String zookeeperConnectionString;
   private final String solrHost;
+  private String basicAuthUser;
+  private String basicAuthPwd;
 
   private SolrScrapeConfiguration(
       ConnectionType type, String zookeeperConnectionString, String solrHost) {
@@ -55,6 +57,20 @@ public class SolrScrapeConfiguration {
 
   public static SolrScrapeConfiguration standalone(String solrHost) {
     return new SolrScrapeConfiguration(ConnectionType.STANDALONE, null, solrHost);
+  }
+
+  public SolrScrapeConfiguration withBasicAuthCredentials(String user, String password) {
+    this.basicAuthUser = user;
+    this.basicAuthPwd = password;
+    return this;
+  }
+
+  public String getBasicAuthUser() {
+    return basicAuthUser;
+  }
+
+  public String getBasicAuthPwd() {
+    return basicAuthPwd;
   }
 
   @Override

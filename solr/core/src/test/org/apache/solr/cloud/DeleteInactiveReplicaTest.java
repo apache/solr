@@ -31,6 +31,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.TimeOut;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -45,8 +46,14 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
+  @AfterClass
+  public static void reset() {
+    System.setProperty("solr.deleteUnknownCores", "false");
+  }
+
   @Test
   public void deleteInactiveReplicaTest() throws Exception {
+    System.setProperty("solr.deleteUnknownCores", "true");
 
     String collectionName = "delDeadColl";
     int replicationFactor = 2;

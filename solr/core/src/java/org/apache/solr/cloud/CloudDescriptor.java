@@ -60,12 +60,7 @@ public class CloudDescriptor {
     this.nodeName = props.getProperty(CoreDescriptor.CORE_NODE_NAME);
     if (StrUtils.isNullOrEmpty(nodeName)) this.nodeName = null;
     this.numShards = PropertiesUtil.toInteger(props.getProperty(CloudDescriptor.NUM_SHARDS), null);
-    String replicaTypeStr = props.getProperty(CloudDescriptor.REPLICA_TYPE);
-    if (StrUtils.isNullOrEmpty(replicaTypeStr)) {
-      this.replicaType = Replica.Type.NRT;
-    } else {
-      this.replicaType = Replica.Type.valueOf(replicaTypeStr);
-    }
+    this.replicaType = Replica.Type.get(props.getProperty(CloudDescriptor.REPLICA_TYPE));
     for (String propName : props.stringPropertyNames()) {
       if (propName.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
         collectionParams.put(

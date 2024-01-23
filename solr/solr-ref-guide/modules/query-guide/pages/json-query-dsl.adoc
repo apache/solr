@@ -455,7 +455,7 @@ need to do this is if you are displaying filters for products (parents) with SKU
 options (children). Let's go on item by item:
 
 * _Filter exclusion_ is usually necessary when multiple filter values can be applied to each field.
-This is also also known as drill-sideways facets.
+This is also known as drill-sideways facets.
 See also xref:faceting.adoc#tagging-and-excluding-filters[tagging and filter exclusion].
 * _Nested documents_, or child documents, are described in xref:indexing-guide:indexing-nested-documents.adoc[].
 In the example below, they are referred as SKUs since this is a frequent use case for this feature.

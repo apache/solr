@@ -40,8 +40,6 @@ import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.beans.DeleteBackupPayload;
-import org.apache.solr.client.solrj.request.beans.ListBackupPayload;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -49,6 +47,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -447,9 +446,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         ImplicitDocRouter.NAME,
         null,
         checkNotNull("shards", shards),
-        numNrtReplicas,
-        numTlogReplicas,
-        numPullReplicas);
+        ReplicaCount.of(numNrtReplicas, numTlogReplicas, numPullReplicas));
   }
 
   /**
@@ -472,9 +469,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String shards;
     protected String routerField;
     protected Integer numShards;
-    protected Integer nrtReplicas;
-    protected Integer pullReplicas;
-    protected Integer tlogReplicas;
+    protected ReplicaCount numReplicas;
     protected Boolean perReplicaState;
 
     protected Properties properties;
@@ -495,9 +490,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
           null,
           numShards,
           null,
-          numNrtReplicas,
-          numTlogReplicas,
-          numPullReplicas);
+          ReplicaCount.of(numNrtReplicas, numTlogReplicas, numPullReplicas));
     }
 
     /**
@@ -511,9 +504,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
           ImplicitDocRouter.NAME,
           null,
           checkNotNull("shards", shards),
-          numNrtReplicas,
-          null,
-          null);
+          ReplicaCount.of(Replica.Type.NRT, numNrtReplicas));
     }
 
     private Create(
@@ -522,9 +513,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         String routerName,
         Integer numShards,
         String shards,
-        Integer numNrtReplicas,
-        Integer numTlogReplicas,
-        Integer numPullReplicas) {
+        ReplicaCount numReplicas) {
       super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
       // NOTE: there's very little we can assert about the args because nothing but "collection" is
       // required by the server
@@ -535,9 +524,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       this.routerName = routerName;
       this.numShards = numShards;
       this.setShards(shards);
-      this.nrtReplicas = numNrtReplicas;
-      this.tlogReplicas = numTlogReplicas;
-      this.pullReplicas = numPullReplicas;
+      this.numReplicas = numReplicas;
     }
 
     public Create setCreateNodeSet(String nodeSet) {
@@ -556,23 +543,24 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     }
 
     public Create setNrtReplicas(Integer nrtReplicas) {
-      this.nrtReplicas = nrtReplicas;
-      return this;
+      return setNumReplicas(Replica.Type.NRT, nrtReplicas);
     }
 
     public Create setTlogReplicas(Integer tlogReplicas) {
-      this.tlogReplicas = tlogReplicas;
-      return this;
+      return setNumReplicas(Replica.Type.TLOG, tlogReplicas);
     }
 
     public Create setPullReplicas(Integer pullReplicas) {
-      this.pullReplicas = pullReplicas;
+      return setNumReplicas(Replica.Type.PULL, pullReplicas);
+    }
+
+    public Create setNumReplicas(Replica.Type type, Integer count) {
+      this.numReplicas.put(type, count);
       return this;
     }
 
     public Create setReplicationFactor(Integer repl) {
-      this.nrtReplicas = repl;
-      return this;
+      return setNrtReplicas(repl);
     }
 
     public Create setRule(String... s) {
@@ -616,19 +604,23 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     }
 
     public Integer getReplicationFactor() {
-      return getNumNrtReplicas();
+      return getNumReplicas(Replica.Type.NRT);
     }
 
     public Integer getNumNrtReplicas() {
-      return nrtReplicas;
+      return getNumReplicas(Replica.Type.NRT);
     }
 
     public Integer getNumTlogReplicas() {
-      return tlogReplicas;
+      return getNumReplicas(Replica.Type.TLOG);
     }
 
     public Integer getNumPullReplicas() {
-      return pullReplicas;
+      return getNumReplicas(Replica.Type.PULL);
+    }
+
+    public Integer getNumReplicas(Replica.Type type) {
+      return numReplicas.get(type);
     }
 
     public Boolean getPerReplicaState() {
@@ -688,18 +680,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       if (routerField != null) {
         params.set("router.field", routerField);
       }
-      if (nrtReplicas != null) {
-        params.set(CollectionAdminParams.NRT_REPLICAS, nrtReplicas);
-      }
       if (properties != null) {
         addProperties(params, properties);
       }
-      if (pullReplicas != null) {
-        params.set(CollectionAdminParams.PULL_REPLICAS, pullReplicas);
-      }
-      if (tlogReplicas != null) {
-        params.set(CollectionAdminParams.TLOG_REPLICAS, tlogReplicas);
-      }
+      numReplicas.writeProps(params);
       if (Boolean.TRUE.equals(perReplicaState)) {
         params.set(CollectionAdminParams.PER_REPLICA_STATE, perReplicaState);
       }
@@ -1112,6 +1096,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected Optional<String> indexBackupStrategy = Optional.empty();
     protected boolean incremental = true;
     protected Optional<Integer> maxNumBackupPoints = Optional.empty();
+    protected boolean backupConfigset = true;
+    protected Properties extraProperties;
 
     public Backup(String collection, String name) {
       super(CollectionAction.BACKUP, collection);
@@ -1190,9 +1176,33 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return this;
     }
 
+    /**
+     * Indicates weather the Backup operation should also backup the configset files (such as
+     * schema.xml, solrconfig.xml. etc).
+     *
+     * <p>Note that the configset is needed to restore the collection, so only set this to false if
+     * you know the cluster will have the configset available before restoring.
+     *
+     * @param backupConfigset {@code true} if you want to backup configsets (default). {@code false}
+     *     to skip configset files.
+     * @return {@code this} builder
+     */
+    public Backup setBackupConfigset(boolean backupConfigset) {
+      this.backupConfigset = backupConfigset;
+      return this;
+    }
+
+    public Backup setExtraProperties(Properties extraProperties) {
+      this.extraProperties = extraProperties;
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      if (extraProperties != null) {
+        addProperties(params, extraProperties);
+      }
       params.set(CoreAdminParams.COLLECTION, collection);
       params.set(CoreAdminParams.NAME, name);
       params.set(CoreAdminParams.BACKUP_LOCATION, location); // note: optional
@@ -1209,6 +1219,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         params.set(CoreAdminParams.MAX_NUM_BACKUP_POINTS, maxNumBackupPoints.get());
       }
       params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
+      params.set(CoreAdminParams.BACKUP_CONFIGSET, backupConfigset);
       return params;
     }
   }
@@ -1226,9 +1237,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     // in common with collection creation:
     protected String configName;
     protected Integer replicationFactor;
-    protected Integer nrtReplicas;
-    protected Integer tlogReplicas;
-    protected Integer pullReplicas;
+    protected ReplicaCount numReplicas;
     protected Optional<String> createNodeSet = Optional.empty();
     protected Optional<Boolean> createNodeSetShuffle = Optional.empty();
     protected Properties properties;
@@ -1237,6 +1246,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     public Restore(String collection, String backupName) {
       super(CollectionAction.RESTORE, collection);
       this.backupName = backupName;
+      this.numReplicas = ReplicaCount.empty();
     }
 
     public String getLocation() {
@@ -1293,30 +1303,35 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     }
 
     public Integer getNrtReplicas() {
-      return nrtReplicas;
+      return getNumReplicas(Replica.Type.NRT);
     }
 
     public Restore setNrtReplicas(Integer nrtReplicas) {
-      this.nrtReplicas = nrtReplicas;
-      return this;
+      return setNumReplicas(Replica.Type.NRT, nrtReplicas);
     }
-    ;
 
     public Integer getTlogReplicas() {
-      return tlogReplicas;
+      return getNumReplicas(Replica.Type.TLOG);
     }
 
     public Restore setTlogReplicas(Integer tlogReplicas) {
-      this.tlogReplicas = tlogReplicas;
-      return this;
+      return setNumReplicas(Replica.Type.TLOG, tlogReplicas);
     }
 
     public Integer getPullReplicas() {
-      return pullReplicas;
+      return getNumReplicas(Replica.Type.PULL);
     }
 
     public Restore setPullReplicas(Integer pullReplicas) {
-      this.pullReplicas = pullReplicas;
+      return setNumReplicas(Replica.Type.PULL, pullReplicas);
+    }
+
+    public int getNumReplicas(Replica.Type type) {
+      return this.numReplicas.get(type);
+    }
+
+    public Restore setNumReplicas(Replica.Type type, Integer count) {
+      this.numReplicas.put(type, count);
       return this;
     }
 
@@ -1345,8 +1360,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return this;
     }
 
-    // TODO support rule, snitch
-
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1354,7 +1367,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       params.set(CoreAdminParams.NAME, backupName);
       params.set(CoreAdminParams.BACKUP_LOCATION, location); // note: optional
       params.set("collection.configName", configName); // note: optional
-      if (replicationFactor != null && nrtReplicas != null) {
+      if (replicationFactor != null && numReplicas.contains(Replica.Type.NRT)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Cannot set both replicationFactor and nrtReplicas as they mean the same thing");
@@ -1362,15 +1375,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       if (replicationFactor != null) {
         params.set(CollectionAdminParams.REPLICATION_FACTOR, replicationFactor);
       }
-      if (nrtReplicas != null) {
-        params.set(CollectionAdminParams.NRT_REPLICAS, nrtReplicas);
-      }
-      if (pullReplicas != null) {
-        params.set(CollectionAdminParams.PULL_REPLICAS, pullReplicas);
-      }
-      if (tlogReplicas != null) {
-        params.set(CollectionAdminParams.TLOG_REPLICAS, tlogReplicas);
-      }
+      numReplicas.writeProps(params);
       if (properties != null) {
         addProperties(params, properties);
       }
@@ -2147,6 +2152,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return java.util.List.of(ROUTER_TYPE_NAME, ROUTER_FIELD, ROUTER_START, ROUTER_INTERVAL);
     }
   }
+
   /**
    * Returns a SolrRequest to create a category routed alias.
    *
@@ -2405,8 +2411,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
   // ADDREPLICA request
   public static class AddReplica extends AsyncCollectionAdminRequest {
 
-    private static final String REPLICA_TYPE_PARAM = "type";
-
     protected String collection;
     protected String shard;
     protected String node;
@@ -2417,7 +2421,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     protected String ulogDir;
     protected Properties properties;
     protected Replica.Type type;
-    protected Integer nrtReplicas, tlogReplicas, pullReplicas;
+    protected ReplicaCount numReplicas;
     protected Boolean skipNodeAssignment;
     protected String createNodeSet;
 
@@ -2427,6 +2431,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       this.shard = shard;
       this.routeKey = routeKey;
       this.type = type;
+      this.numReplicas = ReplicaCount.empty();
     }
 
     public Properties getProperties() {
@@ -2504,29 +2509,35 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
     }
 
     public Integer getNrtReplicas() {
-      return nrtReplicas;
+      return getNumReplicas(Replica.Type.NRT);
     }
 
     public AddReplica setNrtReplicas(Integer nrtReplicas) {
-      this.nrtReplicas = nrtReplicas;
-      return this;
+      return setNumReplicas(Replica.Type.NRT, nrtReplicas);
     }
 
     public Integer getTlogReplicas() {
-      return tlogReplicas;
+      return getNumReplicas(Replica.Type.TLOG);
     }
 
     public AddReplica setTlogReplicas(Integer tlogReplicas) {
-      this.tlogReplicas = tlogReplicas;
-      return this;
+      return setNumReplicas(Replica.Type.TLOG, tlogReplicas);
     }
 
     public Integer getPullReplicas() {
-      return pullReplicas;
+      return getNumReplicas(Replica.Type.PULL);
     }
 
     public AddReplica setPullReplicas(Integer pullReplicas) {
-      this.pullReplicas = pullReplicas;
+      return setNumReplicas(Replica.Type.PULL, pullReplicas);
+    }
+
+    public int getNumReplicas(Replica.Type type) {
+      return this.numReplicas.get(type);
+    }
+
+    public AddReplica setNumReplicas(Replica.Type type, Integer count) {
+      this.numReplicas.put(type, count);
       return this;
     }
 
@@ -2569,20 +2580,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
         params.add(CoreAdminParams.NAME, coreName);
       }
       if (type != null) {
-        params.add(REPLICA_TYPE_PARAM, type.name());
+        params.add(CollectionAdminParams.REPLICA_TYPE, type.name());
       }
       if (properties != null) {
         addProperties(params, properties);
       }
-      if (nrtReplicas != null) {
-        params.add(CollectionAdminParams.NRT_REPLICAS, String.valueOf(nrtReplicas));
-      }
-      if (tlogReplicas != null) {
-        params.add(CollectionAdminParams.TLOG_REPLICAS, String.valueOf(tlogReplicas));
-      }
-      if (pullReplicas != null) {
-        params.add(CollectionAdminParams.PULL_REPLICAS, String.valueOf(pullReplicas));
-      }
+      numReplicas.writeProps(params);
       if (createNodeSet != null) {
         params.add(CREATE_NODE_SET_PARAM, createNodeSet);
       }
@@ -3068,13 +3071,18 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
    * "incremental=false" flag).
    */
   public static class DeleteBackup extends CollectionAdminRequest<CollectionAdminResponse> {
-    private final DeleteBackupPayload deleteBackupPayload;
+
+    private final String name;
+    private String repository;
+    private String location;
+    private Integer backupId;
+    private Integer maxNumBackupPoints;
+    private Boolean purgeUnused;
 
     private DeleteBackup(String backupName) {
       super(CollectionAction.DELETEBACKUP);
 
-      deleteBackupPayload = new DeleteBackupPayload();
-      deleteBackupPayload.name = backupName;
+      this.name = backupName;
     }
 
     /**
@@ -3082,7 +3090,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      *     information. Defaults to 'LocalFileSystemRepository' if not specified.
      */
     public DeleteBackup setRepositoryName(String backupRepository) {
-      deleteBackupPayload.repository = backupRepository;
+      this.repository = backupRepository;
       return this;
     }
 
@@ -3094,7 +3102,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      *     thrown.
      */
     public DeleteBackup setLocation(String backupLocation) {
-      deleteBackupPayload.location = backupLocation;
+      location = backupLocation;
       return this;
     }
 
@@ -3105,7 +3113,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @see #deleteBackupById(String, int)
      */
     protected DeleteBackup setBackupId(int backupId) {
-      deleteBackupPayload.backupId = backupId;
+      this.backupId = backupId;
       return this;
     }
 
@@ -3116,7 +3124,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @see #deleteBackupByRecency(String, int)
      */
     protected DeleteBackup setMaxNumBackupPoints(int backupPointsToRetain) {
-      deleteBackupPayload.maxNumBackupPoints = backupPointsToRetain;
+      this.maxNumBackupPoints = backupPointsToRetain;
       return this;
     }
 
@@ -3129,20 +3137,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      * @see #deleteBackupPurgeUnusedFiles(String)
      */
     protected DeleteBackup setPurgeUnused() {
-      deleteBackupPayload.purgeUnused = true;
+      this.purgeUnused = true;
       return this;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-      params.set(CoreAdminParams.NAME, deleteBackupPayload.name);
-      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, deleteBackupPayload.location);
-      params.setNonNull(BACKUP_REPOSITORY, deleteBackupPayload.repository);
-      params.setNonNull(CoreAdminParams.BACKUP_ID, deleteBackupPayload.backupId);
-      params.setNonNull(
-          CoreAdminParams.MAX_NUM_BACKUP_POINTS, deleteBackupPayload.maxNumBackupPoints);
-      params.setNonNull(CoreAdminParams.BACKUP_PURGE_UNUSED, deleteBackupPayload.purgeUnused);
+      params.set(CoreAdminParams.NAME, name);
+      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, location);
+      params.setNonNull(BACKUP_REPOSITORY, repository);
+      params.setNonNull(CoreAdminParams.BACKUP_ID, backupId);
+      params.setNonNull(CoreAdminParams.MAX_NUM_BACKUP_POINTS, maxNumBackupPoints);
+      params.setNonNull(CoreAdminParams.BACKUP_PURGE_UNUSED, purgeUnused);
       return params;
     }
 
@@ -3171,13 +3178,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
    * "incremental=false" flag).
    */
   public static class ListBackup extends CollectionAdminRequest<CollectionAdminResponse> {
-    private final ListBackupPayload listPayload;
+    private final String backupName;
+    private String location;
+    private String repositoryName;
 
     private ListBackup(String backupName) {
       super(CollectionAction.LISTBACKUP);
 
-      this.listPayload = new ListBackupPayload();
-      this.listPayload.name = backupName;
+      this.backupName = backupName;
     }
 
     /**
@@ -3185,7 +3193,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      *     information. Defaults to 'LocalFileSystemRepository' if not specified.
      */
     public ListBackup setBackupRepository(String backupRepository) {
-      listPayload.repository = backupRepository;
+      this.repositoryName = backupRepository;
       return this;
     }
 
@@ -3197,16 +3205,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
      *     thrown.
      */
     public ListBackup setBackupLocation(String backupLocation) {
-      listPayload.location = backupLocation;
+      this.location = backupLocation;
       return this;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-      params.set(CoreAdminParams.NAME, listPayload.name);
-      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, listPayload.location);
-      params.setNonNull(BACKUP_REPOSITORY, listPayload.repository);
+      params.set(CoreAdminParams.NAME, backupName);
+      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, this.location);
+      params.setNonNull(BACKUP_REPOSITORY, this.repositoryName);
 
       return params;
     }

@@ -37,6 +37,11 @@ public interface CollectionParams {
 
   String SOURCE_NODE = "sourceNode";
   String TARGET_NODE = "targetNode";
+  String SOURCE_NODES = "sourceNodes";
+  String TARGET_NODES = "targetNodes";
+
+  String NODES = "nodes";
+  String MAX_BALANCE_SKEW = "maxBalanceSkew";
 
   enum LockLevel {
     NONE(10, null),
@@ -127,6 +132,10 @@ public interface CollectionParams {
     MOCK_SHARD_TASK(false, LockLevel.SHARD),
     // TODO when we have a node level lock use it here
     REPLACENODE(true, LockLevel.NONE),
+    // TODO when we have a node level lock use it here
+    MIGRATE_REPLICAS(true, LockLevel.NONE),
+    // TODO when we have a node level lock use it here
+    BALANCE_REPLICAS(true, LockLevel.NONE),
     DELETENODE(true, LockLevel.NONE),
     MOCK_REPLICA_TASK(false, LockLevel.REPLICA),
     NONE(false, LockLevel.NONE),

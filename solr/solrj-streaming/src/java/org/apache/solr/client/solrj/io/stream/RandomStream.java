@@ -27,13 +27,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -64,11 +60,12 @@ public class RandomStream extends TupleStream implements Expressible {
   private String zkHost;
   private Map<String, String> props;
   private String collection;
-  protected transient SolrClientCache cache;
-  protected transient CloudSolrClient cloudSolrClient;
   private Iterator<SolrDocument> documentIterator;
   private int x;
   private boolean outputX;
+
+  private transient SolrClientCache clientCache;
+  private transient boolean doCloseCache;
 
   public RandomStream() {
     // Used by the RandomFacade
@@ -200,7 +197,7 @@ public class RandomStream extends TupleStream implements Expressible {
 
   @Override
   public void setStreamContext(StreamContext context) {
-    cache = context.getSolrClientCache();
+    clientCache = context.getSolrClientCache();
   }
 
   @Override
@@ -211,16 +208,11 @@ public class RandomStream extends TupleStream implements Expressible {
 
   @Override
   public void open() throws IOException {
-    if (cache != null) {
-      cloudSolrClient = cache.getCloudSolrClient(zkHost);
+    if (clientCache == null) {
+      doCloseCache = true;
+      clientCache = new SolrClientCache();
     } else {
-      final List<String> hosts = new ArrayList<>();
-      hosts.add(zkHost);
-      cloudSolrClient =
-          new CloudLegacySolrClient.Builder(hosts, Optional.empty())
-              .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
-              .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-              .build();
+      doCloseCache = false;
     }
 
     ModifiableSolrParams params = getParams(this.props);
@@ -235,6 +227,7 @@ public class RandomStream extends TupleStream implements Expressible {
 
     QueryRequest request = new QueryRequest(params, SolrRequest.METHOD.POST);
     try {
+      var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
       QueryResponse response = request.process(cloudSolrClient, collection);
       SolrDocumentList docs = response.getResults();
       documentIterator = docs.iterator();
@@ -245,8 +238,8 @@ public class RandomStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
-    if (cache == null) {
-      cloudSolrClient.close();
+    if (doCloseCache) {
+      clientCache.close();
     }
   }
 

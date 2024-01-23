@@ -437,7 +437,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   protected void addDocs(String collection, Set<Integer> docIds, int expectedRf, int retries)
       throws Exception {
 
-    Integer[] idList = docIds.toArray(new Integer[docIds.size()]);
+    Integer[] idList = docIds.toArray(new Integer[0]);
     if (idList.length == 1) {
       sendDoc(collection, idList[0]);
       return;
