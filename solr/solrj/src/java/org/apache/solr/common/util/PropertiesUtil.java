@@ -65,7 +65,7 @@ public class PropertiesUtil {
           fragment = coreProperties.apply(propertyName);
         }
         if (fragment == null) {
-          fragment = EnvUtils.getProp(propertyName, defaultValue);
+          fragment = EnvUtils.getProperty(propertyName, defaultValue);
         }
         if (fragment == null) {
           throw new SolrException(

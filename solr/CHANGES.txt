@@ -76,6 +76,31 @@ Other Changes
 
 * SOLR-16995: Add a ReplicaCount class to keep track of replicas per type (Vincent Primault)
 
+==================  9.6.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  9.5.0 ==================
 New Features
 ---------------------
@@ -127,9 +152,8 @@ Improvements
 * SOLR-17063: Do not retain log param references in LogWatcher (Michael Gibney)
 
 * SOLR-17066: SolrClient builders now allow users to specify a "default" collection or core
-  using the `withDefaultDataStore` method  ("Cloud" client builders retain the more specific
-  `withDefaultCollection`).  Use of the Builder methods is preferable to including the
-  collection in the base URL accepted by certain client implementations. (Jason Gerlowski)
+  using the `withDefaultCollection` method.  Use of the Builder methods is preferable to including
+  the collection in the base URL accepted by certain client implementations. (Jason Gerlowski)
 
 * SOLR-15960: Unified use of system properties and environment variables (janhoy)
 
@@ -164,6 +188,12 @@ Bug Fixes
 
 * SOLR-17090: The v2 "delete alias" API no longer errantly returns a 405 status code (Jason Gerlowski)
 
+* SOLR-17121: Fix SchemaCodecFactory to get PostingsFormat and DocValues from field. (Bruno Roustant, David Smiley)
+
+* SOLR-17116: The INSTALLSHARDDATA "collection-admin" API now reports errors correctly when run asynchronously. (Jason Gerlowski)
+
+* SOLR-17074: Fixed not correctly escaped quote in bin/solr script (Dominique Béjean, Vincenzo D'Amore)
+
 * SOLR-17120: Fix NullPointerException in UpdateLog.applyOlderUpdates that can occur if there are multiple partial
   updates of the same document in separate requests using commitWithin. (Calvin Smith, Christine Poerschke)
 
@@ -172,6 +202,8 @@ Dependency Upgrades
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
 
 * SOLR-17026: Upgrade to Gradle 8.4 (Kevin Risden)
+
+* SOLR-17089: Upgrade Jersey to 3.1.5 (Jason Gerlowski)
 
 Other Changes
 ---------------------

@@ -35,7 +35,7 @@ public interface ClusterPluginsSource {
    * @return The name of the class to use as the {@link ClusterPluginsSource}
    */
   public static String resolveClassName() {
-    return EnvUtils.getPropAsBool(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, true)
+    return EnvUtils.getPropertyAsBool(ContainerPluginsRegistry.CLUSTER_PLUGIN_EDIT_ENABLED, true)
         ? ZkClusterPluginsSource.class.getName()
         : NodeConfigClusterPluginsSource.class.getName();
   }

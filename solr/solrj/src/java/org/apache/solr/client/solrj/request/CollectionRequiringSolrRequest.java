@@ -14,20 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.api.model;
+package org.apache.solr.client.solrj.request;
 
-public enum StoreType {
-  COLLECTION("collections"),
-  CORE("cores");
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 
-  private final String pathString;
-
-  StoreType(String pathString) {
-    this.pathString = pathString;
+/** Parent {@link SolrRequest} class that requires a target collection or core. */
+public abstract class CollectionRequiringSolrRequest<T extends SolrResponse>
+    extends SolrRequest<T> {
+  public CollectionRequiringSolrRequest(METHOD m, String path) {
+    super(m, path);
   }
 
   @Override
-  public String toString() {
-    return pathString;
+  public boolean requiresCollection() {
+    return true;
   }
 }
