@@ -658,6 +658,7 @@ If only `dividend` routing is desired, `hash` may be explicitly set to the empty
 === The <replicaPlacementFactory> Element
 
 A default xref:replica-placement-plugins.adoc[replica placement plugin] can be defined in `solr.xml`.
+To allow this, the `solr.cluster.plugin.edit.enabled` System Property must be set to false. This setting will disable the `/cluster/plugins` edit APIs, preventing modification of cluster plugins at runtime.
 
 [source,xml]
 ----
@@ -669,6 +670,24 @@ A default xref:replica-placement-plugins.adoc[replica placement plugin] can be d
 
 The `class` attribute should be set to the FQN (fully qualified name) of a class that extends `PlacementPluginFactory`.
 Sub-elements are specific to the implementation.
+
+=== The <clusterSingleton> Element
+One or more `clusterSingleton` elements may be declared in solr.xml.
+To allow this, the `solr.cluster.plugin.edit.enabled` System Property must be set to false. This setting will disable the `/cluster/plugins` edit APIs, preventing modification of cluster plugins at runtime.
+
+Each `clusterSingleton` element specifies a cluster plugin that should be loaded when Solr stars, along with it's associated configuration.
+
+[source,xml]
+----
+<clusterSingleton name="pluginName" class="qualified.plugin.class">
+  <int name="value1">20</int>
+</clusterSingleton>
+----
+
+The `name` attribute is required and must be unique for each `clusterSingleton`.
+
+The `class` attribute should be set to the FQN (fully qualified name) of a class that extends `ClusterSingleton`.
+Sub-elements are specific to the implementation, `value1` is provided as an example here.
 
 === The <metrics> Element
 

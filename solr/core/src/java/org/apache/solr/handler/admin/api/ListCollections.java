@@ -19,11 +19,11 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
+import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.ListCollectionsApi;
 import org.apache.solr.client.api.model.ListCollectionsResponse;
 import org.apache.solr.common.cloud.DocCollection;

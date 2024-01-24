@@ -102,7 +102,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
           public PostingsFormat getPostingsFormatForField(String field) {
             final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
             if (schemaField != null) {
-              String postingsFormatName = schemaField.getType().getPostingsFormat();
+              String postingsFormatName = schemaField.getPostingsFormat();
               if (postingsFormatName != null) {
                 return PostingsFormat.forName(postingsFormatName);
               }
@@ -114,7 +114,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
           public DocValuesFormat getDocValuesFormatForField(String field) {
             final SchemaField schemaField = core.getLatestSchema().getFieldOrNull(field);
             if (schemaField != null) {
-              String docValuesFormatName = schemaField.getType().getDocValuesFormat();
+              String docValuesFormatName = schemaField.getDocValuesFormat();
               if (docValuesFormatName != null) {
                 return DocValuesFormat.forName(docValuesFormatName);
               }

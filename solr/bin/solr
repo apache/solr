@@ -422,8 +422,8 @@ function print_usage() {
     echo ""
     echo "  -noprompt             Don't prompt for input; accept all defaults when running examples that accept user input"
     echo ""
-    echo "  -force                If attempting to start Solr as the root user, the script will exit with a warning that running Solr as "root" can cause problems."
-    echo "                          It is possible to override this warning with the `-force` parameter."
+    echo "  -force                If attempting to start Solr as the root user, the script will exit with a warning that running Solr as \"root\" can cause problems."
+    echo "                          It is possible to override this warning with the '-force' parameter."
     echo ""
     echo "  -v and -q             Verbose (-v) or quiet (-q) logging. Sets default log level of Solr to DEBUG or WARN instead of INFO"
     echo ""
@@ -1172,7 +1172,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
         fi
       done
   fi
-  run_tool auth "${AUTH_PARAMS[@]}" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}/solr" -authConfDir "$SOLR_HOME" $VERBOSE
+  run_tool auth "${AUTH_PARAMS[@]}" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:${AUTH_PORT:-8983}" -authConfDir "$SOLR_HOME" $VERBOSE
   exit $?
 fi
 

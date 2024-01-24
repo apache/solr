@@ -76,11 +76,39 @@ Other Changes
 
 * SOLR-16995: Add a ReplicaCount class to keep track of replicas per type (Vincent Primault)
 
+==================  9.6.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+* SOLR-17119: When registering or updating a ConfigurablePlugin through the `/cluster/plugin` API,
+  config validation exceptions are now propagated to the callers. (Yohann Callea)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  9.5.0 ==================
 New Features
 ---------------------
 * SOLR-17006: Collection creation & adding replicas: User-defined properties are persisted to state.json and
   applied to new replicas, available for use as property substitution in configuration files.  (Vincent Primault)
+
+* SOLR-16986: Log CPU time per request via solr.log.cputime (Gilles Bellaton, David Smiley)
 
 * SOLR-16974: Circuit Breakers can now be configured globally (janhoy, Christine Poerschke)
 
@@ -125,10 +153,17 @@ Improvements
 * SOLR-17063: Do not retain log param references in LogWatcher (Michael Gibney)
 
 * SOLR-17066: SolrClient builders now allow users to specify a "default" collection or core
-  using the `withDefaultCollection` method.  This is preferable to including the collection
-  in the base URL accepted by certain client implementations. (Jason Gerlowski)
+  using the `withDefaultCollection` method.  Use of the Builder methods is preferable to including
+  the collection in the base URL accepted by certain client implementations. (Jason Gerlowski)
 
 * SOLR-15960: Unified use of system properties and environment variables (janhoy)
+
+* SOLR-16397: The MERGEINDEXES v2 endpoint has been updated to be more REST-ful.
+  MERGEINDEXES is now available at `POST /api/cores/coreName/merge-indices` (Sanjay Dutt via Jason Gerlowski)
+
+* PR#2186: Include the external file name in the log instead of the hard-coded value in FileFloatSource.java. (Hamzeh Aldmour via Uwe Schindler)
+
+* SOLR-17096: solr.xml now supports declaring clusterSingleton plugins (Paul McArthur, David Smiley)
 
 * SOLR-16397: The command-status v2 endpoint, to request status of asynchronous CoreAdmin API call, has been updated to be more REST-ful.
   Now available at `GET /api/cores/command-status/requestid` (Sanjay Dutt via Jason Gerlowski)
@@ -139,12 +174,11 @@ Optimizations
   instead of the full list of cores.  This list is potentially as long as the number of cores.  When there are many
   cores, this leads to high CPU and memory usage. (Gilles Bellaton, David Smiley)
 
+* SOLR-17036: UpdateLog lazy creates VersionBucket large array, and VersionBucket do not keep the highest version anymore.
+  This optimization reduces the memory usage, specially when the SolrCore is not used for indexing (Bruno Roustant)
+
 Bug Fixes
 ---------------------
-* SOLR-6853: Allow '/' characters in the text managed by Managed Resources API. (Nikita Rusetskii via Eric Pugh)
-
-* SOLR-17039: Entropy calculation in bin/solr script fails in Docker due to missing 'bc' cmd (janhoy)
-
 * SOLR-17045: DenseVectorField w/ vectorDimension > 1024 now work automatically with _default configset, due to
   implicit use of SchemaCodecFactory.  (hossman)
 
@@ -158,21 +192,22 @@ Bug Fixes
 
 * SOLR-17090: The v2 "delete alias" API no longer errantly returns a 405 status code (Jason Gerlowski)
 
-* SOLR-17057: JSON Query regression: If "query" is specified with a String (not JSON structure),
-  "defType" should parse it.  Since 9.4 defType was ignored.  (David Smiley)
+* SOLR-17121: Fix SchemaCodecFactory to get PostingsFormat and DocValues from field. (Bruno Roustant, David Smiley)
 
-* SOLR-17060: CoreContainer#create may deadlock with concurrent requests for metrics (Alex Deparvu, David Smiley)
+* SOLR-17116: The INSTALLSHARDDATA "collection-admin" API now reports errors correctly when run asynchronously. (Jason Gerlowski)
 
-* SOLR-17098: ZK Credentials and ACLs are no longer sent to all ZK Servers when using Streaming Expressions.
-  They will only be used when sent to the default ZK Host. (Houston Putman, Jan Høydahl, David Smiley, Gus Heck, Qing Xu)
+* SOLR-17074: Fixed not correctly escaped quote in bin/solr script (Dominique Béjean, Vincenzo D'Amore)
 
-* SOLR-16203: Properly initialize schema plugins loaded by SPI name (janhoy, hossman, Uwe Schindler)
+* SOLR-17120: Fix NullPointerException in UpdateLog.applyOlderUpdates that can occur if there are multiple partial
+  updates of the same document in separate requests using commitWithin. (Calvin Smith, Christine Poerschke)
 
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
 
 * SOLR-17026: Upgrade to Gradle 8.4 (Kevin Risden)
+
+* SOLR-17089: Upgrade Jersey to 3.1.5 (Jason Gerlowski)
 
 Other Changes
 ---------------------
@@ -185,10 +220,76 @@ Other Changes
 * SOLR-17091: dev tools script cloud.sh became broken after changes in 9.3 added a new -slim.tgz file it was not expecting
   cloud.sh has been updated to ignore the -slim.tgz version of the tarball.
 
-* SOLR-16949: Restrict certain file types from being uploaded to or downloaded from Config Sets (janhoy, Houston Putman)
-
 * SOLR-16880: Solr now produces an OpenAPI Specification artifact on releases ("solr-openapi-x.y.z.json") that covers
   Solr's v2 APIs. (Jason Gerlowski, Houston Putman)
+
+==================  9.4.1 ==================
+Bug Fixes
+---------------------
+* SOLR-17039: Entropy calculation in bin/solr script fails in Docker due to missing 'bc' cmd (janhoy)
+
+* SOLR-17057: JSON Query regression: If "query" is specified with a String (not JSON structure),
+  "defType" should parse it.  Since 9.4 defType was ignored.  (David Smiley)
+
+* SOLR-6853: Allow '/' characters in the text managed by Managed Resources API. (Nikita Rusetskii via Eric Pugh)
+
+* SOLR-17060: CoreContainer#create may deadlock with concurrent requests for metrics (Alex Deparvu, David Smiley)
+
+* SOLR-17098: ZK Credentials and ACLs are no longer sent to all ZK Servers when using Streaming Expressions.
+  They will only be used when sent to the default ZK Host. (Houston Putman, Jan Høydahl, David Smiley, Gus Heck, Qing Xu)
+
+* SOLR-16203: Properly initialize schema plugins loaded by SPI name (janhoy, hossman, Uwe Schindler)
+
+Dependency Upgrades
+---------------------
+* PR#2165: Update org.eclipse.jetty*:* to v10.0.19 (solrbot)
+
+* PR#2159: Update io.netty:* to v4.1.104.Final (solrbot)
+
+* PR#2048: Update dependency commons-cli:commons-cli to v1.6.0 (solrbot)
+
+* PR#2174: Update org.slf4j:* to v2.0.10 (solrbot)
+
+* PR#2135: Update dependency com.fasterxml.jackson:jackson-bom to v2.16.1 (solrbot)
+
+* PR#2138: Update dependency org.apache.commons:commons-compress to v1.25.0 (solrbot)
+
+* PR#2139: Update dependency org.apache.commons:commons-lang3 to v3.14.0 (solrbot)
+
+* PR#2035: Update dependency com.google.errorprone:error_prone_annotations to v2.23.0 (solrbot)
+
+* PR#2036: Update io.grpc:grpc-* to v1.59.0 (solrbot)
+
+* PR#2037: Update org.apache.logging.log4j:* to v2.21.0 (solrbot)
+
+* PR#2033: Update io.dropwizard.metrics:* to v4.2.21 (solrbot)
+
+* PR#2032: Update dependency io.swagger.core.v3:swagger-annotations to v2.2.17 (solrbot)
+
+* PR#2015: Update dependency org.codehaus.woodstox:stax2-api to v4.2.2 (solrbot)
+
+* PR#2031: Update dependency com.fasterxml.jackson:jackson-bom to v2.15.3 (solrbot)
+
+* PR#2034: Update dependency com.github.spotbugs:spotbugs-annotations to v4.8.0 (solrbot)
+
+* PR#2014: Update dependency com.google.guava:guava to v32.1.3-jre (solrbot)
+
+* PR#2010: Update dependency org.immutables:value-annotations to v2.10.0 (solrbot)
+
+* PR#2009: Update dependency io.opentelemetry:opentelemetry-bom to v1.31.0 (solrbot)
+
+* PR#2008: Update dependency org.semver4j:semver4j to v5.2.2 (solrbot)
+
+* PR#1989: Update org.apache.zookeeper:* to v3.9.1 (solrbot)
+
+* PR#1743: SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (solrbot)
+
+* PR#1745: Update dependency com.google.cloud:google-cloud-bom to v0.204.0 (solrbot)
+
+
+Other Changes
+---------------------
+* SOLR-16949: Restrict certain file types from being uploaded to or downloaded from Config Sets (janhoy, Houston Putman)
 
 ==================  9.4.0 ==================
 New Features

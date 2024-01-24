@@ -39,6 +39,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -79,7 +80,14 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     this.uhandler = core.getUpdateHandler();
     this.ulog = uhandler.getUpdateLog();
     HttpClient httpClient = core.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
-    this.clientToLeader = new HttpSolrClient.Builder(leaderUrl).withHttpClient(httpClient).build();
+
+    final var leaderBaseUrl = URLUtil.extractBaseUrl(leaderUrl);
+    final var coreName = URLUtil.extractCoreFromCoreUrl(leaderUrl);
+    this.clientToLeader =
+        new HttpSolrClient.Builder(leaderBaseUrl)
+            .withDefaultCollection(coreName)
+            .withHttpClient(httpClient)
+            .build();
 
     this.updater = new PeerSync.Updater(msg(), core);
 

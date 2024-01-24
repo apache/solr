@@ -44,10 +44,13 @@ configurations {
         canBeConsumed = true
         canBeResolved = false
     }
+
+    swaggerBuild.extendsFrom implementation
 }
 
 resolve {
   classpath = sourceSets.main.runtimeClasspath
+  buildClasspath = sourceSets.main.runtimeClasspath.plus(configurations.getByName("swaggerBuild"))
   resourcePackages = ["org.apache.solr.client.api.util", "org.apache.solr.client.api.endpoint"]
   outputDir = file(project.openApiSpecDir)
   outputFileName = "solr-openapi-${version}"
@@ -59,12 +62,14 @@ dependencies {
     
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api'
     implementation 'com.fasterxml.jackson.core:jackson-annotations'
-    api 'io.swagger.core.v3:swagger-annotations'
+    api 'io.swagger.core.v3:swagger-annotations-jakarta'
     implementation 'org.semver4j:semver4j'
 
     testImplementation project(':solr:test-framework')
     testImplementation project(':solr:api')
     testImplementation 'org.apache.lucene:lucene-test-framework'
+
+    swaggerBuild 'io.swagger.core.v3:swagger-jaxrs2-jakarta'
 }
 
 // Non-Java client generation tasks below:
