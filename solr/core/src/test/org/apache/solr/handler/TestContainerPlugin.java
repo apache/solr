@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.core.CoreContainer;
@@ -378,6 +379,37 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     assertEquals(1452, C5.classData.limit());
   }
 
+  @Test
+  public void testPluginConfigValidation() throws Exception {
+    final Callable<V2Response> readPluginState = getPlugin("/cluster/plugin");
+
+    // Register a plugin with an invalid configuration
+    final ValidatableConfig config = new ValidatableConfig();
+    config.willPassValidation = false;
+
+    final PluginMeta plugin = new PluginMeta();
+    plugin.name = "validatableplugin";
+    plugin.klass = ConfigurablePluginWithValidation.class.getName();
+    plugin.config = config;
+
+    final V2Request addPlugin = postPlugin(singletonMap("add", plugin));
+
+    // Verify that the expected error is thrown and the plugin is not registered
+    expectError(addPlugin, "invalid config");
+    V2Response response = readPluginState.call();
+    assertNull(response._getStr("/plugin/validatableplugin/class", null));
+
+    // Now register it with a valid configuration
+    config.willPassValidation = true;
+    addPlugin.process(cluster.getSolrClient());
+
+    // Verify that the plugin is properly registered
+    response = readPluginState.call();
+    assertEquals(
+        ConfigurablePluginWithValidation.class.getName(),
+        response._getStr("/plugin/validatableplugin/class", null));
+  }
+
   public static class CC1 extends CC {}
 
   public static class CC2 extends CC1 {}
@@ -508,6 +540,20 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     public void m2(SolrQueryRequest req, SolrQueryResponse rsp) {
       rsp.add("method.name", "m2");
     }
+  }
+
+  public static class ConfigurablePluginWithValidation
+      implements ConfigurablePlugin<ValidatableConfig> {
+    @Override
+    public void configure(ValidatableConfig cfg) {
+      if (!cfg.willPassValidation) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "invalid config");
+      }
+    }
+  }
+
+  public static class ValidatableConfig implements ReflectMapWriter {
+    @JsonProperty public boolean willPassValidation;
   }
 
   private Callable<V2Response> getPlugin(String path) {

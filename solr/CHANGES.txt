@@ -12,7 +12,8 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-17119: When registering or updating a ConfigurablePlugin through the `/cluster/plugin` API,
+  config validation exceptions are now propagated to the callers. (Yohann Callea)
 
 Optimizations
 ---------------------
