@@ -18,10 +18,10 @@ package org.apache.solr.client.api.endpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import org.apache.solr.client.api.model.GetNodeCommandStatusResponse;
 
 /**
  * V2 API for checking the status of a core-level asynchronous command.
@@ -33,20 +33,19 @@ import org.apache.solr.client.api.model.SolrJerseyResponse;
  * level differs in that command IDs are local to individual Solr nodes and are not persisted across
  * restarts.
  *
- * @see org.apache.solr.client.api.model.RequestCoreCommandStatusResponseBody
+ * @see GetNodeCommandStatusResponse
  */
-@Path("/cores/{coreName}/command-status/")
-public interface RequestCoreCommandStatusApi {
+@Path("/node/commands/")
+public interface GetNodeCommandStatusApi {
   @Path("/{requestId}")
   @GET
   @Operation(
       summary = "Request the status of an already submitted asynchronous CoreAdmin API call.",
-      tags = {"cores"})
-  SolrJerseyResponse getCommandStatus(
+      tags = {"node"})
+  GetNodeCommandStatusResponse getCommandStatus(
       @Parameter(
               description = "The user defined request-id for the asynchronous request.",
               required = true)
           @PathParam("requestId")
-          String id,
-      @PathParam("coreName") String coreName);
+          String id);
 }

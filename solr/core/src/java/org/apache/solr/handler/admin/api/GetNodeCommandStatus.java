@@ -20,10 +20,9 @@ import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTrack
 import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.FAILED;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.RUNNING;
 
-import javax.inject.Inject;
-import org.apache.solr.client.api.endpoint.RequestCoreCommandStatusApi;
-import org.apache.solr.client.api.model.RequestCoreCommandStatusResponseBody;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import jakarta.inject.Inject;
+import org.apache.solr.client.api.endpoint.GetNodeCommandStatusApi;
+import org.apache.solr.client.api.model.GetNodeCommandStatusResponse;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -33,14 +32,13 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 
 /**
- * Implementation of V2 API interface {@link RequestCoreCommandStatusApi} for checking the status of
- * a core-level asynchronous command.
+ * Implementation of V2 API interface {@link GetNodeCommandStatusApi} for checking the status of a
+ * core-level asynchronous command.
  */
-public class RequestCoreCommandStatus extends CoreAdminAPIBase
-    implements RequestCoreCommandStatusApi {
+public class GetNodeCommandStatus extends CoreAdminAPIBase implements GetNodeCommandStatusApi {
 
   @Inject
-  public RequestCoreCommandStatus(
+  public GetNodeCommandStatus(
       CoreContainer coreContainer,
       CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker,
       SolrQueryRequest req,
@@ -50,9 +48,9 @@ public class RequestCoreCommandStatus extends CoreAdminAPIBase
 
   @Override
   @PermissionName(PermissionNameProvider.Name.CORE_READ_PERM)
-  public SolrJerseyResponse getCommandStatus(String requestId, String coreName) {
+  public GetNodeCommandStatusResponse getCommandStatus(String requestId) {
     ensureRequiredParameterProvided(CoreAdminParams.REQUESTID, requestId);
-    var requestStatusResponse = new RequestCoreCommandStatusResponseBody();
+    var requestStatusResponse = new GetNodeCommandStatusResponse();
     if (coreAdminAsyncTracker.getRequestStatusMap(RUNNING).containsKey(requestId)) {
       requestStatusResponse.status = RUNNING;
     } else if (coreAdminAsyncTracker.getRequestStatusMap(COMPLETED).containsKey(requestId)) {

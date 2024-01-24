@@ -18,7 +18,7 @@ package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class RequestCoreCommandStatusResponseBody extends SolrJerseyResponse {
+public class GetNodeCommandStatusResponse extends SolrJerseyResponse {
   @JsonProperty("STATUS")
   public String status;
 

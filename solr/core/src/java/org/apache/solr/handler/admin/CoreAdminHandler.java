@@ -58,6 +58,7 @@ import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.CoreSnapshot;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
 import org.apache.solr.handler.admin.api.CreateCoreBackup;
+import org.apache.solr.handler.admin.api.GetNodeCommandStatus;
 import org.apache.solr.handler.admin.api.InstallCoreData;
 import org.apache.solr.handler.admin.api.MergeIndexes;
 import org.apache.solr.handler.admin.api.OverseerOperationAPI;
@@ -67,7 +68,6 @@ import org.apache.solr.handler.admin.api.ReloadCore;
 import org.apache.solr.handler.admin.api.RenameCore;
 import org.apache.solr.handler.admin.api.RequestApplyCoreUpdatesAPI;
 import org.apache.solr.handler.admin.api.RequestBufferUpdatesAPI;
-import org.apache.solr.handler.admin.api.RequestCoreCommandStatus;
 import org.apache.solr.handler.admin.api.RequestCoreRecoveryAPI;
 import org.apache.solr.handler.admin.api.RequestSyncShardAPI;
 import org.apache.solr.handler.admin.api.RestoreCore;
@@ -406,7 +406,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         SwapCores.class,
         RenameCore.class,
         MergeIndexes.class,
-        RequestCoreCommandStatus.class);
+        GetNodeCommandStatus.class);
   }
 
   public interface CoreAdminOp {

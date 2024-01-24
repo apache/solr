@@ -73,9 +73,9 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.api.CoreSnapshot;
+import org.apache.solr.handler.admin.api.GetNodeCommandStatus;
 import org.apache.solr.handler.admin.api.ReloadCore;
 import org.apache.solr.handler.admin.api.RenameCore;
-import org.apache.solr.handler.admin.api.RequestCoreCommandStatus;
 import org.apache.solr.handler.admin.api.SwapCores;
 import org.apache.solr.handler.admin.api.UnloadCore;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -239,14 +239,12 @@ public enum CoreAdminOperation implements CoreAdminOp {
       it -> {
         final var params = it.req.getParams();
         final String requestId = params.required().get(CoreAdminParams.REQUESTID);
-        final String cname = params.get(CoreAdminParams.NAME);
         log().info("Checking request status for : " + requestId);
 
         final var requestCoreCommandStatusApi =
-            new RequestCoreCommandStatus(
+            new GetNodeCommandStatus(
                 it.handler.coreContainer, it.handler.coreAdminAsyncTracker, it.req, it.rsp);
-        final SolrJerseyResponse response =
-            requestCoreCommandStatusApi.getCommandStatus(requestId, cname);
+        final SolrJerseyResponse response = requestCoreCommandStatusApi.getCommandStatus(requestId);
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
 
