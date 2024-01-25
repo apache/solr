@@ -805,7 +805,7 @@ http://localhost:8983/solr/admin/cores?action=REQUESTSTATUS&requestid=id
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cores/_core_name_/command-status/id
+curl -X GET http://localhost:8983/api/node/commands/id
 ----
 ====
 --

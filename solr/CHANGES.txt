@@ -165,8 +165,8 @@ Improvements
 
 * SOLR-17096: solr.xml now supports declaring clusterSingleton plugins (Paul McArthur, David Smiley)
 
-* SOLR-16397: The command-status v2 endpoint, to request status of asynchronous CoreAdmin API call, has been updated to be more REST-ful.
-  Now available at `GET /api/cores/command-status/requestid` (Sanjay Dutt via Jason Gerlowski)
+* SOLR-16397: The v2 endpoint to request the status of asynchronous CoreAdmin commands has been updated to be more REST-ful.
+  Now available at `GET /api/node/commands/someRequestId` (Sanjay Dutt via Jason Gerlowski)
 
 Optimizations
 ---------------------
