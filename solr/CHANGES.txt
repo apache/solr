@@ -68,6 +68,9 @@ Improvements
 
 * SOLR-17096: solr.xml now supports declaring clusterSingleton plugins (Paul McArthur, David Smiley)
 
+* SOLR-16397: The v2 endpoint to request the status of asynchronous CoreAdmin commands has been updated to be more REST-ful.
+  Now available at `GET /api/node/commands/someRequestId` (Sanjay Dutt via Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
