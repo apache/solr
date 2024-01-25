@@ -21,7 +21,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
@@ -291,22 +290,18 @@ public class CollApiCmds {
       CollectionHandlingUtils.checkRequired(
           message,
           COLLECTION_PROP,
-          SHARD_ID_PROP,
           CORE_NAME_PROP,
-          ELECTION_NODE_PROP,
           CORE_NODE_NAME_PROP,
           NODE_NAME_PROP,
           REJOIN_AT_HEAD_PROP);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(COLLECTION_PROP, message.getStr(COLLECTION_PROP));
-      params.set(SHARD_ID_PROP, message.getStr(SHARD_ID_PROP));
       params.set(REJOIN_AT_HEAD_PROP, message.getStr(REJOIN_AT_HEAD_PROP));
       params.set(
           CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REJOINLEADERELECTION.toString());
       params.set(CORE_NAME_PROP, message.getStr(CORE_NAME_PROP));
       params.set(CORE_NODE_NAME_PROP, message.getStr(CORE_NODE_NAME_PROP));
-      params.set(ELECTION_NODE_PROP, message.getStr(ELECTION_NODE_PROP));
       params.set(NODE_NAME_PROP, message.getStr(NODE_NAME_PROP));
 
       String baseUrl = ccc.getZkStateReader().getBaseUrlForNodeName(message.getStr(NODE_NAME_PROP));

@@ -33,7 +33,15 @@ Please refer to the Solr Reference Guide's section on [Learning To Rank](https:/
 
   `ln -s /Users/YourNameHere/Downloads/liblinear-2.1 ./modules/ltr/example/liblinear`
 
-3. Extract features, train a reranking model, and deploy it to Solr.
+3. Prepare your Python3 environment to run the training script.
+
+   `./gradlew solr:modules:ltr:syncPythonClientSourceCode`
+
+   `cd solr/modules/ltr/example/solrclient && python3 setup.py install --user && cd -`
+
+   This installs a Python client used to talk to Solr, making it and its dependencies available to the training script used below.
+
+4. Extract features, train a reranking model, and deploy it to Solr.
 
   `cd modules/ltr/example`
 
@@ -43,7 +51,7 @@ Please refer to the Solr Reference Guide's section on [Learning To Rank](https:/
    document pairs of "userQueriesFile" and merges it with the features extracted from Solr into a training
    file.  That file is used to train a linear model, which is then deployed to Solr for you to rerank results.
 
-4. Search and rerank the results using the trained model
+5. Search and rerank the results using the trained model
 
 ```
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr%20model=exampleModel%20reRankDocs=25%20efi.user_query=%27test%27}&fl=price,score,name

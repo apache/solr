@@ -24,11 +24,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
-import static org.apache.solr.common.params.CollectionAdminParams.NRT_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
-import static org.apache.solr.common.params.CollectionAdminParams.PULL_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.REPLICATION_FACTOR;
-import static org.apache.solr.common.params.CollectionAdminParams.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
@@ -38,19 +35,22 @@ import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTIO
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -71,14 +71,14 @@ import org.apache.solr.response.SolrQueryResponse;
 public class RestoreCollectionAPI extends BackupAPIBase {
 
   private static final Set<String> CREATE_PARAM_ALLOWLIST =
-      Set.of(
-          COLL_CONF,
-          REPLICATION_FACTOR,
-          NRT_REPLICAS,
-          TLOG_REPLICAS,
-          PULL_REPLICAS,
-          CREATE_NODE_SET_PARAM,
-          CREATE_NODE_SET_SHUFFLE_PARAM);
+      Stream.concat(
+              CollectionHandlingUtils.numReplicasProperties().stream(),
+              Stream.of(
+                  COLL_CONF,
+                  REPLICATION_FACTOR,
+                  CREATE_NODE_SET_PARAM,
+                  CREATE_NODE_SET_SHUFFLE_PARAM))
+          .collect(Collectors.toUnmodifiableSet());
 
   @Inject
   public RestoreCollectionAPI(
@@ -144,10 +144,14 @@ public class RestoreCollectionAPI extends BackupAPIBase {
       throw remoteResponse.getException();
     }
 
+    if (requestBody.async != null) {
+      response.requestId = requestBody.async;
+      return response;
+    }
+
     // Values fetched from remoteResponse may be null
     response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
     response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
-
     return response;
   }
 

@@ -31,13 +31,13 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 import com.github.benmanes.caffeine.cache.Interner;
 import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.trace.Tracer;
+import jakarta.inject.Singleton;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -50,14 +50,11 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.inject.Singleton;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;
@@ -65,6 +62,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -112,7 +110,6 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
-import org.apache.solr.handler.admin.ContainerPluginsApi;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.HealthCheckHandler;
@@ -208,8 +205,7 @@ public class CoreContainer {
   /** Minimize exposure to CoreContainer. Mostly only ZK interface is required */
   public final Supplier<SolrZkClient> zkClientSupplier = () -> getZkController().getZkClient();
 
-  private final ContainerPluginsRegistry containerPluginsRegistry =
-      new ContainerPluginsRegistry(this, containerHandlers.getApiBag());
+  private ContainerPluginsRegistry containerPluginsRegistry;
 
   protected final Map<String, CoreLoadFailure> coreInitFailures = new ConcurrentHashMap<>();
 
@@ -733,7 +729,7 @@ public class CoreContainer {
   }
 
   private void registerV2ApiIfEnabled(Object apiObject) {
-    if (containerHandlers.getApiBag() == null) {
+    if (apiObject == null || containerHandlers.getApiBag() == null) {
       return;
     }
 
@@ -775,12 +771,17 @@ public class CoreContainer {
     }
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
+    ClusterPluginsSource pluginsSource =
+        ClusterPluginsSource.loadClusterPluginsSource(this, loader);
+    containerPluginsRegistry =
+        new ContainerPluginsRegistry(this, containerHandlers.getApiBag(), pluginsSource);
+
     ClusterEventProducerFactory clusterEventProducerFactory = new ClusterEventProducerFactory(this);
     clusterEventProducer = clusterEventProducerFactory;
 
     placementPluginFactory =
         new DelegatingPlacementPluginFactory(
-            PlacementPluginFactoryLoader.getDefaultPlacementPluginFactory(cfg, loader));
+            PlacementPluginFactoryLoader.getDefaultPlacementPluginFactory());
 
     containerPluginsRegistry.registerListener(clusterSingletons.getPluginRegistryListener());
     containerPluginsRegistry.registerListener(
@@ -834,6 +835,7 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
+      solrClientCache.setDefaultZKHost(getZkController().getZkServerAddress());
       // initialize ZkClient metrics
       zkSys.getZkMetricsProducer().initializeMetrics(solrMetricsContext, "zkClient");
       pkiAuthenticationSecurityBuilder =
@@ -1029,7 +1031,6 @@ public class CoreContainer {
             null,
             new Class<?>[] {CoreContainer.class},
             new Object[] {this});
-    final List<Future<SolrCore>> futures = new ArrayList<>();
     try {
       List<CoreDescriptor> cds = coresLocator.discover(this);
       cds = coreSorter.sort(cds);
@@ -1043,29 +1044,34 @@ public class CoreContainer {
           solrCores.markCoreAsLoading(cd);
         }
         if (cd.isLoadOnStartup()) {
-          futures.add(
-              coreLoadExecutor.submit(
-                  () -> {
-                    SolrCore core;
-                    try {
-                      if (zkSys.getZkController() != null) {
-                        zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
-                      }
-                      solrCores.waitAddPendingCoreOps(cd.getName());
-                      core = createFromDescriptor(cd, false, false);
-                    } finally {
-                      solrCores.removeFromPendingOps(cd.getName());
-                      if (asyncSolrCoreLoad) {
-                        solrCores.markCoreAsNotLoading(cd);
-                      }
-                    }
-                    try {
-                      zkSys.registerInZk(core, true, false);
-                    } catch (RuntimeException e) {
-                      log.error("Error registering SolrCore", e);
-                    }
-                    return core;
-                  }));
+          coreLoadExecutor.submit(
+              () -> {
+                SolrCore core;
+                try {
+                  if (zkSys.getZkController() != null) {
+                    zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
+                  }
+                  MDCLoggingContext.setCoreDescriptor(this, cd);
+                  solrCores.waitAddPendingCoreOps(cd.getName());
+                  core = createFromDescriptor(cd, false, false);
+                } catch (Exception e) {
+                  log.error("SolrCore failed to load on startup", e);
+                  MDCLoggingContext.clear();
+                  return;
+                } finally {
+                  solrCores.removeFromPendingOps(cd.getName());
+                  if (asyncSolrCoreLoad) {
+                    solrCores.markCoreAsNotLoading(cd);
+                  }
+                }
+                try {
+                  zkSys.registerInZk(core, true, false);
+                } catch (RuntimeException e) {
+                  log.error("Error registering SolrCore", e);
+                } finally {
+                  MDCLoggingContext.clear();
+                }
+              });
         }
       }
 
@@ -1074,24 +1080,9 @@ public class CoreContainer {
       backgroundCloser.start();
 
     } finally {
-      if (asyncSolrCoreLoad && futures != null) {
-
+      if (asyncSolrCoreLoad) {
         coreContainerWorkExecutor.submit(
-            () -> {
-              try {
-                for (Future<SolrCore> future : futures) {
-                  try {
-                    future.get();
-                  } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                  } catch (ExecutionException e) {
-                    log.error("Error waiting for SolrCore to be loaded on startup", e);
-                  }
-                }
-              } finally {
-                ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor);
-              }
-            });
+            () -> ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor));
       } else {
         ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor);
       }
@@ -1100,9 +1091,8 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       containerPluginsRegistry.refresh();
       getZkController().zkStateReader.registerClusterPropertiesListener(containerPluginsRegistry);
-      ContainerPluginsApi containerPluginsApi = new ContainerPluginsApi(this);
-      registerV2ApiIfEnabled(containerPluginsApi.readAPI);
-      registerV2ApiIfEnabled(containerPluginsApi.editAPI);
+      registerV2ApiIfEnabled(pluginsSource.getReadApi());
+      registerV2ApiIfEnabled(pluginsSource.getEditApi());
 
       // initialize the placement plugin factory wrapper
       // with the plugin configuration from the registry
@@ -1314,7 +1304,11 @@ public class CoreContainer {
         }
       }
 
-      objectCache.clear();
+      try {
+        objectCache.close();
+      } catch (IOException e) {
+        log.warn("Exception while closing ObjectCache.", e);
+      }
 
       // It's still possible that one of the pending dynamic load operation is waiting, so wake it
       // up if so. Since all the pending operations queues have been drained, there should be

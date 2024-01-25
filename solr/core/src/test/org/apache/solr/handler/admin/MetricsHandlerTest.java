@@ -93,6 +93,10 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     // response wasn't serialized, so we get here whatever MetricUtils produced instead of NamedList
     assertNotNull(((MapWriter) o)._get("count", null));
     assertEquals(0L, ((MapWriter) nl.get("SEARCHER.new.errors"))._get("count", null));
+    assertNotNull(nl.get("INDEX.segments")); // int gauge
+    assertTrue((int) ((MapWriter) nl.get("INDEX.segments"))._get("value", null) >= 0);
+    assertNotNull(nl.get("INDEX.sizeInBytes")); // long gauge
+    assertTrue((long) ((MapWriter) nl.get("INDEX.sizeInBytes"))._get("value", null) >= 0);
     nl = (NamedList<?>) values.get("solr.node");
     assertNotNull(nl.get("CONTAINER.cores.loaded")); // int gauge
     assertEquals(1, ((MapWriter) nl.get("CONTAINER.cores.loaded"))._get("value", null));

@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -35,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -107,20 +109,24 @@ public class CollectionHandlingUtils {
 
   // Immutable Maps are null-hostile, so build our own
   public static final Map<String, Object> COLLECTION_PROPS_AND_DEFAULTS =
-      Collections.unmodifiableMap(
-          Utils.makeMap(
-              CollectionStateProps.DOC_ROUTER,
-              DocRouter.DEFAULT_NAME,
-              CollectionStateProps.REPLICATION_FACTOR,
-              "1",
-              CollectionStateProps.NRT_REPLICAS,
-              "1",
-              CollectionStateProps.TLOG_REPLICAS,
-              "0",
-              CollectionStateProps.PER_REPLICA_STATE,
-              null,
-              CollectionStateProps.PULL_REPLICAS,
-              "0"));
+      Collections.unmodifiableMap(makeCollectionPropsAndDefaults());
+
+  private static Map<String, Object> makeCollectionPropsAndDefaults() {
+    Map<String, Object> propsAndDefaults =
+        Utils.makeMap(
+            CollectionStateProps.DOC_ROUTER,
+            (Object) DocRouter.DEFAULT_NAME,
+            CollectionStateProps.REPLICATION_FACTOR,
+            "1",
+            CollectionStateProps.PER_REPLICA_STATE,
+            null);
+    for (Replica.Type replicaType : Replica.Type.values()) {
+      propsAndDefaults.put(
+          replicaType.numReplicasPropertyName,
+          replicaType == Replica.Type.defaultType() ? "1" : "0");
+    }
+    return propsAndDefaults;
+  }
 
   public static final Random RANDOM;
 
@@ -133,6 +139,20 @@ public class CollectionHandlingUtils {
     } else {
       RANDOM = new Random(seed.hashCode());
     }
+  }
+
+  /** Returns names of properties that are used to specify a number of replicas of a given type. */
+  public static Set<String> numReplicasProperties() {
+    return Arrays.stream(Replica.Type.values())
+        .map(t -> t.numReplicasPropertyName)
+        .collect(Collectors.toSet());
+  }
+
+  /** Returns replica types that are eligible to be leader. */
+  public static EnumSet<Replica.Type> leaderEligibleReplicaTypes() {
+    return Arrays.stream(Replica.Type.values())
+        .filter(t -> t.leaderEligible)
+        .collect(Collectors.toCollection(() -> EnumSet.noneOf(Replica.Type.class)));
   }
 
   static boolean waitForCoreNodeGone(
@@ -216,12 +236,13 @@ public class CollectionHandlingUtils {
 
   static void commit(NamedList<Object> results, String slice, Replica parentShardLeader) {
     log.debug("Calling soft commit to make sub shard updates visible");
+    final var zkCoreProps = new ZkCoreNodeProps(parentShardLeader);
     String coreUrl = new ZkCoreNodeProps(parentShardLeader).getCoreUrl();
     // HttpShardHandler is hard coded to send a QueryRequest hence we go direct
     // and we force open a searcher so that we have documents to show upon switching states
     UpdateResponse updateResponse = null;
     try {
-      updateResponse = softCommit(coreUrl);
+      updateResponse = softCommit(zkCoreProps.getBaseUrl(), zkCoreProps.getCoreName());
       CollectionHandlingUtils.processResponse(
           results, null, coreUrl, updateResponse, slice, Collections.emptySet());
     } catch (Exception e) {
@@ -234,10 +255,12 @@ public class CollectionHandlingUtils {
     }
   }
 
-  static UpdateResponse softCommit(String url) throws SolrServerException, IOException {
+  static UpdateResponse softCommit(String baseUrl, String coreName)
+      throws SolrServerException, IOException {
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(url)
+        new HttpSolrClient.Builder(baseUrl)
+            .withDefaultCollection(coreName)
             .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(120000, TimeUnit.MILLISECONDS)
             .build()) {
