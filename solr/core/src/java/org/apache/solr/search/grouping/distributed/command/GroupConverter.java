@@ -32,6 +32,7 @@ import org.apache.lucene.util.mutable.MutableValueDouble;
 import org.apache.lucene.util.mutable.MutableValueFloat;
 import org.apache.lucene.util.mutable.MutableValueInt;
 import org.apache.lucene.util.mutable.MutableValueLong;
+import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
@@ -83,7 +84,9 @@ class GroupConverter {
             mutableInt.value = 0;
             mutableInt.exists = false;
           } else {
-            mutableInt.value = (Integer) fieldType.toObject(field, original.groupValue);
+            Object o = fieldType.toObject(field, original.groupValue);
+            if (o instanceof EnumFieldValue) mutableInt.value = ((EnumFieldValue) o).toInt();
+            else mutableInt.value = (Integer) o;
           }
           v = mutableInt;
           break;
