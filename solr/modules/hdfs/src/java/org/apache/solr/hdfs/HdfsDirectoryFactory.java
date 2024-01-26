@@ -52,6 +52,7 @@ import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -187,7 +188,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
       initKerberos();
     }
     if (StrUtils.isNullOrEmpty(
-        System.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
+        EnvUtils.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
       System.setProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED, "false");
     }
   }
@@ -294,7 +295,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   boolean getConfig(String name, boolean defaultValue) {
     Boolean value = params.getBool(name);
     if (value == null) {
-      String sysValue = System.getProperty(name);
+      String sysValue = EnvUtils.getProperty(name);
       if (sysValue != null) {
         value = Boolean.valueOf(sysValue);
       }
@@ -305,7 +306,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   int getConfig(String name, int defaultValue) {
     Integer value = params.getInt(name);
     if (value == null) {
-      String sysValue = System.getProperty(name);
+      String sysValue = EnvUtils.getProperty(name);
       if (sysValue != null) {
         value = Integer.parseInt(sysValue);
       }
@@ -316,7 +317,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   String getConfig(String name, String defaultValue) {
     String value = params.get(name);
     if (value == null) {
-      value = System.getProperty(name);
+      value = EnvUtils.getProperty(name);
     }
     return value == null ? defaultValue : value;
   }
