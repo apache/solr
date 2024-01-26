@@ -22,18 +22,17 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-          days-before-pr-stale: 30
+          days-before-pr-stale: 60
           days-before-issue-stale: -1   # we don't use issues
           days-before-close: -1         # don't close stale PRs/issues
           exempt-draft-pr: true         # don't mark draft PRs as stale
           stale-pr-label: "stale"       # label to use when marking as stale
 
           stale-pr-message: >
-            This PR had no visible activity in the past 30 days, labeling it as stale.
+            This PR had no visible activity in the past 60 days, labeling it as stale.
             Any new activity will remove the stale label. To attract more reviewers, please tag
             someone or notify the dev@solr.apache.org mailing list.
             Thank you for your contribution!
 
-          # TODO: Adjust budget and debug after initial testing
-          operations-per-run: 500       # operations budget
-          debug-only: true              # turn on to run the action without applying changes
+          # TODO: Increase budget after initial testing
+          operations-per-run: 10        # operations budget
