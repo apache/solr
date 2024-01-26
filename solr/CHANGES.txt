@@ -4,7 +4,6 @@ This file lists Solr's raw release notes with details of every change to Solr.
 Most people will find the solr-upgrade-notes.adoc file more approachable.
 https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc
 
-
 ==================  9.6.0 ==================
 New Features
 ---------------------
@@ -129,6 +128,8 @@ Bug Fixes
 
 * SOLR-17120: Fix NullPointerException in UpdateLog.applyOlderUpdates that can occur if there are multiple partial
   updates of the same document in separate requests using commitWithin. (Calvin Smith, Christine Poerschke)
+
+* SOLR-17112: bin/solr script doesn't do ps properly on some systems. (Vincenzo D'Amore via Eric Pugh)
 
 Dependency Upgrades
 ---------------------
