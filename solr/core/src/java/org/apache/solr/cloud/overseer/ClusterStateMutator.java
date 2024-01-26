@@ -19,6 +19,7 @@ package org.apache.solr.cloud.overseer;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -133,9 +134,20 @@ public class ClusterStateMutator {
     }
 
     assert !collectionProps.containsKey(CollectionAdminParams.COLL_CONF);
+
+    /**
+     * This doc collection does not fully capture what will be persisted: the zkNodeVersion and
+     * creationTime will only be definitively set in ZK. Hence, the defaults passed here.
+     */
     DocCollection newCollection =
         DocCollection.create(
-            cName, slices, collectionProps, router, -1, stateManager.getPrsSupplier(cName));
+            cName,
+            slices,
+            collectionProps,
+            router,
+            -1,
+            Instant.EPOCH,
+            stateManager.getPrsSupplier(cName));
 
     return new ZkWriteCommand(cName, newCollection);
   }
