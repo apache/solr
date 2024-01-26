@@ -46,6 +46,11 @@ public class URLUtil {
     return null;
   }
 
+  public static boolean isBaseUrl(String url) {
+    final var normalizedUrl = removeTrailingSlashIfPresent(url);
+    return normalizedUrl.endsWith("/solr");
+  }
+
   /**
    * @param coreUrl a URL pointing to a specific "core" or collection (i.e. that adheres loosely to
    *     the form "scheme://host:port/solr/coreName")

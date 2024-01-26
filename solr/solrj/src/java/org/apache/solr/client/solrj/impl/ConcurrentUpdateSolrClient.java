@@ -52,6 +52,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,8 +101,13 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
    */
   protected ConcurrentUpdateSolrClient(Builder builder) {
     this.internalHttpClient = (builder.httpClient == null);
+    final var hscBuilder =
+        (URLUtil.isBaseUrl(builder.baseSolrUrl))
+            ? new HttpSolrClient.Builder(builder.baseSolrUrl)
+            : new HttpSolrClient.Builder(URLUtil.extractBaseUrl(builder.baseSolrUrl))
+                .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(builder.baseSolrUrl));
     this.client =
-        new HttpSolrClient.Builder(builder.baseSolrUrl)
+        hscBuilder
             .withHttpClient(builder.httpClient)
             .withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS)
             .withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS)
