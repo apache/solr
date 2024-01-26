@@ -574,7 +574,7 @@ The indexes must have completed commits, and should be locked against writes unt
 The target core index must already exist and have a compatible schema with the one or more indexes that will be merged to it.
 Another commit on the target core should also be performed after the merge is complete.
 --
-[example.tab-pane#v1coreadmin-mergeindexes]
+[example.tab-pane#v1coreadmin-mergeindexes-dir]
 ====
 [.tab-label]*V1 API*
 [source,bash]
@@ -582,7 +582,7 @@ Another commit on the target core should also be performed after the merge is co
 curl -X GET "http://localhost:8983/solr/admin/cores?action=MERGEINDEXES&core=targetCoreName&indexDir=path/to/core1/data/index&indexDir=path/to/core2/data/index"
 ----
 ====
-[example.tab-pane#v2coreadmin-mergeindexes]
+[example.tab-pane#v2coreadmin-mergeindexes-dir]
 ====
 [.tab-label]*V2 API*
 [source,bash]
@@ -602,7 +602,7 @@ A benefit of this approach is that we can merge any Lucene-based index that may 
 
 Alternatively, we can instead use a `srcCore` parameter (`srcCores` in the v2 API), as in the example below:
 --
-[example.tab-pane#v1coreadmin-mergeindexes]
+[example.tab-pane#v1coreadmin-mergeindexes-core]
 ====
 [.tab-label]*V1 API*
 [source,bash]
@@ -610,7 +610,7 @@ Alternatively, we can instead use a `srcCore` parameter (`srcCores` in the v2 AP
 curl -X GET "http://localhost:8983/solr/admin/cores?action=mergeindexes&core=targetCoreName&srcCore=core1&srcCore=core2"
 ----
 ====
-[example.tab-pane#v2coreadmin-mergeindexes]
+[example.tab-pane#v2coreadmin-mergeindexes-core]
 ====
 [.tab-label]*V2 API*
 [source,bash]
@@ -788,8 +788,27 @@ If the `split.key` parameter is specified then only documents having the same ro
 == REQUESTSTATUS
 
 Request the status of an already submitted asynchronous CoreAdmin API call.
+--
+[example.tab-pane#v1coreadmin-requeststatus]
+====
+[.tab-label]*V1 API*
 
-`admin/cores?action=REQUESTSTATUS&requestid=_id_`
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=REQUESTSTATUS&requestid=id
+
+----
+====
+[example.tab-pane#v2coreadmin-requeststatus]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/node/commands/id
+----
+====
+--
 
 === Core REQUESTSTATUS Parameters
 

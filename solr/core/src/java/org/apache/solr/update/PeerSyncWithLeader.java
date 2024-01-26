@@ -85,7 +85,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     final var coreName = URLUtil.extractCoreFromCoreUrl(leaderUrl);
     this.clientToLeader =
         new HttpSolrClient.Builder(leaderBaseUrl)
-            .withDefaultDataStore(coreName)
+            .withDefaultCollection(coreName)
             .withHttpClient(httpClient)
             .build();
 

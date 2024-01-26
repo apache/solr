@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -59,7 +60,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     org.apache.hadoop.security.Groups hGroups =
         new org.apache.hadoop.security.Groups(new Configuration());
     try {
-      List<String> g = hGroups.getGroups(System.getProperty("user.name"));
+      List<String> g = hGroups.getGroups(EnvUtils.getProperty("user.name"));
       if (g != null && g.size() > 0) {
         group = g.get(0);
       }
@@ -279,7 +280,8 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @Test
   public void testProxyValidateGroup() throws Exception {
-    solrClient.request(getProxyRequest("anyHostUsersGroup", System.getProperty("user.name"), null));
+    solrClient.request(
+        getProxyRequest("anyHostUsersGroup", EnvUtils.getProperty("user.name"), null));
     assertTrue(ImpersonatorCollectionsHandler.called.get());
   }
 

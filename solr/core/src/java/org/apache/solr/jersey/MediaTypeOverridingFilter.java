@@ -17,16 +17,16 @@
 
 package org.apache.solr.jersey;
 
-import static javax.ws.rs.core.HttpHeaders.CONTENT_TYPE;
+import static jakarta.ws.rs.core.HttpHeaders.CONTENT_TYPE;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.Context;
 import java.io.IOException;
 import java.util.List;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ContainerResponseFilter;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.Context;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.handler.admin.ZookeeperReadAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -55,7 +55,8 @@ public class MediaTypeOverridingFilter implements ContainerResponseFilter {
 
     // Some endpoints have their own media-type logic and opt out of the overriding behavior this
     // filter provides.
-    if (EXEMPTED_RESOURCES.contains(resourceInfo.getResourceClass())) {
+    if (resourceInfo.getResourceClass() == null
+        || EXEMPTED_RESOURCES.contains(resourceInfo.getResourceClass())) {
       return;
     }
 

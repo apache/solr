@@ -249,8 +249,8 @@ public class ClientUtils {
    *     through {@link org.apache.solr.client.solrj.SolrClient#request(SolrRequest, String)}
    * @param request the {@link SolrRequest} being executed
    */
-  public static boolean shouldApplyDefaultDataStore(
+  public static boolean shouldApplyDefaultCollection(
       String providedCollection, SolrRequest<? extends SolrResponse> request) {
-    return providedCollection == null && request.requiresDataStore();
+    return providedCollection == null && request.requiresCollection();
   }
 }
