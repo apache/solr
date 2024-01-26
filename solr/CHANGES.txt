@@ -30,6 +30,7 @@ Optimizations
 Bug Fixes
 ---------------------
 
+
 Deprecation Removals
 ----------------------
 
@@ -200,6 +201,8 @@ Bug Fixes
 
 * SOLR-17120: Fix NullPointerException in UpdateLog.applyOlderUpdates that can occur if there are multiple partial
   updates of the same document in separate requests using commitWithin. (Calvin Smith, Christine Poerschke)
+
+* SOLR-17112: bin/solr script doesn't do ps properly on some systems. (Vincenzo D'Amore via Eric Pugh)
 
 Dependency Upgrades
 ---------------------
