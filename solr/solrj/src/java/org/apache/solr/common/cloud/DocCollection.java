@@ -411,8 +411,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
         + getZNode()
         + "/"
         + znodeVersion
-        + "//"
-        + creationTime.toEpochMilli()
         + " "
         + (perReplicaStatesRef == null ? "" : perReplicaStatesRef.get())
         + ")="
