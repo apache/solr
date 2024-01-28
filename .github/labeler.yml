@@ -224,6 +224,9 @@ cat:index:
       - any-glob-to-any-file:
           - '**/org/apache/solr/index/**'
           - '**/org/apache/solr/hdfs/index/**'
+          - '**/org/apache/solr/update/**'
+          - '**/org/apache/solr/hdfs/update/**'
+          - '**/org/apache/solr/scripting/update/**'
 
 cat:logging:
   - changed-files:
@@ -267,10 +270,3 @@ cat:servlet:
   - changed-files:
       - any-glob-to-any-file:
           - '**/org/apache/solr/servlet/**'
-
-cat:update:
-  - changed-files:
-      - any-glob-to-any-file:
-          - '**/org/apache/solr/update/**'
-          - '**/org/apache/solr/hdfs/update/**'
-          - '**/org/apache/solr/scripting/update/**'
