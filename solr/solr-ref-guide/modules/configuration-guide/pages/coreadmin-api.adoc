@@ -573,17 +573,56 @@ The `MERGEINDEXES` action merges one or more indexes to another index.
 The indexes must have completed commits, and should be locked against writes until the merge is complete or the resulting merged index may become corrupted.
 The target core index must already exist and have a compatible schema with the one or more indexes that will be merged to it.
 Another commit on the target core should also be performed after the merge is complete.
+--
+[example.tab-pane#v1coreadmin-mergeindexes-dir]
+====
+[.tab-label]*V1 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/solr/admin/cores?action=MERGEINDEXES&core=targetCoreName&indexDir=path/to/core1/data/index&indexDir=path/to/core2/data/index"
+----
+====
+[example.tab-pane#v2coreadmin-mergeindexes-dir]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Content-Type: application/json' -d '
+{
+  "indexDirs": ["path/to/core1/data/index","path/to/core2/data/index"]
+}
+'
+----
+====
+--
 
-`admin/cores?action=MERGEINDEXES&core=_new-core-name_&indexDir=_path/to/core1/data/index_&indexDir=_path/to/core2/data/index_`
-
-In this example, we use the `indexDir` parameter to define the index locations of the source cores.
+In this example, we use the `indexDir` parameter (`indexDirs` in the v2 API) to define the index locations of the source cores.
 The `core` parameter defines the target index.
 A benefit of this approach is that we can merge any Lucene-based index that may not be associated with a Solr core.
 
-Alternatively, we can instead use a `srcCore` parameter, as in this example:
-
-`admin/cores?action=mergeindexes&core=_new-core-name_&srcCore=_core1-name_&srcCore=_core2-name_`
-
+Alternatively, we can instead use a `srcCore` parameter (`srcCores` in the v2 API), as in the example below:
+--
+[example.tab-pane#v1coreadmin-mergeindexes-core]
+====
+[.tab-label]*V1 API*
+[source,bash]
+----
+curl -X GET "http://localhost:8983/solr/admin/cores?action=mergeindexes&core=targetCoreName&srcCore=core1&srcCore=core2"
+----
+====
+[example.tab-pane#v2coreadmin-mergeindexes-core]
+====
+[.tab-label]*V2 API*
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/targetCoreName/merge-indices -H 'Content-Type: application/json' -d '
+{
+  "srcCores": ["core1","core2"]
+}
+'
+----
+====
+--
 This approach allows us to define cores that may not have an index path that is on the same physical server as the target core.
 However, we can only use Solr cores as the source indexes.
 Another benefit of this approach is that we don't have as high a risk for corruption if writes occur in parallel with the source index.
@@ -749,8 +788,27 @@ If the `split.key` parameter is specified then only documents having the same ro
 == REQUESTSTATUS
 
 Request the status of an already submitted asynchronous CoreAdmin API call.
+--
+[example.tab-pane#v1coreadmin-requeststatus]
+====
+[.tab-label]*V1 API*
 
-`admin/cores?action=REQUESTSTATUS&requestid=_id_`
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=REQUESTSTATUS&requestid=id
+
+----
+====
+[example.tab-pane#v2coreadmin-requeststatus]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/node/commands/id
+----
+====
+--
 
 === Core REQUESTSTATUS Parameters
 

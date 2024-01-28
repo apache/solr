@@ -555,7 +555,8 @@ public class Http2SolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
-    if (collection == null) collection = defaultCollection;
+    if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest))
+      collection = defaultCollection;
     String url = getRequestPath(solrRequest, collection);
     Throwable abortCause = null;
     Request req = null;
@@ -1196,9 +1197,9 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
-    /** Sets a default collection for collection-based requests. */
-    public Builder withDefaultCollection(String defaultCollection) {
-      this.defaultCollection = defaultCollection;
+    /** Sets a default for core or collection based requests. */
+    public Builder withDefaultCollection(String defaultCoreOrCollection) {
+      this.defaultCollection = defaultCoreOrCollection;
       return this;
     }
 
