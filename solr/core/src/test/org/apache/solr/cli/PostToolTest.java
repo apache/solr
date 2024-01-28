@@ -80,7 +80,7 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testBasicRun() throws Exception {
-    final String collection = "aliasedCollection";
+    final String collection = "testBasicRun";
 
     withBasicAuth(CollectionAdminRequest.createCollection(collection, "config", 1, 1, 0, 0))
         .processAndWait(cluster.getSolrClient(), 10);
@@ -93,10 +93,33 @@ public class PostToolTest extends SolrCloudTestCase {
     String[] args = {
       "post",
       "-url",
-      cluster.getJettySolrRunner(0).getBaseUrl() + "/" + collection,
+      cluster.getJettySolrRunner(0).getBaseUrl() + "/" + collection + "/update",
       "-credentials",
       USER + ":" + PASS,
       jsonDoc.getAbsolutePath()
+    };
+    assertEquals(0, runTool(args));
+  }
+
+  @Test
+  public void testRunWithCollectionParam() throws Exception {
+    final String collection = "testRunWithCollectionParam";
+
+    withBasicAuth(CollectionAdminRequest.createCollection(collection, "config", 1, 1, 0, 0))
+            .processAndWait(cluster.getSolrClient(), 10);
+
+    File jsonDoc = File.createTempFile("temp", "json");
+
+    FileWriter fw = new FileWriter(jsonDoc, StandardCharsets.UTF_8);
+    Utils.writeJson(Utils.toJSONString(Map.of("id", "1", "title", "mytitle")), fw, true);
+
+    String[] args = {
+            "post",
+            "-c",
+            collection,
+            "-credentials",
+            USER + ":" + PASS,
+            jsonDoc.getAbsolutePath()
     };
     assertEquals(0, runTool(args));
   }

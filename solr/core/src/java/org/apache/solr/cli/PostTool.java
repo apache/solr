@@ -45,9 +45,16 @@ public class PostTool extends ToolBase {
         Option.builder("url")
             .argName("url")
             .hasArg()
-            .required(true)
+            .required(false)
             .desc("<base Solr update URL>")
             .build(),
+            Option.builder("c")
+                    .longOpt("name")
+                    .argName("NAME")
+                    .hasArg()
+                    .required(false)
+                    .desc("Name of the collection.")
+                    .build(),
         Option.builder("commit").required(false).desc("Issue a commit at end of post").build(),
         Option.builder("optimize").required(false).desc("Issue an optimize at end of post").build(),
         Option.builder("mode")
@@ -103,8 +110,19 @@ public class PostTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
-    String url = cli.getOptionValue("url");
-    URL solrUrl = new URL(url);
+    URL solrUrl = null;
+    if (cli.hasOption("url")){
+      String url = cli.getOptionValue("url");
+      solrUrl = new URL(url);
+    }
+    else if (cli.hasOption("c")){
+      String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("c") + "/update";
+      solrUrl = new URL(url);
+    }
+    else {
+      throw new IllegalArgumentException("Must specify either -url or -c parameter to post documents.");
+
+    }
 
     String mode = SimplePostTool.DEFAULT_DATA_MODE;
     if (cli.hasOption("mode")) {
