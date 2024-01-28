@@ -44,9 +44,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Emulates bin/solr start -e cloud -noprompt; bin/solr post -c gettingstarted example/exampledocs/*.xml; this
- * test is useful for catching regressions in indexing the example docs in collections that use data
- * driven functionality and managed schema features of the default configset (configsets/_default).
+ * Emulates bin/solr start -e cloud -noprompt; bin/solr post -c gettingstarted
+ * example/exampledocs/*.xml; this test is useful for catching regressions in indexing the example
+ * docs in collections that use data driven functionality and managed schema features of the default
+ * configset (configsets/_default).
  */
 public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
@@ -114,7 +115,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         invalidToolExitStatus,
         tool.runTool(cli));
 
-    // now index docs like bin/post would, but we can't use SimplePostTool because it uses
+    // now index docs like bin/solr post would, but we can't use SimplePostTool because it uses
     // System.exit when it encounters an error, which JUnit doesn't like ...
     log.info("Created collection, now posting example docs!");
     Path exampleDocsDir = Path.of(ExternalPaths.SOURCE_HOME, "example", "exampledocs");

@@ -106,7 +106,7 @@ public class PostToolTest extends SolrCloudTestCase {
     final String collection = "testRunWithCollectionParam";
 
     withBasicAuth(CollectionAdminRequest.createCollection(collection, "config", 1, 1, 0, 0))
-            .processAndWait(cluster.getSolrClient(), 10);
+        .processAndWait(cluster.getSolrClient(), 10);
 
     File jsonDoc = File.createTempFile("temp", "json");
 
@@ -114,12 +114,7 @@ public class PostToolTest extends SolrCloudTestCase {
     Utils.writeJson(Utils.toJSONString(Map.of("id", "1", "title", "mytitle")), fw, true);
 
     String[] args = {
-            "post",
-            "-c",
-            collection,
-            "-credentials",
-            USER + ":" + PASS,
-            jsonDoc.getAbsolutePath()
+      "post", "-c", collection, "-credentials", USER + ":" + PASS, jsonDoc.getAbsolutePath()
     };
     assertEquals(0, runTool(args));
   }
