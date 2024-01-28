@@ -47,7 +47,7 @@ tool:build:
           - buildSrc/**
 
 # Add 'tools' label for changes to dev tools
-tool:scripts:
+scripts:
   - changed-files:
       - any-glob-to-any-file:
           - dev-tools/**
@@ -61,6 +61,8 @@ jetty-server:
           - solr/server/contexts/**
           - solr/server/resources/**
           - solr/server/modules/**
+          - '**/org/apache/solr/servlet/**'
+          - '**/org/apache/solr/logging/**'
 
 # Add 'start-scripts' label for changes to start scripts
 start-scripts:
@@ -73,15 +75,6 @@ configs:
   - changed-files:
       - any-glob-to-any-file:
           - solr/server/solr/**
-
-# Add 'api' label
-api:
-  - changed-files:
-      - any-glob-to-any-file:
-          - solr/api/**
-          - solr/core/src/java/org/apache/solr/api/**
-          - solr/core/src/java/org/apache/solr/cloud/api/**
-          - solr/core/src/java/org/apache/solr/jersey/**
 
 # Add 'client:solrj' labels
 client:solrj:
@@ -182,10 +175,14 @@ tests:
           - '**/src/test-files/**'
 
 # Add category labels loosely based on java packages
-cat:analysis:
+# Add 'api' label
+cat:api:
   - changed-files:
       - any-glob-to-any-file:
-          - '**/org/apache/solr/analysis/**'
+          - solr/api/**
+          - solr/core/src/java/org/apache/solr/api/**
+          - solr/core/src/java/org/apache/solr/cloud/api/**
+          - solr/core/src/java/org/apache/solr/jersey/**
 
 cat:cli:
   - changed-files:
@@ -198,27 +195,6 @@ cat:cloud:
           - '**/org/apache/solr/cloud/**'
           - '**/org/apache/solr/cluster/**'
 
-cat:backup:
-  - changed-files:
-      - any-glob-to-any-file:
-          - '**/org/apache/solr/core/backup/**'
-          - '**/org/apache/solr/hdfs/backup/**'
-
-cat:core:
-  - changed-files:
-      - any-glob-to-any-file:
-          - '**/org/apache/solr/core/**'
-
-cat:filestore:
-  - changed-files:
-      - any-glob-to-any-file:
-          - '**/org/apache/solr/filestore/**'
-
-cat:handler:
-  - changed-files:
-      - any-glob-to-any-file:
-          - '**/org/apache/solr/handler/**'
-
 cat:index:
   - changed-files:
       - any-glob-to-any-file:
@@ -227,11 +203,7 @@ cat:index:
           - '**/org/apache/solr/update/**'
           - '**/org/apache/solr/hdfs/update/**'
           - '**/org/apache/solr/scripting/update/**'
-
-cat:logging:
-  - changed-files:
-      - any-glob-to-any-file:
-          - '**/org/apache/solr/logging/**'
+          - '**/org/apache/solr/handler/loader/**'
 
 cat:metrics:
   - changed-files:
@@ -243,6 +215,7 @@ cat:packagemanager:
       - any-glob-to-any-file:
           - '**/org/apache/solr/packagemanager/**'
           - '**/org/apache/solr/pkg/**'
+          - '**/org/apache/solr/filestore/**'
 
 cat:schema:
   - changed-files:
@@ -260,13 +233,10 @@ cat:search:
           - '**/org/apache/solr/parser/**'
           - '**/org/apache/solr/query/**'
           - '**/org/apache/solr/spelling/**'
+          - '**/org/apache/solr/analysis/**'
+          - '**/org/apache/solr/handler/component/**'
 
 cat:security:
   - changed-files:
       - any-glob-to-any-file:
           - '**/org/apache/solr/security/**'
-
-cat:servlet:
-  - changed-files:
-      - any-glob-to-any-file:
-          - '**/org/apache/solr/servlet/**'
