@@ -44,7 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Emulates bin/solr -e cloud -noprompt; bin/post -c gettingstarted example/exampledocs/*.xml; this
+ * Emulates bin/solr start -e cloud -noprompt; bin/solr post -c gettingstarted example/exampledocs/*.xml; this
  * test is useful for catching regressions in indexing the example docs in collections that use data
  * driven functionality and managed schema features of the default configset (configsets/_default).
  */
