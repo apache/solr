@@ -1616,19 +1616,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // - the sort doesn't contain score
     // - we don't want score returned.
 
-    // check if we should try and use the filter cache
+    // check if we should try and use the filter cache for the query itself
     final boolean needSort;
-    final boolean useFilterCache;
-    final boolean insertQueryResultsIntoFilterCache;
-    if (cmd.getLen() == 0) {
-      // No rows are being returned so no need to sort and can use the filterCache
-      needSort = false;
-      useFilterCache = true;
-      insertQueryResultsIntoFilterCache = false;
-    } else if ((flags & (GET_SCORES | NO_CHECK_FILTERCACHE)) != 0 || filterCache == null) {
-      needSort = true; // this value should be irrelevant when `useFilterCache=false`
-      useFilterCache = false;
-      insertQueryResultsIntoFilterCache = useFilterCache;
+    final boolean useFilterCacheForQuery;
+    if ((flags & (GET_SCORES | NO_CHECK_FILTERCACHE)) != 0 || filterCache == null) {
+      needSort = true; // this value should be irrelevant when `useFilterCacheForQuery=false`
+      useFilterCacheForQuery = false;
     } else if (q instanceof MatchAllDocsQuery
         || (useFilterForSortedQuery && QueryUtils.isConstantScoreQuery(q))) {
       // special-case MatchAllDocsQuery: implicit default useFilterForSortedQuery=true;
@@ -1640,7 +1633,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final Sort sort = cmd.getSort();
       needSort = cmd.getLen() > 0 && sortIncludesOtherThanScore(sort);
       if (!needSort) {
-        useFilterCache = true;
+        useFilterCacheForQuery = true;
       } else {
         /*
         NOTE: if `sort:score` is specified, it will have no effect, so we really _could_ in
@@ -1649,27 +1642,21 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         expects `score` to be present ... so just make the optimization contingent on the absence
         of `score` in the requested sort.
          */
-        useFilterCache =
+        useFilterCacheForQuery =
             Arrays.stream(sort.getSort()).noneMatch((sf) -> sf.getType() == SortField.Type.SCORE);
       }
-      insertQueryResultsIntoFilterCache = useFilterCache;
     } else {
       // for non-constant-score queries, must sort unless no docs requested
       needSort = cmd.getLen() > 0;
-      useFilterCache = useFilterCacheForDynamicScoreQuery(needSort, cmd);
-      insertQueryResultsIntoFilterCache = useFilterCache;
+      useFilterCacheForQuery = useFilterCacheForDynamicScoreQuery(needSort, cmd);
     }
 
-    if (useFilterCache) {
+    if (useFilterCacheForQuery) {
       // now actually use the filter cache.
       // for large filters that match few documents, this may be
       // slower than simply re-executing the query.
       if (out.docSet == null) {
-        if (insertQueryResultsIntoFilterCache) {
-          out.docSet = getDocSet(cmd.getQuery());
-        } else {
-          out.docSet = getDocSetNC(QueryUtils.makeQueryable(cmd.getQuery()), null);
-        }
+        out.docSet = getDocSet(cmd.getQuery());
         List<Query> filterList = cmd.getFilterList();
         if (filterList != null && !filterList.isEmpty()) {
           out.docSet = DocSetUtil.getDocSet(out.docSet.intersection(getDocSet(filterList)), this);
@@ -1697,7 +1684,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
       }
     } else {
-      fullSortCount.increment();
       // do it the normal way...
       if ((flags & GET_DOCSET) != 0) {
         // this currently conflates returning the docset for the base query vs
@@ -1820,7 +1806,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int[] ids;
     float[] scores;
 
-    boolean needScores = ((cmd.getFlags() & GET_SCORES) != 0) && (cmd.getLen() != 0);
+    boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilterList());
     final Query query =
@@ -1939,7 +1925,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     float[] scores;
     DocSet set;
 
-    boolean needScores = ((cmd.getFlags() & GET_SCORES) != 0) && (cmd.getLen() != 0);
+    boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
     int maxDoc = maxDoc();
     cmd.setMinExactCount(Integer.MAX_VALUE); // We need the full DocSet
 
