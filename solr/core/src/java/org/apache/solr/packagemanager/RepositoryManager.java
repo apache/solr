@@ -149,7 +149,10 @@ public class RepositoryManager {
     String path = FileStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
     PackageUtils.uploadKey(key, path, Paths.get(solrHome));
     PackageUtils.getJsonStringFromUrl(
-        solrClient, "/api/node/files" + path, new ModifiableSolrParams().add("sync", "true"));
+        solrClient,
+        "/api/node/files" + path,
+        new ModifiableSolrParams().add("sync", "true"),
+        false);
   }
 
   private String getRepositoriesJson(SolrZkClient zkClient)

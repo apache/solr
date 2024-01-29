@@ -130,7 +130,7 @@ public class PackageUtils {
   public static <T> T getJson(SolrClient client, String path, Class<T> klass) {
     try {
       return getMapper()
-          .readValue(getJsonStringFromUrl(client, path, new ModifiableSolrParams()), klass);
+          .readValue(getJsonStringFromUrl(client, path, new ModifiableSolrParams(), false), klass);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -155,9 +155,12 @@ public class PackageUtils {
   }
 
   /** Returns JSON string from a given Solr URL */
-  public static String getJsonStringFromUrl(SolrClient client, String path, SolrParams params) {
+  public static String getJsonStringFromUrl(
+      SolrClient client, String path, SolrParams params, boolean requiresCollection) {
     try {
-      GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
+      GenericSolrRequest request =
+          new GenericSolrRequest(SolrRequest.METHOD.GET, path, params)
+              .setRequiresCollection(requiresCollection);
       request.setResponseParser(new JsonMapResponseParser());
       NamedList<Object> response = client.request(request);
       return response.jsonStr();

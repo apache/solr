@@ -237,8 +237,10 @@ public class PackageManager implements Closeable {
       NamedList<Object> result =
           solrClient.request(
               new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
-                  PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS"));
+                      SolrRequest.METHOD.GET,
+                      PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS")
+                  .setRequiresCollection(
+                      false) /* Making a collection request, but already baked into path */);
       packages =
           (Map<String, String>)
               result._get("/response/params/PKG_VERSIONS", Collections.emptyMap());
@@ -420,8 +422,10 @@ public class PackageManager implements Closeable {
             solrClient
                 .request(
                     new GenericSolrRequest(
-                        SolrRequest.METHOD.GET,
-                        PackageUtils.getCollectionParamsPath(collection) + "/packages"))
+                            SolrRequest.METHOD.GET,
+                            PackageUtils.getCollectionParamsPath(collection) + "/packages")
+                        .setRequiresCollection(
+                            false) /* Making a collection-request, but already baked into path */)
                 .asShallowMap()
                 .containsKey("params");
         SolrCLI.postJsonToSolr(
@@ -722,8 +726,10 @@ public class PackageManager implements Closeable {
       NamedList<Object> response =
           solrClient.request(
               new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
-                  PackageUtils.getCollectionParamsPath(collection) + "/packages"));
+                      SolrRequest.METHOD.GET,
+                      PackageUtils.getCollectionParamsPath(collection) + "/packages")
+                  .setRequiresCollection(
+                      false) /* Making a collection-request, but already baked into path */);
       return (Map<String, String>)
           response._get("/response/params/packages/" + packageName, Collections.emptyMap());
     } catch (Exception ex) {
@@ -766,7 +772,8 @@ public class PackageManager implements Closeable {
 
           if ("GET".equalsIgnoreCase(cmd.method)) {
             String response =
-                PackageUtils.getJsonStringFromUrl(solrClient, path, new ModifiableSolrParams());
+                PackageUtils.getJsonStringFromUrl(
+                    solrClient, path, new ModifiableSolrParams(), false);
             PackageUtils.printGreen(response);
             String actualValue = null;
             try {
@@ -816,7 +823,8 @@ public class PackageManager implements Closeable {
 
             if ("GET".equalsIgnoreCase(cmd.method)) {
               String response =
-                  PackageUtils.getJsonStringFromUrl(solrClient, path, new ModifiableSolrParams());
+                  PackageUtils.getJsonStringFromUrl(
+                      solrClient, path, new ModifiableSolrParams(), true);
               PackageUtils.printGreen(response);
               String actualValue = null;
               try {
@@ -1101,7 +1109,8 @@ public class PackageManager implements Closeable {
           PackageUtils.getJsonStringFromUrl(
               solrClient,
               PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS",
-              new ModifiableSolrParams().add("omitHeader", "true"));
+              new ModifiableSolrParams().add("omitHeader", "true"),
+              true);
       String version = null;
       try {
         version =

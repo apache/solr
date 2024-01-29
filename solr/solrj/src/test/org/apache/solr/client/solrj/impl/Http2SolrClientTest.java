@@ -1013,7 +1013,8 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
                 getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
             .build()) {
       GenericSolrRequest req =
-          new GenericSolrRequest(SolrRequest.METHOD.GET, "/select", params("q", "*:*"));
+          new GenericSolrRequest(SolrRequest.METHOD.GET, "/select", params("q", "*:*"))
+              .setRequiresCollection(true);
       req.setResponseParser(new InputStreamResponseParser("xml"));
       SimpleSolrResponse rsp = req.process(client);
       Object stream = rsp.getResponse().get("stream");
