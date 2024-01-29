@@ -1594,7 +1594,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       if ((flags & NO_SET_QCACHE) == 0) {
         // handle 0 special case as well as avoid idiv in the common case.
-        if (maxDocRequested < queryResultWindowSize) {
+        if (cmd.getLen() == 0) {
+          supersetMaxDoc = 0;
+        } else if (maxDocRequested < queryResultWindowSize) {
           supersetMaxDoc = queryResultWindowSize;
         } else {
           supersetMaxDoc =
@@ -1818,7 +1820,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int[] ids;
     float[] scores;
 
-    boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
+    boolean needScores = ((cmd.getFlags() & GET_SCORES) != 0) && (cmd.getLen() != 0);
 
     ProcessedFilter pf = getProcessedFilter(cmd.getFilterList());
     final Query query =
@@ -1937,7 +1939,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     float[] scores;
     DocSet set;
 
-    boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
+    boolean needScores = ((cmd.getFlags() & GET_SCORES) != 0) && (cmd.getLen() != 0);
     int maxDoc = maxDoc();
     cmd.setMinExactCount(Integer.MAX_VALUE); // We need the full DocSet
 
