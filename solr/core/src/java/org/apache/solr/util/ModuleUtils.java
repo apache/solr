@@ -56,7 +56,7 @@ public class ModuleUtils {
    * @return set of raw volume names from sysprop and/or env.var
    */
   static Set<String> resolveFromSyspropOrEnv() {
-    return Set.copyOf(EnvUtils.getPropAsList("solr.modules", Collections.emptyList()));
+    return Set.copyOf(EnvUtils.getPropertyAsList("solr.modules", Collections.emptyList()));
   }
 
   /** Returns true if a module name is valid and exists in the system */

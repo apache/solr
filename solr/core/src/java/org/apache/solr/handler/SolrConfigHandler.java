@@ -59,7 +59,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
-import org.apache.solr.client.solrj.request.DataStoreSolrRequest;
+import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapSerializable;
@@ -212,9 +212,10 @@ public class SolrConfigHandler extends RequestHandlerBase
             resp.add(
                 ZNODEVER,
                 Map.of(
-                    ConfigOverlay.NAME, req.getCore().getSolrConfig().getOverlay().getVersion(),
+                    ConfigOverlay.NAME,
+                    req.getCore().getSolrConfig().getOverlay().getVersion(),
                     RequestParams.NAME,
-                        req.getCore().getSolrConfig().getRequestParams().getZnodeVersion()));
+                    req.getCore().getSolrConfig().getRequestParams().getZnodeVersion()));
             boolean isStale = false;
             int expectedVersion = req.getParams().getInt(ConfigOverlay.NAME, -1);
             int actualVersion = req.getCore().getSolrConfig().getOverlay().getVersion();
@@ -959,7 +960,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     }
   }
 
-  private static class PerReplicaCallable extends DataStoreSolrRequest<SolrResponse>
+  private static class PerReplicaCallable extends CollectionRequiringSolrRequest<SolrResponse>
       implements Callable<Boolean> {
     Replica replica;
     String prop;
@@ -988,7 +989,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       int attempts = 0;
       try (HttpSolrClient solr =
           new HttpSolrClient.Builder(replica.getBaseUrl())
-              .withDefaultDataStore(replica.getCoreName())
+              .withDefaultCollection(replica.getCoreName())
               .build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (true) {

@@ -27,7 +27,7 @@ import org.apache.solr.common.params.SolrParams;
  *
  * @since solr 1.3
  */
-public class DirectXmlRequest extends DataStoreSolrRequest<UpdateResponse>
+public class DirectXmlRequest extends CollectionRequiringSolrRequest<UpdateResponse>
     implements IsUpdateRequest {
 
   final String xml;

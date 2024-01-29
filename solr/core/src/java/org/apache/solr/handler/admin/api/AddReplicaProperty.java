@@ -27,10 +27,10 @@ import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFI
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.AddReplicaPropertyApi;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;

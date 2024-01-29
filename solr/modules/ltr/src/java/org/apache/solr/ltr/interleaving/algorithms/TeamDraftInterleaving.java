@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.ltr.interleaving.Interleaving;
 import org.apache.solr.ltr.interleaving.InterleavingResult;
 
@@ -50,7 +51,7 @@ public class TeamDraftInterleaving implements Interleaving {
   static {
     // We try to make things reproducible in the context of our tests by initializing the random
     // instance based on the current seed
-    String seed = System.getProperty("tests.seed");
+    String seed = EnvUtils.getProperty("tests.seed");
     if (seed == null) {
       RANDOM = new Random();
     } else {

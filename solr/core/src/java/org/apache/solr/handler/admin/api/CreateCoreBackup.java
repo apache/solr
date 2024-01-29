@@ -18,10 +18,10 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Optional;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.CreateCoreBackupApi;
 import org.apache.solr.client.api.model.CreateCoreBackupRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
