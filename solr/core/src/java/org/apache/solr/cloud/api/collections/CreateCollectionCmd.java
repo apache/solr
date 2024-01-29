@@ -109,7 +109,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
-    final boolean isPRS = message.getBool(CollectionStateProps.PER_REPLICA_STATE, false);
+    boolean prsDefault = Boolean.parseBoolean(System.getProperty("solr.prs.default", "false"));
+    final boolean isPRS = message.getBool(CollectionStateProps.PER_REPLICA_STATE, prsDefault);
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);

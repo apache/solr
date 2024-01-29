@@ -75,6 +75,7 @@ import org.slf4j.LoggerFactory;
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String PRS_DEFAULT_PROP = System.getProperty("use.per-replica", null);
   public static final Boolean USE_PER_REPLICA_STATE =
       Boolean.parseBoolean(System.getProperty("use.per-replica", "false"));
 
@@ -120,6 +121,13 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       } finally {
         cluster = null;
       }
+    }
+  }
+
+  @Before
+  public void setPrsDefault() {
+    if(PRS_DEFAULT_PROP != null) {
+      System.setProperty("solr.prs.default", PRS_DEFAULT_PROP);
     }
   }
 
