@@ -1617,16 +1617,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // check if we should try and use the filter cache
     final boolean needSort;
     final boolean useFilterCache;
-    final boolean useFilterCacheForQuery;
+    final boolean insertQueryResultsIntoFilterCache;
     if (cmd.getLen() == 0) {
       // No rows are being returned so no need to sort and can use the filterCache
       needSort = false;
       useFilterCache = true;
-      useFilterCacheForQuery = false;
+      insertQueryResultsIntoFilterCache = false;
     } else if ((flags & (GET_SCORES | NO_CHECK_FILTERCACHE)) != 0 || filterCache == null) {
       needSort = true; // this value should be irrelevant when `useFilterCache=false`
       useFilterCache = false;
-      useFilterCacheForQuery = useFilterCache;
+      insertQueryResultsIntoFilterCache = useFilterCache;
     } else if (q instanceof MatchAllDocsQuery
         || (useFilterForSortedQuery && QueryUtils.isConstantScoreQuery(q))) {
       // special-case MatchAllDocsQuery: implicit default useFilterForSortedQuery=true;
@@ -1650,12 +1650,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         useFilterCache =
             Arrays.stream(sort.getSort()).noneMatch((sf) -> sf.getType() == SortField.Type.SCORE);
       }
-      useFilterCacheForQuery = useFilterCache;
+      insertQueryResultsIntoFilterCache = useFilterCache;
     } else {
       // for non-constant-score queries, must sort unless no docs requested
       needSort = cmd.getLen() > 0;
       useFilterCache = useFilterCacheForDynamicScoreQuery(needSort, cmd);
-      useFilterCacheForQuery = useFilterCache;
+      insertQueryResultsIntoFilterCache = useFilterCache;
     }
 
     if (useFilterCache) {
@@ -1663,7 +1663,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // for large filters that match few documents, this may be
       // slower than simply re-executing the query.
       if (out.docSet == null) {
-        if (useFilterCacheForQuery) {
+        if (insertQueryResultsIntoFilterCache) {
           out.docSet = getDocSet(cmd.getQuery());
         } else {
           out.docSet = getDocSetNC(QueryUtils.makeQueryable(cmd.getQuery()), null);
