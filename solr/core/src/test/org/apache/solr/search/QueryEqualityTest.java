@@ -1358,40 +1358,40 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
               "knn",
               req0,
               "{!knn f=vector}" + qvec,
-              "{!knn f=vector fq=''}" + qvec,
+              "{!knn f=vector preFilter=''}" + qvec,
               "{!knn f=vector v=" + qvec + "}");
 
       try (SolrQueryRequest req1 = req("fq", "{!tag=t1}id:1", "xxx", "id:1")) {
-        // either global fq, or (same) fq as localparam
+        // either global fq, or (same) preFilter as localparam
         final Query fqOne =
             assertQueryEqualsAndReturn(
                 "knn",
                 req1,
                 "{!knn f=vector}" + qvec,
                 "{!knn f=vector includeTags=t1}" + qvec,
-                "{!knn f=vector fq='id:1'}" + qvec,
-                "{!knn f=vector fq=$xxx}" + qvec,
+                "{!knn f=vector preFilter='id:1'}" + qvec,
+                "{!knn f=vector preFilter=$xxx}" + qvec,
                 "{!knn f=vector v=" + qvec + "}");
         QueryUtils.checkUnequal(fqNull, fqOne);
 
         try (SolrQueryRequest req2 = req("fq", "{!tag=t2}id:2", "xxx", "id:1", "yyy", "")) {
-          // override global fq with local param to use different filter
+          // override global fq with local param to use different preFilter
           final Query fqOneOverride =
               assertQueryEqualsAndReturn(
                   "knn",
                   req2,
-                  "{!knn f=vector fq='id:1'}" + qvec,
-                  "{!knn f=vector fq=$xxx}" + qvec);
+                  "{!knn f=vector preFilter='id:1'}" + qvec,
+                  "{!knn f=vector preFilter=$xxx}" + qvec);
           QueryUtils.checkEqual(fqOne, fqOneOverride);
 
-          // override global fq with local param to use no filters
+          // override global fq with local param to use no preFilters
           final Query fqNullOverride =
               assertQueryEqualsAndReturn(
                   "knn",
                   req2,
-                  "{!knn f=vector fq=''}" + qvec,
+                  "{!knn f=vector preFilter=''}" + qvec,
                   "{!knn f=vector excludeTags=t2}" + qvec,
-                  "{!knn f=vector fq=$yyy}" + qvec);
+                  "{!knn f=vector preFilter=$yyy}" + qvec);
           QueryUtils.checkEqual(fqNull, fqNullOverride);
         }
       }

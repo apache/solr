@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -36,6 +35,7 @@ import org.apache.solr.search.SyntaxError;
 
 public class KnnQParser extends QParser {
 
+  static final String PRE_FILTER = "preFilter";
   static final String EXCLUDE_TAGS = "excludeTags";
   static final String INCLUDE_TAGS = "includeTags";
 
@@ -123,19 +123,20 @@ public class KnnQParser extends QParser {
       }
     }
 
-    // Explicit fq local params specifying the filter(s) to wrap
-    final String[] localFQs = getLocalParams().getParams(CommonParams.FQ);
-    if (null != localFQs) {
+    // Explicit local params specifying the filter(s) to wrap
+    final String[] preFilters = getLocalParams().getParams(PRE_FILTER);
+    if (null != preFilters) {
 
-      // We don't particularly care if localFQs is empty, the usage below will still work,
+      // We don't particularly care if preFilters is empty, the usage below will still work,
       // but SolrParams API says it should be null not empty...
-      assert 0 != localFQs.length : "SolrParams.getParams should return null, never zero len array";
+      assert 0 != preFilters.length
+          : "SolrParams.getParams should return null, never zero len array";
 
       if (haveGlobalFQTags) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Knn Query Parser does not support combining "
-                + CommonParams.FQ
+                + PRE_FILTER
                 + " localparam with either "
                 + INCLUDE_TAGS
                 + " or "
@@ -143,25 +144,25 @@ public class KnnQParser extends QParser {
                 + " localparams");
       }
 
-      final List<Query> localParamFilters = new ArrayList<>(localFQs.length);
-      for (String fq : localFQs) {
-        final QParser parser = subQuery(fq, null);
+      final List<Query> preFilterQueries = new ArrayList<>(preFilters.length);
+      for (String f : preFilters) {
+        final QParser parser = subQuery(f, null);
         parser.setIsFilter(true);
 
-        // maybe null, ie: `fq=""`
+        // maybe null, ie: `preFilter=""`
         final Query filter = parser.getQuery();
         if (null != filter) {
-          localParamFilters.add(filter);
+          preFilterQueries.add(filter);
         }
       }
       try {
-        return req.getSearcher().getProcessedFilter(localParamFilters).filter;
+        return req.getSearcher().getProcessedFilter(preFilterQueries).filter;
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     }
 
-    // No explicit `fq` localparams specifying what we should filter on.
+    // No explicit `preFilter` localparams specifying what we should filter on.
     //
     // So now, if we're either a filter or a subquery, we have to default to
     // not wrapping anything...

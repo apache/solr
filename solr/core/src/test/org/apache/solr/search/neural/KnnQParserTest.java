@@ -470,13 +470,13 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result[@numFound='1']",
         "//result/doc[1]/str[@name='id'][.='4']");
 
-    // topK=4 w/localparam fq -> 1,4,7,9
+    // topK=4 w/localparam preFilter -> 1,4,7,9
     assertQ(
         req(
             CommonParams.Q,
             "id:(3 4 9 2)",
             "fq",
-            "{!knn f=vector topK=4 fq='id:(1 4 7 8 9)'}" + vectorToSearch,
+            "{!knn f=vector topK=4 preFilter='id:(1 4 7 8 9)'}" + vectorToSearch,
             "fq",
             "id:(4 20 9)",
             "fl",
@@ -519,10 +519,10 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result/doc[3]/str[@name='id'][.='3']",
         "//result/doc[4]/str[@name='id'][.='8']");
 
-    // knn subquery should still accept `fq` local param
+    // knn subquery should still accept `preFilter` local param
     // filt -> topK -> 4,2,3,7,9
     assertQ(
-        req(common, "q", "*:* AND {!knn f=vector topK=5 fq='" + filt + "' v=$vec}"),
+        req(common, "q", "*:* AND {!knn f=vector topK=5 preFilter='" + filt + "' v=$vec}"),
         "//result[@numFound='5']",
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[2]/str[@name='id'][.='2']",
@@ -530,7 +530,8 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='7']",
         "//result/doc[5]/str[@name='id'][.='9']");
 
-    // knn subquery should still accept `fq` local param, and not pre-filter on any global fq params
+    // knn subquery should still accept `preFilter` local param, and not pre-filter on any global fq
+    // params
     // filt -> topK -> 4,2,3,7,9 -> fq -> 3,9
     assertQ(
         req(
@@ -538,7 +539,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "fq",
             "id:(1 9 20 3 5 6 8)",
             "q",
-            "*:* AND {!knn f=vector topK=5 fq='" + filt + "' v=$vec}"),
+            "*:* AND {!knn f=vector topK=5 preFilter='" + filt + "' v=$vec}"),
         "//result[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[2]/str[@name='id'][.='9']");
@@ -549,7 +550,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "fq",
             "id:(1 9 20 3 5 6 8)",
             "q",
-            "id:8^=100 OR {!knn f=vector topK=5 fq='" + filt + "' v=$vec}"),
+            "id:8^=100 OR {!knn f=vector topK=5 preFilter='" + filt + "' v=$vec}"),
         "//result[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='8']",
         "//result/doc[2]/str[@name='id'][.='3']",
@@ -577,11 +578,14 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
       for (SolrQueryRequest req :
           Arrays.asList(
               req(common, "q", "{!knn f=vector topK=10}" + vectorToSearch, "fq", filt),
-              req(common, "q", "{!knn f=vector fq=\"" + filt + "\" topK=10}" + vectorToSearch),
               req(
                   common,
                   "q",
-                  "{!knn f=vector fq=$my_filt topK=10}" + vectorToSearch,
+                  "{!knn f=vector preFilter=\"" + filt + "\" topK=10}" + vectorToSearch),
+              req(
+                  common,
+                  "q",
+                  "{!knn f=vector preFilter=$my_filt topK=10}" + vectorToSearch,
                   "my_filt",
                   filt))) {
         assertQ(
@@ -602,11 +606,16 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
               req(
                   common,
                   "q",
-                  "{!knn f=vector fq=\"" + fx + "\" fq=\"" + fy + "\" topK=4}" + vectorToSearch),
+                  "{!knn f=vector preFilter=\""
+                      + fx
+                      + "\" preFilter=\""
+                      + fy
+                      + "\" topK=4}"
+                      + vectorToSearch),
               req(
                   common,
                   "q",
-                  "{!knn f=vector fq=$fx fq=$fy topK=4}" + vectorToSearch,
+                  "{!knn f=vector preFilter=$fx preFilter=$fy topK=4}" + vectorToSearch,
                   "fx",
                   fx,
                   "fy",
@@ -614,7 +623,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
               req(
                   common,
                   "q",
-                  "{!knn f=vector fq=$multi_filt topK=4}" + vectorToSearch,
+                  "{!knn f=vector preFilter=$multi_filt topK=4}" + vectorToSearch,
                   "multi_filt",
                   fx,
                   "multi_filt",
@@ -630,16 +639,16 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     }
 
     assertQEx(
-        "knn fq localparm incompatible with include/exclude localparams",
-        "does not support combining fq localparam with either",
+        "knn preFilter localparm incompatible with include/exclude localparams",
+        "does not support combining preFilter localparam with either",
         // shouldn't matter if global fq w/tag even exists, usage is an error
-        req("q", "{!knn f=vector fq='id:1' includeTags=xxx}" + vectorToSearch),
+        req("q", "{!knn f=vector preFilter='id:1' includeTags=xxx}" + vectorToSearch),
         SolrException.ErrorCode.BAD_REQUEST);
     assertQEx(
-        "knn fq localparm incompatible with include/exclude localparams",
-        "does not support combining fq localparam with either",
+        "knn preFilter localparm incompatible with include/exclude localparams",
+        "does not support combining preFilter localparam with either",
         // shouldn't matter if global fq w/tag even exists, usage is an error
-        req("q", "{!knn f=vector fq='id:1' excludeTags=xxx}" + vectorToSearch),
+        req("q", "{!knn f=vector preFilter='id:1' excludeTags=xxx}" + vectorToSearch),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -647,10 +656,10 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   public void knnQueryWithFilterQuery_localParamOverridesGlobalFilters() {
     final String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
-    // trivial case: empty fq localparam means no pre-filtering
+    // trivial case: empty preFilter localparam means no pre-filtering
     assertQ(
         req(
-            "q", "{!knn f=vector fq='' topK=5}" + vectorToSearch,
+            "q", "{!knn f=vector preFilter='' topK=5}" + vectorToSearch,
             "fq", "-id:4",
             "fl", "id"),
         "//result[@numFound='4']",
@@ -662,7 +671,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     // localparam prefiltering, global fqs applied independently
     assertQ(
         req(
-            "q", "{!knn f=vector fq='id:(3 4 9 2 7 8)' topK=5}" + vectorToSearch,
+            "q", "{!knn f=vector preFilter='id:(3 4 9 2 7 8)' topK=5}" + vectorToSearch,
             "fq", "-id:4",
             "fl", "id"),
         "//result[@numFound='4']",
@@ -715,8 +724,8 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     // Only 7 matches both of the the regular fq params
     for (SolrQueryRequest req :
         Arrays.asList(
-            // explicit local empty fq
-            req(common, "q", "{!knn f=vector fq='' topK=6}" + vectorToSearch),
+            // explicit local empty preFilter
+            req(common, "q", "{!knn f=vector preFilter='' topK=6}" + vectorToSearch),
             // diff ways of explicitly including none of the global fq params
             req(common, "q", "{!knn f=vector includeTags='' topK=6}" + vectorToSearch),
             req(common, "q", "{!knn f=vector includeTags=bogus topK=6}" + vectorToSearch),
