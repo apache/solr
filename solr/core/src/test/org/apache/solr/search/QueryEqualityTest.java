@@ -1350,8 +1350,10 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
+    final String qvec = "[1.0,2.0,3.0,4.0]";
+
     try (SolrQueryRequest req0 = req()) {
-      final String qvec = "[1.0,2.0,3.0,4.0]";
+
       // no filters
       final Query fqNull =
           assertQueryEqualsAndReturn(
@@ -1395,6 +1397,18 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           QueryUtils.checkEqual(fqNull, fqNullOverride);
         }
       }
+
+      try (SolrQueryRequest reqPostFilter = req("fq", "{!tag=post frange cache=false l=0}9.9")) {
+        // global post-filter fq should always be ignored
+        final Query fqPostFilter =
+            assertQueryEqualsAndReturn(
+                "knn",
+                reqPostFilter,
+                "{!knn f=vector}" + qvec,
+                "{!knn f=vector includeTags=post}" + qvec);
+        QueryUtils.checkEqual(fqNull, fqPostFilter);
+      }
+
     } finally {
       delQ("id:0");
       assertU(commit());
