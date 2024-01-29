@@ -57,6 +57,8 @@ public class SolrReturnFields extends ReturnFields {
   // This *may* include fields that will not be in the final response
   private final Set<String> fields = new HashSet<>();
 
+  private SortSpec _sortSpec = null;
+
   // Field names that are OK to include in the response.
   // This will include pseudo fields, lucene fields, and matching globs
   private Set<String> okFieldNames = new HashSet<>();
@@ -99,7 +101,11 @@ public class SolrReturnFields extends ReturnFields {
   }
 
   public SolrReturnFields(SolrQueryRequest req) {
-    this(req.getParams().getParams(CommonParams.FL), req);
+    this(req, null);
+  }
+
+  public SolrReturnFields(SolrQueryRequest req, SortSpec sortSpec) {
+    this(req.getParams().getParams(CommonParams.FL), req, sortSpec);
   }
 
   public SolrReturnFields(String fl, SolrQueryRequest req) {
@@ -121,6 +127,11 @@ public class SolrReturnFields extends ReturnFields {
   }
 
   public SolrReturnFields(String[] fl, SolrQueryRequest req) {
+    this(fl, req, null);
+  }
+
+  public SolrReturnFields(String[] fl, SolrQueryRequest req, SortSpec sortSpec) {
+    _sortSpec = sortSpec;
     parseFieldList(fl, req);
   }
 
@@ -531,7 +542,7 @@ public class SolrReturnFields extends ReturnFields {
     okFieldNames.add(field);
     okFieldNames.add(key);
     // a valid field name
-    if (SCORE.equals(field)) {
+    if (SCORE.equals(field) && (_sortSpec == null || _sortSpec.getCount() != 0)) {
       _wantsScore = true;
 
       String disp = (key == null) ? field : key;

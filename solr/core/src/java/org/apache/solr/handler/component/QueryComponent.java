@@ -163,13 +163,12 @@ public class QueryComponent extends SearchComponent {
 
       SortSpec sortSpec = parser.getSortSpec(true);
       rb.setSortSpec(sortSpec);
-      boolean someDocs = sortSpec == null || sortSpec.getCount() != 0;
 
       // Set field flags
-      ReturnFields returnFields = new SolrReturnFields(req);
+      ReturnFields returnFields = new SolrReturnFields(req, sortSpec);
       rsp.setReturnFields(returnFields);
       int flags = 0;
-      if (returnFields.wantsScore() && someDocs) {
+      if (returnFields.wantsScore()) {
         flags |= SolrIndexSearcher.GET_SCORES;
       }
       rb.setFieldFlags(flags);
