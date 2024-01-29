@@ -127,7 +127,7 @@ public class PostTool extends ToolBase {
       mode = cli.getOptionValue("mode");
     }
     boolean auto = true;
-    String type = SimplePostTool.DEFAULT_CONTENT_TYPE;
+    String type = null;
     if (cli.hasOption("type")) {
       type = cli.getOptionValue("type");
     }
