@@ -51,28 +51,28 @@ Separating the API "definition" and "implementation" in this way allows us to on
 
 Writing a new v2 API may appear daunting, but additions in reality are actually pretty simple:
 
-1. *Agree on Endpoint Syntax*: Before implementing, developers should generate consensus around what the new API will look like.  General guidelines and conventions for the v2 API syntax are described <<v2-api-conventions.adoc,here>>.
-2. *Create POJO ("Plain Old Java Object") classes as needed to represent the API's request and response*:
+. *Agree on Endpoint Syntax*: Before implementing, developers should generate consensus around what the new API will look like.  General guidelines and conventions for the v2 API syntax are described <<v2-api-conventions.adoc,here>>.
+. *Create POJO ("Plain Old Java Object") classes as needed to represent the API's request and response*:
 ** POJOs are used to represent both the body of the API request (for some `POST` and `PUT` endpoints), as well as the response from the API.
 ** Re-use of existing classes here is preferred where possible.  A library of available POJOs can be found in the `org.apache.solr.client.api.model` package of the `api` gradle project.
 ** POJO class fields are typically "public" and annotated with the Jackson `@JsonProperty` annotations to allow serialization/deserialization.
 ** POJO class fields should also have a Swagger `@Schema` annotation where possible, describing the purpose of the field.  These descriptions are technically non-functional, but add lots of value to our OpenAPI spec and any artifacts generated downstream.
-3. *Find or create an interface to hold the v2 API definition*:
+. *Find or create an interface to hold the v2 API definition*:
 ** API interfaces live in the `org.apache.solr.client.api.endpoint` package of the `api` gradle project.  Interfaces are usually given an "-Api" suffix to indicate their role.
 ** If a new API is similar enough to existing APIs, it may make sense to add the new API definition into an existing interface instead of creating a wholly new one.  Use your best judgement.
-4. *Add a method to the chosen interface representing the API*:
+. *Add a method to the chosen interface representing the API*:
 ** The method should take an argument representing each path and query parameter (annotated with `@PathParam` or `@QueryParam` as appropriate).  If the API is a `PUT` or `POST` that expects a request body, the method should take the request body POJO as its final argument, annotated with `@RequestBody`.
 ** Each method parameter should also be annotated with the Swagger `@Parameter` annotation.  Like the `@Schema` annotation mentioned above, `@Parameter` isn't strictly required for correct operation, but they add lots of value to our OpenAPI spec and generated artifacts.
 ** As a return value, the method should return the response-body POJO.
-5. *Futher JAX-RS Annotation*: The interface method in step (3) has specified its inputs and outputs, but several additional annotations are needed to define how users access the API, and to make it play nice with the code-generation done by Solr's build.
+. *Futher JAX-RS Annotation*: The interface method in step (3) has specified its inputs and outputs, but several additional annotations are needed to define how users access the API, and to make it play nice with the code-generation done by Solr's build.
 ** Each interface must have a `@Path` annotation describing the path that the API is accessed from.  Specific interface methods can also be given `@Path` annotations, making the "effective path" a concatenation of the interface and method-level values.  `@Path` supports a limited regex syntax, and curly-brackets can be used to create named placeholders for path-parameters.
 ** Each interface method should be given an HTTP-method annotation (e.g. `@GET`, `@POST`, etc.)
 ** Each interface method must be marked with a Swagger `@Operation` annotation.  This annotation is used to provide metadata about the API that appears in the OpenAPI specification and in any artifacts generated from that downstream.  At a minimum, `summary` and `tags` values should be specified on the annotation.  (`tags` is used by our SolrJ code generation to group similar APIs together.  Typically APIs are only given a single tag representing the plural name of the most relevant "resource" (e.g. `tags = {"aliases"}`, `tags = {"replica-properties"}`)
-6. *Create a class implementing the API interface*: Implementation classes live in the `core` gradle project, typically in the `org.apache.solr.handler` package or one of its descendants.
+. *Create a class implementing the API interface*: Implementation classes live in the `core` gradle project, typically in the `org.apache.solr.handler` package or one of its descendants.
 ** Implementing classes must extent `JerseyResource`, and are typically named similarly to the API interface created in (2) above without the "-Api" suffix. e.g. `class AddReplicaProperty extends JerseyResource implements AddReplicaPropertyApi`)
 ** Solr's use of Jersey offers us some limited dependency-injection ("DI") capabilities.  Class constructors annotated with `@Inject` can depend on a selection of types made available through DI, such as `CoreContainer`, `SolrQueryRequest`, `SolrCore`, etc.  See the factory-bindings in `JerseyApplications` (or other API classes) for a sense of which types are available for constructor injection.
 ** Add a body to your classes method(s).  For the most part this is "normal" Java development.
-7. *Register your API*: APIs must be registered to be available at runtime.  If the v2 API is associated with an existing v1 RequestHandler, the API class name can be added to the handler's `getJerseyResources` method.  If there is no associated RequestHandler, the API should be registered similar to other APIs in `CoreContainer.load`.
+. *Register your API*: APIs must be registered to be available at runtime.  If the v2 API is associated with an existing v1 RequestHandler, the API class name can be added to the handler's `getJerseyResources` method.  If there is no associated RequestHandler, the API should be registered similar to other APIs in `CoreContainer.load`.
 
 A good example for each of these steps can be seen in Solr's v2 "add-replica-property" API, which has a defining interface https://github.com/apache/solr/blob/9426902acb7081a2e9a1fa29699c5286459e1365/solr/api/src/java/org/apache/solr/client/api/endpoint/AddReplicaPropertyApi.java[AddReplicaPropertyApi], an implementing class https://github.com/apache/solr/blob/9426902acb7081a2e9a1fa29699c5286459e1365/solr/core/src/java/org/apache/solr/handler/admin/api/AddReplicaProperty.java[AddReplicaProperty], and the two POJOs https://github.com/apache/solr/blob/main/solr/api/src/java/org/apache/solr/client/api/model/AddReplicaPropertyRequestBody.java[AddReplicaPropertyRequestBody] and https://github.com/apache/solr/blob/main/solr/api/src/java/org/apache/solr/client/api/model/SolrJerseyResponse.java[SolrJerseyResponse].
 
