@@ -240,7 +240,7 @@ client.add(Arrays.asList(d1, d2));
 This is the Apache Solr query approach designed to support dense vector search:
 
 === knn Query Parser
-The `knn` k-nearest neighbors query parser allows to find the k-nearest documents to the target vector according to indexed dense vectors in the given field.
+The `knn` k-nearest neighbors query parser allows to find the k-nearest documents to the target vector according to indexed dense vectors in the given field.  The set of documents can be Pre-Riltered to reduce the number of vector distance calculations that must be computed, and ensure the best `topK` are returned.
 
 The score for a retrieved document is the approximate distance to the target vector(defined by the similarityFunction configured at indexing time).
 
@@ -264,45 +264,113 @@ The `DenseVectorField` to search in.
 +
 How many k-nearest results to return.
 
-Here's how to run a KNN search:
+`preFilter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: Depends on usage, see below.
+|===
++
+Specifies an explicit list of Pre-Filter query strings to use.
+
+`includeTags`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Indicates that only `fq` filters with the specified `tag` should be considered for implicit Pre-Filtering.  May not be combind with `preFilter`.
+
+
+`excludeTags`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Indicates that `fq` filters with the specified `tag` should be excluded from consideration for implicit Pre-Filtering.  May not be combind with `preFilter`.
+
+
+Here's how to run a simple KNN search:
 
 [source,text]
-&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
+?q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
 
-The search results retrieved are the k-nearest to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the similarityFunction configured at indexing time.
+The search results retrieved are the k=10 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the `similarityFunction` configured at indexing time.
 
-==== Usage with Filter Queries
-The `knn` query parser can be used in filter queries:
-[source,text]
-&q=id:(1 2 3)&fq={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
 
-The `knn` query parser can be used with filter queries:
-[source,text]
-&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq=id:(1 2 3)
+==== Explicit KNN Pre-Filtering
 
-[IMPORTANT]
-====
-Filter queries are executed as pre-filters: the main query refines the sub-set of search results derived from the application of all the filter queries combined as 'MUST' clauses(boolean AND).
-
-This means that in
-[source,text]
-&q=id:(1 2 3)&fq={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
-
-The results are prefiltered by the topK knn retrieval and then only the documents from this subset, matching the query 'q=id:(1 2 3)' are returned.
-
-In
-[source,text]
-&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq=id:(1 2 3)
-
-The results are prefiltered by the fq=id:(1 2 3) and then only the documents from this subset are considered as candidates for the topK knn retrieval.
-
-If you want to run some of the filter queries as post-filters you can follow the standard approach for post-filtering in Apache Solr, using the cache and cost local parameters.
-
-e.g.
+The `knn` query parser's `preFilter` parameter can be specified to reduce the number of candidate documents evaluated for the k-nearest distance calculation:
 
 [source,text]
-&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq={!frange cache=false l=0.99}$q
-====
+?q={!knn f=vector topK=10 preFilter=inStock:true}[1.0, 2.0, 3.0, 4.0]
+
+In the above example, only documents matching the Pre-Filter `inStock:true` will be candidates for consideration when evaluating the k-nearest search against the specified vector.
+
+The `preFilter` parameter may be blank (ex: `preFilter=""`) to indicate that no Pre-Filtering should be performed; or it may be multi-valued -- either through repetition, or via duplicated xref:local-params.adoc#parameter-dereferencing[Parameter References].
+
+These two examples are equivilent:
+
+[source,text]
+?q={!knn f=vector topK=10 preFilter=category:AAA preFilter=inStock:true}[1.0, 2.0, 3.0, 4.0]
+
+[source,text]
+----
+?q={!knn f=vector topK=10 preFilter=$knnPreFilter}[1.0, 2.0, 3.0, 4.0]
+&knnPreFilter=category:AAA
+&knnPreFilter=inStock:true
+----
+
+==== Implicit KNN Pre-Filtering
+
+While the `preFilter` parameter may be explicitly specified on *_any_* usage of the `knn` query parser, the default Pre-Filtering behavior (when no `preFilter` parameter is specified) will vary based on how the `knn` query parser is used:
+
+* When used as the main `q` param: `fq` filters in the request (that are not xref:common-query-parameters.adoc#cache-local-parameter[Solr Post Filters]) will be combined to form an implicit KNN Pre-Filter.
+** This default behavior optimizes the number of vector distance calculations considered, eliminating documents that would eventually be excluded by an `fq` filter anyway.
+** `includeTags` and `excludeTags` may be used to limit the set of `fq` filters used in the Pre-Filter.
+* When used as an `fq` param, or as a subquery clause in a larger query: No implicit Pre-Filter is used.
+** `includeTags` and `excludeTags` may not be used in these situations.
+
+
+The example request below shows two usages of the `knn` query parser that will get _no_ implicit Pre-Filtering from any of the `fq` parameters, because neither usage is as the main `q` param:
+
+[source,text]
+----
+?q=(color_str:red OR {!knn f=color_vector topK=10 v="[1.0, 2.0, 3.0, 4.0]"})
+&fq={!knn f=title_vector topK=10}[9.0, 8.0, 7.0, 6.0]
+&fq=inStock:true
+----
+
+
+However, the next example shows a basic request where all `fq` parameters will be used as implicit Pre-Filters on the main `knn` query:
+
+[source,text]
+----
+?q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
+&fq=category:AAA
+&fq=inStock:true
+----
+
+If we modify the above request to add tags to the `fq` parameters, we can specify an `includeTags` option on the `knn` parser to limit which `fq` filters are used for Pre-Filtering:
+
+[source,text]
+----
+?q={!knn f=vector topK=10 includeTags=for_knn}[1.0, 2.0, 3.0, 4.0]
+&fq=category:AAA
+&fq={!tag=for_knn}inStock:true
+----
+
+In this example, only the `inStock:true` filter will be used for KNN Pre-Filtering to find the the `topK=10` documents, and the `category:AAA` filter will be applied independently; possibly resulting in less then 10 total matches.
+
+
+Some use case where `includeTags` and/or `excludeTags` may be more useful then an explicit `preFilter` parameters:
+
+* You have some `fq` parameters that are xref:configuration-guide:requesthandlers-searchcomponents.adoc#paramsets-and-useparams[re-used on many requests] (even when you don't use the `knn` parser) that you wish to be used as KNN Pre-Filters when you _do_ use the `knn` query parser.
+* You typically want all `fq` params to be used as KNN Pre-Filters, but when users "drill down" on Facets, you want the `fq` parameters you add to be excluded from the KNN Pre-Filtering so that the result set gets smaller; instead of just computing a new `topK` set.
+
 
 
 ==== Usage as Re-Ranking Query
