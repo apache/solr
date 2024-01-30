@@ -1548,6 +1548,33 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testGroupingNoRows() throws Exception {
+    assertU(add(doc("id", "1", "date_dt", "2012-11-20T00:00:00Z")));
+    assertU(add(doc("id", "2", "date_dt", "2012-11-21T00:00:00Z")));
+    assertU(commit());
+
+    assertU(add(doc("id", "3", "date_dt", "2012-11-20T00:00:00Z")));
+    assertU(add(doc("id", "4", "date_dt", "2013-01-15T00:00:00Z")));
+    assertU(add(doc("id", "5")));
+    assertU(commit());
+
+    assertJQ(
+        req(
+            params(
+                "q",
+                "*:*",
+                "rows",
+                "0",
+                "group",
+                "true",
+                "group.ngroups",
+                "true",
+                "group.field",
+                "date_dt")),
+        "/grouped=={'date_dt':{'matches':5,'ngroups':4, 'groups':[ ]}}");
+  }
+
+  @Test
   public void testGroupingOnDateField() throws Exception {
     assertU(add(doc("id", "1", "date_dt", "2012-11-20T00:00:00Z")));
     assertU(add(doc("id", "2", "date_dt", "2012-11-21T00:00:00Z")));
