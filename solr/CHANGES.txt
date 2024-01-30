@@ -103,6 +103,9 @@ Other Changes
 ---------------------
 * SOLR-17126: Cut over System.getProperty to EnvUtils.getProperty (janhoy)
 
+* SOLR-17066: GenericSolrRequest now has a `setRequiresCollection` setter that allows it to specify whether
+  it should make use of the client-level default collection/core. (Jason Gerlowski)
+
 ==================  9.5.0 ==================
 New Features
 ---------------------
@@ -211,6 +214,8 @@ Dependency Upgrades
 * SOLR-17026: Upgrade to Gradle 8.4 (Kevin Risden)
 
 * SOLR-17089: Upgrade Jersey to 3.1.5 (Jason Gerlowski)
+
+* SOLR-17097: Upgrade Lucene to 9.9.2 (Nazerke Seidan, Christine Poerschke, Pierre Salagnac)
 
 Other Changes
 ---------------------

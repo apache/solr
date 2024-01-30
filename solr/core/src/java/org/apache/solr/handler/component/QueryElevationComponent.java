@@ -55,6 +55,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.search.Sort;
@@ -1350,7 +1351,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
     @Override
     public FieldComparator<Integer> newComparator(
-        String fieldName, final int numHits, boolean enableSkipping, boolean reversed) {
+        String fieldName, final int numHits, Pruning pruning, boolean reversed) {
       return new SimpleFieldComparator<>() {
         final int[] values = new int[numHits];
         int bottomVal;
