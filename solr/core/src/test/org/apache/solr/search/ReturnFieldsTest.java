@@ -21,6 +21,7 @@ import static org.apache.solr.response.DocsStreamer.convertLuceneDocToSolrDoc;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
@@ -393,6 +394,17 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
         "//*[@numFound='1'] ",
         "//str[@name='id'][.='1']",
         "//arr[@name='#foo_s']/str[.='how now brown cow']");
+  }
+
+  @Test
+  public void testRowsZeroNoScore() {
+    SortSpec sortSpec = new SortSpec(null, Collections.emptyList(), 0, 0);
+    ReturnFields rf = new SolrReturnFields(req("fl", "id,score"), sortSpec);
+    assertFalse(rf.wantsScore());
+    assertFalse(rf.wantsField("score"));
+    assertTrue(rf.wantsField("id"));
+    assertFalse(rf.wantsField("xxx"));
+    assertFalse(rf.wantsAllFields());
   }
 
   /**

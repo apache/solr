@@ -542,11 +542,19 @@ public class SolrReturnFields extends ReturnFields {
     okFieldNames.add(field);
     okFieldNames.add(key);
     // a valid field name
-    if (SCORE.equals(field) && (_sortSpec == null || _sortSpec.getCount() != 0)) {
-      _wantsScore = true;
+    if (SCORE.equals(field)) {
+      if (_sortSpec == null || _sortSpec.getCount() != 0) {
+        _wantsScore = true;
 
-      String disp = (key == null) ? field : key;
-      augmenters.addTransformer(new ScoreAugmenter(disp));
+        String disp = (key == null) ? field : key;
+        augmenters.addTransformer(new ScoreAugmenter(disp));
+      } else {
+        reqFieldNames.remove(field);
+        reqFieldNames.remove(key);
+        fields.remove(field);
+        okFieldNames.remove(field);
+        okFieldNames.remove(key);
+      }
     }
   }
 
