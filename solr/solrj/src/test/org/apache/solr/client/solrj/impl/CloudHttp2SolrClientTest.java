@@ -593,7 +593,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     NamedList<Object> resp;
     try (SolrClient client =
-        new HttpSolrClient.Builder(baseUrl + "/" + collectionName)
+        new HttpSolrClient.Builder(baseUrl)
+            .withDefaultCollection(collectionName)
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {

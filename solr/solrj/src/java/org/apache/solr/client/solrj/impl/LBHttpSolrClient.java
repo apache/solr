@@ -121,10 +121,14 @@ public class LBHttpSolrClient extends LBSolrClient {
     HttpSolrClient client;
     if (httpSolrClientBuilder != null) {
       synchronized (this) {
-        httpSolrClientBuilder.withBaseSolrUrl(server).withHttpClient(httpClient);
-        httpSolrClientBuilder.withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
-        httpSolrClientBuilder.withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
-
+        httpSolrClientBuilder
+            .withBaseSolrUrl(server)
+            .withHttpClient(httpClient)
+            .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
+        if (defaultCollection != null) {
+          httpSolrClientBuilder.withDefaultCollection(defaultCollection);
+        }
         if (requestWriter != null) {
           httpSolrClientBuilder.withRequestWriter(requestWriter);
         }
@@ -135,9 +139,12 @@ public class LBHttpSolrClient extends LBSolrClient {
       }
     } else {
       final HttpSolrClient.Builder clientBuilder =
-          new HttpSolrClient.Builder(server).withHttpClient(httpClient).withResponseParser(parser);
-      clientBuilder.withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
-      clientBuilder.withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
+          new HttpSolrClient.Builder(server)
+              .withHttpClient(httpClient)
+              .withResponseParser(parser)
+              .withDefaultCollection(defaultCollection)
+              .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+              .withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
       if (requestWriter != null) {
         clientBuilder.withRequestWriter(requestWriter);
       }
