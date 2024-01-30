@@ -22,7 +22,6 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.Objects;
 import org.apache.hadoop.conf.Configuration;
@@ -217,16 +216,12 @@ public class HdfsBackupRepository implements BackupRepository {
   }
 
   @Override
-  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
-      throws IOException {
+  public void delete(URI path, Collection<String> files) throws IOException {
     if (files.isEmpty()) return;
 
     for (String file : files) {
       Path filePath = new Path(new Path(path), file);
-      boolean success = fileSystem.delete(filePath, false);
-      if (!ignoreNoSuchFileException && !success) {
-        throw new NoSuchFileException(filePath.toString());
-      }
+      fileSystem.delete(filePath, false);
     }
   }
 }

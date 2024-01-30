@@ -31,13 +31,13 @@ import org.junit.Test;
 public class NodeMutatorTest extends SolrTestCaseJ4Test {
 
   private static final String NODE3 = "baseUrl3:8985_";
-  private static final String NODE3_URL = "http://baseUrl3:8985";
+  private static final String NODE3_URL = "http://baseUrl3:8985/solr";
 
   private static final String NODE2 = "baseUrl2:8984_";
-  private static final String NODE2_URL = "http://baseUrl2:8984";
+  private static final String NODE2_URL = "http://baseUrl2:8984/solr";
 
   private static final String NODE1 = "baseUrl1:8983_";
-  private static final String NODE1_URL = "http://baseUrl1:8983";
+  private static final String NODE1_URL = "http://baseUrl1:8983/solr";
 
   @Test
   public void downNodeReportsAllImpactedCollectionsAndNothingElse() {

@@ -39,6 +39,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Encoder;
 import org.apache.lucene.search.highlight.Formatter;
@@ -546,17 +547,17 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
                   @Override
                   protected void flatten(
                       Query sourceQuery,
-                      IndexReader reader,
+                      IndexSearcher searcher,
                       Collection<Query> flatQueries,
                       float boost)
                       throws IOException {
                     if (sourceQuery instanceof ToParentBlockJoinQuery) {
                       Query childQuery = ((ToParentBlockJoinQuery) sourceQuery).getChildQuery();
                       if (childQuery != null) {
-                        flatten(childQuery, reader, flatQueries, boost);
+                        flatten(childQuery, searcher, flatQueries, boost);
                       }
                     } else {
-                      super.flatten(sourceQuery, reader, flatQueries, boost);
+                      super.flatten(sourceQuery, searcher, flatQueries, boost);
                     }
                   }
                 };
@@ -846,7 +847,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     for (TextFragment fragment : frags) {
       fragTexts.add(fragment.toString());
     }
-    return fragTexts.toArray(new String[fragTexts.size()]);
+    return fragTexts.toArray(new String[0]);
   }
 
   /**
@@ -907,7 +908,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       }
     }
 
-    String[] altTexts = listFields.toArray(new String[listFields.size()]);
+    String[] altTexts = listFields.toArray(new String[0]);
 
     Encoder encoder = getEncoder(fieldName, params);
     List<String> altList = new ArrayList<>();

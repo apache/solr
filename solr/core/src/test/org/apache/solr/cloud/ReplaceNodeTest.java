@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -326,7 +325,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
         public SolrParams getParams() {
           ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
           params.set(SOURCE_NODE, sourceNode);
-          if (!StringUtils.isEmpty(targetNode)) {
+          if (targetNode != null && !targetNode.isEmpty()) {
             params.setNonNull(TARGET_NODE, targetNode);
           }
           if (parallel != null) params.set("parallel", parallel.toString());

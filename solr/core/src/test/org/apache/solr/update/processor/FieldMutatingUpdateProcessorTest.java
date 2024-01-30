@@ -65,6 +65,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
         "//long[@name='min_foo_l'][.='-34']");
   }
 
+  @SuppressWarnings("UnnecessaryStringBuilder")
   public void testTrimAll() throws Exception {
     SolrInputDocument d = null;
 

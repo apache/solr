@@ -109,7 +109,7 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
     public void collect(int doc) throws IOException {}
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       List<String> outTerms = new ArrayList<>();
       List<Integer> outFreq = new ArrayList<>();
       List<Integer> outQueryFreq = new ArrayList<>();
@@ -174,7 +174,7 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       List<String> outTerms = new ArrayList<>();
       List<Integer> outFreq = new ArrayList<>();
       List<Integer> outQueryFreq = new ArrayList<>();
@@ -270,7 +270,7 @@ public class SignificantTermsQParserPlugin extends QParserPlugin {
       }
 
       if (this.delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) this.delegate).finish();
+        ((DelegatingCollector) this.delegate).complete();
       }
     }
   }

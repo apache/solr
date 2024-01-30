@@ -43,8 +43,10 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.VerifiedUserRoles;
+import org.apache.solr.servlet.LoadAdminUiServlet;
 import org.apache.solr.util.CryptoKeys;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
@@ -519,6 +521,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   public void xSolrAuthDataHeader() {
     testConfig.put("adminUiScope", "solr:admin");
     testConfig.put("authorizationEndpoint", "http://acmepaymentscorp/oauth/auz/authorize");
+    testConfig.put("tokenEndpoint", "http://acmepaymentscorp/oauth/oauth20/token");
+    testConfig.put("authorizationFlow", "code_pkce");
     testConfig.put("clientId", "solr-cluster");
     plugin.init(testConfig);
     String headerBase64 = plugin.generateAuthDataHeader();
@@ -528,6 +532,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertEquals("solr:admin", parsed.get("scope"));
     assertEquals(
         "http://acmepaymentscorp/oauth/auz/authorize", parsed.get("authorizationEndpoint"));
+    assertEquals("http://acmepaymentscorp/oauth/oauth20/token", parsed.get("tokenEndpoint"));
+    assertEquals("code_pkce", parsed.get("authorization_flow"));
     assertEquals("solr-cluster", parsed.get("client_id"));
   }
 
@@ -631,11 +637,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     authConf.put("trustedCerts", trustedPemCert);
     authConf.put("trustedCertsFile", "/path/to/cert.pem");
     plugin = new JWTAuthPlugin();
-    expectThrows(
-        SolrException.class,
-        () -> {
-          plugin.init(authConf);
-        });
+    expectThrows(SolrException.class, () -> plugin.init(authConf));
   }
 
   @Test
@@ -651,12 +653,11 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     expectThrows(
         SolrException.class,
         CertificateException.class,
-        () -> {
-          CryptoKeys.parseX509Certs(
-              new ByteArrayInputStream(
-                  ("-----BEGIN CERTIFICATE-----\n" + "foo\n" + "-----END CERTIFICATE-----\n")
-                      .getBytes(StandardCharsets.UTF_8)));
-        });
+        () ->
+            CryptoKeys.parseX509Certs(
+                new ByteArrayInputStream(
+                    ("-----BEGIN CERTIFICATE-----\n" + "foo\n" + "-----END CERTIFICATE-----\n")
+                        .getBytes(StandardCharsets.UTF_8))));
   }
 
   @Test
@@ -702,5 +703,14 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
             .toAbsolutePath()
             .toString();
     assertEquals(2, plugin.parseCertsFromFile(pemFilePath).size());
+  }
+
+  @Test
+  public void testRegisterTokenEndpointForCsp() {
+    testConfig.put("tokenEndpoint", "http://acmepaymentscorp/oauth/oauth20/token");
+    plugin.init(testConfig);
+    assertEquals(
+        "http://acmepaymentscorp/oauth/oauth20/token",
+        EnvUtils.getProperty(LoadAdminUiServlet.SYSPROP_CSP_CONNECT_SRC_URLS));
   }
 }

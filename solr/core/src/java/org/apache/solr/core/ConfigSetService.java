@@ -29,11 +29,10 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -213,11 +212,36 @@ public abstract class ConfigSetService {
     for (CoreDescriptor cd : cds) {
       String coreName = cd.getName();
       String confName = cd.getCollectionName();
-      if (StringUtils.isEmpty(confName)) confName = coreName;
+      if (StrUtils.isNullOrEmpty(confName)) confName = coreName;
       Path udir = cd.getInstanceDir().resolve("conf");
       log.info("Uploading directory {} with name {} for solrCore {}", udir, confName, coreName);
       cc.getConfigSetService().uploadConfig(confName, udir);
     }
+  }
+
+  /**
+   * Return whether the given configSet is trusted.
+   *
+   * @param name name of the configSet
+   */
+  public boolean isConfigSetTrusted(String name) throws IOException {
+    Map<String, Object> contentMap = getConfigMetadata(name);
+    return (boolean) contentMap.getOrDefault("trusted", true);
+  }
+
+  /**
+   * Return whether the configSet used for the given resourceLoader is trusted.
+   *
+   * @param coreLoader resourceLoader for a core
+   */
+  public boolean isConfigSetTrusted(SolrResourceLoader coreLoader) throws IOException {
+    // ConfigSet flags are loaded from the metadata of the ZK node of the configset. (For the
+    // ZKConfigSetService)
+    NamedList<?> flags = loadConfigSetFlags(coreLoader);
+
+    // Trust if there is no trusted flag (i.e. the ConfigSetApi was not used for this configSet)
+    // or if the trusted flag is set to "true".
+    return (flags == null || flags.get("trusted") == null || flags.getBooleanArg("trusted"));
   }
 
   /**
@@ -233,16 +257,7 @@ public abstract class ConfigSetService {
     try {
       // ConfigSet properties are loaded from ConfigSetProperties.DEFAULT_FILENAME file.
       NamedList<?> properties = loadConfigSetProperties(dcore, coreLoader);
-      // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
-      NamedList<?> flags = loadConfigSetFlags(dcore, coreLoader);
-
-      boolean trusted =
-          (coreLoader instanceof ZkSolrResourceLoader
-                  && flags != null
-                  && flags.get("trusted") != null
-                  && !flags.getBooleanArg("trusted"))
-              ? false
-              : true;
+      boolean trusted = isConfigSetTrusted(coreLoader);
 
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
       return new ConfigSet(
@@ -290,7 +305,7 @@ public abstract class ConfigSetService {
    * @return a SolrConfig object
    */
   protected SolrConfig createSolrConfig(
-      CoreDescriptor cd, SolrResourceLoader loader, boolean isTrusted) {
+      CoreDescriptor cd, SolrResourceLoader loader, boolean isTrusted) throws IOException {
     return SolrConfig.readFromResourceLoader(
         loader, cd.getConfigName(), isTrusted, cd.getSubstitutableProperties());
   }
@@ -364,8 +379,7 @@ public abstract class ConfigSetService {
 
   /** Return the ConfigSet flags or null if none. */
   // TODO should fold into configSetProps -- SOLR-14059
-  protected NamedList<Object> loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader)
-      throws IOException {
+  protected NamedList<Object> loadConfigSetFlags(SolrResourceLoader loader) throws IOException {
     return null;
   }
 

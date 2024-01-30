@@ -24,11 +24,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout.SolrZkClientTimeoutAware;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -40,14 +41,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Retrieves cluster state from Zookeeper */
-public class ZkClientClusterStateProvider implements ClusterStateProvider {
+public class ZkClientClusterStateProvider
+    implements ClusterStateProvider, SolrZkClientTimeoutAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   volatile ZkStateReader zkStateReader;
   private boolean closeZkStateReader = true;
   private final String zkHost;
-  private int zkConnectTimeout = 15000;
-  private int zkClientTimeout = 45000;
+  private final boolean canUseZkACLs;
+  private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
+  private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
 
   private volatile boolean isClosed = false;
 
@@ -63,14 +66,22 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
     this.zkStateReader = zkStateReader;
     this.closeZkStateReader = false;
     this.zkHost = null;
+    this.canUseZkACLs = true;
   }
 
   public ZkClientClusterStateProvider(Collection<String> zkHosts, String chroot) {
+    this(zkHosts, chroot, true);
+  }
+
+  public ZkClientClusterStateProvider(
+      Collection<String> zkHosts, String chroot, boolean canUseZkACLs) {
     zkHost = buildZkHostString(zkHosts, chroot);
+    this.canUseZkACLs = canUseZkACLs;
   }
 
   public ZkClientClusterStateProvider(String zkHost) {
     this.zkHost = zkHost;
+    this.canUseZkACLs = true;
   }
 
   /**
@@ -118,7 +129,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
         version,
         stateMap,
         liveNodes,
-        new PerReplicaStatesFetcher.LazyPrsSupplier(
+        PerReplicaStatesOps.getZkClientPrsSupplier(
             zkClient, DocCollection.getCollectionPath(coll)));
   }
 
@@ -210,7 +221,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
         if (zkStateReader == null) {
           ZkStateReader zk = null;
           try {
-            zk = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout);
+            zk = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout, canUseZkACLs);
             zk.createClusterStateWatchersAndUpdate();
             log.info("Cluster at {} ready", zkHost);
             zkStateReader = zk;
@@ -306,6 +317,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
 
   /** Set the connect timeout to the zookeeper ensemble in ms */
+  @Override
   public void setZkConnectTimeout(int zkConnectTimeout) {
     this.zkConnectTimeout = zkConnectTimeout;
   }
@@ -315,6 +327,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
 
   /** Set the timeout to the zookeeper ensemble in ms */
+  @Override
   public void setZkClientTimeout(int zkClientTimeout) {
     this.zkClientTimeout = zkClientTimeout;
   }

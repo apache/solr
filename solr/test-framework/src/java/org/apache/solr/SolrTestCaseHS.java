@@ -38,10 +38,10 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -233,7 +233,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     }
 
     if ("json".equals(wt)) {
-      query.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
+      query.setResponseParser(new JsonMapResponseParser());
       NamedList<Object> rsp = client.request(query);
       return Utils.toJSONString(rsp);
     } else {
@@ -510,7 +510,6 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
         JettyConfig jettyConfig =
             JettyConfig.builder()
                 .stopAtShutdown(true)
-                .setContext("/solr")
                 .setPort(port)
                 .withSSLConfig(sslConfig.buildServerSSLConfig())
                 .build();

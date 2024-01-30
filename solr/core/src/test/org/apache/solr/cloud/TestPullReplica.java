@@ -125,7 +125,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   }
 
   // 2 times to make sure cleanup is complete, and we can create the same collection
-  @Repeat(iterations = 2)
+  @Repeat(iterations = 30)
   public void testCreateDelete() throws Exception {
     try {
       switch (random().nextInt(3)) {
@@ -152,19 +152,19 @@ public class TestPullReplica extends SolrCloudTestCase {
           break;
         case 2:
           // Sometimes use V2 API
-          url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
+          url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/collections";
           String requestBody =
               String.format(
                   Locale.ROOT,
-                  "{create:{name:%s, config:%s, numShards:%s, pullReplicas:%s, %s}}",
+                  "{\"name\": \"%s\", \"config\": \"%s\", \"numShards\": %s, \"pullReplicas\": %s %s}",
                   collectionName,
                   "conf",
                   2, // numShards
                   3, // pullReplicas
                   pickRandom(
                       "",
-                      ", nrtReplicas:1",
-                      ", replicationFactor:1")); // These options should all mean the same
+                      ", \"nrtReplicas\": 1",
+                      ", \"replicationFactor\": 1")); // These options should all mean the same
           HttpPost createCollectionPost = new HttpPost(url);
           createCollectionPost.setHeader("Content-type", "application/json");
           createCollectionPost.setEntity(new StringEntity(requestBody));
@@ -867,11 +867,11 @@ public class TestPullReplica extends SolrCloudTestCase {
         url =
             String.format(
                 Locale.ROOT,
-                "%s/____v2/c/%s/shards",
+                "%s/____v2/collections/%s/shards/%s/replicas",
                 cluster.getRandomJetty(random()).getBaseUrl(),
-                collectionName);
-        String requestBody =
-            String.format(Locale.ROOT, "{add-replica:{shard:%s, type:%s}}", shardName, type);
+                collectionName,
+                shardName);
+        String requestBody = String.format(Locale.ROOT, "{\"type\": \"%s\"}", type);
         HttpPost addReplicaPost = new HttpPost(url);
         addReplicaPost.setHeader("Content-type", "application/json");
         addReplicaPost.setEntity(new StringEntity(requestBody));

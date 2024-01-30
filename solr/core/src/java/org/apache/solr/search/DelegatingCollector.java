@@ -80,9 +80,23 @@ public class DelegatingCollector extends SimpleCollector {
     leafDelegate = delegate.getLeafCollector(context);
   }
 
-  public void finish() throws IOException {
+  /**
+   * From Solr 9.4 using Lucene 9.8 onwards <code>DelegatingCollector.finish</code> clashes with the
+   * super class's <code>LeafCollector.finish</code> method. Please relocate any finishing logic
+   * into the <code>DelegatingCollector.complete</code> replacement completion method.
+   */
+  @Override
+  public final void finish() throws IOException {
+    if (leafDelegate != null) {
+      leafDelegate.finish();
+    }
+    super.finish();
+  }
+
+  /** since 9.4 */
+  public void complete() throws IOException {
     if (delegate instanceof DelegatingCollector) {
-      ((DelegatingCollector) delegate).finish();
+      ((DelegatingCollector) delegate).complete();
     }
   }
 }

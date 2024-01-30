@@ -59,7 +59,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -171,7 +171,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         "There should be one document because overwrite=true", 1, resp.getResults().getNumFound());
 
     new UpdateRequest()
-        .add(new SolrInputDocument(id, "1", "a_t", "hello1"), /* overwrite = */ false)
+        .add(new SolrInputDocument(id, "1", "a_t", "hello1"), /* overwrite= */ false)
         .add(new SolrInputDocument(id, "1", "a_t", "hello2"), false)
         .commit(cluster.getSolrClient(), "overwrite");
 
@@ -1184,8 +1184,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-    PerReplicaStates prs =
-        PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
+    PerReplicaStates prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
     assertEquals(4, prs.states.size());
 
     JettySolrRunner jsr = null;
@@ -1195,7 +1194,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       // Now let's do an add replica
       CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
           .process(cluster.getSolrClient());
-      prs = PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
+      prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
       assertEquals(5, prs.states.size());
 
       // create a collection with PRS and v2 API
@@ -1205,13 +1204,13 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       new V2Request.Builder("/collections")
           .withMethod(POST)
           .withPayload(
-              "{create: {name: perReplicaState_testv2, config : conf, numShards : 2, nrtReplicas : 2, perReplicaState : true, maxShardsPerNode : 5}}")
+              "{\"name\": \"perReplicaState_testv2\", \"config\" : \"conf\", \"numShards\" : 2, \"nrtReplicas\" : 2, \"perReplicaState\" : true}")
           .build()
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(testCollection, 2, 4);
       c = cluster.getZkStateReader().getCollection(testCollection);
       c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-      prs = PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
+      prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
       assertEquals(4, prs.states.size());
     } finally {
       if (jsr != null) {

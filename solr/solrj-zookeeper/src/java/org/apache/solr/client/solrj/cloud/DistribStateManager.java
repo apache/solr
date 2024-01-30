@@ -78,16 +78,27 @@ public interface DistribStateManager extends SolrCloseable {
       throws AlreadyExistsException, IOException, KeeperException, InterruptedException;
 
   void removeData(String path, int version)
-      throws NoSuchElementException, IOException, NotEmptyException, KeeperException,
-          InterruptedException, BadVersionException;
+      throws NoSuchElementException,
+          IOException,
+          NotEmptyException,
+          KeeperException,
+          InterruptedException,
+          BadVersionException;
 
   void setData(String path, byte[] data, int version)
-      throws BadVersionException, NoSuchElementException, IOException, KeeperException,
+      throws BadVersionException,
+          NoSuchElementException,
+          IOException,
+          KeeperException,
           InterruptedException;
 
   List<OpResult> multi(final Iterable<Op> ops)
-      throws BadVersionException, NoSuchElementException, AlreadyExistsException, IOException,
-          KeeperException, InterruptedException;
+      throws BadVersionException,
+          NoSuchElementException,
+          AlreadyExistsException,
+          IOException,
+          KeeperException,
+          InterruptedException;
 
   /**
    * List a subtree including the root path, using breadth-first traversal.
@@ -125,14 +136,13 @@ public interface DistribStateManager extends SolrCloseable {
   }
 
   default DocCollection.PrsSupplier getPrsSupplier(String collName) {
-    return new DocCollection.PrsSupplier(
-        () -> {
-          try {
-            return getReplicaStates(DocCollection.getCollectionPath(collName));
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
-        });
+    return () -> {
+      try {
+        return getReplicaStates(DocCollection.getCollectionPath(collName));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    };
   }
 
   /**
@@ -143,8 +153,12 @@ public interface DistribStateManager extends SolrCloseable {
    * @param includeRoot when true delete also the root path
    */
   default void removeRecursively(String root, boolean ignoreMissing, boolean includeRoot)
-      throws NoSuchElementException, IOException, NotEmptyException, KeeperException,
-          InterruptedException, BadVersionException {
+      throws NoSuchElementException,
+          IOException,
+          NotEmptyException,
+          KeeperException,
+          InterruptedException,
+          BadVersionException {
     List<String> tree;
     try {
       tree = listTree(root);

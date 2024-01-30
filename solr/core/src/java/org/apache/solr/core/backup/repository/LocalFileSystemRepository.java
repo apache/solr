@@ -160,16 +160,15 @@ public class LocalFileSystemRepository implements BackupRepository {
   }
 
   @Override
-  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
-      throws IOException {
+  public void delete(URI path, Collection<String> files) throws IOException {
     if (files.isEmpty()) return;
 
     try (FSDirectory dir = new NIOFSDirectory(Path.of(path), NoLockFactory.INSTANCE)) {
       for (String file : files) {
         try {
           dir.deleteFile(file);
-        } catch (NoSuchFileException e) {
-          if (!ignoreNoSuchFileException) throw e;
+        } catch (NoSuchFileException ignore) {
+
         }
       }
     }

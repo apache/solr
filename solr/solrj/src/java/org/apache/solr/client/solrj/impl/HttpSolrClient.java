@@ -76,9 +76,9 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -149,8 +149,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   private final boolean internalClient;
 
   private volatile Set<String> urlParamNames = Set.of();
-  private volatile Integer connectionTimeout;
-  private volatile Integer soTimeout;
+  private final int connectionTimeout;
+  private final int soTimeout;
 
   /** Use the builder to create this client */
   protected HttpSolrClient(Builder builder) {
@@ -168,13 +168,14 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       this.internalClient = false;
       this.followRedirects = builder.followRedirects;
       this.httpClient = builder.httpClient;
-
     } else {
       this.internalClient = true;
       this.followRedirects = builder.followRedirects;
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, followRedirects);
       params.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, builder.compression);
+      params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, builder.connectionTimeoutMillis);
+      params.set(HttpClientUtil.PROP_SO_TIMEOUT, builder.socketTimeoutMillis);
       httpClient = HttpClientUtil.createClient(params);
     }
 
@@ -184,14 +185,35 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
     this.parser = builder.responseParser;
     this.invariantParams = builder.invariantParams;
-    this.connectionTimeout = Math.toIntExact(builder.connectionTimeoutMillis);
-    this.soTimeout = Math.toIntExact(builder.socketTimeoutMillis);
+    this.connectionTimeout = builder.connectionTimeoutMillis;
+    this.soTimeout = builder.socketTimeoutMillis;
     this.useMultiPartPost = builder.useMultiPartPost;
     this.urlParamNames = builder.urlParamNames;
+    this.defaultCollection = builder.defaultCollection;
   }
 
   public Set<String> getUrlParamNames() {
     return urlParamNames;
+  }
+
+  /**
+   * Returns the connection timeout, and should be based on httpClient overriding the solrClient.
+   * For unit testing.
+   *
+   * @return the connection timeout
+   */
+  int getConnectionTimeout() {
+    return this.connectionTimeout;
+  }
+
+  /**
+   * Returns the socket timeout, and should be based on httpClient overriding the solrClient. For
+   * unit testing.
+   *
+   * @return the socket timeout
+   */
+  int getSocketTimeout() {
+    return this.soTimeout;
   }
 
   /**
@@ -222,6 +244,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   public NamedList<Object> request(
       final SolrRequest<?> request, final ResponseParser processor, String collection)
       throws SolrServerException, IOException {
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
+      collection = defaultCollection;
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
     if (request.getHeaders() != null) {
@@ -273,7 +297,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       final SolrRequest<?> request, final ResponseParser processor)
       throws SolrServerException, IOException {
     HttpUriRequestResponse mrr = new HttpUriRequestResponse();
-    final HttpRequestBase method = createMethod(request, null);
+    final HttpRequestBase method = createMethod(request, defaultCollection);
     ExecutorService pool =
         ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("httpUriRequest"));
     try {
@@ -318,9 +342,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   protected HttpRequestBase createMethod(SolrRequest<?> request, String collection)
       throws IOException, SolrServerException {
-    if (request instanceof V2RequestSupport) {
-      request = ((V2RequestSupport) request).getV2Request();
-    }
     SolrParams params = request.getParams();
     RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(request);
     Collection<ContentStream> streams =
@@ -548,12 +569,9 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
     org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder =
         HttpClientUtil.createDefaultRequestConfigBuilder();
-    if (soTimeout != null) {
-      requestConfigBuilder.setSocketTimeout(soTimeout);
-    }
-    if (connectionTimeout != null) {
-      requestConfigBuilder.setConnectTimeout(connectionTimeout);
-    }
+    requestConfigBuilder.setSocketTimeout(soTimeout);
+    requestConfigBuilder.setConnectTimeout(connectionTimeout);
+
     if (followRedirects != null) {
       requestConfigBuilder.setRedirectsEnabled(followRedirects);
     }
@@ -625,6 +643,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
         NamedList<Object> rsp = new NamedList<>();
         rsp.add("stream", respBody);
         rsp.add("closeableResponse", response);
+        rsp.add("responseStatus", response.getStatusLine().getStatusCode());
         // Only case where stream should not be closed
         shouldClose = false;
         return rsp;

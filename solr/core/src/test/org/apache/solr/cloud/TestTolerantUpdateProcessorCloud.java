@@ -188,20 +188,19 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     assertEquals(2, docs.getNumFound());
     assertEquals(2, docs.size());
     for (SolrDocument doc : docs) {
-      String expected = COLLECTION_NAME + "_" + doc.getFirstValue("expected_shard_s") + "_replica";
+      String expected = doc.getFirstValue("expected_shard_s").toString();
       String docShard = doc.getFirstValue("[shard]").toString();
       assertTrue(
           "shard routing prefixes don't seem to be aligned anymore, "
               + "did someone change the default routing rules? "
-              + "and/or the the default core name rules? "
+              + "and/or the the default shard name rules? "
               + "and/or the numShards used by this test? ... "
-              + "couldn't find "
               + expected
-              + " as substring of [shard] == '"
+              + " is ot the same as [shard] == '"
               + docShard
               + "' ... for docId == "
               + doc.getFirstValue("id"),
-          docShard.contains(expected));
+          docShard.equals(expected));
     }
   }
 
@@ -788,7 +787,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
               update(
                       params("update.chain", "tolerant-chain-max-errors-10", "commit", "true"),
-                      docs.toArray(new SolrInputDocument[docs.size()]))
+                      docs.toArray(new SolrInputDocument[0]))
                   .process(client);
             });
 
@@ -896,7 +895,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
               update(
                       params("update.chain", "tolerant-chain-max-errors-10", "commit", "true"),
-                      docs.toArray(new SolrInputDocument[docs.size()]))
+                      docs.toArray(new SolrInputDocument[0]))
                   .process(client);
             });
 
@@ -965,12 +964,12 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                     "update.chain", "tolerant-chain-max-errors-10",
                     "maxErrors", "-1",
                     "commit", "true"),
-                docs.toArray(new SolrInputDocument[docs.size()]))
+                docs.toArray(new SolrInputDocument[0]))
             .process(client);
     assertUpdateTolerantErrors(
         "many docs from shard2 fail, but req should succeed",
         rsp,
-        expectedErrs.toArray(new ExpectedErr[expectedErrs.size()]));
+        expectedErrs.toArray(new ExpectedErr[0]));
     assertQueryDocIds(
         client,
         true,

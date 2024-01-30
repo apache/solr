@@ -23,17 +23,28 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import jakarta.ws.rs.ext.ContextResolver;
+import jakarta.ws.rs.ext.Provider;
 import java.io.IOException;
-import javax.ws.rs.ext.ContextResolver;
-import javax.ws.rs.ext.Provider;
 import org.apache.solr.common.util.NamedList;
 
 /** Customizes the ObjectMapper settings used for serialization/deserialization in Jersey */
 @SuppressWarnings("rawtypes")
 @Provider
 public class SolrJacksonMapper implements ContextResolver<ObjectMapper> {
+
+  private static final ObjectMapper objectMapper = createObjectMapper();
+
   @Override
   public ObjectMapper getContext(Class<?> type) {
+    return objectMapper;
+  }
+
+  public static ObjectMapper getObjectMapper() {
+    return objectMapper;
+  }
+
+  private static ObjectMapper createObjectMapper() {
     final SimpleModule customTypeModule = new SimpleModule();
     customTypeModule.addSerializer(new NamedListSerializer(NamedList.class));
 

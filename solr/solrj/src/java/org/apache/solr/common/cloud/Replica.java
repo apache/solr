@@ -16,22 +16,19 @@
  */
 package org.apache.solr.common.cloud;
 
-import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
-import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiPredicate;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,13 +80,16 @@ public class Replica extends ZkNodeProps implements MapWriter {
      */
     public final String shortName;
 
+    public final String longName;
+
     State(String c) {
       this.shortName = c;
+      this.longName = super.toString().toLowerCase(Locale.ROOT);
     }
 
     @Override
     public String toString() {
-      return super.toString().toLowerCase(Locale.ROOT);
+      return longName;
     }
 
     /** Converts the state string to a State instance. */
@@ -104,40 +104,40 @@ public class Replica extends ZkNodeProps implements MapWriter {
      * support NRT (soft commits) and RTG. Any {@link Type#NRT} replica can become a leader. A shard
      * leader will forward updates to all active {@link Type#NRT} and {@link Type#TLOG} replicas.
      */
-    NRT(true),
+    NRT(true, CollectionAdminParams.NRT_REPLICAS),
     /**
      * Writes to transaction log, but not to index, uses replication. Any {@link Type#TLOG} replica
      * can become leader (by first applying all local transaction log elements). If a replica is of
      * type {@link Type#TLOG} but is also the leader, it will behave as a {@link Type#NRT}. A shard
      * leader will forward updates to all active {@link Type#NRT} and {@link Type#TLOG} replicas.
      */
-    TLOG(true),
+    TLOG(true, CollectionAdminParams.TLOG_REPLICAS),
     /**
      * Doesn’t index or writes to transaction log. Just replicates from {@link Type#NRT} or {@link
      * Type#TLOG} replicas. {@link Type#PULL} replicas can’t become shard leaders (i.e., if there
      * are only pull replicas in the collection at some point, updates will fail same as if there is
      * no leaders, queries continue to work), so they don’t even participate in elections.
      */
-    PULL(false);
+    PULL(false, CollectionAdminParams.PULL_REPLICAS);
 
     public final boolean leaderEligible;
+    public final String numReplicasPropertyName;
 
-    Type(boolean b) {
-      this.leaderEligible = b;
+    Type(boolean leaderEligible, String numReplicasPropertyName) {
+      this.leaderEligible = leaderEligible;
+      this.numReplicasPropertyName = numReplicasPropertyName;
     }
 
     public static Type get(String name) {
-      return name == null ? Type.NRT : Type.valueOf(name.toUpperCase(Locale.ROOT));
+      return StrUtils.isNullOrEmpty(name) ? NRT : Type.valueOf(name.toUpperCase(Locale.ROOT));
     }
 
     /**
-     * Only certain replica types can become leaders
-     *
-     * @param type the type of a replica
-     * @return true if that type is able to be leader, false otherwise
+     * Returns a default replica type. It is most notably used by the replica factor, which maps
+     * onto this replica type. This replica type needs to be leader-eligible.
      */
-    public static boolean isLeaderType(Type type) {
-      return type == null || type == NRT || type == TLOG;
+    public static Type defaultType() {
+      return NRT;
     }
   }
 
@@ -147,13 +147,13 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public final String core;
   public final Type type;
   public final String shard, collection;
-  private DocCollection.PrsSupplier prsSupplier;
+  private AtomicReference<PerReplicaStates> perReplicaStatesRef;
 
   // mutable
   private State state;
 
-  void setPrsSupplier(DocCollection.PrsSupplier prsSupplier) {
-    this.prsSupplier = prsSupplier;
+  void setPerReplicaStatesRef(AtomicReference<PerReplicaStates> perReplicaStatesRef) {
+    this.perReplicaStatesRef = perReplicaStatesRef;
   }
 
   public Replica(String name, Map<String, Object> map, String collection, String shard) {
@@ -295,8 +295,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
   /** Returns the {@link State} of this replica. */
   public State getState() {
-    if (prsSupplier != null) {
-      PerReplicaStates.State s = prsSupplier.get().get(name);
+    if (perReplicaStatesRef != null) {
+      PerReplicaStates.State s = perReplicaStatesRef.get().get(name);
       if (s != null) {
         return s.state;
       } else {
@@ -320,8 +320,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public boolean isLeader() {
-    if (prsSupplier != null) {
-      PerReplicaStates.State st = prsSupplier.get().get(name);
+    if (perReplicaStatesRef != null) {
+      PerReplicaStates.State st = perReplicaStatesRef.get().get(name);
       return st == null ? false : st.isLeader;
     }
     return getBool(ReplicaStateProps.LEADER, false);
@@ -362,8 +362,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public PerReplicaStates.State getReplicaState() {
-    if (prsSupplier != null) {
-      return prsSupplier.get().get(name);
+    if (perReplicaStatesRef != null) {
+      return perReplicaStatesRef.get().get(name);
     }
     return null;
   }
@@ -371,11 +371,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
   @Override
   public Object clone() {
     return new Replica(name, node, collection, shard, core, getState(), type, propMap);
-  }
-
-  @Override
-  public void writeMap(MapWriter.EntryWriter ew) throws IOException {
-    ew.put(name, _allPropsWriter());
   }
 
   private static final Map<String, State> STATES = new HashMap<>();
@@ -391,31 +386,21 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return STATES.get(shortName);
   }
 
-  private MapWriter _allPropsWriter() {
-    BiPredicate<CharSequence, Object> p = dedupeKeyPredicate(new HashSet<>()).and(NON_NULL_VAL);
-    return writer -> {
-      // XXX this is why this class should be immutable - it's a mess !!!
-
-      // propMap takes precedence because it's mutable and we can't control its
-      // contents, so a third party may override some declared fields
-      for (Map.Entry<String, Object> e : propMap.entrySet()) {
-        writer.put(e.getKey(), e.getValue(), p);
-      }
-
-      writer
-          .put(ReplicaStateProps.CORE_NAME, core, p)
-          .put(ReplicaStateProps.NODE_NAME, node, p)
-          .put(ReplicaStateProps.TYPE, type.toString(), p)
-          .put(ReplicaStateProps.STATE, shard, p);
-    };
-  }
-
   @Override
-  public void write(JSONWriter jsonWriter) {
-    Map<String, Object> map = new LinkedHashMap<>();
-    // this serializes also our declared properties
-    _allPropsWriter().toMap(map);
-    jsonWriter.write(map);
+  public void writeMap(MapWriter.EntryWriter ew) throws IOException {
+    ew.putIfNotNull(ReplicaStateProps.CORE_NAME, core)
+        .putIfNotNull(ReplicaStateProps.NODE_NAME, node)
+        .putIfNotNull(ReplicaStateProps.TYPE, type.toString())
+        .putIfNotNull(ReplicaStateProps.STATE, getState().toString())
+        .putIfNotNull(ReplicaStateProps.LEADER, () -> isLeader() ? "true" : null)
+        .putIfNotNull(
+            ReplicaStateProps.FORCE_SET_STATE, propMap.get(ReplicaStateProps.FORCE_SET_STATE))
+        .putIfNotNull(ReplicaStateProps.BASE_URL, propMap.get(ReplicaStateProps.BASE_URL));
+    for (Map.Entry<String, Object> e : propMap.entrySet()) {
+      if (!ReplicaStateProps.WELL_KNOWN_PROPS.contains(e.getKey())) {
+        ew.putIfNotNull(e.getKey(), e.getValue());
+      }
+    }
   }
 
   @Override
@@ -429,6 +414,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public interface ReplicaStateProps {
     String COLLECTION = "collection";
     String SHARD_ID = "shard";
+    String REPLICA_ID = "replica";
     String LEADER = "leader";
     String STATE = "state";
     String CORE_NAME = "core";
@@ -437,5 +423,17 @@ public class Replica extends ZkNodeProps implements MapWriter {
     String NODE_NAME = "node_name";
     String BASE_URL = "base_url";
     String PROPERTY_PREFIX = "property.";
+    String FORCE_SET_STATE = "force_set_state";
+    Set<String> WELL_KNOWN_PROPS =
+        Set.of(
+            LEADER, STATE, CORE_NAME, CORE_NODE_NAME, TYPE, NODE_NAME, BASE_URL, FORCE_SET_STATE);
+  }
+
+  public ZkNodeProps toFullProps() {
+    return new ZkNodeProps()
+        .plus(propMap)
+        .plus(ReplicaStateProps.COLLECTION, getCollection())
+        .plus(ReplicaStateProps.SHARD_ID, getShard())
+        .plus(ReplicaStateProps.REPLICA_ID, getName());
   }
 }

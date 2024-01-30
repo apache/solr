@@ -30,8 +30,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -96,7 +94,7 @@ public class FacetComponent extends SearchComponent {
         }
         HashSet<String> deDupe =
             new LinkedHashSet<>(Arrays.asList(origParams.getParams(paramName)));
-        params.add(paramName, deDupe.toArray(new String[deDupe.size()]));
+        params.add(paramName, deDupe.toArray(new String[0]));
       }
       rb.req.setParams(params);
 
@@ -278,7 +276,7 @@ public class FacetComponent extends SearchComponent {
 
       NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
-      if (ArrayUtils.isNotEmpty(pivots)) {
+      if (pivots != null && Array.getLength(pivots) != 0) {
         PivotFacetProcessor pivotProcessor =
             new PivotFacetProcessor(rb.req, rb.getResults().docSet, params, rb);
         SimpleOrderedMap<List<NamedList<Object>>> v = pivotProcessor.process(pivots);
@@ -1336,7 +1334,7 @@ public class FacetComponent extends SearchComponent {
         this.threadCount = threadStr != null ? Integer.parseInt(threadStr) : -1;
 
         String excludeStr = localParams.get(CommonParams.EXCLUDE);
-        if (StringUtils.isEmpty(excludeStr)) {
+        if (StrUtils.isNullOrEmpty(excludeStr)) {
           this.excludeTags = Collections.emptyList();
         } else {
           this.excludeTags = StrUtils.splitSmart(excludeStr, ',');
@@ -1512,14 +1510,14 @@ public class FacetComponent extends SearchComponent {
     }
 
     public ShardFacetCount[] getLexSorted() {
-      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
+      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[0]);
       Arrays.sort(arr, (o1, o2) -> o1.indexed.compareTo(o2.indexed));
       countSorted = arr;
       return arr;
     }
 
     public ShardFacetCount[] getCountSorted() {
-      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
+      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[0]);
       Arrays.sort(
           arr,
           (o1, o2) -> {

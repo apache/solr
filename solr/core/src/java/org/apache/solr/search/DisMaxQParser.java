@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -28,6 +27,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -198,7 +198,7 @@ public class DisMaxQParser extends QParser {
     parsedUserQuery = null;
     String userQuery = getString();
     altUserQuery = null;
-    if (StringUtils.isBlank(userQuery)) {
+    if (StrUtils.isBlank(userQuery)) {
       // If no query is specified, we may have an alternate
       altUserQuery = getAlternateUserQuery(solrParams);
       if (altUserQuery == null) return false;
@@ -277,7 +277,7 @@ public class DisMaxQParser extends QParser {
 
   @Override
   public String[] getDefaultHighlightFields() {
-    return queryFields.keySet().toArray(new String[queryFields.keySet().size()]);
+    return queryFields.keySet().toArray(new String[0]);
   }
 
   @Override

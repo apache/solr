@@ -21,6 +21,7 @@ import java.util.EnumSet;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -46,6 +47,8 @@ import org.slf4j.LoggerFactory;
 
 final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final EnumSet<Replica.Type> leaderEligibleReplicaTypes =
+      CollectionHandlingUtils.leaderEligibleReplicaTypes();
 
   private final CoreContainer cc;
   private final SyncStrategy syncStrategy;
@@ -88,8 +91,12 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public ElectionContext copy() {
-    return new ShardLeaderElectionContext(
-        leaderElector, shardId, collection, id, leaderProps, zkController, cc);
+    ShardLeaderElectionContext context =
+        new ShardLeaderElectionContext(
+            leaderElector, shardId, collection, id, leaderProps, zkController, cc);
+    context.leaderSeqPath = this.leaderSeqPath;
+    context.leaderZkNodeParentVersion = this.leaderZkNodeParentVersion;
+    return context;
   }
 
   /*
@@ -146,8 +153,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
       if (!weAreReplacement) {
         waitForReplicasToComeUp(leaderVoteWait);
-      } else {
-        areAllReplicasParticipating();
       }
 
       if (isClosed) {
@@ -458,16 +463,16 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
 
         // on startup and after connection timeout, wait for all known shards
-        if (found >= slices.getReplicas(EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT)).size()) {
+        if (found >= slices.getReplicas(leaderEligibleReplicaTypes).size()) {
           log.info("Enough replicas found to continue.");
           return true;
         } else {
           if (cnt % 40 == 0) {
             if (log.isInfoEnabled()) {
               log.info(
-                  "Waiting until we see more replicas up for shard {}: total={} found={} timeoute in={}ms",
+                  "Waiting until we see more replicas up for shard {}: total={} found={} timeout in={}ms",
                   shardId,
-                  slices.getReplicas(EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT)).size(),
+                  slices.getReplicas(leaderEligibleReplicaTypes).size(),
                   found,
                   TimeUnit.MILLISECONDS.convert(
                       timeoutAt - System.nanoTime(), TimeUnit.NANOSECONDS));
@@ -490,39 +495,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       docCollection = zkController.getClusterState().getCollectionOrNull(collection);
       slices = (docCollection == null) ? null : docCollection.getSlice(shardId);
       cnt++;
-    }
-    return false;
-  }
-
-  // returns true if all replicas are found to be up, false if not
-  private boolean areAllReplicasParticipating() throws InterruptedException {
-    final String shardsElectZkPath = electionPath + LeaderElector.ELECTION_NODE;
-    final DocCollection docCollection =
-        zkController.getClusterState().getCollectionOrNull(collection);
-
-    if (docCollection != null && docCollection.getSlice(shardId) != null) {
-      final Slice slices = docCollection.getSlice(shardId);
-      int found = 0;
-      try {
-        found = zkClient.getChildren(shardsElectZkPath, null, true).size();
-      } catch (KeeperException e) {
-        if (e instanceof KeeperException.SessionExpiredException) {
-          // if the session has expired, then another election will be launched, so
-          // quit here
-          throw new SolrException(
-              ErrorCode.SERVER_ERROR,
-              "ZK session expired - cancelling election for " + collection + " " + shardId);
-        }
-        log.error("Error checking for the number of election participants", e);
-      }
-
-      if (found >= slices.getReplicasMap().size()) {
-        log.debug("All replicas are ready to participate in election.");
-        return true;
-      }
-    } else {
-      log.warn("Shard not found: {} for collection {}", shardId, collection);
-      return false;
     }
     return false;
   }

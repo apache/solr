@@ -30,8 +30,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -84,7 +82,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
       log.info("####SETUP_START {}", getTestName());
     }
 
-    String exampleHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
+    String exampleHome = legacyExampleCollection1SolrHome();
 
     Path tmpDir = createTempDir();
     solrHome = exampleHome;
@@ -213,13 +211,13 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           zkServer.getZkAddress(),
           "-cmd",
           "putfile",
-          "/solr.xml",
+          "/foo.xml",
           SOLR_HOME + File.separator + "solr-stress-new.xml"
         };
     ZkCLI.main(args);
 
     String fromZk =
-        new String(zkClient.getData("/solr.xml", null, null, true), StandardCharsets.UTF_8);
+        new String(zkClient.getData("/foo.xml", null, null, true), StandardCharsets.UTF_8);
     Path locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
     String fromLoc = Files.readString(locFile);
     assertEquals("Should get back what we put in ZK", fromZk, fromLoc);
@@ -257,7 +255,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
           zkServer.getZkAddress(),
           "-cmd",
           "putfile",
-          "/solr.xml",
+          "/foo.xml",
           SOLR_HOME + File.separator + "not-there.xml"
         };
     NoSuchFileException e = expectThrows(NoSuchFileException.class, () -> ZkCLI.main(args));
@@ -437,7 +435,9 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     ZkCLI.main(args);
     assertArrayEquals(
         data,
-        StringUtils.removeEnd(systemOut.toString(StandardCharsets.UTF_8), System.lineSeparator())
+        systemOut
+            .toString(StandardCharsets.UTF_8)
+            .replace(System.lineSeparator(), "")
             .getBytes(StandardCharsets.UTF_8));
   }
 
@@ -460,7 +460,9 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     ZkCLI.main(args);
     assertArrayEquals(
         data,
-        StringUtils.removeEnd(systemOut.toString(StandardCharsets.UTF_8), System.lineSeparator())
+        systemOut
+            .toString(StandardCharsets.UTF_8)
+            .replace(System.lineSeparator(), "")
             .getBytes(StandardCharsets.UTF_8));
   }
 

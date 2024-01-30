@@ -27,10 +27,10 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.prometheus.collector.MetricsCollectorFactory;
 import org.apache.solr.prometheus.collector.SchedulerMetricsCollector;
 import org.apache.solr.prometheus.scraper.SolrCloudScraper;
@@ -95,6 +95,13 @@ public class SolrExporter {
       "Specify the number of threads. solr-exporter creates a thread pools for request to Solr. If you need to improve request latency via solr-exporter, you can increase the number of threads; the default is "
           + ARG_NUM_THREADS_DEFAULT
           + ".";
+
+  private static final String[] ARG_CREDENTIALS_FLAGS = {"-u", "--credentials"};
+  private static final String ARG_CREDENTIALS_METAVAR = "CREDENTIALS";
+  private static final String ARG_CREDENTIALS_DEST = "credentials";
+  private static final String ARG_CREDENTIALS_DEFAULT = "";
+  private static final String ARG_CREDENTIALS_HELP =
+      "Specify the credentials in the format username:password. Example: --credentials solr:SolrRocks";
 
   public static final CollectorRegistry defaultRegistry = new CollectorRegistry();
 
@@ -161,7 +168,7 @@ public class SolrExporter {
       SolrScrapeConfiguration configuration,
       PrometheusExporterSettings settings,
       String clusterId) {
-    SolrClientFactory factory = new SolrClientFactory(settings);
+    SolrClientFactory factory = new SolrClientFactory(settings, configuration);
 
     switch (configuration.getType()) {
       case STANDALONE:
@@ -242,6 +249,14 @@ public class SolrExporter {
         .setDefault(ARG_CLUSTER_ID_DEFAULT)
         .help(ARG_CLUSTER_ID_HELP);
 
+    parser
+        .addArgument(ARG_CREDENTIALS_FLAGS)
+        .metavar(ARG_CREDENTIALS_METAVAR)
+        .dest(ARG_CREDENTIALS_DEST)
+        .type(String.class)
+        .setDefault(ARG_CREDENTIALS_DEFAULT)
+        .help(ARG_CREDENTIALS_HELP);
+
     try {
       Namespace res = parser.parseArgs(args);
 
@@ -262,8 +277,16 @@ public class SolrExporter {
 
       int port = res.getInt(ARG_PORT_DEST);
       String clusterId = res.getString(ARG_CLUSTER_ID_DEST);
-      if (StringUtils.isEmpty(clusterId)) {
+      if (StrUtils.isNullOrEmpty(clusterId)) {
         clusterId = defaultClusterId;
+      }
+
+      if (!res.getString(ARG_CREDENTIALS_DEST).isEmpty()) {
+        String credentials = res.getString(ARG_CREDENTIALS_DEST);
+        if (credentials.indexOf(':') > 0) {
+          String[] credentialsArray = credentials.split(":", 2);
+          scrapeConfiguration.withBasicAuthCredentials(credentialsArray[0], credentialsArray[1]);
+        }
       }
 
       SolrExporter solrExporter =

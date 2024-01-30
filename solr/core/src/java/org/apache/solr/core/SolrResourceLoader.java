@@ -72,6 +72,7 @@ import org.apache.solr.schema.ManagedIndexSchemaFactory;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,6 +98,7 @@ public class SolrResourceLoader
     "request.",
     "update.processor.",
     "util.",
+    "util.circuitbreaker.",
     "spelling.",
     "handler.component.",
     "spelling.suggest.",
@@ -270,7 +272,7 @@ public class SolrResourceLoader
 
     ClassLoader oldParent = oldLoader.getParent();
     IOUtils.closeWhileHandlingException(oldLoader);
-    return URLClassLoader.newInstance(allURLs.toArray(new URL[allURLs.size()]), oldParent);
+    return URLClassLoader.newInstance(allURLs.toArray(new URL[0]), oldParent);
   }
 
   /**
@@ -722,7 +724,7 @@ public class SolrResourceLoader
 
     while (waitingForCore.size() > 0) {
       synchronized (waitingForCore) {
-        arr = waitingForCore.toArray(new SolrCoreAware[waitingForCore.size()]);
+        arr = waitingForCore.toArray(new SolrCoreAware[0]);
         waitingForCore.clear();
       }
 
@@ -743,7 +745,7 @@ public class SolrResourceLoader
 
     while (waitingForResources.size() > 0) {
       synchronized (waitingForResources) {
-        arr = waitingForResources.toArray(new ResourceLoaderAware[waitingForResources.size()]);
+        arr = waitingForResources.toArray(new ResourceLoaderAware[0]);
         waitingForResources.clear();
       }
 
@@ -778,7 +780,7 @@ public class SolrResourceLoader
 
     SolrInfoBean[] arr;
     synchronized (infoMBeans) {
-      arr = infoMBeans.toArray(new SolrInfoBean[infoMBeans.size()]);
+      arr = infoMBeans.toArray(new SolrInfoBean[0]);
       waitingForResources.clear();
     }
 
@@ -812,7 +814,8 @@ public class SolrResourceLoader
         SolrCoreAware.class,
         new Class<?>[] {
           // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
-          // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
+          // VIA RUNTIME APIS -- UNTIL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
+          CircuitBreaker.class,
           CodecFactory.class,
           DirectoryFactory.class,
           ManagedIndexSchemaFactory.class,
@@ -828,7 +831,7 @@ public class SolrResourceLoader
         ResourceLoaderAware.class,
         new Class<?>[] {
           // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
-          // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
+          // VIA RUNTIME APIS -- UNTIL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
           // evaluate if this must go into schemaResourceLoaderComponents
           CharFilterFactory.class,
           TokenFilterFactory.class,
@@ -884,6 +887,7 @@ public class SolrResourceLoader
   public List<SolrInfoBean> getInfoMBeans() {
     return Collections.unmodifiableList(infoMBeans);
   }
+
   /**
    * Load a class using an appropriate {@link SolrResourceLoader} depending of the package on that
    * class
@@ -918,7 +922,7 @@ public class SolrResourceLoader
   }
 
   /**
-   * Create a n instance of a class using an appropriate {@link SolrResourceLoader} depending on the
+   * Create an instance of a class using an appropriate {@link SolrResourceLoader} depending on the
    * package of that class
    *
    * @param registerCoreReloadListener register a listener for the package and reload the core if

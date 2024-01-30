@@ -34,9 +34,9 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
-import org.apache.zookeeper.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +91,7 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
             "Could not install data to collection [%s] and shard [%s]",
             typedMessage.collection,
             typedMessage.shard);
-    shardRequestTracker.processResponses(new NamedList<>(), shardHandler, true, errorMessage);
+    shardRequestTracker.processResponses(results, shardHandler, true, errorMessage);
   }
 
   /** A value-type representing the message received by {@link InstallShardDataCmd} */
@@ -112,12 +112,12 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
     public String asyncId;
 
     public void validate() {
-      if (StringUtils.isBlank(collection)) {
+      if (StrUtils.isBlank(collection)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "The 'Install Shard Data' API requires a valid collection name to be provided");
       }
-      if (StringUtils.isBlank(shard)) {
+      if (StrUtils.isBlank(shard)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "The 'Install Shard Data' API requires a valid shard name to be provided");

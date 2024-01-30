@@ -572,7 +572,7 @@ public class TermsComponent extends SearchComponent {
 
     // based on code from facets
     public TermsResponse.Term[] getLexSorted(HashMap<String, TermsResponse.Term> data) {
-      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[data.size()]);
+      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[0]);
 
       Arrays.sort(arr, (o1, o2) -> o1.getTerm().compareTo(o2.getTerm()));
 
@@ -581,7 +581,7 @@ public class TermsComponent extends SearchComponent {
 
     // based on code from facets
     public TermsResponse.Term[] getCountSorted(HashMap<String, TermsResponse.Term> data) {
-      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[data.size()]);
+      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[0]);
 
       Arrays.sort(arr, new TermCountComparator());
       return arr;
@@ -597,7 +597,7 @@ public class TermsComponent extends SearchComponent {
       throws IOException {
     List<String> splitTermList = StrUtils.splitSmart(termList, ",", true);
     // Sort the terms once
-    String[] splitTerms = splitTermList.toArray(new String[splitTermList.size()]);
+    String[] splitTerms = splitTermList.toArray(new String[0]);
     // Not a great idea to trim here, but it was in the original implementation
     for (int i = 0; i < splitTerms.length; i++) {
       splitTerms[i] = splitTerms[i].trim();

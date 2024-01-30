@@ -21,6 +21,11 @@ Base Docker Image: (The docker image used for the "FROM" in the Solr Dockerfile)
    EnvVar: SOLR_DOCKER_BASE_IMAGE
    Gradle Property: -Psolr.docker.baseImage
 
+Solr Distribution: (Either Full or Slim, the solr binary distribution to build the docker image with)
+   Default: "full"
+   EnvVar: SOLR_DOCKER_DIST
+   Gradle Property: -Psolr.docker.dist
+
 Tagging and Pushing
 -------
 
@@ -42,12 +47,17 @@ Docker Image Repository:
    Gradle Property: -Psolr.docker.imageRepo
 
 Docker Image Tag:
-   Default: the Solr version, e.g. "9.0.0-SNAPSHOT"
+   Default: the Solr version and distribution (if applicable), e.g. "9.0.0-SNAPSHOT" or "9.5.0-SNAPSHOT-slim"
    EnvVar: SOLR_DOCKER_IMAGE_TAG
    Gradle Property: -Psolr.docker.imageTag
 
+Docker Image Tag Suffix:
+   Default: None. Example: "-java21"
+   EnvVar: SOLR_DOCKER_IMAGE_TAG_SUFFIX
+   Gradle Property: -Psolr.docker.imageTagSuffix
+
 Docker Image Name: (Use this to explicitly set a whole image name. If given, the image repo and image version options above are ignored.)
-   Default: {image_repo}/{image_tag} (both options provided above, with defaults)
+   Default: {image_repo}/{image_tag}{image_tag_suffix} (all options provided above, with defaults)
    EnvVar: SOLR_DOCKER_IMAGE_NAME
    Gradle Property: -Psolr.docker.imageName
 
@@ -83,28 +93,33 @@ Run tests in parallel:
    Gradle Property: -Psolr.docker.tests.concurrent=true
 
 -------
-The Official Solr Image
+The Official Solr Images
 -------
 
-The Official Solr Docker Image is also generated within this module.
-This section should only be used by developers testing that their changes to the Solr project are compatible with the Official image.
+The Official Solr Docker Images are also generated within this module.
+One Dockerfile/Docker image is created for each Solr binary package, "full" and "slim".
+This section should only be used by developers testing that their changes to the Solr project are compatible with the Official images.
 All users should build custom images using the instructions above.
 
-NOTE: All gradle commands for the Official Dockerfile below require the Solr artifacts to be signed with a GPG Key.
+NOTE: All gradle commands for the Official Dockerfiles below require the Solr artifacts to be signed with a GPG Key.
 For necessary inputs and properties, please refer to:
 
 gradlew helpPublishing
 
-You can use the following command to build an official Solr Dockerfile.
-The Dockerfile will be created at: solr/docker/build/Dockerfile.official
+You can use the following command to build both official Solr Dockerfiles.
+The Dockerfiles will be created at:
+- solr/docker/build/Dockerfile.official-full
+- solr/docker/build/Dockerfile.official-slim
 
 gradlew createDockerfileOfficial
 
-You can also test the official docker image using the following command.
-This will build the official Dockerfile, create a local server to host the local Solr artifacts, and build the Official Solr image using this local server.
+You can also test building the official docker images using the following command.
+This will build the official Dockerfiles, create a local server to host the local Solr artifacts, and build the Official Solr images using this local server.
 
 gradlew testBuildDockerfileOfficial
 
-You can also run the official Docker image built by the command above through all Solr Docker tests with the following:
+You can also run the official Docker images built by the command above through all Solr Docker tests with the following:
 
 gradlew testDockerfileOfficial
+
+In order to build/test just one of the "full" or "slim" images/Dockerfiles, just append "Full" or "Slim" to any of the *DockerfileOfficial tasks above.

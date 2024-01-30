@@ -107,10 +107,6 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-function coreNameToLabel(name) {
-  return name.replace(/(.*?)_shard((\d+_?)+)_replica_?[ntp]?(\d+)/, '\$1_s\$2r\$4');
-}
-
 var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
@@ -198,10 +194,13 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
           for (var replicaName in replicas) {
             var core = replicas[replicaName];
             core.name = replicaName;
-            core.label = coreNameToLabel(core['core']);
+            core.replica = core['core'].replace(/.*_(replica_.*)$/, '\$1');
             core.collection = collection.name;
             core.shard = shard.name;
             core.shard_state = shard.state;
+            core.label = core['collection'] + "_"
+              + (core['shard'] + "_").replace(/shard(\d+)_/, 's\$1')
+              + core['replica'].replace(/replica_?[ntp]?(\d+)/, 'r\$1');
 
             var node_name = core['node_name'];
             var node = getOrCreateObj(node_name, nodes);
@@ -424,16 +423,17 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
               // These are the cores we _expect_ to find on this node according to the CLUSTERSTATUS
               var cores = nodes[node]['cores'];
               var indexSizeTotal = 0;
+              var indexSizeMax = 0;
               var docsTotal = 0;
               var graphData = [];
-              for (coreId in cores) {
+              for (let coreId in cores) {
                 var core = cores[coreId];
                 if (core['shard_state'] !== 'active' || core['state'] !== 'active') {
                   // If core state is not active, display the real state, or if shard is inactive, display that
                   var labelState = (core['state'] !== 'active') ? core['state'] : core['shard_state'];
                   core['label'] += "_(" + labelState + ")";
                 }
-                var coreMetricName = "solr.core." + core['core'].replace(/(.*?)_(shard(\d+_?)+)_(replica.*?)/, '\$1.\$2.\$4');
+                var coreMetricName = "solr.core." + core['collection'] + "." + core['shard'] + "." + core['replica'];
                 var coreMetric = m.metrics[coreMetricName];
                 // we may not actually get metrics back for every expected core (the core may be down)
                 if (coreMetric) {
@@ -441,7 +441,8 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
                   size = (typeof size !== 'undefined') ? size : 0;
                   core['sizeInBytes'] = size;
                   core['size'] = bytesToSize(size);
-                  indexSizeTotal += size;
+                  indexSizeTotal = indexSizeTotal + size;
+                  indexSizeMax = size > indexSizeMax ? size : indexSizeMax;
                   var numDocs = coreMetric['SEARCHER.searcher.numDocs'];
                   numDocs = (typeof numDocs !== 'undefined') ? numDocs : 0;
                   core['numDocs'] = numDocs;
@@ -456,12 +457,14 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
                   core['warmupTime'] = warmupTime;
                   docsTotal += core['numDocs'];
                 }
-
+              }
+              for (let coreId in cores) {
+                var core = cores[coreId];
                 var graphObj = {};
                 graphObj['label'] = core['label'];
                 graphObj['size'] = core['sizeInBytes'];
                 graphObj['sizeHuman'] = core['size'];
-                graphObj['pct'] = (core['sizeInBytes'] / indexSizeTotal) * 100;
+                graphObj['pct'] = (core['sizeInBytes'] / indexSizeMax) * 100;
                 graphData.push(graphObj);
               }
               if (cores) {

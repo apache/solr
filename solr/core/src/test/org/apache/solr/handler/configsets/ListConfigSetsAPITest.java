@@ -18,37 +18,23 @@
 package org.apache.solr.handler.configsets;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import javax.inject.Singleton;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Response;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.api.model.ListConfigsetsResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.jersey.InjectionFactories;
-import org.apache.solr.jersey.SolrJacksonMapper;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
-import org.glassfish.jersey.server.ResourceConfig;
-import org.glassfish.jersey.test.JerseyTest;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * Unit tests for {@link ListConfigSetsAPI}.
- *
- * <p>Serves primarily as a model and example of how to write unit tests using Jersey's test
- * framework.
- */
-public class ListConfigSetsAPITest extends JerseyTest {
+/** Unit tests for {@link ListConfigSets}. */
+public class ListConfigSetsAPITest extends SolrTestCase {
 
   private CoreContainer mockCoreContainer;
 
@@ -57,59 +43,18 @@ public class ListConfigSetsAPITest extends JerseyTest {
     assumeWorkingMockito();
   }
 
-  @Override
-  protected Application configure() {
-    resetMocks();
-    final ResourceConfig config = new ResourceConfig();
-    config.register(ListConfigSetsAPI.class);
-    config.register(SolrJacksonMapper.class);
-    config.register(
-        new AbstractBinder() {
-          @Override
-          protected void configure() {
-            bindFactory(new InjectionFactories.SingletonFactory<>(mockCoreContainer))
-                .to(CoreContainer.class)
-                .in(Singleton.class);
-          }
-        });
-
-    return config;
-  }
-
-  private void resetMocks() {
+  @Before
+  public void clearMocks() {
     mockCoreContainer = mock(CoreContainer.class);
   }
 
   @Test
-  public void testSuccessfulListConfigsetsRaw() throws Exception {
-    final String expectedJson =
-        "{\"responseHeader\":{\"status\":0,\"QTime\":0},\"configSets\":[\"cs1\",\"cs2\"]}";
+  public void testSuccessfulListConfigsets() throws Exception {
     final ConfigSetService configSetService = mock(ConfigSetService.class);
     when(mockCoreContainer.getConfigSetService()).thenReturn(configSetService);
     when(configSetService.listConfigs()).thenReturn(List.of("cs1", "cs2"));
 
-    final Response response = target("/cluster/configs").request().get();
-    final String jsonBody = response.readEntity(String.class);
-
-    assertEquals(200, response.getStatus());
-    assertEquals("application/json", response.getHeaders().getFirst("Content-type"));
-    assertEquals(1, 1);
-    assertEquals(
-        expectedJson,
-        "{\"responseHeader\":{\"status\":0,\"QTime\":0},\"configSets\":[\"cs1\",\"cs2\"]}");
-  }
-
-  @Test
-  public void testSuccessfulListConfigsetsTyped() throws Exception {
-    final ConfigSetService configSetService = mock(ConfigSetService.class);
-    when(mockCoreContainer.getConfigSetService()).thenReturn(configSetService);
-    when(configSetService.listConfigs()).thenReturn(List.of("cs1", "cs2"));
-
-    final ListConfigSetsAPI.ListConfigsetsResponse response =
-        target("/cluster/configs").request().get(ListConfigSetsAPI.ListConfigsetsResponse.class);
-
-    assertNotNull(response.configSets);
-    assertNull(response.error);
+    final var response = new ListConfigSets(mockCoreContainer).listConfigSet();
     assertEquals(2, response.configSets.size());
     assertTrue(response.configSets.contains("cs1"));
     assertTrue(response.configSets.contains("cs2"));
@@ -118,11 +63,11 @@ public class ListConfigSetsAPITest extends JerseyTest {
   /**
    * Test the v2 to v1 response mapping for /cluster/configs
    *
-   * <p>{@link org.apache.solr.handler.admin.ConfigSetsHandler} uses {@link ListConfigSetsAPI} (and
-   * its response class {@link ListConfigSetsAPI.ListConfigsetsResponse}) internally to serve the v1
-   * version of this functionality. So it's important to make sure that the v2 response stays
-   * compatible with SolrJ - both because that's important in its own right and because that ensures
-   * we haven't accidentally changed the v1 response format.
+   * <p>{@link org.apache.solr.handler.admin.ConfigSetsHandler} uses {@link ListConfigSets} (and its
+   * response class {@link ListConfigsetsResponse}) internally to serve the v1 version of this
+   * functionality. So it's important to make sure that the v2 response stays compatible with SolrJ
+   * - both because that's important in its own right and because that ensures we haven't
+   * accidentally changed the v1 response format.
    */
   @Test
   public void testListConfigsetsV1Compatibility() throws Exception {
@@ -130,8 +75,7 @@ public class ListConfigSetsAPITest extends JerseyTest {
     when(mockCoreContainer.getConfigSetService()).thenReturn(configSetService);
     when(configSetService.listConfigs()).thenReturn(List.of("cs1", "cs2"));
 
-    final ListConfigSetsAPI.ListConfigsetsResponse response =
-        target("/cluster/configs").request().get(ListConfigSetsAPI.ListConfigsetsResponse.class);
+    final var response = new ListConfigSets(mockCoreContainer).listConfigSet();
     final NamedList<Object> squashedResponse = new NamedList<>();
     V2ApiUtils.squashIntoNamedList(squashedResponse, response);
     final ConfigSetAdminResponse.List solrjResponse = new ConfigSetAdminResponse.List();

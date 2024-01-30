@@ -17,10 +17,10 @@
 package org.apache.solr.s3;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.Before;
@@ -92,7 +92,8 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
   @Test
   public void testWriteLargeBuffer() throws IOException {
     // must be larger than S3 part size
-    String content = RandomStringUtils.randomAlphanumeric(S3OutputStream.PART_SIZE + 1024);
+    String content =
+        RandomStrings.randomAsciiAlphanumOfLength(random(), S3OutputStream.PART_SIZE + 1024);
     byte[] buffer = content.getBytes(StandardCharsets.UTF_8);
     // pre-check -- ensure that our test string isn't too small
     assertTrue(buffer.length > S3OutputStream.PART_SIZE);
@@ -137,7 +138,8 @@ public class S3OutputStreamTest extends SolrTestCaseJ4 {
   @Test
   public void testFlushLargeBuffer() throws IOException {
     // must be larger than S3 minimal part size, so we actually do something for flush()
-    String content = RandomStringUtils.randomAlphanumeric(S3OutputStream.MIN_PART_SIZE + 1024);
+    String content =
+        RandomStrings.randomAsciiAlphanumOfLength(random(), S3OutputStream.MIN_PART_SIZE + 1024);
     byte[] buffer = content.getBytes(StandardCharsets.UTF_8);
     assertTrue(buffer.length > S3OutputStream.MIN_PART_SIZE);
 

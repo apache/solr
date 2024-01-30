@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
 
 import static org.apache.solr.common.util.Utils.STANDARDOBJBUILDER;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
@@ -48,7 +50,7 @@ import org.slf4j.LoggerFactory;
  *
  * @lucene.experimental
  */
-public class ClusterState implements JSONWriter.Writable {
+public class ClusterState implements MapWriter {
 
   /** Cluster Prop that is http or https. */
   public static final String URL_SCHEME = "urlScheme";
@@ -285,8 +287,8 @@ public class ClusterState implements JSONWriter.Writable {
       props = Collections.emptyMap();
     } else {
       slices = Slice.loadAllFromMap(name, sliceObjs);
-      props = new HashMap<>(objs);
       objs.remove(CollectionStateProps.SHARDS);
+      props = new HashMap<>(objs);
     }
 
     Object routerObj = props.get(CollectionStateProps.DOC_ROUTER);
@@ -302,19 +304,17 @@ public class ClusterState implements JSONWriter.Writable {
       router = DocRouter.getDocRouter((String) routerProps.get("name"));
     }
 
-    return new DocCollection(name, slices, props, router, version, prsSupplier);
+    return DocCollection.create(name, slices, props, router, version, prsSupplier);
   }
 
   @Override
-  public void write(JSONWriter jsonWriter) {
-    LinkedHashMap<String, DocCollection> map = new LinkedHashMap<>();
+  public void writeMap(EntryWriter ew) throws IOException {
     for (Entry<String, CollectionRef> e : collectionStates.entrySet()) {
       if (e.getValue().getClass() == CollectionRef.class) {
         DocCollection coll = e.getValue().get();
-        map.put(coll.getName(), coll);
+        ew.put(coll.getName(), coll);
       }
     }
-    jsonWriter.write(map);
   }
 
   @Override

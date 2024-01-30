@@ -20,6 +20,7 @@ import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Array;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,7 +40,6 @@ import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.Semaphore;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -109,8 +109,10 @@ public class SimpleFacets {
 
   /** The main set of documents all facet counts should be relative to */
   protected DocSet docsOrig;
+
   /** Configuration params behavior should be driven by */
   protected final SolrParams global;
+
   /** Searcher to use for all calculations */
   protected final SolrIndexSearcher searcher;
 
@@ -786,7 +788,8 @@ public class SimpleFacets {
       throws IOException {
     GroupingSpecification groupingSpecification = rb.getGroupingSpec();
     String[] groupFields = groupingSpecification != null ? groupingSpecification.getFields() : null;
-    final String groupField = ArrayUtils.isNotEmpty(groupFields) ? groupFields[0] : null;
+    final String groupField =
+        groupFields != null && Array.getLength(groupFields) != 0 ? groupFields[0] : null;
     if (groupField == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,

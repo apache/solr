@@ -280,7 +280,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setPartialResults(true);
     } catch (EarlyTerminatingCollectorException etce) {
       if (collector instanceof DelegatingCollector) {
-        ((DelegatingCollector) collector).finish();
+        ((DelegatingCollector) collector).complete();
       }
       throw etce;
     } finally {
@@ -293,7 +293,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
     }
     if (collector instanceof DelegatingCollector) {
-      ((DelegatingCollector) collector).finish();
+      ((DelegatingCollector) collector).complete();
     }
 
     return collector;
@@ -409,7 +409,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
       }
 
-      cacheList = clist.toArray(new SolrCache[clist.size()]);
+      cacheList = clist.toArray(new SolrCache[0]);
     } else {
       this.filterCache = null;
       this.queryResultCache = null;
@@ -1133,7 +1133,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     search(query, collector);
 
     if (collector instanceof DelegatingCollector) {
-      ((DelegatingCollector) collector).finish();
+      ((DelegatingCollector) collector).complete();
     }
 
     return DocSetUtil.getDocSet(setCollector, this);
@@ -2372,6 +2372,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   public boolean intersects(DocSet a, DocsEnumState deState) throws IOException {
     return a.intersects(getDocSet(deState));
+  }
+
+  /**
+   * Called on the initial searcher for each core, immediately before <code>firstSearcherListeners
+   * </code> are called for the searcher. This provides the opportunity to perform initialization on
+   * the first registered searcher before the searcher begins to see any <code>firstSearcher</code>
+   * -triggered events.
+   */
+  public void bootstrapFirstSearcher() {
+    for (SolrCache<?, ?> solrCache : cacheList) {
+      solrCache.initialSearcher(this);
+    }
   }
 
   /** Warm this searcher based on an old one (primarily for auto-cache warming). */

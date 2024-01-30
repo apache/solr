@@ -37,16 +37,19 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.cloud.ClusterSingleton;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
+import org.apache.solr.search.CacheConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DOMConfigNode;
@@ -71,46 +74,36 @@ public class SolrXmlConfig {
   private static final Pattern COMMA_SEPARATED_PATTERN = Pattern.compile("\\s*,\\s*");
 
   /**
-   * Given some node Properties, checks if non-null and a 'zkHost' is alread included. If so, the
+   * Given some node Properties, checks if non-null and a 'zkHost' is already included. If so, the
    * Properties are returned as is. If not, then the returned value will be a new Properties,
    * wrapping the original Properties, with the 'zkHost' value set based on the value of the
-   * corispond System property (if set)
+   * corresponding System property (if set)
    *
    * <p>In theory we only need this logic once, ideally in SolrDispatchFilter, but we put it here to
-   * re-use redundently because of how much surface area our API has for various tests to poke at
+   * re-use redundantly because of how much surface area our API has for various tests to poke at
    * us.
    */
   public static Properties wrapAndSetZkHostFromSysPropIfNeeded(final Properties props) {
-    if (null != props && !StringUtils.isEmpty(props.getProperty(ZK_HOST))) {
+    if (null != props && StrUtils.isNotNullOrEmpty(props.getProperty(ZK_HOST))) {
       // nothing to do...
       return props;
     }
     // we always wrap if we might set a property -- never mutate the original props
     final Properties results = (null == props ? new Properties() : new Properties(props));
     final String sysprop = System.getProperty(ZK_HOST);
-    if (!StringUtils.isEmpty(sysprop)) {
+    if (StrUtils.isNotNullOrEmpty(sysprop)) {
       results.setProperty(ZK_HOST, sysprop);
     }
     return results;
   }
 
   public static NodeConfig fromConfig(
-      Path solrHome,
-      Properties substituteProperties,
-      boolean fromZookeeper,
-      ConfigNode root,
-      SolrResourceLoader loader) {
+      Path solrHome, Properties substituteProperties, ConfigNode root, SolrResourceLoader loader) {
 
     checkForIllegalConfig(root);
 
-    // sanity check: if our config came from zookeeper, then there *MUST* be Node Properties that
-    // tell us what zkHost was used to read it (either via webapp context attribute, or that
-    // SolrDispatchFilter filled in for us from system properties)
-    assert ((!fromZookeeper)
-        || (null != substituteProperties && null != substituteProperties.getProperty(ZK_HOST)));
-
-    // Regardless of where/how we this XmlConfigFile was loaded from, if it contains a zkHost
-    // property, we're going to use that as our "default" and only *directly* check the system
+    // If solr.xml contains a zkHost property, we're going to use that as our "default" and only
+    // *directly* check the system
     // property if it's not specified.
     //
     // (checking the sys prop here is really just for tests that by-pass SolrDispatchFilter. In
@@ -134,7 +127,7 @@ public class SolrXmlConfig {
     String nodeName = (String) entries.remove("nodeName");
     if (StrUtils.isNullOrEmpty(nodeName) && cloudConfig != null) nodeName = cloudConfig.getHost();
 
-    // It should goes inside the fillSolrSection method but
+    // It should go inside the fillSolrSection method but
     // since it is arranged as a separate section it is placed here
     Map<String, String> coreAdminHandlerActions =
         readNodeListAsNamedList(root.get("coreAdminHandlerActions"), "<coreAdminHandlerActions>")
@@ -173,8 +166,13 @@ public class SolrXmlConfig {
     if (cloudConfig != null) configBuilder.setCloudConfig(cloudConfig);
     configBuilder.setBackupRepositoryPlugins(
         getBackupRepositoryPluginInfos(root.get("backup").getAll("repository")));
+    configBuilder.setClusterPlugins(getClusterPlugins(loader, root));
+    // <metrics><hiddenSysProps></metrics> will be removed in Solr 10, but until then, use it if a
+    // <hiddenSysProps> is not provided under <solr>.
+    // Remove this line in 10.0
+    configBuilder.setHiddenSysProps(getHiddenSysProps(root.get("metrics")));
     configBuilder.setMetricsConfig(getMetricsConfig(root.get("metrics")));
-    configBuilder.setFromZookeeper(fromZookeeper);
+    configBuilder.setCachesConfig(getCachesConfig(loader, root.get("caches")));
     configBuilder.setDefaultZkHost(defaultZkHost);
     configBuilder.setCoreAdminHandlerActions(coreAdminHandlerActions);
     return fillSolrSection(configBuilder, root);
@@ -217,11 +215,6 @@ public class SolrXmlConfig {
 
   public static NodeConfig fromInputStream(
       Path solrHome, InputStream is, Properties substituteProps) {
-    return fromInputStream(solrHome, is, substituteProps, false);
-  }
-
-  public static NodeConfig fromInputStream(
-      Path solrHome, InputStream is, Properties substituteProps, boolean fromZookeeper) {
     SolrResourceLoader loader = new SolrResourceLoader(solrHome);
     if (substituteProps == null) {
       substituteProps = new Properties();
@@ -234,7 +227,6 @@ public class SolrXmlConfig {
         return fromConfig(
             solrHome,
             substituteProps,
-            fromZookeeper,
             new DataConfigNode(new DOMConfigNode(config.getDocument().getDocumentElement())),
             loader);
       }
@@ -343,6 +335,12 @@ public class SolrXmlConfig {
               case "configSetService":
                 builder.setConfigSetServiceClass(it.txt());
                 break;
+              case "coresLocator":
+                builder.setCoresLocatorClass(it.txt());
+                break;
+              case "coreSorter":
+                builder.setCoreSorterClass(it.txt());
+                break;
               case "coreRootDirectory":
                 builder.setCoreRootDirectory(it.txt());
                 break;
@@ -361,8 +359,14 @@ public class SolrXmlConfig {
               case "modules":
                 builder.setModules(it.txt());
                 break;
+              case "hiddenSysProps":
+                builder.setHiddenSysProps(it.txt());
+                break;
               case "allowPaths":
                 builder.setAllowPaths(separatePaths(it.txt()));
+                break;
+              case "hideStackTrace":
+                builder.setHideStackTrace(it.boolVal(false));
                 break;
               case "configSetBaseDir":
                 builder.setConfigSetBaseDirectory(it.txt());
@@ -503,10 +507,15 @@ public class SolrXmlConfig {
       hostPort = parseInt("jetty.port", System.getProperty("jetty.port", "8983"));
     }
     String hostName = required("solrcloud", "host", removeValue(nl, "host"));
-    String hostContext = required("solrcloud", "hostContext", removeValue(nl, "hostContext"));
 
-    CloudConfig.CloudConfigBuilder builder =
-        new CloudConfig.CloudConfigBuilder(hostName, hostPort, hostContext);
+    // We no longer require or support the hostContext property, but legacy users may have it, so
+    // remove it from the list.
+    String hostContext = removeValue(nl, "hostContext");
+    if (hostContext != null) {
+      log.warn("solr.xml hostContext -- hostContext is deprecated and ignored.");
+    }
+
+    CloudConfig.CloudConfigBuilder builder = new CloudConfig.CloudConfigBuilder(hostName, hostPort);
     // set the defaultZkHost until/unless it's overridden in the "cloud section" (below)...
     builder.setZkHost(defaultZkHost);
 
@@ -640,6 +649,68 @@ public class SolrXmlConfig {
     return configs;
   }
 
+  private static PluginInfo[] getClusterPlugins(SolrResourceLoader loader, ConfigNode root) {
+    List<PluginInfo> clusterPlugins = new ArrayList<>();
+
+    Collections.addAll(
+        clusterPlugins, getClusterSingletonPluginInfos(loader, root.getAll("clusterSingleton")));
+
+    PluginInfo replicaPlacementFactory = getPluginInfo(root.get("replicaPlacementFactory"));
+    if (replicaPlacementFactory != null) {
+      if (replicaPlacementFactory.name != null
+          && !replicaPlacementFactory.name.equals(PlacementPluginFactory.PLUGIN_NAME)) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "The replicaPlacementFactory name attribute must be "
+                + PlacementPluginFactory.PLUGIN_NAME);
+      }
+      clusterPlugins.add(replicaPlacementFactory);
+    }
+
+    return clusterPlugins.toArray(new PluginInfo[0]);
+  }
+
+  private static PluginInfo[] getClusterSingletonPluginInfos(
+      SolrResourceLoader loader, List<ConfigNode> nodes) {
+    if (nodes == null || nodes.isEmpty()) {
+      return new PluginInfo[0];
+    }
+
+    List<PluginInfo> plugins =
+        nodes.stream()
+            .map(n -> new PluginInfo(n, n.name(), true, true))
+            .collect(Collectors.toList());
+
+    // Cluster plugin names must be unique
+    Set<String> names = CollectionUtil.newHashSet(nodes.size());
+    Set<String> duplicateNames =
+        plugins.stream()
+            .filter(p -> !names.add(p.name))
+            .map(p -> p.name)
+            .collect(Collectors.toSet());
+    if (!duplicateNames.isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Multiple clusterSingleton sections with name '"
+              + String.join("', '", duplicateNames)
+              + "' found in solr.xml");
+    }
+
+    try {
+      plugins.forEach(
+          p -> {
+            loader.findClass(p.className, ClusterSingleton.class);
+          });
+    } catch (ClassCastException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "clusterSingleton plugins must implement the interface "
+              + ClusterSingleton.class.getName());
+    }
+
+    return plugins.toArray(new PluginInfo[0]);
+  }
+
   private static MetricsConfig getMetricsConfig(ConfigNode metrics) {
     MetricsConfig.MetricsConfigBuilder builder = new MetricsConfig.MetricsConfigBuilder();
     boolean enabled = metrics.boolAttr("enabled", true);
@@ -674,11 +745,21 @@ public class SolrXmlConfig {
     }
 
     PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(metrics);
-    Set<String> hiddenSysProps = getHiddenSysProps(metrics);
-    return builder
-        .setMetricReporterPlugins(reporterPlugins)
-        .setHiddenSysProps(hiddenSysProps)
-        .build();
+    return builder.setMetricReporterPlugins(reporterPlugins).build();
+  }
+
+  private static Map<String, CacheConfig> getCachesConfig(
+      SolrResourceLoader loader, ConfigNode caches) {
+    Map<String, CacheConfig> ret =
+        CacheConfig.getMultipleConfigs(loader, null, null, caches.getAll("cache"));
+    for (CacheConfig c : ret.values()) {
+      if (c.getRegenerator() != null) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "node-level caches should not be configured with a regenerator!");
+      }
+    }
+    return Collections.unmodifiableMap(ret);
   }
 
   private static Object decodeNullValue(Object o) {
@@ -719,23 +800,27 @@ public class SolrXmlConfig {
       PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
       configs.add(defaultPlugin);
     }
-    return configs.toArray(new PluginInfo[configs.size()]);
+    return configs.toArray(new PluginInfo[0]);
   }
 
-  private static Set<String> getHiddenSysProps(ConfigNode metrics) {
+  /**
+   * Deprecated as of 9.3, will be removed in 10.0
+   *
+   * @param metrics configNode for the metrics
+   * @return a comma-separated list of hidden Sys Props
+   */
+  @Deprecated(forRemoval = true, since = "9.3")
+  private static String getHiddenSysProps(ConfigNode metrics) {
     ConfigNode p = metrics.get("hiddenSysProps");
-    if (!p.exists()) return NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS;
+    if (!p.exists()) return null;
     Set<String> props = new HashSet<>();
     p.forEachChild(
         it -> {
-          if (it.name().equals("str") && !StringUtils.isEmpty(it.txt())) props.add(it.txt());
+          if (it.name().equals("str") && StrUtils.isNotNullOrEmpty(it.txt()))
+            props.add(Pattern.quote(it.txt()));
           return Boolean.TRUE;
         });
-    if (props.isEmpty()) {
-      return NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS;
-    } else {
-      return props;
-    }
+    return String.join(",", props);
   }
 
   private static PluginInfo getPluginInfo(ConfigNode cfg) {

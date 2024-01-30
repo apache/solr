@@ -47,8 +47,6 @@ dependencies {
   testImplementation 'junit:junit'
 
   testRuntimeOnly project(':solr:modules:analysis-extras')
-
-  testImplementation 'org.apache.commons:commons-lang3'
 }
 
 

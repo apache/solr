@@ -29,7 +29,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -60,8 +59,8 @@ public class KnnStream extends TupleStream implements Expressible {
   private String zkHost;
   private Map<String, String> props;
   private String collection;
-  protected transient SolrClientCache cache;
-  protected transient CloudSolrClient cloudSolrClient;
+  private transient SolrClientCache clientCache;
+  private transient boolean doCloseCache;
   private Iterator<SolrDocument> documentIterator;
   private String id;
 
@@ -193,7 +192,7 @@ public class KnnStream extends TupleStream implements Expressible {
 
   @Override
   public void setStreamContext(StreamContext context) {
-    cache = context.getSolrClientCache();
+    clientCache = context.getSolrClientCache();
   }
 
   @Override
@@ -204,7 +203,13 @@ public class KnnStream extends TupleStream implements Expressible {
 
   @Override
   public void open() throws IOException {
-    cloudSolrClient = cache.getCloudSolrClient(zkHost);
+    if (clientCache == null) {
+      doCloseCache = true;
+      clientCache = new SolrClientCache();
+    } else {
+      doCloseCache = false;
+    }
+
     ModifiableSolrParams params = getParams(this.props);
 
     StringBuilder builder = new StringBuilder();
@@ -227,7 +232,7 @@ public class KnnStream extends TupleStream implements Expressible {
 
     QueryRequest request = new QueryRequest(params);
     try {
-      QueryResponse response = request.process(cloudSolrClient, collection);
+      QueryResponse response = request.process(clientCache.getCloudSolrClient(zkHost), collection);
       SolrDocumentList docs = response.getResults();
       documentIterator = docs.iterator();
     } catch (Exception e) {
@@ -236,7 +241,11 @@ public class KnnStream extends TupleStream implements Expressible {
   }
 
   @Override
-  public void close() throws IOException {}
+  public void close() throws IOException {
+    if (doCloseCache) {
+      clientCache.close();
+    }
+  }
 
   @Override
   public Tuple read() throws IOException {

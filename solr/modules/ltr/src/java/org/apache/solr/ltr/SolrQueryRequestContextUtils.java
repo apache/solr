@@ -29,8 +29,8 @@ public class SolrQueryRequestContextUtils {
   /** key of the scoring queries in the request context */
   private static final String SCORING_QUERIES = LTR_PREFIX + "scoring_queries";
 
-  /** key of the isExtractingFeatures flag in the request context */
-  private static final String IS_EXTRACTING_FEATURES = LTR_PREFIX + "isExtractingFeatures";
+  /** key of the isLoggingFeatures flag in the request context */
+  private static final String IS_LOGGING_FEATURES = LTR_PREFIX + "isLoggingFeatures";
 
   /** key of the feature vector store name in the request context */
   private static final String STORE = LTR_PREFIX + "store";
@@ -53,17 +53,13 @@ public class SolrQueryRequestContextUtils {
     return (LTRScoringQuery[]) req.getContext().get(SCORING_QUERIES);
   }
 
-  /** isExtractingFeatures flag accessors */
-  public static void setIsExtractingFeatures(SolrQueryRequest req) {
-    req.getContext().put(IS_EXTRACTING_FEATURES, Boolean.TRUE);
+  /** isLoggingFeatures flag accessors */
+  public static void enableFeatureLogging(SolrQueryRequest req) {
+    req.getContext().put(IS_LOGGING_FEATURES, Boolean.TRUE);
   }
 
-  public static void clearIsExtractingFeatures(SolrQueryRequest req) {
-    req.getContext().put(IS_EXTRACTING_FEATURES, Boolean.FALSE);
-  }
-
-  public static boolean isExtractingFeatures(SolrQueryRequest req) {
-    return Boolean.TRUE.equals(req.getContext().get(IS_EXTRACTING_FEATURES));
+  public static boolean isLoggingFeatures(SolrQueryRequest req) {
+    return Boolean.TRUE.equals(req.getContext().get(IS_LOGGING_FEATURES));
   }
 
   /** feature vector store name accessors */

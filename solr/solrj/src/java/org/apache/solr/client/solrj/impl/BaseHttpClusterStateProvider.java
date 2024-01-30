@@ -80,6 +80,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     }
   }
 
+  /** Create a SolrClient implementation that uses the specified Solr node URL */
   protected abstract SolrClient getSolrClient(String baseUrl);
 
   @Override
@@ -172,13 +173,13 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     if (m.containsKey("PRS")) {
       Map prs = (Map) m.remove("PRS");
       prsSupplier =
-          new DocCollection.PrsSupplier(
-              () ->
-                  new PerReplicaStates(
-                      (String) prs.get("path"),
-                      (Integer) prs.get("cversion"),
-                      (List<String>) prs.get("states")));
+          () ->
+              new PerReplicaStates(
+                  (String) prs.get("path"),
+                  (Integer) prs.get("cversion"),
+                  (List<String>) prs.get("states"));
     }
+
     return ClusterState.collectionFromObjects(e.getKey(), m, znodeVersion, prsSupplier);
   }
 

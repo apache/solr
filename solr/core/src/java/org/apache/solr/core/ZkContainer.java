@@ -29,7 +29,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.AlreadyClosedException;
@@ -40,6 +40,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -111,7 +112,7 @@ public class ZkContainer {
       }
     }
 
-    int zkClientConnectTimeout = 30000;
+    int zkClientConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
 
     if (zookeeperHost != null) {
 
@@ -126,13 +127,7 @@ public class ZkContainer {
         }
         boolean createRoot = Boolean.getBoolean("createZkChroot");
 
-        // We may have already loaded NodeConfig from zookeeper with same connect string, so no need
-        // to recheck chroot
-        boolean alreadyUsedChroot =
-            (cc.getConfig().isFromZookeeper()
-                && zookeeperHost.equals(cc.getConfig().getDefaultZkHost()));
-        if (!alreadyUsedChroot
-            && !ZkController.checkChrootPath(zookeeperHost, zkRunOnly || createRoot)) {
+        if (!ZkController.checkChrootPath(zookeeperHost, zkRunOnly || createRoot)) {
           throw new ZooKeeperException(
               SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
@@ -149,7 +144,7 @@ public class ZkContainer {
                 cc, zookeeperHost, zkClientConnectTimeout, config, descriptorsSupplier);
 
         if (zkRun != null) {
-          if (StringUtils.isNotEmpty(System.getProperty(HTTPS_PORT_PROP))) {
+          if (StrUtils.isNotNullOrEmpty(System.getProperty(HTTPS_PORT_PROP))) {
             // Embedded ZK and probably running with SSL
             new ClusterProperties(zkController.getZkClient())
                 .setClusterProperty(ZkStateReader.URL_SCHEME, HTTPS);

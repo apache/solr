@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipException;
 import javax.net.ssl.HostnameVerifier;
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
@@ -36,6 +35,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryProvider;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -88,13 +88,19 @@ public class HttpClientUtilTest extends SolrTestCase {
         "socketFactory is not an SSLConnectionSocketFactory: " + socketFactory.getClass(),
         socketFactory instanceof SSLConnectionSocketFactory);
     SSLConnectionSocketFactory sslSocketFactory = (SSLConnectionSocketFactory) socketFactory;
+    Object hostnameVerifier = getHostnameVerifier(sslSocketFactory);
+    assertNotNull("sslSocketFactory has null hostnameVerifier", hostnameVerifier);
+    assertEquals(
+        "sslSocketFactory does not have expected hostnameVerifier impl",
+        expected,
+        hostnameVerifier.getClass());
+  }
+
+  @SuppressForbidden(reason = "Uses commons-lang3 FieldUtils.readField to get hostnameVerifier")
+  private Object getHostnameVerifier(SSLConnectionSocketFactory sslSocketFactory) {
     try {
-      Object hostnameVerifier = FieldUtils.readField(sslSocketFactory, "hostnameVerifier", true);
-      assertNotNull("sslSocketFactory has null hostnameVerifier", hostnameVerifier);
-      assertEquals(
-          "sslSocketFactory does not have expected hostnameVerifier impl",
-          expected,
-          hostnameVerifier.getClass());
+      return org.apache.commons.lang3.reflect.FieldUtils.readField(
+          sslSocketFactory, "hostnameVerifier", true);
     } catch (IllegalAccessException e) {
       throw new AssertionError("Unexpected access error reading hostnameVerifier field", e);
     }

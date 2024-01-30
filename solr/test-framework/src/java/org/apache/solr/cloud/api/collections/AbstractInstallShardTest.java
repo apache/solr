@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -48,6 +49,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.handler.admin.api.InstallShardData;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -62,7 +64,7 @@ import org.slf4j.LoggerFactory;
  * repository. This base-class will populate that backup repository all data necessary for these
  * tests.
  *
- * @see org.apache.solr.handler.admin.api.InstallShardDataAPI
+ * @see InstallShardData
  */
 public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
 
@@ -100,14 +102,15 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
   private static int replicasPerShard = -1;
   private static int multiShardNumDocs = -1;
   private static URI singleShard1Uri = null;
+  private static URI nonExistentLocationUri = null;
   private static URI[] multiShardUris = null;
 
   private List<String> collectionsToDelete;
 
   public static void bootstrapBackupRepositoryData(String baseRepositoryLocation) throws Exception {
-    final int numShards = random().nextInt(3) + 2;
+    final int numShards = /*random().nextInt(3) + 2*/ 4;
     multiShardUris = new URI[numShards];
-    replicasPerShard = random().nextInt(3) + 1;
+    replicasPerShard = /*random().nextInt(3) + 1;*/ 3;
     CloudSolrClient solrClient = cluster.getSolrClient();
 
     // Create collections and index docs
@@ -123,6 +126,9 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
         createBackupRepoDirectoryForShardData(
             baseRepositoryLocation, singleShardCollName, "shard1");
     copyShardDataToBackupRepository(singleShardCollName, "shard1", singleShard1Uri);
+    // Based off the single-shard location and used for error-case testing
+    nonExistentLocationUri = createUriForNonexistentSubDir(singleShard1Uri, "nonexistent");
+
     // Upload shard data to BackupRepository - multi-shard collection
     for (int i = 0; i < multiShardUris.length; i++) {
       final String shardName = "shard" + (i + 1);
@@ -169,8 +175,38 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
             collectionName, "shard1", singleShardLocation, BACKUP_REPO_NAME)
         .process(cluster.getSolrClient());
 
-    // Shard-install has failed so collection should still be empty.
     assertCollectionHasNumDocs(collectionName, singleShardNumDocs);
+  }
+
+  @Test
+  public void testInstallReportsErrorsAppropriately() throws Exception {
+    final String collectionName = createAndAwaitEmptyCollection(1, replicasPerShard);
+    deleteAfterTest(collectionName);
+    enableReadOnly(collectionName);
+    final String nonExistentLocation = nonExistentLocationUri.toString();
+
+    { // Test synchronous request error reporting
+      final var expectedException =
+          expectThrows(
+              BaseHttpSolrClient.RemoteSolrException.class,
+              () -> {
+                CollectionAdminRequest.installDataToShard(
+                        collectionName, "shard1", nonExistentLocation, BACKUP_REPO_NAME)
+                    .process(cluster.getSolrClient());
+              });
+      assertTrue(expectedException.getMessage().contains("Could not install data to collection"));
+      assertCollectionHasNumDocs(collectionName, 0);
+    }
+
+    { // Test asynchronous request error reporting
+      final var requestStatusState =
+          CollectionAdminRequest.installDataToShard(
+                  collectionName, "shard1", nonExistentLocation, BACKUP_REPO_NAME)
+              .processAndWait(cluster.getSolrClient(), 15);
+
+      assertEquals(RequestStatusState.FAILED, requestStatusState);
+      assertCollectionHasNumDocs(collectionName, 0);
+    }
   }
 
   @Test
@@ -224,7 +260,6 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
         + "  <solrcloud>\n"
         + "    <str name=\"host\">127.0.0.1</str>\n"
         + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
-        + "    <str name=\"hostContext\">${hostContext:solr}</str>\n"
         + "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n"
         + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
         + "    <int name=\"leaderVoteWait\">10000</int>\n"
@@ -295,6 +330,14 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     }
   }
 
+  private static URI createUriForNonexistentSubDir(URI baseUri, String subDirName)
+      throws Exception {
+    final CoreContainer cc = cluster.getJettySolrRunner(0).getCoreContainer();
+    try (final BackupRepository backupRepository = cc.newBackupRepository(BACKUP_REPO_NAME)) {
+      return backupRepository.resolve(baseUri, subDirName);
+    }
+  }
+
   private static int indexDocs(String collectionName, boolean useUUID) throws Exception {
     Random random =
         new Random(
@@ -362,22 +405,27 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     final ExecutorService executor =
         ExecutorUtil.newMDCAwareFixedThreadPool(
             multiShardUris.length, new SolrNamedThreadFactory("shardinstall"));
-    final List<Future<Exception>> futures = executor.invokeAll(tasks, 10, TimeUnit.SECONDS);
-    futures.stream()
-        .forEach(
-            future -> {
-              assertTrue("Shard installation exceeded the test timeout", future.isDone());
-              try {
-                assertNull(
-                    "Expected shard installation to complete successfully but failed with exception "
-                        + future.get(),
-                    future.get());
-              } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-              }
-            });
+    // TODO Reduce timeout once PR #1545 is merged to fix S3Mock slowness
+    final List<Future<Exception>> futures = executor.invokeAll(tasks, 30, TimeUnit.SECONDS);
+    try {
+      futures.stream()
+          .forEach(
+              future -> {
+                assertTrue("Shard installation exceeded the test timeout", future.isDone());
+                try {
+                  assertFalse(
+                      "Shard installation was cancelled after timing out.", future.isCancelled());
+                  final Exception e = future.get();
+                  assertNull("Shard installation failed with exception " + e, e);
+                } catch (InterruptedException | ExecutionException e) {
+                  throw new RuntimeException(e);
+                }
+              });
 
-    executor.shutdown();
-    executor.awaitTermination(10, TimeUnit.SECONDS);
+      executor.shutdown();
+      executor.awaitTermination(10, TimeUnit.SECONDS);
+    } finally {
+      executor.shutdownNow();
+    }
   }
 }

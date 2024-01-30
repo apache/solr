@@ -27,9 +27,9 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -196,7 +196,7 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
             params.add("terms.maxcount");
             params.add(random().nextInt(4) - 1);
           }
-          q = params.toArray(new Object[params.size()]);
+          q = params.toArray(new Object[0]);
           break;
         }
       }
@@ -251,9 +251,7 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
   private ResponseParser[] getResponseParsers() {
     // can't use junit parameters as this would also require RunWith
     return new ResponseParser[] {
-      new BinaryResponseParser(),
-      new DelegationTokenResponse.JsonMapResponseParser(),
-      new XMLResponseParser()
+      new BinaryResponseParser(), new JsonMapResponseParser(), new XMLResponseParser()
     };
   }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.ASYNC_PREEMPTIVE;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.NONE;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.SYNCHRONOUS;
@@ -55,6 +54,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.RequiredSolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.RoutedAliasUpdateProcessor;
@@ -93,6 +93,7 @@ public class TimeRoutedAlias extends RoutedAlias {
 
   public static final String ROUTER_AUTO_DELETE_AGE = ROUTER_PREFIX + "autoDeleteAge";
   public static final String ROUTER_PREEMPTIVE_CREATE_MATH = ROUTER_PREFIX + "preemptiveCreateMath";
+
   // plus TZ and NAME
 
   /** Parameters required for creating a routed alias */
@@ -248,13 +249,13 @@ public class TimeRoutedAlias extends RoutedAlias {
     return aliasName + TYPE.getSeparatorPrefix() + nextCollName;
   }
 
-  private Instant parseStringAsInstant(String str, TimeZone zone) {
+  public static Instant parseStringAsInstant(String str, TimeZone zone) {
     Instant start = DateMathParser.parseMath(new Date(), str, zone).toInstant();
     checkMillis(start);
     return start;
   }
 
-  private void checkMillis(Instant date) {
+  private static void checkMillis(Instant date) {
     if (!date.truncatedTo(ChronoUnit.SECONDS).equals(date)) {
       throw new SolrException(
           BAD_REQUEST,
@@ -553,7 +554,7 @@ public class TimeRoutedAlias extends RoutedAlias {
           }
 
           if (candidate.getCreationType() == NONE
-              && isNotBlank(getPreemptiveCreateWindow())
+              && StrUtils.isNotBlank(getPreemptiveCreateWindow())
               && !this.preemptiveCreateOnceAlready) {
             // are we getting close enough to the (as yet uncreated) next collection to warrant
             // preemptive creation?

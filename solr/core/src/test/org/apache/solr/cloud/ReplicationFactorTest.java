@@ -26,7 +26,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.commons.lang3.StringUtils;
+import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -251,7 +251,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
     // Delete the docs by query indicated.
     req = new UpdateRequest();
-    req.deleteByQuery("id:(" + StringUtils.join(byQueryList, " OR ") + ")");
+    req.deleteByQuery("id:(" + String.join(" OR ", byQueryList) + ")");
     sendNonDirectUpdateRequestReplicaWithRetry(rep, req, expectedRfDBQ, collectionName);
   }
 
@@ -437,7 +437,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
   protected void addDocs(String collection, Set<Integer> docIds, int expectedRf, int retries)
       throws Exception {
 
-    Integer[] idList = docIds.toArray(new Integer[docIds.size()]);
+    Integer[] idList = docIds.toArray(new Integer[0]);
     if (idList.length == 1) {
       sendDoc(collection, idList[0]);
       return;
@@ -457,7 +457,8 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     Set<Integer> docIds = getSomeIds(docsToAdd);
     addDocs(collection, docIds, expectedRf, retries);
     UpdateRequest req = new UpdateRequest();
-    req.deleteByQuery("id:(" + StringUtils.join(docIds, " OR ") + ")");
+    req.deleteByQuery(
+        "id:(" + docIds.stream().map(String::valueOf).collect(Collectors.joining(" OR ")) + ")");
     doDelete(collection, req, msg, expectedRf, retries);
   }
 
@@ -466,7 +467,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
     Set<Integer> docIds = getSomeIds(docsToAdd);
     addDocs(collection, docIds, expectedRf, retries);
     UpdateRequest req = new UpdateRequest();
-    req.deleteById(StringUtils.join(docIds, ","));
+    req.deleteById(docIds.stream().map(String::valueOf).collect(Collectors.joining(",")));
     doDelete(collection, req, msg, expectedRf, retries);
   }
 

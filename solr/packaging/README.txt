@@ -67,10 +67,12 @@ example/
   directory containing various examples.
 
 modules/
+  (Not included in the "slim" release)
   Contains modules to extend the functionality of Solr.
   Libraries for these modules can be found under modules/*/lib
 
 prometheus-exporter/
+  (Not included in the "slim" release)
   Contains a separate application to monitor Solr instances and export Prometheus metrics
 
 docker/

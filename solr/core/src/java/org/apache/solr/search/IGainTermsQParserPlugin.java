@@ -146,7 +146,7 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       NamedList<Double> analytics = new NamedList<>();
       NamedList<Integer> topFreq = new NamedList<>();
       NamedList<Integer> allFreq = new NamedList<>();
@@ -204,7 +204,7 @@ public class IGainTermsQParserPlugin extends QParserPlugin {
       }
 
       if (this.delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) this.delegate).finish();
+        ((DelegatingCollector) this.delegate).complete();
       }
     }
 
