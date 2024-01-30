@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import org.apache.hadoop.io.nativeio.NativeIO;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.util.EnvUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +43,7 @@ public class HadoopTestUtil {
     if (System.getenv("HADOOP_HOME") != null) {
       SolrTestCase.fail("Ensure that HADOOP_HOME environment variable is not set.");
     }
-    if (System.getProperty("hadoop.home.dir") != null) {
+    if (EnvUtils.getProperty("hadoop.home.dir") != null) {
       SolrTestCase.fail("Ensure that \"hadoop.home.dir\" Java property is not set.");
     }
   }

@@ -98,8 +98,9 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
     return getThis();
   }
 
-  public B withDefaultCollection(String defaultCollection) {
-    this.defaultCollection = defaultCollection;
+  /** Sets a default for core or collection based requests. */
+  public B withDefaultCollection(String defaultCoreOrCollection) {
+    this.defaultCollection = defaultCoreOrCollection;
     return getThis();
   }
 

@@ -35,9 +35,9 @@ import static org.apache.solr.handler.admin.api.CreateCollection.copyPrefixedPro
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.CreateCollectionBackupApi;
 import org.apache.solr.client.api.model.CreateCollectionBackupRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionBackupResponseBody;
