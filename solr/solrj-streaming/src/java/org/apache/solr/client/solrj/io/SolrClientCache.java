@@ -192,7 +192,7 @@ public class SolrClientCache implements Closeable {
   private static Http2SolrClient.Builder newHttp2SolrClientBuilder(
       String url, Http2SolrClient http2SolrClient) {
     final var builder =
-        (URLUtil.isBaseUrl(url))
+        (url == null || URLUtil.isBaseUrl(url)) // URL may be null here and set by caller
             ? new Http2SolrClient.Builder(url)
             : new Http2SolrClient.Builder(URLUtil.extractBaseUrl(url))
                 .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(url));
