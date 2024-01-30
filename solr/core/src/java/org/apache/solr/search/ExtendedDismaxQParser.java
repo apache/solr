@@ -187,28 +187,25 @@ public class ExtendedDismaxQParser extends QParser {
       query.add(f, BooleanClause.Occur.SHOULD);
     }
 
-    //
-    // create a boosted query (scores multiplied by boosts)
-    //
     Query topQuery = QueryUtils.build(query, this);
+
+    // If topQuery is a boolean query, unwrap the boolean query to check if it is just
+    // a MatchAllDocsQuery. Using MatchAllDocsQuery by itself enables later optimizations
+    BooleanQuery topQueryBoolean = (BooleanQuery) topQuery;
+    if (topQueryBoolean.clauses().size() == 1) {
+      Query onlyQuery = topQueryBoolean.clauses().get(0).getQuery();
+      if (onlyQuery instanceof MatchAllDocsQuery) {
+        topQuery = onlyQuery;
+      }
+    }
+
+    // create a boosted query (scores multiplied by boosts)
     List<ValueSource> boosts = getMultiplicativeBoosts();
     if (boosts.size() > 1) {
       ValueSource prod = new ProductFloatFunction(boosts.toArray(new ValueSource[0]));
       topQuery = FunctionScoreQuery.boostByValue(topQuery, prod.asDoubleValuesSource());
     } else if (boosts.size() == 1) {
       topQuery = FunctionScoreQuery.boostByValue(topQuery, boosts.get(0).asDoubleValuesSource());
-    }
-
-    // If topQuery is a boolean query, unwrap the boolean query to check if it is just
-    // a MatchAllDocsQuery. Using MatchAllDocsQuery by itself enables later optimizations
-    if (topQuery instanceof BooleanQuery) {
-      BooleanQuery topQueryBoolean = (BooleanQuery) topQuery;
-      if (topQueryBoolean.clauses().size() == 1) {
-        Query onlyQuery = topQueryBoolean.clauses().get(0).getQuery();
-        if (onlyQuery instanceof MatchAllDocsQuery) {
-          return onlyQuery;
-        }
-      }
     }
 
     return topQuery;
