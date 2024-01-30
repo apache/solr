@@ -772,8 +772,8 @@ public class PackageManager implements Closeable {
 
           if ("GET".equalsIgnoreCase(cmd.method)) {
             String response =
-                PackageUtils.getJsonStringFromUrl(
-                    solrClient, path, new ModifiableSolrParams(), false);
+                PackageUtils.getJsonStringFromNonCollectionApi(
+                    solrClient, path, new ModifiableSolrParams());
             PackageUtils.printGreen(response);
             String actualValue = null;
             try {
@@ -823,8 +823,8 @@ public class PackageManager implements Closeable {
 
             if ("GET".equalsIgnoreCase(cmd.method)) {
               String response =
-                  PackageUtils.getJsonStringFromUrl(
-                      solrClient, path, new ModifiableSolrParams(), true);
+                  PackageUtils.getJsonStringFromCollectionApi(
+                      solrClient, path, new ModifiableSolrParams());
               PackageUtils.printGreen(response);
               String actualValue = null;
               try {
@@ -1106,11 +1106,10 @@ public class PackageManager implements Closeable {
     for (String collection : allCollections) {
       // Check package version installed
       String paramsJson =
-          PackageUtils.getJsonStringFromUrl(
+          PackageUtils.getJsonStringFromCollectionApi(
               solrClient,
               PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS",
-              new ModifiableSolrParams().add("omitHeader", "true"),
-              true);
+              new ModifiableSolrParams().add("omitHeader", "true"));
       String version = null;
       try {
         version =

@@ -43,12 +43,10 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -1012,11 +1010,9 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
         getHttp2SolrClientBuilder(
                 getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
             .build()) {
-      GenericSolrRequest req =
-          new GenericSolrRequest(SolrRequest.METHOD.GET, "/select", params("q", "*:*"))
-              .setRequiresCollection(true);
+      final var req = new QueryRequest(params("q", "*:*"));
       req.setResponseParser(new InputStreamResponseParser("xml"));
-      SimpleSolrResponse rsp = req.process(client);
+      final var rsp = req.process(client);
       Object stream = rsp.getResponse().get("stream");
       assertNotNull(stream);
       MatcherAssert.assertThat(stream, instanceOf(InputStream.class));

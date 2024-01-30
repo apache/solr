@@ -130,7 +130,8 @@ public class PackageUtils {
   public static <T> T getJson(SolrClient client, String path, Class<T> klass) {
     try {
       return getMapper()
-          .readValue(getJsonStringFromUrl(client, path, new ModifiableSolrParams(), false), klass);
+          .readValue(
+              getJsonStringFromNonCollectionApi(client, path, new ModifiableSolrParams()), klass);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -154,13 +155,39 @@ public class PackageUtils {
     return null;
   }
 
+  /**
+   * Returns the response of a collection or core API call as string-ified JSON
+   *
+   * @param client the SolrClient used to make the request
+   * @param path the HTTP path of the Solr API to hit, starting after the collection or core name
+   *     (i.e. omitting '/solr/techproducts')
+   * @param params query parameters to include when making the request
+   */
+  public static String getJsonStringFromCollectionApi(
+      SolrClient client, String path, SolrParams params) {
+    return getJsonStringFromUrl(client, path, params, true);
+  }
+
+  /**
+   * Returns the response of a collection-agnostic API call as string-ified JSON
+   *
+   * @param client the SolrClient used to make the request
+   * @param path the HTTP path of the Solr API to hit, starting after '/solr' (or '/api' for v2
+   *     requests)
+   * @param params query parameters to include when making the request
+   */
+  public static String getJsonStringFromNonCollectionApi(
+      SolrClient client, String path, SolrParams params) {
+    return getJsonStringFromUrl(client, path, params, false);
+  }
+
   /** Returns JSON string from a given Solr URL */
-  public static String getJsonStringFromUrl(
-      SolrClient client, String path, SolrParams params, boolean requiresCollection) {
+  private static String getJsonStringFromUrl(
+      SolrClient client, String path, SolrParams params, boolean isCollectionApi) {
     try {
       GenericSolrRequest request =
           new GenericSolrRequest(SolrRequest.METHOD.GET, path, params)
-              .setRequiresCollection(requiresCollection);
+              .setRequiresCollection(isCollectionApi);
       request.setResponseParser(new JsonMapResponseParser());
       NamedList<Object> response = client.request(request);
       return response.jsonStr();
