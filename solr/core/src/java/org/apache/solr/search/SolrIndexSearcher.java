@@ -1666,7 +1666,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // the filters instead of anding them first...
       // perhaps there should be a multi-docset-iterator
       if (needSort) {
-        fullSortCount.increment();
         sortDocSet(qr, cmd);
       } else {
         skipSortCount.increment();
@@ -1775,6 +1774,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   private TopDocsCollector<? extends ScoreDoc> buildTopDocsCollector(int len, QueryCommand cmd)
       throws IOException {
+    fullSortCount.increment();
     int minNumFound = cmd.getMinExactCount();
     Query q = cmd.getQuery();
     if (q instanceof RankQuery) {
@@ -1868,7 +1868,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
       hitsRelation = Relation.EQUAL_TO;
     } else {
-      fullSortCount.increment();
       final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
       MaxScoreCollector maxScoreCollector = null;
       Collector collector = topCollector;
@@ -1981,7 +1980,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // no docs on this page, so cursor doesn't change
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
-      fullSortCount.increment();
       final TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(len, cmd);
       DocSetCollector setCollector = new DocSetCollector(maxDoc);
       MaxScoreCollector maxScoreCollector = null;
