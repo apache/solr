@@ -101,13 +101,13 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
    */
   protected ConcurrentUpdateSolrClient(Builder builder) {
     this.internalHttpClient = (builder.httpClient == null);
-    final var hscBuilder =
+    final var httpSolrClientBuilder =
         (URLUtil.isBaseUrl(builder.baseSolrUrl))
             ? new HttpSolrClient.Builder(builder.baseSolrUrl)
             : new HttpSolrClient.Builder(URLUtil.extractBaseUrl(builder.baseSolrUrl))
                 .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(builder.baseSolrUrl));
     this.client =
-        hscBuilder
+        httpSolrClientBuilder
             .withHttpClient(builder.httpClient)
             .withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS)
             .withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS)
