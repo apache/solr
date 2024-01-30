@@ -141,7 +141,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   public void testScoringQuery() throws Exception {
     // plain request should have no caching or sorting optimization
     String response = JQ(req("q", SCORING_QUERY, "indent", "true"));
-    assertMetricCounts(response, false, 0, 0, 0);
+    assertMetricCounts(response, false, 0, 1, 0);
   }
 
   @Test
@@ -173,12 +173,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   public void testScoringQueryNonScoreSort() throws Exception {
     // plain request with no score in sort should consult filterCache, but need full sorting
     String response = JQ(req("q", SCORING_QUERY, "indent", "true", "sort", "id asc"));
-    assertMetricCounts(
-        response,
-        false,
-        USE_FILTER_FOR_SORTED_QUERY ? 1 : 0,
-        USE_FILTER_FOR_SORTED_QUERY ? 1 : 0,
-        0);
+    assertMetricCounts(response, false, USE_FILTER_FOR_SORTED_QUERY ? 1 : 0, 1, 0);
   }
 
   @Test
@@ -204,19 +199,19 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     // hit cache and skip sort because constant score query
     String response = JQ(req("q", CONSTANT_SCORE_QUERY, "indent", "true"));
     final int insertAndSkipCount = USE_FILTER_FOR_SORTED_QUERY ? 1 : 0;
-    assertMetricCounts(response, false, insertAndSkipCount, 0, insertAndSkipCount);
+    assertMetricCounts(
+        response,
+        false,
+        insertAndSkipCount,
+        USE_FILTER_FOR_SORTED_QUERY ? 0 : 1,
+        insertAndSkipCount);
   }
 
   @Test
   public void testConstantScoreNonScoreSort() throws Exception {
     // consult filterCache because constant score query, but no skip sort (because sort-by-id)
     String response = JQ(req("q", CONSTANT_SCORE_QUERY, "indent", "true", "sort", "id asc"));
-    assertMetricCounts(
-        response,
-        false,
-        USE_FILTER_FOR_SORTED_QUERY ? 1 : 0,
-        USE_FILTER_FOR_SORTED_QUERY ? 1 : 0,
-        0);
+    assertMetricCounts(response, false, USE_FILTER_FOR_SORTED_QUERY ? 1 : 0, 1, 0);
   }
 
   /**
@@ -241,12 +236,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
                 "sort",
                 "id asc"));
     assertMetricCounts(
-        response,
-        USE_FILTER_FOR_SORTED_QUERY,
-        USE_FILTER_FOR_SORTED_QUERY ? 1 : 0,
-        USE_FILTER_FOR_SORTED_QUERY ? 1 : 0,
-        0,
-        ALL_DOCS);
+        response, USE_FILTER_FOR_SORTED_QUERY, USE_FILTER_FOR_SORTED_QUERY ? 1 : 0, 1, 0, ALL_DOCS);
   }
 
   @Test
@@ -341,23 +331,15 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     if (includeScoreInSort) {
       consultMatchAllDocs = false;
       insertFilterCache = false;
-      fullSort = false;
     } else if (MATCH_ALL_DOCS_QUERY.equals(q)) {
       consultMatchAllDocs = true;
       insertFilterCache = false;
-      fullSort = true;
     } else {
       consultMatchAllDocs = false;
       insertFilterCache = USE_FILTER_FOR_SORTED_QUERY;
-      fullSort = USE_FILTER_FOR_SORTED_QUERY;
     }
     assertMetricCounts(
-        response,
-        consultMatchAllDocs,
-        insertFilterCache ? 1 : 0,
-        fullSort ? 1 : 0,
-        0,
-        expectNumFound);
+        response, consultMatchAllDocs, insertFilterCache ? 1 : 0, 1, 0, expectNumFound);
   }
 
   @Test
