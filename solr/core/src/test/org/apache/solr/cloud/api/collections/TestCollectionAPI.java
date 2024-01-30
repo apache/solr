@@ -346,16 +346,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     }
   }
 
-  private Instant getCreationTimeFromClusterStateOrFail(
-      CloudSolrClient client, String collectionName) throws IOException {
-    DocCollection docCollection = client.getClusterState().getCollectionOrNull(collectionName);
-    if (docCollection != null) {
-      return docCollection.getCreationTime();
-    }
-    fail("Collection not found in ClusterState");
-    return null;
-  }
-
   @SuppressWarnings({"unchecked"})
   private void clusterStatusWithCollectionHealthState() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
@@ -504,7 +494,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertEquals("conf1", collection.get("configName"));
 
       Instant creationTime = Instant.ofEpochMilli((long) collection.get("creationTimeMillis"));
-      assertEquals(getCreationTimeFromClusterStateOrFail(client, COLLECTION_NAME), creationTime);
+      assertEquals(
+          creationTime, client.getClusterState().getCollection(COLLECTION_NAME).getCreationTime());
     }
   }
 

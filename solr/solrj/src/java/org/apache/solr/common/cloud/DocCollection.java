@@ -395,9 +395,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /**
-   * When this DocCollection is read from Zookeeper, it captures a collection persisted in
-   * Zookeeper. The date thus captures the date when the collection node was created, and thus the
-   * collection made usable by APIs as specified by {@code ZkStateReader#getCollectionPath(String)}
+   * The creation time of the Collection. When this collection is read from ZooKeeper, this is the
+   * creation time of the collection node.
    */
   public Instant getCreationTime() {
     return creationTime;

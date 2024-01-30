@@ -223,8 +223,7 @@ public class BackupManager {
       byte[] arr = new byte[(int) is.length()]; // probably ok since the json file should be small.
       is.readBytes(arr, 0, (int) is.length());
       // set a default created date, we don't aim at reading actual zookeeper state. The restored
-      // collection
-      // will have a new creation date when persisted in zookeeper.
+      // collection will have a new creation date when persisted in zookeeper.
       ClusterState c_state =
           ClusterState.createFromJson(-1, arr, Collections.emptySet(), Instant.EPOCH, null);
       return c_state.getCollection(collectionName);
