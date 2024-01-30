@@ -127,8 +127,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
         new LBHttpSolrClient.Builder()
             .withHttpClient(httpClient)
             .withBaseSolrUrls(solrUrls)
-            .setEnableZombiePingChecks(true)
-            .setZombiePingIntervalMillis(500)
+            .setAliveCheckInterval(500)
             .build()) {
       SolrQuery solrQuery = new SolrQuery("*:*");
       Set<String> names = new HashSet<>();
@@ -175,8 +174,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
         new LBHttpSolrClient.Builder()
             .withHttpClient(httpClient)
             .withBaseSolrUrls(solrUrls)
-            .setEnableZombiePingChecks(true)
-            .setZombiePingIntervalMillis(500)
+            .setAliveCheckInterval(500)
             .build()) {
       SolrQuery solrQuery = new SolrQuery("*:*");
       QueryResponse resp = null;
@@ -216,8 +214,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
             .withBaseSolrUrls(solrUrls)
             .withConnectionTimeout(500, TimeUnit.MILLISECONDS)
             .withSocketTimeout(500, TimeUnit.MILLISECONDS)
-            .setEnableZombiePingChecks(true)
-            .setZombiePingIntervalMillis(500)
+            .setAliveCheckInterval(500)
             .build()) {
 
       // Kill a server and test again

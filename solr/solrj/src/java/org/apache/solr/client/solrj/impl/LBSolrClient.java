@@ -40,6 +40,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import io.swagger.v3.oas.annotations.servers.Server;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -61,7 +63,7 @@ public abstract class LBSolrClient extends SolrClient {
 
   // defaults
   protected static final Set<Integer> RETRY_CODES =
-      new HashSet<>(Arrays.asList(404, 403, 503, 500));
+          new HashSet<>(Arrays.asList(404, 403, 503, 500));
   private static final int NONSTANDARD_PING_LIMIT =
       5; // number of times we'll ping dead servers not in the server list
 
@@ -77,20 +79,13 @@ public abstract class LBSolrClient extends SolrClient {
 
   private volatile ScheduledExecutorService aliveCheckExecutor;
 
-  //Boolean parameter to make zombie ping checks configurable. If true, zombie ping checks are enabled.
-  // If false, zombieServers are monitored to check for servers that have spent at least minZombieReleaseTimeMillis as zombies and release them
-  protected boolean enableZombiePingChecks = false;
-
-  //Time interval that aliveCheckExecutor thread is scheduled to run periodically with
-  protected long zombieCheckIntervalMillis;
-
-  //min time a server is regarded to be in zombie state before being released to the alive set. This param is relevant if enableZombiePingChecks = false
-  protected long minZombieReleaseTimeMillis = TimeUnit.MILLISECONDS.convert(10, TimeUnit.SECONDS);
-
-
+  protected long aliveCheckIntervalMillis =
+          TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
+  protected int aliveCheckSkipIters = 0;
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
+  protected SolrQuery aliveCheckQuery = solrQuery;
   protected volatile ResponseParser parser;
   protected volatile RequestWriter requestWriter;
 
@@ -116,9 +111,9 @@ public abstract class LBSolrClient extends SolrClient {
     // they move back to the alive list.
     boolean standard = true;
 
-    long remainingTime;
-
     int failedPings = 0;
+
+    int skipAliveCheckIters = 0;
 
     ServerWrapper(String baseUrl) {
       this.baseUrl = baseUrl;
@@ -448,18 +443,12 @@ public abstract class LBSolrClient extends SolrClient {
   protected Exception addZombie(String serverStr, Exception e) {
     ServerWrapper wrapper = createServerWrapper(serverStr);
     wrapper.standard = false;
-    wrapper.remainingTime = minZombieReleaseTimeMillis;
+    wrapper.skipAliveCheckIters = aliveCheckSkipIters;
     zombieServers.put(serverStr, wrapper);
     startAliveCheckExecutor();
     return e;
   }
 
-  /**
-   * Thread that runs periodically at fixed intervals (determined by enableZombiePingChecks). If enableZombiePingChecks=true,
-   * dead servers are pinged at fixed intervals( zombieCheckIntervalMillis) to check if they are alive.
-   * If enableZombiePingChecks=false, no pings are issued against dead servers, but instead zombieServers is monitored every zombieCheckIntervalMillis
-   * to identify servers that spent minZombieReleaseTimeMillis before being released
-   */
   private void startAliveCheckExecutor() {
     // double-checked locking, but it's OK because we don't *do* anything with aliveCheckExecutor
     // if it's not null.
@@ -467,13 +456,13 @@ public abstract class LBSolrClient extends SolrClient {
       synchronized (this) {
         if (aliveCheckExecutor == null) {
           aliveCheckExecutor =
-              Executors.newSingleThreadScheduledExecutor(
-                  new SolrNamedThreadFactory("aliveCheckExecutor"));
+                  Executors.newSingleThreadScheduledExecutor(
+                          new SolrNamedThreadFactory("aliveCheckExecutor"));
           aliveCheckExecutor.scheduleAtFixedRate(
-              getAliveCheckRunner(new WeakReference<>(this)),
-              this.zombieCheckIntervalMillis,
-              this.zombieCheckIntervalMillis,
-              TimeUnit.MILLISECONDS);
+                  getAliveCheckRunner(new WeakReference<>(this)),
+                  this.aliveCheckIntervalMillis,
+                  this.aliveCheckIntervalMillis,
+                  TimeUnit.MILLISECONDS);
         }
       }
     }
@@ -483,31 +472,11 @@ public abstract class LBSolrClient extends SolrClient {
     return () -> {
       LBSolrClient lb = lbRef.get();
       if (lb != null && lb.zombieServers != null) {
-        ZombieAction zombieAction = lb.enableZombiePingChecks ? LBSolrClient::checkAZombieServer : LBSolrClient::reduceRemainingZombieTime;
-        lb.zombieServers.values().forEach(zombieServer -> zombieAction.perform(lb, zombieServer));
+        for (Object zombieServer : lb.zombieServers.values()) {
+          lb.checkAZombieServer((ServerWrapper) zombieServer);
+        }
       }
     };
-  }
-
-  @FunctionalInterface
-  private interface ZombieAction {
-    void perform(LBSolrClient lb, ServerWrapper zombieServer);
-  }
-
-  private void reduceRemainingZombieTime(ServerWrapper wrapper) {
-    if(wrapper == null){
-      return;
-    }
-    if (wrapper.remainingTime == 0) {
-      //evict from zombieServers, add to aliveServers
-      zombieServers.remove(wrapper.getBaseUrl());
-      wrapper.failedPings = 0;
-      if (wrapper.standard) {
-        addToAlive(wrapper);
-      }
-    } else {
-      wrapper.remainingTime = Math.max(0, (wrapper.remainingTime - minZombieReleaseTimeMillis));
-    }
   }
 
   public ResponseParser getParser() {
@@ -518,35 +487,62 @@ public abstract class LBSolrClient extends SolrClient {
     return requestWriter;
   }
 
+
+  private QueryResponse pingServer(ServerWrapper zombieServer) throws SolrServerException, IOException {
+    if (aliveCheckQuery != null) {
+      QueryRequest queryRequest = new QueryRequest(aliveCheckQuery);
+      queryRequest.setBasePath(zombieServer.baseUrl);
+      return queryRequest.process(getClient(zombieServer.getBaseUrl()));
+    }
+    return null;
+  }
+
+  private boolean isServerAlive(QueryResponse resp) {
+    return aliveCheckQuery == null || (resp != null && resp.getStatus() == 0);
+  }
+
+  private void handleServerBackUp(ServerWrapper zombieServer) {
+    // server has come back up.
+    // make sure to remove from zombies before adding to alive to avoid a race condition
+    // where another thread could mark it down, move it back to zombie, and then we delete
+    // from zombie and lose it forever.
+    ServerWrapper wrapper = zombieServers.remove(zombieServer.getBaseUrl());
+    if (wrapper != null) {
+      wrapper.failedPings = 0;
+      if (wrapper.standard) {
+        addToAlive(wrapper);
+      }
+    } else {
+      // something else already moved the server from zombie to alive
+    }
+  }
+
+  private void handleServerDown(ServerWrapper zombieServer) {
+    // Expected. The server is still down.
+    zombieServer.failedPings++;
+
+    // If the server doesn't belong in the standard set belonging to this load balancer
+    // then simply drop it after a certain number of failed pings.
+    if (!zombieServer.standard && zombieServer.failedPings >= NONSTANDARD_PING_LIMIT) {
+      zombieServers.remove(zombieServer.getBaseUrl());
+    }
+  }
+
   private void checkAZombieServer(ServerWrapper zombieServer) {
     try {
-      QueryRequest queryRequest = new QueryRequest(solrQuery);
-      queryRequest.setBasePath(zombieServer.baseUrl);
-      QueryResponse resp = queryRequest.process(getClient(zombieServer.getBaseUrl()));
-      if (resp.getStatus() == 0) {
-        // server has come back up.
-        // make sure to remove from zombies before adding to alive to avoid a race condition
-        // where another thread could mark it down, move it back to zombie, and then we delete
-        // from zombie and lose it forever.
-        ServerWrapper wrapper = zombieServers.remove(zombieServer.getBaseUrl());
-        if (wrapper != null) {
-          wrapper.failedPings = 0;
-          if (wrapper.standard) {
-            addToAlive(wrapper);
-          }
-        } else {
-          // something else already moved the server from zombie to alive
-        }
+      // push back on liveness checks only every Nth iteration
+      if (zombieServer.skipAliveCheckIters > 0) {
+        zombieServer.skipAliveCheckIters--;
+        return;
       }
-    } catch (Exception e) {
-      // Expected. The server is still down.
-      zombieServer.failedPings++;
 
-      // If the server doesn't belong in the standard set belonging to this load balancer
-      // then simply drop it after a certain number of failed pings.
-      if (!zombieServer.standard && zombieServer.failedPings >= NONSTANDARD_PING_LIMIT) {
-        zombieServers.remove(zombieServer.getBaseUrl());
+      QueryResponse resp = pingServer(zombieServer);
+      if (isServerAlive(resp)) {
+        handleServerBackUp(zombieServer);
       }
+
+    } catch (Exception e) {
+      handleServerDown(zombieServer);
     }
   }
 

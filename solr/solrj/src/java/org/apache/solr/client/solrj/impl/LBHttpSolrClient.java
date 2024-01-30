@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 /**
@@ -58,7 +59,11 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  * </pre>
  *
  * </blockquote>
-
+ *
+ * This detects if a dead server comes alive automatically. The check is done in fixed intervals in
+ * a dedicated thread. This interval can be set using {@link
+ * LBHttpSolrClient.Builder#setAliveCheckInterval(int)} , the default is set to one minute.
+ *
  * <p><b>When to use this?</b><br>
  * This can be used as a software load balancer when you do not wish to setup an external load
  * balancer. Alternatives to this code are to use a dedicated hardware load balancer or using Apache
@@ -96,9 +101,7 @@ public class LBHttpSolrClient extends LBSolrClient {
     this.connectionTimeoutMillis = builder.connectionTimeoutMillis;
     this.soTimeoutMillis = builder.socketTimeoutMillis;
     this.parser = builder.responseParser;
-    this.enableZombiePingChecks = builder.enableZombiePingChecks;
-    this.zombieCheckIntervalMillis = builder.enableZombiePingChecks? builder.zombiePingIntervalMillis: builder.zombieStateMonitoringIntervalMillis;
-    this.minZombieReleaseTimeMillis = builder.minZombieReleaseTimeMillis;
+    this.aliveCheckIntervalMillis = builder.aliveCheckInterval;
     for (String baseUrl : builder.baseSolrUrls) {
       urlToClient.put(baseUrl, makeSolrClient(baseUrl));
     }
@@ -179,21 +182,13 @@ public class LBHttpSolrClient extends LBSolrClient {
 
   /** Constructs {@link LBHttpSolrClient} instances from provided configuration. */
   public static class Builder extends SolrClientBuilder<Builder> {
+
+    public static final int CHECK_INTERVAL = 60 * 1000; // 1 minute between checks
     protected final List<String> baseSolrUrls;
     protected HttpSolrClient.Builder httpSolrClientBuilder;
-
-    //Boolean parameter to make zombie ping checks configurable. If true, zombie ping checks are enabled.
-    // If false, zombieServers are monitored to check for servers that have spent at least minZombieReleaseTimeMillis as zombies and release them
-    private boolean enableZombiePingChecks;
-
-    //If enableZombiePingChecks = true, configure aliveCheckExecutor thread to run every zombiePingIntervalMillis to ping zombie servers
-    private long zombiePingIntervalMillis;
-
-    //If enableZombiePingChecks=false, zombieServers are monitored every zombieStateMonitoringIntervalMillis before releasing them
-    private long zombieStateMonitoringIntervalMillis;
-
-    //min time a server is regarded to be in zombie state before being released to the alive set. This param is relevant if enableZombiePingChecks = false
-    private long minZombieReleaseTimeMillis;
+    private int aliveCheckInterval = CHECK_INTERVAL;
+    private int aliveCheckSkipIters = 0;
+    private SolrQuery aliveCheckQuery;
 
     public Builder() {
       this.baseSolrUrls = new ArrayList<>();
@@ -273,51 +268,39 @@ public class LBHttpSolrClient extends LBSolrClient {
     }
 
     /**
-     * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use this to set that
-     * interval
+     * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
+     * this to set that interval
      *
-     * @param zombiePingIntervalMillis time in milliseconds
+     * @param aliveCheckInterval time in milliseconds
      */
-    public Builder setZombiePingIntervalMillis(long zombiePingIntervalMillis){
-      if(zombiePingIntervalMillis <=0 ){
-        throw new IllegalArgumentException(("Zombie check interval must be positive, specified value = " + zombiePingIntervalMillis));
+    public Builder setAliveCheckInterval(int aliveCheckInterval) {
+      if (aliveCheckInterval <= 0) {
+        throw new IllegalArgumentException(
+                "Alive check interval must be positive, specified value = " + aliveCheckInterval);
       }
-      this.zombiePingIntervalMillis = zombiePingIntervalMillis;
+      this.aliveCheckInterval = aliveCheckInterval;
       return this;
     }
 
     /**
-     * LBHttpSolrServer monitors the zombieServers list at fixed interval to see if any of the servers have spent atleast #zombieJalTime as zombies. Use this to set that
-     * interval. Note with enableZombieChecks, either zombie checking (ping dead servers at fixed interval) or zombie tracking (monitor zombieServers to check who can be released as zombies, minus the pings) is supported
-     *
-     * @param zombieStateMonitoringIntervalMillis time in milliseconds a thread would track which servers could be released from zombie state
+     * Positive values can be used to ensure that the liveness checks for a given URL will only be run every "Nth" iteration of the setAliveCheckInterval
+     * @param aliveCheckSkipIters, number of iterations to skip, an int value
      */
-    public Builder setZombieStateMonitoringIntervalMillis(long zombieStateMonitoringIntervalMillis){
-      if(zombieStateMonitoringIntervalMillis <=0 ){
-        throw new IllegalArgumentException(("Zombie track interval must be positive, specified value = " + zombieStateMonitoringIntervalMillis));
+    public Builder setAliveCheckSkipIters(int aliveCheckSkipIters){
+      if(aliveCheckSkipIters < 0) {
+        throw new IllegalArgumentException(("Alive Check Skip Iterations must be positive, specified value = " + aliveCheckSkipIters));
       }
-      this.zombieStateMonitoringIntervalMillis = zombieStateMonitoringIntervalMillis;
+      this.aliveCheckSkipIters = aliveCheckSkipIters;
       return this;
     }
 
-    /**
-     * With this parameter, zombie checking (ping dead servers at fixed interval) or zombie tracking (monitor zombieServers to check who can be released as zombies, minus the pings) is supported
-     * @param enableZombiePingChecks If set to true, this would enable zombie ping checks, else only do zombie tracking, thereby holding a server as zombie for atleast zombieJailTime milliseconds
-     */
-    public Builder setEnableZombiePingChecks(boolean enableZombiePingChecks){
-      this.enableZombiePingChecks = enableZombiePingChecks;
-      return this;
-    }
 
     /**
-     * This param should be set if enableZombieChecks=false. This param configures the time a server should be regarded, at a minimum, as a zombie before being released
-     * @param jailTimeInMillis this corresponds to the amount of time in milliseconds a server would be held as zombie if enableZombieChecks is set to false
+     * If @aliveCheckQuery is set to null the client will implicitly assume success anytime it would normally perform a liveness check on a server.
+     * @param aliveCheckQuery, query to be executed for liveness checks
      */
-    public Builder setMinZombieReleaseTimeMillis(long jailTimeInMillis) {
-      if( jailTimeInMillis < 0){
-        throw new IllegalArgumentException("Jail time should be positive, specified value = " + jailTimeInMillis);
-      }
-      this.minZombieReleaseTimeMillis = jailTimeInMillis;
+    public Builder setAliveCheckQuery(SolrQuery aliveCheckQuery){
+      this.aliveCheckQuery = aliveCheckQuery;
       return this;
     }
 
