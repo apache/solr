@@ -147,6 +147,14 @@ public class QueryComponent extends SearchComponent {
       }
     }
 
+    ReturnFields returnFields = new SolrReturnFields(req);
+    rsp.setReturnFields(returnFields);
+    int flags = 0;
+    if (returnFields.wantsScore()) {
+      flags |= SolrIndexSearcher.GET_SCORES;
+    }
+    rb.setFieldFlags(flags);
+
     String defType = params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE);
 
     // get it from the response builder to give a different component a chance
@@ -160,18 +168,6 @@ public class QueryComponent extends SearchComponent {
 
     try {
       QParser parser = QParser.getParser(rb.getQueryString(), defType, req);
-
-      SortSpec sortSpec = parser.getSortSpec(true);
-      rb.setSortSpec(sortSpec);
-
-      ReturnFields returnFields = new SolrReturnFields(req, sortSpec);
-      rsp.setReturnFields(returnFields);
-      int flags = 0;
-      if (returnFields.wantsScore()) {
-        flags |= SolrIndexSearcher.GET_SCORES;
-      }
-      rb.setFieldFlags(flags);
-
       Query q = parser.getQuery();
       if (q == null) {
         // normalize a null query to a query that matches nothing
@@ -200,6 +196,7 @@ public class QueryComponent extends SearchComponent {
         }
       }
 
+      rb.setSortSpec(parser.getSortSpec(true));
       rb.setQparser(parser);
 
       String[] fqs = req.getParams().getParams(CommonParams.FQ);
