@@ -247,9 +247,16 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       SchemaField foo_dt = h.getCore().getLatestSchema().getField("foo_dt");
       String expected = "foo_dt:2013-09-11T00:00:00Z";
       if (foo_dt.getType().isPointField()) {
-        expected = "(foo_dt:[1378857600000 TO 1378857600000])";
+        expected = "foo_dt:[1378857600000 TO 1378857600000]";
         if (foo_dt.hasDocValues() && foo_dt.indexed()) {
-          expected = "IndexOrDocValuesQuery" + expected;
+          expected =
+              "IndexOrDocValuesQuery(IndexOrDocValuesQuery(indexQuery="
+                  + expected
+                  + ", dvQuery="
+                  + expected
+                  + "))";
+        } else {
+          expected = "(" + expected + ")";
         }
       }
       assertJQ(

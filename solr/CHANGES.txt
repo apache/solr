@@ -30,6 +30,7 @@ Optimizations
 Bug Fixes
 ---------------------
 
+
 Deprecation Removals
 ----------------------
 
@@ -100,7 +101,7 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-17126: Cut over System.getProperty to EnvUtils.getProperty (janhoy)
 
 ==================  9.5.0 ==================
 New Features
@@ -201,6 +202,8 @@ Bug Fixes
 * SOLR-17120: Fix NullPointerException in UpdateLog.applyOlderUpdates that can occur if there are multiple partial
   updates of the same document in separate requests using commitWithin. (Calvin Smith, Christine Poerschke)
 
+* SOLR-17112: bin/solr script doesn't do ps properly on some systems. (Vincenzo D'Amore via Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
@@ -208,6 +211,8 @@ Dependency Upgrades
 * SOLR-17026: Upgrade to Gradle 8.4 (Kevin Risden)
 
 * SOLR-17089: Upgrade Jersey to 3.1.5 (Jason Gerlowski)
+
+* SOLR-17097: Upgrade Lucene to 9.9.2 (Nazerke Seidan, Christine Poerschke, Pierre Salagnac)
 
 Other Changes
 ---------------------
