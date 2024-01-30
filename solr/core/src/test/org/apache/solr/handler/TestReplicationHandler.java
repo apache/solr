@@ -1619,15 +1619,16 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       final String backupName = "empty_backup1";
       final GenericSolrRequest req =
           new GenericSolrRequest(
-              SolrRequest.METHOD.GET,
-              "/replication",
-              params(
-                  "command",
-                  "backup",
-                  "location",
-                  backupDir.getAbsolutePath(),
-                  "name",
-                  backupName));
+                  SolrRequest.METHOD.GET,
+                  "/replication",
+                  params(
+                      "command",
+                      "backup",
+                      "location",
+                      backupDir.getAbsolutePath(),
+                      "name",
+                      backupName))
+              .setRequiresCollection(true);
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       final SimpleSolrResponse rsp = req.process(leaderClient);
 
@@ -1647,15 +1648,16 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       final String backupName = "empty_backup2";
       final GenericSolrRequest req =
           new GenericSolrRequest(
-              SolrRequest.METHOD.GET,
-              "/replication",
-              params(
-                  "command",
-                  "backup",
-                  "location",
-                  backupDir.getAbsolutePath(),
-                  "name",
-                  backupName));
+                  SolrRequest.METHOD.GET,
+                  "/replication",
+                  params(
+                      "command",
+                      "backup",
+                      "location",
+                      backupDir.getAbsolutePath(),
+                      "name",
+                      backupName))
+              .setRequiresCollection(true);
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       final SimpleSolrResponse rsp = req.process(leaderClient);
 

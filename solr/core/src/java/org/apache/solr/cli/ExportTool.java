@@ -67,6 +67,7 @@ import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.DocCollection;
@@ -173,9 +174,10 @@ public class ExportTool extends ToolBase {
       NamedList<Object> response =
           solrClient.request(
               new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
-                  "/schema/uniquekey",
-                  new MapSolrParams(Collections.singletonMap("collection", coll))));
+                      SolrRequest.METHOD.GET,
+                      "/schema/uniquekey",
+                      new MapSolrParams(Collections.singletonMap("collection", coll)))
+                  .setRequiresCollection(true));
       uniqueKey = (String) response.get("uniqueKey");
     }
 
@@ -608,7 +610,7 @@ public class ExportTool extends ToolBase {
 
         try (SolrClient client = new Http2SolrClient.Builder(baseurl).build()) {
           expectedDocs = getDocCount(replica.getCoreName(), client, query);
-          GenericSolrRequest request;
+          QueryRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.add(Q, query);
           if (fields != null) params.add(FL, fields);
@@ -632,12 +634,10 @@ public class ExportTool extends ToolBase {
             if (failed) return false;
             if (docsWritten.get() > limit) return true;
             params.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
-            request =
-                new GenericSolrRequest(
-                    SolrRequest.METHOD.GET, "/" + replica.getCoreName() + "/select", params);
+            request = new QueryRequest(params);
             request.setResponseParser(responseParser);
             try {
-              NamedList<Object> rsp = client.request(request);
+              NamedList<Object> rsp = client.request(request, replica.getCoreName());
               String nextCursorMark = (String) rsp.get(CursorMarkParams.CURSOR_MARK_NEXT);
               if (nextCursorMark == null || Objects.equals(cursorMark, nextCursorMark)) {
                 if (output != null) {
@@ -680,9 +680,8 @@ public class ExportTool extends ToolBase {
     SolrQuery q = new SolrQuery(query);
     q.setRows(0);
     q.add("distrib", "false");
-    GenericSolrRequest request =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/" + coreName + "/select", q);
-    NamedList<Object> res = client.request(request);
+    final var request = new QueryRequest(q);
+    NamedList<Object> res = client.request(request, coreName);
     SolrDocumentList sdl = (SolrDocumentList) res.get("response");
     return sdl.getNumFound();
   }
