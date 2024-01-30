@@ -489,7 +489,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     SolrDocumentList previousAllIdsResult = null;
     for (Replica rAdd : slice.getReplicas()) {
       try (SolrClient client =
-          new HttpSolrClient.Builder(rAdd.getCoreUrl())
+          new HttpSolrClient.Builder(rAdd.getBaseUrl())
               .withDefaultCollection(rAdd.getCoreName())
               .withHttpClient(httpClient)
               .build()) {
