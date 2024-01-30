@@ -135,7 +135,7 @@ public class ClusterStateMutator {
 
     assert !collectionProps.containsKey(CollectionAdminParams.COLL_CONF);
 
-    // This doc collection does not fully capture what will be persisted: the zkNodeVersion and
+    // This instance does not fully capture what will be persisted: the zkNodeVersion and
     // creationTime will only be definitively set in ZK. Hence, the defaults passed here.
     DocCollection newCollection =
         DocCollection.create(
