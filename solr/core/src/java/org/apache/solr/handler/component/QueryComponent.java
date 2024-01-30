@@ -164,7 +164,6 @@ public class QueryComponent extends SearchComponent {
       SortSpec sortSpec = parser.getSortSpec(true);
       rb.setSortSpec(sortSpec);
 
-      // Set field flags
       ReturnFields returnFields = new SolrReturnFields(req, sortSpec);
       rsp.setReturnFields(returnFields);
       int flags = 0;
