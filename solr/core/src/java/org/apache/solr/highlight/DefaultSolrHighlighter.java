@@ -432,6 +432,21 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     return solrBs.getBoundaryScanner(fieldName, params);
   }
 
+  private static final class TermVectorsSupplier {
+
+    private final IndexReader reader;
+    private TermVectors termVectors;
+
+    TermVectorsSupplier(IndexReader reader) {
+      this.reader = reader;
+    }
+
+    public TermVectors get() throws IOException {
+      if (this.termVectors == null) this.termVectors = this.reader.termVectors();
+      return this.termVectors;
+    }
+  }
+
   /**
    * Generates a list of Highlighted query fragments for each item in a list of documents, or
    * returns null if highlighting is disabled.
@@ -485,6 +500,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     IndexReader reader =
         new TermVectorReusingLeafReader(req.getSearcher().getSlowAtomicReader()); // SOLR-5855
+    TermVectorsSupplier tvSupplier = new TermVectorsSupplier(reader);
 
     // Highlight each document
     NamedList<Object> fragments = new SimpleOrderedMap<>();
@@ -501,10 +517,11 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         Object fieldHighlights; // object type allows flexibility for subclassers
         fieldHighlights =
             doHighlightingOfField(
-                doc, docId, schemaField, fvhContainer, query, reader, req, params);
+                doc, docId, schemaField, fvhContainer, query, reader, tvSupplier, req, params);
 
         if (fieldHighlights == null) {
-          fieldHighlights = alternateField(doc, docId, fieldName, fvhContainer, query, reader, req);
+          fieldHighlights =
+              alternateField(doc, docId, fieldName, fvhContainer, query, reader, tvSupplier, req);
         }
 
         if (fieldHighlights != null) {
@@ -523,6 +540,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       FvhContainer fvhContainer,
       Query query,
       IndexReader reader,
+      TermVectorsSupplier tvSupplier,
       SolrQueryRequest req,
       SolrParams params)
       throws IOException {
@@ -572,7 +590,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
           doHighlightingByFastVectorHighlighter(doc, docId, schemaField, fvhContainer, reader, req);
     } else { // standard/default highlighter
       fieldHighlights =
-          doHighlightingByHighlighter(doc, docId, schemaField, query, reader.termVectors(), req);
+          doHighlightingByHighlighter(doc, docId, schemaField, query, tvSupplier, req);
     }
     return fieldHighlights;
   }
@@ -658,7 +676,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       int docId,
       SchemaField schemaField,
       Query query,
-      TermVectors termVectors,
+      TermVectorsSupplier tvSupplier,
       SolrQueryRequest req)
       throws IOException {
     final SolrParams params = req.getParams();
@@ -698,7 +716,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     // Try term vectors, which is faster
     //  note: offsets are minimally sufficient for this HL.
-    final Fields tvFields = schemaField.storeTermOffsets() ? termVectors.get(docId) : null;
+    final Fields tvFields = schemaField.storeTermOffsets() ? tvSupplier.get().get(docId) : null;
     final TokenStream tvStream =
         TokenSources.getTermVectorTokenStreamOrNull(fieldName, tvFields, maxCharsToAnalyze - 1);
     //  We need to wrap in OffsetWindowTokenFilter if multi-valued
@@ -860,6 +878,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       FvhContainer fvhContainer,
       Query query,
       IndexReader reader,
+      TermVectorsSupplier tvSupplier,
       SolrQueryRequest req)
       throws IOException {
     IndexSchema schema = req.getSearcher().getSchema();
@@ -889,7 +908,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         req.setParams(SolrParams.wrapDefaults(new MapSolrParams(invariants), origParams));
         fieldHighlights =
             doHighlightingOfField(
-                doc, docId, schemaField, fvhContainer, query, reader, req, params);
+                doc, docId, schemaField, fvhContainer, query, reader, tvSupplier, req, params);
         req.setParams(origParams);
         if (fieldHighlights != null) {
           return fieldHighlights;
