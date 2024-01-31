@@ -15,66 +15,138 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.admin.api;
-import org.apache.http.HttpStatus;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCoreRequestBody;
-import org.apache.solr.client.api.model.CreateCoreResponseBody;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.jersey.JerseySolrTest;
-import org.glassfish.jersey.server.ResourceConfig;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.response.SolrQueryResponse;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+/** Test for {@link CreateCore} */
+public class CreateCoreApiTest extends SolrTestCaseJ4 {
+  private CoreContainer coreContainer;
+  private CreateCore createCore;
+  private final String CREATE_CORE_NAME = "demo1";
+  private Path instDir;
+  private CoreAdminHandler coreAdminHandler;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
+  }
 
-public class CreateCoreApiTest extends JerseySolrTest {
-    @Override
-    public Application configure(){
-        ResourceConfig resourceConfig = (ResourceConfig) super.configure();
-        resourceConfig.register(CreateCore.class);
-        return resourceConfig;
-    };
-    @Test
-    public void test_createCore_validResponse(){
-        CreateCoreRequestBody createCoreRequestBody = new CreateCoreRequestBody();
-        createCoreRequestBody.name = coreName;
-        Response response = target("/cores")
-                .request().post(Entity.entity(createCoreRequestBody, MediaType.APPLICATION_JSON_TYPE));
-        var createCoreResponseBody = response.readEntity(CreateCoreResponseBody.class);
-        assertEquals(HttpStatus.SC_OK, response.getStatus());
-        assertEquals(createCoreRequestBody.name, createCoreResponseBody.core);
-    }
+  public String getCoreWorkDir() {
+    return this.getClass().getName();
+  }
 
-    @Test
-    public void testReportsError_createCore_missingRequiredParams(){
-        CreateCoreRequestBody createCoreRequestBody = new CreateCoreRequestBody();
-        Response response = target("/cores")
-                .request().post(Entity.entity(createCoreRequestBody, MediaType.APPLICATION_JSON_TYPE));
-        var createCoreResponseBody = response.readEntity(CreateCoreResponseBody.class);
-        var errorMessage = response.readEntity(String.class);
-        assertEquals(SolrException.ErrorCode.BAD_REQUEST, response.getStatus());
-        assertTrue(errorMessage.contains("Missing Required Parameter"));
-    }
-    @Test
-    public void testReportsError_createCore_NameAlreadyTaken(){
-        when(coreContainer.create(coreName, any(), any(), any())).thenThrow(new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR, "Core with name '" + coreName + "' already exists."
-        ));
-        var createCoreRequestBody = new CreateCoreRequestBody();
-        createCoreRequestBody.name = coreName;
-        Response response = target("/cores")
-                .request().post(Entity.entity(createCoreRequestBody, MediaType.APPLICATION_JSON_TYPE));
-        var createCoreResponseBody = response.readEntity(CreateCoreResponseBody.class);
-        var errorMessage = response.readEntity(String.class);
-        assertEquals(SolrException.ErrorCode.SERVER_ERROR, response.getStatus());
-        assertTrue(errorMessage.contains("already exists."));
-    }
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    final Path workDir = createTempDir(getCoreWorkDir());
+    instDir = workDir.resolve(CREATE_CORE_NAME);
+    Path subHome = instDir.resolve("conf");
+    Files.createDirectories(subHome);
+    String srcDir = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    Files.copy(Path.of(srcDir, "schema-tiny.xml"), subHome.resolve("schema_ren.xml"));
+    Files.copy(Path.of(srcDir, "solrconfig-minimal.xml"), subHome.resolve("solrconfig_ren.xml"));
+    Files.copy(
+        Path.of(srcDir, "solrconfig.snippet.randomindexconfig.xml"),
+        subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
+    final CoreContainer cores = h.getCoreContainer();
+    cores.getAllowPaths().add(workDir);
+    // cores.getAllowPaths().add(workDir);
+    coreAdminHandler = new CoreAdminHandler(cores);
+    SolrQueryResponse response = new SolrQueryResponse();
+    createCore =
+        new CreateCore(
+            coreAdminHandler.getCoreContainer(),
+            coreAdminHandler.getCoreAdminAsyncTracker(),
+            req(),
+            response);
+  }
 
+  @Test
+  public void test_createCore_with_existent_configSet() {
+    CreateCoreRequestBody createCoreRequestBody = new CreateCoreRequestBody();
+    createCoreRequestBody.name = coreName;
+    createCoreRequestBody.configSet = "_default";
+    createCoreRequestBody.dataDir = "data_demo";
+    createCoreRequestBody.instanceDir = instDir.toAbsolutePath().toString();
+    createCore.createCore(createCoreRequestBody, CREATE_CORE_NAME);
+    Path dataDir = instDir.resolve("data_demo");
+    assertTrue(Files.exists(dataDir));
+  }
+
+  @Test
+  public void testReportError_createCore_non_existent_configSet() {
+    CreateCoreRequestBody createCoreRequestBody = new CreateCoreRequestBody();
+    createCoreRequestBody.name = coreName;
+    createCoreRequestBody.configSet = "_default_non_existent_configSet";
+    createCoreRequestBody.instanceDir = instDir.toAbsolutePath().toString();
+    assertThrows(
+        "Could not load configuration from directory",
+        SolrException.class,
+        () -> createCore.createCore(createCoreRequestBody, CREATE_CORE_NAME));
+  }
+
+  @Test
+  public void testReportError_two_thread_simultaneously_createCore() throws InterruptedException {
+    final CreateCoreRequestBody createCoreRequestBody = new CreateCoreRequestBody();
+    createCoreRequestBody.name = coreName;
+    createCoreRequestBody.instanceDir = instDir.toAbsolutePath().toString();
+    createCoreRequestBody.config = "solrconfig_ren.xml";
+    createCoreRequestBody.schema = "schema_ren.xml";
+    createCoreRequestBody.dataDir = "data_demo";
+    final AtomicReference<Exception> exp = new AtomicReference<>();
+    final Runnable coreCreationCmd =
+        () -> {
+          try {
+            createCore.createCore(createCoreRequestBody, CREATE_CORE_NAME);
+          } catch (Exception e) {
+            exp.set(e);
+          }
+        };
+
+    Thread firstCoreCreationThread = new Thread(coreCreationCmd);
+    Thread secCoreCreationThread = new Thread(coreCreationCmd);
+    firstCoreCreationThread.start();
+    secCoreCreationThread.start();
+    firstCoreCreationThread.join();
+    secCoreCreationThread.join();
+    // Test for failed creation cmd
+    assertNotNull("Exception must be thrown as two threads creating core simultaneously", exp);
+  }
+
+  @Test
+  public void test_buildCoreParams() {
+    final var unknownKey = "UNKNOWN_KEY";
+    final var configKeyWithBlankVal = "config";
+
+    Map<String, Object> params = Map.of(unknownKey, "TEST_VAL", configKeyWithBlankVal, "");
+    Map<String, String> coreParams = CreateCore.buildCoreParams(params);
+    assertFalse(coreParams.containsKey("unknownKey"));
+    assertFalse(coreParams.containsKey(configKeyWithBlankVal));
+
+    final var configKeyWithNullVal = "config";
+    params = new HashMap<>();
+    params.put(configKeyWithNullVal, null);
+
+    coreParams = CreateCore.buildCoreParams(params);
+    assertFalse(coreParams.containsKey(configKeyWithNullVal));
+  }
+
+  @After
+  public void close() throws Exception {
+    coreAdminHandler.close();
+  }
 }

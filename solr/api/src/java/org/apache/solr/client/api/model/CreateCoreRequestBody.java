@@ -1,50 +1,49 @@
 package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.List;
 import java.util.Map;
 
 /** Request body for v2 "create core" requests */
-public class CreateCoreRequestBody{
-    @JsonProperty(required = true)
-    public String name;
-    @JsonProperty public String instanceDir;
+public class CreateCoreRequestBody {
+  @JsonProperty(required = true)
+  public String name;
 
-    @JsonProperty public String dataDir;
+  @JsonProperty public String instanceDir;
 
-    @JsonProperty public String ulogDir;
+  @JsonProperty public String dataDir;
 
-    @JsonProperty public String schema;
+  @JsonProperty public String ulogDir;
 
-    @JsonProperty public String config;
+  @JsonProperty public String schema;
 
-    @JsonProperty public String configSet;
+  @JsonProperty public String config;
 
-    @JsonProperty public Boolean loadOnStartup;
+  @JsonProperty public String configSet;
 
-    // If our JsonProperty clone was more feature-rich here we could specify the property be called
-    // 'transient', but without that support it needs to be named something else to avoid conflicting
-    // with the 'transient' keyword in Java
-    @JsonProperty public Boolean isTransient;
+  @JsonProperty public Boolean loadOnStartup;
 
-    @JsonProperty public String shard;
+  // If our JsonProperty clone was more feature-rich here we could specify the property be called
+  // 'transient', but without that support it needs to be named something else to avoid conflicting
+  // with the 'transient' keyword in Java
+  @JsonProperty public Boolean isTransient;
 
-    @JsonProperty public String collection;
+  @JsonProperty public String shard;
 
-    // TODO - what type is 'roles' expected to be?
-    @JsonProperty public List<String> roles;
+  @JsonProperty public String collection;
 
-    @JsonProperty public String replicaType;
+  // TODO - what type is 'roles' expected to be?
+  @JsonProperty public List<String> roles;
 
-    @JsonProperty public Map<String, Object> properties;
+  @JsonProperty public String replicaType;
 
-    @JsonProperty public String coreNodeName;
+  @JsonProperty public Map<String, Object> properties;
 
-    @JsonProperty public Integer numShards;
+  @JsonProperty public String coreNodeName;
 
-    @JsonProperty public Boolean newCollection;
+  @JsonProperty public Integer numShards;
 
-    @JsonProperty public String async;
+  @JsonProperty public Boolean newCollection;
 
+  @JsonProperty public String async;
 }
