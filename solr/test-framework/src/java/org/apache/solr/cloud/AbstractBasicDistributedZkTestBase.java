@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -1159,14 +1158,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
     CollectionAdminResponse res = new CollectionAdminResponse();
     if (client == null) {
-      final String baseUrl =
-          ((HttpSolrClient) clients.get(clientIndex))
-              .getBaseURL()
-              .substring(
-                  0,
-                  ((HttpSolrClient) clients.get(clientIndex)).getBaseURL().length()
-                      - DEFAULT_COLLECTION.length()
-                      - 1);
+      final String baseUrl = ((HttpSolrClient) clients.get(clientIndex)).getBaseURL();
 
       try (SolrClient aClient = createNewSolrClient("", baseUrl)) {
         res.setResponse(aClient.request(request));
@@ -1293,15 +1285,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   }
 
   private Long getNumCommits(HttpSolrClient sourceClient) throws SolrServerException, IOException {
-    // construct the /admin/metrics URL
-    URL url = new URL(sourceClient.getBaseURL());
-    String path = url.getPath().substring(1);
-    String[] elements = path.split("/");
-    String collection = elements[elements.length - 1];
-    String baseUrl = url.toString();
-    baseUrl = baseUrl.substring(0, baseUrl.length() - collection.length() - 1);
+    String collection = sourceClient.getDefaultCollection();
     try (SolrClient client =
-        new HttpSolrClient.Builder(baseUrl)
+        new HttpSolrClient.Builder(sourceClient.getBaseURL())
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
@@ -1454,12 +1440,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   private void testSearchByCollectionName() throws SolrServerException, IOException {
     log.info("### STARTING testSearchByCollectionName");
     SolrClient client = clients.get(0);
-    final String baseUrl =
-        ((HttpSolrClient) client)
-            .getBaseURL()
-            .substring(
-                0,
-                ((HttpSolrClient) client).getBaseURL().length() - DEFAULT_COLLECTION.length() - 1);
+    final String baseUrl = ((HttpSolrClient) client).getBaseURL();
 
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
@@ -1473,12 +1454,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   private void testUpdateByCollectionName() throws SolrServerException, IOException {
     log.info("### STARTING testUpdateByCollectionName");
     SolrClient client = clients.get(0);
-    final String baseUrl =
-        ((HttpSolrClient) client)
-            .getBaseURL()
-            .substring(
-                0,
-                ((HttpSolrClient) client).getBaseURL().length() - DEFAULT_COLLECTION.length() - 1);
+    final String baseUrl = ((HttpSolrClient) client).getBaseURL();
 
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
@@ -1533,11 +1509,6 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
     assertEquals(3, allDocs);
     IOUtils.close(collectionClients);
-  }
-
-  private void createCollection(
-      String collection, List<SolrClient> collectionClients, String baseUrl, int num) {
-    createSolrCore(collection, collectionClients, baseUrl, num, null);
   }
 
   private void createSolrCore(
