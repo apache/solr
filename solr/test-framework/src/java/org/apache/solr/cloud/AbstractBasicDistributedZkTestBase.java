@@ -1298,10 +1298,10 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     String path = url.getPath().substring(1);
     String[] elements = path.split("/");
     String collection = elements[elements.length - 1];
-    String urlString = url.toString();
-    urlString = urlString.substring(0, urlString.length() - collection.length() - 1);
+    String baseUrl = url.toString();
+    baseUrl = baseUrl.substring(0, baseUrl.length() - collection.length() - 1);
     try (SolrClient client =
-        new HttpSolrClient.Builder(urlString)
+        new HttpSolrClient.Builder(baseUrl)
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
@@ -1718,11 +1718,20 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     return client;
   }
 
+  /**
+   * @param collection the name of a collection or core to set as the "default" on the created
+   *     client.
+   * @param baseUrl the "base" URL of a Solr node. Should <em>not</em> contain a collection or core
+   *     name.
+   * @param connectionTimeoutMillis the HTTP connection timeout in milliseconds
+   * @param socketTimeoutMillis the HTTP socket-read timeout in milliseconds
+   */
   protected SolrClient createNewSolrClient(
       String collection, String baseUrl, int connectionTimeoutMillis, int socketTimeoutMillis) {
 
     SolrClient client =
-        new HttpSolrClient.Builder(baseUrl + "/" + collection)
+        new HttpSolrClient.Builder(baseUrl)
+            .withDefaultCollection(collection)
             .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
             .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
             .build();

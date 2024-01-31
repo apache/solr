@@ -356,7 +356,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
 
     controlClient =
-        new HttpSolrClient.Builder(controlJetty.getBaseUrl() + "/control_collection").build();
+        new HttpSolrClient.Builder(controlJetty.getBaseUrl().toString())
+            .withDefaultCollection("control_collection")
+            .build();
     if (sliceCount <= 0) {
       // for now, just create the cloud client for the control if we don't
       // create the normal cloud client.
@@ -2204,8 +2206,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected SolrClient createNewSolrClient(String coreName, int port) {
     String baseUrl = buildUrl(port);
-    String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + coreName;
-    return new HttpSolrClient.Builder(url)
+    return new HttpSolrClient.Builder(baseUrl)
+        .withDefaultCollection(coreName)
         .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
         .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
         .build();
@@ -2763,7 +2765,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected long getIndexVersion(Replica replica) throws IOException {
-    try (SolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(replica.getBaseUrl())
+            .withDefaultCollection(replica.getCoreName())
+            .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/replication");
       params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_SHOW_COMMITS);
@@ -2810,7 +2815,10 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected void logReplicationDetails(Replica replica, StringBuilder builder) throws IOException {
-    try (SolrClient client = new HttpSolrClient.Builder(replica.getCoreUrl()).build()) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(replica.getBaseUrl())
+            .withDefaultCollection(replica.getCoreName())
+            .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("qt", "/replication");
       params.set(ReplicationHandler.COMMAND, ReplicationHandler.CMD_DETAILS);
