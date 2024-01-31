@@ -391,12 +391,12 @@ public class IndexSizeEstimator {
         if (liveDocs != null && !liveDocs.get(docId)) {
           continue;
         }
-        Fields vectors = termVectors.get(docId);
-        if (vectors == null) {
+        Fields fields = termVectors.get(docId);
+        if (fields == null) {
           continue;
         }
-        for (String field : vectors) {
-          Terms terms = vectors.terms(field);
+        for (String field : fields) {
+          Terms terms = fields.terms(field);
           if (terms == null) {
             continue;
           }
