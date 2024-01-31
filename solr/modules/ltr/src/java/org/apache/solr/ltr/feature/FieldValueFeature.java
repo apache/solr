@@ -184,16 +184,14 @@ public class FieldValueFeature extends Feature {
     public class FieldValueFeatureScorer extends FeatureScorer {
 
       private final LeafReaderContext context;
-      StoredFields storedFields = null;
+      private final StoredFields storedFields;
 
       public FieldValueFeatureScorer(
           FeatureWeight weight, LeafReaderContext context, DocIdSetIterator itr)
           throws IOException {
         super(weight, itr);
         this.context = context;
-        if (context != null) {
-          this.storedFields = context.reader().storedFields();
-        }
+        this.storedFields = (context == null ? null : context.reader().storedFields());
       }
 
       @Override
