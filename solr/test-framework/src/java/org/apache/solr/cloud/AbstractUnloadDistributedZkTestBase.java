@@ -250,7 +250,8 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
 
     Random random = random();
     if (random.nextBoolean()) {
-      try (SolrClient collectionClient = getHttpSolrClient(leaderProps.getCoreUrl())) {
+      try (SolrClient collectionClient =
+          getHttpSolrClient(leaderProps.getBaseUrl(), leaderProps.getCoreName())) {
         // lets try and use the solrj client to index and retrieve a couple
         // documents
         SolrInputDocument doc1 =

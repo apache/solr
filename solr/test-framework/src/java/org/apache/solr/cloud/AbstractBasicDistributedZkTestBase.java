@@ -911,7 +911,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     for (Slice slice : dColl.getActiveSlices()) {
       long sliceDocCount = -1;
       for (Replica rep : slice.getReplicas()) {
-        try (SolrClient one = getHttpSolrClient(rep.getCoreUrl())) {
+        try (SolrClient one = getHttpSolrClient(rep)) {
           SolrQuery query = new SolrQuery("*:*");
           query.setDistrib(false);
           QueryResponse resp = one.query(query);
@@ -1713,7 +1713,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   @Override
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
 
-    SolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
+    SolrClient client = getHttpSolrClient(baseUrl, collection);
 
     return client;
   }

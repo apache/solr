@@ -2212,7 +2212,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
-    return getHttpSolrClient(baseUrl + "/" + collection);
+    return getHttpSolrClient(baseUrl, collection);
   }
 
   protected String getBaseUrl(JettySolrRunner jetty) {
@@ -2343,7 +2343,15 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         });
   }
 
-  public static String getUrlFromZk(ClusterState clusterState, String collection) {
+  /**
+   * Returns the base URL of a live Solr node hosting the specified collection
+   *
+   * <p>Note that the returned URL does not contain the collection name itself.
+   *
+   * @param clusterState used to identify which live nodes host the collection
+   * @param collection the name of the collection to search for
+   */
+  public static String getBaseUrlFromZk(ClusterState clusterState, String collection) {
     Map<String, Slice> slices = clusterState.getCollection(collection).getSlicesMap();
 
     if (slices == null) {
@@ -2359,7 +2367,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         final ZkNodeProps node = shardEntry.getValue();
         final String nodeName = node.getStr(ZkStateReader.NODE_NAME_PROP);
         if (clusterState.liveNodesContain(nodeName)) {
-          return ZkCoreNodeProps.getCoreUrl(node.getStr(ZkStateReader.BASE_URL_PROP), collection);
+          return node.getStr(ZkStateReader.BASE_URL_PROP);
         }
       }
     }
