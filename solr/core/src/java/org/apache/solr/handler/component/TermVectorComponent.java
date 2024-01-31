@@ -131,8 +131,8 @@ public class TermVectorComponent extends SearchComponent {
       return;
     }
 
-    NamedList<Object> termVectors = new NamedList<>();
-    rb.rsp.add(TERM_VECTORS, termVectors);
+    NamedList<Object> termVectorsNL = new NamedList<>();
+    rb.rsp.add(TERM_VECTORS, termVectorsNL);
 
     IndexSchema schema = rb.req.getSchema();
     SchemaField keyField = schema.getUniqueKeyField();
@@ -237,7 +237,7 @@ public class TermVectorComponent extends SearchComponent {
       warnings.add("noPayloads", noPay);
     }
     if (warnings.size() > 0) {
-      termVectors.add(TV_KEY_WARNINGS, warnings);
+      termVectorsNL.add(TV_KEY_WARNINGS, warnings);
     }
 
     DocListAndSet listAndSet = rb.getResults();
@@ -270,10 +270,10 @@ public class TermVectorComponent extends SearchComponent {
         String uKey = schema.printableUniqueKey(solrDoc);
         assert null != uKey;
         docNL.add("uniqueKey", uKey);
-        termVectors.add(uKey, docNL);
+        termVectorsNL.add(uKey, docNL);
       } else {
         // support for schemas w/o a unique key,
-        termVectors.add("doc-" + docId, docNL);
+        termVectorsNL.add("doc-" + docId, docNL);
       }
 
       if (null != fields) {

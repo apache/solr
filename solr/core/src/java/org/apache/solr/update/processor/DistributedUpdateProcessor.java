@@ -702,7 +702,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     params.set(DISTRIB, false);
     params.set("getInputDocument", id);
     params.set("onlyIfActive", true);
-    SolrRequest<SimpleSolrResponse> ur = new GenericSolrRequest(METHOD.GET, "/get", params);
+    SolrRequest<SimpleSolrResponse> ur =
+        new GenericSolrRequest(METHOD.GET, "/get", params).setRequiresCollection(true);
 
     String leaderUrl = getLeaderUrl(id);
 
