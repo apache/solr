@@ -100,28 +100,6 @@ public enum CoreAdminOperation implements CoreAdminOp {
         SolrJerseyResponse response =
             createCore.createCore(params.toMap(new HashMap<String, Object>()), coreName);
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
-        /*
-        Map<String, String> coreParams = buildCoreParams(params);
-        CoreContainer coreContainer = it.handler.coreContainer;
-        Path instancePath;
-
-        // TODO: Should we nuke setting odd instance paths?  They break core discovery, generally
-        String instanceDir = it.req.getParams().get(CoreAdminParams.INSTANCE_DIR);
-        if (instanceDir == null) instanceDir = it.req.getParams().get("property.instanceDir");
-        if (instanceDir != null) {
-          instanceDir =
-              PropertiesUtil.substituteProperty(
-                  instanceDir, coreContainer.getContainerProperties());
-          instancePath = coreContainer.getCoreRootDirectory().resolve(instanceDir).normalize();
-        } else {
-          instancePath = coreContainer.getCoreRootDirectory().resolve(coreName);
-        }
-
-        boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
-
-        coreContainer.create(coreName, instancePath, coreParams, newCollection);
-
-        it.rsp.add("core", coreName);*/
       }),
   UNLOAD_OP(
       UNLOAD,
