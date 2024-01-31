@@ -16,21 +16,22 @@
  */
 package org.apache.solr.client.api.endpoint;
 
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 import org.apache.solr.client.api.model.CreateCoreRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
-
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
 
 /**
  * V2 API for creating a new core on the receiving node.
  *
- * <p>This API (POST /api/cores {...}) is analogous to the v1 /admin/cores?action=CREATE
- * command.
+ * <p>This API (POST /api/cores {...}) is analogous to the v1 /admin/cores?action=CREATE command.
  *
+ * @see CreateCoreRequestBody
  */
-@Path("/cores")
+@Path("/cores/{coreName}/create")
 public interface CreateCoreApi {
-    @POST
-    public SolrJerseyResponse createCore(CreateCoreRequestBody createCoreRequestBody);
+  @POST
+  public SolrJerseyResponse createCore(
+      CreateCoreRequestBody createCoreRequestBody, @PathParam("coreName") String coreName);
 }

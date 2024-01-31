@@ -167,7 +167,7 @@ public class CoreContainer {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  {
+  static {
     // Declared up top to ensure this is present before anything else.
     // note: will not be re-added if already there
     ExecutorUtil.addThreadLocalProvider(SolrRequestInfo.getInheritableThreadLocalProvider());
@@ -1074,7 +1074,7 @@ public class CoreContainer {
       }
 
       // Start the background thread
-      backgroundCloser = new CloserThread(this, solrCores, cfg);
+      backgroundCloser = new CloserThread(this, solrCores);
       backgroundCloser.start();
 
     } finally {
@@ -1617,7 +1617,7 @@ public class CoreContainer {
 
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
-            "Error CREATEing SolrCore '" + coreName + "': " + ex.getMessage() + rootMsg,
+            "Error creating SolrCore '" + coreName + "': " + ex.getMessage() + rootMsg,
             ex);
       }
     } finally {
@@ -2184,9 +2184,6 @@ public class CoreContainer {
         throw new SolrException(
             ErrorCode.SERVER_ERROR,
             "Interrupted while unregistering core [" + name + "] from cloud state");
-      } catch (KeeperException e) {
-        throw new SolrException(
-            ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
       } catch (Exception e) {
         throw new SolrException(
             ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
@@ -2588,15 +2585,13 @@ public class CoreContainer {
 }
 
 class CloserThread extends Thread {
-  CoreContainer container;
-  SolrCores solrCores;
-  NodeConfig cfg;
+  private final CoreContainer container;
+  private final SolrCores solrCores;
 
-  CloserThread(CoreContainer container, SolrCores solrCores, NodeConfig cfg) {
+  CloserThread(CoreContainer container, SolrCores solrCores) {
     super("CloserThread");
     this.container = container;
     this.solrCores = solrCores;
-    this.cfg = cfg;
   }
 
   // It's important that this be the _only_ thread removing things from pendingDynamicCloses!

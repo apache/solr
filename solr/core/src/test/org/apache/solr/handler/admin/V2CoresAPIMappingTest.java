@@ -17,34 +17,15 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.params.CollectionAdminParams.NUM_SHARDS;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
-import static org.apache.solr.common.params.CoreAdminParams.CONFIG;
-import static org.apache.solr.common.params.CoreAdminParams.CONFIGSET;
 import static org.apache.solr.common.params.CoreAdminParams.CORE;
-import static org.apache.solr.common.params.CoreAdminParams.CORE_NODE_NAME;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.CREATE;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
-import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.INDEX_INFO;
-import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
-import static org.apache.solr.common.params.CoreAdminParams.LOAD_ON_STARTUP;
-import static org.apache.solr.common.params.CoreAdminParams.NAME;
-import static org.apache.solr.common.params.CoreAdminParams.NEW_COLLECTION;
-import static org.apache.solr.common.params.CoreAdminParams.REPLICA_TYPE;
-import static org.apache.solr.common.params.CoreAdminParams.ROLES;
-import static org.apache.solr.common.params.CoreAdminParams.SCHEMA;
-import static org.apache.solr.common.params.CoreAdminParams.SHARD;
-import static org.apache.solr.common.params.CoreAdminParams.TRANSIENT;
-import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
-import org.apache.solr.handler.admin.api.CreateCoreAPI;
 import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
 import org.junit.Test;
 
@@ -61,7 +42,6 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   @Override
   public void populateApiBag() {
     final CoreAdminHandler handler = getRequestHandler();
-    apiBag.registerObject(new CreateCoreAPI(handler));
     apiBag.registerObject(new SingleCoreStatusAPI(handler));
     apiBag.registerObject(new AllCoresStatusAPI(handler));
   }
@@ -74,55 +54,6 @@ public class V2CoresAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   @Override
   public boolean isCoreSpecific() {
     return false;
-  }
-
-  @Test
-  public void testCreateCoreAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cores",
-            "POST",
-            "{'create': {"
-                + "'name': 'someCoreName', "
-                + "'instanceDir': 'someInstanceDir', "
-                + "'dataDir': 'someDataDir', "
-                + "'ulogDir': 'someUpdateLogDirectory', "
-                + "'schema': 'some-schema-file-name', "
-                + "'config': 'some-config-file-name', "
-                + "'configSet': 'someConfigSetName', "
-                + "'loadOnStartup': true, "
-                + "'isTransient': true, "
-                + "'shard': 'someShardName', "
-                + "'collection': 'someCollectionName', "
-                + "'replicaType': 'TLOG', "
-                + "'coreNodeName': 'someNodeName', "
-                + "'numShards': 123, "
-                + "'roles': ['role1', 'role2'], "
-                + "'properties': {'prop1': 'val1', 'prop2': 'val2'}, "
-                + "'newCollection': true, "
-                + "'async': 'requestTrackingId' "
-                + "}}");
-
-    assertEquals(CREATE.name().toLowerCase(Locale.ROOT), v1Params.get(ACTION));
-    assertEquals("someCoreName", v1Params.get(NAME));
-    assertEquals("someInstanceDir", v1Params.get(INSTANCE_DIR));
-    assertEquals("someDataDir", v1Params.get(DATA_DIR));
-    assertEquals("someUpdateLogDirectory", v1Params.get(ULOG_DIR));
-    assertEquals("some-schema-file-name", v1Params.get(SCHEMA));
-    assertEquals("some-config-file-name", v1Params.get(CONFIG));
-    assertEquals("someConfigSetName", v1Params.get(CONFIGSET));
-    assertTrue(v1Params.getPrimitiveBool(LOAD_ON_STARTUP));
-    assertTrue(v1Params.getPrimitiveBool(TRANSIENT));
-    assertEquals("someShardName", v1Params.get(SHARD));
-    assertEquals("someCollectionName", v1Params.get(COLLECTION));
-    assertEquals("TLOG", v1Params.get(REPLICA_TYPE));
-    assertEquals("someNodeName", v1Params.get(CORE_NODE_NAME));
-    assertEquals(123, v1Params.getPrimitiveInt(NUM_SHARDS));
-    assertEquals("role1,role2", v1Params.get(ROLES));
-    assertEquals("val1", v1Params.get("property.prop1"));
-    assertEquals("val2", v1Params.get("property.prop2"));
-    assertTrue(v1Params.getPrimitiveBool(NEW_COLLECTION));
-    assertEquals("requestTrackingId", v1Params.get(ASYNC));
   }
 
   @Test
