@@ -176,6 +176,7 @@ public class CollectionMutator {
             props,
             coll.getRouter(),
             coll.getZNodeVersion(),
+            coll.getCreationTime(),
             stateManager.getPrsSupplier(coll.getName()));
     if (replicaOps == null) {
       return new ZkWriteCommand(coll.getName(), collection);

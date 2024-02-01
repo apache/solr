@@ -24,6 +24,7 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -221,7 +222,10 @@ public class BackupManager {
         repository.openInput(zkStateDir, COLLECTION_PROPS_FILE, IOContext.DEFAULT)) {
       byte[] arr = new byte[(int) is.length()]; // probably ok since the json file should be small.
       is.readBytes(arr, 0, (int) is.length());
-      ClusterState c_state = ClusterState.createFromJson(-1, arr, Collections.emptySet(), null);
+      // set a default created date, we don't aim at reading actual zookeeper state. The restored
+      // collection will have a new creation date when persisted in zookeeper.
+      ClusterState c_state =
+          ClusterState.createFromJson(-1, arr, Collections.emptySet(), Instant.EPOCH, null);
       return c_state.getCollection(collectionName);
     }
   }

@@ -14,6 +14,9 @@ Improvements
 * SOLR-17119: When registering or updating a ConfigurablePlugin through the `/cluster/plugin` API,
   config validation exceptions are now propagated to the callers. (Yohann Callea)
 
+* SOLR-16699: Add Collection creation time to CLUSTERSTATUS and COLSTATUS API responses
+  (Julien Pilourdault, Paul McArthur, David Smiley)
+
 Optimizations
 ---------------------
 (No changes)
