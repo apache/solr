@@ -38,6 +38,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.core.backup.repository.BackupRepositoryUtil;
 import org.apache.solr.hdfs.HdfsDirectoryFactory;
 import org.apache.solr.hdfs.store.HdfsDirectory;
 import org.apache.solr.hdfs.store.HdfsDirectory.HdfsIndexInput;
@@ -56,6 +57,7 @@ public class HdfsBackupRepository implements BackupRepository {
   private Path baseHdfsPath = null;
   private NamedList<?> config = null;
   protected int copyBufferSize = HdfsDirectory.DEFAULT_BUFFER_SIZE;
+  private boolean shouldVerifyChecksum;
 
   @Override
   public void init(NamedList<?> args) {
@@ -100,6 +102,13 @@ public class HdfsBackupRepository implements BackupRepository {
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
+
+    shouldVerifyChecksum = getBooleanConfig(args, PARAM_VERIFY_CHECKSUM, true);
+  }
+
+  private static boolean getBooleanConfig(NamedList<?> args, String param, boolean defaultValue) {
+    Object value = args.get(param);
+    return value == null ? defaultValue : Boolean.parseBoolean(value.toString());
   }
 
   @Override
@@ -201,6 +210,17 @@ public class HdfsBackupRepository implements BackupRepository {
     try (HdfsDirectory dir =
         new HdfsDirectory(new Path(destDir), NoLockFactory.INSTANCE, hdfsConfig, copyBufferSize)) {
       copyIndexFileFrom(sourceDir, sourceFileName, dir, destFileName);
+    }
+  }
+
+  @Override
+  public void copyIndexFileFrom(
+      Directory sourceDir, String sourceFileName, Directory destDir, String destFileName)
+      throws IOException {
+    if (shouldVerifyChecksum) {
+      BackupRepository.super.copyIndexFileFrom(sourceDir, sourceFileName, destDir, destFileName);
+    } else {
+      BackupRepositoryUtil.copyFileNoChecksum(sourceDir, sourceFileName, destDir, destFileName);
     }
   }
 

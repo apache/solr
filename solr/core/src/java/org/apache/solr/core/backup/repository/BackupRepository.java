@@ -48,6 +48,16 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
   }
 
   /**
+   * Plugin initialization parameter to define whether the {@link BackupRepository} should verify
+   * the checksum before copying index files. Defaults to {@code true}.
+   *
+   * <p>If the checksum cannot be verified in the standard Lucene way ({@link
+   * CodecUtil#checkFooter}, then this parameter can be set to false, and the checksum should be
+   * verified in a specific way.
+   */
+  String PARAM_VERIFY_CHECKSUM = "verifyChecksum";
+
+  /**
    * This method returns the location where the backup should be stored (or restored from).
    *
    * @param override The location parameter supplied by the user.

@@ -45,10 +45,13 @@ import org.apache.solr.core.DirectoryFactory;
 public class LocalFileSystemRepository implements BackupRepository {
 
   private NamedList<?> config = null;
+  private boolean shouldVerifyChecksum;
 
   @Override
   public void init(NamedList<?> args) {
     this.config = args;
+    Object value = args.get(PARAM_VERIFY_CHECKSUM);
+    shouldVerifyChecksum = value == null || Boolean.parseBoolean(value.toString());
   }
 
   @SuppressWarnings("unchecked")
@@ -97,7 +100,7 @@ public class LocalFileSystemRepository implements BackupRepository {
   public void createDirectory(URI path) throws IOException {
     Path p = Path.of(path);
     if (!Files.exists(p, LinkOption.NOFOLLOW_LINKS)) {
-      Files.createDirectory(p);
+      Files.createDirectories(p);
     }
   }
 
@@ -147,6 +150,17 @@ public class LocalFileSystemRepository implements BackupRepository {
       throws IOException {
     try (FSDirectory dir = new NIOFSDirectory(Path.of(destDir), NoLockFactory.INSTANCE)) {
       copyIndexFileFrom(sourceDir, sourceFileName, dir, destFileName);
+    }
+  }
+
+  @Override
+  public void copyIndexFileFrom(
+      Directory sourceDir, String sourceFileName, Directory destDir, String destFileName)
+      throws IOException {
+    if (shouldVerifyChecksum) {
+      BackupRepository.super.copyIndexFileFrom(sourceDir, sourceFileName, destDir, destFileName);
+    } else {
+      BackupRepositoryUtil.copyFileNoChecksum(sourceDir, sourceFileName, destDir, destFileName);
     }
   }
 

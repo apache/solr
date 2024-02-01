@@ -55,6 +55,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.core.backup.repository.BackupRepositoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,6 +73,7 @@ public class GCSBackupRepository implements BackupRepository {
   protected int writeBufferSizeBytes;
   protected int readBufferSizeBytes;
   protected StorageOptions.Builder storageOptionsBuilder = null;
+  protected boolean shouldVerifyChecksum;
 
   protected Storage initStorage() {
     if (storage != null) return storage;
@@ -105,6 +107,7 @@ public class GCSBackupRepository implements BackupRepository {
     this.writeBufferSizeBytes = parsedConfig.getWriteBufferSize();
     this.readBufferSizeBytes = parsedConfig.getReadBufferSize();
     this.storageOptionsBuilder = parsedConfig.getStorageOptionsBuilder();
+    this.shouldVerifyChecksum = parsedConfig.shouldVerifyChecksum();
 
     initStorage();
   }
@@ -342,8 +345,10 @@ public class GCSBackupRepository implements BackupRepository {
     blobName = appendTrailingSeparatorIfNecessary(blobName);
     blobName += destFileName;
     final BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, blobName).build();
-    try (ChecksumIndexInput input =
-        sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+    try (IndexInput input =
+        shouldVerifyChecksum
+            ? sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)
+            : sourceDir.openInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
       if (input.length() <= CodecUtil.footerLength()) {
         throw new CorruptIndexException("file is too small:" + input.length(), input);
       }
@@ -352,6 +357,17 @@ public class GCSBackupRepository implements BackupRepository {
       } else {
         writeBlobMultipart(blobInfo, input, (int) input.length());
       }
+    }
+  }
+
+  @Override
+  public void copyIndexFileFrom(
+      Directory sourceDir, String sourceFileName, Directory destDir, String destFileName)
+      throws IOException {
+    if (shouldVerifyChecksum) {
+      BackupRepository.super.copyIndexFileFrom(sourceDir, sourceFileName, destDir, destFileName);
+    } else {
+      BackupRepositoryUtil.copyFileNoChecksum(sourceDir, sourceFileName, destDir, destFileName);
     }
   }
 
@@ -383,14 +399,18 @@ public class GCSBackupRepository implements BackupRepository {
   @Override
   public void close() throws IOException {}
 
-  private void writeBlobMultipart(BlobInfo blobInfo, ChecksumIndexInput indexInput, int blobSize)
+  private void writeBlobMultipart(BlobInfo blobInfo, IndexInput indexInput, int blobSize)
       throws IOException {
     byte[] bytes = new byte[blobSize];
-    indexInput.readBytes(bytes, 0, blobSize - CodecUtil.footerLength());
-    long checksum = CodecUtil.checkFooter(indexInput);
-    ByteBuffer footerBuffer =
-        ByteBuffer.wrap(bytes, blobSize - CodecUtil.footerLength(), CodecUtil.footerLength());
-    writeFooter(checksum, footerBuffer);
+    if (shouldVerifyChecksum) {
+      indexInput.readBytes(bytes, 0, blobSize - CodecUtil.footerLength());
+      long checksum = CodecUtil.checkFooter((ChecksumIndexInput) indexInput);
+      ByteBuffer footerBuffer =
+          ByteBuffer.wrap(bytes, blobSize - CodecUtil.footerLength(), CodecUtil.footerLength());
+      writeFooter(checksum, footerBuffer);
+    } else {
+      indexInput.readBytes(bytes, 0, blobSize);
+    }
     try {
       storage.create(blobInfo, bytes, Storage.BlobTargetOption.doesNotExist());
     } catch (final StorageException se) {
@@ -401,15 +421,17 @@ public class GCSBackupRepository implements BackupRepository {
     }
   }
 
-  private void writeBlobResumable(BlobInfo blobInfo, ChecksumIndexInput indexInput)
-      throws IOException {
+  private void writeBlobResumable(BlobInfo blobInfo, IndexInput indexInput) throws IOException {
     try {
       final WriteChannel writeChannel = storage.writer(blobInfo, getDefaultBlobWriteOptions());
 
       ByteBuffer buffer = ByteBuffer.allocate(writeBufferSizeBytes);
       writeChannel.setChunkSize(writeBufferSizeBytes);
 
-      long remain = indexInput.length() - CodecUtil.footerLength();
+      long remain =
+          shouldVerifyChecksum
+              ? indexInput.length() - CodecUtil.footerLength()
+              : indexInput.length();
       while (remain > 0) {
         // reading
         int byteReads = (int) Math.min(buffer.capacity(), remain);
@@ -422,9 +444,11 @@ public class GCSBackupRepository implements BackupRepository {
         buffer.clear();
         remain -= byteReads;
       }
-      long checksum = CodecUtil.checkFooter(indexInput);
-      ByteBuffer bytes = getFooter(checksum);
-      writeChannel.write(bytes);
+      if (shouldVerifyChecksum) {
+        long checksum = CodecUtil.checkFooter((ChecksumIndexInput) indexInput);
+        ByteBuffer bytes = getFooter(checksum);
+        writeChannel.write(bytes);
+      }
       writeChannel.close();
     } catch (final StorageException se) {
       if (se.getCode() == HTTP_PRECON_FAILED) {

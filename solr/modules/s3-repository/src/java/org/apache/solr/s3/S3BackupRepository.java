@@ -16,6 +16,8 @@
  */
 package org.apache.solr.s3;
 
+import static org.apache.solr.s3.S3BackupRepositoryConfig.getBooleanConfig;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,6 +42,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.core.backup.repository.BackupRepositoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +59,7 @@ public class S3BackupRepository implements BackupRepository {
 
   private NamedList<?> config;
   private S3StorageClient client;
+  private boolean shouldVerifyChecksum;
 
   @Override
   public void init(NamedList<?> args) {
@@ -66,8 +70,9 @@ public class S3BackupRepository implements BackupRepository {
     if (client != null) {
       client.close();
     }
-
     this.client = backupConfig.buildClient();
+
+    shouldVerifyChecksum = getBooleanConfig(args, PARAM_VERIFY_CHECKSUM, true);
   }
 
   @Override
@@ -279,8 +284,10 @@ public class S3BackupRepository implements BackupRepository {
       log.debug("Upload started to S3 '{}'", s3Path);
     }
 
-    try (ChecksumIndexInput indexInput =
-        sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+    try (IndexInput indexInput =
+        shouldVerifyChecksum
+            ? sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)
+            : sourceDir.openInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
       if (indexInput.length() <= CodecUtil.footerLength()) {
         throw new CorruptIndexException("file is too small:" + indexInput.length(), indexInput);
       }
@@ -290,7 +297,10 @@ public class S3BackupRepository implements BackupRepository {
 
         byte[] buffer = new byte[CHUNK_SIZE];
         int bufferLen;
-        long remaining = indexInput.length() - CodecUtil.footerLength();
+        long remaining =
+            shouldVerifyChecksum
+                ? indexInput.length() - CodecUtil.footerLength()
+                : indexInput.length();
 
         while (remaining > 0) {
           bufferLen = remaining >= CHUNK_SIZE ? CHUNK_SIZE : (int) remaining;
@@ -299,14 +309,27 @@ public class S3BackupRepository implements BackupRepository {
           outputStream.write(buffer, 0, bufferLen);
           remaining -= bufferLen;
         }
-        final long checksum = CodecUtil.checkFooter(indexInput);
-        writeFooter(checksum, outputStream);
+        if (shouldVerifyChecksum) {
+          long checksum = CodecUtil.checkFooter((ChecksumIndexInput) indexInput);
+          writeFooter(checksum, outputStream);
+        }
       }
     }
 
     long timeElapsed = Duration.between(start, Instant.now()).toMillis();
     if (log.isInfoEnabled()) {
       log.info("Upload to S3: '{}' finished in {}ms", s3Path, timeElapsed);
+    }
+  }
+
+  @Override
+  public void copyIndexFileFrom(
+      Directory sourceDir, String sourceFileName, Directory destDir, String destFileName)
+      throws IOException {
+    if (shouldVerifyChecksum) {
+      BackupRepository.super.copyIndexFileFrom(sourceDir, sourceFileName, destDir, destFileName);
+    } else {
+      BackupRepositoryUtil.copyFileNoChecksum(sourceDir, sourceFileName, destDir, destFileName);
     }
   }
 
