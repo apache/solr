@@ -79,6 +79,7 @@ public class ResponseBuilder {
   private QParser qparser = null;
   private String queryString = null;
   private Query query = null;
+  private List<Query> queriesToCombine = null;
   private List<Query> filters = null;
   private SortSpec sortSpec = null;
   private GroupingSpecification groupingSpec;
@@ -376,6 +377,14 @@ public class ResponseBuilder {
 
   public void setQuery(Query query) {
     this.query = query;
+  }
+
+  public List<Query> getQueriesToCombine() {
+    return queriesToCombine;
+  }
+
+  public void setQueriesToCombine(List<Query> queries) {
+    this.queriesToCombine = queries;
   }
 
   public DocListAndSet getResults() {

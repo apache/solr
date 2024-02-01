@@ -93,6 +93,7 @@
   -->
   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
 
+  <field name="vector" type="knn_vector" indexed="true" stored="true"/>
   <field name="sku" type="text_en_splitting_tight" indexed="true" stored="true" omitNorms="true"/>
   <field name="name" type="text_general" indexed="true" stored="true"/>
   <field name="manu" type="text_general" indexed="true" stored="true" omitNorms="true"/>
@@ -329,6 +330,7 @@
        Class names starting with "solr" refer to java classes in a
      standard package such as org.apache.solr.analysis
   -->
+  <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" />
 
   <!-- The StrField type is not analyzed, but indexed/stored verbatim. -->
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>

@@ -16,10 +16,12 @@
  */
 package org.apache.solr.request.json;
 
+import static org.apache.solr.common.params.CombinerParams.COMBINER_QUERIES_KEYS;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -241,13 +243,16 @@ public class RequestUtil {
           if (queriesJsonObj instanceof Map && queriesJsonObj != null) {
             @SuppressWarnings("unchecked")
             final Map<String, Object> queriesAsMap = (Map<String, Object>) queriesJsonObj;
+            ArrayList<String> queriesKeys = new ArrayList<>();
             for (Map.Entry<String, Object> queryJsonProperty : queriesAsMap.entrySet()) {
               out = queryJsonProperty.getKey();
+              queriesKeys.add(out);
               arr = true;
               isQuery = true;
               convertJsonPropertyToLocalParams(
                   newMap, jsonQueryConverter, queryJsonProperty, out, isQuery, arr);
             }
+            newMap.put(COMBINER_QUERIES_KEYS, queriesKeys.toArray(new String[queriesKeys.size()]));
             continue;
           } else {
             throw new SolrException(

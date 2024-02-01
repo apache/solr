@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.common.params.CombinerParams.COMBINER_QUERIES_KEYS;
 import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
 
 import java.io.IOException;
@@ -95,6 +96,7 @@ import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.combining.Combiner;
 import org.apache.solr.search.grouping.CommandHandler;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
@@ -376,30 +378,38 @@ public class QueryComponent extends SearchComponent {
     // -1 as flag if not set.
     long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
 
-    QueryCommand cmd = rb.createQueryCommand();
-    cmd.setMultiThreaded(multiThreaded);
-    cmd.setTimeAllowed(timeAllowed);
-    cmd.setMinExactCount(getMinExactCount(params));
-    cmd.setDistribStatsDisabled(rb.isDistribStatsDisabled());
-
-    boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
-
-    if (isCancellableQuery) {
-      // Set the queryID for the searcher to consume
-      String queryID = params.get(ShardParams.QUERY_ID);
-
-      cmd.setQueryCancellable(true);
-
-      if (queryID == null) {
-        if (rb.isDistrib) {
-          throw new IllegalStateException("QueryID is null for distributed query");
-        }
-
-        queryID = rb.queryID;
-      }
-
-      cmd.setQueryID(queryID);
+    List<Query> queries = rb.getQueriesToCombine();
+    if(!isCombinedSearch){
+      queries.add(rb.getQuery());
     }
+    QueryResult[] results = new QueryResult[queries.size()];
+    int resultIndex = 0;
+    for (Query q : queries) {
+      rb.setQuery(q);
+      QueryCommand cmd = rb.createQueryCommand();
+      cmd.setMultiThreaded(multiThreaded);
+      cmd.setTimeAllowed(timeAllowed);
+      cmd.setMinExactCount(getMinExactCount(params));
+      cmd.setDistribStatsDisabled(rb.isDistribStatsDisabled());
+
+      boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
+
+      if (isCancellableQuery) {
+        // Set the queryID for the searcher to consume
+        String queryID = params.get(ShardParams.QUERY_ID);
+  
+        cmd.setQueryCancellable(true);
+  
+        if (queryID == null) {
+          if (rb.isDistrib) {
+            throw new IllegalStateException("QueryID is null for distributed query");
+          }
+  
+          queryID = rb.queryID;
+        }
+  
+        cmd.setQueryID(queryID);
+      }
 
     req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
 
