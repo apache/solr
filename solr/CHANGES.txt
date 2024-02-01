@@ -87,7 +87,7 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+* GITHUB#2217: Scale to 10K+ collections better in ZkStateReader.refreshCollectionsList (David Smiley)
 
 Bug Fixes
 ---------------------
