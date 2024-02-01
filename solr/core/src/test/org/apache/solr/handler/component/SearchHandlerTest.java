@@ -383,6 +383,85 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testFindResponsesWithException() {
+    ShardResponse response1 = new ShardResponse();
+    ShardResponse response2 = new ShardResponse();
+    ShardRequest request = new ShardRequest();
+    response1.setShardRequest(request);
+    response2.setShardRequest(request);
+
+    // shards.tolerant=false - single response with no exception
+    request.responses.add(response1);
+    assertEquals(List.of(), SearchHandler.findResponsesWithException(response1));
+
+    // shards.tolerant=false - multiple responses with no exception
+    request.responses.add(response2);
+    assertEquals(List.of(), SearchHandler.findResponsesWithException(response2));
+
+    // shards.tolerant=false - first response with exception
+    request.responses.clear(); // nothing in responses based on HttpShardHandler#take
+    response1.setException(new Exception());
+    assertEquals(List.of(response1), SearchHandler.findResponsesWithException(response1));
+
+    // shards.tolerant=false - second response with exception
+    response1.setException(null);
+    response2.setException(new Exception());
+    request.responses.add(
+        response1); // only response1 will be in responses based on HttpShardHandler#take
+    assertEquals(List.of(response2), SearchHandler.findResponsesWithException(response2));
+
+    // shards.tolerant=true - multiple responses no exception
+    response1 = new ShardResponse();
+    response2 = new ShardResponse();
+    request = new ShardRequest();
+    request.responses.add(response1);
+    request.responses.add(response2);
+    response1.setShardRequest(request);
+    response2.setShardRequest(request);
+
+    // the last response - response2 will be used as argument
+    assertEquals(List.of(), SearchHandler.findResponsesWithException(response2));
+
+    // shards.tolerant=true - exception on response1
+    response1.setException(new Exception());
+    // the last response - response2 will be used as argument, however response1 should be located
+    // as one that gives exception
+    assertEquals(List.of(response1), SearchHandler.findResponsesWithException(response2));
+
+    // shards.tolerant=true - exception on both response1 and response2
+    response2.setException(new Exception());
+    // the last response - response2 will be used as argument, both responses should be included in
+    // the result, with correct ordering and no duplicates
+    assertEquals(
+        List.of(response1, response2), SearchHandler.findResponsesWithException(response2));
+  }
+
+  public void testFindNonTolerableException() {
+    ShardResponse response1 = new ShardResponse();
+    ShardResponse response2 = new ShardResponse();
+    ShardRequest request = new ShardRequest();
+    response1.setShardRequest(request);
+    response2.setShardRequest(request);
+
+    Exception exception1 = new Exception("exception1");
+    response1.setResponseCode(429); // tolerable response code
+    response1.setException(exception1);
+    Exception exception2 = new Exception("exception2");
+    response2.setResponseCode(400); // non-tolerable response code
+    response2.setException(exception2);
+
+    // shards.tolerant=false
+    assertEquals(exception1, SearchHandler.findNonTolerableException(false, List.of(response1)));
+
+    // shards.tolerant=true
+    assertEquals(null, SearchHandler.findNonTolerableException(true, List.of(response1)));
+
+    // shards.tolerant=true
+    assertEquals(
+        exception2, SearchHandler.findNonTolerableException(true, List.of(response1, response2)));
+  }
+
   private static <T> T getRandomEntry(Collection<T> collection) {
     if (null == collection || collection.isEmpty()) return null;
 

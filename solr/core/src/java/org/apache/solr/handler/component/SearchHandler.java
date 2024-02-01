@@ -30,13 +30,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.queryparser.surround.query.TooManyBasicQueries;
@@ -572,18 +575,21 @@ public class SearchHandler extends RequestHandlerBase
             if (srsp == null) break; // no more requests to wait for
 
             // Was there an exception?
-            if (srsp.getException() != null) {
-              log.warn("Shard request failed : {}", srsp);
+            List<ShardResponse> responsesWithException = findResponsesWithException(srsp);
+
+            if (!responsesWithException.isEmpty()) {
+              responsesWithException.forEach(r -> log.warn("Shard request failed : {}", r));
+
               // If things are not tolerant, abort everything and rethrow
-              if (!tolerant
-                  || NONTOLERANT_ERROR_CODES.contains(
-                      SolrException.ErrorCode.getErrorCode(srsp.getRspCode()))) {
+              Throwable nonTolerableException =
+                  findNonTolerableException(tolerant, responsesWithException);
+              if (nonTolerableException != null) {
                 shardHandler1.cancelAll();
-                if (srsp.getException() instanceof SolrException) {
-                  throw (SolrException) srsp.getException();
+                if (nonTolerableException instanceof SolrException) {
+                  throw (SolrException) nonTolerableException;
                 } else {
                   throw new SolrException(
-                      SolrException.ErrorCode.SERVER_ERROR, srsp.getException());
+                      SolrException.ErrorCode.SERVER_ERROR, nonTolerableException);
                 }
               } else {
                 rsp.getResponseHeader()
@@ -643,6 +649,37 @@ public class SearchHandler extends RequestHandlerBase
           pos != -1 ? rb.shortCircuitedURL.substring(pos + 3) : rb.shortCircuitedURL;
       shardInfo.add(shardInfoName, nl);
       rsp.getValues().add(ShardParams.SHARDS_INFO, shardInfo);
+    }
+  }
+
+  static List<ShardResponse> findResponsesWithException(ShardResponse response) {
+    // a single response instance can contain multiple responses
+    Set<ShardResponse> allResponses = new LinkedHashSet<>();
+    if (response.getShardRequest() != null) {
+      allResponses.addAll(response.getShardRequest().responses);
+    }
+
+    // the original response might or might not be a part of response.getShardRequest().responses...
+    allResponses.add(response);
+    return allResponses.stream().filter(r -> r.getException() != null).collect(Collectors.toList());
+  }
+
+  static Throwable findNonTolerableException(boolean tolerant, List<ShardResponse> responses) {
+    if (tolerant) { // if tolerant, see if there are any responses with non-tolerant error codes
+      Optional<ShardResponse> nonTolerableResponse =
+          responses.stream()
+              .filter(
+                  r ->
+                      NONTOLERANT_ERROR_CODES.contains(
+                          SolrException.ErrorCode.getErrorCode(r.getRspCode())))
+              .findFirst();
+      return nonTolerableResponse.map(ShardResponse::getException).orElse(null);
+    } else { // cannot tolerate any exception
+      return responses.stream()
+          .filter(r -> r.getException() != null)
+          .findFirst()
+          .map(ShardResponse::getException)
+          .orElse(null);
     }
   }
 
