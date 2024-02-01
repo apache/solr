@@ -87,6 +87,9 @@ Improvements
 * SOLR-17119: When registering or updating a ConfigurablePlugin through the `/cluster/plugin` API,
   config validation exceptions are now propagated to the callers. (Yohann Callea)
 
+* SOLR-16699: Add Collection creation time to CLUSTERSTATUS and COLSTATUS API responses
+  (Julien Pilourdault, Paul McArthur, David Smiley)
+
 Optimizations
 ---------------------
 (No changes)
@@ -102,6 +105,9 @@ Dependency Upgrades
 Other Changes
 ---------------------
 * SOLR-17126: Cut over System.getProperty to EnvUtils.getProperty (janhoy)
+
+* SOLR-17066: GenericSolrRequest now has a `setRequiresCollection` setter that allows it to specify whether
+  it should make use of the client-level default collection/core. (Jason Gerlowski)
 
 ==================  9.5.0 ==================
 New Features
@@ -211,6 +217,8 @@ Dependency Upgrades
 * SOLR-17026: Upgrade to Gradle 8.4 (Kevin Risden)
 
 * SOLR-17089: Upgrade Jersey to 3.1.5 (Jason Gerlowski)
+
+* SOLR-17097: Upgrade Lucene to 9.9.2 (Nazerke Seidan, Christine Poerschke, Pierre Salagnac)
 
 Other Changes
 ---------------------
