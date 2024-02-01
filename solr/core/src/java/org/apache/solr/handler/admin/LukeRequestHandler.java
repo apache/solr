@@ -318,7 +318,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
       Document doc, int docId, IndexReader reader, IndexSchema schema) throws IOException {
     final CharsRefBuilder spare = new CharsRefBuilder();
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<>();
-    TermVectors termVectors = reader.termVectors();
+    TermVectors termVectors = null;
     for (Object o : doc.getFields()) {
       Field field = (Field) o;
       SimpleOrderedMap<Object> f = new SimpleOrderedMap<>();
@@ -356,6 +356,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
       // If we have a term vector, return that
       if (field.fieldType().storeTermVectors()) {
         try {
+          if (termVectors == null) termVectors = reader.termVectors();
           Terms v = termVectors.get(docId, field.name());
           if (v != null) {
             SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<>();
