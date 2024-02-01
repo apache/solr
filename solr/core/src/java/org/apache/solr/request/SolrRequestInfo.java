@@ -31,6 +31,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
@@ -43,6 +44,7 @@ public class SolrRequestInfo {
 
   private static final ThreadLocal<Deque<SolrRequestInfo>> threadLocal =
       ThreadLocal.withInitial(ArrayDeque::new);
+  private static final Object LIMITS_KEY = new Object();
 
   private int refCount = 1; // prevent closing when still used
 
@@ -208,6 +210,10 @@ public class SolrRequestInfo {
       }
       closeHooks.add(hook);
     }
+  }
+
+  public QueryLimits getLimits() {
+    return (QueryLimits) req.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(req));
   }
 
   public SolrDispatchFilter.Action getAction() {
