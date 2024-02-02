@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.URLUtil;
 
 /**
  * LBHttpSolrClient or "LoadBalanced HttpSolrClient" is a load balancing wrapper around {@link
@@ -138,13 +139,22 @@ public class LBHttpSolrClient extends LBSolrClient {
         client = httpSolrClientBuilder.build();
       }
     } else {
-      final HttpSolrClient.Builder clientBuilder =
-          new HttpSolrClient.Builder(server)
-              .withHttpClient(httpClient)
-              .withResponseParser(parser)
-              .withDefaultCollection(defaultCollection)
-              .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
-              .withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
+      final var clientBuilder =
+          (URLUtil.isBaseUrl(server))
+              ? new HttpSolrClient.Builder(server)
+              : new HttpSolrClient.Builder(URLUtil.extractBaseUrl(server))
+                  .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(server));
+      clientBuilder
+          .withHttpClient(httpClient)
+          .withResponseParser(parser)
+          .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+          .withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
+
+      // Note that this may override the value extracted from the base URL..should we log a warning
+      // here?
+      if (defaultCollection != null) {
+        clientBuilder.withDefaultCollection(defaultCollection);
+      }
       if (requestWriter != null) {
         clientBuilder.withRequestWriter(requestWriter);
       }
