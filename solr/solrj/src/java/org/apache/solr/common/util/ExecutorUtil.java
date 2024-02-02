@@ -161,11 +161,12 @@ public class ExecutorUtil {
 
   /**
    * Similar to {@link #newMDCAwareSingleThreadExecutor(ThreadFactory)}, but the thread will not be
-   * kept active after 60 seconds if no task is submitted to the executor.
+   * kept active after the specified time if no task is submitted to the executor.
    */
-  public static ExecutorService newMDCAwareSingleLazyThreadExecutor(ThreadFactory threadFactory) {
+  public static ExecutorService newMDCAwareSingleLazyThreadExecutor(
+      ThreadFactory threadFactory, long keepAliveTime, TimeUnit unit) {
     return new MDCAwareThreadPoolExecutor(
-        0, 1, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(), threadFactory);
+        0, 1, keepAliveTime, unit, new LinkedBlockingQueue<>(), threadFactory);
   }
 
   /** Create a cached thread pool using a named thread factory */

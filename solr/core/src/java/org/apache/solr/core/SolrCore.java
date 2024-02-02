@@ -2059,7 +2059,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   // Single threaded pool, with a time-to-keep of 60 seconds
   final ExecutorService searcherExecutor =
       ExecutorUtil.newMDCAwareSingleLazyThreadExecutor(
-          new SolrNamedThreadFactory("searcherExecutor"));
+          new SolrNamedThreadFactory("searcherExecutor"), 60L, TimeUnit.SECONDS);
   private int onDeckSearchers; // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not
   // vice-versa.
