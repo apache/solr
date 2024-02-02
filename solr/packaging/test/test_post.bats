@@ -39,7 +39,7 @@ teardown() {
 @test "Check help command" {
 
   run solr post
-  assert_output --partial 'Failed to parse command-line arguments due to: Missing required option: url'
+  assert_output --partial 'Must specify either -url or -c parameter'
   
   run solr post -h
   assert_output --partial 'usage: post'
@@ -58,6 +58,17 @@ teardown() {
   assert_output --partial "Created collection 'monitors'"
   
   run solr post -type application/xml -url http://localhost:${SOLR_PORT}/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
+
+  assert_output --partial '1 files indexed.'
+  refute_output --partial 'ERROR'
+}
+
+@test "basic post with c parameter instead of url parameter" {
+  
+  run solr create -c monitors_c_param -d _default
+  assert_output --partial "Created collection 'monitors_c_param'"
+  
+  run solr post -type application/xml -c monitors_c_param ${SOLR_TIP}/example/exampledocs/monitor.xml
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
