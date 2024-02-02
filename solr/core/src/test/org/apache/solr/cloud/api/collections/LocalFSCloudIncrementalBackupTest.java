@@ -63,6 +63,7 @@ public class LocalFSCloudIncrementalBackupTest extends AbstractIncrementalBackup
           + "      <str name=\"delegateRepoName\">localfs</str>\n"
           + "    </repository>\n"
           + "    <repository name=\"localfs\" class=\"org.apache.solr.core.backup.repository.LocalFileSystemRepository\"> \n"
+          + "      <str name=\"location\">LOCATION_TEMPLATE_VAL</str>\n"
           + "    </repository>\n"
           + "  </backup>\n"
           + "  \n"
@@ -82,7 +83,10 @@ public class LocalFSCloudIncrementalBackupTest extends AbstractIncrementalBackup
     configureCluster(NUM_SHARDS) // nodes
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .withSolrXml(SOLR_XML.replace("ALLOWPATHS_TEMPLATE_VAL", backupLocation))
+        .withSolrXml(
+            SOLR_XML
+                .replace("ALLOWPATHS_TEMPLATE_VAL", backupLocation)
+                .replace("LOCATION_TEMPLATE_VAL", backupLocation))
         .configure();
   }
 

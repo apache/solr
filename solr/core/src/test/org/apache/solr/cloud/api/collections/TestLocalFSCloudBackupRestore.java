@@ -46,6 +46,13 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
 
   @BeforeClass
   public static void setupClass() throws Exception {
+    boolean whitespacesInPath = random().nextBoolean();
+    if (whitespacesInPath) {
+      backupLocation = createTempDir("my backup").toAbsolutePath().toString();
+    } else {
+      backupLocation = createTempDir("mybackup").toAbsolutePath().toString();
+    }
+
     String solrXml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML;
     String poisoned =
         "    <repository  name=\""
@@ -56,6 +63,9 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
     String local =
         "    <repository  name=\"local\" "
             + "class=\"org.apache.solr.core.backup.repository.LocalFileSystemRepository\"> \n"
+            + "      <str name=\"location\">"
+            + backupLocation
+            + "</str> \n"
             + "    </repository>\n";
     solrXml =
         solrXml.replace(
@@ -79,13 +89,6 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
             ZkConfigSetService.CONFIGS_ZKNODE + "/" + "confFaulty" + "/" + "solrconfig.xml",
             -1,
             true);
-
-    boolean whitespacesInPath = random().nextBoolean();
-    if (whitespacesInPath) {
-      backupLocation = createTempDir("my backup").toAbsolutePath().toString();
-    } else {
-      backupLocation = createTempDir("mybackup").toAbsolutePath().toString();
-    }
   }
 
   @Override
