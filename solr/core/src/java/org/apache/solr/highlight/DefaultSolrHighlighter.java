@@ -488,6 +488,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
           private TermVectors termVectors;
 
+          @Override
           public TermVectors get() throws IOException {
             if (this.termVectors == null) {
               this.termVectors = new ReusingTermVectors(reader.termVectors()); // SOLR-5855
