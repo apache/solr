@@ -89,7 +89,7 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+* SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
 
 Bug Fixes
 ---------------------
