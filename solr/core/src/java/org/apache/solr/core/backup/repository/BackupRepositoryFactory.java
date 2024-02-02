@@ -17,7 +17,7 @@
 
 package org.apache.solr.core.backup.repository;
 
-import static org.apache.solr.core.backup.repository.FilterBackupRepository.PARAM_DELEGATE;
+import static org.apache.solr.core.backup.repository.FilterBackupRepository.PARAM_DELEGATE_REPOSITORY_NAME;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
@@ -78,11 +78,14 @@ public class BackupRepositoryFactory {
 
     if (backupRepository instanceof FilterBackupRepository) {
       FilterBackupRepository filter = (FilterBackupRepository) backupRepository;
-      String delegateName = (String) repo.initArgs.get(PARAM_DELEGATE);
+      String delegateName = (String) repo.initArgs.get(PARAM_DELEGATE_REPOSITORY_NAME);
       if (delegateName == null) {
         throw new SolrException(
             ErrorCode.SERVER_ERROR,
-            "Missing '" + PARAM_DELEGATE + "' parameter for backup repository with name " + name);
+            "Missing '"
+                + PARAM_DELEGATE_REPOSITORY_NAME
+                + "' parameter for backup repository with name "
+                + name);
       }
       PluginInfo delegatePlugin = getBackupRepoPlugin(delegateName);
       BackupRepository delegate =

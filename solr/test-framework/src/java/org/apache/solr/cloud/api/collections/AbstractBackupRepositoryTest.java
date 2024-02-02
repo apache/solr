@@ -20,7 +20,7 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.lucene.codecs.CodecUtil.FOOTER_MAGIC;
 import static org.apache.lucene.codecs.CodecUtil.writeBEInt;
 import static org.apache.lucene.codecs.CodecUtil.writeBELong;
-import static org.apache.solr.core.backup.repository.FilterBackupRepository.PARAM_DELEGATE;
+import static org.apache.solr.core.backup.repository.FilterBackupRepository.PARAM_DELEGATE_REPOSITORY_NAME;
 
 import java.io.File;
 import java.io.IOException;
@@ -379,7 +379,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
     attrs.put(FieldType.CLASS_NAME, NoChecksumFilterBackupRepository.class.getName());
     attrs.put("default", Boolean.toString(isDefault));
     NamedList<Object> args = new NamedList<>();
-    args.add(PARAM_DELEGATE, delegateName);
+    args.add(PARAM_DELEGATE_REPOSITORY_NAME, delegateName);
     return new PluginInfo("repository", attrs, args, null);
   }
 
