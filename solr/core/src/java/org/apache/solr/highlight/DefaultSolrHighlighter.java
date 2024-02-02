@@ -33,10 +33,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
@@ -484,15 +482,16 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     // Lazy container for fvh and fieldQuery
     FvhContainer fvhContainer = new FvhContainer(null, null);
 
-    IndexReader reader =
-        new TermVectorReusingLeafReader(req.getSearcher().getSlowAtomicReader()); // SOLR-5855
+    IndexReader reader = req.getSearcher().getSlowAtomicReader();
     IOSupplier<TermVectors> tvSupplier =
         new IOSupplier<TermVectors>() {
 
           private TermVectors termVectors;
 
           public TermVectors get() throws IOException {
-            if (this.termVectors == null) this.termVectors = reader.termVectors();
+            if (this.termVectors == null) {
+              this.termVectors = new ReusingTermVectors(reader.termVectors()); // SOLR-5855
+            }
             return this.termVectors;
           }
         };
@@ -1103,36 +1102,26 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
 
   /**
-   * Wraps a DirectoryReader that caches the {@link LeafReader#getTermVectors(int)} so that if the
-   * next call has the same ID, then it is reused.
+   * Wraps a TermVectors and caches the {@link TermVectors#get(int)} so that if the next call has
+   * the same ID, then it is reused.
    */
-  static class TermVectorReusingLeafReader extends FilterLeafReader {
+  static class ReusingTermVectors extends TermVectors {
 
+    private final TermVectors in;
     private int lastDocId = -1;
     private Fields tvFields;
 
-    public TermVectorReusingLeafReader(LeafReader in) {
-      super(in);
+    public ReusingTermVectors(TermVectors in) {
+      this.in = in;
     }
 
     @Override
-    @Deprecated
-    public Fields getTermVectors(int docID) throws IOException {
+    public Fields get(int docID) throws IOException {
       if (docID != lastDocId) {
         lastDocId = docID;
-        tvFields = in.getTermVectors(docID);
+        tvFields = in.get(docID);
       }
       return tvFields;
-    }
-
-    @Override
-    public CacheHelper getCoreCacheHelper() {
-      return null;
-    }
-
-    @Override
-    public CacheHelper getReaderCacheHelper() {
-      return null;
     }
   }
 }
