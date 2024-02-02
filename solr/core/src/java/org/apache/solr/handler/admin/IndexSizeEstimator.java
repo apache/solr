@@ -386,17 +386,17 @@ public class IndexSizeEstimator {
     for (LeafReaderContext leafReaderContext : reader.leaves()) {
       LeafReader leafReader = leafReaderContext.reader();
       Bits liveDocs = leafReader.getLiveDocs();
-      TermVectors termVectors = leafReader.termVectors();
+      TermVectors leafTermVectors = leafReader.termVectors();
       for (int docId = 0; docId < leafReader.maxDoc(); docId += samplingStep) {
         if (liveDocs != null && !liveDocs.get(docId)) {
           continue;
         }
-        Fields fields = termVectors.get(docId);
-        if (fields == null) {
+        Fields termVectors = leafTermVectors.get(docId);
+        if (termVectors == null) {
           continue;
         }
-        for (String field : fields) {
-          Terms terms = fields.terms(field);
+        for (String field : termVectors) {
+          Terms terms = termVectors.terms(field);
           if (terms == null) {
             continue;
           }
