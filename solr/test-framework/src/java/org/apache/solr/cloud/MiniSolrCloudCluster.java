@@ -163,6 +163,7 @@ public class MiniSolrCloudCluster {
   private CloudSolrClient solrClient;
   private final JettyConfig jettyConfig;
   private final boolean trackJettyMetrics;
+  private final boolean clientParallelUpdates;
 
   private final AtomicInteger nodeIds = new AtomicInteger();
   private final Map<String, CloudSolrClient> solrClientByCollection = new ConcurrentHashMap<>();
@@ -245,7 +246,8 @@ public class MiniSolrCloudCluster {
         zkTestServer,
         securityJson,
         false,
-        formatZkServer);
+        formatZkServer,
+        true);
   }
 
   /**
@@ -260,6 +262,7 @@ public class MiniSolrCloudCluster {
    * @param zkTestServer ZkTestServer to use. If null, one will be created
    * @param securityJson A string representation of security.json file (optional).
    * @param trackJettyMetrics supply jetties with metrics registry
+   * @param clientParallelUpdates does the client have parallel updates enabled?
    * @throws Exception if there was an error starting the cluster
    */
   MiniSolrCloudCluster(
@@ -270,7 +273,8 @@ public class MiniSolrCloudCluster {
       ZkTestServer zkTestServer,
       Optional<String> securityJson,
       boolean trackJettyMetrics,
-      boolean formatZkServer)
+      boolean formatZkServer,
+      boolean clientParallelUpdates)
       throws Exception {
 
     Objects.requireNonNull(securityJson);
@@ -335,7 +339,7 @@ public class MiniSolrCloudCluster {
       }
       throw startupError;
     }
-
+    this.clientParallelUpdates = clientParallelUpdates;
     solrClient = buildSolrClient();
 
     if (numServers > 0) {
@@ -742,6 +746,7 @@ public class MiniSolrCloudCluster {
             Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
         .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+        .withParallelUpdates(clientParallelUpdates)
         .build(); // we choose 90 because we run in some harsh envs
   }
 
@@ -1032,6 +1037,8 @@ public class MiniSolrCloudCluster {
     private boolean formatZkServer = true;
     private boolean disableTraceIdGeneration = false;
 
+    private boolean clientParallelUpdates = true;
+
     /**
      * Create a builder
      *
@@ -1192,6 +1199,19 @@ public class MiniSolrCloudCluster {
     }
 
     /**
+     * Use parallel updates in the client? Recommend to disable when testing authorization so as not
+     * to confuse the PKI Authorization Plugin to think our test updates are really inter-node
+     * requests.
+     *
+     * @param clientParallelUpdates defaults to true
+     * @return this
+     */
+    public Builder withClientParallelUpdates(boolean clientParallelUpdates) {
+      this.clientParallelUpdates = clientParallelUpdates;
+      return this;
+    }
+
+    /**
      * Configure and run the {@link MiniSolrCloudCluster}
      *
      * @throws Exception if an error occurs on startup
@@ -1240,7 +1260,8 @@ public class MiniSolrCloudCluster {
               null,
               securityJson,
               trackJettyMetrics,
-              formatZkServer);
+              formatZkServer,
+              clientParallelUpdates);
       for (Config config : configs) {
         cluster.uploadConfigSet(config.path, config.name);
       }
