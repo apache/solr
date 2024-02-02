@@ -102,6 +102,10 @@ Improvements
 * SOLR-16397: The v2 endpoint to request the status of asynchronous CoreAdmin commands has been updated to be more REST-ful.
   Now available at `GET /api/node/commands/someRequestId` (Sanjay Dutt via Jason Gerlowski)
 
+* SOLR-17068: bin/solr post CLI use of options is now aligned closely with bin/post CLI tool, and is consistently
+  referenced throughout the Ref Guide and source code, and is used through out our tests.  The bin/post tool 
+  remains and has been tested to work. (Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies

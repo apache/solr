@@ -520,7 +520,33 @@ public class SolrCLI implements CLIO {
           OPTION_VERBOSE);
 
   /**
-   * Get the base URL of a live Solr instance from either the solrUrl command-line option from
+   * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
+   * is used, and warns those users. In the future we'll have urls ending with /api as well.
+   *
+   * @param solrUrl The user supplied url to Solr.
+   * @return the solrUrl in the format that Solr expects to see internally.
+   */
+  public static String normalizeSolrUrl(String solrUrl) {
+    if (solrUrl != null) {
+      if (solrUrl.contains("/solr")) { //
+        String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
+        CLIO.out(
+            "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
+                + solrUrl
+                + "] to ["
+                + newSolrUrl
+                + "].");
+        solrUrl = newSolrUrl;
+      }
+      if (solrUrl.endsWith("/")) {
+        solrUrl = solrUrl.substring(0, solrUrl.length() - 1);
+      }
+    }
+    return solrUrl;
+  }
+
+  /**
+   * Get the base URL of a live Solr instance from either the solrUrl command-line option or from
    * ZooKeeper.
    */
   public static String resolveSolrUrl(CommandLine cli) throws Exception {
