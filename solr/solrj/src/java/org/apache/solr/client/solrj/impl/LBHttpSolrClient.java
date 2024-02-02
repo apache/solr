@@ -126,6 +126,9 @@ public class LBHttpSolrClient extends LBSolrClient {
         httpSolrClientBuilder.withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
         httpSolrClientBuilder.withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
 
+        if (defaultCollection != null) {
+          httpSolrClientBuilder.withDefaultCollection(defaultCollection);
+        }
         if (requestWriter != null) {
           httpSolrClientBuilder.withRequestWriter(requestWriter);
         }
@@ -145,6 +148,9 @@ public class LBHttpSolrClient extends LBSolrClient {
           .withResponseParser(parser)
           .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
           .withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
+      if (defaultCollection != null) {
+        clientBuilder.withDefaultCollection(defaultCollection);
+      }
       if (requestWriter != null) {
         clientBuilder.withRequestWriter(requestWriter);
       }

@@ -227,7 +227,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     }
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(getCoreUrl()))
+        (new ConcurrentUpdateSolrClient.Builder(getBaseUrl()))
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .build()) {
@@ -283,7 +284,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     }
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(getCoreUrl()))
+        (new ConcurrentUpdateSolrClient.Builder(getBaseUrl()))
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .build()) {
