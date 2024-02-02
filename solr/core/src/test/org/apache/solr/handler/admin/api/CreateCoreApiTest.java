@@ -49,6 +49,7 @@ public class CreateCoreApiTest extends SolrTestCaseJ4 {
     return this.getClass().getName();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
