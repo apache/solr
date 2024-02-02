@@ -203,7 +203,7 @@ def checkAllJARs(topDir, gitRevision, version):
 
     for file in files:
       if file.lower().endswith('.jar'):
-        if ((normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.activation-'))
+        if ((normRoot.endswith('/modules/extraction/lib') and (file.startswith('jakarta.activation-') or file.startswith('jakarta.xml')))
             or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))
             or (normRoot.endswith('/server/solr-webapp/webapp/WEB-INF/lib') and file.startswith('jakarta.'))
             or (normRoot.endswith('/server/lib/ext') and file.startswith('jetty-servlet-api-'))):
