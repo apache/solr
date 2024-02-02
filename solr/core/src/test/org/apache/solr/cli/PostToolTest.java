@@ -29,19 +29,17 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class PostToolTest extends SolrCloudTestCase {
 
-
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
-            .addConfig(
-                    "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-            .configure();
+        .addConfig(
+            "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .configure();
   }
 
   @Test
@@ -72,7 +70,7 @@ public class PostToolTest extends SolrCloudTestCase {
     // Provide the port as an environment variable for the PostTool to look up.
     EnvUtils.setEnv("SOLR_PORT", cluster.getJettySolrRunner(0).getLocalPort() + "");
 
-   CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0)
+    CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0)
         .processAndWait(cluster.getSolrClient(), 10);
 
     File jsonDoc = File.createTempFile("temp", "json");
@@ -80,9 +78,7 @@ public class PostToolTest extends SolrCloudTestCase {
     FileWriter fw = new FileWriter(jsonDoc, StandardCharsets.UTF_8);
     Utils.writeJson(Utils.toJSONString(Map.of("id", "1", "title", "mytitle")), fw, true);
 
-    String[] args = {
-      "post", "-c", collection, jsonDoc.getAbsolutePath()
-    };
+    String[] args = {"post", "-c", collection, jsonDoc.getAbsolutePath()};
     assertEquals(0, runTool(args));
   }
 
