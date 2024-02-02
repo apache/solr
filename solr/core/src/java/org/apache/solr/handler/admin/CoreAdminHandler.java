@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -39,7 +38,6 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -50,13 +48,12 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.CoreSnapshot;
-import org.apache.solr.handler.admin.api.CreateCoreAPI;
+import org.apache.solr.handler.admin.api.CreateCore;
 import org.apache.solr.handler.admin.api.CreateCoreBackup;
 import org.apache.solr.handler.admin.api.GetNodeCommandStatus;
 import org.apache.solr.handler.admin.api.InstallCoreData;
@@ -287,32 +284,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   protected static Map<String, String> buildCoreParams(SolrParams params) {
-
-    Map<String, String> coreParams = new HashMap<>();
-
-    // standard core create parameters
-    for (Map.Entry<String, String> entry : paramToProp.entrySet()) {
-      String value = params.get(entry.getKey(), null);
-      if (StrUtils.isNotNullOrEmpty(value)) {
-        coreParams.put(entry.getValue(), value);
-      }
-    }
-
-    // extra properties
-    Iterator<String> paramsIt = params.getParameterNamesIterator();
-    while (paramsIt.hasNext()) {
-      String param = paramsIt.next();
-      if (param.startsWith(CoreAdminParams.PROPERTY_PREFIX)) {
-        String propName = param.substring(CoreAdminParams.PROPERTY_PREFIX.length());
-        String propValue = params.get(param);
-        coreParams.put(propName, propValue);
-      }
-      if (param.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
-        coreParams.put(param, params.get(param));
-      }
-    }
-
-    return coreParams;
+    return CreateCore.buildCoreParams(params.toMap(new HashMap<String, Object>()));
   }
 
   protected static String normalizePath(String path) {
@@ -380,7 +352,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     final List<Api> apis = new ArrayList<>();
     apis.addAll(AnnotatedApi.getApis(new AllCoresStatusAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SingleCoreStatusAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new CreateCoreAPI(this)));
+    // apis.addAll(AnnotatedApi.getApis(new CreateCoreAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SplitCoreAPI(this)));
@@ -406,7 +378,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         SwapCores.class,
         RenameCore.class,
         MergeIndexes.class,
-        GetNodeCommandStatus.class);
+        GetNodeCommandStatus.class,
+        CreateCore.class);
   }
 
   public interface CoreAdminOp {

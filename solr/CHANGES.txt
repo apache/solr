@@ -90,6 +90,9 @@ Improvements
 * SOLR-16699: Add Collection creation time to CLUSTERSTATUS and COLSTATUS API responses
   (Julien Pilourdault, Paul McArthur, David Smiley)
 
+* SOLR-16397: The v2 endpoint for creating core is updated to be more REST-ful.
+  Now available at `POST /api/cores/coreName/create` (Sanjay Dutt via Jason Gerlowski)
+
 Optimizations
 ---------------------
 (No changes)

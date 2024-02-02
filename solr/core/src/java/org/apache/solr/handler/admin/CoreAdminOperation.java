@@ -44,14 +44,12 @@ import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA_TYPE;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
-import static org.apache.solr.handler.admin.CoreAdminHandler.buildCoreParams;
 import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 import org.apache.solr.client.api.endpoint.SwapCoresApi;
 import org.apache.solr.client.api.model.ListCoreSnapshotsResponse;
 import org.apache.solr.client.api.model.ReloadCoreRequestBody;
@@ -65,7 +63,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.PropertiesUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
@@ -73,6 +70,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
 import org.apache.solr.handler.admin.api.CoreSnapshot;
+import org.apache.solr.handler.admin.api.CreateCore;
 import org.apache.solr.handler.admin.api.GetNodeCommandStatus;
 import org.apache.solr.handler.admin.api.ReloadCore;
 import org.apache.solr.handler.admin.api.RenameCore;
@@ -93,31 +91,15 @@ public enum CoreAdminOperation implements CoreAdminOp {
       CREATE,
       it -> {
         assert TestInjection.injectRandomDelayInCoreCreation();
-
         SolrParams params = it.req.getParams();
         log().info("core create command {}", params);
         String coreName = params.required().get(CoreAdminParams.NAME);
-        Map<String, String> coreParams = buildCoreParams(params);
-        CoreContainer coreContainer = it.handler.coreContainer;
-        Path instancePath;
-
-        // TODO: Should we nuke setting odd instance paths?  They break core discovery, generally
-        String instanceDir = it.req.getParams().get(CoreAdminParams.INSTANCE_DIR);
-        if (instanceDir == null) instanceDir = it.req.getParams().get("property.instanceDir");
-        if (instanceDir != null) {
-          instanceDir =
-              PropertiesUtil.substituteProperty(
-                  instanceDir, coreContainer.getContainerProperties());
-          instancePath = coreContainer.getCoreRootDirectory().resolve(instanceDir).normalize();
-        } else {
-          instancePath = coreContainer.getCoreRootDirectory().resolve(coreName);
-        }
-
-        boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
-
-        coreContainer.create(coreName, instancePath, coreParams, newCollection);
-
-        it.rsp.add("core", coreName);
+        final CreateCore createCore =
+            new CreateCore(
+                it.handler.coreContainer, it.handler.coreAdminAsyncTracker, it.req, it.rsp);
+        SolrJerseyResponse response =
+            createCore.createCore(params.toMap(new HashMap<String, Object>()), coreName);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
   UNLOAD_OP(
       UNLOAD,
