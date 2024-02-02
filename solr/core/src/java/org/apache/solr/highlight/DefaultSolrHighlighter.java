@@ -62,6 +62,7 @@ import org.apache.lucene.search.vectorhighlight.FieldQuery;
 import org.apache.lucene.search.vectorhighlight.FragListBuilder;
 import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
 import org.apache.lucene.util.AttributeSource.State;
+import org.apache.lucene.util.IOSupplier;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
@@ -432,21 +433,6 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     return solrBs.getBoundaryScanner(fieldName, params);
   }
 
-  private static final class TermVectorsSupplier {
-
-    private final IndexReader reader;
-    private TermVectors termVectors;
-
-    TermVectorsSupplier(IndexReader reader) {
-      this.reader = reader;
-    }
-
-    public TermVectors get() throws IOException {
-      if (this.termVectors == null) this.termVectors = this.reader.termVectors();
-      return this.termVectors;
-    }
-  }
-
   /**
    * Generates a list of Highlighted query fragments for each item in a list of documents, or
    * returns null if highlighting is disabled.
@@ -500,7 +486,16 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     IndexReader reader =
         new TermVectorReusingLeafReader(req.getSearcher().getSlowAtomicReader()); // SOLR-5855
-    TermVectorsSupplier tvSupplier = new TermVectorsSupplier(reader);
+    IOSupplier<TermVectors> tvSupplier =
+        new IOSupplier<TermVectors>() {
+
+          private TermVectors termVectors;
+
+          public TermVectors get() throws IOException {
+            if (this.termVectors == null) this.termVectors = reader.termVectors();
+            return this.termVectors;
+          }
+        };
 
     // Highlight each document
     NamedList<Object> fragments = new SimpleOrderedMap<>();
@@ -540,7 +535,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       FvhContainer fvhContainer,
       Query query,
       IndexReader reader,
-      TermVectorsSupplier tvSupplier,
+      IOSupplier<TermVectors> tvSupplier,
       SolrQueryRequest req,
       SolrParams params)
       throws IOException {
@@ -676,7 +671,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       int docId,
       SchemaField schemaField,
       Query query,
-      TermVectorsSupplier tvSupplier,
+      IOSupplier<TermVectors> tvSupplier,
       SolrQueryRequest req)
       throws IOException {
     final SolrParams params = req.getParams();
@@ -878,7 +873,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       FvhContainer fvhContainer,
       Query query,
       IndexReader reader,
-      TermVectorsSupplier tvSupplier,
+      IOSupplier<TermVectors> tvSupplier,
       SolrQueryRequest req)
       throws IOException {
     IndexSchema schema = req.getSearcher().getSchema();
