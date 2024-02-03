@@ -676,7 +676,7 @@ public class ZkStateReader implements SolrCloseable {
       // Don't mess with watchedCollections, they should self-manage.
 
       // First, drop any children that disappeared.
-      this.lazyCollectionStates.keySet().retainAll(children);
+      this.lazyCollectionStates.keySet().retainAll(new HashSet<>(children)); // Set avoids O(N^2)
       for (String coll : children) {
         // We will create an eager collection for any interesting collections, so don't add to lazy.
         if (!collectionWatches.watchedCollections().contains(coll)) {
