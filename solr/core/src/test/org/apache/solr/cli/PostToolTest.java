@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
@@ -68,7 +69,7 @@ public class PostToolTest extends SolrCloudTestCase {
                     singletonMap(USER, getSaltedHashedValue(PASS)))));
 
     configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf1", configset("cloud-minimal"))
         .withSecurityJson(SECURITY_JSON)
         .configure();
   }
@@ -80,9 +81,35 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @Test
   public void testBasicRun() throws Exception {
-    final String collection = "aliasedCollection";
+    final String collection = "testBasicRun";
 
-    withBasicAuth(CollectionAdminRequest.createCollection(collection, "config", 1, 1, 0, 0))
+    withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
+        .processAndWait(cluster.getSolrClient(), 10);
+
+    File jsonDoc = File.createTempFile("temp", ".json");
+
+    FileWriter fw = new FileWriter(jsonDoc, StandardCharsets.UTF_8);
+    Utils.writeJson(Utils.toJSONString(Map.of("id", "1", "title", "mytitle")), fw, true);
+
+    String[] args = {
+      "post",
+      "-url",
+      cluster.getJettySolrRunner(0).getBaseUrl() + "/" + collection + "/update",
+      "-credentials",
+      USER + ":" + PASS,
+      jsonDoc.getAbsolutePath()
+    };
+    assertEquals(0, runTool(args));
+  }
+
+  @Test
+  public void testRunWithCollectionParam() throws Exception {
+    final String collection = "testRunWithCollectionParam";
+
+    // Provide the port as an environment variable for the PostTool to look up.
+    EnvUtils.setEnv("SOLR_PORT", cluster.getJettySolrRunner(0).getLocalPort() + "");
+
+    withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
         .processAndWait(cluster.getSolrClient(), 10);
 
     File jsonDoc = File.createTempFile("temp", "json");
@@ -91,12 +118,7 @@ public class PostToolTest extends SolrCloudTestCase {
     Utils.writeJson(Utils.toJSONString(Map.of("id", "1", "title", "mytitle")), fw, true);
 
     String[] args = {
-      "post",
-      "-url",
-      cluster.getJettySolrRunner(0).getBaseUrl() + "/" + collection,
-      "-credentials",
-      USER + ":" + PASS,
-      jsonDoc.getAbsolutePath()
+      "post", "-c", collection, "-credentials", USER + ":" + PASS, jsonDoc.getAbsolutePath()
     };
     assertEquals(0, runTool(args));
   }

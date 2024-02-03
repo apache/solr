@@ -544,6 +544,27 @@ public class SolrZkClient implements Closeable {
   }
 
   /**
+   * Returns path of created node
+   *
+   * @param stat Output argument that captures created node details
+   */
+  public String create(
+      final String path,
+      final byte[] data,
+      final CreateMode createMode,
+      boolean retryOnConnLoss,
+      Stat stat)
+      throws KeeperException, InterruptedException {
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(
+          () -> keeper.create(path, data, zkACLProvider.getACLsToAdd(path), createMode, stat));
+    } else {
+      List<ACL> acls = zkACLProvider.getACLsToAdd(path);
+      return keeper.create(path, data, acls, createMode, stat);
+    }
+  }
+
+  /**
    * Creates the path in ZooKeeper, creating each node as necessary.
    *
    * <p>e.g. If <code>path=/solr/group/node</code> and none of the nodes, solr, group, node exist,

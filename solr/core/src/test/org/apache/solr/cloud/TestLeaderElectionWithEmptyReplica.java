@@ -118,7 +118,8 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     int count = 0;
     for (Replica replica : shard.getReplicas()) {
       SolrClient client =
-          new Builder(replica.getCoreUrl())
+          new Builder(replica.getBaseUrl())
+              .withDefaultCollection(replica.getCoreName())
               .withHttpClient(((CloudLegacySolrClient) cloudClient).getHttpClient())
               .build();
       QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));

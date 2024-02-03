@@ -113,7 +113,10 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     // Check that we can continue indexing after this
     updateResponse = new UpdateRequest().add("id", "2").commit(cluster.getSolrClient(), collection);
     assertEquals(0, updateResponse.getStatus());
-    try (SolrClient followerClient = new HttpSolrClient.Builder(oldLeader.getCoreUrl()).build()) {
+    try (SolrClient followerClient =
+        new HttpSolrClient.Builder(oldLeader.getBaseUrl())
+            .withDefaultCollection(oldLeader.getCoreName())
+            .build()) {
       QueryResponse queryResponse = new QueryRequest(new SolrQuery("*:*")).process(followerClient);
       assertEquals(
           queryResponse.getResults().toString(), 2, queryResponse.getResults().getNumFound());
@@ -128,9 +131,9 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       Replica oldLeader = dc.getLeader("shard1");
       log.info("Will crash leader : {}", oldLeader);
 
-      try (SolrClient solrClient =
-          new HttpSolrClient.Builder(dc.getLeader("shard1").getCoreUrl()).build()) {
-        new UpdateRequest().add("id", "99").commit(solrClient, null);
+      final Replica leaderReplica = dc.getLeader("shard1");
+      try (SolrClient solrClient = new HttpSolrClient.Builder(leaderReplica.getBaseUrl()).build()) {
+        new UpdateRequest().add("id", "99").commit(solrClient, leaderReplica.getCoreName());
         fail("Should have injected tragedy");
       } catch (RemoteSolrException e) {
         // solrClient.add would throw RemoteSolrException with code 500
