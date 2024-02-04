@@ -16,14 +16,10 @@
  */
 package org.apache.solr.common.util;
 
-import java.lang.invoke.MethodHandles;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class URLUtil {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final Pattern URL_PREFIX = Pattern.compile("^([a-z]*?://).*");
 
@@ -50,11 +46,6 @@ public class URLUtil {
     return null;
   }
 
-  public static boolean isBaseUrl(String url) {
-    final var normalizedUrl = removeTrailingSlashIfPresent(url);
-    return normalizedUrl.endsWith("/solr");
-  }
-
   /**
    * @param coreUrl a URL pointing to a specific "core" or collection (i.e. that adheres loosely to
    *     the form "scheme://host:port/solr/coreName")
@@ -64,12 +55,6 @@ public class URLUtil {
     coreUrl = removeTrailingSlashIfPresent(coreUrl);
 
     // Remove the core name and return
-    final var indexOfLastSlash = coreUrl.lastIndexOf("/");
-    if (indexOfLastSlash == -1) {
-      log.warn(
-          "Solr core URL [{}] did not contain expected path segments when parsing, ignoring...");
-      return coreUrl;
-    }
     return coreUrl.substring(0, coreUrl.lastIndexOf("/"));
   }
 

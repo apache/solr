@@ -60,7 +60,7 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
     leaderJetty = ReplicationTestHelper.createAndStartJetty(leader);
     leaderClient =
         ReplicationTestHelper.createNewSolrClient(
-            buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
+            buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
     leaderClientHealthCheck =
         ReplicationTestHelper.createNewSolrClient(buildUrl(leaderJetty.getLocalPort()));
 
@@ -71,7 +71,7 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
     followerJetty = createAndStartJetty(follower);
     followerClient =
         ReplicationTestHelper.createNewSolrClient(
-            buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
+            buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
     followerClientHealthCheck =
         ReplicationTestHelper.createNewSolrClient(buildUrl(followerJetty.getLocalPort()));
 

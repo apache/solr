@@ -37,7 +37,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientBuilder;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.URLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,14 +144,6 @@ public class SolrClientCache implements Closeable {
     return client;
   }
 
-  /**
-   * Create (and cache) a SolrClient based around the provided URL
-   *
-   * @param baseUrl a Solr URL. May be either a "base" URL (i.e. ending in "/solr"), or point to a
-   *     particular collection or core.
-   * @return a SolrClient configured to use the provided URL. The cache retains a reference to the
-   *     returned client, and will close it when callers invoke {@link SolrClientCache#close()}
-   */
   public synchronized SolrClient getHttpSolrClient(String baseUrl) {
     ensureOpen();
     Objects.requireNonNull(baseUrl, "Url cannot be null!");
@@ -170,12 +161,8 @@ public class SolrClientCache implements Closeable {
   }
 
   @Deprecated
-  private static SolrClient newHttpSolrClient(String url, HttpClient httpClient) {
-    final var builder =
-        (URLUtil.isBaseUrl(url))
-            ? new HttpSolrClient.Builder(url)
-            : new HttpSolrClient.Builder(URLUtil.extractBaseUrl(url))
-                .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(url));
+  private static SolrClient newHttpSolrClient(String baseUrl, HttpClient httpClient) {
+    HttpSolrClient.Builder builder = new HttpSolrClient.Builder(baseUrl);
     adjustTimeouts(builder, httpClient);
     return builder.build();
   }
@@ -190,14 +177,10 @@ public class SolrClientCache implements Closeable {
   }
 
   private static Http2SolrClient.Builder newHttp2SolrClientBuilder(
-      String url, Http2SolrClient http2SolrClient) {
-    final var builder =
-        (url == null || URLUtil.isBaseUrl(url)) // URL may be null here and set by caller
-            ? new Http2SolrClient.Builder(url)
-            : new Http2SolrClient.Builder(URLUtil.extractBaseUrl(url))
-                .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(url));
+      String baseUrl, Http2SolrClient http2SolrClient) {
+    var builder = new Http2SolrClient.Builder(baseUrl);
     if (http2SolrClient != null) {
-      builder.withHttpClient(http2SolrClient);
+      builder = builder.withHttpClient(http2SolrClient);
     }
     long idleTimeout = minSocketTimeout;
     if (builder.getIdleTimeoutMillis() != null) {

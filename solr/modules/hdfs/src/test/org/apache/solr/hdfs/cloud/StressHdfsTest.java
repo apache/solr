@@ -189,8 +189,7 @@ public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
     int i = 0;
     for (SolrClient client : clients) {
       try (SolrClient c =
-          new HttpSolrClient.Builder(getBaseUrl(client))
-              .withDefaultCollection(DELETE_DATA_DIR_COLLECTION)
+          new HttpSolrClient.Builder(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION)
               .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
               .build()) {
         int docCnt = random().nextInt(1000) + 1;

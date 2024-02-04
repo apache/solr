@@ -440,11 +440,6 @@ public class TestPackages extends SolrCloudTestCase {
         return new RequestWriter.StringPayloadContentWriter(
             "{set:{PKG_VERSIONS:{mypkg : '1.1'}}}", ClientUtils.TEXT_JSON);
       }
-
-      @Override
-      public boolean requiresCollection() {
-        return true;
-      }
     }.process(cluster.getSolrClient());
 
     add.version = "2.1";
@@ -468,11 +463,6 @@ public class TestPackages extends SolrCloudTestCase {
       public RequestWriter.ContentWriter getContentWriter(String expectedType) {
         return new RequestWriter.StringPayloadContentWriter(
             "{set:{PKG_VERSIONS:{mypkg : '2.1'}}}", ClientUtils.TEXT_JSON);
-      }
-
-      @Override
-      public boolean requiresCollection() {
-        return true;
       }
     }.process(cluster.getSolrClient());
 

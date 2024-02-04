@@ -435,7 +435,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   /** Helper to convert from wt string parameter to actual SolrClient. */
   private static SolrClient getSolrClient(final String jettyBaseUrl, final String wt) {
     HttpSolrClient.Builder builder =
-        new HttpSolrClient.Builder(jettyBaseUrl).withDefaultCollection(COLLECTION_NAME);
+        new HttpSolrClient.Builder(jettyBaseUrl + "/" + COLLECTION_NAME + "/");
     switch (wt) {
       case "xml":
         builder.withResponseParser(RAW_XML_RESPONSE_PARSER);
