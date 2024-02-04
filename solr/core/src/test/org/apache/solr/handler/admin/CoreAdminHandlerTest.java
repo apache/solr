@@ -306,8 +306,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     runner.start();
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-            .withDefaultCollection("corex")
+        new HttpSolrClient.Builder(runner.getBaseUrl() + "/corex")
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
@@ -380,8 +379,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     runner.start();
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-            .withDefaultCollection("corex")
+        new HttpSolrClient.Builder(runner.getBaseUrl() + "/corex")
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
@@ -392,8 +390,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     }
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-            .withDefaultCollection("corex")
+        new HttpSolrClient.Builder(runner.getBaseUrl() + "/corex")
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
@@ -417,8 +414,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
             BaseHttpSolrClient.RemoteSolrException.class,
             () -> {
               try (SolrClient client =
-                  new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-                      .withDefaultCollection("corex")
+                  new HttpSolrClient.Builder(runner.getBaseUrl() + "/corex")
                       .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
                       .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT * 1000, TimeUnit.MILLISECONDS)
                       .build()) {
@@ -445,8 +441,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     runner.start();
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
-            .withDefaultCollection("corex")
+        new HttpSolrClient.Builder(runner.getBaseUrl() + "/corex")
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {

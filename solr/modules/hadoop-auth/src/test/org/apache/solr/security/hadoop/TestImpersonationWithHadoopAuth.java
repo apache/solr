@@ -211,8 +211,7 @@ public class TestImpersonationWithHadoopAuth extends SolrCloudTestCase {
     // try a command to each node, one of them must be forwarded
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       try (SolrClient client =
-          new HttpSolrClient.Builder(jetty.getBaseUrl().toString())
-              .withDefaultCollection(collectionName)
+          new HttpSolrClient.Builder(jetty.getBaseUrl().toString() + "/" + collectionName)
               .build()) {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("q", "*:*");

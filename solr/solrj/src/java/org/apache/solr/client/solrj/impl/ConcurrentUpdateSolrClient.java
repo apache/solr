@@ -54,7 +54,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -103,13 +102,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
    */
   protected ConcurrentUpdateSolrClient(Builder builder) {
     this.internalHttpClient = (builder.httpClient == null);
-    final var httpSolrClientBuilder =
-        (URLUtil.isBaseUrl(builder.baseSolrUrl))
-            ? new HttpSolrClient.Builder(builder.baseSolrUrl)
-            : new HttpSolrClient.Builder(URLUtil.extractBaseUrl(builder.baseSolrUrl))
-                .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(builder.baseSolrUrl));
     this.client =
-        httpSolrClientBuilder
+        new HttpSolrClient.Builder(builder.baseSolrUrl)
             .withHttpClient(builder.httpClient)
             .withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS)
             .withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS)
@@ -335,11 +329,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           requestParams.set(CommonParams.VERSION, client.parser.getVersion());
 
           String basePath = client.getBaseURL();
-          if (update.getCollection() != null) {
-            basePath += "/" + update.getCollection();
-          } else if (client.getDefaultCollection() != null) {
-            basePath += "/" + client.getDefaultCollection();
-          }
+          if (update.getCollection() != null) basePath += "/" + update.getCollection();
 
           method = new HttpPost(basePath + "/update" + requestParams.toQueryString());
 

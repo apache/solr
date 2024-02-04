@@ -110,8 +110,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     String baseUrl = replicas.iterator().next().getBaseUrl();
     if (!baseUrl.endsWith("/")) baseUrl += "/";
     try (SolrClient client =
-        new HttpSolrClient.Builder(baseUrl)
-            .withDefaultCollection("a1x2")
+        new HttpSolrClient.Builder(baseUrl + "a1x2")
             .withConnectionTimeout(2000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(5000, TimeUnit.MILLISECONDS)
             .build()) {
@@ -222,10 +221,11 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     // Query against the node which hosts the down replica
 
     String baseUrl = notLeader.getBaseUrl();
-    log.info("Firing queries against path={} and collection=football", baseUrl);
+    if (!baseUrl.endsWith("/")) baseUrl += "/";
+    String path = baseUrl + "football";
+    log.info("Firing queries against path={}", path);
     try (SolrClient client =
-        new HttpSolrClient.Builder(baseUrl)
-            .withDefaultCollection("football")
+        new HttpSolrClient.Builder(path)
             .withConnectionTimeout(2000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(5000, TimeUnit.MILLISECONDS)
             .build()) {

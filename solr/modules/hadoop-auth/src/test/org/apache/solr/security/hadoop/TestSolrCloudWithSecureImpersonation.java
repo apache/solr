@@ -340,8 +340,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     // try a command to each node, one of them must be forwarded
     for (JettySolrRunner jetty : miniCluster.getJettySolrRunners()) {
       try (HttpSolrClient client =
-          new HttpSolrClient.Builder(jetty.getBaseUrl().toString())
-              .withDefaultCollection(collectionName)
+          new HttpSolrClient.Builder(jetty.getBaseUrl().toString() + "/" + collectionName)
               .build()) {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("q", "*:*");

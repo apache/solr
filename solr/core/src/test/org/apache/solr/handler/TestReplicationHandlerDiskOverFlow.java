@@ -81,7 +81,9 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     leaderJetty = createAndStartJetty(leader);
     leaderClient =
         ReplicationTestHelper.createNewSolrClient(
-            TestReplicationHandler.buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
+            TestReplicationHandler.buildUrl(leaderJetty.getLocalPort())
+                + "/"
+                + DEFAULT_TEST_CORENAME);
     System.setProperty(TEST_URL_ALLOW_LIST, leaderJetty.getBaseUrl().toString());
 
     follower =
@@ -91,7 +93,9 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     followerJetty = createAndStartJetty(follower);
     followerClient =
         ReplicationTestHelper.createNewSolrClient(
-            TestReplicationHandler.buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
+            TestReplicationHandler.buildUrl(followerJetty.getLocalPort())
+                + "/"
+                + DEFAULT_TEST_CORENAME);
 
     System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
