@@ -27,6 +27,7 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.OverseerCollectionConfigSetProcessor;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
@@ -123,7 +124,12 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
 
     DocCollection c =
         ClusterState.createFromCollectionMap(
-                0, (Map<String, Object>) Utils.fromJSON(node.data), Collections.emptySet(), null)
+                0,
+                (Map<String, Object>) Utils.fromJSON(node.data),
+                Collections.emptySet(),
+                () ->
+                    PerReplicaStatesOps.fetch(
+                        DocCollection.getCollectionPath(collectionName), getZkClient(), null))
             .getCollection(collectionName);
 
     Set<String> knownKeys =
