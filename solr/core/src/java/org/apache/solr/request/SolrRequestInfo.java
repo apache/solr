@@ -77,6 +77,9 @@ public class SolrRequestInfo {
     } else if (stack.size() > MAX_STACK_SIZE) {
       assert false : "SolrRequestInfo Stack is full";
       log.error("SolrRequestInfo Stack is full");
+    } else if (!stack.isEmpty() && info.req != null) {
+      // if req is null limits will be an empty instance with no limits anyway.
+      info.req.getContext().put(LIMITS_KEY, stack.peek().getLimits());
     }
     log.trace("{} {}", info, "setRequestInfo()");
     assert !info.isClosed() : "SRI is already closed (odd).";
