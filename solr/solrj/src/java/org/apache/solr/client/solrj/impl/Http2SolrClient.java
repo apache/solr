@@ -1124,6 +1124,45 @@ public class Http2SolrClient extends SolrClient {
 
     public Builder() {}
 
+    /**
+     * Create a Builder object, based on the provided Solr URL.
+     *
+     * <p>Two different paths can be specified as a part of this URL:
+     *
+     * <p>1) A path pointing directly at a particular core
+     *
+     * <pre>
+     *   SolrClient client = new Http2SolrClient.Builder("http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * Note that when a core is provided in the base URL, queries and other requests can be made
+     * without mentioning the core explicitly. However, the client can only send requests to that
+     * core. Attempts to make core-agnostic requests, or requests for other cores will fail.
+     *
+     * <p>Use of these core-based URLs is deprecated and will not be supported in Solr 10.0 Users
+     * should instead provide base URLs as described below, and provide a "default collection" as
+     * desired using {@link #withDefaultCollection(String)}
+     *
+     * <p>2) The path of the root Solr path ("/solr")
+     *
+     * <pre>
+     *   SolrClient client = new Http2SolrClient.Builder("http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     *
+     * In this case the client is more flexible and can be used to send requests to any cores. Users
+     * can still provide a "default" collection if desired through use of {@link
+     * #withDefaultCollection(String)}.
+     *
+     * <p>By default, compression is not enabled on created HttpSolrClient objects. By default,
+     * redirects are not followed in created HttpSolrClient objects. By default, {@link
+     * BinaryRequestWriter} is used for composing requests. By default, {@link BinaryResponseParser}
+     * is used for parsing responses.
+     *
+     * @param baseSolrUrl the base URL of the Solr server that will be targeted by any created
+     *     clients.
+     */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
     }
@@ -1223,6 +1262,9 @@ public class Http2SolrClient extends SolrClient {
       if (this.urlParamNames == null) {
         this.urlParamNames = http2SolrClient.urlParamNames;
       }
+      if (this.defaultCollection == null) {
+        this.defaultCollection = http2SolrClient.defaultCollection;
+      }
       return this;
     }
 
@@ -1238,7 +1280,12 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
-    /** Sets a default for core or collection based requests. */
+    /**
+     * Sets a default for core or collection based requests.
+     *
+     * <p>This method should not be used if the client is provided a Solr URL which already contains
+     * a core or collection name.
+     */
     public Builder withDefaultCollection(String defaultCoreOrCollection) {
       this.defaultCollection = defaultCoreOrCollection;
       return this;

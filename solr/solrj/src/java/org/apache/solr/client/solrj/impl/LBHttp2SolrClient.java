@@ -322,6 +322,37 @@ public class LBHttp2SolrClient extends LBSolrClient {
         TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
     protected String defaultCollection;
 
+    /**
+     * Create a Builder object, based on the provided solrClient and Solr URLs.
+     *
+     * <p>Two different paths can be specified as a part of the provided URLs:
+     *
+     * <p>1) A path pointing directly at a particular core
+     *
+     * <pre>
+     *   SolrClient client = new LBHttp2SolrClient.Builder(client, "http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * Note that when a core is provided in the base URL, queries and other requests can be made
+     * without mentioning the core explicitly. However, the client can only send requests to that
+     * core. Attempts to make core-agnostic requests, or requests for other cores will fail.
+     *
+     * <p>Use of these core-based URLs is deprecated and will not be supported in Solr 10.0 Users
+     * should instead provide base URLs as described below, and provide a "default collection" as
+     * desired using {@link #withDefaultCollection(String)}
+     *
+     * <p>2) The path of the root Solr path ("/solr")
+     *
+     * <pre>
+     *   SolrClient client = new LBHttp2SolrClient.Builder(client, "http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     *
+     * In this case the client is more flexible and can be used to send requests to any cores. Users
+     * can still provide a "default" collection if desired through use of {@link
+     * #withDefaultCollection(String)}.
+     */
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
       this.http2SolrClient = http2Client;
       this.baseSolrUrls = baseSolrUrls;
@@ -342,7 +373,12 @@ public class LBHttp2SolrClient extends LBSolrClient {
       return this;
     }
 
-    /** Sets a default for core or collection based requests. */
+    /**
+     * Sets a default for core or collection based requests.
+     *
+     * <p>This method should not be used if the client is provided a Solr URL which already contains
+     * a core or collection name.
+     */
     public LBHttp2SolrClient.Builder withDefaultCollection(String defaultCoreOrCollection) {
       this.defaultCollection = defaultCoreOrCollection;
       return this;

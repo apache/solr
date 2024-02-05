@@ -98,7 +98,12 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
     return getThis();
   }
 
-  /** Sets a default for core or collection based requests. */
+  /**
+   * Sets a default for core or collection based requests.
+   *
+   * <p>This method should not be used if the client is provided a Solr URL which already contains a
+   * core or collection name.
+   */
   public B withDefaultCollection(String defaultCoreOrCollection) {
     this.defaultCollection = defaultCoreOrCollection;
     return getThis();

@@ -125,7 +125,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderJetty = createAndStartJetty(leader);
     leaderClient =
         ReplicationTestHelper.createNewSolrClient(
-            buildUrl(leaderJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+            buildUrl(leaderJetty.getLocalPort(), context), DEFAULT_TEST_CORENAME);
 
     follower =
         new SolrInstance(
@@ -134,7 +134,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty = createAndStartJetty(follower);
     followerClient =
         ReplicationTestHelper.createNewSolrClient(
-            buildUrl(followerJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+            buildUrl(followerJetty.getLocalPort(), context), DEFAULT_TEST_CORENAME);
 
     System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
@@ -302,10 +302,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     leaderClient.close();
     leaderClient =
         ReplicationTestHelper.createNewSolrClient(
-            buildUrl(leaderJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+            buildUrl(leaderJetty.getLocalPort(), context), DEFAULT_TEST_CORENAME);
     followerClient =
         ReplicationTestHelper.createNewSolrClient(
-            buildUrl(followerJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+            buildUrl(followerJetty.getLocalPort(), context), DEFAULT_TEST_CORENAME);
 
     clearIndexWithReplication();
     {
@@ -375,7 +375,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       repeaterJetty = createAndStartJetty(repeater);
       repeaterClient =
           ReplicationTestHelper.createNewSolrClient(
-              buildUrl(repeaterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+              buildUrl(repeaterJetty.getLocalPort(), context), DEFAULT_TEST_CORENAME);
 
       NamedList<Object> details = getDetails(repeaterClient);
 
@@ -409,7 +409,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       instanceJetty = createAndStartJetty(solrInstance);
       client =
           ReplicationTestHelper.createNewSolrClient(
-              buildUrl(instanceJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+              buildUrl(instanceJetty.getLocalPort(), context), DEFAULT_TEST_CORENAME);
 
       NamedList<Object> details = getDetails(client);
 
@@ -568,8 +568,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     leaderJetty = createAndStartJetty(leader);
     leaderClient.close();
-    leaderClient =
-        createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+    leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
     follower.setTestPort(leaderJetty.getLocalPort());
     follower.copyConfigFile(follower.getSolrConfigFile(), "solrconfig.xml");
@@ -589,7 +588,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
     followerClient =
-        createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+        createNewSolrClient(buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
     // add a doc with new field and commit on leader to trigger index fetch from follower.
     index(leaderClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
     leaderClient.commit();
@@ -676,7 +675,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       // close and re-create leader client because its connection pool has stale connections
       leaderClient.close();
       leaderClient =
-          createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+          createNewSolrClient(buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
       nDocs--;
       for (int i = 0; i < nDocs; i++) index(leaderClient, "id", i, "name", "name = " + i);
@@ -812,7 +811,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerClient.close();
     followerClient =
         ReplicationTestHelper.createNewSolrClient(
-            buildUrl(followerJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME);
+            buildUrl(followerJetty.getLocalPort(), context), DEFAULT_TEST_CORENAME);
 
     leaderClient.deleteByQuery("*:*");
     followerClient.deleteByQuery("*:*");
@@ -961,14 +960,14 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       followerJetty = createAndStartJetty(follower);
       followerClient.close();
       followerClient =
-          createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+          createNewSolrClient(buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
       leader.copyConfigFile(CONF_DIR + "solrconfig-leader3.xml", "solrconfig.xml");
       leaderJetty.stop();
       leaderJetty = createAndStartJetty(leader);
       leaderClient.close();
       leaderClient =
-          createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+          createNewSolrClient(buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
       leaderClient.deleteByQuery("*:*");
       followerClient.deleteByQuery("*:*");
@@ -1114,7 +1113,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
     followerClient =
-        createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+        createNewSolrClient(buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
     try {
       repeater =
@@ -1127,7 +1126,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         repeaterClient.close();
       }
       repeaterClient =
-          createNewSolrClient(buildUrl(repeaterJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+          createNewSolrClient(buildUrl(repeaterJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
       for (int i = 0; i < 3; i++) index(leaderClient, "id", i, "name", "name = " + i);
 
@@ -1195,8 +1194,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     leaderJetty = createAndStartJetty(leader);
     leaderClient.close();
-    leaderClient =
-        createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+    leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
     for (int i = 0; i < nDocs; i++) index(leaderClient, "id", i, "name", "name = " + i);
 
@@ -1213,7 +1211,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
     followerClient =
-        createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+        createNewSolrClient(buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
     // get docs from follower and check if number is equal to leader
     NamedList<Object> followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
@@ -1247,7 +1245,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       leaderJetty = createAndStartJetty(leader);
       leaderClient.close();
       leaderClient =
-          createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+          createNewSolrClient(buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
       for (int i = 0; i < nDocs; i++) index(leaderClient, "id", i, "name", "name = " + i);
 
@@ -1272,7 +1270,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       followerJetty = createAndStartJetty(follower);
       followerClient.close();
       followerClient =
-          createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+          createNewSolrClient(buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
       // get docs from follower and check if number is equal to leader
       NamedList<Object> followerQueryRsp = rQuery(nDocs, "*:*", followerClient);
@@ -1303,8 +1301,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     leaderJetty = createAndStartJetty(leader);
     leaderClient.close();
-    leaderClient =
-        createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+    leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
     leaderClient.deleteByQuery("*:*");
     for (int i = 0; i < docs; i++) index(leaderClient, "id", i, "name", "name = " + i);
@@ -1322,7 +1319,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
     followerClient =
-        createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+        createNewSolrClient(buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
     // get docs from follower and check if number is equal to leader
     NamedList<Object> followerQueryRsp = rQuery(docs, "*:*", followerClient);
@@ -1399,8 +1396,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     leaderJetty = createAndStartJetty(leader);
     leaderClient.close();
-    leaderClient =
-        createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+    leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
     follower.setTestPort(leaderJetty.getLocalPort());
     follower.copyConfigFile(follower.getSolrConfigFile(), "solrconfig.xml");
@@ -1409,7 +1405,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
     followerClient =
-        createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+        createNewSolrClient(buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
     followerClient.deleteByQuery("*:*");
     followerClient.commit();
@@ -1455,8 +1451,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     useFactory(null);
     leaderJetty = createAndStartJetty(leader);
     leaderClient.close();
-    leaderClient =
-        createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+    leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
     // index docs
     final int totalDocs = TestUtil.nextInt(random(), 17, 53);
@@ -1483,8 +1478,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // Start again and replicate the data
     useFactory(null);
     leaderJetty = createAndStartJetty(leader);
-    leaderClient =
-        createNewSolrClient(buildUrl(leaderJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+    leaderClient = createNewSolrClient(buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
     // start follower
     follower.setTestPort(leaderJetty.getLocalPort());
@@ -1492,7 +1486,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
     followerClient =
-        createNewSolrClient(buildUrl(followerJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME);
+        createNewSolrClient(buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
     long startTime = System.nanoTime();
 

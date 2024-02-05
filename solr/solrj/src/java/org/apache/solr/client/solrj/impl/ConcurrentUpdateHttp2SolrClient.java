@@ -733,10 +733,72 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     protected boolean closeHttp2Client;
     private long pollQueueTimeMillis;
 
+    /**
+     * Create a Builder object, based on the provided SolrClient and Solr URL.
+     *
+     * <p>Two different paths can be specified as a part of this URL:
+     *
+     * <p>1) A path pointing directly at a particular core
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder(client, "http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * Note that when a core is provided in the base URL, queries and other requests can be made
+     * without mentioning the core explicitly. However, the client can only send requests to that
+     * core. Attempts to make core-agnostic requests, or requests for other cores will fail.
+     *
+     * <p>Use of these core-based URLs is deprecated and will not be supported in Solr 10.0 Users
+     * should instead provide base URLs as described below, and provide a "default collection" as
+     * desired using {@link #withDefaultCollection(String)}
+     *
+     * <p>2) The path of the root Solr path ("/solr")
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     *
+     * In this case the client is more flexible and can be used to send requests to any cores. Users
+     * can still provide a "default" collection if desired through use of {@link
+     * #withDefaultCollection(String)}.
+     */
     public Builder(String baseSolrUrl, Http2SolrClient client) {
       this(baseSolrUrl, client, false);
     }
 
+    /**
+     * Create a Builder object, based on the provided SolrClient and Solr URL.
+     *
+     * <p>Two different paths can be specified as a part of this URL:
+     *
+     * <p>1) A path pointing directly at a particular core
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder(client, "http://my-solr-server:8983/solr/core1").build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * Note that when a core is provided in the base URL, queries and other requests can be made
+     * without mentioning the core explicitly. However, the client can only send requests to that
+     * core. Attempts to make core-agnostic requests, or requests for other cores will fail.
+     *
+     * <p>Use of these core-based URLs is deprecated and will not be supported in Solr 10.0 Users
+     * should instead provide base URLs as described below, and provide a "default collection" as
+     * desired using {@link #withDefaultCollection(String)}
+     *
+     * <p>2) The path of the root Solr path ("/solr")
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr").build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     *
+     * In this case the client is more flexible and can be used to send requests to any cores. Users
+     * can still provide a "default" collection if desired through use of {@link
+     * #withDefaultCollection(String)}.
+     */
     public Builder(String baseSolrUrl, Http2SolrClient client, boolean closeHttp2Client) {
       this.baseSolrUrl = baseSolrUrl;
       this.client = client;
@@ -816,7 +878,12 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       return this;
     }
 
-    /** Sets a default for core or collection based requests. */
+    /**
+     * Sets a default for core or collection based requests.
+     *
+     * <p>This method should not be used if the client is provided a Solr URL which already contains
+     * a core or collection name.
+     */
     public Builder withDefaultCollection(String defaultCoreOrCollection) {
       this.defaultCollection = defaultCoreOrCollection;
       return this;

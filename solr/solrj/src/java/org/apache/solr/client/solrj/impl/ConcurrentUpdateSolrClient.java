@@ -104,6 +104,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.internalHttpClient = (builder.httpClient == null);
     this.client =
         new HttpSolrClient.Builder(builder.baseSolrUrl)
+            .withDefaultCollection(builder.defaultCollection)
             .withHttpClient(builder.httpClient)
             .withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS)
             .withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS)
@@ -329,7 +330,11 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           requestParams.set(CommonParams.VERSION, client.parser.getVersion());
 
           String basePath = client.getBaseURL();
-          if (update.getCollection() != null) basePath += "/" + update.getCollection();
+          if (update.getCollection() != null) {
+            basePath += "/" + update.getCollection();
+          } else if (client.getDefaultCollection() != null) {
+            basePath += "/" + client.getDefaultCollection();
+          }
 
           method = new HttpPost(basePath + "/update" + requestParams.toQueryString());
 
@@ -883,7 +888,11 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
      *
      * Note that when a core is provided in the base URL, queries and other requests can be made
      * without mentioning the core explicitly. However, the client can only send requests to that
-     * core.
+     * core. Attempts to make core-agnostic requests, or requests for other cores will fail.
+     *
+     * <p>Use of these core-based URLs is deprecated and will not be supported in Solr 10.0 Users
+     * should instead provide base URLs as described below, and provide a "default collection" as
+     * desired using {@link #withDefaultCollection(String)}
      *
      * <p>2) The path of the root Solr path ("/solr")
      *
@@ -892,8 +901,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
      *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
      * </pre>
      *
-     * In this case the client is more flexible and can be used to send requests to any cores. This
-     * flexibility though requires that the core be specified on all requests.
+     * In this case the client is more flexible and can be used to send requests to any cores. Users
+     * can still provide a "default" collection if desired through use of {@link
+     * #withDefaultCollection(String)}.
      */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
