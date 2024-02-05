@@ -158,8 +158,11 @@ public interface CommonParams {
 
   boolean SEGMENT_TERMINATE_EARLY_DEFAULT = false;
 
-  /** Timeout value in milliseconds. If not set, or the value is &gt; 0, there is no timeout. */
+  /** Timeout value in milliseconds. If not set, or the value is &lt; 0, there is no timeout. */
   String TIME_ALLOWED = "timeAllowed";
+
+  /** Maximum query CPU usage value in milliseconds. If not set, or the value is &lt; 0, there is no timeout. */
+  String CPU_ALLOWED = "cpuAllowed";
 
   /** Is the query cancellable? */
   String IS_QUERY_CANCELLABLE = "canCancel";
