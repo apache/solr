@@ -133,6 +133,7 @@ public class SolrRequestInfo {
   public SolrRequestInfo(SolrQueryRequest req, SolrQueryResponse rsp) {
     this.req = req;
     this.rsp = rsp;
+    this.getLimits();
   }
 
   public SolrRequestInfo(
@@ -144,6 +145,7 @@ public class SolrRequestInfo {
   public SolrRequestInfo(HttpServletRequest httpReq, SolrQueryResponse rsp) {
     this.httpRequest = httpReq;
     this.rsp = rsp;
+    this.getLimits();
   }
 
   public SolrRequestInfo(
