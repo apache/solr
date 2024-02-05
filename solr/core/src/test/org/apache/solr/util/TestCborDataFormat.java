@@ -159,6 +159,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       throws SolrServerException, IOException {
     GenericSolrRequest req =
         new GenericSolrRequest(SolrRequest.METHOD.POST, "/schema")
+            .setRequiresCollection(true)
             .setContentWriter(
                 new RequestWriter.StringPayloadContentWriter(
                     "{\n"
@@ -180,6 +181,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
             SolrRequest.METHOD.POST,
             "/update/json/docs",
             new MapSolrParams(Map.of("commit", "true")))
+        .setRequiresCollection(true)
         .withContent(b, "application/json");
   }
 
@@ -191,13 +193,15 @@ public class TestCborDataFormat extends SolrCloudTestCase {
 
     return new GenericSolrRequest(
             SolrRequest.METHOD.POST, "/update", new MapSolrParams(Map.of("commit", "true")))
-        .withContent(baos.toByteArray(), "application/javabin");
+        .withContent(baos.toByteArray(), "application/javabin")
+        .setRequiresCollection(true);
   }
 
   private GenericSolrRequest createCborReq(byte[] b) throws IOException {
     return new GenericSolrRequest(
             SolrRequest.METHOD.POST, "/update/cbor", new MapSolrParams(Map.of("commit", "true")))
-        .withContent(serializeToCbor(b), "application/cbor");
+        .withContent(serializeToCbor(b), "application/cbor")
+        .setRequiresCollection(true);
   }
 
   @SuppressWarnings("unchecked")

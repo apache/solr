@@ -87,9 +87,18 @@ Improvements
 * SOLR-17119: When registering or updating a ConfigurablePlugin through the `/cluster/plugin` API,
   config validation exceptions are now propagated to the callers. (Yohann Callea)
 
+* SOLR-16699: Add Collection creation time to CLUSTERSTATUS and COLSTATUS API responses
+  (Julien Pilourdault, Paul McArthur, David Smiley)
+
+* SOLR-17038: Expose the term count in /admin/segments handler if fieldInfo=true.
+  (Rahul Goswami via David Smiley and Christine Poerschke)
+
 Optimizations
 ---------------------
-(No changes)
+* SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
+
+* GITHUB#2217: Scale to 10K+ collections better in ZkStateReader.refreshCollectionsList (David Smiley)
+
 
 Bug Fixes
 ---------------------
@@ -102,6 +111,9 @@ Dependency Upgrades
 Other Changes
 ---------------------
 * SOLR-17126: Cut over System.getProperty to EnvUtils.getProperty (janhoy)
+
+* SOLR-17066: GenericSolrRequest now has a `setRequiresCollection` setter that allows it to specify whether
+  it should make use of the client-level default collection/core. (Jason Gerlowski)
 
 ==================  9.5.0 ==================
 New Features
@@ -169,6 +181,10 @@ Improvements
 * SOLR-16397: The v2 endpoint to request the status of asynchronous CoreAdmin commands has been updated to be more REST-ful.
   Now available at `GET /api/node/commands/someRequestId` (Sanjay Dutt via Jason Gerlowski)
 
+* SOLR-17068: bin/solr post CLI use of options is now aligned closely with bin/post CLI tool, and is consistently
+  referenced throughout the Ref Guide and source code, and is used through out our tests.  The bin/post tool
+  remains and has been tested to work. (Eric Pugh)
+
 Optimizations
 ---------------------
 * SOLR-17084: LBSolrClient (used by CloudSolrClient) now returns the count of core tracked as not live AKA zombies
@@ -211,6 +227,8 @@ Dependency Upgrades
 * SOLR-17026: Upgrade to Gradle 8.4 (Kevin Risden)
 
 * SOLR-17089: Upgrade Jersey to 3.1.5 (Jason Gerlowski)
+
+* SOLR-17097: Upgrade Lucene to 9.9.2 (Nazerke Seidan, Christine Poerschke, Pierre Salagnac)
 
 Other Changes
 ---------------------

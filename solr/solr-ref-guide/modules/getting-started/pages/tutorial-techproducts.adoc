@@ -159,13 +159,10 @@ image::solr-tutorial/tutorial-solrcloud.png[]
 
 Your Solr server is up and running, but it doesn't contain any data yet, so we can't do any queries.
 
-Solr includes the `bin/post` tool in order to facilitate indexing various types of documents easily.
+Solr includes the `bin/solr post` tool in order to facilitate indexing various types of documents easily.
 We'll use this tool for the indexing examples below.
 
 You'll need a command shell to run some of the following examples, rooted in the Solr install directory; the shell from where you launched Solr works just fine.
-
-NOTE: Currently the `bin/post` tool does not have a comparable Windows script, but the `bin/solr post` command is available on Windows.
-See the section xref:indexing-guide:post-tool.adoc[] for more information.
 
 The data we will index is in the `example/exampledocs` directory.
 The documents are in a mix of document formats (JSON, CSV, etc.), and fortunately we can index them all at once:
@@ -173,7 +170,7 @@ The documents are in a mix of document formats (JSON, CSV, etc.), and fortunatel
 .Linux/Mac
 [,console]
 ----
-$ bin/post -c techproducts example/exampledocs/*
+$ bin/solr post -c techproducts example/exampledocs/*
 ----
 
 .Windows
