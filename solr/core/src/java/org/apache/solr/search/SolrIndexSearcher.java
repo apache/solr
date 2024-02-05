@@ -730,10 +730,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // So we need to make a new IndexSearcher instead of using "this".
       new IndexSearcher(reader) { // cheap, actually!
         void searchWithTimeout() throws IOException {
-          setTimeout(requestInfo.getLimits());
+          setTimeout(requestInfo.getLimits()); // Lucene's method name is less than ideal here...
           super.search(leaves, weight, collector); // FYI protected access
           if (timedOut()) {
-            throw new TimeAllowedExceededFromScorerException("timeAllowed exceeded");
+            throw new LimitExceededFromScorerException(
+                "Limits exceeded! " + requestInfo.getLimits().limitStatusMessage());
           }
         }
       }.searchWithTimeout();
@@ -745,10 +746,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Further, from the low level Lucene {@code org.apache.lucene.search.TimeLimitingBulkScorer}.
    * Extending {@code ExitableDirectoryReader.ExitingReaderException} is for legacy reasons.
    */
-  public static class TimeAllowedExceededFromScorerException
+  public static class LimitExceededFromScorerException
       extends ExitableDirectoryReader.ExitingReaderException {
 
-    public TimeAllowedExceededFromScorerException(String msg) {
+    public LimitExceededFromScorerException(String msg) {
       super(msg);
     }
   }

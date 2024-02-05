@@ -213,7 +213,9 @@ public class SolrRequestInfo {
   }
 
   public QueryLimits getLimits() {
-    return (QueryLimits) req.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(req));
+    return req == null
+        ? QueryLimits.NONE
+        : (QueryLimits) req.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(req));
   }
 
   public SolrDispatchFilter.Action getAction() {

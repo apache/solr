@@ -30,7 +30,7 @@ public class SolrQueryTimeLimit implements QueryTimeout {
   /**
    * Create an object to represent a time limit for the current request.
    *
-   * @param req A sollr request that has a value for {@code timeAllowed}
+   * @param req A solr request that has a value for {@code timeAllowed}
    * @throws IllegalArgumentException if the request does not contain timeAllowed parameter. This
    *     should be validated with {@link #hasTimeLimit(SolrQueryRequest)} prior to constructing this
    *     object
@@ -41,7 +41,7 @@ public class SolrQueryTimeLimit implements QueryTimeout {
 
     if (reqTimeAllowed == -1L) {
       throw new IllegalArgumentException(
-          "Check for limit with hasTimeLimit(req) before creating a SolrQuerTimeLimit");
+          "Check for limit with hasTimeLimit(req) before creating a SolrQueryTimeLimit");
     }
     long timeAllowed = reqTimeAllowed - (long) req.getRequestTimer().getTime();
     long nanosAllowed = TimeUnit.NANOSECONDS.convert(timeAllowed, TimeUnit.MILLISECONDS);
