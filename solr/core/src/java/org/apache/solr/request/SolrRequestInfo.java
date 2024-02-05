@@ -31,6 +31,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
@@ -43,6 +44,7 @@ public class SolrRequestInfo {
 
   private static final ThreadLocal<Deque<SolrRequestInfo>> threadLocal =
       ThreadLocal.withInitial(ArrayDeque::new);
+  private static final Object LIMITS_KEY = new Object();
 
   private int refCount = 1; // prevent closing when still used
 
@@ -75,6 +77,9 @@ public class SolrRequestInfo {
     } else if (stack.size() > MAX_STACK_SIZE) {
       assert false : "SolrRequestInfo Stack is full";
       log.error("SolrRequestInfo Stack is full");
+    } else if (!stack.isEmpty() && info.req != null) {
+      // if req is null limits will be an empty instance with no limits anyway.
+      info.req.getContext().put(LIMITS_KEY, stack.peek().getLimits());
     }
     log.trace("{} {}", info, "setRequestInfo()");
     assert !info.isClosed() : "SRI is already closed (odd).";
@@ -131,6 +136,7 @@ public class SolrRequestInfo {
   public SolrRequestInfo(SolrQueryRequest req, SolrQueryResponse rsp) {
     this.req = req;
     this.rsp = rsp;
+    this.getLimits();
   }
 
   public SolrRequestInfo(
@@ -142,6 +148,7 @@ public class SolrRequestInfo {
   public SolrRequestInfo(HttpServletRequest httpReq, SolrQueryResponse rsp) {
     this.httpRequest = httpReq;
     this.rsp = rsp;
+    this.getLimits();
   }
 
   public SolrRequestInfo(
@@ -208,6 +215,12 @@ public class SolrRequestInfo {
       }
       closeHooks.add(hook);
     }
+  }
+
+  public QueryLimits getLimits() {
+    return req == null
+        ? QueryLimits.NONE
+        : (QueryLimits) req.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(req));
   }
 
   public SolrDispatchFilter.Action getAction() {
