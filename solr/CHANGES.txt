@@ -17,6 +17,9 @@ Improvements
 * SOLR-16699: Add Collection creation time to CLUSTERSTATUS and COLSTATUS API responses
   (Julien Pilourdault, Paul McArthur, David Smiley)
 
+* SOLR-17038: Expose the term count in /admin/segments handler if fieldInfo=true.
+  (Rahul Goswami via David Smiley and Christine Poerschke)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
