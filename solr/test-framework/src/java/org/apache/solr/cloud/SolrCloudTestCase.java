@@ -51,6 +51,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +77,8 @@ import org.slf4j.LoggerFactory;
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  // TODO remove hardcoding
   public static final String PRS_DEFAULT_PROP =
       "true"; // System.getProperty("use.per-replica", null);
   public static final Boolean USE_PER_REPLICA_STATE =
@@ -126,16 +129,25 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
   }
 
-  @Before
-  public void setPrsDefault() {
-    log.info("@Before test {}", PRS_DEFAULT_PROP);
+  @BeforeClass
+  public static void setPrsDefault() {
     if (PRS_DEFAULT_PROP != null) {
       System.setProperty("solr.prs.default", PRS_DEFAULT_PROP);
     }
   }
 
   @After
-  public void unsetPrsDefault() {
+  public void _unsetPrsDefault() {
+    unsetPrsDefault();
+  }
+
+  @Before
+  public void _setPrsDefault() {
+    setPrsDefault();
+  }
+
+  @AfterClass
+  public static void unsetPrsDefault() {
     if (PRS_DEFAULT_PROP != null) {
       System.clearProperty("solr.prs.default");
     }
