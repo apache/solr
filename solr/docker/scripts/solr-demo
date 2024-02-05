@@ -37,13 +37,9 @@ else
   /opt/solr/bin/solr create -c "$CORE"
   echo "Created $CORE"
   echo "Loading example data"
-  post_args=()
-  if [[ -n "${SOLR_PORT:-}" ]]; then
-    post_args+=(-p "$SOLR_PORT")
-  fi
-  /opt/solr/bin/post "${post_args[@]}" -c $CORE -commit no example/exampledocs/*.xml
-  /opt/solr/bin/post "${post_args[@]}" -c $CORE -commit no example/exampledocs/books.json
-  /opt/solr/bin/post "${post_args[@]}" -c $CORE -commit yes example/exampledocs/books.csv
+  /opt/solr/bin/solr post -c $CORE -commit no example/exampledocs/*.xml
+  /opt/solr/bin/solr post -c $CORE -commit no example/exampledocs/books.json
+  /opt/solr/bin/solr post -c $CORE -commit yes example/exampledocs/books.csv
   echo "Loaded example data"
   stop-local-solr
 

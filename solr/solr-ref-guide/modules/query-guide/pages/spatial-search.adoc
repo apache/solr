@@ -68,10 +68,10 @@ However, it's much bulkier than the raw coordinates for such simple data.
 
 === Indexing GeoJSON and WKT
 
-Using the `bin/post` tool:
+Using the `bin/solr post` tool:
 
 [source,text]
-bin/post -type "application/json" -url "http://localhost:8983/solr/mycollection/update?format=geojson" /path/to/geojson.file
+bin/solr post -type "application/json" -url "http://localhost:8983/solr/mycollection/update?format=geojson" /path/to/geojson.file
 
 The key parameter to pass in with your request is:
 

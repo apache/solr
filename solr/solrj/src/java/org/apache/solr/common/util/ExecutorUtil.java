@@ -150,10 +150,23 @@ public class ExecutorUtil {
         nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), threadFactory);
   }
 
-  /** See {@link java.util.concurrent.Executors#newSingleThreadExecutor(ThreadFactory)} */
+  /**
+   * See {@link java.util.concurrent.Executors#newSingleThreadExecutor(ThreadFactory)}. Note the
+   * thread is always active, even if no tasks are submitted to the executor.
+   */
   public static ExecutorService newMDCAwareSingleThreadExecutor(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(
         1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), threadFactory);
+  }
+
+  /**
+   * Similar to {@link #newMDCAwareSingleThreadExecutor(ThreadFactory)}, but the thread will not be
+   * kept active after the specified time if no task is submitted to the executor.
+   */
+  public static ExecutorService newMDCAwareSingleLazyThreadExecutor(
+      ThreadFactory threadFactory, long keepAliveTime, TimeUnit unit) {
+    return new MDCAwareThreadPoolExecutor(
+        0, 1, keepAliveTime, unit, new LinkedBlockingQueue<>(), threadFactory);
   }
 
   /** Create a cached thread pool using a named thread factory */
