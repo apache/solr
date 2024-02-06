@@ -44,7 +44,7 @@ public class SolrRequestInfo {
 
   private static final ThreadLocal<Deque<SolrRequestInfo>> threadLocal =
       ThreadLocal.withInitial(ArrayDeque::new);
-  private static final Object LIMITS_KEY = new Object();
+  static final Object LIMITS_KEY = new Object();
 
   private int refCount = 1; // prevent closing when still used
 
@@ -81,6 +81,7 @@ public class SolrRequestInfo {
       // if req is null limits will be an empty instance with no limits anyway.
       info.req.getContext().put(LIMITS_KEY, stack.peek().getLimits());
     }
+    info.initQueryLimits();
     log.trace("{} {}", info, "setRequestInfo()");
     assert !info.isClosed() : "SRI is already closed (odd).";
     stack.push(info);
@@ -136,7 +137,6 @@ public class SolrRequestInfo {
   public SolrRequestInfo(SolrQueryRequest req, SolrQueryResponse rsp) {
     this.req = req;
     this.rsp = rsp;
-    this.getLimits();
   }
 
   public SolrRequestInfo(
@@ -148,7 +148,6 @@ public class SolrRequestInfo {
   public SolrRequestInfo(HttpServletRequest httpReq, SolrQueryResponse rsp) {
     this.httpRequest = httpReq;
     this.rsp = rsp;
-    this.getLimits();
   }
 
   public SolrRequestInfo(
@@ -217,6 +216,26 @@ public class SolrRequestInfo {
     }
   }
 
+  /**
+   * This call creates the QueryLimits object and any required implementations of {@link
+   * org.apache.lucene.index.QueryTimeout}. Any code before this call will not be subject to the
+   * limitations set on the request. Note that calling {@link #getLimits()} has the same effect as
+   * this method.
+   *
+   * @see #getLimits()
+   */
+  public void initQueryLimits() {
+    // This method only exists for code clarity reasons.
+    getLimits();
+  }
+
+  /**
+   * Get the query limits for the current request. This will trigger the creation of the (possibly
+   * empty) {@link QueryLimits} object if it has not been created, and will then return the same
+   * object on every subsequent invocation.
+   *
+   * @return The {@code QueryLimits} object for the current requet.
+   */
   public QueryLimits getLimits() {
     return req == null
         ? QueryLimits.NONE
