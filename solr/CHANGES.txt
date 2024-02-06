@@ -104,7 +104,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17148: Fixing Config API overlay property enabling or disabling the cache
 
 Dependency Upgrades
 ---------------------
