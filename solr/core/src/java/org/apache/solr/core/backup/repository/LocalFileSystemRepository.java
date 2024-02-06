@@ -34,7 +34,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 
 /**
@@ -42,17 +41,7 @@ import org.apache.solr.core.DirectoryFactory;
  * Solr indexes to a local file-system. (Note - This can even be used for a shared file-system if it
  * is exposed via a local file-system interface e.g. NFS).
  */
-public class LocalFileSystemRepository implements BackupRepository {
-
-  private NamedList<?> config = null;
-  private boolean shouldVerifyChecksum;
-
-  @Override
-  public void init(NamedList<?> args) {
-    this.config = args;
-    Object value = args.get(PARAM_VERIFY_CHECKSUM);
-    shouldVerifyChecksum = value == null || Boolean.parseBoolean(value.toString());
-  }
+public class LocalFileSystemRepository extends AbstractBackupRepository {
 
   @SuppressWarnings("unchecked")
   @Override
@@ -150,17 +139,6 @@ public class LocalFileSystemRepository implements BackupRepository {
       throws IOException {
     try (FSDirectory dir = new NIOFSDirectory(Path.of(destDir), NoLockFactory.INSTANCE)) {
       copyIndexFileFrom(sourceDir, sourceFileName, dir, destFileName);
-    }
-  }
-
-  @Override
-  public void copyIndexFileFrom(
-      Directory sourceDir, String sourceFileName, Directory destDir, String destFileName)
-      throws IOException {
-    if (shouldVerifyChecksum) {
-      BackupRepository.super.copyIndexFileFrom(sourceDir, sourceFileName, destDir, destFileName);
-    } else {
-      BackupRepositoryUtil.copyFileNoChecksum(sourceDir, sourceFileName, destDir, destFileName);
     }
   }
 

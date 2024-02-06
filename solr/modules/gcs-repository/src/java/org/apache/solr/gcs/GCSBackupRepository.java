@@ -54,26 +54,24 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.backup.repository.AbstractBackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.core.backup.repository.BackupRepositoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** {@link BackupRepository} implementation that stores files in Google Cloud Storage ("GCS"). */
-public class GCSBackupRepository implements BackupRepository {
+public class GCSBackupRepository extends AbstractBackupRepository {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int LARGE_BLOB_THRESHOLD_BYTE_SIZE = 5 * 1024 * 1024;
   private static final Storage.BlobWriteOption[] NO_WRITE_OPTIONS = new Storage.BlobWriteOption[0];
 
   protected Storage storage;
 
-  private NamedList<?> config = null;
   protected String bucketName = null;
   protected String credentialPath = null;
   protected int writeBufferSizeBytes;
   protected int readBufferSizeBytes;
   protected StorageOptions.Builder storageOptionsBuilder = null;
-  protected boolean shouldVerifyChecksum;
 
   protected Storage initStorage() {
     if (storage != null) return storage;
@@ -98,7 +96,7 @@ public class GCSBackupRepository implements BackupRepository {
 
   @Override
   public void init(NamedList<?> args) {
-    this.config = args;
+    super.init(args);
     final GCSConfigParser configReader = new GCSConfigParser();
     final GCSConfigParser.GCSConfig parsedConfig = configReader.parseConfiguration(config);
 
@@ -107,7 +105,6 @@ public class GCSBackupRepository implements BackupRepository {
     this.writeBufferSizeBytes = parsedConfig.getWriteBufferSize();
     this.readBufferSizeBytes = parsedConfig.getReadBufferSize();
     this.storageOptionsBuilder = parsedConfig.getStorageOptionsBuilder();
-    this.shouldVerifyChecksum = parsedConfig.shouldVerifyChecksum();
 
     initStorage();
   }
@@ -357,17 +354,6 @@ public class GCSBackupRepository implements BackupRepository {
       } else {
         writeBlobMultipart(blobInfo, input, (int) input.length());
       }
-    }
-  }
-
-  @Override
-  public void copyIndexFileFrom(
-      Directory sourceDir, String sourceFileName, Directory destDir, String destFileName)
-      throws IOException {
-    if (shouldVerifyChecksum) {
-      BackupRepository.super.copyIndexFileFrom(sourceDir, sourceFileName, destDir, destFileName);
-    } else {
-      BackupRepositoryUtil.copyFileNoChecksum(sourceDir, sourceFileName, destDir, destFileName);
     }
   }
 

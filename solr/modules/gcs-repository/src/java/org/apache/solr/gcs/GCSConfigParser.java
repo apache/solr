@@ -17,8 +17,6 @@
 
 package org.apache.solr.gcs;
 
-import static org.apache.solr.core.backup.repository.BackupRepository.PARAM_VERIFY_CHECKSUM;
-
 import com.google.api.gax.retrying.RetrySettings;
 import com.google.cloud.storage.StorageOptions;
 import java.util.Map;
@@ -77,15 +75,12 @@ public class GCSConfigParser {
         getIntOrDefault(
             repoConfig, GCS_READ_BUFFER_SIZE_PARAM_NAME, DEFAULT_GCS_READ_BUFFER_SIZE_VALUE);
     final StorageOptions.Builder storageOptionsBuilder = parseStorageOptions(repoConfig);
-    final boolean shouldVerifyChecksum =
-        getBooleanOrDefault(repoConfig, PARAM_VERIFY_CHECKSUM, true);
     return new GCSConfig(
         bucketName,
         credentialPathStr,
         writeBufferSizeBytes,
         readBufferSizeBytes,
-        storageOptionsBuilder,
-        shouldVerifyChecksum);
+        storageOptionsBuilder);
   }
 
   /*
@@ -130,13 +125,6 @@ public class GCSConfigParser {
   private double getDoubleOrDefault(NamedList<?> config, String propName, double defaultValue) {
     if (config.get(propName) != null) {
       return Double.parseDouble(config.get(propName).toString());
-    }
-    return defaultValue;
-  }
-
-  private boolean getBooleanOrDefault(NamedList<?> config, String propName, boolean defaultValue) {
-    if (config.get(propName) != null) {
-      return Boolean.parseBoolean(config.get(propName).toString());
     }
     return defaultValue;
   }
@@ -207,21 +195,18 @@ public class GCSConfigParser {
     private final String gcsCredentialPath;
     private final int writeBufferSizeBytes;
     private final int readBufferSizeBytes;
-    private final boolean shouldVerifyChecksum;
 
     public GCSConfig(
         String bucketName,
         String gcsCredentialPath,
         int writeBufferSizeBytes,
         int readBufferSizeBytes,
-        StorageOptions.Builder optionsBuilder,
-        boolean shouldVerifyChecksum) {
+        StorageOptions.Builder optionsBuilder) {
       this.bucketName = bucketName;
       this.gcsCredentialPath = gcsCredentialPath;
       this.writeBufferSizeBytes = writeBufferSizeBytes;
       this.readBufferSizeBytes = readBufferSizeBytes;
       this.optionsBuilder = optionsBuilder;
-      this.shouldVerifyChecksum = shouldVerifyChecksum;
     }
 
     public StorageOptions.Builder getStorageOptionsBuilder() {
@@ -242,10 +227,6 @@ public class GCSConfigParser {
 
     public int getReadBufferSize() {
       return readBufferSizeBytes;
-    }
-
-    public boolean shouldVerifyChecksum() {
-      return shouldVerifyChecksum;
     }
   }
 }

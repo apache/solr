@@ -16,8 +16,6 @@
  */
 package org.apache.solr.s3;
 
-import static org.apache.solr.s3.S3BackupRepositoryConfig.getBooleanConfig;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -41,8 +39,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.backup.repository.AbstractBackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.core.backup.repository.BackupRepositoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,20 +48,18 @@ import org.slf4j.LoggerFactory;
  * A concrete implementation of {@link BackupRepository} interface supporting backup/restore of Solr
  * indexes to S3.
  */
-public class S3BackupRepository implements BackupRepository {
+public class S3BackupRepository extends AbstractBackupRepository {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int CHUNK_SIZE = 16 * 1024 * 1024; // 16 MBs
   static final String S3_SCHEME = "s3";
 
-  private NamedList<?> config;
   private S3StorageClient client;
-  private boolean shouldVerifyChecksum;
 
   @Override
   public void init(NamedList<?> args) {
-    this.config = args;
+    super.init(args);
     S3BackupRepositoryConfig backupConfig = new S3BackupRepositoryConfig(this.config);
 
     // If a client was already created, close it to avoid any resource leak
@@ -71,8 +67,6 @@ public class S3BackupRepository implements BackupRepository {
       client.close();
     }
     this.client = backupConfig.buildClient();
-
-    shouldVerifyChecksum = getBooleanConfig(args, PARAM_VERIFY_CHECKSUM, true);
   }
 
   @Override
@@ -319,17 +313,6 @@ public class S3BackupRepository implements BackupRepository {
     long timeElapsed = Duration.between(start, Instant.now()).toMillis();
     if (log.isInfoEnabled()) {
       log.info("Upload to S3: '{}' finished in {}ms", s3Path, timeElapsed);
-    }
-  }
-
-  @Override
-  public void copyIndexFileFrom(
-      Directory sourceDir, String sourceFileName, Directory destDir, String destFileName)
-      throws IOException {
-    if (shouldVerifyChecksum) {
-      BackupRepository.super.copyIndexFileFrom(sourceDir, sourceFileName, destDir, destFileName);
-    } else {
-      BackupRepositoryUtil.copyFileNoChecksum(sourceDir, sourceFileName, destDir, destFileName);
     }
   }
 

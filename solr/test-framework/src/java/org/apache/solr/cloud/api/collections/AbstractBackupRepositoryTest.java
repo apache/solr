@@ -53,6 +53,8 @@ import org.apache.solr.core.backup.repository.FilterBackupRepository;
 import org.apache.solr.schema.FieldType;
 import org.junit.Test;
 
+import static org.apache.solr.core.backup.repository.AbstractBackupRepository.PARAM_VERIFY_CHECKSUM;
+
 public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
 
   protected abstract Class<? extends BackupRepository> getRepositoryClass();
