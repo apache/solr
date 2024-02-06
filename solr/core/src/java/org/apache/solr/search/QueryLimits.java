@@ -72,7 +72,7 @@ public class QueryLimits implements QueryTimeout {
         sb.append("Query limits:");
       }
       sb.append("[");
-      sb.append(limit.getClass().getName());
+      sb.append(limit.getClass().getSimpleName());
       sb.append(":");
       sb.append(limit.shouldExit() ? "LIMIT EXCEEDED" : "within limit");
       sb.append("]");
