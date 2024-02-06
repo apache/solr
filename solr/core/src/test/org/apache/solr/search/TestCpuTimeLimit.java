@@ -16,23 +16,17 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.tests.util.TestUtil;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.handler.component.ResponseBuilder;
-import org.apache.solr.handler.component.SearchComponent;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 
 public class TestCpuTimeLimit extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -54,9 +48,14 @@ public class TestCpuTimeLimit extends SolrCloudTestCase {
     }
     long endNs = System.nanoTime();
     long wallTimeDeltaMs = TimeUnit.MILLISECONDS.convert(endNs - startNs, TimeUnit.NANOSECONDS);
-    log.info("CPU limit: {} ms, elapsed wall-clock: {} ms, wakeups: {}", limitMs, wallTimeDeltaMs, wakeups);
-    assertTrue("Elapsed wall-clock time expected much larger than 100ms but was " +
-        wallTimeDeltaMs, limitMs < wallTimeDeltaMs);
+    log.info(
+        "CPU limit: {} ms, elapsed wall-clock: {} ms, wakeups: {}",
+        limitMs,
+        wallTimeDeltaMs,
+        wakeups);
+    assertTrue(
+        "Elapsed wall-clock time expected much larger than 100ms but was " + wallTimeDeltaMs,
+        limitMs < wallTimeDeltaMs);
   }
 
   @Test
@@ -66,9 +65,14 @@ public class TestCpuTimeLimit extends SolrCloudTestCase {
     String COLLECTION = "test";
     try {
       SolrClient solrClient = cluster.getSolrClient();
-      CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1);
+      CollectionAdminRequest.Create create =
+          CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1);
       create.process(solrClient);
-      CloudUtil.waitForState(cluster.getOpenOverseer().getSolrCloudManager(), "active", COLLECTION, clusterShape(2, 2));
+      CloudUtil.waitForState(
+          cluster.getOpenOverseer().getSolrCloudManager(),
+          "active",
+          COLLECTION,
+          clusterShape(2, 2));
 
       // add some docs
       for (int i = 0; i < 10; i++) {
@@ -78,7 +82,8 @@ public class TestCpuTimeLimit extends SolrCloudTestCase {
 
       // no limits set - should eventually complete
       long sleepMs = 1000;
-      QueryResponse rsp = solrClient.query(COLLECTION, params("q", "*:*", "sleepMs", String.valueOf(sleepMs)));
+      QueryResponse rsp =
+          solrClient.query(COLLECTION, params("q", "*:*", "sleepMs", String.valueOf(sleepMs)));
       System.err.println("rsp=" + rsp.jsonStr());
       assertEquals(rsp.getHeader().get("status"), 0);
       Number qtime = (Number) rsp.getHeader().get("QTime");
@@ -86,12 +91,17 @@ public class TestCpuTimeLimit extends SolrCloudTestCase {
       assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
 
       // timeAllowed set, should return partial results
-      rsp = solrClient.query(COLLECTION, params("q", "*:*", "sleepMs", String.valueOf(sleepMs), "timeAllowed", "500"));
+      rsp =
+          solrClient.query(
+              COLLECTION,
+              params("q", "*:*", "sleepMs", String.valueOf(sleepMs), "timeAllowed", "500"));
       System.err.println("rsp=" + rsp.jsonStr());
       assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
 
       // cpuAllowed set, should return partial results
-      rsp = solrClient.query(COLLECTION, params("q", "*:*", "spinWaitCount", "10000", "cpuAllowed", "20"));
+      rsp =
+          solrClient.query(
+              COLLECTION, params("q", "*:*", "spinWaitCount", "10000", "cpuAllowed", "20"));
       System.err.println("rsp=" + rsp.jsonStr());
       assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
     } finally {

@@ -16,8 +16,8 @@
  */
 package org.apache.solr.search;
 
-import static org.apache.solr.search.SolrQueryTimeLimit.hasTimeLimit;
 import static org.apache.solr.search.CpuTimeLimit.hasCpuLimit;
+import static org.apache.solr.search.SolrQueryTimeLimit.hasTimeLimit;
 
 import java.util.ArrayList;
 import java.util.List;

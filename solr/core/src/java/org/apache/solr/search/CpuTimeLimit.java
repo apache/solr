@@ -17,13 +17,12 @@
 package org.apache.solr.search;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.lucene.index.QueryTimeout;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.request.SolrQueryRequest;
-
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.util.concurrent.TimeUnit;
+import org.apache.lucene.index.QueryTimeout;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.request.SolrQueryRequest;
 
 public class CpuTimeLimit implements QueryTimeout {
   private static final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
@@ -43,7 +42,9 @@ public class CpuTimeLimit implements QueryTimeout {
 
   @VisibleForTesting
   CpuTimeLimit(long limitMs) {
-    limitAt = threadMXBean.getCurrentThreadCpuTime() + TimeUnit.NANOSECONDS.convert(limitMs, TimeUnit.MILLISECONDS);
+    limitAt =
+        threadMXBean.getCurrentThreadCpuTime()
+            + TimeUnit.NANOSECONDS.convert(limitMs, TimeUnit.MILLISECONDS);
   }
 
   static boolean hasCpuLimit(SolrQueryRequest req) {

@@ -16,21 +16,18 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 
-import java.io.IOException;
-import java.util.ArrayList;
-
 public class ExpensiveSearchComponent extends SearchComponent {
   final ArrayList<String> data = new ArrayList<>();
 
   @Override
-  public void prepare(ResponseBuilder rb) throws IOException {
-
-  }
+  public void prepare(ResponseBuilder rb) throws IOException {}
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
