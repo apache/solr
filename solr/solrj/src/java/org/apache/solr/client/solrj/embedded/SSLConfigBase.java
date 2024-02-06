@@ -1,12 +1,12 @@
 package org.apache.solr.client.solrj.embedded;
 
 public class SSLConfigBase {
-    protected boolean useSsl;
-    protected boolean clientAuth;
-    protected String keyStore;
-    protected String keyStorePassword;
-    protected String trustStore;
-    protected String trustStorePassword;
+    private boolean useSsl;
+    private boolean clientAuth;
+    private String keyStore;
+    private String keyStorePassword;
+    private String trustStore;
+    private String trustStorePassword;
 
     public SSLConfigBase(boolean useSsl, boolean clientAuth, String keyStore, String keyStorePassword, String trustStore, String trustStorePassword) {
         this.useSsl = useSsl;
