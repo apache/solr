@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
@@ -125,7 +124,7 @@ import static org.apache.solr.common.util.Utils.getObjectByPath;
  *
  * @lucene.experimental
  */
-public class Http2SolrClient extends SolrClient {
+public class Http2SolrClient extends Http2SolrClientBase {
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
 
   private static volatile SSLConfig defaultSSLConfig;
