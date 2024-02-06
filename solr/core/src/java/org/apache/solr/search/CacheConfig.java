@@ -80,7 +80,9 @@ public class CacheConfig implements MapSerializable {
 
   public static Map<String, CacheConfig> getMultipleConfigs(
       SolrResourceLoader loader, SolrConfig solrConfig, String configPath, List<ConfigNode> nodes) {
-    if (nodes == null || nodes.isEmpty()) return new LinkedHashMap<>();
+    if (nodes == null || nodes.isEmpty()) {
+      return new LinkedHashMap<>();
+    }
     Map<String, CacheConfig> result = CollectionUtil.newHashMap(nodes.size());
     for (ConfigNode node : nodes) {
       if (node.boolAttr("enabled", true)) {
@@ -93,7 +95,9 @@ public class CacheConfig implements MapSerializable {
   }
 
   public static CacheConfig getConfig(SolrConfig solrConfig, ConfigNode node, String xpath) {
-    if (!node.boolAttr("enabled", true) || !node.exists()) return null;
+    if (!node.boolAttr("enabled", true) || !node.exists()) {
+      return null;
+    }
     return getConfig(solrConfig, node.name(), node.attributes().asMap(), xpath);
   }
 

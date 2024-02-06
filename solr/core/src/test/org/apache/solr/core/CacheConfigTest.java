@@ -85,7 +85,7 @@ public class CacheConfigTest extends SolrTestCaseJ4 {
     domConfigNodeDisable = new DOMConfigNode(queryResultNode);
   }
 
-  public void test_SolrConfigProps_ForCache() {
+  public void testSolrConfigPropsForCache() {
     final CacheConfig cacheConfig =
         CacheConfig.getConfig(mockSolrConfig, domConfigNode, XPATH_DOCUMENT_CACHE);
     assertNotNull(cacheConfig);
@@ -96,7 +96,7 @@ public class CacheConfigTest extends SolrTestCaseJ4 {
     assertEquals("documentCache", cacheConfig.getNodeName());
   }
 
-  public void test_Disable_SolrConfig_ForCache() {
+  public void testSolrConfigDisabledCache() {
     Mockito.when(mockSolrConfig.getOverlay()).thenReturn(mockConfigOverlay);
     Mockito.when(mockConfigOverlay.getEditableSubProperties(XPATH_QUERY_RESULT_CACHE))
         .thenReturn(null);
@@ -106,7 +106,7 @@ public class CacheConfigTest extends SolrTestCaseJ4 {
     assertNull(cacheConfig);
   }
 
-  public void test_OverlayProps_Overriding_solrConfigProps() {
+  public void testOverlayPropsOverridingSolrConfigProps() {
     final String overlaidSize = "199";
     overlayConfigNode =
         new OverlaidConfigNode(mockConfigOverlay, "documentCache", null, domConfigNode);
@@ -122,7 +122,7 @@ public class CacheConfigTest extends SolrTestCaseJ4 {
     assertEquals(overlaidSize, args.get("size"));
   }
 
-  public void test_OverlaidDisable_SolrConfigEnabled_Cache() {
+  public void testOverlaidDisabledSolrConfigEnabledCache() {
     overlayConfigNode =
         new OverlaidConfigNode(mockConfigOverlay, "queryResultCache", null, domConfigNode);
     Mockito.when(mockSolrConfig.getOverlay()).thenReturn(mockConfigOverlay);
@@ -134,7 +134,7 @@ public class CacheConfigTest extends SolrTestCaseJ4 {
     assertNull(cacheConfig);
   }
 
-  public void test_OverlaidEnabled_SolrConfigDisabled_Cache() {
+  public void testOverlaidEnabledSolrConfigDisabledCache() {
     overlayConfigNode =
         new OverlaidConfigNode(mockConfigOverlay, "queryResultCache", null, domConfigNodeDisable);
     Mockito.when(mockSolrConfig.getOverlay()).thenReturn(mockConfigOverlay);
@@ -150,7 +150,7 @@ public class CacheConfigTest extends SolrTestCaseJ4 {
     assertEquals("queryResultCache", cacheConfig.getNodeName());
   }
 
-  public void test_EmptyConfigNode_Cache() {
+  public void testEmptyConfigNodeCache() {
     final ConfigNode emptyNodeSolrConfig = ConfigNode.EMPTY;
     final CacheConfig cacheConfig =
         CacheConfig.getConfig(mockSolrConfig, emptyNodeSolrConfig, null);
