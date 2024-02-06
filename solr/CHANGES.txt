@@ -93,6 +93,8 @@ Improvements
 * SOLR-17038: Expose the term count in /admin/segments handler if fieldInfo=true.
   (Rahul Goswami via David Smiley and Christine Poerschke)
 
+* SOLR-17146: Add DelegatingBackupRepository and alternative checksum verification (Bruno Roustant)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
@@ -219,6 +221,8 @@ Bug Fixes
   updates of the same document in separate requests using commitWithin. (Calvin Smith, Christine Poerschke)
 
 * SOLR-17112: bin/solr script doesn't do ps properly on some systems. (Vincenzo D'Amore via Eric Pugh)
+
+* SOLR-17149: Backups on collections with too many shards fail due to restrictive Executor queue size (Pierre Salagnac via Jason Gerlowski)
 
 Dependency Upgrades
 ---------------------
