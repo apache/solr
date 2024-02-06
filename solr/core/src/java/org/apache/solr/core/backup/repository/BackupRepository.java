@@ -204,6 +204,15 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
     }
   }
 
+  /**
+   * Copies an index file from a specified {@link Directory} to a destination {@link Directory}.
+   *
+   * @param sourceDir The source directory hosting the file to be copied.
+   * @param sourceFileName The name of the file to be copied
+   * @param destDir The destination directory.
+   * @throws CorruptIndexException in case checksum of the file does not match with precomputed
+   *     checksum stored at the end of the file
+   */
   default void copyIndexFileFrom(
       Directory sourceDir, String sourceFileName, Directory destDir, String destFileName)
       throws IOException {
@@ -288,5 +297,29 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
       URI sourceRepo, String sourceFileName, Directory dest, String destFileName)
       throws IOException {
     throw new UnsupportedOperationException();
+  }
+
+  /**
+   * Copy a file from a source {@link Directory} to a destination {@link Directory} without
+   * verifying the checksum.
+   *
+   * @param sourceDir The source directory hosting the file to be copied.
+   * @param sourceFileName The name of the file to be copied.
+   * @param destDir The destination directory to copy the file to.
+   * @param destFileName The name of the copied file at destination.
+   */
+  default void copyFileNoChecksum(
+      Directory sourceDir, String sourceFileName, Directory destDir, String destFileName)
+      throws IOException {
+    boolean success = false;
+    try (IndexInput is = sourceDir.openInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+        IndexOutput os = destDir.createOutput(destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+      os.copyBytes(is, is.length());
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.deleteFilesIgnoringExceptions(destDir, destFileName);
+      }
+    }
   }
 }
