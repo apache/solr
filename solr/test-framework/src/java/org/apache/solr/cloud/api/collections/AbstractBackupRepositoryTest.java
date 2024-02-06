@@ -20,6 +20,7 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.lucene.codecs.CodecUtil.FOOTER_MAGIC;
 import static org.apache.lucene.codecs.CodecUtil.writeBEInt;
 import static org.apache.lucene.codecs.CodecUtil.writeBELong;
+import static org.apache.solr.core.backup.repository.AbstractBackupRepository.PARAM_VERIFY_CHECKSUM;
 import static org.apache.solr.core.backup.repository.DelegatingBackupRepository.PARAM_DELEGATE_REPOSITORY_NAME;
 
 import java.io.File;
@@ -52,8 +53,6 @@ import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 import org.apache.solr.core.backup.repository.DelegatingBackupRepository;
 import org.apache.solr.schema.FieldType;
 import org.junit.Test;
-
-import static org.apache.solr.core.backup.repository.AbstractBackupRepository.PARAM_VERIFY_CHECKSUM;
 
 public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
 
@@ -394,8 +393,8 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Test implementation of a {@link DelegatingBackupRepository} that disables the checksum verification
-   * on its delegate {@link BackupRepository}.
+   * Test implementation of a {@link DelegatingBackupRepository} that disables the checksum
+   * verification on its delegate {@link BackupRepository}.
    *
    * <p>This test class is public to be instantiated by the {@link BackupRepositoryFactory}.
    */

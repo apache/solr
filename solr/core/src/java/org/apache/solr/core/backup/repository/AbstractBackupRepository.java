@@ -1,14 +1,14 @@
 package org.apache.solr.core.backup.repository;
 
+import java.io.IOException;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.common.util.NamedList;
 
-import java.io.IOException;
-
 /**
- * Abstract {@link BackupRepository} implementation providing some logic shared between real implementations.
+ * Abstract {@link BackupRepository} implementation providing some logic shared between real
+ * implementations.
  */
 public abstract class AbstractBackupRepository implements BackupRepository {
 
@@ -33,8 +33,8 @@ public abstract class AbstractBackupRepository implements BackupRepository {
 
   /**
    * Copies an index file from a specified {@link Directory} to a destination {@link Directory}.
-   * Also verifies the checksum unless {@link #PARAM_VERIFY_CHECKSUM} was false in the
-   * {@link #init(NamedList)} arguments.
+   * Also verifies the checksum unless {@link #PARAM_VERIFY_CHECKSUM} was false in the {@link
+   * #init(NamedList)} arguments.
    *
    * @param sourceDir The source directory hosting the file to be copied.
    * @param sourceFileName The name of the file to be copied

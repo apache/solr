@@ -301,7 +301,7 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
       throws IOException {
     boolean success = false;
     try (IndexInput is = sourceDir.openInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
-         IndexOutput os = destDir.createOutput(destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+        IndexOutput os = destDir.createOutput(destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
       os.copyBytes(is, is.length());
       success = true;
     } finally {
