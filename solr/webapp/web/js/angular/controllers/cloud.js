@@ -976,8 +976,8 @@ solrAdminApp.directive('graph', function(Constants) {
 
                 // Calculate roughly the width of host name to align the graph
                 var hostnameWidth = graphData.children.length > 0 ?
-                  graphData.children[0].children[0].children[0].name.length * 7.5 : 400;
-                var tree = d3.layout.tree().size([h, w - hostnameWidth]);
+                  graphData.children[0].children[0].children[0].name.length * 5.5 : 400;
+                var tree = d3.layout.tree().size([h, w - 140 - hostnameWidth]);
 
                 var diagonal = d3.svg.diagonal().projection(function (d) {
                     return [d.y, d.x];
