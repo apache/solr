@@ -61,7 +61,12 @@ teardown() {
 }
 
 @test "icu collation in analysis-extras module" {
-  run solr start -c -Dsolr.modules=analysis-extras
+  local solr_include_file="${BATS_TEST_TMPDIR}/solr.include"
+  echo "SOLR_MODULES=analysis-extras" > "${solr_include_file}"
+  chmod a+r "${solr_include_file}"
+
+  export SOLR_INCLUDE="${solr_include_file}"
+  run solr start -c
   run solr create -c COLL_NAME -d test/analysis_extras_config/conf
   assert_output --partial "Created collection 'COLL_NAME'"
 }
