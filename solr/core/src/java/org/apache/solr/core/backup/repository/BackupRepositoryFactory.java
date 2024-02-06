@@ -17,7 +17,7 @@
 
 package org.apache.solr.core.backup.repository;
 
-import static org.apache.solr.core.backup.repository.FilterBackupRepository.PARAM_DELEGATE_REPOSITORY_NAME;
+import static org.apache.solr.core.backup.repository.DelegatingBackupRepository.PARAM_DELEGATE_REPOSITORY_NAME;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
@@ -76,8 +76,8 @@ public class BackupRepositoryFactory {
     BackupRepository backupRepository = loader.newInstance(repo.className, BackupRepository.class);
     backupRepository.init(repo.initArgs);
 
-    if (backupRepository instanceof FilterBackupRepository) {
-      FilterBackupRepository filter = (FilterBackupRepository) backupRepository;
+    if (backupRepository instanceof DelegatingBackupRepository) {
+      DelegatingBackupRepository delegatingRepo = (DelegatingBackupRepository) backupRepository;
       String delegateName = (String) repo.initArgs.get(PARAM_DELEGATE_REPOSITORY_NAME);
       if (delegateName == null) {
         throw new SolrException(
@@ -90,8 +90,8 @@ public class BackupRepositoryFactory {
       PluginInfo delegatePlugin = getBackupRepoPlugin(delegateName);
       BackupRepository delegate =
           loader.newInstance(delegatePlugin.className, BackupRepository.class);
-      delegate.init(filter.getDelegateInitArgs(delegatePlugin.initArgs));
-      filter.setDelegate(delegate);
+      delegate.init(delegatingRepo.getDelegateInitArgs(delegatePlugin.initArgs));
+      delegatingRepo.setDelegate(delegate);
     }
 
     return backupRepository;

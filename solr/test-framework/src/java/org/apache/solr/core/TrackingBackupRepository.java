@@ -24,9 +24,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.store.Directory;
-import org.apache.solr.core.backup.repository.FilterBackupRepository;
+import org.apache.solr.core.backup.repository.DelegatingBackupRepository;
 
-public class TrackingBackupRepository extends FilterBackupRepository {
+public class TrackingBackupRepository extends DelegatingBackupRepository {
   private static final List<URI> COPIED_FILES = Collections.synchronizedList(new ArrayList<>());
   private static final List<URI> DIRECTORIES_CREATED =
       Collections.synchronizedList(new ArrayList<>());

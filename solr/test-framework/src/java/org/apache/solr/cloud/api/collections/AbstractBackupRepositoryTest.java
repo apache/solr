@@ -20,7 +20,7 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.lucene.codecs.CodecUtil.FOOTER_MAGIC;
 import static org.apache.lucene.codecs.CodecUtil.writeBEInt;
 import static org.apache.lucene.codecs.CodecUtil.writeBELong;
-import static org.apache.solr.core.backup.repository.FilterBackupRepository.PARAM_DELEGATE_REPOSITORY_NAME;
+import static org.apache.solr.core.backup.repository.DelegatingBackupRepository.PARAM_DELEGATE_REPOSITORY_NAME;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,7 +49,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
-import org.apache.solr.core.backup.repository.FilterBackupRepository;
+import org.apache.solr.core.backup.repository.DelegatingBackupRepository;
 import org.apache.solr.schema.FieldType;
 import org.junit.Test;
 
@@ -321,13 +321,13 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       // When we copy the local file with the NoChecksumFilterBackupRepository,
       // then it succeeds because the checksum is not verified,
       // and the checksum is verified alternatively.
-      NoChecksumFilterBackupRepository.checksumVerifiedAlternatively = false;
+      NoChecksumDelegatingBackupRepository.checksumVerifiedAlternatively = false;
       copyFileToRepo(sourceDir, fileName, filterRepoName, repoFactory, resourceLoader);
-      assertTrue(NoChecksumFilterBackupRepository.checksumVerifiedAlternatively);
-      NoChecksumFilterBackupRepository.checksumVerifiedAlternatively = false;
+      assertTrue(NoChecksumDelegatingBackupRepository.checksumVerifiedAlternatively);
+      NoChecksumDelegatingBackupRepository.checksumVerifiedAlternatively = false;
       copyFileToDir(
           sourceDir, fileName, destinationDir, filterRepoName, repoFactory, resourceLoader);
-      assertTrue(NoChecksumFilterBackupRepository.checksumVerifiedAlternatively);
+      assertTrue(NoChecksumDelegatingBackupRepository.checksumVerifiedAlternatively);
     }
   }
 
@@ -378,7 +378,7 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
       String pluginName, boolean isDefault, String delegateName) {
     Map<String, String> attrs = new HashMap<>();
     attrs.put(CoreAdminParams.NAME, pluginName);
-    attrs.put(FieldType.CLASS_NAME, NoChecksumFilterBackupRepository.class.getName());
+    attrs.put(FieldType.CLASS_NAME, NoChecksumDelegatingBackupRepository.class.getName());
     attrs.put("default", Boolean.toString(isDefault));
     NamedList<Object> args = new NamedList<>();
     args.add(PARAM_DELEGATE_REPOSITORY_NAME, delegateName);
@@ -394,12 +394,12 @@ public abstract class AbstractBackupRepositoryTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Test implementation of a {@link FilterBackupRepository} that disables the checksum verification
+   * Test implementation of a {@link DelegatingBackupRepository} that disables the checksum verification
    * on its delegate {@link BackupRepository}.
    *
    * <p>This test class is public to be instantiated by the {@link BackupRepositoryFactory}.
    */
-  public static class NoChecksumFilterBackupRepository extends FilterBackupRepository {
+  public static class NoChecksumDelegatingBackupRepository extends DelegatingBackupRepository {
 
     static volatile boolean checksumVerifiedAlternatively;
 

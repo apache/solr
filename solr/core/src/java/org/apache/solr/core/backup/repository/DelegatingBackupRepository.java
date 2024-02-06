@@ -27,7 +27,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.Checksum;
 
 /** Delegates to another {@link BackupRepository}. */
-public class FilterBackupRepository implements BackupRepository {
+public class DelegatingBackupRepository implements BackupRepository {
 
   public static final String PARAM_DELEGATE_REPOSITORY_NAME = "delegateRepoName";
 
