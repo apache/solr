@@ -410,7 +410,7 @@ By default, all the repository implementations verify the integrity of the index
 |Optional |Default: `true`
 |===
 +
-Defines whether the backup repository should check the index files integrity before copying them to the destination. Set `false` to disable the checksum verification, for example to verify the integrity in a different way.
+Defines whether the backup repository should check the index files integrity before copying them to the destination. Set `false` to disable the checksum verification, in order to verify the integrity in a different way, for example if the files are encrypted.
 
 === LocalFileSystemRepository
 
@@ -433,7 +433,7 @@ LocalFileSystemRepository accepts the following configuration option:
 |===
 +
 A valid file path (accessible to Solr locally) to use for backup storage and retrieval.
-Used as a fallback when user's don't provide a `location` parameter in their Backup or Restore API commands.
+Used as a fallback when users don't provide a `location` parameter in their Backup or Restore API commands.
 
 An example configuration using this property can be found below.
 
