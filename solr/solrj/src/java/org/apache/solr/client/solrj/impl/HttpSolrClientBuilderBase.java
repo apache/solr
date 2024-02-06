@@ -3,7 +3,6 @@ package org.apache.solr.client.solrj.impl;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.eclipse.jetty.util.HttpCookieStore;
 
 import java.net.CookieStore;
 import java.util.Set;
@@ -25,7 +24,7 @@ public class HttpSolrClientBuilderBase {
     protected SSLConfig sslConfig;;
     protected Integer maxConnectionsPerHost;
     protected ExecutorService executor;
-    protected CookieStore cookieStore = HttpSolrClientBuilderBase.getDefaultCookieStore();
+    protected CookieStore cookieStore;
     protected String proxyHost;
     protected int proxyPort;
     protected boolean proxyIsSocks4;
@@ -35,17 +34,6 @@ public class HttpSolrClientBuilderBase {
 
     public  HttpSolrClientBuilderBase(String baseSolrUrl) {
         this.baseSolrUrl = baseSolrUrl;
-    }
-
-    protected static CookieStore getDefaultCookieStore() {
-        if (Boolean.getBoolean("solr.http.disableCookies")) {
-            return new HttpCookieStore.Empty();
-        }
-        /*
-         * We could potentially have a Supplier<CookieStore> if we ever need further customization support,
-         * but for now it's only either Empty or default (in-memory).
-         */
-        return null;
     }
 
     /**

@@ -71,6 +71,7 @@ import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
@@ -1248,9 +1249,23 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
+    private CookieStore getDefaultCookieStore() {
+      if (Boolean.getBoolean("solr.http.disableCookies")) {
+        return new HttpCookieStore.Empty();
+      }
+      /*
+       * We could potentially have a Supplier<CookieStore> if we ever need further customization support,
+       * but for now it's only either Empty or default (in-memory).
+       */
+      return null;
+    }
+
     public Http2SolrClient build() {
       if(sslConfig == null) {
         sslConfig = Http2SolrClient.defaultSSLConfig;
+      }
+      if(cookieStore == null) {
+        cookieStore = getDefaultCookieStore();
       }
       if (idleTimeoutMillis == null || idleTimeoutMillis <= 0) {
         idleTimeoutMillis = (long) HttpClientUtil.DEFAULT_SO_TIMEOUT;
