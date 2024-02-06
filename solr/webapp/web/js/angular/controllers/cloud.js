@@ -929,18 +929,21 @@ solrAdminApp.directive('graph', function(Constants) {
                 return name;
             };
 
-            scope.$watch("data", function(newValue, oldValue) {
+            var drawGraph = function(newValue, oldValue) {
                 if (newValue) {
-                    flatGraph(element, scope.data, scope.leafCount);
+                  flatGraph(element, scope.data, scope.leafCount);
                 }
 
                 $('text').tooltip({
-                    content: function() {
-                        return $(this).attr('title');
-                    }
+                  content: function() {
+                    return $(this).attr('title');
+                  }
                 });
-            });
+              };
 
+            scope.$watch("data", drawGraph);
+
+            window.onresize = drawGraph;
 
             function setNodeNavigationBehavior(node, view){
                 node
@@ -971,7 +974,10 @@ solrAdminApp.directive('graph', function(Constants) {
                 var w = element.width(),
                     h = leafCount * 20;
 
-                var tree = d3.layout.tree().size([h, w - 400]);
+                // Calculate roughly the width of host name to align the graph
+                var hostnameWidth = graphData.children.length > 0 ?
+                  graphData.children[0].children[0].children[0].name.length * 7.5 : 400;
+                var tree = d3.layout.tree().size([h, w - hostnameWidth]);
 
                 var diagonal = d3.svg.diagonal().projection(function (d) {
                     return [d.y, d.x];
@@ -982,7 +988,7 @@ solrAdminApp.directive('graph', function(Constants) {
                     .attr('width', w)
                     .attr('height', h)
                     .append('g')
-                    .attr('transform', 'translate(100, 0)');
+                    .attr('transform', 'translate(10, 0)');
 
                 var nodes = tree.nodes(graphData);
 
