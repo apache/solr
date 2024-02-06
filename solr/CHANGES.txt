@@ -110,6 +110,8 @@ Bug Fixes
 
 * SOLR-17112: bin/solr script doesn't do ps properly on some systems. (Vincenzo D'Amore via Eric Pugh)
 
+* SOLR-17149: Backups on collections with too many shards fail due to restrictive Executor queue size (Pierre Salagnac via Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 * PR#2055: Update org.mockito:mockito* from v5.5.0 to v5.8.0 (solrbot)
