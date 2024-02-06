@@ -7,6 +7,10 @@ import org.apache.solr.common.util.NamedList;
 import java.io.IOException;
 
 public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
+    protected HttpSolrClientJdkImpl(String serverBaseUrl, HttpSolrClientBuilderBase builder) {
+        super(serverBaseUrl, builder);
+    }
+
     @Override
     public NamedList<Object> request(SolrRequest<?> request, String collection) throws SolrServerException, IOException {
         return null;

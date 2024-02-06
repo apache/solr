@@ -86,8 +86,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
 import java.net.CookieStore;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -132,7 +130,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
-  private static final String DEFAULT_PATH = "/select";
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
 
   private final HttpClient httpClient;
@@ -143,13 +140,10 @@ public class Http2SolrClient extends Http2SolrClientBase {
   // updating parser instance needs to go via the setter to ensure update of defaultParserMimeTypes
   private ResponseParser parser = new BinaryResponseParser();
   private Set<String> defaultParserMimeTypes;
-
-  protected RequestWriter requestWriter = new BinaryRequestWriter();
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private final AsyncTracker asyncTracker = new AsyncTracker();
 
-  /** The URL of the Solr server. */
-  private final String serverBaseUrl;
+
 
   private final boolean closeClient;
   private ExecutorService executor;
@@ -161,18 +155,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
   private KeyStoreScanner scanner;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
-    if (serverBaseUrl != null) {
-      if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
-        serverBaseUrl = serverBaseUrl.substring(0, serverBaseUrl.length() - 1);
-      }
-
-      if (serverBaseUrl.startsWith("//")) {
-        serverBaseUrl = serverBaseUrl.substring(1, serverBaseUrl.length());
-      }
-      this.serverBaseUrl = serverBaseUrl;
-    } else {
-      this.serverBaseUrl = null;
-    }
+    super(serverBaseUrl, builder);
 
     this.idleTimeoutMillis = builder.idleTimeoutMillis;
 
@@ -555,8 +538,9 @@ public class Http2SolrClient extends Http2SolrClientBase {
   @Override
   public NamedList<Object> request(SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
-    if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest))
+    if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest)) {
       collection = defaultCollection;
+    }
     String url = getRequestPath(solrRequest, collection);
     Throwable abortCause = null;
     Request req = null;
@@ -661,32 +645,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
               headers.entrySet().stream()
                   .forEach(entry -> h.add(entry.getKey(), entry.getValue())));
     }
-  }
-
-  private String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
-    URL oldURL = new URL(basePath);
-    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
-    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
-  }
-
-  private String getRequestPath(SolrRequest<?> solrRequest, String collection)
-      throws MalformedURLException {
-    String basePath = solrRequest.getBasePath() == null ? serverBaseUrl : solrRequest.getBasePath();
-    if (collection != null) basePath += "/" + collection;
-
-    if (solrRequest instanceof V2Request) {
-      if (System.getProperty("solr.v2RealPath") == null) {
-        basePath = changeV2RequestEndpoint(basePath);
-      } else {
-        basePath = serverBaseUrl + "/____v2";
-      }
-    }
-    String path = requestWriter.getPath(solrRequest);
-    if (path == null || !path.startsWith("/")) {
-      path = DEFAULT_PATH;
-    }
-
-    return basePath + path;
   }
 
   private Request makeRequestAndSend(
