@@ -16,39 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.common.util.Utils.getObjectByPath;
-
-import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
-import java.io.FilterInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.InvocationTargetException;
-import java.net.ConnectException;
-import java.net.CookieStore;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Phaser;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -104,12 +71,45 @@ import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.InvocationTargetException;
+import java.net.ConnectException;
+import java.net.CookieStore;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Phaser;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
+import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 /**
  * Difference between this {@link Http2SolrClient} and {@link HttpSolrClient}:
@@ -1057,37 +1057,201 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
-  public static class Builder {
+  public static class Builder extends HttpSolrClientBuilderBase {
 
     private HttpClient httpClient;
-    private SSLConfig sslConfig = defaultSSLConfig;
-    private Long idleTimeoutMillis;
-    private Long connectionTimeoutMillis;
-    private Long requestTimeoutMillis;
-    private Integer maxConnectionsPerHost;
-    private String basicAuthAuthorizationStr;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
-    private Boolean followRedirects;
-    protected String baseSolrUrl;
-    private ExecutorService executor;
-    protected RequestWriter requestWriter;
-    protected ResponseParser responseParser;
-    protected String defaultCollection;
-    private Set<String> urlParamNames;
-    private CookieStore cookieStore = getDefaultCookieStore();
-    private String proxyHost;
-    private int proxyPort;
-    private boolean proxyIsSocks4;
-    private boolean proxyIsSecure;
-    private Long keyStoreReloadIntervalSecs;
 
-    public Builder() {}
+    public Builder() {
+      super();
+    }
 
     public Builder(String baseSolrUrl) {
-      this.baseSolrUrl = baseSolrUrl;
+      super(baseSolrUrl);
+    }
+
+    /**
+     * Provides a {@link RequestWriter} for created clients to use when handing requests.
+     */
+    public Http2SolrClient.Builder withRequestWriter(RequestWriter requestWriter) {
+     super.withRequestWriter(requestWriter);
+      return this;
+    }
+
+    /**
+     * Provides a {@link ResponseParser} for created clients to use when handling requests.
+     */
+    public Http2SolrClient.Builder withResponseParser(ResponseParser responseParser) {
+     super.withResponseParser(responseParser);
+      return this;
+    }
+
+    /**
+     * Sets a default for core or collection based requests.
+     */
+    public Http2SolrClient.Builder withDefaultCollection(String defaultCoreOrCollection) {
+      super.withDefaultCollection(defaultCoreOrCollection);
+      return this;
+    }
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Http2SolrClient.Builder withFollowRedirects(boolean followRedirects) {
+     super.withFollowRedirects(followRedirects);
+      return this;
+    }
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Http2SolrClient.Builder withExecutor(ExecutorService executor) {
+      super.withExecutor(executor);
+      return this;
+    }
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Http2SolrClient.Builder withSSLConfig(SSLConfig sslConfig) {
+      super.withSSLConfig(sslConfig);
+      return this;
+    }
+
+    public Http2SolrClient.Builder withBasicAuthCredentials(String user, String pass) {
+     super.withBasicAuthCredentials(user, pass);
+     return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Http2SolrClient.Builder withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
+      super.withTheseParamNamesInTheUrl(urlParamNames);
+      return this;
+    }
+
+    /**
+     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
+     * to 4
+     *
+     * @deprecated Please use {@link #withMaxConnectionsPerHost(int)}
+     */
+    @Deprecated(since = "9.2")
+    public Http2SolrClient.Builder maxConnectionsPerHost(int max) {
+      withMaxConnectionsPerHost(max);
+      return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Http2SolrClient.Builder withMaxConnectionsPerHost(int max) {
+      super.withMaxConnectionsPerHost(max);
+      return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Http2SolrClient.Builder withKeyStoreReloadInterval(long interval, TimeUnit unit) {
+     super.withKeyStoreReloadInterval(interval, unit);
+      return this;
+    }
+
+    /**
+     * @deprecated Please use {@link #withIdleTimeout(long, TimeUnit)}
+     */
+    @Deprecated(since = "9.2")
+    public Http2SolrClient.Builder idleTimeout(int idleConnectionTimeout) {
+      withIdleTimeout(idleConnectionTimeout, TimeUnit.MILLISECONDS);
+      return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Http2SolrClient.Builder withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
+      super.withIdleTimeout(idleConnectionTimeout, unit);
+      return this;
+    }
+
+    /**
+     * @deprecated Please use {@link #withConnectionTimeout(long, TimeUnit)}
+     */
+    @Deprecated(since = "9.2")
+    public Http2SolrClient.Builder connectionTimeout(int connectionTimeout) {
+      withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS);
+      return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Http2SolrClient.Builder withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
+     super.withConnectionTimeout(connectionTimeout, unit);
+      return this;
+    }
+
+    /**
+     * Set a timeout in milliseconds for requests issued by this client.
+     *
+     * @param requestTimeout The timeout in milliseconds
+     * @return this Builder.
+     * @deprecated Please use {@link #withRequestTimeout(long, TimeUnit)}
+     */
+    @Deprecated(since = "9.2")
+    public Http2SolrClient.Builder requestTimeout(int requestTimeout) {
+      withRequestTimeout(requestTimeout, TimeUnit.MILLISECONDS);
+      return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Http2SolrClient.Builder withRequestTimeout(long requestTimeout, TimeUnit unit) {
+      super.withRequestTimeout(requestTimeout, unit);
+      return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Http2SolrClient.Builder withCookieStore(CookieStore cookieStore) {
+      super.withCookieStore(cookieStore);
+      return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Http2SolrClient.Builder withProxyConfiguration(
+            String host, int port, boolean isSocks4, boolean isSecure) {
+      super.withProxyConfiguration(host, port, isSocks4, isSecure);
+      return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Http2SolrClient.Builder withOptionalBasicAuthCredentials(String credentials) {
+      super.withOptionalBasicAuthCredentials(credentials);
+      return this;
     }
 
     public Http2SolrClient build() {
+      if(sslConfig == null) {
+        sslConfig = Http2SolrClient.defaultSSLConfig;
+      }
       if (idleTimeoutMillis == null || idleTimeoutMillis <= 0) {
         idleTimeoutMillis = (long) HttpClientUtil.DEFAULT_SO_TIMEOUT;
       }
@@ -1143,17 +1307,6 @@ public class Http2SolrClient extends SolrClient {
       }
     }
 
-    private static CookieStore getDefaultCookieStore() {
-      if (Boolean.getBoolean("solr.http.disableCookies")) {
-        return new HttpCookieStore.Empty();
-      }
-      /*
-       * We could potentially have a Supplier<CookieStore> if we ever need further customization support,
-       * but for now it's only either Empty or default (in-memory).
-       */
-      return null;
-    }
-
     /**
      * Provide a seed Http2SolrClient for the builder values, values can still be overridden by
      * using builder methods
@@ -1185,214 +1338,11 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
-    /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
-    public Builder withRequestWriter(RequestWriter requestWriter) {
-      this.requestWriter = requestWriter;
-      return this;
-    }
-
-    /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
-    public Builder withResponseParser(ResponseParser responseParser) {
-      this.responseParser = responseParser;
-      return this;
-    }
-
-    /** Sets a default for core or collection based requests. */
-    public Builder withDefaultCollection(String defaultCoreOrCollection) {
-      this.defaultCollection = defaultCoreOrCollection;
-      return this;
-    }
-
-    public Builder withFollowRedirects(boolean followRedirects) {
-      this.followRedirects = followRedirects;
-      return this;
-    }
-
-    public Builder withExecutor(ExecutorService executor) {
-      this.executor = executor;
-      return this;
-    }
-
-    public Builder withSSLConfig(SSLConfig sslConfig) {
-      this.sslConfig = sslConfig;
-      return this;
-    }
-
-    public Builder withBasicAuthCredentials(String user, String pass) {
-      if (user != null || pass != null) {
-        if (user == null || pass == null) {
-          throw new IllegalStateException(
-              "Invalid Authentication credentials. Either both username and password or none must be provided");
-        }
-      }
-      this.basicAuthAuthorizationStr = basicAuthCredentialsToAuthorizationString(user, pass);
-      return this;
-    }
-
-    /**
-     * Expert Method
-     *
-     * @param urlParamNames set of param keys that are only sent via the query string. Note that the
-     *     param will be sent as a query string if the key is part of this Set or the SolrRequest's
-     *     query params.
-     * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
-     */
-    public Builder withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
-      this.urlParamNames = urlParamNames;
-      return this;
-    }
-
-    /**
-     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
-     * to 4
-     *
-     * @deprecated Please use {@link #withMaxConnectionsPerHost(int)}
-     */
-    @Deprecated(since = "9.2")
-    public Builder maxConnectionsPerHost(int max) {
-      withMaxConnectionsPerHost(max);
-      return this;
-    }
-
-    /**
-     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
-     * to 4
-     */
-    public Builder withMaxConnectionsPerHost(int max) {
-      this.maxConnectionsPerHost = max;
-      return this;
-    }
-
-    /**
-     * Set the scanning interval to check for updates in the Key Store used by this client. If the
-     * interval is unset, 0 or less, then the Key Store Scanner is not created, and the client will
-     * not attempt to update key stores. The minimum value between checks is 1 second.
-     *
-     * @param interval Interval between checks
-     * @param unit The unit for the interval
-     * @return This builder
-     */
-    public Builder withKeyStoreReloadInterval(long interval, TimeUnit unit) {
-      this.keyStoreReloadIntervalSecs = unit.toSeconds(interval);
-      if (this.keyStoreReloadIntervalSecs == 0 && interval > 0) {
-        this.keyStoreReloadIntervalSecs = 1L;
-      }
-      return this;
-    }
-
-    /**
-     * @deprecated Please use {@link #withIdleTimeout(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Builder idleTimeout(int idleConnectionTimeout) {
-      withIdleTimeout(idleConnectionTimeout, TimeUnit.MILLISECONDS);
-      return this;
-    }
-
-    public Builder withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
-      this.idleTimeoutMillis = TimeUnit.MILLISECONDS.convert(idleConnectionTimeout, unit);
-      return this;
-    }
-
-    public Long getIdleTimeoutMillis() {
-      return idleTimeoutMillis;
-    }
-
     public Builder useHttp1_1(boolean useHttp1_1) {
       this.useHttp1_1 = useHttp1_1;
       return this;
     }
 
-    /**
-     * @deprecated Please use {@link #withConnectionTimeout(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Builder connectionTimeout(int connectionTimeout) {
-      withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS);
-      return this;
-    }
-
-    public Builder withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
-      this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
-      return this;
-    }
-
-    public Long getConnectionTimeout() {
-      return connectionTimeoutMillis;
-    }
-
-    /**
-     * Set a timeout in milliseconds for requests issued by this client.
-     *
-     * @deprecated Please use {@link #withRequestTimeout(long, TimeUnit)}
-     * @param requestTimeout The timeout in milliseconds
-     * @return this Builder.
-     */
-    @Deprecated(since = "9.2")
-    public Builder requestTimeout(int requestTimeout) {
-      withRequestTimeout(requestTimeout, TimeUnit.MILLISECONDS);
-      return this;
-    }
-
-    /**
-     * Set a timeout in milliseconds for requests issued by this client.
-     *
-     * @param requestTimeout The timeout in milliseconds
-     * @return this Builder.
-     */
-    public Builder withRequestTimeout(long requestTimeout, TimeUnit unit) {
-      this.requestTimeoutMillis = TimeUnit.MILLISECONDS.convert(requestTimeout, unit);
-      return this;
-    }
-
-    /**
-     * Set a cookieStore other than the default ({@code java.net.InMemoryCookieStore})
-     *
-     * @param cookieStore The CookieStore to set. {@code null} will set the default.
-     * @return this Builder
-     */
-    public Builder withCookieStore(CookieStore cookieStore) {
-      this.cookieStore = cookieStore;
-      return this;
-    }
-
-    /**
-     * Setup a proxy
-     *
-     * @param host The proxy host
-     * @param port The proxy port
-     * @param isSocks4 If true creates an SOCKS 4 proxy, otherwise creates an HTTP proxy
-     * @param isSecure If true enables the secure flag on the proxy
-     * @return this Builder
-     */
-    public Builder withProxyConfiguration(
-        String host, int port, boolean isSocks4, boolean isSecure) {
-      this.proxyHost = host;
-      this.proxyPort = port;
-      this.proxyIsSocks4 = isSocks4;
-      this.proxyIsSecure = isSecure;
-      return this;
-    }
-
-    /**
-     * Setup basic authentication from a string formatted as username:password. If the string is
-     * Null then it doesn't do anything.
-     *
-     * @param credentials The username and password formatted as username:password
-     * @return this Builder
-     */
-    public Builder withOptionalBasicAuthCredentials(String credentials) {
-      if (credentials != null) {
-        if (credentials.indexOf(':') == -1) {
-          throw new IllegalStateException(
-              "Invalid Authentication credential formatting. Provide username and password in the 'username:password' format.");
-        }
-        String username = credentials.substring(0, credentials.indexOf(':'));
-        String password = credentials.substring(credentials.indexOf(':') + 1, credentials.length());
-        withBasicAuthCredentials(username, password);
-      }
-      return this;
-    }
   }
 
   public Set<String> getUrlParamNames() {
