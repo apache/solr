@@ -63,7 +63,7 @@ teardown() {
   refute_output --partial 'ERROR'
 }
 
-@test "basic post with c parameter instead of url parameter" {
+@test "basic post with collection instead of url parameter" {
   
   run solr create -c monitors_c_param -d _default
   assert_output --partial "Created collection 'monitors_c_param'"
