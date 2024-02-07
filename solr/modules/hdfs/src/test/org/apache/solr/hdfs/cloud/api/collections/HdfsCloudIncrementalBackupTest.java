@@ -121,7 +121,7 @@ public class HdfsCloudIncrementalBackupTest extends AbstractIncrementalBackupTes
     System.setProperty("solr.hdfs.home", hdfsUri + "/solr");
     useFactory("solr.StandardDirectoryFactory");
 
-    configureCluster(NUM_SHARDS) // nodes
+    configureCluster(NUM_NODES) // nodes
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(SOLR_XML)

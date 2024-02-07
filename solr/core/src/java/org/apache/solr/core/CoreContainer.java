@@ -420,7 +420,8 @@ public class CoreContainer {
         new OrderedExecutor(
             cfg.getReplayUpdatesThreads(),
             ExecutorUtil.newMDCAwareCachedThreadPool(
-                cfg.getReplayUpdatesThreads(),
+                cfg.getReplayUpdatesThreads(), // thread count
+                cfg.getReplayUpdatesThreads(), // queue size
                 new SolrNamedThreadFactory("replayUpdatesExecutor")));
     this.appHandlersByConfigSetId = new JerseyAppHandlerCache();
 
