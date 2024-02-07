@@ -634,23 +634,11 @@ public class Http2SolrClient extends Http2SolrClientBase {
       SolrRequest<?> solrRequest, String url, InputStreamResponseListener listener, boolean isAsync)
       throws IOException, SolrServerException {
 
-    // TODO add invariantParams support
-    ResponseParser parser =
-        solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
-
-    // The parser 'wt=' and 'version=' params are used instead of the original
-    // params
-    ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
-    wparams.set(CommonParams.WT, parser.getWriterType());
-    wparams.set(CommonParams.VERSION, parser.getVersion());
+    ResponseParser parser = responseParser(solrRequest);
+    ModifiableSolrParams wparams = initalizeSolrParams(solrRequest);
 
     if (SolrRequest.METHOD.GET == solrRequest.getMethod()) {
-      RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
-      Collection<ContentStream> streams =
-          contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
-      if (contentWriter != null || streams != null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
-      }
+      validateGetRequest(solrRequest);
       var r = httpClient.newRequest(url + wparams.toQueryString()).method(HttpMethod.GET);
       decorateRequest(r, solrRequest, isAsync);
       r.send(listener);
@@ -670,12 +658,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
       Collection<ContentStream> streams =
           contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
 
-      boolean isMultipart = false;
-      if (streams != null) {
-        boolean hasNullStreamName = false;
-        hasNullStreamName = streams.stream().anyMatch(cs -> cs.getName() == null);
-        isMultipart = !hasNullStreamName && streams.size() > 1;
-      }
+      boolean isMultipart = isMultipart(streams);
 
       HttpMethod method =
           SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;
@@ -701,7 +684,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
         return r;
 
       } else {
-        // It is has one stream, it is the post body, put the params in the URL
+        // If is has one stream, it is the post body, put the params in the URL
         ContentStream contentStream = streams.iterator().next();
         var content =
             new InputStreamRequestContent(
@@ -1152,22 +1135,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
     return urlParamNames;
   }
 
-  private ModifiableSolrParams calculateQueryParams(
-      Set<String> queryParamNames, ModifiableSolrParams wparams) {
-    ModifiableSolrParams queryModParams = new ModifiableSolrParams();
-    if (queryParamNames != null) {
-      for (String param : queryParamNames) {
-        String[] value = wparams.getParams(param);
-        if (value != null) {
-          for (String v : value) {
-            queryModParams.add(param, v);
-          }
-          wparams.remove(param);
-        }
-      }
-    }
-    return queryModParams;
-  }
 
   public static void setDefaultSSLConfig(SSLConfig sslConfig) {
     Http2SolrClient.defaultSSLConfig = sslConfig;

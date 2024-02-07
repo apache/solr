@@ -6,6 +6,10 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.eclipse.jetty.http.MimeTypes;
@@ -83,6 +87,56 @@ public abstract class Http2SolrClientBase extends SolrClient {
         URL oldURL = new URL(basePath);
         String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
         return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
+    }
+
+    protected ResponseParser responseParser(SolrRequest<?> solrRequest) {
+        // TODO add invariantParams support
+        return solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
+    }
+
+    protected ModifiableSolrParams initalizeSolrParams(SolrRequest<?> solrRequest) {
+        // The parser 'wt=' and 'version=' params are used instead of the original
+        // params
+        ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
+        wparams.set(CommonParams.WT, parser.getWriterType());
+        wparams.set(CommonParams.VERSION, parser.getVersion());
+        return wparams;
+    }
+
+    protected boolean isMultipart(Collection<ContentStream> streams) {
+        boolean isMultipart = false;
+        if (streams != null) {
+            boolean hasNullStreamName = false;
+            hasNullStreamName = streams.stream().anyMatch(cs -> cs.getName() == null);
+            isMultipart = !hasNullStreamName && streams.size() > 1;
+        }
+        return isMultipart;
+    }
+
+    protected ModifiableSolrParams calculateQueryParams(
+            Set<String> queryParamNames, ModifiableSolrParams wparams) {
+        ModifiableSolrParams queryModParams = new ModifiableSolrParams();
+        if (queryParamNames != null) {
+            for (String param : queryParamNames) {
+                String[] value = wparams.getParams(param);
+                if (value != null) {
+                    for (String v : value) {
+                        queryModParams.add(param, v);
+                    }
+                    wparams.remove(param);
+                }
+            }
+        }
+        return queryModParams;
+    }
+
+    protected void validateGetRequest(SolrRequest<?> solrRequest) throws IOException {
+        RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
+        Collection<ContentStream> streams =
+                contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
+        if (contentWriter != null || streams != null) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
+        }
     }
 
     protected abstract boolean isFollowRedirects() ;
