@@ -16,21 +16,22 @@ public class MemQueryLimit implements QueryTimeout {
   private static final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
   private static Method GET_BYTES_METHOD;
   private static boolean available;
-  private static ThreadLocal<Long> lastMaxDelta = ThreadLocal.withInitial(() -> Long.valueOf(0L));
+  // this keeps the maxDelta recorded during previous execution
+  private static ThreadLocal<Long> previousMaxDelta = ThreadLocal.withInitial(() -> Long.valueOf(0L));
   private static Histogram memHistogram = new Histogram(LockFreeExponentiallyDecayingReservoir.builder().build());
 
   static {
     boolean testAvailable;
     try {
       Class<?> sunThreadBeanClz = Class.forName("com.sun.management.ThreadMXBean");
-      if (threadBean.getClass().isAssignableFrom(sunThreadBeanClz)) {
-        Method m = threadBean.getClass().getMethod("isThreadAllocatedMemorySupported");
+      if (sunThreadBeanClz.isAssignableFrom(threadBean.getClass())) {
+        Method m = sunThreadBeanClz.getMethod("isThreadAllocatedMemorySupported");
         Boolean supported = (Boolean) m.invoke(threadBean);
         if (supported) {
-          m = threadBean.getClass().getMethod("setThreadAllocatedMemoryEnabled", Boolean.class);
+          m = sunThreadBeanClz.getMethod("setThreadAllocatedMemoryEnabled", boolean.class);
           m.invoke(threadBean, Boolean.TRUE);
           testAvailable = true;
-          GET_BYTES_METHOD = threadBean.getClass().getMethod("getCurrentThreadAllocatedBytes");
+          GET_BYTES_METHOD = sunThreadBeanClz.getMethod("getCurrentThreadAllocatedBytes");
         } else {
           testAvailable = false;
         }
@@ -64,10 +65,10 @@ public class MemQueryLimit implements QueryTimeout {
       initialBytes = (Long) GET_BYTES_METHOD.invoke(threadBean);
       limitAtBytes = initialBytes + limitBytes;
       // record the last max delta left here by the previous query, and reset
-      if (lastMaxDelta.get() > 0L) {
-        memHistogram.update(lastMaxDelta.get());
+      if (previousMaxDelta.get() > 0L) {
+        memHistogram.update(previousMaxDelta.get());
       }
-      lastMaxDelta.set(0L);
+      previousMaxDelta.set(0L);
     } catch (Exception e) {
       available = false;
       throw new IllegalArgumentException("Unexpected error checking thread allocation, disabling!", e);
@@ -92,9 +93,9 @@ public class MemQueryLimit implements QueryTimeout {
   public boolean shouldExit() {
     try {
       long currentAllocatedBytes = (Long) GET_BYTES_METHOD.invoke(threadBean);
-      Long lastDelta = lastMaxDelta.get();
+      Long lastDelta = previousMaxDelta.get();
       if (currentAllocatedBytes - initialBytes > lastDelta) {
-        lastMaxDelta.set(currentAllocatedBytes - initialBytes);
+        previousMaxDelta.set(currentAllocatedBytes - initialBytes);
       }
       return limitAtBytes - currentAllocatedBytes < 0L;
     } catch (Exception e) {

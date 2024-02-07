@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -36,40 +35,41 @@ public class TestMemQueryLimit extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
-  public void testCompareToWallClock() throws Exception {
-    //Assume.assumeTrue("Thread memory monitoring is not available",MemQueryLimit.isAvailable());
+  public void testActivation() throws Exception {
+    Assume.assumeTrue("Thread memory monitoring is not available",MemQueryLimit.isAvailable());
     long limitMs = 100;
-    // 100 kiB
-    MemQueryLimit memLimit = new MemQueryLimit(0.1f);
-    ArrayList<String> data = new ArrayList<>();
+    // 1 MiB
+    MemQueryLimit memLimit = new MemQueryLimit(1f);
+    ArrayList<byte[]> data = new ArrayList<>();
     long startNs = System.nanoTime();
     int wakeups = 0;
     while (!memLimit.shouldExit()) {
       Thread.sleep(1);
       // allocate memory
-      for (int i = 0; i < 10; i++) {
-        data.add(TestUtil.randomUnicodeString(random(), 100));
+      for (int i = 0; i < 20; i++) {
+        data.add(new byte[1000]);
       }
       wakeups++;
     }
     long endNs = System.nanoTime();
     long wallTimeDeltaMs = TimeUnit.MILLISECONDS.convert(endNs - startNs, TimeUnit.NANOSECONDS);
     log.info("CPU limit: {} ms, elapsed wall-clock: {} ms, wakeups: {}", limitMs, wallTimeDeltaMs, wakeups);
-    assertTrue("Elapsed wall-clock time expected much larger than 100ms but was " +
-        wallTimeDeltaMs, limitMs < wallTimeDeltaMs);
+    assertTrue("Number of wakeups should be smaller than 100 but was " + wakeups, wakeups < 100);
+    assertTrue("Elapsed wall-clock time expected much smaller than 100ms but was " +
+        wallTimeDeltaMs, limitMs > wallTimeDeltaMs);
   }
 
   @Test
   public void testDistribLimit() throws Exception {
     Assume.assumeTrue("Thread memory monitoring is not available",MemQueryLimit.isAvailable());
     MiniSolrCloudCluster cluster =
-        configureCluster(2).addConfig("conf", configset("query-limits")).configure();
+        configureCluster(1).addConfig("conf", configset("query-limits")).configure();
     String COLLECTION = "test";
     try {
       SolrClient solrClient = cluster.getSolrClient();
-      CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1);
+      CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 1);
       create.process(solrClient);
-      CloudUtil.waitForState(cluster.getOpenOverseer().getSolrCloudManager(), "active", COLLECTION, clusterShape(2, 2));
+      CloudUtil.waitForState(cluster.getOpenOverseer().getSolrCloudManager(), "active", COLLECTION, clusterShape(1, 1));
 
       // add some docs
       for (int i = 0; i < 10; i++) {
@@ -77,22 +77,15 @@ public class TestMemQueryLimit extends SolrCloudTestCase {
       }
       solrClient.commit(COLLECTION);
 
-      // no limits set - should eventually complete
-      long sleepMs = 1000;
-      QueryResponse rsp = solrClient.query(COLLECTION, params("q", "*:*", "sleepMs", String.valueOf(sleepMs)));
+      // no limits set - should complete
+      long dataSize = 1000;
+      QueryResponse rsp = solrClient.query(COLLECTION, params("q", "id:*", "sort", "id desc", "dataSize", String.valueOf(dataSize)));
       System.err.println("rsp=" + rsp.jsonStr());
       assertEquals(rsp.getHeader().get("status"), 0);
-      Number qtime = (Number) rsp.getHeader().get("QTime");
-      assertTrue("QTime  expected " + qtime + " >> " + sleepMs, qtime.longValue() > sleepMs);
       assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
 
-      // timeAllowed set, should return partial results
-      rsp = solrClient.query(COLLECTION, params("q", "*:*", "sleepMs", String.valueOf(sleepMs), "timeAllowed", "500"));
-      System.err.println("rsp=" + rsp.jsonStr());
-      assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
-
-      // cpuAllowed set, should return partial results
-      rsp = solrClient.query(COLLECTION, params("q", "*:*", "spinWaitCount", "10000", "cpuAllowed", "20"));
+      // memAllowed set, should return partial results
+      rsp = solrClient.query(COLLECTION, params("q", "id:*", "sort", "id asc", "dataSize", String.valueOf(dataSize), "memAllowed", "0.1"));
       System.err.println("rsp=" + rsp.jsonStr());
       assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
     } finally {

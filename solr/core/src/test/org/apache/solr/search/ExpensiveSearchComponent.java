@@ -16,8 +16,6 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 
@@ -25,7 +23,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class ExpensiveSearchComponent extends SearchComponent {
-  final ArrayList<String> data = new ArrayList<>();
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
@@ -34,16 +31,16 @@ public class ExpensiveSearchComponent extends SearchComponent {
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
-    final long spinWaitCount = rb.req.getParams().getLong("spinWaitCount", 0L);
+    ArrayList<byte[]> data = new ArrayList<>();
+    rb.req.getContext().put("__data__", data);
+    final long spinWaitCount = rb.req.getParams().getLong("spinWaitCount", 1L);
     final long sleepMs = rb.req.getParams().getLong("sleepMs", 0);
     final int dataSize = rb.req.getParams().getInt("dataSize", 1);
     for (int i = 0; i < spinWaitCount; i++) {
-      data.clear();
       // create CPU load
       for (int j = 0; j < dataSize; j++) {
-        String str = TestUtil.randomUnicodeString(LuceneTestCase.random(), 100);
         // create mem load
-        data.add(str);
+        data.add(new byte[1000]);
       }
     }
     // create wall-clock load
