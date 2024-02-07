@@ -95,6 +95,8 @@ Improvements
 
 * SOLR-17146: Add DelegatingBackupRepository and alternative checksum verification (Bruno Roustant)
 
+* SOLR-17145: The INSTALLSHARDDATA API now includes a 'requestid' field when run asynchronously (Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
@@ -223,8 +225,6 @@ Bug Fixes
 * SOLR-17112: bin/solr script doesn't do ps properly on some systems. (Vincenzo D'Amore via Eric Pugh)
 
 * SOLR-17149: Backups on collections with too many shards fail due to restrictive Executor queue size (Pierre Salagnac via Jason Gerlowski)
-
-* SOLR-17145: The INSTALLSHARDDATA API now includes a 'requestid' field when run asynchronously (Jason Gerlowski)
 
 Dependency Upgrades
 ---------------------
