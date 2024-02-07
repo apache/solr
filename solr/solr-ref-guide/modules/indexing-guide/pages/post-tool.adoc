@@ -63,7 +63,7 @@ usage: post
  -mode <mode>                                 Files crawls files, web
                                               crawls website. default:
                                               files.
- -nocommit                                    Disable commiting newly
+ -skipcommit                                  Skip committing newly
                                               posted documents
  -optimize                                    Issue an optimize at end of
                                               posting documents

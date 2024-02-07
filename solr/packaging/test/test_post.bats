@@ -133,12 +133,12 @@ teardown() {
   assert_output --partial 'Entering crawl at level 0'
 }
 
-@test "nocommit and optimize and delete" {
+@test "skipcommit and optimize and delete" {
   
   run solr create -c monitors2 -d _default
   assert_output --partial "Created collection 'monitors2'"
   
-  run solr post -url http://localhost:${SOLR_PORT}/solr/monitors2/update -type application/xml -nocommit -optimize ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post -url http://localhost:${SOLR_PORT}/solr/monitors2/update -type application/xml -skipcommit -optimize ${SOLR_TIP}/example/exampledocs/monitor.xml
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'COMMITting Solr index'

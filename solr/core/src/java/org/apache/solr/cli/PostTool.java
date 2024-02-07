@@ -55,9 +55,9 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc("Name of the collection.")
             .build(),
-        Option.builder("nocommit")
+        Option.builder("skipcommit")
             .required(false)
-            .desc("Disable commiting newly posted documents")
+            .desc("Skip committing newly posted documents")
             .build(),
         Option.builder("optimize")
             .required(false)
@@ -152,7 +152,7 @@ public class PostTool extends ToolBase {
     int recursive = Integer.parseInt(cli.getOptionValue("recursive", "1"));
 
     OutputStream out = cli.hasOption("out") ? CLIO.getOutStream() : null;
-    boolean commit = cli.hasOption("nocommit") ? false : true;
+    boolean commit = cli.hasOption("skipcommit") ? false : true;
     boolean optimize = cli.hasOption("optimize");
 
     String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
