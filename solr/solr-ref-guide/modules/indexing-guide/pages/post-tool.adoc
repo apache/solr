@@ -171,7 +171,7 @@ Index a PDF as the user "solr" with password "SolrRocks":
 bin/solr post -u solr:SolrRocks -url http://localhost:8983/solr/gettingstarted/update a.pdf
 ----
 
-=== Web Crawl and Index Documents 
+=== Crawling a Website to Index Documents 
 
 Crawl the Apache Solr website going one layer deep and indexing the pages into Solr.   
 
@@ -180,4 +180,23 @@ See xref:indexing-with-tika.adoc#trying-out-solr-cell[Trying Out Solr Cell] to l
 [source,bash]
 ----
 bin/solr post -mode web -c gettingstarted -recursive 1 -delay 1 https://solr.apache.org/ 
+----
+
+=== Standard Input as Source for Indexing
+
+You can use the standard input as your source for data to index.  
+Notice the `-out` providing raw responses from Solr.
+
+[source,bash]
+----
+echo '{commit: {}}' | bin/solr post -mode stdin -url http://localhost:8983/my_collection/update -out
+----
+
+=== Raw Data as Source for Indexing
+
+Provide the raw document as a string for indexing.
+
+[source,bash]
+----
+bin/solr post -url http://localhost:8983/signals/update -mode args -type text/csv -out $'id,value\n1,0.47' 
 ----
