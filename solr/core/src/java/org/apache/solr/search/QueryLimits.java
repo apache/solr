@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.search.MemQueryLimit.hasMemLimit;
 import static org.apache.solr.search.SolrQueryTimeLimit.hasTimeLimit;
 
 import java.util.ArrayList;
@@ -45,6 +46,9 @@ public class QueryLimits implements QueryTimeout {
   public QueryLimits(SolrQueryRequest req) {
     if (hasTimeLimit(req)) {
       limits.add(new SolrQueryTimeLimit(req));
+    }
+    if (hasMemLimit(req)) {
+      limits.add(new MemQueryLimit(req));
     }
   }
 

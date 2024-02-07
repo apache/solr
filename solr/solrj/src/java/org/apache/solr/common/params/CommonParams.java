@@ -161,6 +161,9 @@ public interface CommonParams {
   /** Timeout value in milliseconds. If not set, or the value is &gt; 0, there is no timeout. */
   String TIME_ALLOWED = "timeAllowed";
 
+  /** Max query mem allocation value in mebibytes. If not set, or the value is &lt;= 0, there is no limit. */
+  String MEM_ALLOWED = "memAllowed";
+
   /** Is the query cancellable? */
   String IS_QUERY_CANCELLABLE = "canCancel";
 
