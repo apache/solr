@@ -51,6 +51,7 @@ public class TestMemQueryLimit extends SolrCloudTestCase {
       wakeups++;
     }
     long endNs = System.nanoTime();
+    assertTrue(data.size() > 1);
     long wallTimeDeltaMs = TimeUnit.MILLISECONDS.convert(endNs - startNs, TimeUnit.NANOSECONDS);
     log.info(
         "CPU limit: {} ms, elapsed wall-clock: {} ms, wakeups: {}",
