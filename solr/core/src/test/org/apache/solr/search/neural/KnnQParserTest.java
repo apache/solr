@@ -593,7 +593,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     final String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
     final SolrParams common = params("fl", "id");
 
-    // these requests should be equivilent
+    // these requests should be equivalent
     final String filt = "id:(1 2 7 20)";
     for (SolrQueryRequest req :
         Arrays.asList(
@@ -619,7 +619,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     final String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
     final SolrParams common = params("fl", "id");
 
-    // these requests should be equivilent
+    // these requests should be equivalent
     final String fx = "id:(3 4 9 2 1 )"; // 1 & 10 dropped from intersection
     final String fy = "id:(3 4 9 2 10)";
     for (SolrQueryRequest req :
@@ -716,7 +716,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "fq", "{!tag=xx,aa}id:(5 6 7 8 9 10)",
             "fq", "{!tag=yy,aa}id:(1 2 3 4 5 6 7)");
 
-    // These req's are equivilent: pre-filter everything
+    // These req's are equivalent: pre-filter everything
     // So only 7,6,5 are viable for topK=5
     for (SolrQueryRequest req :
         Arrays.asList(
@@ -755,7 +755,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "fq", "{!tag=xx,aa}id:(5 6 7 8 9 10)",
             "fq", "{!tag=yy,aa}id:(1 2 3 4 5 6 7)");
 
-    // These req's are equivilent: pre-filter nothing
+    // These req's are equivalent: pre-filter nothing
     // So 1,4,2,10,3,7 are the topK=6
     // Only 7 matches both of the the regular fq params
     for (SolrQueryRequest req :
@@ -803,7 +803,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "fq", "{!tag=xx,aa}id:(5 6 7 8 9 10)",
             "fq", "{!tag=yy,aa}id:(1 2 3 4 5 6 7)");
 
-    // These req's are equivilent: prefilter only the 'yy' fq
+    // These req's are equivalent: prefilter only the 'yy' fq
     // So 1,4,2,3,7 are in the topK=5.
     // Only 7 matches the regular 'xx' fq param
     for (SolrQueryRequest req :
