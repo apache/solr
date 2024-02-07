@@ -442,7 +442,7 @@ public class CoreContainer {
 
     this.collectorExecutor =
         ExecutorUtil.newMDCAwareCachedThreadPool(
-            6, Integer.MAX_VALUE, new SolrNamedThreadFactory("searcherCollector"));
+            6, 6, new SolrNamedThreadFactory("searcherCollector"));
   }
 
   @SuppressWarnings({"unchecked"})
