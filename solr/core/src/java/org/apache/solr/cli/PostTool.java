@@ -55,8 +55,8 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc("Name of the collection.")
             .build(),
-        Option.builder("commit").required(false).desc("Issue a commit at end of post").build(),
-        Option.builder("optimize").required(false).desc("Issue an optimize at end of post").build(),
+        Option.builder("nocommit").required(false).desc("Disable commiting newly posted documents").build(),
+        Option.builder("optimize").required(false).desc("Issue an optimize at end of posting documents").build(),
         Option.builder("mode")
             .argName("mode")
             .hasArg(true)
@@ -146,7 +146,7 @@ public class PostTool extends ToolBase {
     int recursive = Integer.parseInt(cli.getOptionValue("recursive", "1"));
 
     OutputStream out = cli.hasOption("out") ? CLIO.getOutStream() : null;
-    boolean commit = cli.hasOption("commit");
+    boolean commit = cli.hasOption("nocommit") ? false : true;
     boolean optimize = cli.hasOption("optimize");
 
     String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
