@@ -16,18 +16,15 @@
  */
 package org.apache.solr.search;
 
-import org.apache.solr.handler.component.ResponseBuilder;
-import org.apache.solr.handler.component.SearchComponent;
-
 import java.io.IOException;
 import java.util.ArrayList;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.SearchComponent;
 
 public class ExpensiveSearchComponent extends SearchComponent {
 
   @Override
-  public void prepare(ResponseBuilder rb) throws IOException {
-
-  }
+  public void prepare(ResponseBuilder rb) throws IOException {}
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
