@@ -55,8 +55,14 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc("Name of the collection.")
             .build(),
-        Option.builder("nocommit").required(false).desc("Disable commiting newly posted documents").build(),
-        Option.builder("optimize").required(false).desc("Issue an optimize at end of posting documents").build(),
+        Option.builder("nocommit")
+            .required(false)
+            .desc("Disable commiting newly posted documents")
+            .build(),
+        Option.builder("optimize")
+            .required(false)
+            .desc("Issue an optimize at end of posting documents")
+            .build(),
         Option.builder("mode")
             .argName("mode")
             .hasArg(true)
