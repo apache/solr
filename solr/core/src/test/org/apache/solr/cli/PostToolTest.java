@@ -25,6 +25,7 @@ import java.io.FileWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.apache.commons.cli.CommandLine;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.EnvUtils;
@@ -32,6 +33,7 @@ import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@SolrTestCaseJ4.SuppressSSL
 public class PostToolTest extends SolrCloudTestCase {
 
   @BeforeClass
