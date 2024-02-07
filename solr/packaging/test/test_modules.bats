@@ -63,7 +63,6 @@ teardown() {
 @test "icu collation in analysis-extras module" {
   local solr_include_file="${BATS_TEST_TMPDIR}/solr.include"
   echo "SOLR_MODULES=analysis-extras" > "${solr_include_file}"
-  chmod a+r "${solr_include_file}"
 
   export SOLR_INCLUDE="${solr_include_file}"
   run solr start -c
