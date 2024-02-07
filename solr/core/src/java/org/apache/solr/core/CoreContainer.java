@@ -442,7 +442,9 @@ public class CoreContainer {
 
     this.collectorExecutor =
         ExecutorUtil.newMDCAwareCachedThreadPool(
-            6, 6, new SolrNamedThreadFactory("searcherCollector"));
+            cfg.getIndexSearcherExecutorThreads(), // thread count
+            cfg.getIndexSearcherExecutorThreads(), // queue size
+            new SolrNamedThreadFactory("searcherCollector"));
   }
 
   @SuppressWarnings({"unchecked"})
