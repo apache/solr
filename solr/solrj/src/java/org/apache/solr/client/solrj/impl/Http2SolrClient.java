@@ -20,7 +20,6 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory.RequestResponseListener;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -39,7 +38,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.Utils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpProxy;
@@ -63,7 +61,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
@@ -77,7 +74,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -86,13 +82,9 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
 import java.net.CookieStore;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -106,8 +98,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
-import static org.apache.solr.common.util.Utils.getObjectByPath;
 
 /**
  * Difference between this {@link Http2SolrClient} and {@link HttpSolrClient}:
@@ -129,21 +119,13 @@ public class Http2SolrClient extends Http2SolrClientBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
-  private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
-  private static final List<String> errPath = Arrays.asList("metadata", "error-class");
 
   private final HttpClient httpClient;
   private final Set<String> urlParamNames;
   private final long idleTimeoutMillis;
   private final long requestTimeoutMillis;
-
-  // updating parser instance needs to go via the setter to ensure update of defaultParserMimeTypes
-  private ResponseParser parser = new BinaryResponseParser();
-  private Set<String> defaultParserMimeTypes;
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private final AsyncTracker asyncTracker = new AsyncTracker();
-
-
 
   private final boolean closeClient;
   private ExecutorService executor;
@@ -593,8 +575,9 @@ public class Http2SolrClient extends Http2SolrClientBase {
       mimeType = MimeTypes.getContentTypeWithoutCharset(contentType);
       encoding = MimeTypes.getCharsetFromContentType(contentType);
     }
+    String responseMethod = response.getRequest() == null ? "" : response.getRequest().getMethod();
     return processErrorsAndResponse(
-        response, parser, is, mimeType, encoding, isV2ApiRequest(solrRequest), urlExceptionMessage);
+        response.getStatus(), response.getReason(), responseMethod, parser, is, mimeType, encoding, isV2ApiRequest(solrRequest), urlExceptionMessage);
   }
 
   private void setBasicAuthHeader(SolrRequest<?> solrRequest, Request req) {
@@ -792,178 +775,26 @@ public class Http2SolrClient extends Http2SolrClientBase {
     return req;
   }
 
-  private boolean wantStream(final ResponseParser processor) {
-    return processor == null || processor instanceof InputStreamResponseParser;
+  @Override
+  protected boolean isFollowRedirects() {
+    return httpClient.isFollowRedirects();
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private NamedList<Object> processErrorsAndResponse(
-      Response response,
-      final ResponseParser processor,
-      InputStream is,
-      String mimeType,
-      String encoding,
-      final boolean isV2Api,
-      String urlExceptionMessage)
-      throws SolrServerException {
-    boolean shouldClose = true;
-    try {
-      // handle some http level checks before trying to parse the response
-      int httpStatus = response.getStatus();
+  @Override
+  protected boolean processorAcceptsMimeType(Collection<String> processorSupportedContentTypes, String mimeType) {
 
-      switch (httpStatus) {
-        case HttpStatus.OK_200:
-        case HttpStatus.BAD_REQUEST_400:
-        case HttpStatus.CONFLICT_409:
-          break;
-        case HttpStatus.MOVED_PERMANENTLY_301:
-        case HttpStatus.MOVED_TEMPORARILY_302:
-          if (!httpClient.isFollowRedirects()) {
-            throw new SolrServerException(
-                "Server at " + urlExceptionMessage + " sent back a redirect (" + httpStatus + ").");
-          }
-          break;
-        default:
-          if (processor == null || mimeType == null) {
-            throw new RemoteSolrException(
-                urlExceptionMessage,
-                httpStatus,
-                "non ok status: " + httpStatus + ", message:" + response.getReason(),
-                null);
-          }
-      }
-
-      if (wantStream(processor)) {
-        // no processor specified, return raw stream
-        NamedList<Object> rsp = new NamedList<>();
-        rsp.add("stream", is);
-        rsp.add("responseStatus", httpStatus);
-        // Only case where stream should not be closed
-        shouldClose = false;
-        return rsp;
-      }
-
-      checkContentType(processor, is, mimeType, encoding, httpStatus, urlExceptionMessage);
-
-      NamedList<Object> rsp;
-      try {
-        rsp = processor.processResponse(is, encoding);
-      } catch (Exception e) {
-        throw new RemoteSolrException(urlExceptionMessage, httpStatus, e.getMessage(), e);
-      }
-
-      Object error = rsp == null ? null : rsp.get("error");
-      if (rsp != null && error == null && processor instanceof NoOpResponseParser) {
-        error = rsp.get("response");
-      }
-      if (error != null
-          && (String.valueOf(getObjectByPath(error, true, errPath))
-              .endsWith("ExceptionWithErrObject"))) {
-        throw RemoteExecutionException.create(urlExceptionMessage, rsp);
-      }
-      if (httpStatus != HttpStatus.OK_200 && !isV2Api) {
-        NamedList<String> metadata = null;
-        String reason = null;
-        try {
-          if (error != null) {
-            reason = (String) Utils.getObjectByPath(error, false, Collections.singletonList("msg"));
-            if (reason == null) {
-              reason =
-                  (String) Utils.getObjectByPath(error, false, Collections.singletonList("trace"));
-            }
-            Object metadataObj =
-                Utils.getObjectByPath(error, false, Collections.singletonList("metadata"));
-            if (metadataObj instanceof NamedList) {
-              metadata = (NamedList<String>) metadataObj;
-            } else if (metadataObj instanceof List) {
-              // NamedList parsed as List convert to NamedList again
-              List<Object> list = (List<Object>) metadataObj;
-              metadata = new NamedList<>(list.size() / 2);
-              for (int i = 0; i < list.size(); i += 2) {
-                metadata.add((String) list.get(i), (String) list.get(i + 1));
-              }
-            } else if (metadataObj instanceof Map) {
-              metadata = new NamedList((Map) metadataObj);
-            }
-          }
-        } catch (Exception ex) {
-          /* Ignored */
-        }
-        if (reason == null) {
-          StringBuilder msg = new StringBuilder();
-          msg.append(response.getReason())
-              .append("\n")
-              .append("request: ")
-              .append(response.getRequest().getMethod());
-          if (error != null) {
-            msg.append("\n\nError returned:\n").append(error);
-          }
-          reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
-        }
-        RemoteSolrException rss =
-            new RemoteSolrException(urlExceptionMessage, httpStatus, reason, null);
-        if (metadata != null) rss.setMetadata(metadata);
-        throw rss;
-      }
-      return rsp;
-    } finally {
-      if (shouldClose) {
-        try {
-          is.close();
-        } catch (IOException e) {
-          // quitely
-        }
-      }
-    }
+    return processorSupportedContentTypes.stream()
+            .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim())
+            .anyMatch(mimeType::equalsIgnoreCase);
   }
 
-  /**
-   * Validates that the content type in the response can be processed by the Response Parser. Throws
-   * a {@code RemoteSolrException} if not.
-   */
-  private void checkContentType(
-      ResponseParser processor,
-      InputStream is,
-      String mimeType,
-      String encoding,
-      int httpStatus,
-      String urlExceptionMessage) {
-    if (mimeType == null
-        || (processor == this.parser && defaultParserMimeTypes.contains(mimeType))) {
-      // Shortcut the default scenario
-      return;
-    }
-    final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
-    if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
-      boolean processorAcceptsMimeType =
-          processorSupportedContentTypes.stream()
-              .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim())
-              .anyMatch(mimeType::equalsIgnoreCase);
-      if (!processorAcceptsMimeType) {
-        // unexpected mime type
-        final String allSupportedTypes =
-            processorSupportedContentTypes.stream()
-                .map(
+  @Override
+  protected String allProcessorSupportedContentTypesCommaDelimited(Collection<String> processorSupportedContentTypes) {
+    return processorSupportedContentTypes.stream()
+            .map(
                     ct ->
-                        MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
-                .collect(Collectors.joining(", "));
-        String prefix =
-            "Expected mime type in [" + allSupportedTypes + "] but got " + mimeType + ". ";
-        String exceptionEncoding = encoding != null ? encoding : FALLBACK_CHARSET.name();
-        try {
-          ByteArrayOutputStream body = new ByteArrayOutputStream();
-          is.transferTo(body);
-          throw new RemoteSolrException(
-              urlExceptionMessage, httpStatus, prefix + body.toString(exceptionEncoding), null);
-        } catch (IOException e) {
-          throw new RemoteSolrException(
-              urlExceptionMessage,
-              httpStatus,
-              "Could not parse response with encoding " + exceptionEncoding,
-              e);
-        }
-      }
-    }
+                            MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
+            .collect(Collectors.joining(", "));
   }
 
   protected RequestWriter getRequestWriter() {
@@ -1336,22 +1167,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
       }
     }
     return queryModParams;
-  }
-
-  public ResponseParser getParser() {
-    return parser;
-  }
-
-  protected void setParser(ResponseParser parser) {
-    this.parser = parser;
-    updateDefaultMimeTypeForParser();
-  }
-
-  protected void updateDefaultMimeTypeForParser() {
-    defaultParserMimeTypes =
-        parser.getContentTypes().stream()
-            .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
-            .collect(Collectors.toSet());
   }
 
   public static void setDefaultSSLConfig(SSLConfig sslConfig) {
