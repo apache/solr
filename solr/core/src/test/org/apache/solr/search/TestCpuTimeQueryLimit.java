@@ -24,17 +24,20 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.junit.Assume;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TestCpuTimeLimit extends SolrCloudTestCase {
+public class TestCpuTimeQueryLimit extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void testCompareToWallClock() throws Exception {
+    Assume.assumeTrue(
+        "Thread CPU time monitoring is not available", CpuTimeQueryLimit.isAvailable());
     long limitMs = 100;
-    CpuTimeLimit cpuLimit = new CpuTimeLimit(limitMs);
+    CpuTimeQueryLimit cpuLimit = new CpuTimeQueryLimit(limitMs);
     int[] randoms = new int[100];
     long startNs = System.nanoTime();
     int wakeups = 0;
@@ -60,6 +63,8 @@ public class TestCpuTimeLimit extends SolrCloudTestCase {
 
   @Test
   public void testDistribLimit() throws Exception {
+    Assume.assumeTrue(
+        "Thread CPU time monitoring is not available", CpuTimeQueryLimit.isAvailable());
     MiniSolrCloudCluster cluster =
         configureCluster(2).addConfig("conf", configset("query-limits")).configure();
     String COLLECTION = "test";

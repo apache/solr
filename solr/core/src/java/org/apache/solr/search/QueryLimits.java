@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search;
 
-import static org.apache.solr.search.CpuTimeLimit.hasCpuLimit;
+import static org.apache.solr.search.CpuTimeQueryLimit.hasCpuLimit;
 import static org.apache.solr.search.SolrQueryTimeLimit.hasTimeLimit;
 
 import java.util.ArrayList;
@@ -48,7 +48,7 @@ public class QueryLimits implements QueryTimeout {
       limits.add(new SolrQueryTimeLimit(req));
     }
     if (hasCpuLimit(req)) {
-      limits.add(new CpuTimeLimit(req));
+      limits.add(new CpuTimeQueryLimit(req));
     }
   }
 
