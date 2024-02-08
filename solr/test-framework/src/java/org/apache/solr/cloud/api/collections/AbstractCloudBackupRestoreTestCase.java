@@ -497,7 +497,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     for (Slice slice : docCollection.getActiveSlices()) {
       String shardName = slice.getName();
       try (var leaderClient =
-          new HttpSolrClient.Builder(slice.getLeader().getCoreUrl())
+          new HttpSolrClient.Builder(slice.getLeader().getBaseUrl())
+              .withDefaultCollection(slice.getLeader().getCoreName())
               .withHttpClient(((CloudLegacySolrClient) client).getHttpClient())
               .build()) {
         long docsInShard =
