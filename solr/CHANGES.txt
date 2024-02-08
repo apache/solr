@@ -31,7 +31,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17152: Better alignment of Admin UI graph (janhoy)
 
 Dependency Upgrades
 ---------------------
