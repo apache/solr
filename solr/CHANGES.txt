@@ -95,6 +95,8 @@ Improvements
 
 * SOLR-17146: Add DelegatingBackupRepository and alternative checksum verification (Bruno Roustant)
 
+* SOLR-16858: KnnQParser's "Pre-Filtering" behavior is now controlable via local params (hossman)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
