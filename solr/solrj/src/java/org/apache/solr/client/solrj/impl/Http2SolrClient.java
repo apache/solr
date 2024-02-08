@@ -120,7 +120,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
   private static final String AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
 
   private final HttpClient httpClient;
-  private final Set<String> urlParamNames;
 
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private final AsyncTracker asyncTracker = new AsyncTracker();
@@ -147,11 +146,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
     updateDefaultMimeTypeForParser();
 
     this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
-    if (builder.urlParamNames != null) {
-      this.urlParamNames = builder.urlParamNames;
-    } else {
-      this.urlParamNames = Set.of();
-    }
+
     assert ObjectReleaseTracker.track(this);
   }
 

@@ -46,6 +46,8 @@ public abstract class Http2SolrClientBase extends SolrClient {
 
     protected final long requestTimeoutMillis;
 
+    protected final Set<String> urlParamNames;
+
     protected RequestWriter requestWriter = new BinaryRequestWriter();
 
     // updating parser instance needs to go via the setter to ensure update of defaultParserMimeTypes
@@ -81,6 +83,11 @@ public abstract class Http2SolrClientBase extends SolrClient {
             this.requestTimeoutMillis = builder.requestTimeoutMillis;
         } else {
             this.requestTimeoutMillis = -1;
+        }
+        if (builder.urlParamNames != null) {
+            this.urlParamNames = builder.urlParamNames;
+        } else {
+            this.urlParamNames = Set.of();
         }
     }
 

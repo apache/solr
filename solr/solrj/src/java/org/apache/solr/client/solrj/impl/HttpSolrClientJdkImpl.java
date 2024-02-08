@@ -3,9 +3,11 @@ package org.apache.solr.client.solrj.impl;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.slf4j.Logger;
@@ -13,6 +15,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -22,6 +27,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -50,6 +56,35 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         assert ObjectReleaseTracker.track(this);
     }
 
+    private HttpRequest.BodyPublisher preparePostPutRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) throws IOException {
+        RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
+        Collection<ContentStream> streams = Collections.emptySet();
+        String contentType = "application/x-www-form-urlencoded";
+        if(contentWriter != null ) {
+            streams = requestWriter.getContentStreams(solrRequest);
+            if(contentWriter.getContentType() != null) {
+                contentType = contentWriter.getContentType();
+            }
+        }
+        reqb.header("Content-Type", contentType);
+
+        if(isMultipart(streams)) {
+            throw new UnsupportedOperationException("This client does not support multipart.");
+        }
+        if (contentWriter != null) {
+            PipedInputStream is = new PipedInputStream();
+            OutputStream os = new PipedOutputStream(is);
+            contentWriter.write(os);
+            return HttpRequest.BodyPublishers.ofInputStream(() -> is);
+        } else if (streams.size() == 1) {
+            ContentStream contentStream = streams.iterator().next();
+            InputStream is = contentStream.getStream();
+            return HttpRequest.BodyPublishers.ofInputStream(() -> is);
+        } else {
+            return HttpRequest.BodyPublishers.noBody();
+        }
+    }
+
     @Override
     public NamedList<Object> request(SolrRequest<?> solrRequest, String collection) throws SolrServerException, IOException {
         checkClosed();
@@ -67,27 +102,27 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
                 case GET: {
                     validateGetRequest(solrRequest);
                     reqb.GET();
-                    decorateRequest(reqb, solrRequest);
-                    HttpResponse<InputStream> resp = client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
-                    return processErrorsAndResponse(solrRequest, resp, url);
+                    break;
                 }
                 case POST: {
-                    HttpRequest.BodyPublisher bp = null;
-                    reqb.POST(bp);
+                    reqb.POST(preparePostPutRequest(reqb, solrRequest));
                     break;
                 }
                 case PUT: {
-                    HttpRequest.BodyPublisher bp = null;
-                    reqb.PUT(bp);
+                    reqb.PUT(preparePostPutRequest(reqb, solrRequest));
                     break;
                 }
                 case DELETE: {
                     reqb.DELETE();
                     break;
                 }
-                default:
+                default: {
                     throw new IllegalStateException("Unsupported method: " + solrRequest.getMethod());
+                }
             }
+            decorateRequest(reqb, solrRequest);
+            HttpResponse<InputStream> resp = client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
+            return processErrorsAndResponse(solrRequest, resp, url);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             abortCause = e;
@@ -119,7 +154,6 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
                 //TODO
             }
         }
-        return null;
     }
 
     private void setBasicAuthHeader(SolrRequest<?> solrRequest, HttpRequest.Builder reqb) {
