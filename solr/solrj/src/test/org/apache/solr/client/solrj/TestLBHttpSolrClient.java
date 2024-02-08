@@ -101,7 +101,10 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     }
     SolrResponseBase resp;
     try (SolrClient client =
-        new HttpSolrClient.Builder(solrInstance.getUrl()).withHttpClient(httpClient).build()) {
+        new HttpSolrClient.Builder(solrInstance.getBaseUrl())
+            .withDefaultCollection(solrInstance.getDefaultCollection())
+            .withHttpClient(httpClient)
+            .build()) {
       resp = client.add(docs);
       assertEquals(0, resp.getStatus());
       resp = client.commit();
@@ -275,6 +278,14 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
 
     public String getUrl() {
       return buildUrl(port, "/solr/collection1");
+    }
+
+    public String getBaseUrl() {
+      return buildUrl(port, "/solr");
+    }
+
+    public String getDefaultCollection() {
+      return "collection1";
     }
 
     public String getSchemaFile() {

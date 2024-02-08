@@ -121,10 +121,14 @@ public class LBHttpSolrClient extends LBSolrClient {
     HttpSolrClient client;
     if (httpSolrClientBuilder != null) {
       synchronized (this) {
-        httpSolrClientBuilder.withBaseSolrUrl(server).withHttpClient(httpClient);
-        httpSolrClientBuilder.withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
-        httpSolrClientBuilder.withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
-
+        httpSolrClientBuilder
+            .withBaseSolrUrl(server)
+            .withHttpClient(httpClient)
+            .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
+        if (defaultCollection != null) {
+          httpSolrClientBuilder.withDefaultCollection(defaultCollection);
+        }
         if (requestWriter != null) {
           httpSolrClientBuilder.withRequestWriter(requestWriter);
         }
@@ -140,6 +144,12 @@ public class LBHttpSolrClient extends LBSolrClient {
               .withResponseParser(parser)
               .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
               .withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
+
+      // Note that this may override or even conflict with a value in the base URL ... should we log
+      // a warning here?
+      if (defaultCollection != null) {
+        clientBuilder.withDefaultCollection(defaultCollection);
+      }
       if (requestWriter != null) {
         clientBuilder.withRequestWriter(requestWriter);
       }

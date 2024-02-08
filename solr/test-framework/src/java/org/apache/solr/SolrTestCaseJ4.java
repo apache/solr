@@ -106,6 +106,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -2692,14 +2693,25 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   /**
    * This method creates a basic HttpSolrClient. Tests that want to control the creation process
    * should use the {@link org.apache.solr.client.solrj.impl.Http2SolrClient.Builder} class directly
+   *
+   * @param url the base URL for a Solr node. Should not contain a core or collection name.
    */
   public static HttpSolrClient getHttpSolrClient(String url) {
     return new HttpSolrClient.Builder(url).build();
   }
 
+  /** Create a basic HttpSolrClient pointed at the specified replica */
+  public static HttpSolrClient getHttpSolrClient(Replica replica) {
+    return getHttpSolrClient(replica.getBaseUrl(), replica.getCoreName());
+  }
+
   /**
    * This method creates a basic HttpSolrClient. Tests that want to control the creation process
    * should use the {@link org.apache.solr.client.solrj.impl.Http2SolrClient.Builder} class directly
+   *
+   * @param url the base URL of a Solr node. Should <em>not</em> include a collection or core name.
+   * @param defaultCoreName the name of a core that the created client should default to when making
+   *     core-aware requests
    */
   public static HttpSolrClient getHttpSolrClient(String url, String defaultCoreName) {
     return new HttpSolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();

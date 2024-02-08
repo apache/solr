@@ -259,9 +259,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   private SolrClient adminClient(JettySolrRunner client) {
-    String adminUrl =
-        client.getBaseUrl().toString().replace("/" + DEFAULT_TEST_COLLECTION_NAME, "");
-    return getHttpSolrClient(adminUrl);
+    return getHttpSolrClient(client.getBaseUrl().toString());
   }
 
   @Test
