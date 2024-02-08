@@ -24,12 +24,10 @@ import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory.RequestResponseListener;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -83,7 +81,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
 import java.net.CookieStore;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -120,6 +117,8 @@ public class Http2SolrClient extends Http2SolrClientBase {
   private static final String AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
 
   private final HttpClient httpClient;
+
+  private SSLConfig sslConfig;;
 
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private final AsyncTracker asyncTracker = new AsyncTracker();
@@ -793,6 +792,9 @@ public class Http2SolrClient extends Http2SolrClientBase {
   public static class Builder extends HttpSolrClientBuilderBase {
 
     private HttpClient httpClient;
+
+    private SSLConfig sslConfig;
+
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
 
     public Builder() {
@@ -804,7 +806,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
     }
 
     /**
-     * Provides a {@link RequestWriter} for created clients to use when handing requests.
+     * {@inheritDoc}
      */
     public Http2SolrClient.Builder withRequestWriter(RequestWriter requestWriter) {
      super.withRequestWriter(requestWriter);
@@ -812,7 +814,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
     }
 
     /**
-     * Provides a {@link ResponseParser} for created clients to use when handling requests.
+     * {@inheritDoc}
      */
     public Http2SolrClient.Builder withResponseParser(ResponseParser responseParser) {
      super.withResponseParser(responseParser);
@@ -820,7 +822,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
     }
 
     /**
-     * Sets a default for core or collection based requests.
+     * {@inheritDoc}
      */
     public Http2SolrClient.Builder withDefaultCollection(String defaultCoreOrCollection) {
       super.withDefaultCollection(defaultCoreOrCollection);
@@ -842,12 +844,8 @@ public class Http2SolrClient extends Http2SolrClientBase {
       super.withExecutor(executor);
       return this;
     }
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Http2SolrClient.Builder withSSLConfig(SSLConfig sslConfig) {
-      super.withSSLConfig(sslConfig);
+    public HttpSolrClientBuilderBase withSSLConfig(SSLConfig sslConfig) {
+      this.sslConfig = sslConfig;
       return this;
     }
 

@@ -178,6 +178,34 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
       }
   }
 
+
+  @Test
+  public void testQueryGet() throws Exception {
+    super.testQueryGet();
+  }
+  @Test
+  public void testQueryPost() throws Exception {
+    super.testQueryPost();
+  }
+  @Test
+  public void testQueryPut() throws Exception {
+    super.testQueryPut();
+  }
+  @Test
+  public void testQueryXmlGet() throws Exception {
+    super.testQueryXmlGet();
+  }
+
+  @Test
+  public void testQueryXmlPost() throws Exception {
+    super.testQueryXmlPost();
+  }
+
+  @Test
+  public void testQueryXmlPut() throws Exception {
+    super.testQueryXmlPut();
+  }
+
   @Test
   public void testDelete() throws Exception {
     DebugServlet.clear();
@@ -187,38 +215,26 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
         client.deleteById("id");
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
       }
-
-      // default method
-      assertEquals("post", DebugServlet.lastMethod);
-      // agent
-      assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
-      // default wt
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      // default version
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
       assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      // agent
-      assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
+              client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
+      assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
+      validateDelete();
     }
-    // XML
+  }
+  @Test
+  public void testDeleteXml() throws Exception {
+    DebugServlet.clear();
+    String url = getBaseUrl() + "/debug/foo";
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(url).withResponseParser(new XMLResponseParser()).build()) {
-
+                 new Http2SolrClient.Builder(url).withResponseParser(new XMLResponseParser()).build()) {
       try {
         client.deleteByQuery("*:*");
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
       }
-
-      assertEquals("post", DebugServlet.lastMethod);
-      assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
       assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
+              client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
+      assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
+      validateDelete();
     }
   }
 

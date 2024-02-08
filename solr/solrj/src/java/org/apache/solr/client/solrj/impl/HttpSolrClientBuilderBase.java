@@ -1,7 +1,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.request.RequestWriter;
 
 import java.net.CookieStore;
@@ -21,7 +20,6 @@ public abstract class HttpSolrClientBuilderBase {
     protected String defaultCollection;
     protected Set<String> urlParamNames;
     protected Long keyStoreReloadIntervalSecs;
-    protected SSLConfig sslConfig;;
     protected Integer maxConnectionsPerHost;
     protected ExecutorService executor;
     protected CookieStore cookieStore;
@@ -70,10 +68,7 @@ public abstract class HttpSolrClientBuilderBase {
         return this;
     }
 
-    public HttpSolrClientBuilderBase withSSLConfig(SSLConfig sslConfig) {
-        this.sslConfig = sslConfig;
-        return this;
-    }
+
 
     public HttpSolrClientBuilderBase withBasicAuthCredentials(String user, String pass) {
         if (user != null || pass != null) {

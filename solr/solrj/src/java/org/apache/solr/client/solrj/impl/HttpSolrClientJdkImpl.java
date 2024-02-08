@@ -13,12 +13,11 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.CookieStore;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -27,8 +26,8 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -58,25 +57,29 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
 
     private HttpRequest.BodyPublisher preparePostPutRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) throws IOException {
         RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
-        Collection<ContentStream> streams = Collections.emptySet();
-        String contentType = "application/x-www-form-urlencoded";
-        if(contentWriter != null ) {
+
+        Collection<ContentStream> streams = null;
+        if(contentWriter == null) {
             streams = requestWriter.getContentStreams(solrRequest);
-            if(contentWriter.getContentType() != null) {
-                contentType = contentWriter.getContentType();
-            }
+        }
+
+        String contentType = "application/x-www-form-urlencoded";
+        if(contentWriter != null && contentWriter.getContentType() != null) {
+            contentType = contentWriter.getContentType();
         }
         reqb.header("Content-Type", contentType);
 
         if(isMultipart(streams)) {
             throw new UnsupportedOperationException("This client does not support multipart.");
         }
+
         if (contentWriter != null) {
-            PipedInputStream is = new PipedInputStream();
-            OutputStream os = new PipedOutputStream(is);
-            contentWriter.write(os);
-            return HttpRequest.BodyPublishers.ofInputStream(() -> is);
-        } else if (streams.size() == 1) {
+            //TODO:  There is likely a more memory-efficient way to do this!
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            contentWriter.write(baos);
+            byte[] bytes = baos.toByteArray();
+            return HttpRequest.BodyPublishers.ofByteArray(bytes);
+        } else if (streams != null && streams.size() == 1) {
             ContentStream contentStream = streams.iterator().next();
             InputStream is = contentStream.getStream();
             return HttpRequest.BodyPublishers.ofInputStream(() -> is);
@@ -113,6 +116,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
                     break;
                 }
                 case DELETE: {
+                    //TODO:  Delete requests are sent as POST, so should we support method=DELETE??
                     reqb.DELETE();
                     break;
                 }
@@ -295,6 +299,142 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
                 log.warn("keyStoreReloadIntervalSecs not supported by this client.");
             }
             return new HttpSolrClientJdkImpl(baseSolrUrl, this);
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public HttpSolrClientJdkImpl.Builder withRequestWriter(RequestWriter requestWriter) {
+            super.withRequestWriter(requestWriter);
+            return this;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public HttpSolrClientJdkImpl.Builder withResponseParser(ResponseParser responseParser) {
+            super.withResponseParser(responseParser);
+            return this;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        public HttpSolrClientJdkImpl.Builder withDefaultCollection(String defaultCoreOrCollection) {
+            super.withDefaultCollection(defaultCoreOrCollection);
+            return this;
+        }
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public HttpSolrClientJdkImpl.Builder withFollowRedirects(boolean followRedirects) {
+            super.withFollowRedirects(followRedirects);
+            return this;
+        }
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public HttpSolrClientJdkImpl.Builder withExecutor(ExecutorService executor) {
+            super.withExecutor(executor);
+            return this;
+        }
+
+        public HttpSolrClientJdkImpl.Builder withBasicAuthCredentials(String user, String pass) {
+            super.withBasicAuthCredentials(user, pass);
+            return this;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public HttpSolrClientJdkImpl.Builder withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
+            super.withTheseParamNamesInTheUrl(urlParamNames);
+            return this;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public HttpSolrClientJdkImpl.Builder withMaxConnectionsPerHost(int max) {
+            super.withMaxConnectionsPerHost(max);
+            return this;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public HttpSolrClientJdkImpl.Builder withKeyStoreReloadInterval(long interval, TimeUnit unit) {
+            super.withKeyStoreReloadInterval(interval, unit);
+            return this;
+        }
+
+        /**
+         * @deprecated Please use {@link #withIdleTimeout(long, TimeUnit)}
+         */
+        @Deprecated(since = "9.2")
+        public HttpSolrClientJdkImpl.Builder idleTimeout(int idleConnectionTimeout) {
+            withIdleTimeout(idleConnectionTimeout, TimeUnit.MILLISECONDS);
+            return this;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public HttpSolrClientJdkImpl.Builder withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
+            super.withIdleTimeout(idleConnectionTimeout, unit);
+            return this;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public HttpSolrClientJdkImpl.Builder withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
+            super.withConnectionTimeout(connectionTimeout, unit);
+            return this;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public HttpSolrClientJdkImpl.Builder withRequestTimeout(long requestTimeout, TimeUnit unit) {
+            super.withRequestTimeout(requestTimeout, unit);
+            return this;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public HttpSolrClientJdkImpl.Builder withCookieStore(CookieStore cookieStore) {
+            super.withCookieStore(cookieStore);
+            return this;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public HttpSolrClientJdkImpl.Builder withProxyConfiguration(
+                String host, int port, boolean isSocks4, boolean isSecure) {
+            super.withProxyConfiguration(host, port, isSocks4, isSecure);
+            return this;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public HttpSolrClientJdkImpl.Builder withOptionalBasicAuthCredentials(String credentials) {
+            super.withOptionalBasicAuthCredentials(credentials);
+            return this;
         }
     }
 }

@@ -7,7 +7,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
 
@@ -38,7 +37,6 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
 
     protected abstract void testQuerySetup(SolrRequest.METHOD method, ResponseParser rp) throws Exception;
 
-    @Test
     public void testQueryGet() throws Exception {
         testQuerySetup(SolrRequest.METHOD.GET, null);
         // default method
@@ -59,7 +57,6 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
         assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
     }
 
-    @Test
     public void testQueryPost() throws Exception {
         testQuerySetup(SolrRequest.METHOD.POST, null);
 
@@ -74,8 +71,7 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
         assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
     }
 
-    @Test
-    public void testQueryPut() throws Exception {
+   public void testQueryPut() throws Exception {
         testQuerySetup(SolrRequest.METHOD.PUT, null);
 
         assertEquals("put", DebugServlet.lastMethod);
@@ -89,8 +85,7 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
         assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
     }
 
-    @Test
-    public void testQueryXmlGet() throws Exception {
+   public void testQueryXmlGet() throws Exception {
         testQuerySetup(SolrRequest.METHOD.GET, new XMLResponseParser());
 
         assertEquals("get", DebugServlet.lastMethod);
@@ -103,7 +98,6 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
         assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     }
 
-    @Test
     public void testQueryXmlPost() throws Exception {
         testQuerySetup(SolrRequest.METHOD.POST, new XMLResponseParser());
 
@@ -118,7 +112,6 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
         assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
     }
 
-    @Test
     public void testQueryXmlPut() throws Exception {
         testQuerySetup(SolrRequest.METHOD.PUT, new XMLResponseParser());
 
@@ -131,5 +124,18 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
         assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
         assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
         assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
+    }
+
+    protected void validateDelete() {
+        // default method
+        assertEquals("post", DebugServlet.lastMethod);
+        // agent
+        assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
+        // default wt
+        assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
+        // default version
+        assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
+        // agent
+        assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     }
 }
