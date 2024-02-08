@@ -24,6 +24,7 @@ import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Method;
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.request.SolrQueryRequest;
 
 public class MemQueryLimit implements QueryTimeout {
@@ -34,8 +35,6 @@ public class MemQueryLimit implements QueryTimeout {
   // this keeps the maxDelta recorded during previous execution
   private static ThreadLocal<Long> previousMaxDelta =
       ThreadLocal.withInitial(() -> Long.valueOf(0L));
-  private static Histogram memHistogram =
-      new Histogram(LockFreeExponentiallyDecayingReservoir.builder().build());
 
   static {
     boolean testAvailable;
@@ -61,8 +60,12 @@ public class MemQueryLimit implements QueryTimeout {
     available = testAvailable;
   }
 
+  static final int MIN_COUNT = 100;
+
   private long limitAtBytes;
+  private float limitRatio;
   private long initialBytes;
+  private Histogram memHistogram;
 
   public MemQueryLimit(SolrQueryRequest req) {
     if (!available) {
@@ -70,18 +73,34 @@ public class MemQueryLimit implements QueryTimeout {
           "Per-thread memory allocation monitoring not available in this JVM.");
     }
     float reqMemLimit = req.getParams().getFloat(CommonParams.MEM_ALLOWED, -1.0f);
-    if (reqMemLimit <= 0.0f) {
+    float reqMemRatio = req.getParams().getFloat(CommonParams.MEM_ALLOWED_RATIO, -1.0f);
+    if (reqMemLimit <= 0.0f && reqMemRatio <= 1.0f) {
       throw new IllegalArgumentException(
-          "Check for limit with hasMemLimit(req) before creating a MemQueryLimit");
+          "Check for limit with hasMemLimit(req) before creating a MemQueryLimit!");
     }
-    init(reqMemLimit);
+    if (reqMemRatio >= 0.0f && reqMemRatio < 1.0f) {
+      throw new IllegalArgumentException(
+          "Parameter " + CommonParams.MEM_ALLOWED_RATIO + " must be greater than 1.0!");
+    }
+    memHistogram =
+        req.getCore()
+            .getCoreMetricManager()
+            .getSolrMetricsContext()
+            .histogram("memQueryLimit", SolrInfoBean.Category.QUERY.toString());
+
+    init(reqMemLimit, reqMemRatio);
   }
 
-  private void init(float reqMemLimit) {
-    long limitBytes = Math.round(reqMemLimit * MEBI);
+  private void init(float reqMemLimit, float reqMemRatio) {
+    this.limitRatio = reqMemRatio;
     try {
       initialBytes = (Long) GET_BYTES_METHOD.invoke(threadBean);
-      limitAtBytes = initialBytes + limitBytes;
+      if (reqMemLimit > 0) {
+        long limitBytes = Math.round(reqMemLimit * MEBI);
+        limitAtBytes = initialBytes + limitBytes;
+      } else {
+        limitAtBytes = -1;
+      }
       // record the last max delta left here by the previous query, and reset
       if (previousMaxDelta.get() > 0L) {
         memHistogram.update(previousMaxDelta.get());
@@ -95,8 +114,13 @@ public class MemQueryLimit implements QueryTimeout {
   }
 
   @VisibleForTesting
-  MemQueryLimit(float memLimit) {
-    init(memLimit);
+  MemQueryLimit(float memLimit, float memLimitRatio, Histogram memHistogram) {
+    this.memHistogram = memHistogram;
+    init(memLimit, memLimitRatio);
+  }
+
+  static Histogram createHistogram() {
+    return new Histogram(LockFreeExponentiallyDecayingReservoir.builder().build());
   }
 
   @VisibleForTesting
@@ -105,7 +129,8 @@ public class MemQueryLimit implements QueryTimeout {
   }
 
   static boolean hasMemLimit(SolrQueryRequest req) {
-    return req.getParams().getFloat(CommonParams.MEM_ALLOWED, -1.0f) > 0.0f;
+    return req.getParams().getFloat(CommonParams.MEM_ALLOWED, -1.0f) > 0.0f
+        || req.getParams().getFloat(CommonParams.MEM_ALLOWED_RATIO, -1.0f) > 1.0f;
   }
 
   @Override
@@ -116,7 +141,19 @@ public class MemQueryLimit implements QueryTimeout {
       if (currentAllocatedBytes - initialBytes > lastDelta) {
         previousMaxDelta.set(currentAllocatedBytes - initialBytes);
       }
-      return limitAtBytes - currentAllocatedBytes < 0L;
+      if (limitRatio > 0.0f && memHistogram.getCount() > MIN_COUNT) {
+        long maxDynamicDelta =
+            Math.round(memHistogram.getSnapshot().get99thPercentile() * (double) limitRatio);
+        if (initialBytes + maxDynamicDelta < currentAllocatedBytes) {
+          return true;
+        }
+        // don't exit - check the absolute limit, too
+      }
+      if (limitAtBytes > 0) {
+        return limitAtBytes - currentAllocatedBytes < 0L;
+      } else {
+        return false;
+      }
     } catch (Exception e) {
       available = false;
       throw new IllegalArgumentException(

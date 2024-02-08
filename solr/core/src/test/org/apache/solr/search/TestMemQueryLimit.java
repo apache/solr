@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import com.codahale.metrics.Histogram;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
@@ -34,11 +35,11 @@ public class TestMemQueryLimit extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
-  public void testActivation() throws Exception {
+  public void testHardLimit() throws Exception {
     Assume.assumeTrue("Thread memory monitoring is not available", MemQueryLimit.isAvailable());
     long limitMs = 100;
     // 1 MiB
-    MemQueryLimit memLimit = new MemQueryLimit(1f);
+    MemQueryLimit memLimit = new MemQueryLimit(1f, -1f, MemQueryLimit.createHistogram());
     ArrayList<byte[]> data = new ArrayList<>();
     long startNs = System.nanoTime();
     int wakeups = 0;
@@ -62,6 +63,28 @@ public class TestMemQueryLimit extends SolrCloudTestCase {
     assertTrue(
         "Elapsed wall-clock time expected much smaller than 100ms but was " + wallTimeDeltaMs,
         limitMs > wallTimeDeltaMs);
+  }
+
+  @Test
+  public void testDynamicLimit() throws Exception {
+    Assume.assumeTrue("Thread memory monitoring is not available", MemQueryLimit.isAvailable());
+    long limitMs = 100;
+    Histogram histogram = MemQueryLimit.createHistogram();
+    ArrayList<byte[]> data = new ArrayList<>();
+    MemQueryLimit memLimit = new MemQueryLimit(-1f, 1.1f, histogram);
+
+    // initial warmup
+    int dataSize = 10240; // 10 KiB
+    for (int i = 0; i < MemQueryLimit.MIN_COUNT; i++) {
+      histogram.update(random().nextInt(dataSize));
+    }
+    // make allocation larger than p99 - but not enough datapoints yet
+    data.add(new byte[3 * dataSize]);
+    assertFalse("not enough datapoints yet", memLimit.shouldExit());
+
+    // one additional point to enable dynamic limit
+    histogram.update(dataSize);
+    assertTrue("enough datapoints reached", memLimit.shouldExit());
   }
 
   @Test
