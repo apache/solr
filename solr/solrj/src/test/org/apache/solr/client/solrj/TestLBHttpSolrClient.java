@@ -293,14 +293,6 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       return "collection1";
     }
 
-    public String getBaseUrl() {
-      return buildUrl(port);
-    }
-
-    public String getDefaultCollection() {
-      return "collection1";
-    }
-
     public String getSchemaFile() {
       return "solrj/solr/collection1/conf/schema-replication1.xml";
     }
