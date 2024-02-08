@@ -167,7 +167,9 @@ public interface CommonParams {
    */
   String MEM_ALLOWED = "memAllowed";
 
-  /** Max query mem allocation ratio (a float > 1.0) relative to the p99 of the recent queries. */
+  /**
+   * Max query mem allocation ratio (a float &gt; 1.0) relative to the p99 of the recent queries.
+   */
   String MEM_ALLOWED_RATIO = "memAllowedRatio";
 
   /** Is the query cancellable? */

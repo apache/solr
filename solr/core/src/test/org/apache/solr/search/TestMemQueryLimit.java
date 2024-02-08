@@ -55,7 +55,7 @@ public class TestMemQueryLimit extends SolrCloudTestCase {
     assertTrue(data.size() > 1);
     long wallTimeDeltaMs = TimeUnit.MILLISECONDS.convert(endNs - startNs, TimeUnit.NANOSECONDS);
     log.info(
-        "CPU limit: {} ms, elapsed wall-clock: {} ms, wakeups: {}",
+        "Time limit: {} ms, elapsed wall-clock: {} ms, wakeups: {}",
         limitMs,
         wallTimeDeltaMs,
         wakeups);
@@ -75,7 +75,9 @@ public class TestMemQueryLimit extends SolrCloudTestCase {
 
     // initial warmup
     int dataSize = 10240; // 10 KiB
-    for (int i = 0; i < MemQueryLimit.MIN_COUNT; i++) {
+    // may have been updated in init() from a leftover thread local value
+    int count = MemQueryLimit.MIN_COUNT - (int) histogram.getCount();
+    for (int i = 0; i < count; i++) {
       histogram.update(random().nextInt(dataSize));
     }
     // make allocation larger than p99 - but not enough datapoints yet
