@@ -217,4 +217,4 @@ Unlike most local params, `op` is actually _not_ defined by any query parser (`f
 In the above example, it would find documents with indexed ranges that _contain_ (or equals) the range 2013 thru 2018.
 Multi-valued overlapping indexed ranges in a document are effectively coalesced.
 
-For a DateRangeField example use-case, see https://cwiki.apache.org/confluence/display/solr/DateRangeField[see Solr's community wiki].
+For a DateRangeField example use-case, see https://cwiki.apache.org/confluence/display/solr/DateRangeField[Solr's community wiki].

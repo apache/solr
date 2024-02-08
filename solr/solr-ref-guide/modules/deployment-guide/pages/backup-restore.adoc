@@ -388,7 +388,7 @@ If the status is anything other than "success", an error message will explain wh
 
 Solr provides a repository abstraction to allow users to backup and restore their data to a variety of different storage systems.
 For example, a Solr cluster running on a local filesystem (e.g., EXT3) can store backup data on the same disk, on a remote network-mounted drive, in HDFS, or even in some popular "cloud storage" providers, depending on the 'repository' implementation chosen.
-Solr offers multiple different repository implementations out of the box (`LocalFileSystemRepository`, `HdfsBackupRepository`, `GCSBackupRepository` and `S3BackupRepository`), and allows users to create plugins for their own storage systems as needed.
+Solr offers multiple different repository implementations out of the box (`LocalFileSystemRepository`, `HdfsBackupRepository`, `GCSBackupRepository` and `S3BackupRepository`), and allows users to create plugins for their own storage systems as needed. It is also possible to create a `DelegatingBackupRepository` that delegates to another `BackupRepository` and adds or modifies some behavior on top of it.
 
 Users can define any number of repositories in their `solr.xml` file.
 The backup and restore APIs described above allow users to select which of these definitions they want to use at runtime via the `repository` parameter.
@@ -400,6 +400,17 @@ They may also have a boolean `default` attribute, which may be `true` on at most
 Any children under the `<repository>` tag are passed as additional configuration to the repository, allowing repositories to read their own implementation-specific configuration.
 
 Information on each of the repository implementations provided with Solr is provided below.
+
+By default, all the repository implementations verify the integrity of the index files before they are copied to the destination. However, it is possible to disable this integrity check by setting the optional configuration property `verifyChecksum`.
+
+`verifyChecksum`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Defines whether the backup repository should check the index files integrity before copying them to the destination. Set `false` to disable the checksum verification, in order to verify the integrity in a different way, for example if the files are encrypted.
 
 === LocalFileSystemRepository
 
@@ -422,7 +433,7 @@ LocalFileSystemRepository accepts the following configuration option:
 |===
 +
 A valid file path (accessible to Solr locally) to use for backup storage and retrieval.
-Used as a fallback when user's don't provide a `location` parameter in their Backup or Restore API commands
+Used as a fallback when users don't provide a `location` parameter in their Backup or Restore API commands.
 
 An example configuration using this property can be found below.
 
