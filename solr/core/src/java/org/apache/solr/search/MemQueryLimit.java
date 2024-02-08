@@ -19,8 +19,6 @@ package org.apache.solr.search;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.LockFreeExponentiallyDecayingReservoir;
 import com.google.common.annotations.VisibleForTesting;
-
-import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Method;
@@ -28,12 +26,8 @@ import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.request.SolrQueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class MemQueryLimit implements QueryTimeout {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private static final double MEBI = 1024.0 * 1024.0;
   private static final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
   private static Method GET_BYTES_METHOD;
@@ -147,7 +141,6 @@ public class MemQueryLimit implements QueryTimeout {
       if (currentAllocatedBytes - initialBytes > lastDelta) {
         previousMaxDelta.set(currentAllocatedBytes - initialBytes);
       }
-      log.info("count={}", memHistogram.getCount());
       if (limitRatio > 0.0f && memHistogram.getCount() > MIN_COUNT) {
         long maxDynamicDelta =
             Math.round(memHistogram.getSnapshot().get99thPercentile() * (double) limitRatio);
