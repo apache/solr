@@ -57,7 +57,7 @@ public class S3BackupRepositoryConfig {
         bucketName, profile, region, proxyURL, proxyUseSystemSettings, endpoint, disableRetries);
   }
 
-  private static String getStringConfig(NamedList<?> config, String property) {
+  static String getStringConfig(NamedList<?> config, String property) {
     String envProp = EnvUtils.getProperty(property);
     if (envProp == null) {
       Object configProp = config.get(property);
@@ -67,11 +67,11 @@ public class S3BackupRepositoryConfig {
     }
   }
 
-  private static int getIntConfig(NamedList<?> config, String property) {
+  static int getIntConfig(NamedList<?> config, String property) {
     return getIntConfig(config, property, 0);
   }
 
-  private static int getIntConfig(NamedList<?> config, String property, int def) {
+  static int getIntConfig(NamedList<?> config, String property, int def) {
     String envProp = EnvUtils.getProperty(property);
     if (envProp == null) {
       Object configProp = config.get(property);
@@ -82,11 +82,11 @@ public class S3BackupRepositoryConfig {
   }
 
   /** If the property as any other value than 'true' or 'TRUE', this will default to false. */
-  private static boolean getBooleanConfig(NamedList<?> config, String property) {
+  static boolean getBooleanConfig(NamedList<?> config, String property) {
     return getBooleanConfig(config, property, false);
   }
 
-  private static boolean getBooleanConfig(NamedList<?> config, String property, boolean def) {
+  static boolean getBooleanConfig(NamedList<?> config, String property, boolean def) {
     String envProp = EnvUtils.getProperty(property);
     if (envProp == null) {
       Boolean configProp = config.getBooleanArg(property);

@@ -90,13 +90,21 @@ Improvements
 * SOLR-16699: Add Collection creation time to CLUSTERSTATUS and COLSTATUS API responses
   (Julien Pilourdault, Paul McArthur, David Smiley)
 
+* SOLR-17038: Expose the term count in /admin/segments handler if fieldInfo=true.
+  (Rahul Goswami via David Smiley and Christine Poerschke)
+
+* SOLR-17146: Add DelegatingBackupRepository and alternative checksum verification (Bruno Roustant)
+
 Optimizations
 ---------------------
-(No changes)
+* SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
+
+* GITHUB#2217: Scale to 10K+ collections better in ZkStateReader.refreshCollectionsList (David Smiley)
+
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17152: Better alignment of Admin UI graph (janhoy)
 
 Dependency Upgrades
 ---------------------
@@ -176,7 +184,7 @@ Improvements
   Now available at `GET /api/node/commands/someRequestId` (Sanjay Dutt via Jason Gerlowski)
 
 * SOLR-17068: bin/solr post CLI use of options is now aligned closely with bin/post CLI tool, and is consistently
-  referenced throughout the Ref Guide and source code, and is used through out our tests.  The bin/post tool 
+  referenced throughout the Ref Guide and source code, and is used through out our tests.  The bin/post tool
   remains and has been tested to work. (Eric Pugh)
 
 Optimizations
@@ -213,6 +221,8 @@ Bug Fixes
   updates of the same document in separate requests using commitWithin. (Calvin Smith, Christine Poerschke)
 
 * SOLR-17112: bin/solr script doesn't do ps properly on some systems. (Vincenzo D'Amore via Eric Pugh)
+
+* SOLR-17149: Backups on collections with too many shards fail due to restrictive Executor queue size (Pierre Salagnac via Jason Gerlowski)
 
 Dependency Upgrades
 ---------------------

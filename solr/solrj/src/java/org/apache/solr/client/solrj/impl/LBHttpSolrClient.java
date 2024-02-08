@@ -122,10 +122,11 @@ public class LBHttpSolrClient extends LBSolrClient {
     HttpSolrClient client;
     if (httpSolrClientBuilder != null) {
       synchronized (this) {
-        httpSolrClientBuilder.withBaseSolrUrl(server).withHttpClient(httpClient);
-        httpSolrClientBuilder.withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
-        httpSolrClientBuilder.withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
-
+        httpSolrClientBuilder
+            .withBaseSolrUrl(server)
+            .withHttpClient(httpClient)
+            .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
         if (defaultCollection != null) {
           httpSolrClientBuilder.withDefaultCollection(defaultCollection);
         }

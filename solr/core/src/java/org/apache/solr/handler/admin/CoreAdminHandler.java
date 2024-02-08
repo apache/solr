@@ -443,7 +443,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     // We keep the number number of max threads very low to have throttling for expensive tasks
     private ExecutorService expensiveExecutor =
         ExecutorUtil.newMDCAwareCachedThreadPool(
-            5, new SolrNamedThreadFactory("parallelCoreAdminAPIExpensiveExecutor"));
+            5,
+            Integer.MAX_VALUE,
+            new SolrNamedThreadFactory("parallelCoreAdminAPIExpensiveExecutor"));
 
     public CoreAdminAsyncTracker() {
       HashMap<String, Map<String, TaskObject>> map = new HashMap<>(3, 1.0f);
