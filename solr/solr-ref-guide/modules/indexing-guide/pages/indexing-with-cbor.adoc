@@ -94,7 +94,7 @@ else:
 
 == Node.js example
 
-Save the following program into a a file called `script.js`
+Save the following program into a file called `script.js`
 
 [,javascript]
 ----

@@ -104,6 +104,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
+* SOLR-17152: Better alignment of Admin UI graph (janhoy)
+
 * SOLR-17148: Fixing Config API overlay property enabling or disabling the cache
 
 Dependency Upgrades
