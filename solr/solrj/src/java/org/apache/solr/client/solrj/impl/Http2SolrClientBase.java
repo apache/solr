@@ -22,6 +22,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -41,12 +42,18 @@ public abstract class Http2SolrClientBase extends SolrClient {
     /** The URL of the Solr server. */
     protected final String serverBaseUrl;
 
+    protected final long idleTimeoutMillis;
+
+    protected final long requestTimeoutMillis;
+
     protected RequestWriter requestWriter = new BinaryRequestWriter();
 
     // updating parser instance needs to go via the setter to ensure update of defaultParserMimeTypes
     protected ResponseParser parser = new BinaryResponseParser();
 
     protected Set<String> defaultParserMimeTypes;
+
+    protected final String basicAuthAuthorizationStr;
 
     protected Http2SolrClientBase(String serverBaseUrl, HttpSolrClientBuilderBase builder) {
         if (serverBaseUrl != null) {
@@ -60,6 +67,20 @@ public abstract class Http2SolrClientBase extends SolrClient {
             this.serverBaseUrl = serverBaseUrl;
         } else {
             this.serverBaseUrl = null;
+        }
+        this.idleTimeoutMillis = builder.idleTimeoutMillis;
+        this.basicAuthAuthorizationStr = builder.basicAuthAuthorizationStr;
+        if (builder.requestWriter != null) {
+            this.requestWriter = builder.requestWriter;
+        }
+        if (builder.responseParser != null) {
+            this.parser = builder.responseParser;
+        }
+        this.defaultCollection = builder.defaultCollection;
+        if (builder.requestTimeoutMillis != null) {
+            this.requestTimeoutMillis = builder.requestTimeoutMillis;
+        } else {
+            this.requestTimeoutMillis = -1;
         }
     }
 
@@ -311,10 +332,10 @@ public abstract class Http2SolrClientBase extends SolrClient {
         }
     }
 
-    public ResponseParser getParser() {
-        return parser;
+    protected static String basicAuthCredentialsToAuthorizationString(String user, String pass) {
+        String userPass = user + ":" + pass;
+        return "Basic " + Base64.getEncoder().encodeToString(userPass.getBytes(FALLBACK_CHARSET));
     }
-
     protected void setParser(ResponseParser parser) {
         this.parser = parser;
         updateDefaultMimeTypeForParser();
@@ -325,5 +346,17 @@ public abstract class Http2SolrClientBase extends SolrClient {
                 parser.getContentTypes().stream()
                         .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
                         .collect(Collectors.toSet());
+    }
+
+    public boolean isV2ApiRequest(final SolrRequest<?> request) {
+        return request instanceof V2Request || request.getPath().contains("/____v2");
+    }
+
+    public ResponseParser getParser() {
+        return parser;
+    }
+
+    public long getIdleTimeout() {
+        return idleTimeoutMillis;
     }
 }

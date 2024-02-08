@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class HttpSolrClientBuilderBase {
+public abstract class HttpSolrClientBuilderBase {
     protected Long idleTimeoutMillis;
     protected Long connectionTimeoutMillis;
     protected Long requestTimeoutMillis;

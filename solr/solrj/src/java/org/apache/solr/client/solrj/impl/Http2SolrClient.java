@@ -116,14 +116,12 @@ public class Http2SolrClient extends Http2SolrClientBase {
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
 
   private static volatile SSLConfig defaultSSLConfig;
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
 
   private final HttpClient httpClient;
   private final Set<String> urlParamNames;
-  private final long idleTimeoutMillis;
-  private final long requestTimeoutMillis;
+
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private final AsyncTracker asyncTracker = new AsyncTracker();
 
@@ -131,15 +129,12 @@ public class Http2SolrClient extends Http2SolrClientBase {
   private ExecutorService executor;
   private boolean shutdownExecutor;
 
-  final String basicAuthAuthorizationStr;
   private AuthenticationStoreHolder authenticationStore;
 
   private KeyStoreScanner scanner;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
     super(serverBaseUrl, builder);
-
-    this.idleTimeoutMillis = builder.idleTimeoutMillis;
 
     if (builder.httpClient != null) {
       this.httpClient = builder.httpClient;
@@ -148,20 +143,9 @@ public class Http2SolrClient extends Http2SolrClientBase {
       this.httpClient = createHttpClient(builder);
       this.closeClient = true;
     }
-    this.basicAuthAuthorizationStr = builder.basicAuthAuthorizationStr;
-    if (builder.requestWriter != null) {
-      this.requestWriter = builder.requestWriter;
-    }
-    if (builder.responseParser != null) {
-      this.parser = builder.responseParser;
-    }
+
     updateDefaultMimeTypeForParser();
-    this.defaultCollection = builder.defaultCollection;
-    if (builder.requestTimeoutMillis != null) {
-      this.requestTimeoutMillis = builder.requestTimeoutMillis;
-    } else {
-      this.requestTimeoutMillis = -1;
-    }
+
     this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
     if (builder.urlParamNames != null) {
       this.urlParamNames = builder.urlParamNames;
@@ -341,14 +325,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
     this.authenticationStore.updateAuthenticationStore(authenticationStore);
   }
 
-  public boolean isV2ApiRequest(final SolrRequest<?> request) {
-    return request instanceof V2Request || request.getPath().contains("/____v2");
-  }
-
-  public long getIdleTimeout() {
-    return idleTimeoutMillis;
-  }
-
   public static class OutStream implements Closeable {
     private final String origCollection;
     private final ModifiableSolrParams origParams;
@@ -402,11 +378,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
     String contentType = requestWriter.getUpdateContentType();
     final ModifiableSolrParams origParams = new ModifiableSolrParams(updateRequest.getParams());
 
-    // The parser 'wt=' and 'version=' params are used instead of the
-    // original params
-    ModifiableSolrParams requestParams = new ModifiableSolrParams(origParams);
-    requestParams.set(CommonParams.WT, parser.getWriterType());
-    requestParams.set(CommonParams.VERSION, parser.getVersion());
+   ModifiableSolrParams requestParams = initalizeSolrParams(null);
 
     String basePath = baseUrl;
     if (collection != null) basePath += "/" + collection;
@@ -590,12 +562,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
       req.headers(headers -> headers.put("Authorization", basicAuthAuthorizationStr));
     }
   }
-
-  static String basicAuthCredentialsToAuthorizationString(String user, String pass) {
-    String userPass = user + ":" + pass;
-    return "Basic " + Base64.getEncoder().encodeToString(userPass.getBytes(FALLBACK_CHARSET));
-  }
-
   private void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
     req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
 

@@ -184,6 +184,11 @@ grant {
   // for Apache HttpClient useSystemProperties
   permission java.net.NetPermission "getProxySelector";
   permission java.net.NetPermission "requestPasswordAuthentication";
+
+  // for java.net.http.HttpClient
+  //permission java.net.URLPermission "http://www.oracle.com/a/b/c.html" "POST,GET,DELETE"
+  //TODO NOCOMMIT !!
+  permission java.security.AllPermission;
 };
 
 // additional permissions based on system properties set by /bin/solr

@@ -3,13 +3,14 @@ package org.apache.solr.client.solrj.impl;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.params.CommonParams;
 
 import java.util.concurrent.TimeUnit;
 
-public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrClientBuilderBase> {
+public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrClientJdkImpl.Builder> {
 
     protected String expectedUserAgent() {
-        return "Solr[" + HttpSolrClientJdkImpl.class.getName() + "] 2.0";
+        return "Solr[" + HttpSolrClientJdkImpl.class.getName() + "] 1.0";
     }
 
     @Override
@@ -24,13 +25,15 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
         }
         try (HttpSolrClientJdkImpl client = b.build()) {
             client.query(q, method);
+            assertEquals(
+                    client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
         } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
         }
     }
 
     @Override
-    protected HttpSolrClientBuilderBase builder(String url, int connectionTimeout, int socketTimeout) {
-        return new HttpSolrClientBuilderBase(url).withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
+    protected HttpSolrClientJdkImpl.Builder builder(String url, int connectionTimeout, int socketTimeout) {
+        return (HttpSolrClientJdkImpl.Builder) new HttpSolrClientJdkImpl.Builder(url).withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
                 .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS);
     }
 
