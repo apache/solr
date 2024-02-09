@@ -281,9 +281,7 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
                     boolean shouldBeInQueryString =
                             client.getUrlParamNames().contains(name)
                                     || (request.getQueryParams() != null && request.getQueryParams().contains(name));
-                    System.out.println(value + " | " + client.getUrlParamNames() + " | " + request.getQueryParams() + " | " + DebugServlet.queryString + " | " + DebugServlet.parameters);
-                    System.out.println("** " + shouldBeInQueryString + " | " + DebugServlet.queryString + " | " + name + " | " + value);
-                    assertEquals(
+                   assertEquals(
                             shouldBeInQueryString, DebugServlet.queryString.contains(name + "=" + value));
                     // in either case, it should be in the parameters
                     assertNotNull(DebugServlet.parameters.get(name));
@@ -310,7 +308,6 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
                 client.request(req);
             } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
             }
-            System.out.println("***1");
             verifyServletState(client, req);
 
             // test without server query params
@@ -325,7 +322,6 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
                 client.request(req);
             } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
             }
-            System.out.println("***2");
             verifyServletState(client, req);
 
             // test with both request and server query params
@@ -342,7 +338,6 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
                 client.request(req);
             } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
             }
-            System.out.println("***3");
             verifyServletState(client, req);
         }
         try (Http2SolrClientBase client =
@@ -364,7 +359,6 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
             // as part of the query string.  So add "neither" to the request
             // so it passes the verification step.
             req.setQueryParams(Set.of("requestOnly", "both", "neither"));
-            System.out.println("***4");
             verifyServletState(client, req);
         }
     }

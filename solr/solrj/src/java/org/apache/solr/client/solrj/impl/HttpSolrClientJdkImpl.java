@@ -55,42 +55,6 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
 
         assert ObjectReleaseTracker.track(this);
     }
-
-    private HttpRequest.BodyPublisher preparePostPutRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest, ModifiableSolrParams requestParams) throws IOException {
-        RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
-
-        Collection<ContentStream> streams = null;
-        if(contentWriter == null) {
-            streams = requestWriter.getContentStreams(solrRequest);
-        }
-
-        String contentType = "application/x-www-form-urlencoded";
-        if(contentWriter != null && contentWriter.getContentType() != null) {
-            contentType = contentWriter.getContentType();
-        }
-        reqb.header("Content-Type", contentType);
-
-        if(isMultipart(streams)) {
-            throw new UnsupportedOperationException("This client does not support multipart.");
-        }
-
-        if (contentWriter != null) {
-            //TODO:  There is likely a more memory-efficient way to do this!
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            contentWriter.write(baos);
-            byte[] bytes = baos.toByteArray();
-            return HttpRequest.BodyPublishers.ofByteArray(bytes);
-        } else if (streams != null && streams.size() == 1) {
-            ContentStream contentStream = streams.iterator().next();
-            InputStream is = contentStream.getStream();
-            return HttpRequest.BodyPublishers.ofInputStream(() -> is);
-        } else if(requestParams != null) {
-            return HttpRequest.BodyPublishers.ofString(requestParams.toString());
-        } else {
-            return HttpRequest.BodyPublishers.noBody();
-        }
-    }
-
     @Override
     public NamedList<Object> request(SolrRequest<?> solrRequest, String collection) throws SolrServerException, IOException {
         checkClosed();
@@ -100,12 +64,6 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         String url = getRequestPath(solrRequest, collection);
         ResponseParser parser = responseParser(solrRequest);
         ModifiableSolrParams queryParams = initalizeSolrParams(solrRequest);
-        ModifiableSolrParams requestParams = null;
-        if (urlParamNames != null && !urlParamNames.isEmpty()) {
-            requestParams = queryParams;
-            queryParams = calculateQueryParams(urlParamNames, requestParams);
-            queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), requestParams));
-        }
         Throwable abortCause = null;
         try {
             var reqb = HttpRequest.newBuilder();
@@ -116,11 +74,15 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
                     break;
                 }
                 case POST: {
-                    reqb.POST(preparePostPutRequest(reqb, solrRequest, requestParams));
+                    PreparePostPutRequestResult result = preparePostPutRequest(reqb, solrRequest, queryParams);
+                    queryParams = result.queryParams;
+                    reqb.POST(result.bodyPublisher);
                     break;
                 }
                 case PUT: {
-                    reqb.PUT(preparePostPutRequest(reqb, solrRequest, requestParams));
+                    PreparePostPutRequestResult result = preparePostPutRequest(reqb, solrRequest, queryParams);
+                    queryParams = result.queryParams;
+                    reqb.PUT(result.bodyPublisher);
                     break;
                 }
                 case DELETE: {
@@ -169,17 +131,52 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         }
     }
 
-    private void setBasicAuthHeader(SolrRequest<?> solrRequest, HttpRequest.Builder reqb) {
-        if (solrRequest.getBasicAuthUser() != null && solrRequest.getBasicAuthPassword() != null) {
-            String encoded =
-                    basicAuthCredentialsToAuthorizationString(
-                            solrRequest.getBasicAuthUser(), solrRequest.getBasicAuthPassword());
-            reqb.header("Authorization", encoded);
-        } else if (basicAuthAuthorizationStr != null) {
-            reqb.header("Authorization", basicAuthAuthorizationStr);
+    private static class PreparePostPutRequestResult {
+        ModifiableSolrParams queryParams;
+        HttpRequest.BodyPublisher bodyPublisher;
+        PreparePostPutRequestResult(ModifiableSolrParams queryParams, HttpRequest.BodyPublisher bodyPublisher) {
+            this.queryParams = queryParams;
+            this.bodyPublisher = bodyPublisher;
         }
     }
 
+    private PreparePostPutRequestResult preparePostPutRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest, ModifiableSolrParams queryParams) throws IOException {
+        RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
+
+        Collection<ContentStream> streams = null;
+        if(contentWriter == null) {
+            streams = requestWriter.getContentStreams(solrRequest);
+        }
+
+        String contentType = "application/x-www-form-urlencoded";
+        if(contentWriter != null && contentWriter.getContentType() != null) {
+            contentType = contentWriter.getContentType();
+        }
+        reqb.header("Content-Type", contentType);
+
+        if(isMultipart(streams)) {
+            throw new UnsupportedOperationException("This client does not support multipart.");
+        }
+
+        if (contentWriter != null) {
+            //TODO:  There is likely a more memory-efficient way to do this!
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            contentWriter.write(baos);
+            byte[] bytes = baos.toByteArray();
+            return new PreparePostPutRequestResult(queryParams, HttpRequest.BodyPublishers.ofByteArray(bytes));
+        } else if (streams != null && streams.size() == 1) {
+            ContentStream contentStream = streams.iterator().next();
+            InputStream is = contentStream.getStream();
+            return new PreparePostPutRequestResult(queryParams, HttpRequest.BodyPublishers.ofInputStream(() -> is));
+        } else if(queryParams != null && urlParamNames != null) {
+            ModifiableSolrParams requestParams = queryParams;
+            queryParams = calculateQueryParams(urlParamNames, requestParams);
+            queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), requestParams));
+            return new PreparePostPutRequestResult(queryParams, HttpRequest.BodyPublishers.ofString(requestParams.toString()));
+        } else {
+            return new PreparePostPutRequestResult(queryParams, HttpRequest.BodyPublishers.noBody());
+        }
+    }
 
     private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {
         if (requestTimeoutMillis > 0) {
@@ -196,8 +193,17 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
             }
         }
     }
-//Content-Type: text/html; charset=utf-8
-//Content-Type: multipart/form-data; boundary=something
+
+    private void setBasicAuthHeader(SolrRequest<?> solrRequest, HttpRequest.Builder reqb) {
+        if (solrRequest.getBasicAuthUser() != null && solrRequest.getBasicAuthPassword() != null) {
+            String encoded =
+                    basicAuthCredentialsToAuthorizationString(
+                            solrRequest.getBasicAuthUser(), solrRequest.getBasicAuthPassword());
+            reqb.header("Authorization", encoded);
+        } else if (basicAuthAuthorizationStr != null) {
+            reqb.header("Authorization", basicAuthAuthorizationStr);
+        }
+    }
 
     private static final Pattern MIME_TYPE_PATTERN = Pattern.compile("^(.*) .*$");
     private static final Pattern CHARSET_PATTERN = Pattern.compile("(?i)^.*charset=(.*)?(?:;| |$)");
