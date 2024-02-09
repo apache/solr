@@ -20,6 +20,7 @@ import com.codahale.metrics.Histogram;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -82,6 +83,9 @@ public class TestMemQueryLimit extends SolrCloudTestCase {
     }
     // make allocation larger than p99 - but not enough datapoints yet
     data.add(new byte[3 * dataSize]);
+    if (log.isInfoEnabled()) {
+      log.info("Data size: {}", RamUsageEstimator.sizeOfObject(data));
+    }
     assertFalse("not enough datapoints yet", memLimit.shouldExit());
 
     // one additional point to enable dynamic limit
@@ -118,7 +122,6 @@ public class TestMemQueryLimit extends SolrCloudTestCase {
           solrClient.query(
               COLLECTION,
               params("q", "id:*", "sort", "id desc", "dataSize", String.valueOf(dataSize)));
-      System.err.println("rsp=" + rsp.jsonStr());
       assertEquals(rsp.getHeader().get("status"), 0);
       assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
 
@@ -135,7 +138,6 @@ public class TestMemQueryLimit extends SolrCloudTestCase {
                   String.valueOf(dataSize),
                   "memAllowed",
                   "0.1"));
-      System.err.println("rsp=" + rsp.jsonStr());
       assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
     } finally {
       cluster.shutdown();
