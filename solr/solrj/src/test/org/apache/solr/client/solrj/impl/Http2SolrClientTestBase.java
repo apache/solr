@@ -2,11 +2,21 @@ package org.apache.solr.client.solrj.impl;
 
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.SolrPing;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 
 public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
 
@@ -138,4 +148,98 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
         // agent
         assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     }
+
+    public void testGetById(Http2SolrClientBase client) throws Exception {
+        DebugServlet.clear();
+        Collection<String> ids = Collections.singletonList("a");
+        try {
+            client.getById("a");
+        } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+        }
+
+        try {
+            client.getById(ids, null);
+        } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+        }
+
+        try {
+            client.getById("foo", "a");
+        } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+        }
+
+        try {
+            client.getById("foo", ids, null);
+        } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+        }
+    }
+
+    /**
+     * test that SolrExceptions thrown by HttpSolrClient can correctly encapsulate http status codes
+     * even when not on the list of ErrorCodes solr may return.
+     */
+    public void testSolrExceptionCodeNotFromSolr(Http2SolrClientBase client) throws IOException, SolrServerException {
+        final int status = 527;
+        assertEquals(
+                status
+                        + " didn't generate an UNKNOWN error code, someone modified the list of valid ErrorCode's w/o changing this test to work a different way",
+                SolrException.ErrorCode.UNKNOWN,
+                SolrException.ErrorCode.getErrorCode(status));
+
+        DebugServlet.setErrorCode(status);
+        try {
+            SolrQuery q = new SolrQuery("foo");
+            client.query(q, SolrRequest.METHOD.GET);
+            fail("Didn't get excepted exception from oversided request");
+        } catch (SolrException e) {
+            assertEquals("Unexpected exception status code", status, e.code());
+        }
+    }
+
+    /**
+     * test that SolrExceptions thrown by HttpSolrClient can correctly encapsulate http status codes
+     * even when not on the list of ErrorCodes solr may return.
+     */
+    public void testSolrExceptionWithNullBaseurl(Http2SolrClientBase client) throws IOException, SolrServerException {
+        final int status = 527;
+        assertEquals(
+                status
+                        + " didn't generate an UNKNOWN error code, someone modified the list of valid ErrorCode's w/o changing this test to work a different way",
+                SolrException.ErrorCode.UNKNOWN,
+                SolrException.ErrorCode.getErrorCode(status));
+
+        DebugServlet.setErrorCode(status);
+        try {
+            // if client base url is null, request url will be used in exception message
+            SolrPing ping = new SolrPing();
+            ping.setBasePath(getBaseUrl() + "/debug/foo");
+            client.request(ping);
+
+            fail("Didn't get excepted exception from oversided request");
+        } catch (SolrException e) {
+            assertEquals("Unexpected exception status code", status, e.code());
+            assertTrue(e.getMessage().contains(getBaseUrl()));
+        }
+    }
+
+    protected void testUpdate(Http2SolrClientBase client, String wt, String contentType) throws Exception {
+        DebugServlet.clear();
+        UpdateRequest req = new UpdateRequest();
+        req.add(new SolrInputDocument());
+        req.setParam("a", "\u1234");
+
+        try {
+            client.request(req);
+        } catch (BaseHttpSolrClient.RemoteSolrException ignored) { }
+        assertEquals("post", DebugServlet.lastMethod);
+        assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
+        assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
+        assertEquals(wt, DebugServlet.parameters.get(CommonParams.WT)[0]);
+        assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
+        assertEquals(
+                client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
+        assertEquals(contentType, DebugServlet.headers.get("content-type"));
+        assertEquals(1, DebugServlet.parameters.get("a").length);
+        assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+    }
+
 }

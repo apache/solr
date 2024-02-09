@@ -23,6 +23,7 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
@@ -131,10 +132,10 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
             Thread.currentThread().interrupt();
             abortCause = e;
             throw new RuntimeException(e);
-        } /* TODO catch (TimeoutException e) {
+        } catch (HttpTimeoutException e) {
             throw new SolrServerException(
                     "Timeout occurred while waiting response from server at: " + url, e);
-        }  TODO catch (ExecutionException e) {
+        }  /*TODO catch (ExecutionException e) {
             Throwable cause = e.getCause();
             abortCause = cause;
             if (cause instanceof ConnectException) {

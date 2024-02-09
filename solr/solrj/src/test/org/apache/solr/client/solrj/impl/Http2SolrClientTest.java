@@ -24,9 +24,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -40,8 +38,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
@@ -108,54 +104,18 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
    */
   @Test
   public void testSolrExceptionCodeNotFromSolr() throws IOException, SolrServerException {
-    final int status = 527;
-    assertEquals(
-        status
-            + " didn't generate an UNKNOWN error code, someone modified the list of valid ErrorCode's w/o changing this test to work a different way",
-        SolrException.ErrorCode.UNKNOWN,
-        SolrException.ErrorCode.getErrorCode(status));
-
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build()) {
-      DebugServlet.setErrorCode(status);
-      try {
-        SolrQuery q = new SolrQuery("foo");
-        client.query(q, SolrRequest.METHOD.GET);
-        fail("Didn't get excepted exception from oversided request");
-      } catch (SolrException e) {
-        assertEquals("Unexpected exception status code", status, e.code());
-      }
+      super.testSolrExceptionCodeNotFromSolr(client);
     } finally {
       DebugServlet.clear();
     }
   }
 
-  /**
-   * test that SolrExceptions thrown by HttpSolrClient can correctly encapsulate http status codes
-   * even when not on the list of ErrorCodes solr may return.
-   */
   @Test
   public void testSolrExceptionWithNullBaseurl() throws IOException, SolrServerException {
-    final int status = 527;
-    assertEquals(
-        status
-            + " didn't generate an UNKNOWN error code, someone modified the list of valid ErrorCode's w/o changing this test to work a different way",
-        SolrException.ErrorCode.UNKNOWN,
-        SolrException.ErrorCode.getErrorCode(status));
-
-    try (Http2SolrClient client = new Http2SolrClient.Builder(null).build()) {
-      DebugServlet.setErrorCode(status);
-      try {
-        // if client base url is null, request url will be used in exception message
-        SolrPing ping = new SolrPing();
-        ping.setBasePath(getBaseUrl() + "/debug/foo");
-        client.request(ping);
-
-        fail("Didn't get excepted exception from oversided request");
-      } catch (SolrException e) {
-        assertEquals("Unexpected exception status code", status, e.code());
-        assertTrue(e.getMessage().contains(getBaseUrl()));
-      }
+   try (Http2SolrClient client = new Http2SolrClient.Builder(null).build()) {
+      super.testSolrExceptionWithNullBaseurl(client);
     } finally {
       DebugServlet.clear();
     }
@@ -243,107 +203,38 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
     DebugServlet.clear();
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build()) {
-      Collection<String> ids = Collections.singletonList("a");
-      try {
-        client.getById("a");
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      try {
-        client.getById(ids, null);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      try {
-        client.getById("foo", "a");
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      try {
-        client.getById("foo", ids, null);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
+      super.testGetById(client);
     }
   }
 
   @Test
-  public void testUpdate() throws Exception {
-    DebugServlet.clear();
+  public void testUpdateDefault() throws Exception {
     String url = getBaseUrl() + "/debug/foo";
-    UpdateRequest req = new UpdateRequest();
-    req.add(new SolrInputDocument());
-    req.setParam("a", "\u1234");
     try (Http2SolrClient client = new Http2SolrClient.Builder(url).build()) {
-
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      // default method
-      assertEquals("post", DebugServlet.lastMethod);
-      // agent
-      assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
-      // default wt
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      // default version
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      // content type
-      assertEquals("application/javabin", DebugServlet.headers.get("content-type"));
-      // parameter encoding
-      assertEquals(1, DebugServlet.parameters.get("a").length);
-      assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+      testUpdate(client, "javabin", "application/javabin");
     }
+  }
+
+  @Test
+  public void testUpdateXml() throws Exception {
+    String url = getBaseUrl() + "/debug/foo";
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(url)
-            .withRequestWriter(new RequestWriter())
-            .withResponseParser(new XMLResponseParser())
-            .build()) {
-
-      // XML response and writer
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      assertEquals("post", DebugServlet.lastMethod);
-      assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      assertEquals("application/xml; charset=UTF-8", DebugServlet.headers.get("content-type"));
-      assertEquals(1, DebugServlet.parameters.get("a").length);
-      assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+                 new Http2SolrClient.Builder(url)
+                         .withRequestWriter(new RequestWriter())
+                         .withResponseParser(new XMLResponseParser())
+                         .build()) {
+      testUpdate(client, "xml", "application/xml; charset=UTF-8");
     }
-
-    // javabin request
-    try (Http2SolrClient client =
+  }
+    @Test
+    public void testUpdateJavabin() throws Exception {
+      String url = getBaseUrl() + "/debug/foo";
+       try (Http2SolrClient client =
         new Http2SolrClient.Builder(url)
             .withRequestWriter(new BinaryRequestWriter())
             .withResponseParser(new BinaryResponseParser())
             .build()) {
-
-      DebugServlet.clear();
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      assertEquals("post", DebugServlet.lastMethod);
-      assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      assertEquals("application/javabin", DebugServlet.headers.get("content-type"));
-      assertEquals(1, DebugServlet.parameters.get("a").length);
-      assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+      testUpdate(client, "javabin", "application/javabin");
     }
   }
 
