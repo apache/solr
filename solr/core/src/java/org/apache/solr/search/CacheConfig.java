@@ -177,8 +177,8 @@ public class CacheConfig implements MapSerializable {
 
   @Override
   public Map<String, Object> toMap(Map<String, Object> argsMap) {
-    argsMap.putAll(args);
-    return argsMap;
+    // TODO: Should not create new HashMap?
+    return new HashMap<>(args);
   }
 
   public String getNodeName() {
