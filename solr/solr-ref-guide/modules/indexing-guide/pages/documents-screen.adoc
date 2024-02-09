@@ -78,7 +78,7 @@ More information can be found in xref:indexing-with-tika.adoc[].
 
 == Solr Command
 
-The Solr Command option allows you use the `/update` request handler with XML or JSON formatted commands to perform specific actions.
+The Solr Command option allows you to use the `/update` request handler with XML or JSON formatted commands to perform specific actions.
 A few examples are:
 
 * Deleting documents

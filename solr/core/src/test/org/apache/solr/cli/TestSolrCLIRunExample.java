@@ -408,7 +408,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       if ("techproducts".equals(exampleName)) {
         SolrClient solrClient =
-            getHttpSolrClient("http://localhost:" + bindPort + "/solr/" + exampleName);
+            getHttpSolrClient("http://localhost:" + bindPort + "/solr", exampleName);
         try {
           SolrQuery query = new SolrQuery("*:*");
           QueryResponse qr = solrClient.query(query);

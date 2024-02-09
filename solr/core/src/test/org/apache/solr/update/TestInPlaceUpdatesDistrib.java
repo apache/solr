@@ -1146,7 +1146,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       // the resurrection can happen from there (instead of the leader)
       update.setParam(
           DistributedUpdateProcessor.DISTRIB_FROM,
-          ((HttpSolrClient) NONLEADERS.get(1)).getBaseURL());
+          ((HttpSolrClient) NONLEADERS.get(1)).getBaseURL()
+              + "/"
+              + NONLEADERS.get(1).getDefaultCollection());
       AsyncUpdateWithRandomCommit task =
           new AsyncUpdateWithRandomCommit(update, NONLEADERS.get(0), random().nextLong());
       updateResponses.add(threadpool.submit(task));

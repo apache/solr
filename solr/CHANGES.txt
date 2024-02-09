@@ -92,6 +92,13 @@ Improvements
 * SOLR-16699: Add Collection creation time to CLUSTERSTATUS and COLSTATUS API responses
   (Julien Pilourdault, Paul McArthur, David Smiley)
 
+* SOLR-17038: Expose the term count in /admin/segments handler if fieldInfo=true.
+  (Rahul Goswami via David Smiley and Christine Poerschke)
+
+* SOLR-17146: Add DelegatingBackupRepository and alternative checksum verification (Bruno Roustant)
+
+* SOLR-16858: KnnQParser's "Pre-Filtering" behavior is now controlable via local params (hossman)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
@@ -101,7 +108,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17152: Better alignment of Admin UI graph (janhoy)
 
 Dependency Upgrades
 ---------------------
@@ -218,6 +225,8 @@ Bug Fixes
   updates of the same document in separate requests using commitWithin. (Calvin Smith, Christine Poerschke)
 
 * SOLR-17112: bin/solr script doesn't do ps properly on some systems. (Vincenzo D'Amore via Eric Pugh)
+
+* SOLR-17149: Backups on collections with too many shards fail due to restrictive Executor queue size (Pierre Salagnac via Jason Gerlowski)
 
 Dependency Upgrades
 ---------------------
@@ -2219,6 +2228,74 @@ Bug Fixes
 * SOLR-16143: SolrConfig can miss updates from ZooKeeper when deleting and recreating file items (Mike Drob)
 
 * SOLR-16164: ConfigSet API returns error if untrusted user creates from _default configset (Eric Pugh, Kevin Risden)
+
+==================  8.11.3 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+New Features
+---------------------
+
+* SOLR-15694, 15715: Node roles and dedicated query coordinator nodes (Hitesh Khamesra, Ishan Chattopadhyaya, noble)
+
+Bug Fixes
+---------------------
+* SOLR-16429: Add AWS STS support in s3-repository (Josh Souza via Houston Putman and Kevin Risden)
+
+* SOLR-14679: Fix continuously growing TLOGs on TLOG replicas (Viktor Molnár via Houston Putman)
+
+* SOLR-16293: Luke request fails for document with a binary field (Kevin Risden)
+
+* SOLR-16477: Collection RENAME api creates broken alias (Alex Deparvu via Kevin Risden)
+
+* SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
+
+* SOLR-13219: Fix NPE in FieldLengthFeature with non-stored/missing fields (Nick Veenhof, Tomasz Elendt)
+
+* SOLR-16984: Add missing sysProps to redaction logic (Houston Putman)
+
+* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
+
+* SOLR-16110: Using Schema/Config API breaks the File-Upload of Config Set File (Steffen Moldenhauer, Kevin Risden)
+
+* SOLR-16451: Don't fetch the PRS states while registering the collection watch (Hitesh Khamesra via Ishan Chattopadhyaya)
+
+* SOLR-16452: Do not update PRS states if local version is newer (Hitesh Khamesra via noble)
+
+* SOLR-16777: Schema Designer now correctly manages trust of the ConfigSets it is managing. (Ishan Chattopadhyaya, Skay, Houston Putman)
+
+* SOLR-17098: ZK Credentials and ACLs are no longer sent to all ZK Servers when using Streaming Expressions.
+  They will only be used when sent to the default ZK Host. (Houston Putman, Jan Høydahl, David Smiley, Gus Heck, Qing Xu)
+
+* SOLR-17120: Fix NullPointerException in UpdateLog.applyOlderUpdates that can occur if there are multiple partial
+  updates of the same document in separate requests using commitWithin. (Calvin Smith, Christine Poerschke)
+
+Optimizations
+---------------------
+* SOLR-16555: SolrIndexSearcher - FilterCache intersections/andNot should not clone bitsets repeatedly (Kevin Risden, David Smiley)
+
+* SOLR-17004: ZkStateReader waitForState should check clusterState before using watchers (Kevin Risden)
+
+Other Changes
+---------------------
+* SOLR-16141: Upgrade Apache Tika to 1.28.4 (Kevin Risden)
+
+* SOLR-16324: Upgrade commons-configuration2 to 2.8.0 and commons-text to 1.9 (Kevin Risden)
+
+* SOLR-16332: Upgrade Jetty to 9.4.48.v20220622 (Kevin Risden)
+
+* SOLR-16626, SOLR-16424: Upgrade to Netty 4.1.87.Final (Kevin Risden, janhoy)
+
+* SOLR-16421: Upgrade Apache Calcite to 1.32.0 and Avatica to 1.22.0 (Kevin Risden)
+
+* SOLR-16464: Upgrade commons-text to 1.10.0 (Kevin Risden)
+
+* SOLR-17025: Upgrade Jetty to 9.4.53.v20231009 (Kevin Risden)
+
+* SOLR-14853: Security: Converted enableRemoteStreaming and enableStreamBody solrconfig options into system properties and env vars.
+  Attempts to set them the old way are no-op and log a warning. (David Smiley, janhoy, Ishan Chattopadhyaya)
+
+* SOLR-16949: Restrict certain file types from being uploaded to or downloaded from Config Sets (janhoy, Houston Putman)
 
 ==================  8.11.2 ==================
 
