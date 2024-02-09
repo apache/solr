@@ -158,7 +158,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       // Start the killed server once again
       solr[1].startJetty();
       // Wait for the alive check to complete
-      Thread.sleep(1200 * 5);
+      Thread.sleep(1200);
       names.clear();
       for (String ignored : solrUrls) {
         resp = client.query(solrQuery);

@@ -752,7 +752,7 @@ public abstract class CloudSolrClient extends SolrClient {
     if (requestCollection != null) {
       collection = requestCollection;
     } else if (collection == null) {
-      collection = defaultCollection;
+      collection = getDefaultCollection();
     }
 
     List<String> inputCollections =

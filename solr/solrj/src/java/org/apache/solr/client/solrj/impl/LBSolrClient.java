@@ -485,7 +485,9 @@ public abstract class LBSolrClient extends SolrClient {
     try {
       QueryRequest queryRequest = new QueryRequest(solrQuery);
       queryRequest.setBasePath(zombieServer.baseUrl);
-      QueryResponse resp = queryRequest.process(getClient(zombieServer.getBaseUrl()));
+
+      final SolrClient client = getClient(zombieServer.getBaseUrl());
+      QueryResponse resp = queryRequest.process(client);
       if (resp.getStatus() == 0) {
         // server has come back up.
         // make sure to remove from zombies before adding to alive to avoid a race condition
@@ -576,7 +578,7 @@ public abstract class LBSolrClient extends SolrClient {
     int numServersTried = 0;
     Map<String, ServerWrapper> justFailed = null;
     if (ClientUtils.shouldApplyDefaultCollection(collection, request))
-      collection = defaultCollection;
+      collection = getDefaultCollection();
 
     boolean timeAllowedExceeded = false;
     long timeAllowedNano = getTimeAllowedInNanos(request);
@@ -621,6 +623,7 @@ public abstract class LBSolrClient extends SolrClient {
       try {
         ++numServersTried;
         request.setBasePath(wrapper.baseUrl);
+
         NamedList<Object> rsp = getClient(wrapper.baseUrl).request(request, collection);
         // remove from zombie list *before* adding to alive to avoid a race that could lose a server
         zombieServers.remove(wrapper.getBaseUrl());

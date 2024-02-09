@@ -245,7 +245,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       final SolrRequest<?> request, final ResponseParser processor, String collection)
       throws SolrServerException, IOException {
     if (ClientUtils.shouldApplyDefaultCollection(collection, request))
-      collection = defaultCollection;
+      collection = getDefaultCollection();
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
     if (request.getHeaders() != null) {
@@ -297,7 +297,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       final SolrRequest<?> request, final ResponseParser processor)
       throws SolrServerException, IOException {
     HttpUriRequestResponse mrr = new HttpUriRequestResponse();
-    final HttpRequestBase method = createMethod(request, defaultCollection);
+    final HttpRequestBase method = createMethod(request, getDefaultCollection());
     ExecutorService pool =
         ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("httpUriRequest"));
     try {
