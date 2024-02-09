@@ -103,7 +103,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     public void testTimeout() throws Exception {
         SolrQuery q = new SolrQuery("*:*");
         try (HttpSolrClientJdkImpl client =
-                     builder(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)
+                     builder(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000, HttpSolrClientJdkImpl.Builder.class)
                              .build()) {
             client.query(q, SolrRequest.METHOD.GET);
             fail("No exception thrown.");
@@ -116,7 +116,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     public void test0IdleTimeout() throws Exception {
         SolrQuery q = new SolrQuery("*:*");
         try (HttpSolrClientJdkImpl client =
-                     builder(getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
+                     builder(getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, 0, HttpSolrClientJdkImpl.Builder.class)
                              .build()) {
             try {
                 client.query(q, SolrRequest.METHOD.GET);
@@ -129,7 +129,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     public void testRequestTimeout() throws Exception {
         SolrQuery q = new SolrQuery("*:*");
         try (HttpSolrClientJdkImpl client =
-                     builder(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
+                     builder(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 0, HttpSolrClientJdkImpl.Builder.class)
                              .withRequestTimeout(500, TimeUnit.MILLISECONDS)
                              .build()) {
             client.query(q, SolrRequest.METHOD.GET);
@@ -193,13 +193,19 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
         testCollectionParameters(baseUrlClient, collection1UrlClient);
     }
 
+    @Test
+    public void testQueryString() throws Exception {
+        testQueryString(HttpSolrClientJdkImpl.class, HttpSolrClientJdkImpl.Builder.class);
+    }
+
     protected String expectedUserAgent() {
         return "Solr[" + HttpSolrClientJdkImpl.class.getName() + "] 1.0";
     }
 
     @Override
-    protected HttpSolrClientJdkImpl.Builder builder(String url, int connectionTimeout, int socketTimeout) {
-        return new HttpSolrClientJdkImpl.Builder(url).withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
+    protected <B extends HttpSolrClientBuilderBase> B builder(String url, int connectionTimeout, int socketTimeout, Class<B> type) {
+        HttpSolrClientJdkImpl.Builder b = new HttpSolrClientJdkImpl.Builder(url).withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
                 .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS);
+        return type.cast(b);
     }
 }

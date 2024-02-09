@@ -56,7 +56,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         assert ObjectReleaseTracker.track(this);
     }
 
-    private HttpRequest.BodyPublisher preparePostPutRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) throws IOException {
+    private HttpRequest.BodyPublisher preparePostPutRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest, ModifiableSolrParams requestParams) throws IOException {
         RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
 
         Collection<ContentStream> streams = null;
@@ -84,6 +84,8 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
             ContentStream contentStream = streams.iterator().next();
             InputStream is = contentStream.getStream();
             return HttpRequest.BodyPublishers.ofInputStream(() -> is);
+        } else if(requestParams != null) {
+            return HttpRequest.BodyPublishers.ofString(requestParams.toString());
         } else {
             return HttpRequest.BodyPublishers.noBody();
         }
@@ -97,11 +99,16 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         }
         String url = getRequestPath(solrRequest, collection);
         ResponseParser parser = responseParser(solrRequest);
-        ModifiableSolrParams wparams = initalizeSolrParams(solrRequest);
+        ModifiableSolrParams queryParams = initalizeSolrParams(solrRequest);
+        ModifiableSolrParams requestParams = null;
+        if (urlParamNames != null && !urlParamNames.isEmpty()) {
+            requestParams = queryParams;
+            queryParams = calculateQueryParams(urlParamNames, requestParams);
+            queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), requestParams));
+        }
         Throwable abortCause = null;
         try {
-            URI uri = new URI(url + "?" + wparams);
-            var reqb = HttpRequest.newBuilder(uri);
+            var reqb = HttpRequest.newBuilder();
             switch(solrRequest.getMethod()) {
                 case GET: {
                     validateGetRequest(solrRequest);
@@ -109,11 +116,11 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
                     break;
                 }
                 case POST: {
-                    reqb.POST(preparePostPutRequest(reqb, solrRequest));
+                    reqb.POST(preparePostPutRequest(reqb, solrRequest, requestParams));
                     break;
                 }
                 case PUT: {
-                    reqb.PUT(preparePostPutRequest(reqb, solrRequest));
+                    reqb.PUT(preparePostPutRequest(reqb, solrRequest, requestParams));
                     break;
                 }
                 case DELETE: {
@@ -126,6 +133,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
                 }
             }
             decorateRequest(reqb, solrRequest);
+            reqb.uri(new URI(url + "?" + queryParams));
             HttpResponse<InputStream> resp = client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
             return processErrorsAndResponse(solrRequest, resp, url);
         } catch (InterruptedException e) {
@@ -287,6 +295,10 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         }
         public  Builder(String baseSolrUrl) {
            super(baseSolrUrl);
+        }
+
+        public <B extends Http2SolrClientBase> B build(Class<B> type) {
+            return type.cast(build());
         }
         public HttpSolrClientJdkImpl build() {
             if (idleTimeoutMillis == null || idleTimeoutMillis <= 0) {

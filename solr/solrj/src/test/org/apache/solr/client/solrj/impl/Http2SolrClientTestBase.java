@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Set;
 
 public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
 
@@ -42,7 +43,7 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
         super.tearDown();
     }
 
-    protected abstract B builder(String url, int connectionTimeout, int socketTimeout);
+    protected abstract <B extends HttpSolrClientBuilderBase> B builder(String url, int connectionTimeout, int socketTimeout, Class<B> type) ;
 
     protected abstract String expectedUserAgent();
 
@@ -280,6 +281,8 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
                     boolean shouldBeInQueryString =
                             client.getUrlParamNames().contains(name)
                                     || (request.getQueryParams() != null && request.getQueryParams().contains(name));
+                    System.out.println(value + " | " + client.getUrlParamNames() + " | " + request.getQueryParams() + " | " + DebugServlet.queryString + " | " + DebugServlet.parameters);
+                    System.out.println("** " + shouldBeInQueryString + " | " + DebugServlet.queryString + " | " + name + " | " + value);
                     assertEquals(
                             shouldBeInQueryString, DebugServlet.queryString.contains(name + "=" + value));
                     // in either case, it should be in the parameters
@@ -290,5 +293,81 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
             }
         }
     }
+
+    protected <C extends Http2SolrClientBase, B extends HttpSolrClientBuilderBase> void testQueryString(Class<C> type, Class<B> builderType) throws Exception {
+        final String clientUrl = getBaseUrl() + "/debug/foo";
+        UpdateRequest req = new UpdateRequest();
+
+        try (Http2SolrClientBase client =
+                     builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, builderType)
+                             .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
+                             .build(type)) {
+            // test without request query params
+            DebugServlet.clear();
+            setReqParamsOf(req, "serverOnly", "notServer");
+
+            try {
+                client.request(req);
+            } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+            }
+            System.out.println("***1");
+            verifyServletState(client, req);
+
+            // test without server query params
+            DebugServlet.clear();
+        }
+        try (Http2SolrClientBase client =
+                     builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, builderType).withTheseParamNamesInTheUrl(Set.of()).build(type)) {
+            req = new UpdateRequest();
+            req.setQueryParams(Set.of("requestOnly"));
+            setReqParamsOf(req, "requestOnly", "notRequest");
+            try {
+                client.request(req);
+            } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+            }
+            System.out.println("***2");
+            verifyServletState(client, req);
+
+            // test with both request and server query params
+            DebugServlet.clear();
+        }
+        try (Http2SolrClientBase client =
+                     builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, builderType)
+                             .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
+                             .build(type)) {
+            req = new UpdateRequest();
+            req.setQueryParams(Set.of("requestOnly", "both"));
+            setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
+            try {
+                client.request(req);
+            } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+            }
+            System.out.println("***3");
+            verifyServletState(client, req);
+        }
+        try (Http2SolrClientBase client =
+                     builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, builderType)
+                             .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
+                             .build(type)) {
+
+            // test with both request and server query params with single stream
+            DebugServlet.clear();
+            req = new UpdateRequest();
+            req.add(new SolrInputDocument());
+            req.setQueryParams(Set.of("requestOnly", "both"));
+            setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
+            try {
+                client.request(req);
+            } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
+            }
+            // NOTE: single stream requests send all the params
+            // as part of the query string.  So add "neither" to the request
+            // so it passes the verification step.
+            req.setQueryParams(Set.of("requestOnly", "both", "neither"));
+            System.out.println("***4");
+            verifyServletState(client, req);
+        }
+    }
+
 
 }

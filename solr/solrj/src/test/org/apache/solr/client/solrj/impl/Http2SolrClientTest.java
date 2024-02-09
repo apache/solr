@@ -24,8 +24,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
@@ -39,7 +37,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -50,18 +47,19 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
     return "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
   }
   @Override
-  protected Http2SolrClient.Builder builder(
-      String url, int connectionTimeout, int socketTimeout) {
-    return new Http2SolrClient.Builder(url)
+  protected <B extends HttpSolrClientBuilderBase> B builder(
+      String url, int connectionTimeout, int socketTimeout, Class<B> type) {
+    Http2SolrClient.Builder b =  new Http2SolrClient.Builder(url)
         .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
         .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS);
+    return type.cast(b);
   }
 
   @Test
   public void testTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        builder(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)
+        builder(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000, Http2SolrClient.Builder.class)
             .build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
@@ -74,7 +72,7 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
   public void test0IdleTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        builder(getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
+        builder(getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, 0, Http2SolrClient.Builder.class)
             .build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
@@ -87,7 +85,7 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
   public void testRequestTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        builder(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
+        builder(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 0, Http2SolrClient.Builder.class)
             .withRequestTimeout(500, TimeUnit.MILLISECONDS)
             .build()) {
       client.query(q, SolrRequest.METHOD.GET);
@@ -295,75 +293,7 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
 
   @Test
   public void testQueryString() throws Exception {
-
-    final String clientUrl = getBaseUrl() + "/debug/foo";
-    UpdateRequest req = new UpdateRequest();
-
-    try (Http2SolrClient client =
-        new Http2SolrClient.Builder(clientUrl)
-            .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
-            .build()) {
-      // test without request query params
-      DebugServlet.clear();
-      setReqParamsOf(req, "serverOnly", "notServer");
-
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-      verifyServletState(client, req);
-
-      // test without server query params
-      DebugServlet.clear();
-    }
-    try (Http2SolrClient client =
-        new Http2SolrClient.Builder(clientUrl).withTheseParamNamesInTheUrl(Set.of()).build()) {
-      req = new UpdateRequest();
-      req.setQueryParams(Set.of("requestOnly"));
-      setReqParamsOf(req, "requestOnly", "notRequest");
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-      verifyServletState(client, req);
-
-      // test with both request and server query params
-      DebugServlet.clear();
-    }
-    try (Http2SolrClient client =
-        new Http2SolrClient.Builder(clientUrl)
-            .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
-            .build()) {
-      req = new UpdateRequest();
-      req.setQueryParams(Set.of("requestOnly", "both"));
-      setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-      verifyServletState(client, req);
-    }
-    try (Http2SolrClient client =
-        new Http2SolrClient.Builder(clientUrl)
-            .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
-            .build()) {
-
-      // test with both request and server query params with single stream
-      DebugServlet.clear();
-      req = new UpdateRequest();
-      req.add(new SolrInputDocument());
-      req.setQueryParams(Set.of("requestOnly", "both"));
-      setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-      // NOTE: single stream requests send all the params
-      // as part of the query string.  So add "neither" to the request
-      // so it passes the verification step.
-      req.setQueryParams(Set.of("requestOnly", "both", "neither"));
-      verifyServletState(client, req);
-    }
+    testQueryString(Http2SolrClient.class, Http2SolrClient.Builder.class);
   }
 
   @Test
@@ -618,7 +548,7 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
     DebugServlet.clear();
     try (Http2SolrClient client =
         builder(
-                getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
+                getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, Http2SolrClient.Builder.class)
             .build()) {
       final var req = new QueryRequest(params("q", "*:*"));
       req.setResponseParser(new InputStreamResponseParser("xml"));
