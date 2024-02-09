@@ -1026,7 +1026,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     restTestHarness.setServerProvider(oldProvider);
   }
 
-  public void testSetPropertyCacheSize() throws Exception{
+  public void testSetPropertyCacheSize() throws Exception {
     RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
     // Changing cache size
     String payload = "{'set-property' : { 'query.documentCache.size': 399} }";
@@ -1037,10 +1037,11 @@ public class TestSolrConfigHandler extends RestTestBase {
     restTestHarness.setServerProvider(() -> getBaseUrl());
     MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);
     assertNull(
-            confMap._get(
-                    asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+        confMap._get(
+            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
     restTestHarness.setServerProvider(oldProvider);
   }
+
   public void testSetPropertyEnableAndDisableCache() throws Exception {
     RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
     // Enabling Cache

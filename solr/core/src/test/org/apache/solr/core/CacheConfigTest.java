@@ -36,7 +36,7 @@ import org.mockito.Mockito;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
-/** Test for {@link CacheConfig}*/
+/** Test for {@link CacheConfig} */
 public class CacheConfigTest extends SolrTestCaseJ4 {
   private static final String XPATH_DOCUMENT_CACHE = "query/documentCache";
   private static final String XPATH_QUERY_RESULT_CACHE = "query/queryResultCache";
