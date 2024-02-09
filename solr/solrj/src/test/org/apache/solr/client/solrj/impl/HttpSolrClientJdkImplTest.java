@@ -184,7 +184,13 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
                              .build()) {
             testUpdate(client, "javabin", "application/javabin");
         }
+    }
 
+    @Test
+    public void testCollectionParameters() throws IOException, SolrServerException {
+        HttpSolrClientJdkImpl baseUrlClient = new HttpSolrClientJdkImpl.Builder(getBaseUrl()).build();
+        HttpSolrClientJdkImpl collection1UrlClient = new HttpSolrClientJdkImpl.Builder(getCoreUrl()).build();
+        testCollectionParameters(baseUrlClient, collection1UrlClient);
     }
 
     protected String expectedUserAgent() {

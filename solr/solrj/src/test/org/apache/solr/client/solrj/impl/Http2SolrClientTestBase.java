@@ -17,6 +17,7 @@ import org.junit.BeforeClass;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 
 public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
 
@@ -240,6 +241,54 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
         assertEquals(contentType, DebugServlet.headers.get("content-type"));
         assertEquals(1, DebugServlet.parameters.get("a").length);
         assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+    }
+
+    protected void testCollectionParameters(Http2SolrClientBase baseUrlClient, Http2SolrClientBase collection1UrlClient) throws IOException, SolrServerException {
+        try {
+            SolrInputDocument doc = new SolrInputDocument();
+            doc.addField("id", "collection");
+            baseUrlClient.add("collection1", doc);
+            baseUrlClient.commit("collection1");
+
+            assertEquals(
+                    1,
+                    baseUrlClient.query("collection1", new SolrQuery("id:collection")).getResults().getNumFound());
+
+            assertEquals(1, collection1UrlClient.query(new SolrQuery("id:collection")).getResults().getNumFound());
+        } finally {
+            baseUrlClient.close();
+            collection1UrlClient.close();
+        }
+    }
+
+    protected void setReqParamsOf(UpdateRequest req, String... keys) {
+        if (keys != null) {
+            for (String k : keys) {
+                req.setParam(k, k + "Value");
+            }
+        }
+    }
+
+    protected void verifyServletState(Http2SolrClientBase client, SolrRequest<?> request) {
+        // check query String
+        Iterator<String> paramNames = request.getParams().getParameterNamesIterator();
+        while (paramNames.hasNext()) {
+            String name = paramNames.next();
+            String[] values = request.getParams().getParams(name);
+            if (values != null) {
+                for (String value : values) {
+                    boolean shouldBeInQueryString =
+                            client.getUrlParamNames().contains(name)
+                                    || (request.getQueryParams() != null && request.getQueryParams().contains(name));
+                    assertEquals(
+                            shouldBeInQueryString, DebugServlet.queryString.contains(name + "=" + value));
+                    // in either case, it should be in the parameters
+                    assertNotNull(DebugServlet.parameters.get(name));
+                    assertEquals(1, DebugServlet.parameters.get(name).length);
+                    assertEquals(value, DebugServlet.parameters.get(name)[0]);
+                }
+            }
+        }
     }
 
 }

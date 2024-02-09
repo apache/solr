@@ -39,7 +39,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -289,52 +288,9 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
 
   @Test
   public void testCollectionParameters() throws IOException, SolrServerException {
-
-    try (Http2SolrClient client = new Http2SolrClient.Builder(getBaseUrl()).build()) {
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", "collection");
-      client.add("collection1", doc);
-      client.commit("collection1");
-
-      assertEquals(
-          1,
-          client.query("collection1", new SolrQuery("id:collection")).getResults().getNumFound());
-    }
-
-    final String collection1Url = getCoreUrl();
-    try (Http2SolrClient client = new Http2SolrClient.Builder(collection1Url).build()) {
-      assertEquals(1, client.query(new SolrQuery("id:collection")).getResults().getNumFound());
-    }
-  }
-
-  private void setReqParamsOf(UpdateRequest req, String... keys) {
-    if (keys != null) {
-      for (String k : keys) {
-        req.setParam(k, k + "Value");
-      }
-    }
-  }
-
-  private void verifyServletState(Http2SolrClient client, SolrRequest<?> request) {
-    // check query String
-    Iterator<String> paramNames = request.getParams().getParameterNamesIterator();
-    while (paramNames.hasNext()) {
-      String name = paramNames.next();
-      String[] values = request.getParams().getParams(name);
-      if (values != null) {
-        for (String value : values) {
-          boolean shouldBeInQueryString =
-              client.getUrlParamNames().contains(name)
-                  || (request.getQueryParams() != null && request.getQueryParams().contains(name));
-          assertEquals(
-              shouldBeInQueryString, DebugServlet.queryString.contains(name + "=" + value));
-          // in either case, it should be in the parameters
-          assertNotNull(DebugServlet.parameters.get(name));
-          assertEquals(1, DebugServlet.parameters.get(name).length);
-          assertEquals(value, DebugServlet.parameters.get(name)[0]);
-        }
-      }
-    }
+    Http2SolrClient baseUrlClient = new Http2SolrClient.Builder(getBaseUrl()).build();
+    Http2SolrClient collection1UrlClient = new Http2SolrClient.Builder(getCoreUrl()).build();
+    testCollectionParameters(baseUrlClient, collection1UrlClient);
   }
 
   @Test

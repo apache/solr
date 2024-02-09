@@ -1087,14 +1087,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
       this.useHttp1_1 = useHttp1_1;
       return this;
     }
-
   }
-
-  public Set<String> getUrlParamNames() {
-    return urlParamNames;
-  }
-
-
   public static void setDefaultSSLConfig(SSLConfig sslConfig) {
     Http2SolrClient.defaultSSLConfig = sslConfig;
   }

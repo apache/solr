@@ -366,4 +366,8 @@ public abstract class Http2SolrClientBase extends SolrClient {
     public long getIdleTimeout() {
         return idleTimeoutMillis;
     }
+
+    public Set<String> getUrlParamNames() {
+        return urlParamNames;
+    }
 }
