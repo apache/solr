@@ -95,7 +95,6 @@ import org.apache.solr.handler.admin.api.CoreReplicationAPI;
 import org.apache.solr.handler.admin.api.SnapshotBackupAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.jersey.APIConfigProvider;
-import org.apache.solr.jersey.APIConfigProvider.APIConfig;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -1740,7 +1739,7 @@ public class ReplicationHandler extends RequestHandlerBase
     @Override
     protected Path initFile() {
       // if it is a tlog file read from tlog directory
-      return Path.of(core.getUpdateHandler().getUpdateLog().getLogDir(), tlogFileName);
+      return Path.of(core.getUpdateHandler().getUpdateLog().getTlogDir(), tlogFileName);
     }
   }
 

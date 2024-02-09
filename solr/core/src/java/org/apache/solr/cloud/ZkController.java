@@ -1720,7 +1720,7 @@ public class ZkController implements Closeable {
                       props.put("dataDir", core.getDataDir());
                       UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
                       if (ulog != null) {
-                        props.put("ulogDir", ulog.getLogDir());
+                        props.put("ulogDir", ulog.getUlogDir());
                       }
                     });
           }

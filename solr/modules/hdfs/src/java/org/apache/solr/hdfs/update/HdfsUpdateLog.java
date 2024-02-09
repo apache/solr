@@ -19,10 +19,13 @@ package org.apache.solr.hdfs.update;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
@@ -30,13 +33,17 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.ipc.RemoteException;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.hdfs.HdfsDirectoryFactory;
+import org.apache.solr.hdfs.store.HdfsDirectory;
 import org.apache.solr.hdfs.util.HdfsUtil;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.TransactionLog;
@@ -51,7 +58,6 @@ import org.slf4j.LoggerFactory;
  */
 public class HdfsUpdateLog extends UpdateLog {
 
-  private final Object fsLock = new Object();
   private FileSystem fs;
   private volatile Path hdfsTlogDir;
   private final String confDir;
@@ -95,51 +101,66 @@ public class HdfsUpdateLog extends UpdateLog {
   }
 
   @Override
-  public void init(UpdateHandler uhandler, SolrCore core) {
-
+  public void initTlogDir(SolrCore core) {
     // ulogDir from CoreDescriptor overrides
     String ulogDir = core.getCoreDescriptor().getUlogDir();
 
-    this.uhandler = uhandler;
+    // just like dataDir, we do not allow
+    // moving the tlog dir on reload
+    assert fs == null;
+    if (ulogDir != null) {
+      dataDir = ulogDir;
+    }
+    if (dataDir == null || dataDir.length() == 0) {
+      dataDir = core.getDataDir();
+    }
 
-    synchronized (fsLock) {
-      // just like dataDir, we do not allow
-      // moving the tlog dir on reload
-      if (fs == null) {
-        if (ulogDir != null) {
-          dataDir = ulogDir;
-        }
-        if (dataDir == null || dataDir.length() == 0) {
-          dataDir = core.getDataDir();
-        }
-
-        if (!core.getDirectoryFactory().isAbsolute(dataDir)) {
-          try {
-            dataDir = core.getDirectoryFactory().getDataHome(core.getCoreDescriptor());
-          } catch (IOException e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
-          }
-        }
-
-        try {
-          Path dataDirPath = new Path(dataDir);
-          fs = FileSystem.get(dataDirPath.toUri(), getConf(dataDirPath));
-        } catch (IOException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
-      } else {
-        if (debug) {
-          log.debug(
-              "UpdateHandler init: tlogDir={}, next id={}  this is a reopen or double init ... nothing else to do.",
-              hdfsTlogDir,
-              id);
-        }
-        versionInfo.reload();
-        return;
+    if (!core.getDirectoryFactory().isAbsolute(dataDir)) {
+      try {
+        dataDir = core.getDirectoryFactory().getDataHome(core.getCoreDescriptor());
+      } catch (IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
     }
 
-    hdfsTlogDir = new Path(dataDir, TLOG_NAME);
+    try {
+      URI ulog = new Path(dataDir).toUri();
+      URI coreData = new Path(core.getDataDir()).toUri();
+      if (!ulog.getScheme().equals(coreData.getScheme())
+          || !Objects.equals(ulog.getAuthority(), coreData.getAuthority())
+          || !java.nio.file.Path.of(ulog.getPath()).startsWith(coreData.getPath())) {
+        // ulog is hdfs, but is not scoped under the core data dir (core data dir may
+        // be not hdfs, or is a different host/port, or an external path within the same
+        // host/port); either way we must scope it analogous to how the data dir is
+        // scoped. This inherits the same issue as SOLR-7187, but we're not making
+        // anything worse than it already is.
+        String scopePath = HdfsDirectoryFactory.scopePath(core.getCoreDescriptor());
+        hdfsTlogDir = new Path(dataDir, scopePath);
+      } else {
+        hdfsTlogDir = new Path(dataDir, TLOG_NAME);
+      }
+      // usage of tlog dir almost entirely bypasses `Directory` API; we only need to do this so that
+      // we can remove the tlog dir via `DirectoryFactory.remove()`, which understands how to delete
+      // on hdfs.
+      DirectoryFactory df = core.getDirectoryFactory();
+      Directory tlogDir =
+          df.get(
+              hdfsTlogDir.toUri().toString(),
+              DirectoryFactory.DirContext.DEFAULT,
+              DirectoryFactory.LOCK_TYPE_NONE);
+      try {
+        // here we assume that Hdfs update log will only be configured in conjunction with
+        // Hdfs DirectoryFactory.
+        fs = ((HdfsDirectory) FilterDirectory.unwrap(tlogDir)).getFileSystem();
+      } catch (Throwable t) {
+        df.release(tlogDir);
+        throw t;
+      }
+      this.releaseTlogDir = () -> df.release(tlogDir);
+    } catch (IOException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+
     while (true) {
       try {
         if (!fs.exists(hdfsTlogDir)) {
@@ -165,6 +186,25 @@ public class HdfsUpdateLog extends UpdateLog {
       } catch (IOException e) {
         throw new RuntimeException("Problem creating directory: " + hdfsTlogDir, e);
       }
+    }
+  }
+
+  private final AtomicBoolean initialized = new AtomicBoolean();
+
+  @Override
+  public void init(UpdateHandler uhandler, SolrCore core) {
+
+    this.uhandler = uhandler;
+
+    if (!initialized.compareAndSet(false, true)) {
+      if (debug) {
+        log.debug(
+            "UpdateHandler init: tlogDir={}, next id={}  this is a reopen or double init ... nothing else to do.",
+            hdfsTlogDir,
+            id);
+      }
+      versionInfo.reload();
+      return;
     }
 
     String[] oldBufferTlog = getBufferLogList(fs, hdfsTlogDir);
@@ -252,7 +292,7 @@ public class HdfsUpdateLog extends UpdateLog {
   }
 
   @Override
-  public String getLogDir() {
+  public String getTlogDir() {
     return hdfsTlogDir.toUri().toString();
   }
 
@@ -306,15 +346,6 @@ public class HdfsUpdateLog extends UpdateLog {
   }
 
   @Override
-  public void close(boolean committed, boolean deleteOnClose) {
-    try {
-      super.close(committed, deleteOnClose);
-    } finally {
-      IOUtils.closeQuietly(fs);
-    }
-  }
-
-  @Override
   protected void ensureBufferTlog() {
     if (bufferTlog != null) return;
     String newLogName =
@@ -356,16 +387,10 @@ public class HdfsUpdateLog extends UpdateLog {
     }
   }
 
-  /**
-   * Clears the logs on the file system. Only call before init.
-   *
-   * @param core the SolrCore
-   * @param ulogPluginInfo the init info for the UpdateHandler
-   */
+  /** Clears the logs on the file system. Only call before init. */
   @Override
-  public void clearLog(SolrCore core, PluginInfo ulogPluginInfo) {
-    if (ulogPluginInfo == null) return;
-    Path tlogDir = new Path(getTlogDir(core, ulogPluginInfo));
+  public void clearLog() {
+    Path tlogDir = hdfsTlogDir;
     try {
       if (fs != null && fs.exists(tlogDir)) {
         String[] files = getLogList(tlogDir);

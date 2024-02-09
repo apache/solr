@@ -236,7 +236,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     String tlogDir;
     UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
     if (ulog != null) {
-      return new File(ulog.getLogDir());
+      return new File(ulog.getTlogDir());
     } else if ((tlogDir = core.getCoreDescriptor().getUlogDir()) != null) {
       return new File(tlogDir, UpdateLog.TLOG_NAME);
     } else {

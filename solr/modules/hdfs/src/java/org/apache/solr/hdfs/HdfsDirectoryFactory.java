@@ -461,6 +461,14 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
               + " for relative dataDir paths to work");
     }
 
+    String scopePath = scopePath(cd);
+
+    return normalize(
+        SolrPaths.normalizeDir(
+            trimLeadingAndTrailingSlashes(hdfsDataDir) + "/" + scopePath + "/" + cd.getDataDir()));
+  }
+
+  public static String scopePath(CoreDescriptor cd) {
     // by default, we go off the instance directory
     String path;
     if (cd.getCloudDescriptor() != null) {
@@ -472,10 +480,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
     } else {
       path = cd.getName();
     }
-
-    return normalize(
-        SolrPaths.normalizeDir(
-            trimLeadingAndTrailingSlashes(hdfsDataDir) + "/" + path + "/" + cd.getDataDir()));
+    return path;
   }
 
   /**

@@ -3287,36 +3287,28 @@ public class SolrCore implements SolrInfoBean, Closeable {
         log.error(
             "Failed to flag data dir for removal for core: {} dir: {}", name, getDataDir(), e);
       }
-    }
-    if (deleteInstanceDir) {
-      // if ulogDir is outside dataDir and instanceDir, we have to remove it explicitly
+      // ulogDir may be outside dataDir and instanceDir, so we have to explicitly ensure it's
+      // removed; ulog is most closely associated with data, so we bundle it with logic under
+      // `deleteDataDir`
       UpdateHandler uh = getUpdateHandler();
       UpdateLog ulog;
-      Path ulogDir = null;
       if (uh != null && (ulog = uh.getUpdateLog()) != null) {
-        ulogDir = Path.of(ulog.getLogDir());
-        if (ulogDir.startsWith(desc.getInstanceDir())
-            || (deleteDataDir && ulogDir.startsWith(getDataDir()))) {
-          // ulogDir will be implicitly deleted
-          ulogDir = null;
+        try {
+          directoryFactory.remove(ulog.getTlogDir(), true);
+        } catch (Exception e) {
+          log.error(
+              "Failed to flag tlog dir for removal for core: {} dir: {}",
+              name,
+              ulog.getTlogDir(),
+              e);
         }
       }
-      Path explicitDeleteUlogDir = ulogDir;
+    }
+    if (deleteInstanceDir) {
       addCloseHook(
           new CloseHook() {
             @Override
             public void postClose(SolrCore core) {
-              if (explicitDeleteUlogDir != null) {
-                try {
-                  PathUtils.deleteDirectory(explicitDeleteUlogDir);
-                } catch (IOException e) {
-                  log.error(
-                      "Failed to delete external ulog dir for core: {} ulogDir: {}",
-                      name,
-                      explicitDeleteUlogDir,
-                      e);
-                }
-              }
               if (desc != null) {
                 try {
                   PathUtils.deleteDirectory(desc.getInstanceDir());
@@ -3335,9 +3327,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   public static void deleteUnloadedCore(
       CoreDescriptor cd, boolean deleteDataDir, boolean deleteInstanceDir) {
-    Path dataDir = null;
     if (deleteDataDir) {
-      dataDir = cd.getInstanceDir().resolve(cd.getDataDir());
+      Path instanceDir = cd.getInstanceDir();
+      Path dataDir = instanceDir.resolve(cd.getDataDir());
       try {
         PathUtils.deleteDirectory(dataDir);
       } catch (IOException e) {
@@ -3347,16 +3339,17 @@ public class SolrCore implements SolrInfoBean, Closeable {
             dataDir.toAbsolutePath(),
             e);
       }
-    }
-    if (deleteInstanceDir) {
       String ulogDir = cd.getUlogDir();
       if (ulogDir != null) {
-        Path ulogDirPath = Path.of(ulogDir);
-        if (!ulogDirPath.startsWith(cd.getInstanceDir())
-            && (!deleteDataDir || !ulogDirPath.startsWith(dataDir))) {
-          // if ulogDir is outside dataDir and instanceDir, we have to remove it explicitly
+        Path ulogDirPath = instanceDir.resolve(ulogDir);
+        if (!ulogDirPath.startsWith(dataDir)
+            && (!deleteInstanceDir || !ulogDirPath.startsWith(instanceDir))) {
+          // external ulogDir, we have to remove it explicitly
           try {
-            PathUtils.deleteDirectory(ulogDirPath);
+            Path tlogPath =
+                UpdateLog.ulogToTlogDir(
+                    cd.getName(), ulogDirPath, ulogDir, instanceDir, dataDir.toString());
+            PathUtils.deleteDirectory(tlogPath);
           } catch (IOException e) {
             log.error(
                 "Failed to delete external ulog dir for core: {} ulogDir: {}",
@@ -3366,6 +3359,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
           }
         }
       }
+    }
+    if (deleteInstanceDir) {
       try {
         PathUtils.deleteDirectory(cd.getInstanceDir());
       } catch (IOException e) {
