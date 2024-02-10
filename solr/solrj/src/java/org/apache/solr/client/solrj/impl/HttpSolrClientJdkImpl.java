@@ -298,7 +298,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
            super(baseSolrUrl);
         }
 
-        public <B extends Http2SolrClientBase> B build(Class<B> type) {
+        protected <B extends Http2SolrClientBase> B build(Class<B> type) {
             return type.cast(build());
         }
         public HttpSolrClientJdkImpl build() {

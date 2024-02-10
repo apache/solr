@@ -30,7 +30,7 @@ public abstract class HttpSolrClientBuilderBase {
 
     public HttpSolrClientBuilderBase() {}
 
-    public abstract <B extends Http2SolrClientBase> B build(Class<B> type);
+    protected abstract <B extends Http2SolrClientBase> B build(Class<B> type);
 
     public  HttpSolrClientBuilderBase(String baseSolrUrl) {
         this.baseSolrUrl = baseSolrUrl;

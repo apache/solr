@@ -990,7 +990,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
       return null;
     }
 
-    public <B extends Http2SolrClientBase> B build(Class<B> type) {
+    protected <B extends Http2SolrClientBase> B build(Class<B> type) {
       return type.cast(build());
     }
     public Http2SolrClient build() {
