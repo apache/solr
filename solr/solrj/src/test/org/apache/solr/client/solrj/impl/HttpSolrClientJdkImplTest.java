@@ -6,12 +6,18 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.CommonParams;
+import org.junit.After;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrClientJdkImpl.Builder> {
+
+    @After
+    public void workaroundToReleaseThreads_noClosableUntilJava21() {
+        System.gc();
+    }
 
     @Test
     public void testQueryGet() throws Exception {

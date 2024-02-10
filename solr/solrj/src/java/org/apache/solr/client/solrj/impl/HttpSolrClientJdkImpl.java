@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -42,17 +41,18 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
 
     private HttpClient client;
 
-    private ExecutorService executor;
-
     protected HttpSolrClientJdkImpl(String serverBaseUrl, HttpSolrClientBuilderBase builder) {
         super(serverBaseUrl, builder);
 
         HttpClient.Redirect followRedirects = Boolean.TRUE.equals(builder.followRedirects) ? HttpClient.Redirect.NORMAL : HttpClient.Redirect.NEVER;
-        this.executor = Executors.newCachedThreadPool(Executors.defaultThreadFactory());
-        this.client = HttpClient.newBuilder().executor(executor).followRedirects(followRedirects).build();
+        HttpClient.Builder b = HttpClient.newBuilder().followRedirects(followRedirects);
 
+        if(builder.executor != null) {
+            b.executor(builder.executor);
+        }
+
+        this.client = b.build();
         updateDefaultMimeTypeForParser();
-
         assert ObjectReleaseTracker.track(this);
     }
     @Override
@@ -65,6 +65,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         ResponseParser parser = responseParser(solrRequest);
         ModifiableSolrParams queryParams = initalizeSolrParams(solrRequest);
         Throwable abortCause = null;
+        HttpResponse<InputStream> resp = null;
         try {
             var reqb = HttpRequest.newBuilder();
             switch(solrRequest.getMethod()) {
@@ -96,7 +97,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
             }
             decorateRequest(reqb, solrRequest);
             reqb.uri(new URI(url + "?" + queryParams));
-            HttpResponse<InputStream> resp = client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
+            resp = client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
             return processErrorsAndResponse(solrRequest, resp, url);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -125,6 +126,11 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
             abortCause = re;
             throw new SolrServerException(re);
         } finally {
+            try {
+                resp.body().close();
+            } catch(Exception e1) {
+                //ignore
+            }
             if (abortCause != null /* && req != null*/) {
                 //TODO
             }
@@ -218,9 +224,9 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         String mimeType = mimeTypeMatcher.find() ? mimeTypeMatcher.group(1) : null;
         String encoding = encodingMatcher.find() ? encodingMatcher.group(1) : null;
         String method = resp.request() == null ? null : resp.request().method();
-        InputStream is = resp.body();
         int status = resp.statusCode();
         String reason = statusToReasonPhrase(status);
+        InputStream is = resp.body();
         return processErrorsAndResponse(
                 status, reason, method, parser, is, mimeType, encoding, isV2ApiRequest(solrRequest), url);
 
@@ -228,20 +234,9 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
 
     @Override
     public void close() throws IOException {
-        // TODO: Java 21 adds close/autoclosable to HttpClient.
-        // Once we require Java 21, we should use it.  Perhaps
-        // also we can use the default executor.
-
-        try {
-            //TODO: 60 seconds?
-            executor.awaitTermination(60, TimeUnit.MILLISECONDS);
-            executor.shutdown();
-        } catch (InterruptedException ie) {
-           executor.shutdownNow();
-           Thread.currentThread().interrupt();
-        }
-        executor = null;
+        // TODO: Java 21 adds close/autoclosable to HttpClient.  We should use it.
         client = null;
+        assert ObjectReleaseTracker.release(this);
     }
 
     private void checkClosed() {
