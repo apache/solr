@@ -65,7 +65,7 @@ usage: post
                                               files.
  -skipcommit                                  Skip committing newly
                                               posted documents
- -optimize                                    Issue an optimize at end of
+ -optimize                                    Issue an optimize at the end of
                                               posting documents
  -out                                         sends Solr response outputs
                                               to console
