@@ -28,10 +28,11 @@ teardown() {
   solr stop -all >/dev/null 2>&1
 }
 
-@test "user managed index replication with a twist" {
-  export SOLR_SECURITY_MANAGER_ENABLED=false
+@test "user managed index replication with a twist" {  
   # This demonstrates traditional user managed cluster working as defined in
   # https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-types.html 
+  
+  export SOLR_SECURITY_MANAGER_ENABLED=false
   
   # should cloud_5000 be "leader" and cloud_5100 be "repeater" etc?
   
@@ -42,41 +43,41 @@ teardown() {
   mkdir -p ${clusters_dir}/cluster_5200
   
   # Get our three seperate independent Solr nodes running.
-  solr start -c -p 5000 -Dsolr.disable.allowUrls=true -s ${clusters_dir}/cluster_5000 -DzkServerDataDir=${clusters_dir}/cluster_5000/zoo_data -v -V 
-  solr start -c -p 5100 -Dsolr.disable.allowUrls=true -s ${clusters_dir}/cluster_5100 -DzkServerDataDir=${clusters_dir}/cluster_5100/zoo_data -v -V 
-  solr start -c -p 5200 -Dsolr.disable.allowUrls=true -s ${clusters_dir}/cluster_5200 -DzkServerDataDir=${clusters_dir}/cluster_5200/zoo_data -v -V 
+  solr start -c -p ${SOLR_PORT} -Dsolr.disable.allowUrls=true -s "${clusters_dir}"/cluster_5000 -DzkServerDataDir="${clusters_dir}"/cluster_5000/zoo_data -v -V 
+  solr start -c -p ${SOLR2_PORT} -Dsolr.disable.allowUrls=true -s "${clusters_dir}"/cluster_5100 -DzkServerDataDir="${clusters_dir}"/cluster_5100/zoo_data -v -V 
+  solr start -c -p ${SOLR3_PORT} -Dsolr.disable.allowUrls=true -s "${clusters_dir}"/cluster_5200 -DzkServerDataDir="${clusters_dir}"/cluster_5200/zoo_data -v -V 
   
-  solr assert --started http://localhost:5000 --timeout 5000
-  solr assert --started http://localhost:5100 --timeout 5000
-  solr assert --started http://localhost:5200 --timeout 5000
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000
+  solr assert --started http://localhost:${SOLR3_PORT} --timeout 5000
   
-  solr assert -cloud http://localhost:5000
-  solr assert -cloud http://localhost:5100
-  solr assert -cloud http://localhost:5200  
+  solr assert -cloud http://localhost:${SOLR_PORT}
+  solr assert -cloud http://localhost:${SOLR2_PORT}
+  solr assert -cloud http://localhost:${SOLR3_PORT}  
   
   # Wish I loaded configset seperately...
   local source_configset_dir="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs"
-  solr create -c techproducts -d "${source_configset_dir}" -solrUrl http://localhost:5000
-  solr create -c techproducts -d "${source_configset_dir}" -solrUrl http://localhost:5100
-  solr create -c techproducts -d "${source_configset_dir}" -solrUrl http://localhost:5200
+  solr create -c techproducts -d "${source_configset_dir}" -solrUrl http://localhost:${SOLR_PORT}
+  solr create -c techproducts -d "${source_configset_dir}" -solrUrl http://localhost:${SOLR2_PORT}
+  solr create -c techproducts -d "${source_configset_dir}" -solrUrl http://localhost:${SOLR3_PORT}
   
   # Verify empty state of all the nodes
-  run curl 'http://localhost:5000/solr/techproducts/select?q=*:*&rows=0'
+  run curl "http://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":0'
-  run curl 'http://localhost:5100/solr/techproducts/select?q=*:*&rows=0'
+  run curl "http://localhost:${SOLR2_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":0'
-  run curl 'http://localhost:5200/solr/techproducts/select?q=*:*&rows=0'
+  run curl "http://localhost:${SOLR3_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":0'  
   
   # Load XML formatted data into the leader
-  solr post -type application/xml -commit -url http://localhost:5000/solr/techproducts/update ${SOLR_TIP}/example/exampledocs/*.xml
-  run curl 'http://localhost:5000/solr/techproducts/select?q=*:*&rows=0'
+  solr post -type application/xml -commit -url http://localhost:${SOLR_PORT}/solr/techproducts/update "${SOLR_TIP}"/example/exampledocs/*.xml
+  run curl "http://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":32'
   
   # Confirm no replication
-  run curl 'http://localhost:5100/solr/techproducts/select?q=*:*&rows=0'
+  run curl "http://localhost:${SOLR2_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":0'  
-  run curl 'http://localhost:5200/solr/techproducts/select?q=*:*&rows=0'
+  run curl "http://localhost:${SOLR3_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":0'  
   
   # Setup the Leader for replication
@@ -84,13 +85,13 @@ teardown() {
     "add-requesthandler": {
       "name": "/replication",
       "class": "solr.ReplicationHandler",
-      "leader":{ "replicateAfter": "commit", "backupAfter":"commit", "confFiles":""},
+      "leader":{ "replicateAfter": "commit", "replicateAfter": "optimize", "backupAfter":"commit", "confFiles":""},
       "maxNumberOfBackups":2            
     }
-  }' "http://localhost:5000/solr/techproducts/config"
+  }' "http://localhost:${SOLR_PORT}/solr/techproducts/config"
   assert_output --partial '"status":0'
   
-  run curl 'http://localhost:5000/solr/techproducts/replication?command=details'
+  run curl "http://localhost:${SOLR_PORT}/solr/techproducts/replication?command=details"
   assert_output --partial '"replicationEnabled":"true"'
   
   # Setup the Repeater for replication  
@@ -98,35 +99,38 @@ teardown() {
     "add-requesthandler": {
       "name": "/replication",
       "class": "solr.ReplicationHandler",
-      "follower":{ "leaderUrl": "http://localhost:5000/solr/techproducts/replication", "pollInterval":"00:00:02"},
+      "follower":{ "leaderUrl": "http://localhost:'"${SOLR_PORT}"'/solr/techproducts/replication", "pollInterval":"00:00:02"},
       "leader":{ "replicateAfter": "commit", "backupAfter":"commit", "confFiles":""},
       "maxNumberOfBackups":2            
     }
-  }' "http://localhost:5100/solr/techproducts/config"
+  }' "http://localhost:${SOLR2_PORT}/solr/techproducts/config"
   assert_output --partial '"status":0'
   
-  run curl 'http://localhost:5100/solr/techproducts/replication?command=details'
+  run curl "http://localhost:${SOLR2_PORT}/solr/techproducts/replication?command=details"
   assert_output --partial '"isPollingDisabled":"false"'
  
- # How can we know when a replication has happened and then check?
-  sleep 5
-  run curl 'http://localhost:5100/solr/techproducts/select?q=*:*&rows=0'
+  # How can we know when a replication has happened and then check?
+  run curl "http://localhost:${SOLR_PORT}/solr/techproducts/update?optimize=true"
+  assert_output --partial '"status":0'
+  sleep 10
+  run curl "http://localhost:${SOLR2_PORT}/solr/techproducts/replication?command=details"
+  run curl "http://localhost:${SOLR2_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":32' 
   
   # Testing adding new data by adding JSON formatted data into the leader
-  solr post -type application/json -commit -url http://localhost:5000/solr/techproducts/update ${SOLR_TIP}/example/exampledocs/*.json
-  run curl 'http://localhost:5000/solr/techproducts/select?q=*:*&rows=0'
+  solr post -type application/json -commit -url http://localhost:${SOLR_PORT}/solr/techproducts/update "${SOLR_TIP}"/example/exampledocs/*.json
+  run curl "http://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":36'
   sleep 5
-  run curl 'http://localhost:5100/solr/techproducts/select?q=*:*&rows=0'
+  run curl "http://localhost:${SOLR2_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":36' 
   
   # Testing adding new data by adding CSV formatted data into the leader
-  solr post -commit -url http://localhost:5000/solr/techproducts/update ${SOLR_TIP}/example/exampledocs/*.csv
-  run curl 'http://localhost:5000/solr/techproducts/select?q=*:*&rows=0'
+  solr post -commit -url http://localhost:${SOLR_PORT}/solr/techproducts/update "${SOLR_TIP}"/example/exampledocs/*.csv
+  run curl "http://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":46'  
   sleep 5  
-  run curl 'http://localhost:5100/solr/techproducts/select?q=*:*&rows=0'
+  run curl "http://localhost:${SOLR2_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":46'  
   
   run bash -c 'solr stop -all 2>&1'
