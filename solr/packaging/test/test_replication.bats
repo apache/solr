@@ -28,22 +28,23 @@ teardown() {
   solr stop -all >/dev/null 2>&1
 }
 
-@test "user managed index replication" {
-
-  # This test is fragile.  I think we are creating files etc in solr/packaging/build/solr-10.0.0-SNAPSHOT/example/techproducts
-  # which means you may need to run gradle clean between runs or we can't start up Solr.
-  # I think we can't run both bats test either, one after the other ;-( 
+@test "user managed index replication with a twist" {
+  export SOLR_SECURITY_MANAGER_ENABLED=false
+  # This demonstrates traditional user managed cluster working as defined in
+  # https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-types.html 
   
-  # wish we had zkServerDataDir as a EnvUtil instead of system property!
+  # should cloud_5000 be "leader" and cloud_5100 be "repeater" etc?
   
-  mkdir -p cloud_5000
-  mkdir -p cloud_5100
-  mkdir -p cloud_5200
+  export clusters_dir="${BATS_TEST_TMPDIR}/clusters"
+  
+  mkdir -p ${clusters_dir}/cluster_5000
+  mkdir -p ${clusters_dir}/cluster_5100
+  mkdir -p ${clusters_dir}/cluster_5200
   
   # Get our three seperate independent Solr nodes running.
-  bin/solr start -f -c -p 5000 -Dsolr.disable.allowUrls=true -s $(pwd)/cloud_5000 -DzkServerDataDir=$(pwd)/cloud_5000/zoo_data -v -V 
-  bin/solr start -f -c -p 5100 -Dsolr.disable.allowUrls=true -s $(pwd)/cloud_5100 -DzkServerDataDir=$(pwd)/cloud_5100/zoo_data -v -V 
-  bin/solr start -f -c -p 5200 -Dsolr.disable.allowUrls=true -s $(pwd)/cloud_5200 -DzkServerDataDir=$(pwd)/cloud_5200/zoo_data -v -V 
+  solr start -c -p 5000 -Dsolr.disable.allowUrls=true -s ${clusters_dir}/cluster_5000 -DzkServerDataDir=${clusters_dir}/cluster_5000/zoo_data -v -V 
+  solr start -c -p 5100 -Dsolr.disable.allowUrls=true -s ${clusters_dir}/cluster_5100 -DzkServerDataDir=${clusters_dir}/cluster_5100/zoo_data -v -V 
+  solr start -c -p 5200 -Dsolr.disable.allowUrls=true -s ${clusters_dir}/cluster_5200 -DzkServerDataDir=${clusters_dir}/cluster_5200/zoo_data -v -V 
   
   solr assert --started http://localhost:5000 --timeout 5000
   solr assert --started http://localhost:5100 --timeout 5000
@@ -54,11 +55,12 @@ teardown() {
   solr assert -cloud http://localhost:5200  
   
   # Wish I loaded configset seperately...
-  bin/solr create -c techproducts -d ./server/solr/configsets/sample_techproducts_configs -solrUrl http://localhost:5000
-  bin/solr create -c techproducts -d ./server/solr/configsets/sample_techproducts_configs -solrUrl http://localhost:5100
-  bin/solr create -c techproducts -d ./server/solr/configsets/sample_techproducts_configs -solrUrl http://localhost:5200
+  local source_configset_dir="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs"
+  solr create -c techproducts -d "${source_configset_dir}" -solrUrl http://localhost:5000
+  solr create -c techproducts -d "${source_configset_dir}" -solrUrl http://localhost:5100
+  solr create -c techproducts -d "${source_configset_dir}" -solrUrl http://localhost:5200
   
-  # Verify no data
+  # Verify empty state of all the nodes
   run curl 'http://localhost:5000/solr/techproducts/select?q=*:*&rows=0'
   assert_output --partial '"numFound":0'
   run curl 'http://localhost:5100/solr/techproducts/select?q=*:*&rows=0'
@@ -67,7 +69,7 @@ teardown() {
   assert_output --partial '"numFound":0'  
   
   # Load XML formatted data into the leader
-  bin/solr post -type application/xml -commit -url http://localhost:5000/solr/techproducts/update ./example/exampledocs/*.xml
+  solr post -type application/xml -commit -url http://localhost:5000/solr/techproducts/update ${SOLR_TIP}/example/exampledocs/*.xml
   run curl 'http://localhost:5000/solr/techproducts/select?q=*:*&rows=0'
   assert_output --partial '"numFound":32'
   
@@ -91,9 +93,7 @@ teardown() {
   run curl 'http://localhost:5000/solr/techproducts/replication?command=details'
   assert_output --partial '"replicationEnabled":"true"'
   
-  
-  # Setup the Repeater for replication
-  
+  # Setup the Repeater for replication  
   run curl -X POST -H 'Content-type:application/json' -d '{
     "add-requesthandler": {
       "name": "/replication",
@@ -107,30 +107,27 @@ teardown() {
   
   run curl 'http://localhost:5100/solr/techproducts/replication?command=details'
   assert_output --partial '"isPollingDisabled":"false"'
-
-  
-  # Wish we could block on fetchindex..   Does checking details help?
+ 
+ # How can we know when a replication has happened and then check?
   sleep 5
   run curl 'http://localhost:5100/solr/techproducts/select?q=*:*&rows=0'
   assert_output --partial '"numFound":32' 
   
   # Testing adding new data by adding JSON formatted data into the leader
-  bin/solr post -type application/json -commit -url http://localhost:5000/solr/techproducts/update ./example/exampledocs/*.json
+  solr post -type application/json -commit -url http://localhost:5000/solr/techproducts/update ${SOLR_TIP}/example/exampledocs/*.json
   run curl 'http://localhost:5000/solr/techproducts/select?q=*:*&rows=0'
   assert_output --partial '"numFound":36'
-  
   sleep 5
+  run curl 'http://localhost:5100/solr/techproducts/select?q=*:*&rows=0'
+  assert_output --partial '"numFound":36' 
   
   # Testing adding new data by adding CSV formatted data into the leader
-  bin/solr post -commit -url http://localhost:5000/solr/techproducts/update ./example/exampledocs/*.csv
+  solr post -commit -url http://localhost:5000/solr/techproducts/update ${SOLR_TIP}/example/exampledocs/*.csv
   run curl 'http://localhost:5000/solr/techproducts/select?q=*:*&rows=0'
-  assert_output --partial '"numFound":46'
-  
-  sleep 5
-  
+  assert_output --partial '"numFound":46'  
+  sleep 5  
   run curl 'http://localhost:5100/solr/techproducts/select?q=*:*&rows=0'
-  assert_output --partial '"numFound":46'
-  
+  assert_output --partial '"numFound":46'  
   
   run bash -c 'solr stop -all 2>&1'
   refute_output --partial 'forcefully killing'
