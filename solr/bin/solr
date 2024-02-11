@@ -1283,7 +1283,6 @@ if [ $# -gt 0 ]; then
         ;;
         -t|-data.home)
             SOLR_DATA_HOME="$2"
-            PASS_TO_RUN_EXAMPLE+=("-t" "$SOLR_DATA_HOME")
             shift 2
         ;;
         -e|-example)

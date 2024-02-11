@@ -353,16 +353,10 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       String[] toolArgs =
           new String[] {
-            "-e",
-            exampleName,
-            "-serverDir",
-            solrServerDir.getAbsolutePath(),
-            "-exampleDir",
-            solrExampleDir.getAbsolutePath(),
-            "-p",
-            String.valueOf(bindPort),
-            "-t",
-            "dude"
+            "-e", exampleName,
+            "-serverDir", solrServerDir.getAbsolutePath(),
+            "-exampleDir", solrExampleDir.getAbsolutePath(),
+            "-p", String.valueOf(bindPort)
           };
 
       // capture tool output to stdout
