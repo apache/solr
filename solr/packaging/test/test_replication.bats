@@ -85,7 +85,7 @@ teardown() {
     "add-requesthandler": {
       "name": "/replication",
       "class": "solr.ReplicationHandler",
-      "leader":{ "replicateAfter": "commit", "replicateAfter": "optimize", "backupAfter":"commit", "confFiles":""},
+      "leader":{ "replicateAfter": "commit", "backupAfter":"commit", "confFiles":""},
       "maxNumberOfBackups":2            
     }
   }' "http://localhost:${SOLR_PORT}/solr/techproducts/config"
@@ -108,12 +108,24 @@ teardown() {
   
   run curl "http://localhost:${SOLR2_PORT}/solr/techproducts/replication?command=details"
   assert_output --partial '"isPollingDisabled":"false"'
+  
+  # Setup the Follower for replication  
+  run curl -X POST -H 'Content-type:application/json' -d '{
+    "add-requesthandler": {
+      "name": "/replication",
+      "class": "solr.ReplicationHandler",
+      "follower":{ "leaderUrl": "http://localhost:'"${SOLR2_PORT}"'/solr/techproducts/replication", "pollInterval":"00:00:02"}         
+    }
+  }' "http://localhost:${SOLR3_PORT}/solr/techproducts/config"
+  assert_output --partial '"status":0'
+  
+  run curl "http://localhost:${SOLR3_PORT}/solr/techproducts/replication?command=details"
+  assert_output --partial '"isPollingDisabled":"false"'  
  
   # How can we know when a replication has happened and then check?
   run curl "http://localhost:${SOLR_PORT}/solr/techproducts/update?optimize=true"
   assert_output --partial '"status":0'
   sleep 10
-  run curl "http://localhost:${SOLR2_PORT}/solr/techproducts/replication?command=details"
   run curl "http://localhost:${SOLR2_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":32' 
   
@@ -130,8 +142,15 @@ teardown() {
   run curl "http://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":46'  
   sleep 5  
+  echo "Waiting to see Solr2 on ${SOLR2_PORT} update"
+  sleep 20
   run curl "http://localhost:${SOLR2_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":46'  
+  
+  # Now lets go check our Follower and make sure it's picks up all the changes too!
+  sleep 5  
+  run curl "http://localhost:${SOLR3_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":46' 
   
   run bash -c 'solr stop -all 2>&1'
   refute_output --partial 'forcefully killing'
