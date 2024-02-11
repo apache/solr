@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.URLUtil;
 
 /**
  * LBHttpSolrClient or "LoadBalanced HttpSolrClient" is a load balancing wrapper around {@link
@@ -91,8 +92,12 @@ public class LBHttpSolrClient extends LBSolrClient {
     this.httpSolrClientBuilder = builder.httpSolrClientBuilder;
     this.httpClient =
         builder.httpClient == null
-            ? constructClient(builder.baseSolrUrls.toArray(new String[builder.baseSolrUrls.size()]))
+            ? constructClient(builder.baseSolrUrls.toArray(new String[0]))
             : builder.httpClient;
+    this.defaultCollection = builder.defaultCollection;
+    if (httpSolrClientBuilder != null && this.defaultCollection != null) {
+      httpSolrClientBuilder.defaultCollection = this.defaultCollection;
+    }
     this.connectionTimeoutMillis = builder.connectionTimeoutMillis;
     this.soTimeoutMillis = builder.socketTimeoutMillis;
     this.parser = builder.responseParser;
@@ -130,10 +135,16 @@ public class LBHttpSolrClient extends LBSolrClient {
         client = httpSolrClientBuilder.build();
       }
     } else {
-      final HttpSolrClient.Builder clientBuilder =
-          new HttpSolrClient.Builder(server).withHttpClient(httpClient).withResponseParser(parser);
-      clientBuilder.withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS);
-      clientBuilder.withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
+      final var clientBuilder =
+          (URLUtil.isBaseUrl(server))
+              ? new HttpSolrClient.Builder(server)
+              : new HttpSolrClient.Builder(URLUtil.extractBaseUrl(server))
+                  .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(server));
+      clientBuilder
+          .withHttpClient(httpClient)
+          .withResponseParser(parser)
+          .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+          .withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
       if (requestWriter != null) {
         clientBuilder.withRequestWriter(requestWriter);
       }

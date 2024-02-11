@@ -45,8 +45,15 @@ public class PostTool extends ToolBase {
         Option.builder("url")
             .argName("url")
             .hasArg()
-            .required(true)
+            .required(false)
             .desc("<base Solr update URL>")
+            .build(),
+        Option.builder("c")
+            .longOpt("name")
+            .argName("NAME")
+            .hasArg()
+            .required(false)
+            .desc("Name of the collection.")
             .build(),
         Option.builder("commit").required(false).desc("Issue a commit at end of post").build(),
         Option.builder("optimize").required(false).desc("Issue an optimize at end of post").build(),
@@ -95,15 +102,25 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc(
                 "sends application/json content as Solr commands to /update instead of /update/json/docs")
-            .build());
+            .build(),
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
-    String url = cli.getOptionValue("url");
-    URL solrUrl = new URL(url);
+    URL solrUrl = null;
+    if (cli.hasOption("url")) {
+      String url = cli.getOptionValue("url");
+      solrUrl = new URL(url);
+    } else if (cli.hasOption("c")) {
+      String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("c") + "/update";
+      solrUrl = new URL(url);
+    } else {
+      throw new IllegalArgumentException(
+          "Must specify either -url or -c parameter to post documents.");
+    }
 
     String mode = SimplePostTool.DEFAULT_DATA_MODE;
     if (cli.hasOption("mode")) {
@@ -132,11 +149,24 @@ public class PostTool extends ToolBase {
     boolean commit = cli.hasOption("commit");
     boolean optimize = cli.hasOption("optimize");
 
+    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
+
     String[] args = cli.getArgs();
 
     SimplePostTool spt =
         new SimplePostTool(
-            mode, solrUrl, auto, type, format, recursive, delay, fileTypes, out, commit, optimize,
+            mode,
+            solrUrl,
+            credentials,
+            auto,
+            type,
+            format,
+            recursive,
+            delay,
+            fileTypes,
+            out,
+            commit,
+            optimize,
             args);
 
     spt.execute();

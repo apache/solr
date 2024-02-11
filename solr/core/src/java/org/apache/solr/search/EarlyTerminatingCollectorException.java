@@ -33,6 +33,7 @@ public class EarlyTerminatingCollectorException extends RuntimeException {
     this.numberCollected = numberCollected;
     this.numberScanned = numberScanned;
   }
+
   /**
    * The total number of documents in the index that were "scanned" by the index when collecting the
    * {@link #getNumberCollected()} documents that triggered this exception.
@@ -48,6 +49,7 @@ public class EarlyTerminatingCollectorException extends RuntimeException {
   public int getNumberScanned() {
     return numberScanned;
   }
+
   /** The number of documents collected that resulted in early termination */
   public int getNumberCollected() {
     return numberCollected;

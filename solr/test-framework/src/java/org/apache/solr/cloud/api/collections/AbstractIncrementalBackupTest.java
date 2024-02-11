@@ -21,8 +21,11 @@ import static org.apache.solr.core.TrackingBackupRepository.copiedFiles;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -85,7 +88,9 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static long docsSeed; // see indexDocs()
+  protected static final int NUM_NODES = 2;
   protected static final int NUM_SHARDS = 2; // granted we sometimes shard split to get more
+  protected static final int LARGE_NUM_SHARDS = 11; // Periodically chosen via randomization
   protected static final int REPL_FACTOR = 2;
   protected static final String BACKUPNAME_PREFIX = "mytestbackup";
   protected static final String BACKUP_REPO_NAME = "trackingBackupRepository";
@@ -126,10 +131,11 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     setTestSuffix("testbackupincsimple");
     final String backupCollectionName = getCollectionName();
     final String restoreCollectionName = backupCollectionName + "_restore";
+    final int randomizedNumShards = rarely() ? LARGE_NUM_SHARDS : NUM_SHARDS;
 
     CloudSolrClient solrClient = cluster.getSolrClient();
 
-    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", randomizedNumShards, 1)
         .process(solrClient);
     int totalIndexedDocs = indexDocs(backupCollectionName, true);
     String backupName = BACKUPNAME_PREFIX + testSuffix;
@@ -163,7 +169,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       log.info("Created backup with {} docs, took {}ms", numFound, timeTaken);
 
       t = System.nanoTime();
-      randomlyPrecreateRestoreCollection(restoreCollectionName, "conf1", NUM_SHARDS, 1);
+      randomlyPrecreateRestoreCollection(restoreCollectionName, "conf1", randomizedNumShards, 1);
       CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
           .setBackupId(0)
           .setLocation(backupLocation)
@@ -456,6 +462,34 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     }
   }
 
+  public void testBackupProperties() throws IOException {
+    BackupProperties p =
+        BackupProperties.create(
+            "backupName",
+            "collection1",
+            "collection1-ext",
+            "conf1",
+            Map.of("foo", "bar", "aaa", "bbb"));
+    try (BackupRepository repository =
+        cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(BACKUP_REPO_NAME)) {
+      String backupLocation = repository.getBackupLocation(getBackupLocation());
+      URI dest = repository.resolve(repository.createURI(backupLocation), "props-file.properties");
+      try (Writer propsWriter =
+          new OutputStreamWriter(repository.createOutput(dest), StandardCharsets.UTF_8)) {
+        p.store(propsWriter);
+      }
+      BackupProperties propsRead =
+          BackupProperties.readFrom(
+              repository, repository.createURI(backupLocation), "props-file.properties");
+      assertEquals(p.getCollection(), propsRead.getCollection());
+      assertEquals(p.getCollectionAlias(), propsRead.getCollectionAlias());
+      assertEquals(p.getConfigName(), propsRead.getConfigName());
+      assertEquals(p.getIndexVersion(), propsRead.getIndexVersion());
+      assertEquals(p.getExtraProperties(), propsRead.getExtraProperties());
+      assertEquals(p.getBackupName(), propsRead.getBackupName());
+    }
+  }
+
   protected void corruptIndexFiles() throws IOException {
     List<Slice> slices = new ArrayList<>(getCollectionState(getCollectionName()).getSlices());
     Replica leader = slices.get(random().nextInt(slices.size())).getLeader();
@@ -550,7 +584,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     log.info("Indexed {} docs to collection: {}", numDocs, collectionName);
   }
 
-  private int indexDocs(String collectionName, boolean useUUID) throws Exception {
+  protected int indexDocs(String collectionName, boolean useUUID) throws Exception {
     Random random =
         new Random(
             docsSeed); // use a constant seed for the whole test run so that we can easily re-index.

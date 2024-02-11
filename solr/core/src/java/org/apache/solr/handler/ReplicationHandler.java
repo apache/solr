@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.Adler32;
@@ -60,7 +61,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -90,8 +90,12 @@ import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
+import org.apache.solr.handler.ReplicationHandler.ReplicationHandlerConfig;
 import org.apache.solr.handler.admin.api.CoreReplicationAPI;
+import org.apache.solr.handler.admin.api.SnapshotBackupAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.jersey.APIConfigProvider;
+import org.apache.solr.jersey.APIConfigProvider.APIConfig;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
@@ -99,7 +103,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrIndexWriter;
-import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
@@ -137,7 +140,8 @@ import org.slf4j.MDC;
  *
  * @since solr 1.4
  */
-public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAware {
+public class ReplicationHandler extends RequestHandlerBase
+    implements SolrCoreAware, APIConfigProvider<ReplicationHandlerConfig> {
 
   public static final String PATH = "/replication";
 
@@ -159,6 +163,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       generation = g;
       version = v;
     }
+
     /**
      * builds a CommitVersionInfo data for the specified IndexCommit. Will never be null, ut version
      * and generation may be zero if there are problems extracting them from the commit data
@@ -217,8 +222,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private volatile long executorStartTime;
 
-  private int numberBackupsToKeep = 0; // zero: do not delete old backups
-
   private int numTimesReplicated = 0;
 
   private final Map<String, FileInfo> confFileInfoCache = new HashMap<>();
@@ -235,6 +238,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private String pollIntervalStr;
 
   private PollListener pollListener;
+
+  private final ReplicationHandlerConfig replicationHandlerConfig = new ReplicationHandlerConfig();
 
   public interface PollListener {
     void onComplete(SolrCore solrCore, IndexFetchResult fetchResult) throws IOException;
@@ -593,50 +598,19 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   private void doSnapShoot(SolrParams params, SolrQueryResponse rsp, SolrQueryRequest req) {
     try {
       int numberToKeep = params.getInt(NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM, 0);
-      if (numberToKeep > 0 && numberBackupsToKeep > 0) {
-        throw new SolrException(
-            ErrorCode.BAD_REQUEST,
-            "Cannot use "
-                + NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM
-                + " if "
-                + NUMBER_BACKUPS_TO_KEEP_INIT_PARAM
-                + " was specified in the configuration.");
-      }
-      numberToKeep = Math.max(numberToKeep, numberBackupsToKeep);
-      if (numberToKeep < 1) {
-        numberToKeep = Integer.MAX_VALUE;
-      }
-
       String location = params.get(CoreAdminParams.BACKUP_LOCATION);
       String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
-      CoreContainer cc = core.getCoreContainer();
-      BackupRepository repo = null;
-      if (repoName != null) {
-        repo = cc.newBackupRepository(repoName);
-        location = repo.getBackupLocation(location);
-        if (location == null) {
-          throw new IllegalArgumentException("location is required");
-        }
-      } else {
-        repo = new LocalFileSystemRepository();
-        if (location == null) {
-          location = core.getDataDir();
-        } else {
-          location =
-              core.getCoreDescriptor().getInstanceDir().resolve(location).normalize().toString();
-        }
-      }
-      if ("file".equals(repo.createURI("x").getScheme())) {
-        core.getCoreContainer().assertPathAllowed(Paths.get(location));
-      }
-
-      // small race here before the commit point is saved
-      URI locationUri = repo.createDirectoryURI(location);
       String commitName = params.get(CoreAdminParams.COMMIT_NAME);
-      SnapShooter snapShooter =
-          new SnapShooter(repo, core, locationUri, params.get(NAME), commitName);
-      snapShooter.validateCreateSnapshot();
-      snapShooter.createSnapAsync(numberToKeep, (nl) -> snapShootDetails = nl);
+      String name = params.get(NAME);
+      doSnapShoot(
+          numberToKeep,
+          replicationHandlerConfig.numberBackupsToKeep,
+          location,
+          repoName,
+          commitName,
+          name,
+          core,
+          (nl) -> snapShootDetails = nl);
       rsp.add(STATUS, OK_STATUS);
     } catch (SolrException e) {
       throw e;
@@ -645,6 +619,58 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       reportErrorOnResponse(
           rsp, "Error encountered while creating a snapshot: " + e.getMessage(), e);
     }
+  }
+
+  public static void doSnapShoot(
+      int numberToKeep,
+      int numberBackupsToKeep,
+      String location,
+      String repoName,
+      String commitName,
+      String name,
+      SolrCore core,
+      Consumer<NamedList<?>> result)
+      throws IOException {
+    if (numberToKeep > 0 && numberBackupsToKeep > 0) {
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          "Cannot use "
+              + NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM
+              + " if "
+              + NUMBER_BACKUPS_TO_KEEP_INIT_PARAM
+              + " was specified in the configuration.");
+    }
+    numberToKeep = Math.max(numberToKeep, numberBackupsToKeep);
+    if (numberToKeep < 1) {
+      numberToKeep = Integer.MAX_VALUE;
+    }
+
+    CoreContainer cc = core.getCoreContainer();
+    BackupRepository repo = null;
+    if (repoName != null) {
+      repo = cc.newBackupRepository(repoName);
+      location = repo.getBackupLocation(location);
+      if (location == null) {
+        throw new IllegalArgumentException("location is required");
+      }
+    } else {
+      repo = new LocalFileSystemRepository();
+      if (location == null) {
+        location = core.getDataDir();
+      } else {
+        location =
+            core.getCoreDescriptor().getInstanceDir().resolve(location).normalize().toString();
+      }
+    }
+    if ("file".equals(repo.createURI("x").getScheme())) {
+      core.getCoreContainer().assertPathAllowed(Paths.get(location));
+    }
+
+    // small race here before the commit point is saved
+    URI locationUri = repo.createDirectoryURI(location);
+    SnapShooter snapShooter = new SnapShooter(repo, core, locationUri, name, commitName);
+    snapShooter.validateCreateSnapshot();
+    snapShooter.createSnapAsync(numberToKeep, result);
   }
 
   /**
@@ -700,18 +726,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.status = OK_STATUS;
 
     return rsp;
-  }
-
-  /**
-   * Retrieves the maximum version number from an index commit. NOTE: The commit <b>MUST</b> be
-   * reserved before calling this method
-   */
-  private long getMaxVersion(IndexCommit commit) throws IOException {
-    try (DirectoryReader reader = DirectoryReader.open(commit)) {
-      IndexSearcher searcher = new IndexSearcher(reader);
-      VersionInfo vinfo = core.getUpdateHandler().getUpdateLog().getVersionInfo();
-      return Math.abs(vinfo.getMaxVersionFromIndex(searcher));
-    }
   }
 
   /**
@@ -891,7 +905,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             map -> {
               IndexFetcher fetcher = currentIndexFetcher;
               if (fetcher != null) {
-                map.put(LEADER_URL, fetcher.getLeaderUrl());
+                map.put(LEADER_URL, fetcher.getLeaderCoreUrl());
                 if (getPollInterval() != null) {
                   map.put(POLL_INTERVAL, getPollInterval());
                 }
@@ -973,7 +987,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           follower.add(ERR_STATUS, "invalid_leader");
         }
       }
-      follower.add(LEADER_URL, fetcher.getLeaderUrl());
+      follower.add(LEADER_URL, fetcher.getLeaderCoreUrl());
       if (getPollInterval() != null) {
         follower.add(POLL_INTERVAL, getPollInterval());
       }
@@ -1239,9 +1253,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     registerCloseHook();
     Object nbtk = initArgs.get(NUMBER_BACKUPS_TO_KEEP_INIT_PARAM);
     if (nbtk != null) {
-      numberBackupsToKeep = Integer.parseInt(nbtk.toString());
+      replicationHandlerConfig.numberBackupsToKeep = Integer.parseInt(nbtk.toString());
     } else {
-      numberBackupsToKeep = 0;
+      replicationHandlerConfig.numberBackupsToKeep = 0;
     }
     NamedList<?> follower = getObjectWithBackwardCompatibility(initArgs, "follower", "slave");
     boolean enableFollower = isEnabled(follower);
@@ -1374,7 +1388,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(CoreReplicationAPI.class);
+    return List.of(CoreReplicationAPI.class, SnapshotBackupAPI.class);
   }
 
   @Override
@@ -1474,7 +1488,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
         if (snapshoot) {
           try {
-            int numberToKeep = numberBackupsToKeep;
+            int numberToKeep = replicationHandlerConfig.numberBackupsToKeep;
             if (numberToKeep < 1) {
               numberToKeep = Integer.MAX_VALUE;
             }
@@ -1777,11 +1791,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   public static final String LEADER_URL = "leaderUrl";
 
-  @Deprecated
   /**
-   * @deprecated: Only used for backwards compatibility. Use {@link #LEADER_URL}
+   * @deprecated Only used for backwards compatibility. Use {@link #LEADER_URL}
    */
-  public static final String LEGACY_LEADER_URL = "masterUrl";
+  @Deprecated public static final String LEGACY_LEADER_URL = "masterUrl";
 
   public static final String FETCH_FROM_LEADER = "fetchFromLeader";
 
@@ -1790,11 +1803,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   // loss
   public static final String SKIP_COMMIT_ON_LEADER_VERSION_ZERO = "skipCommitOnLeaderVersionZero";
 
-  @Deprecated
   /**
-   * @deprecated: Only used for backwards compatibility. Use {@link
+   * @deprecated Only used for backwards compatibility. Use {@link
    *     #SKIP_COMMIT_ON_LEADER_VERSION_ZERO}
    */
+  @Deprecated
   public static final String LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO =
       "skipCommitOnMasterVersionZero";
 
@@ -1898,4 +1911,23 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    * @lucene.internal
    */
   public static final String WAIT = "wait";
+
+  public static class ReplicationHandlerConfig implements APIConfig {
+
+    private int numberBackupsToKeep = 0; // zero: do not delete old backups
+
+    public int getNumberBackupsToKeep() {
+      return numberBackupsToKeep;
+    }
+  }
+
+  @Override
+  public ReplicationHandlerConfig provide() {
+    return replicationHandlerConfig;
+  }
+
+  @Override
+  public Class<ReplicationHandlerConfig> getConfigClass() {
+    return ReplicationHandlerConfig.class;
+  }
 }

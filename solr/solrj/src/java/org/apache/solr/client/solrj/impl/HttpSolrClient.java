@@ -76,9 +76,9 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -189,6 +189,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     this.soTimeout = builder.socketTimeoutMillis;
     this.useMultiPartPost = builder.useMultiPartPost;
     this.urlParamNames = builder.urlParamNames;
+    this.defaultCollection = builder.defaultCollection;
   }
 
   public Set<String> getUrlParamNames() {
@@ -243,6 +244,8 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   public NamedList<Object> request(
       final SolrRequest<?> request, final ResponseParser processor, String collection)
       throws SolrServerException, IOException {
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
+      collection = defaultCollection;
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
     if (request.getHeaders() != null) {
@@ -294,7 +297,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       final SolrRequest<?> request, final ResponseParser processor)
       throws SolrServerException, IOException {
     HttpUriRequestResponse mrr = new HttpUriRequestResponse();
-    final HttpRequestBase method = createMethod(request, null);
+    final HttpRequestBase method = createMethod(request, defaultCollection);
     ExecutorService pool =
         ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("httpUriRequest"));
     try {
@@ -339,9 +342,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   protected HttpRequestBase createMethod(SolrRequest<?> request, String collection)
       throws IOException, SolrServerException {
-    if (request instanceof V2RequestSupport) {
-      request = ((V2RequestSupport) request).getV2Request();
-    }
     SolrParams params = request.getParams();
     RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(request);
     Collection<ContentStream> streams =

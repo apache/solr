@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -87,7 +88,7 @@ public abstract class LBSolrClient extends SolrClient {
 
   static {
     solrQuery.setRows(0);
-    /**
+    /*
      * Default sort (if we don't supply a sort) is by score and since we request 0 rows any sorting
      * and scoring is not necessary. SolrQuery.DOCID schema-independently specifies a non-scoring
      * sort. <code>_docid_ asc</code> sort is efficient, <code>_docid_ desc</code> sort is not, so
@@ -358,7 +359,10 @@ public abstract class LBSolrClient extends SolrClient {
       }
     }
     throw new SolrServerException(
-        "No live SolrServers available to handle this request:" + zombieServers.keySet(), ex);
+        "No live SolrServers available to handle this request. (Tracking "
+            + zombieServers.size()
+            + " not live)",
+        ex);
   }
 
   /**
@@ -571,6 +575,8 @@ public abstract class LBSolrClient extends SolrClient {
     final int maxTries = (numServersToTry == null ? serverList.length : numServersToTry.intValue());
     int numServersTried = 0;
     Map<String, ServerWrapper> justFailed = null;
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
+      collection = defaultCollection;
 
     boolean timeAllowedExceeded = false;
     long timeAllowedNano = getTimeAllowedInNanos(request);

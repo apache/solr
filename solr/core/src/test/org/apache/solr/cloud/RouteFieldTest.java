@@ -38,6 +38,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.URLUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -154,13 +155,8 @@ public class RouteFieldTest extends SolrCloudTestCase {
     params.add(CommonParams.SORT, "sorter asc");
     params.add(CommonParams.ROWS, "1000");
 
-    SolrClient solrClient = new HttpSolrClient.Builder(urlId).build();
-    SolrDocumentList docsId = (SolrDocumentList) solrClient.request(request).get("response");
-    solrClient.close();
-
-    solrClient = new HttpSolrClient.Builder(urlRoute).build();
-    SolrDocumentList docsRoute = (SolrDocumentList) solrClient.request(request).get("response");
-    solrClient.close();
+    final var docsId = getDocsMatching(urlId, request);
+    final var docsRoute = getDocsMatching(urlRoute, request);
 
     assertEquals(
         "We should have the exact same number of docs on each shard",
@@ -173,6 +169,16 @@ public class RouteFieldTest extends SolrCloudTestCase {
           "Docs with Ids 1.5M different should be on exactly the same shard and in the same order when sorted",
           idId,
           idRoute - 1_500_000);
+    }
+  }
+
+  private SolrDocumentList getDocsMatching(String coreUrl, QueryRequest request)
+      throws IOException, SolrServerException {
+    final var baseUrl = URLUtil.extractBaseUrl(coreUrl);
+    final var coreName = URLUtil.extractCoreFromCoreUrl(coreUrl);
+    try (SolrClient solrClient =
+        new HttpSolrClient.Builder(baseUrl).withDefaultCollection(coreName).build()) {
+      return (SolrDocumentList) solrClient.request(request).get("response");
     }
   }
 }

@@ -84,6 +84,7 @@ public class DeleteTool extends ToolBase {
                 "Skip safety checks when deleting the configuration directory used by a collection.")
             .build(),
         SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_CREDENTIALS,
         SolrCLI.OPTION_VERBOSE);
   }
 
@@ -92,7 +93,7 @@ public class DeleteTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
 
-    try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
+    try (var solrClient = SolrCLI.getSolrClient(cli)) {
       if (SolrCLI.isCloudMode(solrClient)) {
         deleteCollection(cli);
       } else {
@@ -102,13 +103,17 @@ public class DeleteTool extends ToolBase {
   }
 
   protected void deleteCollection(CommandLine cli) throws Exception {
+    Http2SolrClient.Builder builder =
+        new Http2SolrClient.Builder()
+            .withIdleTimeout(30, TimeUnit.SECONDS)
+            .withConnectionTimeout(15, TimeUnit.SECONDS)
+            .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
+            .withOptionalBasicAuthCredentials(cli.getOptionValue(("credentials")));
+
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient =
         new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-            .withInternalClientBuilder(
-                new Http2SolrClient.Builder()
-                    .withIdleTimeout(30, TimeUnit.SECONDS)
-                    .withConnectionTimeout(15, TimeUnit.SECONDS))
+            .withInternalClientBuilder(builder)
             .build()) {
       echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
       cloudSolrClient.connect();

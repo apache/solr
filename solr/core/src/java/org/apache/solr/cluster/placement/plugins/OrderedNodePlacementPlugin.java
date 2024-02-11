@@ -404,9 +404,13 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     private final Node node;
     private final Map<String, Map<String, Set<Replica>>> replicas;
 
+    // a flattened list of all replicas, as computing from the map could be costly
+    private final Set<Replica> allReplicas;
+
     public WeightedNode(Node node) {
       this.node = node;
       this.replicas = new HashMap<>();
+      this.allReplicas = new HashSet<>();
     }
 
     public Node getNode() {
@@ -414,10 +418,11 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     public Set<Replica> getAllReplicasOnNode() {
-      return replicas.values().stream()
-          .flatMap(shard -> shard.values().stream())
-          .flatMap(Collection::stream)
-          .collect(Collectors.toSet());
+      return new HashSet<>(allReplicas);
+    }
+
+    public int getAllReplicaCount() {
+      return allReplicas.size();
     }
 
     public Set<String> getCollectionsOnNode() {
@@ -454,6 +459,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     private boolean addReplicaToInternalState(Replica replica) {
+      allReplicas.add(replica);
       return replicas
           .computeIfAbsent(replica.getShard().getCollection().getName(), k -> new HashMap<>())
           .computeIfAbsent(replica.getShard().getShardName(), k -> CollectionUtil.newHashSet(1))
@@ -508,6 +514,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
                 (shard, reps) -> {
                   if (reps.remove(replica)) {
                     hasReplica.set(true);
+                    allReplicas.remove(replica);
                   }
                   return reps.isEmpty() ? null : reps;
                 });

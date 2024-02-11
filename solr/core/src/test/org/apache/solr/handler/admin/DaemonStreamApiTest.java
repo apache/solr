@@ -222,6 +222,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
             + daemonName
             + "' did not become RUNNABLE, WAITING or TIMED_WAITING in 10 seconds");
   }
+
   // There can be some delay while threads stabilize, so we need to loop. Eventually, the status of
   // a
   // stopped thread should be "TERMINATED"

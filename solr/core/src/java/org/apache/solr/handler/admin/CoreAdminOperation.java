@@ -44,12 +44,6 @@ import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA_TYPE;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
-import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED;
-import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.FAILED;
-import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.RUNNING;
-import static org.apache.solr.handler.admin.CoreAdminHandler.OPERATION_RESPONSE;
-import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_MESSAGE;
-import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
 import static org.apache.solr.handler.admin.CoreAdminHandler.buildCoreParams;
 import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
 
@@ -58,6 +52,13 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.solr.client.api.endpoint.SwapCoresApi;
+import org.apache.solr.client.api.model.ListCoreSnapshotsResponse;
+import org.apache.solr.client.api.model.ReloadCoreRequestBody;
+import org.apache.solr.client.api.model.RenameCoreRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SwapCoresRequestBody;
+import org.apache.solr.client.api.model.UnloadCoreRequestBody;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -71,7 +72,12 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminOp;
-import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
+import org.apache.solr.handler.admin.api.CoreSnapshot;
+import org.apache.solr.handler.admin.api.GetNodeCommandStatus;
+import org.apache.solr.handler.admin.api.ReloadCore;
+import org.apache.solr.handler.admin.api.RenameCore;
+import org.apache.solr.handler.admin.api.SwapCores;
+import org.apache.solr.handler.admin.api.UnloadCore;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
@@ -118,14 +124,17 @@ public enum CoreAdminOperation implements CoreAdminOp {
       it -> {
         SolrParams params = it.req.getParams();
         String cname = params.required().get(CoreAdminParams.CORE);
-
-        boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, false);
-        boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
-        boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
-        CoreDescriptor cdescr = it.handler.coreContainer.getCoreDescriptor(cname);
-        it.handler.coreContainer.unload(cname, deleteIndexDir, deleteDataDir, deleteInstanceDir);
-
-        assert TestInjection.injectNonExistentCoreExceptionAfterUnload(cname);
+        final var unloadCoreRequestBody = new UnloadCoreRequestBody();
+        unloadCoreRequestBody.deleteIndex = params.getBool(CoreAdminParams.DELETE_INDEX, false);
+        unloadCoreRequestBody.deleteDataDir =
+            params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
+        unloadCoreRequestBody.deleteInstanceDir =
+            params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
+        UnloadCore unloadCoreAPI =
+            new UnloadCore(
+                it.handler.coreContainer, it.handler.getCoreAdminAsyncTracker(), it.req, it.rsp);
+        SolrJerseyResponse response = unloadCoreAPI.unloadCore(cname, unloadCoreRequestBody);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
   RELOAD_OP(
       RELOAD,
@@ -133,7 +142,12 @@ public enum CoreAdminOperation implements CoreAdminOp {
         SolrParams params = it.req.getParams();
         String cname = params.required().get(CoreAdminParams.CORE);
 
-        it.handler.coreContainer.reload(cname);
+        ReloadCore reloadCoreAPI =
+            new ReloadCore(
+                it.req, it.rsp, it.handler.coreContainer, it.handler.getCoreAdminAsyncTracker());
+        ReloadCoreRequestBody reloadCoreRequestBody = new ReloadCoreRequestBody();
+        SolrJerseyResponse response = reloadCoreAPI.reloadCore(cname, reloadCoreRequestBody);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
   STATUS_OP(STATUS, new StatusOp()),
   SWAP_OP(
@@ -141,20 +155,29 @@ public enum CoreAdminOperation implements CoreAdminOp {
       it -> {
         final SolrParams params = it.req.getParams();
         final String cname = params.required().get(CoreAdminParams.CORE);
-        String other = params.required().get(CoreAdminParams.OTHER);
-        it.handler.coreContainer.swap(cname, other);
+        final var swapCoresRequestBody = new SwapCoresRequestBody();
+        swapCoresRequestBody.with = params.required().get(CoreAdminParams.OTHER);
+        ;
+        SwapCoresApi swapCoresApi =
+            new SwapCores(
+                it.handler.coreContainer, it.handler.getCoreAdminAsyncTracker(), it.req, it.rsp);
+        SolrJerseyResponse response = swapCoresApi.swapCores(cname, swapCoresRequestBody);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
 
   RENAME_OP(
       RENAME,
       it -> {
         SolrParams params = it.req.getParams();
-        String name = params.required().get(CoreAdminParams.OTHER);
-        String cname = params.required().get(CoreAdminParams.CORE);
-
-        if (cname.equals(name)) return;
-
-        it.handler.coreContainer.rename(cname, name);
+        final String cname = params.required().get(CoreAdminParams.CORE);
+        final String name = params.required().get(CoreAdminParams.OTHER);
+        final var renameCoreRequestBody = new RenameCoreRequestBody();
+        renameCoreRequestBody.to = name;
+        final var renameCoreApi =
+            new RenameCore(
+                it.handler.coreContainer, it.handler.getCoreAdminAsyncTracker(), it.req, it.rsp);
+        SolrJerseyResponse response = renameCoreApi.renameCore(cname, renameCoreRequestBody);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
 
   MERGEINDEXES_OP(MERGEINDEXES, new MergeIndexesOp()),
@@ -214,34 +237,15 @@ public enum CoreAdminOperation implements CoreAdminOp {
   REQUESTSTATUS_OP(
       REQUESTSTATUS,
       it -> {
-        SolrParams params = it.req.getParams();
-        String requestId = params.required().get(CoreAdminParams.REQUESTID);
+        final var params = it.req.getParams();
+        final String requestId = params.required().get(CoreAdminParams.REQUESTID);
         log().info("Checking request status for : " + requestId);
 
-        final CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker =
-            it.handler.getCoreAdminAsyncTracker();
-        if (coreAdminAsyncTracker.getRequestStatusMap(RUNNING).containsKey(requestId)) {
-          it.rsp.add(RESPONSE_STATUS, RUNNING);
-        } else if (coreAdminAsyncTracker.getRequestStatusMap(COMPLETED).containsKey(requestId)) {
-          it.rsp.add(RESPONSE_STATUS, COMPLETED);
-          it.rsp.add(
-              RESPONSE_MESSAGE,
-              coreAdminAsyncTracker.getRequestStatusMap(COMPLETED).get(requestId).getRspObject());
-          it.rsp.add(
-              OPERATION_RESPONSE,
-              coreAdminAsyncTracker
-                  .getRequestStatusMap(COMPLETED)
-                  .get(requestId)
-                  .getOperationRspObject());
-        } else if (coreAdminAsyncTracker.getRequestStatusMap(FAILED).containsKey(requestId)) {
-          it.rsp.add(RESPONSE_STATUS, FAILED);
-          it.rsp.add(
-              RESPONSE_MESSAGE,
-              coreAdminAsyncTracker.getRequestStatusMap(FAILED).get(requestId).getRspObject());
-        } else {
-          it.rsp.add(RESPONSE_STATUS, "notfound");
-          it.rsp.add(RESPONSE_MESSAGE, "No task found in running, completed or failed tasks");
-        }
+        final var requestCoreCommandStatusApi =
+            new GetNodeCommandStatus(
+                it.handler.coreContainer, it.handler.coreAdminAsyncTracker, it.req, it.rsp);
+        final SolrJerseyResponse response = requestCoreCommandStatusApi.getCommandStatus(requestId);
+        V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       }),
 
   OVERSEEROP_OP(
@@ -285,12 +289,10 @@ public enum CoreAdminOperation implements CoreAdminOp {
         final String coreName = params.required().get(CoreAdminParams.CORE);
 
         final CoreContainer coreContainer = it.handler.getCoreContainer();
-        final CoreSnapshotAPI coreSnapshotAPI =
-            new CoreSnapshotAPI(
-                it.req, it.rsp, coreContainer, it.handler.getCoreAdminAsyncTracker());
+        final CoreSnapshot coreSnapshotAPI =
+            new CoreSnapshot(it.req, it.rsp, coreContainer, it.handler.getCoreAdminAsyncTracker());
 
-        final CoreSnapshotAPI.ListSnapshotsResponse response =
-            coreSnapshotAPI.listSnapshots(coreName);
+        final ListCoreSnapshotsResponse response = coreSnapshotAPI.listSnapshots(coreName);
 
         V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
       });

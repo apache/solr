@@ -532,7 +532,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     // check all our expected docs can be found (with the expected values)
     assertU(commit());
     xpaths.add("//*[@numFound='" + xpaths.size() + "']");
-    assertQ(req("q", "*:*", "fl", "*"), xpaths.toArray(new String[xpaths.size()]));
+    assertQ(req("q", "*:*", "fl", "*"), xpaths.toArray(new String[0]));
   }
 
   /**

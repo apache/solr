@@ -25,7 +25,7 @@ docker run --name "$container_name" -d "$tag" solr-create -c gettingstarted
 wait_for_container_and_solr "$container_name"
 
 echo "Loading data"
-docker exec --user=solr "$container_name" bin/post -c gettingstarted example/exampledocs/manufacturers.xml
+docker exec --user=solr "$container_name" bin/solr post -c gettingstarted -commit example/exampledocs/manufacturers.xml
 sleep 1
 echo "Checking data"
 data=$(docker exec --user=solr "$container_name" wget -q -O - 'http://localhost:8983/solr/gettingstarted/select?q=id%3Adell')

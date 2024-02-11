@@ -34,7 +34,7 @@ However, you are introducing some potential security vulnerabilities.
 This is provided via the `scripting` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 
-== Enababling the ScriptingUpdateProcessor and Scripting Engines
+== Enabling the ScriptingUpdateProcessor and Scripting Engines
 
 Java 11 and previous versions come with a JavaScript engine called Nashorn, but Java 12 will require you to add your own JavaScript engine.
 Other supported scripting engines like JRuby, Jython, Groovy, all require you to add JAR files to Solr.

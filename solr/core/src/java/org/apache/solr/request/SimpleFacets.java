@@ -109,8 +109,10 @@ public class SimpleFacets {
 
   /** The main set of documents all facet counts should be relative to */
   protected DocSet docsOrig;
+
   /** Configuration params behavior should be driven by */
   protected final SolrParams global;
+
   /** Searcher to use for all calculations */
   protected final SolrIndexSearcher searcher;
 

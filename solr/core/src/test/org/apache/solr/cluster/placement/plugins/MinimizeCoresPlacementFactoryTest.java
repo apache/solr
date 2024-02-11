@@ -33,6 +33,7 @@ import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.cluster.placement.impl.BalanceRequestImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -101,9 +102,7 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
             solrCollection,
             Set.of(solrCollection.shards().iterator().next().getShardName()),
             new HashSet<>(liveNodes),
-            1,
-            0,
-            0);
+            ReplicaCount.of(1, 0, 0));
 
     PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
 
@@ -147,7 +146,10 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
     // Place an additional NRT and an additional TLOG replica for each shard
     PlacementRequestImpl placementRequest =
         new PlacementRequestImpl(
-            solrCollection, solrCollection.getShardNames(), new HashSet<>(liveNodes), 1, 1, 0);
+            solrCollection,
+            solrCollection.getShardNames(),
+            new HashSet<>(liveNodes),
+            ReplicaCount.of(1, 1, 0));
 
     // The replicas must be placed on the most appropriate nodes, i.e. those that do not already
     // have a replica for the shard and then on the node with the lowest number of cores. NRT are
@@ -198,9 +200,7 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
             solrCollection,
             Set.of(solrCollection.iterator().next().getShardName()),
             new HashSet<>(liveNodes),
-            0,
-            0,
-            1);
+            ReplicaCount.of(0, 0, 1));
 
     PlacementPlan pp =
         plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
@@ -216,7 +216,10 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
     it.next(); // skip first shard to do placement for the second one...
     placementRequest =
         new PlacementRequestImpl(
-            solrCollection, Set.of(it.next().getShardName()), new HashSet<>(liveNodes), 0, 0, 1);
+            solrCollection,
+            Set.of(it.next().getShardName()),
+            new HashSet<>(liveNodes),
+            ReplicaCount.of(0, 0, 1));
     pp = plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
     expectedPlacements = Set.of("2 PULL 0");
     verifyPlacements(expectedPlacements, pp, collectionBuilder.getShardBuilders(), liveNodes);

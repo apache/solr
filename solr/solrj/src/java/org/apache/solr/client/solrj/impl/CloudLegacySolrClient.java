@@ -167,12 +167,12 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     protected boolean shardLeadersOnly = true;
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
-    protected String defaultCollection;
     protected long retryExpiryTimeNano =
         TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
     protected ClusterStateProvider stateProvider;
     private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
     private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
+    private boolean canUseZkACLs = true;
 
     /** Constructor for use by subclasses. This constructor was public prior to version 9.0 */
     protected Builder() {}
@@ -230,6 +230,12 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     public Builder(List<String> zkHosts, Optional<String> zkChroot) {
       this.zkHosts = zkHosts;
       if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
+    }
+
+    /** Whether or not to use the default ZK ACLs when building a ZK Client. */
+    public Builder canUseZkACLs(boolean canUseZkACLs) {
+      this.canUseZkACLs = canUseZkACLs;
+      return this;
     }
 
     /** Provides a {@link HttpClient} for the builder to use when creating clients. */
@@ -343,12 +349,6 @@ public class CloudLegacySolrClient extends CloudSolrClient {
       return this;
     }
 
-    /** Sets the default collection for request. */
-    public Builder withDefaultCollection(String collection) {
-      this.defaultCollection = collection;
-      return this;
-    }
-
     /**
      * Sets the Zk connection timeout
      *
@@ -378,7 +378,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
           throw new IllegalArgumentException(
               "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
         } else if (!zkHosts.isEmpty()) {
-          this.stateProvider = ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot);
+          this.stateProvider =
+              ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot, canUseZkACLs);
           if (stateProvider instanceof SolrZkClientTimeoutAware) {
             var timeoutAware = (SolrZkClientTimeoutAware) stateProvider;
             timeoutAware.setZkClientTimeout(zkClientTimeout);

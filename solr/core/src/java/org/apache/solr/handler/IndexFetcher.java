@@ -32,7 +32,6 @@ import static org.apache.solr.handler.ReplicationHandler.EXTERNAL;
 import static org.apache.solr.handler.ReplicationHandler.FETCH_FROM_LEADER;
 import static org.apache.solr.handler.ReplicationHandler.FILE;
 import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
-import static org.apache.solr.handler.ReplicationHandler.FileInfo;
 import static org.apache.solr.handler.ReplicationHandler.GENERATION;
 import static org.apache.solr.handler.ReplicationHandler.INTERNAL;
 import static org.apache.solr.handler.ReplicationHandler.LEADER_URL;
@@ -117,10 +116,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.ReplicationHandler.FileInfo;
 import org.apache.solr.handler.admin.api.CoreReplicationAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -132,6 +133,7 @@ import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,7 +150,10 @@ public class IndexFetcher {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private String leaderUrl;
+  private String leaderCoreUrl;
+  // Derived from 'leaderCoreUrl' but kept around to avoid recomputing
+  private String leaderBaseUrl;
+  private String leaderCoreName;
 
   final ReplicationHandler replicationHandler;
 
@@ -265,11 +270,13 @@ public class IndexFetcher {
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
     httpClientParams.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, useCompression);
-
+    // no metrics, just tracing
+    InstrumentedHttpRequestExecutor executor = new InstrumentedHttpRequestExecutor(null);
     return HttpClientUtil.createClient(
         httpClientParams,
         core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyConnectionManager(),
-        true);
+        true,
+        executor);
   }
 
   public IndexFetcher(
@@ -297,7 +304,7 @@ public class IndexFetcher {
       leaderUrl = leaderUrl.substring(0, leaderUrl.length() - 12);
       log.warn("'leaderUrl' must be specified without the {} suffix", ReplicationHandler.PATH);
     }
-    setLeaderUrl(leaderUrl);
+    setLeaderCoreUrl(leaderUrl);
 
     this.replicationHandler = handler;
     String compress = (String) initArgs.get(COMPRESSION);
@@ -319,8 +326,8 @@ public class IndexFetcher {
             solrCore, httpBasicAuthUser, httpBasicAuthPassword, useExternalCompression);
   }
 
-  private void setLeaderUrl(String leaderUrl) {
-    if (leaderUrl != null) {
+  private void setLeaderCoreUrl(String leaderCoreUrl) {
+    if (leaderCoreUrl != null) {
       ClusterState clusterState =
           solrCore.getCoreContainer().getZkController() == null
               ? null
@@ -329,24 +336,28 @@ public class IndexFetcher {
         solrCore
             .getCoreContainer()
             .getAllowListUrlChecker()
-            .checkAllowList(Collections.singletonList(leaderUrl), clusterState);
+            .checkAllowList(Collections.singletonList(leaderCoreUrl), clusterState);
       } catch (MalformedURLException e) {
         throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "Malformed 'leaderUrl' " + leaderUrl, e);
+            SolrException.ErrorCode.SERVER_ERROR, "Malformed 'leaderUrl' " + leaderCoreUrl, e);
       } catch (SolrException e) {
         throw new SolrException(
             SolrException.ErrorCode.FORBIDDEN,
             "The '"
                 + LEADER_URL
                 + "' parameter value '"
-                + leaderUrl
+                + leaderCoreUrl
                 + "' is not allowed: "
                 + e.getMessage()
                 + ". "
                 + AllowListUrlChecker.SET_SOLR_DISABLE_URL_ALLOW_LIST_CLUE);
       }
     }
-    this.leaderUrl = leaderUrl;
+    this.leaderCoreUrl = leaderCoreUrl;
+    if (leaderCoreUrl != null) {
+      this.leaderBaseUrl = URLUtil.extractBaseUrl(leaderCoreUrl);
+      this.leaderCoreName = URLUtil.extractCoreFromCoreUrl(leaderCoreUrl);
+    }
   }
 
   protected <T> T getParameter(
@@ -372,13 +383,13 @@ public class IndexFetcher {
 
     // TODO modify to use shardhandler
     try (SolrClient client =
-        new Builder(leaderUrl)
+        new Builder(leaderBaseUrl)
             .withHttpClient(myHttpClient)
             .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
             .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .build()) {
 
-      return client.request(req);
+      return client.request(req, leaderCoreName);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     }
@@ -399,12 +410,12 @@ public class IndexFetcher {
 
     // TODO modify to use shardhandler
     try (SolrClient client =
-        new HttpSolrClient.Builder(leaderUrl)
+        new HttpSolrClient.Builder(leaderBaseUrl)
             .withHttpClient(myHttpClient)
             .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
             .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .build()) {
-      NamedList<?> response = client.request(req);
+      NamedList<?> response = client.request(req, leaderCoreName);
 
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
@@ -485,9 +496,9 @@ public class IndexFetcher {
           }
           return IndexFetchResult.LEADER_IS_NOT_ACTIVE;
         }
-        if (!replica.getCoreUrl().equals(leaderUrl)) {
-          setLeaderUrl(replica.getCoreUrl());
-          log.info("Updated leaderUrl to {}", leaderUrl);
+        if (!replica.getCoreUrl().equals(leaderCoreUrl)) {
+          setLeaderCoreUrl(replica.getCoreUrl());
+          log.info("Updated leaderUrl to {}", leaderCoreUrl);
           // TODO: Do we need to set forceReplication = true?
         } else {
           log.debug("leaderUrl didn't change");
@@ -502,13 +513,13 @@ public class IndexFetcher {
         if (StrUtils.isNotNullOrEmpty(errorMsg) && errorMsg.contains(INTERRUPT_RESPONSE_MESSAGE)) {
           log.warn(
               "Leader at: {} is not available. Index fetch failed by interrupt. Exception: {}",
-              leaderUrl,
+              leaderCoreUrl,
               errorMsg);
           return new IndexFetchResult(IndexFetchResult.FAILED_BY_INTERRUPT_MESSAGE, false, e);
         } else {
           log.warn(
               "Leader at: {} is not available. Index fetch failed by exception: {}",
-              leaderUrl,
+              leaderCoreUrl,
               errorMsg);
           return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
         }
@@ -1219,6 +1230,7 @@ public class IndexFetcher {
   // -----------START----------------------
   static BooleanSupplier testWait = () -> true;
   static Function<String, Long> usableDiskSpaceProvider = dir -> getUsableSpace(dir);
+
   // ------------ END---------------------
 
   private static Long getUsableSpace(String dir) {
@@ -1981,14 +1993,14 @@ public class IndexFetcher {
 
       // TODO use shardhandler
       try (SolrClient client =
-          new Builder(leaderUrl)
+          new Builder(leaderBaseUrl)
               .withHttpClient(myHttpClient)
               .withResponseParser(null)
               .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
               .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
               .build()) {
         QueryRequest req = new QueryRequest(params);
-        response = client.request(req);
+        response = client.request(req, leaderCoreName);
         is = (InputStream) response.get("stream");
         if (useInternalCompression) {
           is = new InflaterInputStream(is);
@@ -2114,13 +2126,13 @@ public class IndexFetcher {
 
     // TODO use shardhandler
     try (SolrClient client =
-        new HttpSolrClient.Builder(leaderUrl)
+        new HttpSolrClient.Builder(leaderBaseUrl)
             .withHttpClient(myHttpClient)
             .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
             .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .build()) {
       QueryRequest request = new QueryRequest(params);
-      return client.request(request);
+      return client.request(request, leaderCoreName);
     }
   }
 
@@ -2129,8 +2141,8 @@ public class IndexFetcher {
     HttpClientUtil.close(myHttpClient);
   }
 
-  String getLeaderUrl() {
-    return leaderUrl;
+  String getLeaderCoreUrl() {
+    return leaderCoreUrl;
   }
 
   private static final int MAX_RETRIES = 5;
