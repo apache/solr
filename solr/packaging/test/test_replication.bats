@@ -31,6 +31,17 @@ teardown() {
 @test "user managed index replication with a twist" {  
   # This demonstrates traditional user managed cluster working as defined in
   # https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-types.html 
+  #
+  # We demonstrate starting up three independent Solr nodes in the Leader/Repeater/Follower pattern.
+  # Then we create three seperate 'techproducts' collections, uploading the same configset three seperate times
+  # to demonstrate that there is no interconnection or shard config between them.
+  # We then index some XML data on the Leader, and then check that it flows through the Repeater to the Follower.
+  # This is repeated for some more documents.
+  # Lastly, we shutdown the Repeater and demonstrate that the Follower still has all of it's documents available for querying.
+  # We delete the data on the Leader, and then subsequantly bring back up the Repeater.
+  # The Repeater perseves all fo the configuration that was done during the setup process after restarting, and immediatley copies
+  # over the now empty 'techproducts' index and we then see the Follower picks up that empty collection as well.
+  
   
   export SOLR_SECURITY_MANAGER_ENABLED=false
   
@@ -151,6 +162,35 @@ teardown() {
   sleep 5  
   run curl "http://localhost:${SOLR3_PORT}/solr/techproducts/select?q=*:*&rows=0"
   assert_output --partial '"numFound":46' 
+  
+  # Now lets stop our replicator
+  solr stop -p ${SOLR2_PORT}
+  
+  solr assert --not-started http://localhost:${SOLR2_PORT} --timeout 5000
+  
+  # Delete data on the leader.
+  solr post -url http://localhost:${SOLR_PORT}/solr/techproducts/update -mode args -out -commit "{'delete': {'query': '*:*'}}"
+  run curl "http://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":0' 
+
+  # check our follower is still up and responding
+  sleep 5  
+  run curl "http://localhost:${SOLR3_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":46' 
+  
+  # Bring back our Repeater
+  solr start -c -p ${SOLR2_PORT} -Dsolr.disable.allowUrls=true -s "${clusters_dir}"/cluster_5100 -DzkServerDataDir="${clusters_dir}"/cluster_5100/zoo_data -v -V 
+  solr assert --started http://localhost:${SOLR2_PORT} --timeout 5000
+  
+  # check our Repeater is picking up the deleted documents from the Leader
+  sleep 5  
+  run curl "http://localhost:${SOLR2_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":0' 
+  
+  # And now check our follower has no documents as well.
+  sleep 5  
+  run curl "http://localhost:${SOLR3_PORT}/solr/techproducts/select?q=*:*&rows=0"
+  assert_output --partial '"numFound":0' 
   
   run bash -c 'solr stop -all 2>&1'
   refute_output --partial 'forcefully killing'
