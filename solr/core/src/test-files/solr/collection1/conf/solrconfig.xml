@@ -58,6 +58,7 @@
   <statsCache class="${solr.statsCache:}"/>
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  <indexConfig><infoStream>true</infoStream></indexConfig>
 
   <updateHandler class="solr.DirectUpdateHandler2">
 

@@ -229,8 +229,13 @@ public class AddUpdateCommand extends UpdateCommand {
       // instead.
     }
 
-    return () ->
-        all.stream().map(sdoc -> DocumentBuilder.toDocument(sdoc, req.getSchema())).iterator();
+    List<Document> out = new ArrayList<>();
+    for (SolrInputDocument sid: all) {
+      final Document document = DocumentBuilder.toDocument(sid, req.getSchema());
+      System.out.println(document);
+      out.add( document);
+    }
+    return () ->out.iterator();
   }
 
   private void addRootField(SolrInputDocument sdoc, String rootId) {

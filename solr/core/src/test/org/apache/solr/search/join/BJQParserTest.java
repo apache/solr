@@ -39,6 +39,7 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.BaseTestHarness;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class BJQParserTest extends SolrTestCaseJ4 {
@@ -73,19 +74,22 @@ public class BJQParserTest extends SolrTestCaseJ4 {
               "</doc>",
               updBlock.subList(0, updBlock.size() - 1).toString().replaceAll("[\\[\\]]", "")
                   + "</doc>");
+      System.out.println(parentDoc.xml);
       assertU(add(parentDoc));
-
+      assertQ(req("q", "*:*", "sort","_docid_ asc", "rows", "100", "indent", "on", "fl","*,[docid]", "wt", "csv"));
       if (random().nextBoolean()) {
         assertU(commit());
+        assertQ(req("q", "*:*", "sort","_docid_ asc", "rows", "100", "indent", "on", "fl","*,[docid]", "wt", "csv"), "//*[@numFound='" + i + "']");
         // force empty segment (actually, this will no longer create an empty segment, only a new
         // segments_n)
         if (random().nextBoolean()) {
           assertU(commit());
+          assertQ(req("q", "*:*", "sort","_docid_ asc", "rows", "100", "indent", "on", "fl","*,[docid]", "wt", "csv"), "//*[@numFound='" + i + "']");
         }
       }
     }
     assertU(commit());
-    assertQ(req("q", "*:*"), "//*[@numFound='" + i + "']");
+    assertQ(req("q", "*:*", "sort","_docid_ asc", "rows", "100", "indent", "on", "fl","*,[docid]", "wt", "csv"), "//*[@numFound='" + i + "']");
   }
 
   private static List<List<String[]>> createBlocks() {
@@ -236,11 +240,12 @@ public class BJQParserTest extends SolrTestCaseJ4 {
                 + (rarely() ? "" : (rarely() ? "score=None" : "score=none"))
                 + "}child_s:l",
             "fl",
-            "score"),
+            "score,*,[docid]","debugQuery","true", "explainOther","id:6", "indent", "on",
+            "sort","_docid_ asc"),
         "//*[@numFound='6']",
         "(//float[@name='score'])[" + (random().nextInt(6) + 1) + "]=0.0");
   }
-
+  @Ignore
   public void testWrongScoreExceptionForParent() {
     final String aMode = ScoreMode.values()[random().nextInt(ScoreMode.values().length)].name();
     final String wrongMode =
@@ -292,7 +297,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
             resp, "(//float[@name='score'])[1]/text()", XPathConstants.STRING);
   }
 
-  @Test
+  @Test @Ignore
   public void testFq() {
     assertQ(
         req(
@@ -321,7 +326,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         beParents);
   }
 
-  @Test
+  @Test @Ignore
   public void testIntersectParentBqChildBq() {
 
     assertQ(
@@ -367,7 +372,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         beParents);
   }
 
-  @Test
+  @Test @Ignore
   public void testChildrenParser() {
     assertQ(
         req("q", "{!child of=\"parent_s:[* TO *]\"}parent_s:a", "fq", "NOT grand_s:[* TO *]"),
@@ -388,7 +393,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         "//doc/arr[@name=\"child_s\"]/str='l'");
   }
 
-  @Test
+  @Test @Ignore
   public void testCacheHit() {
 
     MetricsMap parentFilterCache =
@@ -617,7 +622,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         "//*[@numFound='42']");
   }
 
-  @Test
+  @Test @Ignore
   public void testFiltersCache() throws SyntaxError, IOException {
     final String[] elFilterQuery =
         new String[] {

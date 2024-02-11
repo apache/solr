@@ -964,7 +964,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       xmlWriterTypeParams.set("indent", xmlWriterTypeParams.get("indent", "off"));
       req.setParams(xmlWriterTypeParams);
       String response = h.query(req);
-
+      System.out.println(response);
       if (req.getParams().getBool("facet", false)) {
         // add a test to ensure that faceting did not throw an exception
         // internally, where it would be added to facet_counts/exception
