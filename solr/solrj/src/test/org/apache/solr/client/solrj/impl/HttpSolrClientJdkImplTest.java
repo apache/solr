@@ -145,6 +145,55 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
         }
     }
 
+    @Test
+    public void testFollowRedirect() throws Exception {
+        final String clientUrl = getBaseUrl() + "/redirect/foo";
+        try (HttpSolrClientJdkImpl client =
+                     new HttpSolrClientJdkImpl.Builder(clientUrl).withFollowRedirects(true).build()) {
+            SolrQuery q = new SolrQuery("*:*");
+            client.query(q);
+        }
+    }
+
+    @Test
+    public void testDoNotFollowRedirect() throws Exception {
+        final String clientUrl = getBaseUrl() + "/redirect/foo";
+        try (HttpSolrClientJdkImpl client =
+                     new HttpSolrClientJdkImpl.Builder(clientUrl).withFollowRedirects(false).build()) {
+            SolrQuery q = new SolrQuery("*:*");
+
+            SolrServerException thrown = assertThrows(SolrServerException.class, () -> client.query(q));
+            assertTrue(thrown.getMessage().contains("redirect"));
+        }
+    }
+
+    @Test
+    public void testRedirectSwapping() throws Exception {
+        final String clientUrl = getBaseUrl() + "/redirect/foo";
+        SolrQuery q = new SolrQuery("*:*");
+
+        // default for follow redirects is false
+        try (HttpSolrClientJdkImpl client = new HttpSolrClientJdkImpl.Builder(clientUrl).build()) {
+
+            SolrServerException e = expectThrows(SolrServerException.class, () -> client.query(q));
+            assertTrue(e.getMessage().contains("redirect"));
+        }
+
+        try (HttpSolrClientJdkImpl client =
+                     new HttpSolrClientJdkImpl.Builder(clientUrl).withFollowRedirects(true).build()) {
+            // shouldn't throw an exception
+            client.query(q);
+        }
+
+        // set explicit false for following redirects
+        try (HttpSolrClientJdkImpl client =
+                     new HttpSolrClientJdkImpl.Builder(clientUrl).withFollowRedirects(false).build()) {
+
+            SolrServerException e = expectThrows(SolrServerException.class, () -> client.query(q));
+            assertTrue(e.getMessage().contains("redirect"));
+        }
+    }
+
 
     public void testSolrExceptionCodeNotFromSolr() throws IOException, SolrServerException {
         try (HttpSolrClientJdkImpl client = new HttpSolrClientJdkImpl.Builder(getBaseUrl() + "/debug/foo").build()) {

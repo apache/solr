@@ -39,9 +39,11 @@ import java.util.concurrent.TimeUnit;
 
 public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient.Builder> {
 
+  @Override
   protected String expectedUserAgent() {
     return "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
   }
+
   @Override
   protected <B extends HttpSolrClientBuilderBase> B builder(
       String url, int connectionTimeout, int socketTimeout, Class<B> type) {
@@ -341,20 +343,6 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
   }
 
   @Test
-  public void testBadExplicitCredentials() {
-    expectThrowsAndMessage(
-        IllegalStateException.class,
-        () -> new Http2SolrClient.Builder().withBasicAuthCredentials("foo", null),
-        "Invalid Authentication credentials");
-    expectThrowsAndMessage(
-        IllegalStateException.class,
-        () -> new Http2SolrClient.Builder().withBasicAuthCredentials(null, "foo"),
-        "Invalid Authentication credentials");
-  }
-
-
-
-  @Test
   public void testSetCredentialsExplicitly() {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
@@ -452,6 +440,18 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
         IllegalStateException.class,
         () -> new Http2SolrClient.Builder().withOptionalBasicAuthCredentials("username password"),
         "Invalid Authentication credential formatting. Provide username and password in the 'username:password' format.");
+  }
+
+  @Test
+  public void testBadExplicitCredentials() {
+    expectThrowsAndMessage(
+            IllegalStateException.class,
+            () -> new Http2SolrClient.Builder().withBasicAuthCredentials("foo", null),
+            "Invalid Authentication credentials");
+    expectThrowsAndMessage(
+            IllegalStateException.class,
+            () -> new Http2SolrClient.Builder().withBasicAuthCredentials(null, "foo"),
+            "Invalid Authentication credentials");
   }
 
   @Test
