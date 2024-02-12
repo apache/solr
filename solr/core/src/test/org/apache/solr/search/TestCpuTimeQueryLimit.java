@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.util.ThreadCpuTime;
 import org.junit.Assume;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -35,7 +36,7 @@ public class TestCpuTimeQueryLimit extends SolrCloudTestCase {
   @Test
   public void testCompareToWallClock() throws Exception {
     Assume.assumeTrue(
-        "Thread CPU time monitoring is not available", CpuTimeQueryLimit.isAvailable());
+        "Thread CPU time monitoring is not available", ThreadCpuTime.isSupported());
     long limitMs = 100;
     CpuTimeQueryLimit cpuLimit = new CpuTimeQueryLimit(limitMs);
     int[] randoms = new int[100];
@@ -64,7 +65,7 @@ public class TestCpuTimeQueryLimit extends SolrCloudTestCase {
   @Test
   public void testDistribLimit() throws Exception {
     Assume.assumeTrue(
-        "Thread CPU time monitoring is not available", CpuTimeQueryLimit.isAvailable());
+        "Thread CPU time monitoring is not available", ThreadCpuTime.isSupported());
     MiniSolrCloudCluster cluster =
         configureCluster(2).addConfig("conf", configset("query-limits")).configure();
     String COLLECTION = "test";
@@ -88,7 +89,7 @@ public class TestCpuTimeQueryLimit extends SolrCloudTestCase {
       // no limits set - should eventually complete
       long sleepMs = 1000;
       QueryResponse rsp =
-          solrClient.query(COLLECTION, params("q", "*:*", "sleepMs", String.valueOf(sleepMs)));
+          solrClient.query(COLLECTION, params("q", "id:*", "sort", "id asc", "sleepMs", String.valueOf(sleepMs)));
       System.err.println("rsp=" + rsp.jsonStr());
       assertEquals(rsp.getHeader().get("status"), 0);
       Number qtime = (Number) rsp.getHeader().get("QTime");
@@ -99,14 +100,14 @@ public class TestCpuTimeQueryLimit extends SolrCloudTestCase {
       rsp =
           solrClient.query(
               COLLECTION,
-              params("q", "*:*", "sleepMs", String.valueOf(sleepMs), "timeAllowed", "500"));
+              params("q", "id:*", "sort", "id asc", "sleepMs", String.valueOf(sleepMs), "timeAllowed", "500"));
       System.err.println("rsp=" + rsp.jsonStr());
       assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
 
       // cpuAllowed set, should return partial results
       rsp =
           solrClient.query(
-              COLLECTION, params("q", "*:*", "spinWaitCount", "10000", "cpuAllowed", "20"));
+              COLLECTION, params("q", "id:*", "sort", "id desc", "spinWaitCount", "50000", "cpuAllowed", "20"));
       System.err.println("rsp=" + rsp.jsonStr());
       assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
     } finally {

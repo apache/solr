@@ -29,7 +29,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.SolrJettyTestRule;
-import org.apache.solr.util.ThreadStats;
+import org.apache.solr.util.ThreadCpuTime;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
@@ -44,7 +44,7 @@ public class TestCpuTimeSearch extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupSolr() throws Exception {
-    System.setProperty(ThreadStats.ENABLE_CPU_TIME, "true");
+    System.setProperty(ThreadCpuTime.ENABLE_CPU_TIME, "true");
     System.setProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST, "true");
 
     Path configSet = createTempDir("configSet");
@@ -86,8 +86,8 @@ public class TestCpuTimeSearch extends SolrTestCaseJ4 {
     int size = results.size();
     assertEquals("should have 1 result", 1, size);
     NamedList<Object> header = response.getHeader();
-    List<Object> localCpuTimes = header.getAll(ThreadStats.LOCAL_CPU_TIME);
-    List<Object> cpuTimes = header.getAll(ThreadStats.CPU_TIME);
+    List<Object> localCpuTimes = header.getAll(ThreadCpuTime.LOCAL_CPU_TIME);
+    List<Object> cpuTimes = header.getAll(ThreadCpuTime.CPU_TIME);
     assertEquals("localCpuTime should not have values", 0, localCpuTimes.size());
     assertEquals("cpuTime should only have one value", 1, cpuTimes.size());
     long cpuTime = (long) cpuTimes.iterator().next();
@@ -114,8 +114,8 @@ public class TestCpuTimeSearch extends SolrTestCaseJ4 {
     int size = results.size();
     assertEquals("should have 2 results", 2, size);
     NamedList<Object> header = response.getHeader();
-    List<Object> localCpuTimes = header.getAll(ThreadStats.LOCAL_CPU_TIME);
-    List<Object> cpuTimes = header.getAll(ThreadStats.CPU_TIME);
+    List<Object> localCpuTimes = header.getAll(ThreadCpuTime.LOCAL_CPU_TIME);
+    List<Object> cpuTimes = header.getAll(ThreadCpuTime.CPU_TIME);
     assertEquals("localCpuTime should not have values", 0, localCpuTimes.size());
     assertEquals("cpuTime should only have one value", 1, cpuTimes.size());
     long cpuTime = (long) cpuTimes.iterator().next();

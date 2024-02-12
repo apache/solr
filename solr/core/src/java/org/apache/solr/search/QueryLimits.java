@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.ThreadCpuTime;
 
 /**
  * Represents the limitations on the query. These limits might be wall clock time, cpu time, memory,
@@ -34,6 +35,8 @@ public class QueryLimits implements QueryTimeout {
       new ArrayList<>(3); // timeAllowed, cpu, and memory anticipated
 
   public static QueryLimits NONE = new QueryLimits();
+
+  private ThreadCpuTime threadCpuTime = new ThreadCpuTime();
 
   private QueryLimits() {}
 
@@ -48,8 +51,12 @@ public class QueryLimits implements QueryTimeout {
       limits.add(new SolrQueryTimeLimit(req));
     }
     if (hasCpuLimit(req)) {
-      limits.add(new CpuTimeQueryLimit(req));
+      limits.add(new CpuTimeQueryLimit(req, threadCpuTime));
     }
+  }
+
+  public ThreadCpuTime getThreadCpuTime() {
+    return threadCpuTime;
   }
 
   @Override

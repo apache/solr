@@ -18,61 +18,39 @@ package org.apache.solr.search;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadMXBean;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.ThreadCpuTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CpuTimeQueryLimit implements QueryTimeout {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final ThreadMXBean THREAD_MX_BEAN = ManagementFactory.getThreadMXBean();
-  private static final boolean available;
-
-  static {
-    ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-    boolean testAvailable = false;
-    try {
-      if (threadBean.isThreadCpuTimeSupported()) {
-        threadBean.setThreadCpuTimeEnabled(true);
-        testAvailable = true;
-      }
-    } catch (UnsupportedOperationException e) {
-      log.info("Thread CPU time monitoring is not available.");
-      testAvailable = false;
-    }
-    available = testAvailable;
-  }
-
   private final long limitAt;
+  private final ThreadCpuTime threadCpuTime;
 
-  public CpuTimeQueryLimit(SolrQueryRequest req) {
-    if (!available) {
+  public CpuTimeQueryLimit(SolrQueryRequest req, ThreadCpuTime threadCpuTime) {
+    if (!ThreadCpuTime.isSupported()) {
       throw new IllegalArgumentException("Thread CPU time monitoring is not available.");
     }
+    this.threadCpuTime = threadCpuTime;
     long reqCpuLimit = req.getParams().getLong(CommonParams.CPU_ALLOWED, -1L);
 
     if (reqCpuLimit <= 0L) {
       throw new IllegalArgumentException(
           "Check for limit with hasLimit(req) before creating a CpuTimeLimit");
     }
-    long currentTime = THREAD_MX_BEAN.getCurrentThreadCpuTime();
-    limitAt = currentTime + TimeUnit.NANOSECONDS.convert(reqCpuLimit, TimeUnit.MILLISECONDS);
-  }
-
-  @VisibleForTesting
-  static boolean isAvailable() {
-    return available;
+    limitAt = threadCpuTime.getStartCpuTimeNs() + TimeUnit.NANOSECONDS.convert(reqCpuLimit, TimeUnit.MILLISECONDS);
   }
 
   @VisibleForTesting
   CpuTimeQueryLimit(long limitMs) {
+    this.threadCpuTime = new ThreadCpuTime();
     limitAt =
-        THREAD_MX_BEAN.getCurrentThreadCpuTime()
+        threadCpuTime.getCurrentCpuTimeNs()
             + TimeUnit.NANOSECONDS.convert(limitMs, TimeUnit.MILLISECONDS);
   }
 
@@ -83,6 +61,6 @@ public class CpuTimeQueryLimit implements QueryTimeout {
   /** Return true if a max limit value is set and the current usage has exceeded the limit. */
   @Override
   public boolean shouldExit() {
-    return limitAt - THREAD_MX_BEAN.getCurrentThreadCpuTime() < 0L;
+    return limitAt - threadCpuTime.getCurrentCpuTimeNs() < 0L;
   }
 }

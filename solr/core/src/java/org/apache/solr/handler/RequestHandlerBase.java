@@ -43,13 +43,15 @@ import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.ThreadStats;
+import org.apache.solr.util.ThreadCpuTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +78,7 @@ public abstract class RequestHandlerBase
 
   private PluginInfo pluginInfo;
 
-  protected boolean publishCpuTime = Boolean.getBoolean(ThreadStats.ENABLE_CPU_TIME);
+  protected boolean publishCpuTime = Boolean.getBoolean(ThreadCpuTime.ENABLE_CPU_TIME);
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
   public RequestHandlerBase() {
@@ -216,11 +218,10 @@ public abstract class RequestHandlerBase
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    ThreadStats cpuStats = null;
+    ThreadCpuTime threadCpuTime = null;
     if (publishCpuTime) {
-      cpuStats = new ThreadStats();
+      threadCpuTime = SolrRequestInfo.getRequestInfo() == null ? new ThreadCpuTime() : SolrRequestInfo.getRequestInfo().getLimits().getThreadCpuTime();
     }
-
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
 
@@ -250,17 +251,17 @@ public abstract class RequestHandlerBase
       long elapsed = timer.stop();
       metrics.totalTime.inc(elapsed);
 
-      if (cpuStats != null) {
-        Optional<Long> cpuTime = cpuStats.getCpuTimeMs();
+      if (publishCpuTime) {
+        Optional<Long> cpuTime = threadCpuTime.getCpuTimeMs();
         if (cpuTime.isPresent()) {
           // add CPU_TIME if not already added by SearchHandler
           NamedList<Object> header = rsp.getResponseHeader();
           if (header != null) {
-            if (header.get(ThreadStats.CPU_TIME) == null) {
-              header.add(ThreadStats.CPU_TIME, cpuTime.get());
+            if (header.get(ThreadCpuTime.CPU_TIME) == null) {
+              header.add(ThreadCpuTime.CPU_TIME, cpuTime.get());
             }
           }
-          rsp.addToLog(ThreadStats.LOCAL_CPU_TIME, cpuTime.get());
+          rsp.addToLog(ThreadCpuTime.LOCAL_CPU_TIME, cpuTime.get());
         }
       }
     }
