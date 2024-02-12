@@ -204,6 +204,15 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
         testQueryString(HttpSolrClientJdkImpl.class, HttpSolrClientJdkImpl.Builder.class);
     }
 
+    @Test
+    public void testGetRawStream() throws Exception {
+        try(HttpSolrClientJdkImpl client = builder(
+                getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, HttpSolrClientJdkImpl.Builder.class)
+                .build()) {
+            super.testGetRawStream(client);
+        }
+    }
+
     protected String expectedUserAgent() {
         return "Solr[" + HttpSolrClientJdkImpl.class.getName() + "] 1.0";
     }

@@ -5,6 +5,7 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -12,13 +13,17 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
+
+import static org.hamcrest.CoreMatchers.instanceOf;
 
 public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
 
@@ -361,6 +366,17 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
             req.setQueryParams(Set.of("requestOnly", "both", "neither"));
             verifyServletState(client, req);
         }
+    }
+
+    protected void testGetRawStream(Http2SolrClientBase client) throws Exception {
+        DebugServlet.clear();
+        final var req = new QueryRequest(params("q", "*:*"));
+        req.setResponseParser(new InputStreamResponseParser("xml"));
+        final var rsp = req.process(client);
+        Object stream = rsp.getResponse().get("stream");
+        assertNotNull(stream);
+        MatcherAssert.assertThat(stream, instanceOf(InputStream.class));
+        org.apache.solr.common.util.IOUtils.closeQuietly((InputStream) stream);
     }
 
 

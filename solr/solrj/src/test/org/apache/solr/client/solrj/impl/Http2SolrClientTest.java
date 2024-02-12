@@ -29,17 +29,13 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
-
-import static org.hamcrest.CoreMatchers.instanceOf;
 
 public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient.Builder> {
 
@@ -543,20 +539,14 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
     }
   }
 
+
+
   @Test
   public void testGetRawStream() throws Exception {
-    DebugServlet.clear();
-    try (Http2SolrClient client =
-        builder(
-                getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, Http2SolrClient.Builder.class)
-            .build()) {
-      final var req = new QueryRequest(params("q", "*:*"));
-      req.setResponseParser(new InputStreamResponseParser("xml"));
-      final var rsp = req.process(client);
-      Object stream = rsp.getResponse().get("stream");
-      assertNotNull(stream);
-      MatcherAssert.assertThat(stream, instanceOf(InputStream.class));
-      org.apache.solr.common.util.IOUtils.closeQuietly((InputStream) stream);
+    try(Http2SolrClient client = builder(
+            getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, Http2SolrClient.Builder.class)
+                .build()) {
+      super.testGetRawStream(client);
     }
   }
 
