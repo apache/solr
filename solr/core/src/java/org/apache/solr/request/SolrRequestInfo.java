@@ -226,7 +226,7 @@ public class SolrRequestInfo {
    *
    * @see #getLimits()
    */
-   private void initQueryLimits() {
+  private void initQueryLimits() {
     // This method only exists for code clarity reasons.
     getLimits();
   }
