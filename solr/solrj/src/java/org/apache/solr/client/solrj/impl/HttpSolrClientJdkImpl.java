@@ -88,11 +88,6 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
                     reqb.PUT(result.bodyPublisher);
                     break;
                 }
-                case DELETE: {
-                    //TODO:  Delete requests are sent as POST, so should we support method=DELETE??
-                    reqb.DELETE();
-                    break;
-                }
                 default: {
                     throw new IllegalStateException("Unsupported method: " + solrRequest.getMethod());
                 }
