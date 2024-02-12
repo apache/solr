@@ -126,12 +126,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
             abortCause = re;
             throw new SolrServerException(re);
         } finally {
-            try {
-                resp.body().close();
-            } catch(Exception e1) {
-                //ignore
-            }
-            if (abortCause != null /* && req != null*/) {
+           if (abortCause != null /* && req != null*/) {
                 //TODO
             }
         }
