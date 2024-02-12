@@ -370,7 +370,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
             .iterator()
             .next();
     coreName = r.getCoreName();
-    coreClient = getHttpSolrClient(r.getCoreUrl());
+    coreClient = getHttpSolrClient(r);
   }
 
   /**
