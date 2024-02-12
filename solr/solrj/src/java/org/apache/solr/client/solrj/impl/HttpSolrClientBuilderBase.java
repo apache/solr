@@ -19,7 +19,6 @@ public abstract class HttpSolrClientBuilderBase {
     protected ResponseParser responseParser;
     protected String defaultCollection;
     protected Set<String> urlParamNames;
-    protected Long keyStoreReloadIntervalSecs;
     protected Integer maxConnectionsPerHost;
     protected ExecutorService executor;
     protected CookieStore cookieStore;
@@ -105,22 +104,6 @@ public abstract class HttpSolrClientBuilderBase {
         return this;
     }
 
-    /**
-     * Set the scanning interval to check for updates in the Key Store used by this client. If the
-     * interval is unset, 0 or less, then the Key Store Scanner is not created, and the client will
-     * not attempt to update key stores. The minimum value between checks is 1 second.
-     *
-     * @param interval Interval between checks
-     * @param unit     The unit for the interval
-     * @return This builder
-     */
-    public HttpSolrClientBuilderBase withKeyStoreReloadInterval(long interval, TimeUnit unit) {
-        this.keyStoreReloadIntervalSecs = unit.toSeconds(interval);
-        if (this.keyStoreReloadIntervalSecs == 0 && interval > 0) {
-            this.keyStoreReloadIntervalSecs = 1L;
-        }
-        return this;
-    }
     public HttpSolrClientBuilderBase withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
         this.idleTimeoutMillis = TimeUnit.MILLISECONDS.convert(idleConnectionTimeout, unit);
         return this;

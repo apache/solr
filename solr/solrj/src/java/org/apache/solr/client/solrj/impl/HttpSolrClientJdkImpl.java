@@ -67,7 +67,6 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         String url = getRequestPath(solrRequest, collection);
         ResponseParser parser = responseParser(solrRequest);
         ModifiableSolrParams queryParams = initalizeSolrParams(solrRequest);
-        Throwable abortCause = null;
         HttpResponse<InputStream> resp = null;
         try {
             var reqb = HttpRequest.newBuilder();
@@ -104,29 +103,13 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
             return processErrorsAndResponse(solrRequest, parser, resp, url);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            abortCause = e;
             throw new RuntimeException(e);
         } catch (HttpTimeoutException e) {
             throw new SolrServerException(
                     "Timeout occurred while waiting response from server at: " + url, e);
-        }  /*TODO catch (ExecutionException e) {
-            Throwable cause = e.getCause();
-            abortCause = cause;
-            if (cause instanceof ConnectException) {
-                throw new SolrServerException("Server refused connection at: " + url, cause);
-            }
-            if (cause instanceof SolrServerException) {
-                throw (SolrServerException) cause;
-            } else if (cause instanceof IOException) {
-                throw new SolrServerException(
-                        "IOException occurred when talking to server at: " + url, cause);
-            }
-            throw new SolrServerException(cause.getMessage(), cause);
-        } */ catch (SolrException se) {
-            abortCause =se;
+        }  catch (SolrException se) {
             throw se;
         } catch (URISyntaxException | RuntimeException re) {
-            abortCause = re;
             throw new SolrServerException(re);
         } finally {
             // See https://docs.oracle.com/en/java/javase/17/docs/api/java.net.http/java/net/http/HttpResponse.BodySubscribers.html#ofInputStream()
@@ -135,9 +118,6 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
                     resp.body().close();
                 } catch (Exception e1) {
                     //ignore
-                }
-                if (abortCause != null /* && req != null*/) {
-                    //TODO
                 }
             }
         }
@@ -300,6 +280,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         public Builder() {
             super();
         }
+        
         public  Builder(String baseSolrUrl) {
            super(baseSolrUrl);
         }
@@ -314,11 +295,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
             if (connectionTimeoutMillis == null) {
                 connectionTimeoutMillis = (long) HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
             }
-            //TODO: if really not supported, move to Htt2SolrCLient
-            if (keyStoreReloadIntervalSecs != null && keyStoreReloadIntervalSecs > 0) {
-                log.warn("keyStoreReloadIntervalSecs not supported by this client.");
-            }
-            return new HttpSolrClientJdkImpl(baseSolrUrl, this);
+           return new HttpSolrClientJdkImpl(baseSolrUrl, this);
         }
 
         /**
@@ -381,24 +358,6 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         @Override
         public HttpSolrClientJdkImpl.Builder withMaxConnectionsPerHost(int max) {
             super.withMaxConnectionsPerHost(max);
-            return this;
-        }
-
-        /**
-         * {@inheritDoc}
-         */
-        @Override
-        public HttpSolrClientJdkImpl.Builder withKeyStoreReloadInterval(long interval, TimeUnit unit) {
-            super.withKeyStoreReloadInterval(interval, unit);
-            return this;
-        }
-
-        /**
-         * @deprecated Please use {@link #withIdleTimeout(long, TimeUnit)}
-         */
-        @Deprecated(since = "9.2")
-        public HttpSolrClientJdkImpl.Builder idleTimeout(int idleConnectionTimeout) {
-            withIdleTimeout(idleConnectionTimeout, TimeUnit.MILLISECONDS);
             return this;
         }
 

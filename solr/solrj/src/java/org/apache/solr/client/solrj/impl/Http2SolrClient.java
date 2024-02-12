@@ -797,6 +797,8 @@ public class Http2SolrClient extends Http2SolrClientBase {
 
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
 
+    protected Long keyStoreReloadIntervalSecs;
+
     public Builder() {
       super();
     }
@@ -844,6 +846,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
       super.withExecutor(executor);
       return this;
     }
+
     public HttpSolrClientBuilderBase withSSLConfig(SSLConfig sslConfig) {
       this.sslConfig = sslConfig;
       return this;
@@ -885,11 +888,19 @@ public class Http2SolrClient extends Http2SolrClientBase {
     }
 
     /**
-     * {@inheritDoc}
+     * Set the scanning interval to check for updates in the Key Store used by this client. If the
+     * interval is unset, 0 or less, then the Key Store Scanner is not created, and the client will
+     * not attempt to update key stores. The minimum value between checks is 1 second.
+     *
+     * @param interval Interval between checks
+     * @param unit     The unit for the interval
+     * @return This builder
      */
-    @Override
     public Http2SolrClient.Builder withKeyStoreReloadInterval(long interval, TimeUnit unit) {
-     super.withKeyStoreReloadInterval(interval, unit);
+      this.keyStoreReloadIntervalSecs = unit.toSeconds(interval);
+      if (this.keyStoreReloadIntervalSecs == 0 && interval > 0) {
+        this.keyStoreReloadIntervalSecs = 1L;
+      }
       return this;
     }
 
