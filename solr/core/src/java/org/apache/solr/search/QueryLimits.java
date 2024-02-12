@@ -50,7 +50,12 @@ public class QueryLimits implements QueryTimeout {
 
   @Override
   public boolean shouldExit() {
-    return limits.stream().anyMatch(QueryTimeout::shouldExit);
+    for (QueryTimeout limit : limits) {
+      if (limit.shouldExit()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
