@@ -63,7 +63,7 @@ teardown() {
   refute_output --partial 'ERROR'
 }
 
-@test "basic post with c parameter instead of url parameter" {
+@test "basic post with collection instead of url parameter" {
   
   run solr create -c monitors_c_param -d _default
   assert_output --partial "Created collection 'monitors_c_param'"
@@ -133,15 +133,15 @@ teardown() {
   assert_output --partial 'Entering crawl at level 0'
 }
 
-@test "commit and optimize and delete" {
+@test "skipcommit and optimize and delete" {
   
   run solr create -c monitors2 -d _default
   assert_output --partial "Created collection 'monitors2'"
   
-  run solr post -url http://localhost:${SOLR_PORT}/solr/monitors2/update -type application/xml -commit -optimize ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post -url http://localhost:${SOLR_PORT}/solr/monitors2/update -type application/xml -skipcommit -optimize ${SOLR_TIP}/example/exampledocs/monitor.xml
 
   assert_output --partial '1 files indexed.'
-  assert_output --partial 'COMMITting Solr index'
+  refute_output --partial 'COMMITting Solr index'
   assert_output --partial 'Performing an OPTIMIZE'
   refute_output --partial 'ERROR'
 
@@ -156,14 +156,14 @@ teardown() {
   assert_output --partial '<int name="status">0</int>'
   
   # confirm default type
-  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -out -commit "{'delete': {'query': '*:*'}}"
+  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -out "{'delete': {'query': '*:*'}}"
   assert_output --partial '"status":0'
   
   # confirm we don't get back output without -out
-  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -commit "{'delete': {'query': '*:*'}}"
+  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args "{'delete': {'query': '*:*'}}"
   refute_output --partial '"status":0'
   
-  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -commit -type text/csv -out $'id,value\nROW1,0.47'
+  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -type text/csv -out $'id,value\nROW1,0.47'
   assert_output --partial '"status":0'
   run curl "http://localhost:${SOLR_PORT}/solr/test_args/select?q=id:ROW1"
   assert_output --partial '"numFound":1'
