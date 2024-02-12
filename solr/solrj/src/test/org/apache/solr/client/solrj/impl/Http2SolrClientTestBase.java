@@ -378,6 +378,8 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
         Object stream = rsp.getResponse().get("stream");
         assertNotNull(stream);
         MatcherAssert.assertThat(stream, instanceOf(InputStream.class));
+        InputStream is = (InputStream) stream;
+        assertNotNull(is.readAllBytes()); //throws IOException if closed
         org.apache.solr.common.util.IOUtils.closeQuietly((InputStream) stream);
     }
 

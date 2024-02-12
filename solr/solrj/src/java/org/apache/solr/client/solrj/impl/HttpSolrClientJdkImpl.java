@@ -101,7 +101,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
             decorateRequest(reqb, solrRequest);
             reqb.uri(new URI(url + "?" + queryParams));
             resp = client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
-            return processErrorsAndResponse(solrRequest, resp, url);
+            return processErrorsAndResponse(solrRequest, parser, resp, url);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             abortCause = e;
@@ -129,13 +129,16 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
             abortCause = re;
             throw new SolrServerException(re);
         } finally {
-            try {
-                resp.body().close();
-            } catch(Exception e1) {
-                //ignore
-            }
-            if (abortCause != null /* && req != null*/) {
-                //TODO
+            // See https://docs.oracle.com/en/java/javase/17/docs/api/java.net.http/java/net/http/HttpResponse.BodySubscribers.html#ofInputStream()
+            if(!wantStream(parser)) {
+                try {
+                    resp.body().close();
+                } catch (Exception e1) {
+                    //ignore
+                }
+                if (abortCause != null /* && req != null*/) {
+                    //TODO
+                }
             }
         }
     }
@@ -217,9 +220,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
     private static final Pattern MIME_TYPE_PATTERN = Pattern.compile("^(.*) .*$");
     private static final Pattern CHARSET_PATTERN = Pattern.compile("(?i)^.*charset=(.*)?(?:;| |$)");
 
-    private NamedList<Object> processErrorsAndResponse(SolrRequest<?> solrRequest, HttpResponse<InputStream> resp, String url)  throws SolrServerException {
-        ResponseParser parser =
-                solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
+    private NamedList<Object> processErrorsAndResponse(SolrRequest<?> solrRequest, ResponseParser parser, HttpResponse<InputStream> resp, String url)  throws SolrServerException {
         String contentType = resp.headers().firstValue("Content-Type").orElse(null);
         contentType = contentType == null ? "" : contentType;
         Matcher mimeTypeMatcher = MIME_TYPE_PATTERN.matcher(contentType);
