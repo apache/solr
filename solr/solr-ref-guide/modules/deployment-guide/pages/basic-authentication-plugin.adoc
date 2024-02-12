@@ -29,7 +29,7 @@ This file and where to put it is described in detail in the section xref:authent
 If running in cloud mode, you can use the `bin/solr auth` command-line utility to enable security for a new installation, see: `bin/solr auth --help` for more details.
 
 For Basic authentication, `security.json` must have an `authentication` block which defines the class being used for authentication.
-Usernames and passwords (as a base64 encoded `sha256(sha256(salt+password))` hash) could be added when the file is created, or can be added later with the Authentication API, described below.
+Usernames and passwords (Format: `base64(sha256(sha256(salt+password)) base64(salt)`) could be added when the file is created, or can be added later with the Authentication API, described below.
 
 An example `security.json` showing `authentication` and `authorization` blocks is shown below to show how authentication and authorization plugins can work together:
 
