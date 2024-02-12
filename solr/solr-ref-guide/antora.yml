@@ -20,9 +20,9 @@
 
 name: solr
 version: '9_5'
-display_version: '9.5-beta'
+display_version: '9.5'
 # Marking a version as 'prerelease: false' is only needed for published branches (minor version branches, branch_x_y, that have had a release)
-prerelease: -beta
+prerelease: false
 title: Solr Reference Guide
 nav:
 - modules/getting-started/getting-started-nav.adoc
@@ -41,7 +41,7 @@ asciidoc:
     # 'patch-version' is the 'z' part of x.y.z semantic version
     page-solr-javadocs: 'https://solr.apache.org/docs/9_5_0'
     solr-javadocs: 'https://solr.apache.org/docs/9_5_0'
-    lucene-javadocs: 'https://lucene.apache.org/core/9_8_0'
+    lucene-javadocs: 'https://lucene.apache.org/core/9_9_2'
     java-javadocs: https://docs.oracle.com/en/java/javase/11/docs/api/java.base/
     solr-docs-version: '9.5'
     solr-full-version: '9.5.0'
@@ -53,5 +53,5 @@ asciidoc:
     dep-version-opennlp: '1.9.4'
     dep-version-tika: '1.28.5'
     dep-version-zookeeper: '3.9.1'
-    dep-version-lucene: '9.8.0'
+    dep-version-lucene: '9.9.2'
     dep-version-opentelemetry: '1.31.0'
