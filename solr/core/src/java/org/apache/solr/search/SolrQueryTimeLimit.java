@@ -23,6 +23,13 @@ import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
 
+/**
+ * Enforces a wall clock based timeout on a given SolrQueryRequest. This class holds the logic for
+ * the {@code timeAllowed} query parameter. Note that timeAllowed will be ignored for
+ * <strong><em>local</em></strong> processing of sub-queries in cases where the parent query already
+ * has {@code timeAllowed} set. Essentially only one timeAllowed can be specified for any thread
+ * executing a query. This is to ensure that subqueies don't escape from the intended limit
+ */
 public class SolrQueryTimeLimit implements QueryTimeout {
 
   private final long timeoutAt;

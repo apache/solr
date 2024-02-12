@@ -78,6 +78,8 @@ public class SolrRequestInfo {
       assert false : "SolrRequestInfo Stack is full";
       log.error("SolrRequestInfo Stack is full");
     } else if (!stack.isEmpty() && info.req != null) {
+      // New SRI instances inherit limits from prior SRI regardless of parameters.
+      // This ensures limits cannot be changed or removed for a given thread once set.
       // if req is null limits will be an empty instance with no limits anyway.
       info.req.getContext().put(LIMITS_KEY, stack.peek().getLimits());
     }
@@ -224,7 +226,7 @@ public class SolrRequestInfo {
    *
    * @see #getLimits()
    */
-  public void initQueryLimits() {
+  private void initQueryLimits() {
     // This method only exists for code clarity reasons.
     getLimits();
   }

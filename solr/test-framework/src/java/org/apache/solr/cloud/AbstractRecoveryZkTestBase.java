@@ -139,7 +139,8 @@ public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
     int i = 0;
     for (Replica replica : replicas) {
       try (var client =
-          new HttpSolrClient.Builder(replica.getCoreUrl())
+          new HttpSolrClient.Builder(replica.getBaseUrl())
+              .withDefaultCollection(replica.getCoreName())
               .withHttpClient(((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())
               .build()) {
         numCounts[i] =
