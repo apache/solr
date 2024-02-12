@@ -22,7 +22,6 @@ def isCIBuild = System.getenv().keySet().any { it ==~ /(?i)((JENKINS|HUDSON)(_\w
 
 gradleEnterprise {
     server = "https://ge.apache.org"
-    projectId = "solr"
 
     buildScan {
         capture { taskInputFiles = true }
