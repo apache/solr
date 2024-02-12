@@ -54,8 +54,14 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc("Name of the collection.")
             .build(),
-        Option.builder("commit").required(false).desc("Issue a commit at end of post").build(),
-        Option.builder("optimize").required(false).desc("Issue an optimize at end of post").build(),
+        Option.builder("skipcommit")
+            .required(false)
+            .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
+            .build(),
+        Option.builder("optimize")
+            .required(false)
+            .desc("Issue an optimize at end of posting documents.")
+            .build(),
         Option.builder("mode")
             .argName("mode")
             .hasArg(true)
@@ -91,7 +97,7 @@ public class PostTool extends ToolBase {
             .argName("<key>=<value>[&<key>=<value>...]")
             .hasArg(true)
             .required(false)
-            .desc("values must be URL-encoded; these pass through to Solr update request")
+            .desc("values must be URL-encoded; these pass through to Solr update request.")
             .build(),
         Option.builder("out")
             .required(false)
@@ -100,7 +106,7 @@ public class PostTool extends ToolBase {
         Option.builder("format")
             .required(false)
             .desc(
-                "sends application/json content as Solr commands to /update instead of /update/json/docs")
+                "sends application/json content as Solr commands to /update instead of /update/json/docs.")
             .build());
   }
 
@@ -144,7 +150,7 @@ public class PostTool extends ToolBase {
     int recursive = Integer.parseInt(cli.getOptionValue("recursive", "1"));
 
     OutputStream out = cli.hasOption("out") ? CLIO.getOutStream() : null;
-    boolean commit = cli.hasOption("commit");
+    boolean commit = cli.hasOption("skipcommit") ? false : true;
     boolean optimize = cli.hasOption("optimize");
 
     String[] args = cli.getArgs();
