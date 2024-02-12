@@ -352,29 +352,15 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
         "Invalid Authentication credentials");
   }
 
+
+
   @Test
   public void testSetCredentialsExplicitly() {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
             .withBasicAuthCredentials("foo", "explicit")
             .build(); ) {
-      QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-      try {
-        ignoreException("Error from server");
-        client.request(r);
-      } catch (Exception e) {
-        // expected
-      }
-      unIgnoreException("Error from server");
-      assertTrue(DebugServlet.headers.size() > 0);
-      String authorizationHeader = DebugServlet.headers.get("authorization");
-      assertNotNull(
-          "No authorization information in headers found. Headers: " + DebugServlet.headers,
-          authorizationHeader);
-      assertEquals(
-          "Basic "
-              + Base64.getEncoder().encodeToString("foo:explicit".getBytes(StandardCharsets.UTF_8)),
-          authorizationHeader);
+      super.testSetCredentialsExplicitly(client);
     }
   }
 
@@ -416,32 +402,12 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
   }
 
   @Test
-  public void testPerRequestCredentialsWin() {
+  public void testPerRequestCredentials() {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
             .withBasicAuthCredentials("foo2", "explicit")
             .build(); ) {
-      QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-      r.setBasicAuthCredentials("foo3", "per-request");
-      try {
-        ignoreException("Error from server");
-        client.request(r);
-      } catch (Exception e) {
-        // expected
-      }
-      unIgnoreException("Error from server");
-      assertTrue(DebugServlet.headers.size() > 0);
-      String authorizationHeader = DebugServlet.headers.get("authorization");
-      assertNotNull(
-          "No authorization information in headers found. Headers: " + DebugServlet.headers,
-          authorizationHeader);
-      assertEquals(
-          "Basic "
-              + Base64.getEncoder()
-                  .encodeToString("foo3:per-request".getBytes(StandardCharsets.UTF_8)),
-          authorizationHeader);
-    } finally {
-      System.clearProperty("basicauth");
+      super.testPerRequestCredentials(client);
     }
   }
 
@@ -449,17 +415,7 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
   public void testNoCredentials() {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build(); ) {
-      QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-      try {
-        ignoreException("Error from server");
-        client.request(r);
-      } catch (Exception e) {
-        // expected
-      }
-      unIgnoreException("Error from server");
-      assertFalse(
-          "Expecting no authorization header but got: " + DebugServlet.headers,
-          DebugServlet.headers.containsKey("authorization"));
+      super.testNoCredentials(client);
     }
   }
 
@@ -470,47 +426,17 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
         new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
             .withOptionalBasicAuthCredentials("foo:expli:cit")
             .build(); ) {
-      QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-      try {
-        ignoreException("Error from server");
-        client.request(r);
-      } catch (Exception e) {
-        // expected
-      }
-      unIgnoreException("Error from server");
-      assertTrue(DebugServlet.headers.size() > 0);
-      String authorizationHeader = DebugServlet.headers.get("authorization");
-      assertNotNull(
-          "No authorization information in headers found. Headers: " + DebugServlet.headers,
-          authorizationHeader);
-      assertEquals(
-          "Basic "
-              + Base64.getEncoder()
-                  .encodeToString("foo:expli:cit".getBytes(StandardCharsets.UTF_8)),
-          authorizationHeader);
+      super.testUseOptionalCredentials(client);
     }
   }
 
   @Test
   public void testUseOptionalCredentialsWithNull() {
-    // username foo, password with embedded colon separator is "expli:cit".
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
             .withOptionalBasicAuthCredentials(null)
             .build(); ) {
-      QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-      try {
-        ignoreException("Error from server");
-        client.request(r);
-      } catch (Exception e) {
-        // expected
-      }
-      unIgnoreException("Error from server");
-      assertTrue(DebugServlet.headers.size() > 0);
-      String authorizationHeader = DebugServlet.headers.get("authorization");
-      assertNull(
-          "No authorization headers expected. Headers: " + DebugServlet.headers,
-          authorizationHeader);
+      super.testUseOptionalCredentialsWithNull(client);
     }
   }
 

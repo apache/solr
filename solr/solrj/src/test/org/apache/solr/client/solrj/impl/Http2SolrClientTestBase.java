@@ -18,6 +18,8 @@ import org.junit.BeforeClass;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -379,5 +381,97 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
         org.apache.solr.common.util.IOUtils.closeQuietly((InputStream) stream);
     }
 
+    protected void testSetCredentialsExplicitly(Http2SolrClientBase client) {
+        QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
+        try {
+            ignoreException("Error from server");
+            client.request(r);
+        } catch (Exception e) {
+            // expected
+        }
+        unIgnoreException("Error from server");
+        assertTrue(DebugServlet.headers.size() > 0);
+        String authorizationHeader = DebugServlet.headers.get("authorization");
+        assertNotNull(
+                "No authorization information in headers found. Headers: " + DebugServlet.headers,
+                authorizationHeader);
+        assertEquals(
+                "Basic "
+                        + Base64.getEncoder().encodeToString("foo:explicit".getBytes(StandardCharsets.UTF_8)),
+                authorizationHeader);
+    }
 
+    protected void testPerRequestCredentials(Http2SolrClientBase client) {
+        QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
+        r.setBasicAuthCredentials("foo3", "per-request");
+        try {
+            ignoreException("Error from server");
+            client.request(r);
+        } catch (Exception e) {
+            // expected
+        }
+        unIgnoreException("Error from server");
+        assertTrue(DebugServlet.headers.size() > 0);
+        String authorizationHeader = DebugServlet.headers.get("authorization");
+        assertNotNull(
+                "No authorization information in headers found. Headers: " + DebugServlet.headers,
+                authorizationHeader);
+        assertEquals(
+                "Basic "
+                        + Base64.getEncoder()
+                        .encodeToString("foo3:per-request".getBytes(StandardCharsets.UTF_8)),
+                authorizationHeader);
+    }
+
+    protected void testNoCredentials(Http2SolrClientBase client) {
+        QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
+        try {
+            ignoreException("Error from server");
+            client.request(r);
+        } catch (Exception e) {
+            // expected
+        }
+        unIgnoreException("Error from server");
+        assertFalse(
+                "Expecting no authorization header but got: " + DebugServlet.headers,
+                DebugServlet.headers.containsKey("authorization"));
+    }
+
+    protected void testUseOptionalCredentials(Http2SolrClientBase client) {
+        QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
+        try {
+            ignoreException("Error from server");
+            client.request(r);
+        } catch (Exception e) {
+            // expected
+        }
+        unIgnoreException("Error from server");
+        assertTrue(DebugServlet.headers.size() > 0);
+        String authorizationHeader = DebugServlet.headers.get("authorization");
+        assertNotNull(
+                "No authorization information in headers found. Headers: " + DebugServlet.headers,
+                authorizationHeader);
+        assertEquals(
+                "Basic "
+                        + Base64.getEncoder()
+                        .encodeToString("foo:expli:cit".getBytes(StandardCharsets.UTF_8)),
+                authorizationHeader);
+    }
+
+    protected void testUseOptionalCredentialsWithNull(Http2SolrClientBase client ) {
+        // username foo, password with embedded colon separator is "expli:cit".
+        QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
+        try {
+            ignoreException("Error from server");
+            client.request(r);
+        } catch (Exception e) {
+            // expected
+        }
+        unIgnoreException("Error from server");
+        assertTrue(DebugServlet.headers.size() > 0);
+        String authorizationHeader = DebugServlet.headers.get("authorization");
+        assertNull(
+                "No authorization headers expected. Headers: " + DebugServlet.headers,
+                authorizationHeader);
+    }
 }

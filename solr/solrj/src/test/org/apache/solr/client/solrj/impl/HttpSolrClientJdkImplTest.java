@@ -213,6 +213,56 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
         }
     }
 
+    @Test
+    public void testSetCredentialsExplicitly() throws Exception {
+        try (HttpSolrClientJdkImpl client =
+                     new HttpSolrClientJdkImpl.Builder(getBaseUrl() + "/debug/foo")
+                             .withBasicAuthCredentials("foo", "explicit")
+                             .build(); ) {
+            super.testSetCredentialsExplicitly(client);
+        }
+    }
+
+    @Test
+    public void testPerRequestCredentials() throws Exception {
+        try (HttpSolrClientJdkImpl client =
+                     new HttpSolrClientJdkImpl.Builder(getBaseUrl() + "/debug/foo")
+                             .withBasicAuthCredentials("foo2", "explicit")
+                             .build(); ) {
+            super.testPerRequestCredentials(client);
+        }
+    }
+
+    @Test
+    public void testNoCredentials() throws Exception {
+        try (HttpSolrClientJdkImpl client =
+                     new HttpSolrClientJdkImpl.Builder(getBaseUrl() + "/debug/foo").build(); ) {
+            super.testNoCredentials(client);
+        }
+    }
+
+    @Test
+    public void testUseOptionalCredentials() throws Exception {
+        // username foo, password with embedded colon separator is "expli:cit".
+        try (HttpSolrClientJdkImpl client =
+                     new HttpSolrClientJdkImpl.Builder(getBaseUrl() + "/debug/foo")
+                             .withOptionalBasicAuthCredentials("foo:expli:cit")
+                             .build(); ) {
+            super.testUseOptionalCredentials(client);
+        }
+    }
+
+    @Test
+    public void testUseOptionalCredentialsWithNull() throws Exception {
+        try (HttpSolrClientJdkImpl client =
+                     new HttpSolrClientJdkImpl.Builder(getBaseUrl() + "/debug/foo")
+                             .withOptionalBasicAuthCredentials(null)
+                             .build(); ) {
+            super.testUseOptionalCredentialsWithNull(client);
+        }
+    }
+
+    @Override
     protected String expectedUserAgent() {
         return "Solr[" + HttpSolrClientJdkImpl.class.getName() + "] 1.0";
     }
