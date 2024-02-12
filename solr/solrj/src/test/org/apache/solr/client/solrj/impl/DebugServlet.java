@@ -23,6 +23,7 @@ public class DebugServlet extends HttpServlet {
         queryString = null;
         cookies = null;
         responseHeaders = null;
+        responseBody = null;
     }
 
     public static Integer errorCode = null;
@@ -32,6 +33,7 @@ public class DebugServlet extends HttpServlet {
     public static String queryString = null;
     public static javax.servlet.http.Cookie[] cookies = null;
     public static List<String[]> responseHeaders = null;
+    public static Object responseBody = null;
 
     public static void setErrorCode(Integer code) {
         errorCode = code;
@@ -110,6 +112,19 @@ public class DebugServlet extends HttpServlet {
         if (responseHeaders != null) {
             for (String[] h : responseHeaders) {
                 resp.addHeader(h[0], h[1]);
+            }
+        }
+        if(responseBody != null) {
+            try {
+                if (responseBody instanceof String) {
+                    resp.getWriter().print((String) responseBody);
+                } else if (responseBody instanceof byte[]) {
+                    resp.getOutputStream().write((byte[]) responseBody);
+                } else {
+                    throw new IllegalArgumentException("Only String and byte[] are supported for responseBody.");
+                }
+            } catch(IOException ioe) {
+                throw new RuntimeException(ioe);
             }
         }
         if (null != errorCode) {

@@ -103,6 +103,23 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     @Override
     protected void testQuerySetup(SolrRequest.METHOD method, ResponseParser rp) throws Exception {
         DebugServlet.clear();
+        if(rp instanceof XMLResponseParser) {
+            DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
+            DebugServlet.responseBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />";
+        } else {
+            DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
+            byte[] javabin = { (byte)0x02,(byte)0xa2,(byte)0xe0,(byte)0x2e,(byte)0x72,(byte)0x65,(byte)0x73,(byte)0x70,(byte)0x6f,(byte)0x6e,(byte)0x73,(byte)0x65,(byte)0x48,(byte)0x65,(byte)0x61,(byte)0x64
+                    ,(byte)0x65,(byte)0x72,(byte)0xa4,(byte)0xe0,(byte)0x2b,(byte)0x7a,(byte)0x6b,(byte)0x43,(byte)0x6f,(byte)0x6e,(byte)0x6e,(byte)0x65,(byte)0x63,(byte)0x74,(byte)0x65,(byte)0x64
+                    ,(byte)0x01,(byte)0xe0,(byte)0x26,(byte)0x73,(byte)0x74,(byte)0x61,(byte)0x74,(byte)0x75,(byte)0x73,(byte)0x06,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0xe0,(byte)0x25
+                    ,(byte)0x51,(byte)0x54,(byte)0x69,(byte)0x6d,(byte)0x65,(byte)0x06,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00,(byte)0xe0,(byte)0x26,(byte)0x70,(byte)0x61,(byte)0x72,(byte)0x61
+                    ,(byte)0x6d,(byte)0x73,(byte)0xa4,(byte)0xe0,(byte)0x21,(byte)0x71,(byte)0x21,(byte)0x7a,(byte)0xe0,(byte)0x24,(byte)0x72,(byte)0x6f,(byte)0x77,(byte)0x73,(byte)0x21,(byte)0x30
+                    ,(byte)0xe0,(byte)0x22,(byte)0x77,(byte)0x74,(byte)0x27,(byte)0x6a,(byte)0x61,(byte)0x76,(byte)0x61,(byte)0x62,(byte)0x69,(byte)0x6e,(byte)0xe0,(byte)0x27,(byte)0x76,(byte)0x65
+                    ,(byte)0x72,(byte)0x73,(byte)0x69,(byte)0x6f,(byte)0x6e,(byte)0x21,(byte)0x32,(byte)0xe0,(byte)0x28,(byte)0x72,(byte)0x65,(byte)0x73,(byte)0x70,(byte)0x6f,(byte)0x6e,(byte)0x73
+                    ,(byte)0x65,(byte)0x0c,(byte)0x84,(byte)0x60,(byte)0x60,(byte)0x00,(byte)0x01,(byte)0x80 };
+            DebugServlet.responseBody = javabin;
+
+
+        }
         String url = getBaseUrl() + "/debug/foo";
         SolrQuery q = new SolrQuery("foo");
         q.setParam("a", "\u1234");
@@ -114,7 +131,6 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
             client.query(q, method);
             assertEquals(
                     client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-        } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
         }
     }
 

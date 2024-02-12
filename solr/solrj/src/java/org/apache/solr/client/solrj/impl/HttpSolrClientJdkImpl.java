@@ -197,7 +197,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         }
     }
 
-    private static final Pattern MIME_TYPE_PATTERN = Pattern.compile("^(.*) .*$");
+    private static final Pattern MIME_TYPE_PATTERN = Pattern.compile("^(.*?)(?:;| |$)");
     private static final Pattern CHARSET_PATTERN = Pattern.compile("(?i)^.*charset=(.*)?(?:;| |$)");
 
     private NamedList<Object> processErrorsAndResponse(SolrRequest<?> solrRequest, ResponseParser parser, HttpResponse<InputStream> resp, String url)  throws SolrServerException {
@@ -209,7 +209,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         String encoding = encodingMatcher.find() ? encodingMatcher.group(1) : null;
         String method = resp.request() == null ? null : resp.request().method();
         int status = resp.statusCode();
-        String reason = statusToReasonPhrase(status);
+        String reason = "" + status;
         InputStream is = resp.body();
         return processErrorsAndResponse(
                 status, reason, method, parser, is, mimeType, encoding, isV2ApiRequest(solrRequest), url);
@@ -244,35 +244,6 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         return null;
     }
 
-    /**
-     * Taken from https://stackoverflow.com/questions/63540068/is-there-a-way-to-fetch-the-reason-phrase-from-the-status-line-of-a-http-1-1-res
-     * and pruned to only include the more-common phrases.  If not one of these the code is returned as a String.
-     * @param statusCode
-     * @return the phrase
-     */
-    private String statusToReasonPhrase(int statusCode) {
-        switch(statusCode) {
-            case (200): return "OK";
-            case (204): return "No Content";
-            case (301): return "Moved Permanently";
-            case (302): return "Moved Temporarily";
-            case (304): return "Not Modified";
-            case (400): return "Bad Request";
-            case (401): return "Unauthorized";
-            case (403): return "Forbidden";
-            case (404): return "Not Found";
-            case (405): return "Method Not Allowed";
-            case (413): return "Request Entity Too Large";
-            case (414): return "Request-URI Too Long";
-            case (415): return "Unsupported Media Type";
-            case (422): return "Unprocessable Entity";
-            case (500): return "Server Error";
-            case (503): return "Service Unavailable";
-            default: return "" + statusCode;
-        }
-    }
-
-
     public static class Builder extends HttpSolrClientBuilderBase {
 
         private SSLContext sslContext;
@@ -280,7 +251,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         public Builder() {
             super();
         }
-        
+
         public  Builder(String baseSolrUrl) {
            super(baseSolrUrl);
         }
