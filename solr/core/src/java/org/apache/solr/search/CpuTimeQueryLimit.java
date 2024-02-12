@@ -43,7 +43,9 @@ public class CpuTimeQueryLimit implements QueryTimeout {
       throw new IllegalArgumentException(
           "Check for limit with hasLimit(req) before creating a CpuTimeLimit");
     }
-    limitAt = threadCpuTime.getStartCpuTimeNs() + TimeUnit.NANOSECONDS.convert(reqCpuLimit, TimeUnit.MILLISECONDS);
+    limitAt =
+        threadCpuTime.getStartCpuTimeNs()
+            + TimeUnit.NANOSECONDS.convert(reqCpuLimit, TimeUnit.MILLISECONDS);
   }
 
   @VisibleForTesting

@@ -21,7 +21,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,6 +73,7 @@ public class ThreadCpuTime {
 
   /**
    * Return initial value of CPU time for this thread when this instance was created.
+   *
    * @return current value, or {@link #UNSUPPORTED} if not supported.
    */
   public long getStartCpuTimeNs() {
@@ -82,13 +82,14 @@ public class ThreadCpuTime {
 
   /**
    * Return current value of CPU time for this thread.
+   *
    * @return current value, or {@link #UNSUPPORTED} if not supported.
    */
   public long getCurrentCpuTimeNs() {
     if (THREAD_MX_BEAN != null) {
       return this.startCpuTimeNanos != UNSUPPORTED
-              ? THREAD_MX_BEAN.getCurrentThreadCpuTime() - this.startCpuTimeNanos
-              : UNSUPPORTED;
+          ? THREAD_MX_BEAN.getCurrentThreadCpuTime() - this.startCpuTimeNanos
+          : UNSUPPORTED;
     } else {
       return UNSUPPORTED;
     }
@@ -101,7 +102,9 @@ public class ThreadCpuTime {
    */
   public Optional<Long> getCpuTimeMs() {
     long cpuTimeNs = getCurrentCpuTimeNs();
-    return cpuTimeNs != UNSUPPORTED ? Optional.of(TimeUnit.MILLISECONDS.convert(cpuTimeNs, TimeUnit.NANOSECONDS)) : Optional.of(UNSUPPORTED);
+    return cpuTimeNs != UNSUPPORTED
+        ? Optional.of(TimeUnit.MILLISECONDS.convert(cpuTimeNs, TimeUnit.NANOSECONDS))
+        : Optional.of(UNSUPPORTED);
   }
 
   @Override

@@ -45,7 +45,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
@@ -220,7 +219,10 @@ public abstract class RequestHandlerBase
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     ThreadCpuTime threadCpuTime = null;
     if (publishCpuTime) {
-      threadCpuTime = SolrRequestInfo.getRequestInfo() == null ? new ThreadCpuTime() : SolrRequestInfo.getRequestInfo().getLimits().getThreadCpuTime();
+      threadCpuTime =
+          SolrRequestInfo.getRequestInfo() == null
+              ? new ThreadCpuTime()
+              : SolrRequestInfo.getRequestInfo().getLimits().getThreadCpuTime();
     }
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
