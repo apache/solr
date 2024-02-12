@@ -204,7 +204,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     assert reader != null;
     reader = UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
     if (useExitableDirectoryReader) { // SOLR-16693 legacy; may be removed.  Probably inefficient.
-      reader = ExitableDirectoryReader.wrap(reader, SolrQueryTimeoutImpl.getInstance());
+      SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+      assert requestInfo != null;
+      QueryLimits limits = requestInfo.getLimits();
+      reader = ExitableDirectoryReader.wrap(reader, limits);
     }
     return reader;
   }
@@ -714,8 +717,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   @Override
   protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
       throws IOException {
-    final var queryTimeout = SolrQueryTimeoutImpl.getInstance();
-    if (useExitableDirectoryReader || queryTimeout.isTimeoutEnabled() == false) {
+    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+    if (useExitableDirectoryReader
+        || requestInfo == null
+        || !requestInfo.getLimits().isTimeoutEnabled()) {
       // no timeout.  Pass through to super class
       super.search(leaves, weight, collector);
     } else {
@@ -725,10 +730,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // So we need to make a new IndexSearcher instead of using "this".
       new IndexSearcher(reader) { // cheap, actually!
         void searchWithTimeout() throws IOException {
-          setTimeout(queryTimeout.makeLocalImpl());
+          setTimeout(requestInfo.getLimits()); // Lucene's method name is less than ideal here...
           super.search(leaves, weight, collector); // FYI protected access
           if (timedOut()) {
-            throw new TimeAllowedExceededFromScorerException("timeAllowed exceeded");
+            throw new LimitExceededFromScorerException(
+                "Limits exceeded! " + requestInfo.getLimits().limitStatusMessage());
           }
         }
       }.searchWithTimeout();
@@ -740,10 +746,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Further, from the low level Lucene {@code org.apache.lucene.search.TimeLimitingBulkScorer}.
    * Extending {@code ExitableDirectoryReader.ExitingReaderException} is for legacy reasons.
    */
-  public static class TimeAllowedExceededFromScorerException
+  public static class LimitExceededFromScorerException
       extends ExitableDirectoryReader.ExitingReaderException {
 
-    public TimeAllowedExceededFromScorerException(String msg) {
+    public LimitExceededFromScorerException(String msg) {
       super(msg);
     }
   }
@@ -972,7 +978,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     DocSet answer;
-    if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled()) {
+    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+    if (requestInfo != null && requestInfo.getLimits().isTimeoutEnabled()) {
       // If there is a possibility of timeout for this query, then don't reserve a computation slot.
       // Further, we can't naively wait for an in progress computation to finish, because if we time
       // out before it does then we won't even have partial results to provide. We could possibly
