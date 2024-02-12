@@ -55,7 +55,7 @@ There are several options defined in this example:
 
 <1> The first block defines the authentication plugin to be used and its parameters.
 <2> The parameter `"blockUnknown":true` means that unauthenticated requests are not allowed to pass through.
-<3> A user called 'solr', with a password `'SolrRocks'` in the format `base64(<password hash>) base64(<salt>)` has been defined.
+<3> A user called 'solr', with a password `'SolrRocks'`, in the encoded format detailed above, has been defined.
 <4> We override the `realm` property to display another text on the login prompt.
 <5> The parameter `"forwardCredentials":false` means we let Solr's PKI authenticaion handle distributed request instead of forwarding the Basic Auth header.
 
