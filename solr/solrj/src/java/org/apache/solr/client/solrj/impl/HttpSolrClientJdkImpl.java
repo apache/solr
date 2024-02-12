@@ -13,6 +13,7 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLContext;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,12 +42,14 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
 
     private HttpClient client;
 
-    protected HttpSolrClientJdkImpl(String serverBaseUrl, HttpSolrClientBuilderBase builder) {
+    protected HttpSolrClientJdkImpl(String serverBaseUrl, HttpSolrClientJdkImpl.Builder builder) {
         super(serverBaseUrl, builder);
 
         HttpClient.Redirect followRedirects = Boolean.TRUE.equals(builder.followRedirects) ? HttpClient.Redirect.NORMAL : HttpClient.Redirect.NEVER;
         HttpClient.Builder b = HttpClient.newBuilder().followRedirects(followRedirects);
-
+        if (builder.sslContext != null) {
+            b.sslContext(builder.sslContext);
+        }
         if(builder.executor != null) {
             b.executor(builder.executor);
         }
@@ -286,6 +289,8 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
 
     public static class Builder extends HttpSolrClientBuilderBase {
 
+        private SSLContext sslContext;
+
         public Builder() {
             super();
         }
@@ -443,6 +448,17 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         @Override
         public HttpSolrClientJdkImpl.Builder withOptionalBasicAuthCredentials(String credentials) {
             super.withOptionalBasicAuthCredentials(credentials);
+            return this;
+        }
+
+        /**
+         * Use the provided SSLContext. See {@link HttpClient.Builder#sslContext(SSLContext sslContext)}.
+         *
+         * @param sslContext
+         * @return this
+         */
+        public HttpSolrClientJdkImpl.Builder withSSLContext(SSLContext sslContext) {
+            this.sslContext = sslContext;
             return this;
         }
     }

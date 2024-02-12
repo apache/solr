@@ -7,12 +7,34 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509ExtendedTrustManager;
 import java.io.IOException;
+import java.net.Socket;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.concurrent.TimeUnit;
 
 public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrClientJdkImpl.Builder> {
+
+    private static SSLContext allTrustingSslContext;
+
+    @BeforeClass
+    public static void beforeClass() {
+        try {
+            SSLContext sslContext = SSLContext.getInstance("SSL");
+            sslContext.init(null, new TrustManager[]{MOCK_TRUST_MANAGER}, new SecureRandom());
+            allTrustingSslContext = sslContext;
+        } catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @After
     public void workaroundToReleaseThreads_noClosableUntilJava21() {
@@ -50,7 +72,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     public void testDelete() throws Exception {
         DebugServlet.clear();
         String url = getBaseUrl() + "/debug/foo";
-        try (HttpSolrClientJdkImpl client = new HttpSolrClientJdkImpl.Builder(url).build()) {
+        try (HttpSolrClientJdkImpl client = builder(url).build()) {
             try {
                 client.deleteById("id");
             } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -66,7 +88,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
        DebugServlet.clear();
         String url = getBaseUrl() + "/debug/foo";
         try (HttpSolrClientJdkImpl client =
-                     new HttpSolrClientJdkImpl.Builder(url).withResponseParser(new XMLResponseParser()).build()) {
+                     builder(url).withResponseParser(new XMLResponseParser()).build()) {
             try {
                 client.deleteByQuery("*:*");
             } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -84,7 +106,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
         String url = getBaseUrl() + "/debug/foo";
         SolrQuery q = new SolrQuery("foo");
         q.setParam("a", "\u1234");
-        HttpSolrClientJdkImpl.Builder b = new HttpSolrClientJdkImpl.Builder(url);
+        HttpSolrClientJdkImpl.Builder b = builder(url);
         if(rp != null) {
             b.withResponseParser(rp);
         }
@@ -100,7 +122,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     public void testGetById() throws Exception {
         DebugServlet.clear();
         try (HttpSolrClientJdkImpl client =
-                     new HttpSolrClientJdkImpl.Builder(getBaseUrl() + "/debug/foo").build()) {
+                     builder(getBaseUrl() + "/debug/foo").build()) {
             super.testGetById(client);
         }
     }
@@ -149,7 +171,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     public void testFollowRedirect() throws Exception {
         final String clientUrl = getBaseUrl() + "/redirect/foo";
         try (HttpSolrClientJdkImpl client =
-                     new HttpSolrClientJdkImpl.Builder(clientUrl).withFollowRedirects(true).build()) {
+                     builder(clientUrl).withFollowRedirects(true).build()) {
             SolrQuery q = new SolrQuery("*:*");
             client.query(q);
         }
@@ -159,7 +181,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     public void testDoNotFollowRedirect() throws Exception {
         final String clientUrl = getBaseUrl() + "/redirect/foo";
         try (HttpSolrClientJdkImpl client =
-                     new HttpSolrClientJdkImpl.Builder(clientUrl).withFollowRedirects(false).build()) {
+                     builder(clientUrl).withFollowRedirects(false).build()) {
             SolrQuery q = new SolrQuery("*:*");
 
             SolrServerException thrown = assertThrows(SolrServerException.class, () -> client.query(q));
@@ -173,21 +195,21 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
         SolrQuery q = new SolrQuery("*:*");
 
         // default for follow redirects is false
-        try (HttpSolrClientJdkImpl client = new HttpSolrClientJdkImpl.Builder(clientUrl).build()) {
+        try (HttpSolrClientJdkImpl client = builder(clientUrl).build()) {
 
             SolrServerException e = expectThrows(SolrServerException.class, () -> client.query(q));
             assertTrue(e.getMessage().contains("redirect"));
         }
 
         try (HttpSolrClientJdkImpl client =
-                     new HttpSolrClientJdkImpl.Builder(clientUrl).withFollowRedirects(true).build()) {
+                     builder(clientUrl).withFollowRedirects(true).build()) {
             // shouldn't throw an exception
             client.query(q);
         }
 
         // set explicit false for following redirects
         try (HttpSolrClientJdkImpl client =
-                     new HttpSolrClientJdkImpl.Builder(clientUrl).withFollowRedirects(false).build()) {
+                     builder(clientUrl).withFollowRedirects(false).build()) {
 
             SolrServerException e = expectThrows(SolrServerException.class, () -> client.query(q));
             assertTrue(e.getMessage().contains("redirect"));
@@ -196,7 +218,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
 
 
     public void testSolrExceptionCodeNotFromSolr() throws IOException, SolrServerException {
-        try (HttpSolrClientJdkImpl client = new HttpSolrClientJdkImpl.Builder(getBaseUrl() + "/debug/foo").build()) {
+        try (HttpSolrClientJdkImpl client = builder(getBaseUrl() + "/debug/foo").build()) {
             super.testSolrExceptionCodeNotFromSolr(client);
         } finally {
             DebugServlet.clear();
@@ -205,7 +227,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
 
     @Test
     public void testSolrExceptionWithNullBaseurl() throws IOException, SolrServerException {
-        try (HttpSolrClientJdkImpl client = new HttpSolrClientJdkImpl.Builder(null).build()) {
+        try (HttpSolrClientJdkImpl client = builder(null).build()) {
             super.testSolrExceptionWithNullBaseurl(client);
         } finally {
             DebugServlet.clear();
@@ -215,7 +237,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     @Test
     public void testUpdateDefault() throws Exception {
         String url = getBaseUrl() + "/debug/foo";
-        try (HttpSolrClientJdkImpl client = new HttpSolrClientJdkImpl.Builder(url).build()) {
+        try (HttpSolrClientJdkImpl client = builder(url).build()) {
             testUpdate(client, "javabin", "application/javabin");
         }
     }
@@ -223,7 +245,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     @Test
     public void testUpdateXml() throws Exception {
         String url = getBaseUrl() + "/debug/foo";
-        try (HttpSolrClientJdkImpl client = new HttpSolrClientJdkImpl.Builder(url)
+        try (HttpSolrClientJdkImpl client = builder(url)
                              .withRequestWriter(new RequestWriter())
                              .withResponseParser(new XMLResponseParser())
                              .build()) {
@@ -233,7 +255,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     @Test
     public void testUpdateJavabin() throws Exception {
         String url = getBaseUrl() + "/debug/foo";
-        try (HttpSolrClientJdkImpl client = new HttpSolrClientJdkImpl.Builder(url)
+        try (HttpSolrClientJdkImpl client = builder(url)
                              .withRequestWriter(new BinaryRequestWriter())
                              .withResponseParser(new BinaryResponseParser())
                              .build()) {
@@ -243,8 +265,8 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
 
     @Test
     public void testCollectionParameters() throws IOException, SolrServerException {
-        HttpSolrClientJdkImpl baseUrlClient = new HttpSolrClientJdkImpl.Builder(getBaseUrl()).build();
-        HttpSolrClientJdkImpl collection1UrlClient = new HttpSolrClientJdkImpl.Builder(getCoreUrl()).build();
+        HttpSolrClientJdkImpl baseUrlClient = builder(getBaseUrl()).build();
+        HttpSolrClientJdkImpl collection1UrlClient = builder(getCoreUrl()).build();
         testCollectionParameters(baseUrlClient, collection1UrlClient);
     }
 
@@ -265,7 +287,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     @Test
     public void testSetCredentialsExplicitly() throws Exception {
         try (HttpSolrClientJdkImpl client =
-                     new HttpSolrClientJdkImpl.Builder(getBaseUrl() + "/debug/foo")
+                     builder(getBaseUrl() + "/debug/foo")
                              .withBasicAuthCredentials("foo", "explicit")
                              .build(); ) {
             super.testSetCredentialsExplicitly(client);
@@ -275,7 +297,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     @Test
     public void testPerRequestCredentials() throws Exception {
         try (HttpSolrClientJdkImpl client =
-                     new HttpSolrClientJdkImpl.Builder(getBaseUrl() + "/debug/foo")
+                     builder(getBaseUrl() + "/debug/foo")
                              .withBasicAuthCredentials("foo2", "explicit")
                              .build(); ) {
             super.testPerRequestCredentials(client);
@@ -285,7 +307,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     @Test
     public void testNoCredentials() throws Exception {
         try (HttpSolrClientJdkImpl client =
-                     new HttpSolrClientJdkImpl.Builder(getBaseUrl() + "/debug/foo").build(); ) {
+                     builder(getBaseUrl() + "/debug/foo").build(); ) {
             super.testNoCredentials(client);
         }
     }
@@ -294,7 +316,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     public void testUseOptionalCredentials() throws Exception {
         // username foo, password with embedded colon separator is "expli:cit".
         try (HttpSolrClientJdkImpl client =
-                     new HttpSolrClientJdkImpl.Builder(getBaseUrl() + "/debug/foo")
+                     builder(getBaseUrl() + "/debug/foo")
                              .withOptionalBasicAuthCredentials("foo:expli:cit")
                              .build(); ) {
             super.testUseOptionalCredentials(client);
@@ -304,7 +326,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     @Test
     public void testUseOptionalCredentialsWithNull() throws Exception {
         try (HttpSolrClientJdkImpl client =
-                     new HttpSolrClientJdkImpl.Builder(getBaseUrl() + "/debug/foo")
+                     builder(getBaseUrl() + "/debug/foo")
                              .withOptionalBasicAuthCredentials(null)
                              .build(); ) {
             super.testUseOptionalCredentialsWithNull(client);
@@ -319,7 +341,50 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     @Override
     protected <B extends HttpSolrClientBuilderBase> B builder(String url, int connectionTimeout, int socketTimeout, Class<B> type) {
         HttpSolrClientJdkImpl.Builder b = new HttpSolrClientJdkImpl.Builder(url).withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
-                .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS);
+                .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS).withSSLContext(allTrustingSslContext);
         return type.cast(b);
     }
+    
+    private HttpSolrClientJdkImpl.Builder builder(String url) { 
+        return builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, HttpSolrClientJdkImpl.Builder.class);
+    }
+
+    /**
+     * Taken from: https://www.baeldung.com/java-httpclient-ssl sec 4.1, 2024/02/12. This is an all-trusting Trust Manager.  Works with self-signed certificates.
+     */
+    private static final TrustManager MOCK_TRUST_MANAGER = new X509ExtendedTrustManager() {
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
+            //no-op
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket) throws CertificateException {
+            // no-op
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException {
+            // no-op
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine) throws CertificateException {
+            // no-op
+        }
+        @Override
+        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+            return new java.security.cert.X509Certificate[0];
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+            // no-op
+        }
+
+        @Override
+        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+            // no-op
+        }
+    };
 }
