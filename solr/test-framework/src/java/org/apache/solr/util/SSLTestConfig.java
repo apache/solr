@@ -17,6 +17,18 @@
 package org.apache.solr.util;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.SecureRandomParameters;
+import java.security.SecureRandomSpi;
+import java.security.UnrecoverableKeyException;
+import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Pattern;
+import javax.net.ssl.SSLContext;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
@@ -33,19 +45,6 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryPro
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-
-import javax.net.ssl.SSLContext;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.SecureRandomParameters;
-import java.security.SecureRandomSpi;
-import java.security.UnrecoverableKeyException;
-import java.util.Random;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.regex.Pattern;
 
 /**
  * An SSLConfig that provides {@link SSLConfig} and {@link SocketFactoryRegistryProvider} for both
@@ -251,7 +250,7 @@ public class SSLTestConfig {
   }
 
   public KeyStore defaultKeyStore() {
-    if(keyStore==null) {
+    if (keyStore == null) {
       return null;
     }
     return buildKeyStore(keyStore, TEST_PASSWORD);

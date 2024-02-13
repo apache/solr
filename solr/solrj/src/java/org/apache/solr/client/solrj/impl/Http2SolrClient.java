@@ -16,6 +16,29 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.Closeable;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.InvocationTargetException;
+import java.net.ConnectException;
+import java.net.CookieStore;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Phaser;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -72,30 +95,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import java.io.Closeable;
-import java.io.FilterInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.InvocationTargetException;
-import java.net.ConnectException;
-import java.net.CookieStore;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Phaser;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-
 /**
  * Difference between this {@link Http2SolrClient} and {@link HttpSolrClient}:
  *
@@ -118,7 +117,8 @@ public class Http2SolrClient extends Http2SolrClientBase {
 
   private final HttpClient httpClient;
 
-  private SSLConfig sslConfig;;
+  private SSLConfig sslConfig;
+  ;
 
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private final AsyncTracker asyncTracker = new AsyncTracker();
@@ -372,7 +372,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
     String contentType = requestWriter.getUpdateContentType();
     final ModifiableSolrParams origParams = new ModifiableSolrParams(updateRequest.getParams());
 
-   ModifiableSolrParams requestParams = initalizeSolrParams(null);
+    ModifiableSolrParams requestParams = initalizeSolrParams(null);
 
     String basePath = baseUrl;
     if (collection != null) basePath += "/" + collection;
@@ -543,7 +543,15 @@ public class Http2SolrClient extends Http2SolrClientBase {
     }
     String responseMethod = response.getRequest() == null ? "" : response.getRequest().getMethod();
     return processErrorsAndResponse(
-        response.getStatus(), response.getReason(), responseMethod, parser, is, mimeType, encoding, isV2ApiRequest(solrRequest), urlExceptionMessage);
+        response.getStatus(),
+        response.getReason(),
+        responseMethod,
+        parser,
+        is,
+        mimeType,
+        encoding,
+        isV2ApiRequest(solrRequest),
+        urlExceptionMessage);
   }
 
   private void setBasicAuthHeader(SolrRequest<?> solrRequest, Request req) {
@@ -556,6 +564,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
       req.headers(headers -> headers.put("Authorization", basicAuthAuthorizationStr));
     }
   }
+
   private void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
     req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
 
@@ -724,20 +733,20 @@ public class Http2SolrClient extends Http2SolrClientBase {
   }
 
   @Override
-  protected boolean processorAcceptsMimeType(Collection<String> processorSupportedContentTypes, String mimeType) {
+  protected boolean processorAcceptsMimeType(
+      Collection<String> processorSupportedContentTypes, String mimeType) {
 
     return processorSupportedContentTypes.stream()
-            .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim())
-            .anyMatch(mimeType::equalsIgnoreCase);
+        .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim())
+        .anyMatch(mimeType::equalsIgnoreCase);
   }
 
   @Override
-  protected String allProcessorSupportedContentTypesCommaDelimited(Collection<String> processorSupportedContentTypes) {
+  protected String allProcessorSupportedContentTypesCommaDelimited(
+      Collection<String> processorSupportedContentTypes) {
     return processorSupportedContentTypes.stream()
-            .map(
-                    ct ->
-                            MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
-            .collect(Collectors.joining(", "));
+        .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
+        .collect(Collectors.joining(", "));
   }
 
   protected RequestWriter getRequestWriter() {
@@ -807,40 +816,32 @@ public class Http2SolrClient extends Http2SolrClientBase {
       super(baseSolrUrl);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     public Http2SolrClient.Builder withRequestWriter(RequestWriter requestWriter) {
-     super.withRequestWriter(requestWriter);
+      super.withRequestWriter(requestWriter);
       return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     public Http2SolrClient.Builder withResponseParser(ResponseParser responseParser) {
-     super.withResponseParser(responseParser);
+      super.withResponseParser(responseParser);
       return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     public Http2SolrClient.Builder withDefaultCollection(String defaultCoreOrCollection) {
       super.withDefaultCollection(defaultCoreOrCollection);
       return this;
     }
-    /**
-     * {@inheritDoc}
-     */
+
+    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withFollowRedirects(boolean followRedirects) {
-     super.withFollowRedirects(followRedirects);
+      super.withFollowRedirects(followRedirects);
       return this;
     }
-    /**
-     * {@inheritDoc}
-     */
+
+    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withExecutor(ExecutorService executor) {
       super.withExecutor(executor);
@@ -853,13 +854,11 @@ public class Http2SolrClient extends Http2SolrClientBase {
     }
 
     public Http2SolrClient.Builder withBasicAuthCredentials(String user, String pass) {
-     super.withBasicAuthCredentials(user, pass);
-     return this;
+      super.withBasicAuthCredentials(user, pass);
+      return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
       super.withTheseParamNamesInTheUrl(urlParamNames);
@@ -878,9 +877,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
       return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withMaxConnectionsPerHost(int max) {
       super.withMaxConnectionsPerHost(max);
@@ -893,7 +890,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
      * not attempt to update key stores. The minimum value between checks is 1 second.
      *
      * @param interval Interval between checks
-     * @param unit     The unit for the interval
+     * @param unit The unit for the interval
      * @return This builder
      */
     public Http2SolrClient.Builder withKeyStoreReloadInterval(long interval, TimeUnit unit) {
@@ -913,9 +910,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
       return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
       super.withIdleTimeout(idleConnectionTimeout, unit);
@@ -931,12 +926,10 @@ public class Http2SolrClient extends Http2SolrClientBase {
       return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
-     super.withConnectionTimeout(connectionTimeout, unit);
+      super.withConnectionTimeout(connectionTimeout, unit);
       return this;
     }
 
@@ -953,37 +946,29 @@ public class Http2SolrClient extends Http2SolrClientBase {
       return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withRequestTimeout(long requestTimeout, TimeUnit unit) {
       super.withRequestTimeout(requestTimeout, unit);
       return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withCookieStore(CookieStore cookieStore) {
       super.withCookieStore(cookieStore);
       return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withProxyConfiguration(
-            String host, int port, boolean isSocks4, boolean isSecure) {
+        String host, int port, boolean isSocks4, boolean isSecure) {
       super.withProxyConfiguration(host, port, isSocks4, isSecure);
       return this;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withOptionalBasicAuthCredentials(String credentials) {
       super.withOptionalBasicAuthCredentials(credentials);
@@ -1004,11 +989,12 @@ public class Http2SolrClient extends Http2SolrClientBase {
     protected <B extends Http2SolrClientBase> B build(Class<B> type) {
       return type.cast(build());
     }
+
     public Http2SolrClient build() {
-      if(sslConfig == null) {
+      if (sslConfig == null) {
         sslConfig = Http2SolrClient.defaultSSLConfig;
       }
-      if(cookieStore == null) {
+      if (cookieStore == null) {
         cookieStore = getDefaultCookieStore();
       }
       if (idleTimeoutMillis == null || idleTimeoutMillis <= 0) {
@@ -1102,6 +1088,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
       return this;
     }
   }
+
   public static void setDefaultSSLConfig(SSLConfig sslConfig) {
     Http2SolrClient.defaultSSLConfig = sslConfig;
   }

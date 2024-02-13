@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
+import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
@@ -28,8 +29,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.Properties;
 
 public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
 
@@ -70,8 +69,8 @@ public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
   public void testProxyWithHttp2SolrClient() throws Exception {
     assertNotNull(proxy);
     var builder =
-            new Http2SolrClient.Builder(url)
-                    .withProxyConfiguration(host, proxy.getListenPort(), false, false);
+        new Http2SolrClient.Builder(url)
+            .withProxyConfiguration(host, proxy.getListenPort(), false, false);
 
     try (Http2SolrClient client = builder.build()) {
       testProxy(client);
@@ -81,35 +80,38 @@ public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
   @Test
   public void testProxyWithHttpSolrClientJdkImpl() throws Exception {
     assertNotNull(proxy);
-    var builder = new HttpSolrClientJdkImpl.Builder(url).withProxyConfiguration(host, proxy.getListenPort(), false, false);
+    var builder =
+        new HttpSolrClientJdkImpl.Builder(url)
+            .withProxyConfiguration(host, proxy.getListenPort(), false, false);
     try (HttpSolrClientJdkImpl client = builder.build()) {
       testProxy(client);
     }
-    // This is a workaround for java.net.http.HttpClient not implementing closeable/autoclosable until Java 21.
+    // This is a workaround for java.net.http.HttpClient not implementing closeable/autoclosable
+    // until Java 21.
     System.gc();
   }
 
   /** Setup a simple http proxy and verify a request works */
- public void testProxy(Http2SolrClientBase client) throws Exception {
-   String id = "1234";
-   SolrInputDocument doc = new SolrInputDocument();
-   doc.addField("id", id);
-   client.add(DEFAULT_TEST_COLLECTION_NAME, doc);
-   client.commit(DEFAULT_TEST_COLLECTION_NAME);
-   assertEquals(
-           1,
-           client
-                   .query(DEFAULT_TEST_COLLECTION_NAME, new SolrQuery("id:" + id))
-                   .getResults()
-                   .getNumFound());
+  public void testProxy(Http2SolrClientBase client) throws Exception {
+    String id = "1234";
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", id);
+    client.add(DEFAULT_TEST_COLLECTION_NAME, doc);
+    client.commit(DEFAULT_TEST_COLLECTION_NAME);
+    assertEquals(
+        1,
+        client
+            .query(DEFAULT_TEST_COLLECTION_NAME, new SolrQuery("id:" + id))
+            .getResults()
+            .getNumFound());
 
-  client.deleteByQuery(DEFAULT_TEST_COLLECTION_NAME, "*:*");
-  client.commit(DEFAULT_TEST_COLLECTION_NAME);
-   assertEquals(
-           0,
-           client
-                   .query(DEFAULT_TEST_COLLECTION_NAME, new SolrQuery("*:*"))
-                   .getResults()
-                   .getNumFound());
- }
+    client.deleteByQuery(DEFAULT_TEST_COLLECTION_NAME, "*:*");
+    client.commit(DEFAULT_TEST_COLLECTION_NAME);
+    assertEquals(
+        0,
+        client
+            .query(DEFAULT_TEST_COLLECTION_NAME, new SolrQuery("*:*"))
+            .getResults()
+            .getNumFound());
+  }
 }
