@@ -67,7 +67,7 @@ public class SolrMultiCollectorManager
   }
 
   /** Wraps multiple collectors for processing */
-  public class Collectors implements Collector {
+  class Collectors implements Collector {
 
     private final Collector[] collectors;
 
@@ -101,7 +101,7 @@ public class SolrMultiCollectorManager
      *
      * @lucene.internal
      */
-    public class LeafCollectors implements LeafCollector {
+    private class LeafCollectors implements LeafCollector {
 
       private final LeafCollector[] leafCollectors;
       private final boolean skipNonCompetitiveScores;
