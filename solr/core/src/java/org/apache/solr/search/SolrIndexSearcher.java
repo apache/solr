@@ -1802,29 +1802,29 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   private void getDocListNC(QueryResult qr, QueryCommand cmd) throws IOException {
-    int len = cmd.getSupersetMaxDoc();
+    final int len = cmd.getSupersetMaxDoc();
     int last = len;
     if (last < 0 || last > maxDoc()) last = maxDoc();
     final int lastDocRequested = last;
-    int nDocsReturned;
-    int totalHits;
-    float maxScore;
-    int[] ids;
-    float[] scores;
+    final int nDocsReturned;
+    final int totalHits;
+    final float maxScore;
+    final int[] ids;
+    final float[] scores;
 
-    boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
+    final boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
 
-    ProcessedFilter pf = getProcessedFilter(cmd.getFilterList());
+    final ProcessedFilter pf = getProcessedFilter(cmd.getFilterList());
     final Query query =
         QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
-    Relation hitsRelation;
+    final Relation hitsRelation;
 
     // handle zero case...
     if (lastDocRequested <= 0) {
       final float[] topscore = new float[] {Float.NEGATIVE_INFINITY};
       final int[] numHits = new int[1];
 
-      Collector collector;
+      final Collector collector;
 
       if (!needScores) {
         collector =
@@ -1881,11 +1881,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         maxScoreCollector = new MaxScoreCollector();
         collector = MultiCollector.wrap(topCollector, maxScoreCollector);
       }
-      ScoreMode scoreModeUsed =
+      final ScoreMode scoreModeUsed =
           buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter).scoreMode();
 
       totalHits = topCollector.getTotalHits();
-      TopDocs topDocs = topCollector.topDocs(0, len);
+      final TopDocs topDocs = topCollector.topDocs(0, len);
       if (scoreModeUsed == ScoreMode.COMPLETE || scoreModeUsed == ScoreMode.COMPLETE_NO_SCORES) {
         hitsRelation = TotalHits.Relation.EQUAL_TO;
       } else {
