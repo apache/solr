@@ -327,6 +327,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
       super(baseSolrUrl);
     }
 
+    @Override
     protected <B extends Http2SolrClientBase> B build(Class<B> type) {
       return type.cast(build());
     }
@@ -341,16 +342,19 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
       return new HttpSolrClientJdkImpl(baseSolrUrl, this);
     }
 
+    @Override
     public HttpSolrClientJdkImpl.Builder withRequestWriter(RequestWriter requestWriter) {
       super.withRequestWriter(requestWriter);
       return this;
     }
 
+    @Override
     public HttpSolrClientJdkImpl.Builder withResponseParser(ResponseParser responseParser) {
       super.withResponseParser(responseParser);
       return this;
     }
 
+    @Override
     public HttpSolrClientJdkImpl.Builder withDefaultCollection(String defaultCoreOrCollection) {
       super.withDefaultCollection(defaultCoreOrCollection);
       return this;
