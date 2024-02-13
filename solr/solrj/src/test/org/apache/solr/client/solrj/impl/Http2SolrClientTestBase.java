@@ -1,15 +1,5 @@
 package org.apache.solr.client.solrj.impl;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Set;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -26,7 +16,26 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Set;
+
+import static org.hamcrest.CoreMatchers.instanceOf;
+
 public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
+
+  protected static final String DEFAULT_CORE = "foo";
+  protected static final String SLOW_SERVLET_PATH = "/slow";
+  protected static final String SLOW_SERVLET_REGEX = SLOW_SERVLET_PATH + "/*";
+  protected static final String DEBUG_SERVLET_PATH = "/debug";
+  protected static final String DEBUG_SERVLET_REGEX = DEBUG_SERVLET_PATH + "/*";
+  protected static final String REDIRECT_SERVLET_PATH = "/redirect";
+  protected static final String REDIRECT_SERVLET_REGEX = REDIRECT_SERVLET_PATH + "/*";
 
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -223,8 +232,8 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
     try {
       // if client base url is null, request url will be used in exception message
       SolrPing ping = new SolrPing();
-      ping.setBasePath(getBaseUrl() + "/debug/foo");
-      client.request(ping);
+      ping.setBasePath(getBaseUrl() + DEBUG_SERVLET_PATH);
+      client.request(ping, DEFAULT_CORE);
 
       fail("Didn't get excepted exception from oversided request");
     } catch (SolrException e) {
@@ -312,12 +321,13 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
 
   protected <C extends Http2SolrClientBase, B extends HttpSolrClientBuilderBase>
       void testQueryString(Class<C> type, Class<B> builderType) throws Exception {
-    final String clientUrl = getBaseUrl() + "/debug/foo";
+    final String clientUrl = getBaseUrl() + DEBUG_SERVLET_PATH;
     UpdateRequest req = new UpdateRequest();
 
     try (Http2SolrClientBase client =
         builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, builderType)
-            .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
+                .withDefaultCollection(DEFAULT_CORE)
+                .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
             .build(type)) {
       // test without request query params
       DebugServlet.clear();

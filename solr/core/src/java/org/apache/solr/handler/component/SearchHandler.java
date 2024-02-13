@@ -61,7 +61,6 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
-import org.apache.solr.search.SolrQueryTimeoutImpl;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.facet.FacetModule;
 import org.apache.solr.security.AuthorizationContext;
@@ -458,7 +457,6 @@ public class SearchHandler extends RequestHandlerBase
     if (!rb.isDistrib) {
       // a normal non-distributed request
 
-      SolrQueryTimeoutImpl.set(req);
       try {
         // The semantics of debugging vs not debugging are different enough that
         // it makes sense to have two control loops
@@ -503,8 +501,6 @@ public class SearchHandler extends RequestHandlerBase
             .getResponseHeader()
             .asShallowMap()
             .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-      } finally {
-        SolrQueryTimeoutImpl.reset();
       }
     } else {
       // a distributed request

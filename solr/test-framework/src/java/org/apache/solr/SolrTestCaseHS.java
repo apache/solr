@@ -461,10 +461,6 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       return (SolrTestCaseJ4.isSSLMode() ? "https" : "http") + "://127.0.0.1:" + port + "/solr";
     }
 
-    public String getCollectionURL() {
-      return getBaseURL() + "/" + collection;
-    }
-
     /** string appropriate for passing in shards param (i.e. missing http://) */
     public String getShardURL() {
       return "127.0.0.1:" + port + "/solr" + "/" + collection;
@@ -472,7 +468,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
     public SolrClient getSolrJ() {
       if (solrj == null) {
-        solrj = getHttpSolrClient(getCollectionURL());
+        solrj = getHttpSolrClient(getBaseURL(), collection);
       }
       return solrj;
     }
