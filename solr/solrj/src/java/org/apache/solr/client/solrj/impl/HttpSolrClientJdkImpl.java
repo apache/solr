@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.CookieStore;
+import java.net.InetSocketAddress;
+import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -53,7 +55,12 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         if(builder.executor != null) {
             b.executor(builder.executor);
         }
-
+        if(builder.proxyHost != null) {
+            if(builder.proxyIsSocks4) {
+                log.warn("Socks4 is likely not supported by this client.  See https://bugs.openjdk.org/browse/JDK-8214516");
+            }
+            b.proxy(ProxySelector.of(new InetSocketAddress(builder.proxyHost, builder.proxyPort)));
+        }
         this.client = b.build();
         updateDefaultMimeTypeForParser();
         assert ObjectReleaseTracker.track(this);
