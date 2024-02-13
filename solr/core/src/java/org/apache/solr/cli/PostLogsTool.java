@@ -87,7 +87,6 @@ public class PostLogsTool extends ToolBase {
   }
 
   public void runCommand(String baseUrl, String root) throws IOException {
-
     Http2SolrClient.Builder builder =
         new Http2SolrClient.Builder(baseUrl).withKeyStoreReloadInterval(-1, TimeUnit.SECONDS);
     try (SolrClient client = builder.build()) {
