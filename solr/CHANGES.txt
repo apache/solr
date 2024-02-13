@@ -10,8 +10,6 @@ New Features
 ---------------------
 * SOLR-14496: Solr CLI commands now can interact with a Solr secured using Basic Authentication.  (Eric Pugh)
 
-* SOLR-16943: Extend Solr client tracing coverage to both Jetty Client and Apache HttpClient (Alex Deparvu, David Smiley)
-
 Improvements
 ---------------------
 
@@ -95,6 +93,8 @@ Improvements
 
 * SOLR-17146: Add DelegatingBackupRepository and alternative checksum verification (Bruno Roustant)
 
+* SOLR-16858: KnnQParser's "Pre-Filtering" behavior is now controlable via local params (hossman)
+
 * SOLR-17145: The INSTALLSHARDDATA API now includes a 'requestid' field when run asynchronously (Jason Gerlowski)
 
 Optimizations
@@ -106,7 +106,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17152: Better alignment of Admin UI graph (janhoy)
 
 Dependency Upgrades
 ---------------------
@@ -144,6 +144,8 @@ Improvements
 * SOLR-13748: Add support for mm (min should match) parameter to bool query parser (Andrey Bozhko)
 
 * SOLR-17046: SchemaCodecFactory is now the implicit default codec factory.  (hossman)
+
+* SOLR-16943: Extend Solr client tracing coverage to both Jetty Client and Apache HttpClient (Alex Deparvu, David Smiley)
 
 * SOLR-16397: Swap core v2 endpoints have been updated to be more REST-ful.
   SWAP is now available at `POST /api/cores/coreName/swap` (Sanjay Dutt via Jason Gerlowski)
@@ -228,6 +230,48 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
+* PR#2055: Update org.mockito:mockito* from v5.5.0 to v5.8.0 (solrbot)
+
+* PR#2165: Update org.eclipse.jetty*:* to v10.0.19 (solrbot)
+
+* PR#2159: Update io.netty:* to v4.1.104.Final (solrbot)
+
+* PR#2048: Update dependency commons-cli:commons-cli to v1.6.0 (solrbot)
+
+* PR#2174: Update org.slf4j:* to v2.0.10 (solrbot)
+
+* PR#2135: Update dependency com.fasterxml.jackson:jackson-bom to v2.16.1 (solrbot)
+
+* PR#2138: Update dependency org.apache.commons:commons-compress to v1.25.0 (solrbot)
+
+* PR#2139: Update dependency org.apache.commons:commons-lang3 to v3.14.0 (solrbot)
+
+* PR#2035: Update dependency com.google.errorprone:error_prone_annotations to v2.23.0 (solrbot)
+
+* PR#2036: Update io.grpc:grpc-* to v1.59.0 (solrbot)
+
+* PR#2037: Update org.apache.logging.log4j:* to v2.21.0 (solrbot)
+
+* PR#2033: Update io.dropwizard.metrics:* to v4.2.21 (solrbot)
+
+* PR#2032: Update dependency io.swagger.core.v3:swagger-annotations to v2.2.17 (solrbot)
+
+* PR#2015: Update dependency org.codehaus.woodstox:stax2-api to v4.2.2 (solrbot)
+
+* PR#2034: Update dependency com.github.spotbugs:spotbugs-annotations to v4.8.0 (solrbot)
+
+* PR#2014: Update dependency com.google.guava:guava to v32.1.3-jre (solrbot)
+
+* PR#2010: Update dependency org.immutables:value-annotations to v2.10.0 (solrbot)
+
+* PR#2009: Update dependency io.opentelemetry:opentelemetry-bom to v1.31.0 (solrbot)
+
+* PR#2008: Update dependency org.semver4j:semver4j to v5.2.2 (solrbot)
+
+* PR#1989: Update org.apache.zookeeper:* to v3.9.1 (solrbot)
+
+* PR#1745: Update dependency com.google.cloud:google-cloud-bom to v0.204.0 (solrbot)
+
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
 
 * SOLR-17026: Upgrade to Gradle 8.4 (Kevin Risden)
@@ -239,6 +283,10 @@ Dependency Upgrades
 Other Changes
 ---------------------
 * SOLR-17024: Remove support for the long-defunct "collectionDefaults" clusterprops key (Jason Gerlowski)
+
+* SOLR-17042: Deprecate the V2RequestSupport interface, and the associated `setUseV2` and `setUseBinaryV2` SolrRequest
+  methods.  SolrJ users looking to make use of v2 APIs in their applications can use the SolrRequest implementations
+  dedicated to that purpose. (Jason Gerlowski)
 
 * SOLR-17072: package CLI tool prints error JSONPath (Mikhail Khludnev)
 
@@ -2226,6 +2274,74 @@ Bug Fixes
 * SOLR-16143: SolrConfig can miss updates from ZooKeeper when deleting and recreating file items (Mike Drob)
 
 * SOLR-16164: ConfigSet API returns error if untrusted user creates from _default configset (Eric Pugh, Kevin Risden)
+
+==================  8.11.3 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+New Features
+---------------------
+
+* SOLR-15694, 15715: Node roles and dedicated query coordinator nodes (Hitesh Khamesra, Ishan Chattopadhyaya, noble)
+
+Bug Fixes
+---------------------
+* SOLR-16429: Add AWS STS support in s3-repository (Josh Souza via Houston Putman and Kevin Risden)
+
+* SOLR-14679: Fix continuously growing TLOGs on TLOG replicas (Viktor Molnár via Houston Putman)
+
+* SOLR-16293: Luke request fails for document with a binary field (Kevin Risden)
+
+* SOLR-16477: Collection RENAME api creates broken alias (Alex Deparvu via Kevin Risden)
+
+* SOLR-16274: HEAD request for managed resource returns 500 Server Error (Kevin Risden)
+
+* SOLR-13219: Fix NPE in FieldLengthFeature with non-stored/missing fields (Nick Veenhof, Tomasz Elendt)
+
+* SOLR-16984: Add missing sysProps to redaction logic (Houston Putman)
+
+* SOLR-16165: Rare Deadlock in SlotAcc initialization (Justin Sweeney, noble)
+
+* SOLR-16110: Using Schema/Config API breaks the File-Upload of Config Set File (Steffen Moldenhauer, Kevin Risden)
+
+* SOLR-16451: Don't fetch the PRS states while registering the collection watch (Hitesh Khamesra via Ishan Chattopadhyaya)
+
+* SOLR-16452: Do not update PRS states if local version is newer (Hitesh Khamesra via noble)
+
+* SOLR-16777: Schema Designer now correctly manages trust of the ConfigSets it is managing. (Ishan Chattopadhyaya, Skay, Houston Putman)
+
+* SOLR-17098: ZK Credentials and ACLs are no longer sent to all ZK Servers when using Streaming Expressions.
+  They will only be used when sent to the default ZK Host. (Houston Putman, Jan Høydahl, David Smiley, Gus Heck, Qing Xu)
+
+* SOLR-17120: Fix NullPointerException in UpdateLog.applyOlderUpdates that can occur if there are multiple partial
+  updates of the same document in separate requests using commitWithin. (Calvin Smith, Christine Poerschke)
+
+Optimizations
+---------------------
+* SOLR-16555: SolrIndexSearcher - FilterCache intersections/andNot should not clone bitsets repeatedly (Kevin Risden, David Smiley)
+
+* SOLR-17004: ZkStateReader waitForState should check clusterState before using watchers (Kevin Risden)
+
+Other Changes
+---------------------
+* SOLR-16141: Upgrade Apache Tika to 1.28.4 (Kevin Risden)
+
+* SOLR-16324: Upgrade commons-configuration2 to 2.8.0 and commons-text to 1.9 (Kevin Risden)
+
+* SOLR-16332: Upgrade Jetty to 9.4.48.v20220622 (Kevin Risden)
+
+* SOLR-16626, SOLR-16424: Upgrade to Netty 4.1.87.Final (Kevin Risden, janhoy)
+
+* SOLR-16421: Upgrade Apache Calcite to 1.32.0 and Avatica to 1.22.0 (Kevin Risden)
+
+* SOLR-16464: Upgrade commons-text to 1.10.0 (Kevin Risden)
+
+* SOLR-17025: Upgrade Jetty to 9.4.53.v20231009 (Kevin Risden)
+
+* SOLR-14853: Security: Converted enableRemoteStreaming and enableStreamBody solrconfig options into system properties and env vars.
+  Attempts to set them the old way are no-op and log a warning. (David Smiley, janhoy, Ishan Chattopadhyaya)
+
+* SOLR-16949: Restrict certain file types from being uploaded to or downloaded from Config Sets (janhoy, Houston Putman)
 
 ==================  8.11.2 ==================
 
