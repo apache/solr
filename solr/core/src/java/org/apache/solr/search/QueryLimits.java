@@ -36,9 +36,6 @@ public class QueryLimits implements QueryTimeout {
 
   public static QueryLimits NONE = new QueryLimits();
 
-  // initialize here for consistency between logging and monitoring
-  private ThreadCpuTime threadCpuTime = new ThreadCpuTime();
-
   private QueryLimits() {}
 
   /**
@@ -46,22 +43,15 @@ public class QueryLimits implements QueryTimeout {
    * statement will hinge on hasXXXLimit() static method attached to the implementation class.
    *
    * @param req the current SolrQueryRequest.
+   * @param threadCpuTime current thread CPU time monitor.
    */
-  public QueryLimits(SolrQueryRequest req) {
+  public QueryLimits(SolrQueryRequest req, ThreadCpuTime threadCpuTime) {
     if (hasTimeLimit(req)) {
       limits.add(new SolrQueryTimeLimit(req));
     }
     if (hasCpuLimit(req)) {
       limits.add(new CpuQueryTimeLimit(req, threadCpuTime));
     }
-  }
-
-  /**
-   * Return the instance used for reporting and monitoring total CPU time spent on processing this
-   * request and its child requests.
-   */
-  public ThreadCpuTime getThreadCpuTime() {
-    return threadCpuTime;
   }
 
   @Override

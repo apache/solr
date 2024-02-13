@@ -36,6 +36,9 @@ public class CpuQueryTimeLimit implements QueryTimeout {
     if (!ThreadCpuTime.isSupported()) {
       throw new IllegalArgumentException("Thread CPU time monitoring is not available.");
     }
+    if (threadCpuTime == null) {
+      throw new IllegalArgumentException("Thread CPU time monitor must not be null.");
+    }
     this.threadCpuTime = threadCpuTime;
     long reqCpuLimit = req.getParams().getLong(CommonParams.CPU_ALLOWED, -1L);
 

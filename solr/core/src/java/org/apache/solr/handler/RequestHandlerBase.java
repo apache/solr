@@ -222,7 +222,7 @@ public abstract class RequestHandlerBase
       threadCpuTime =
           SolrRequestInfo.getRequestInfo() == null
               ? new ThreadCpuTime()
-              : SolrRequestInfo.getRequestInfo().getLimits().getThreadCpuTime();
+              : SolrRequestInfo.getRequestInfo().getThreadCpuTime();
     }
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
