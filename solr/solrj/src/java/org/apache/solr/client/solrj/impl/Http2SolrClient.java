@@ -742,6 +742,14 @@ public class Http2SolrClient extends Http2SolrClientBase {
   }
 
   @Override
+  protected void updateDefaultMimeTypeForParser() {
+    defaultParserMimeTypes =
+        parser.getContentTypes().stream()
+            .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
+            .collect(Collectors.toSet());
+  }
+
+  @Override
   protected String allProcessorSupportedContentTypesCommaDelimited(
       Collection<String> processorSupportedContentTypes) {
     return processorSupportedContentTypes.stream()

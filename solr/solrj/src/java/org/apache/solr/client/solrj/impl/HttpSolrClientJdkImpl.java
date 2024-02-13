@@ -33,12 +33,15 @@ import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -237,17 +240,26 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
   }
 
   private static final Pattern MIME_TYPE_PATTERN = Pattern.compile("^(.*?)(?:;| |$)");
+
+  private String contentTypeToMimeType(String contentType) {
+    Matcher mimeTypeMatcher = MIME_TYPE_PATTERN.matcher(contentType);
+    return mimeTypeMatcher.find() ? mimeTypeMatcher.group(1) : null;
+  }
+
   private static final Pattern CHARSET_PATTERN = Pattern.compile("(?i)^.*charset=(.*)?(?:;| |$)");
+
+  private String contentTypeToEncoding(String contentType) {
+    Matcher encodingMatcher = CHARSET_PATTERN.matcher(contentType);
+    return encodingMatcher.find() ? encodingMatcher.group(1) : null;
+  }
 
   private NamedList<Object> processErrorsAndResponse(
       SolrRequest<?> solrRequest, ResponseParser parser, HttpResponse<InputStream> resp, String url)
       throws SolrServerException {
     String contentType = resp.headers().firstValue("Content-Type").orElse(null);
     contentType = contentType == null ? "" : contentType;
-    Matcher mimeTypeMatcher = MIME_TYPE_PATTERN.matcher(contentType);
-    Matcher encodingMatcher = CHARSET_PATTERN.matcher(contentType);
-    String mimeType = mimeTypeMatcher.find() ? mimeTypeMatcher.group(1) : null;
-    String encoding = encodingMatcher.find() ? encodingMatcher.group(1) : null;
+    String mimeType = contentTypeToMimeType(contentType);
+    String encoding = contentTypeToEncoding(contentType);
     String method = resp.request() == null ? null : resp.request().method();
     int status = resp.statusCode();
     String reason = "" + status;
@@ -277,13 +289,30 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
   @Override
   protected boolean processorAcceptsMimeType(
       Collection<String> processorSupportedContentTypes, String mimeType) {
-    return false;
+    return processorSupportedContentTypes.stream()
+        .map(this::contentTypeToMimeType)
+        .filter(Objects::nonNull)
+        .map(String::trim)
+        .anyMatch(mimeType::equalsIgnoreCase);
+  }
+
+  protected void updateDefaultMimeTypeForParser() {
+    defaultParserMimeTypes =
+        parser.getContentTypes().stream()
+            .map(this::contentTypeToMimeType)
+            .filter(Objects::nonNull)
+            .map(s -> s.toLowerCase(Locale.ROOT).trim())
+            .collect(Collectors.toSet());
   }
 
   @Override
   protected String allProcessorSupportedContentTypesCommaDelimited(
       Collection<String> processorSupportedContentTypes) {
-    return null;
+    return processorSupportedContentTypes.stream()
+        .map(this::contentTypeToMimeType)
+        .filter(Objects::nonNull)
+        .map(s -> s.toLowerCase(Locale.ROOT).trim())
+        .collect(Collectors.joining(", "));
   }
 
   public static class Builder extends HttpSolrClientBuilderBase {

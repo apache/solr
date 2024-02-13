@@ -31,10 +31,8 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -47,7 +45,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.eclipse.jetty.http.MimeTypes;
 
 public abstract class Http2SolrClientBase extends SolrClient {
 
@@ -368,12 +365,7 @@ public abstract class Http2SolrClientBase extends SolrClient {
     updateDefaultMimeTypeForParser();
   }
 
-  protected void updateDefaultMimeTypeForParser() {
-    defaultParserMimeTypes =
-        parser.getContentTypes().stream()
-            .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
-            .collect(Collectors.toSet());
-  }
+  protected abstract void updateDefaultMimeTypeForParser();
 
   public boolean isV2ApiRequest(final SolrRequest<?> request) {
     return request instanceof V2Request || request.getPath().contains("/____v2");
