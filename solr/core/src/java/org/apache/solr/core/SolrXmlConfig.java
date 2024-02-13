@@ -679,6 +679,7 @@ public class SolrXmlConfig {
     List<PluginInfo> plugins =
         nodes.stream()
             .map(n -> new PluginInfo(n, n.name(), true, true))
+            .filter(PluginInfo::isEnabled)
             .collect(Collectors.toList());
 
     // Cluster plugin names must be unique
@@ -781,6 +782,9 @@ public class SolrXmlConfig {
     boolean hasJmxReporter = false;
     for (ConfigNode node : metrics.getAll("reporter")) {
       PluginInfo info = getPluginInfo(node);
+      if (info == null) {
+        continue;
+      }
       String clazz = info.className;
       if (clazz != null && clazz.equals(SolrJmxReporter.class.getName())) {
         hasJmxReporter = true;
@@ -825,6 +829,7 @@ public class SolrXmlConfig {
 
   private static PluginInfo getPluginInfo(ConfigNode cfg) {
     if (cfg == null || !cfg.exists()) return null;
-    return new PluginInfo(cfg, cfg.name(), false, true);
+    final var pluginInfo = new PluginInfo(cfg, cfg.name(), false, true);
+    return pluginInfo.isEnabled() ? pluginInfo : null;
   }
 }
