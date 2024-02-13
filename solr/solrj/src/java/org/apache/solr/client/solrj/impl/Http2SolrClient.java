@@ -816,32 +816,27 @@ public class Http2SolrClient extends Http2SolrClientBase {
       super(baseSolrUrl);
     }
 
-    /** {@inheritDoc} */
     public Http2SolrClient.Builder withRequestWriter(RequestWriter requestWriter) {
       super.withRequestWriter(requestWriter);
       return this;
     }
 
-    /** {@inheritDoc} */
     public Http2SolrClient.Builder withResponseParser(ResponseParser responseParser) {
       super.withResponseParser(responseParser);
       return this;
     }
 
-    /** {@inheritDoc} */
     public Http2SolrClient.Builder withDefaultCollection(String defaultCoreOrCollection) {
       super.withDefaultCollection(defaultCoreOrCollection);
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withFollowRedirects(boolean followRedirects) {
       super.withFollowRedirects(followRedirects);
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withExecutor(ExecutorService executor) {
       super.withExecutor(executor);
@@ -858,7 +853,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
       super.withTheseParamNamesInTheUrl(urlParamNames);
@@ -877,7 +871,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withMaxConnectionsPerHost(int max) {
       super.withMaxConnectionsPerHost(max);
@@ -910,7 +903,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
       super.withIdleTimeout(idleConnectionTimeout, unit);
@@ -926,7 +918,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
       super.withConnectionTimeout(connectionTimeout, unit);
@@ -946,21 +937,18 @@ public class Http2SolrClient extends Http2SolrClientBase {
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withRequestTimeout(long requestTimeout, TimeUnit unit) {
       super.withRequestTimeout(requestTimeout, unit);
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withCookieStore(CookieStore cookieStore) {
       super.withCookieStore(cookieStore);
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withProxyConfiguration(
         String host, int port, boolean isSocks4, boolean isSecure) {
@@ -968,7 +956,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public Http2SolrClient.Builder withOptionalBasicAuthCredentials(String credentials) {
       super.withOptionalBasicAuthCredentials(credentials);

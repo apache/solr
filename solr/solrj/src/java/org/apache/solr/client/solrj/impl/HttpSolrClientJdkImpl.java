@@ -295,32 +295,27 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
       return new HttpSolrClientJdkImpl(baseSolrUrl, this);
     }
 
-    /** {@inheritDoc} */
     public HttpSolrClientJdkImpl.Builder withRequestWriter(RequestWriter requestWriter) {
       super.withRequestWriter(requestWriter);
       return this;
     }
 
-    /** {@inheritDoc} */
     public HttpSolrClientJdkImpl.Builder withResponseParser(ResponseParser responseParser) {
       super.withResponseParser(responseParser);
       return this;
     }
 
-    /** {@inheritDoc} */
     public HttpSolrClientJdkImpl.Builder withDefaultCollection(String defaultCoreOrCollection) {
       super.withDefaultCollection(defaultCoreOrCollection);
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public HttpSolrClientJdkImpl.Builder withFollowRedirects(boolean followRedirects) {
       super.withFollowRedirects(followRedirects);
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public HttpSolrClientJdkImpl.Builder withExecutor(ExecutorService executor) {
       super.withExecutor(executor);
@@ -332,21 +327,18 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public HttpSolrClientJdkImpl.Builder withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
       super.withTheseParamNamesInTheUrl(urlParamNames);
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public HttpSolrClientJdkImpl.Builder withMaxConnectionsPerHost(int max) {
       super.withMaxConnectionsPerHost(max);
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public HttpSolrClientJdkImpl.Builder withIdleTimeout(
         long idleConnectionTimeout, TimeUnit unit) {
@@ -354,7 +346,6 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public HttpSolrClientJdkImpl.Builder withConnectionTimeout(
         long connectionTimeout, TimeUnit unit) {
@@ -362,21 +353,18 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public HttpSolrClientJdkImpl.Builder withRequestTimeout(long requestTimeout, TimeUnit unit) {
       super.withRequestTimeout(requestTimeout, unit);
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public HttpSolrClientJdkImpl.Builder withCookieStore(CookieStore cookieStore) {
       super.withCookieStore(cookieStore);
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public HttpSolrClientJdkImpl.Builder withProxyConfiguration(
         String host, int port, boolean isSocks4, boolean isSecure) {
@@ -384,7 +372,6 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
       return this;
     }
 
-    /** {@inheritDoc} */
     @Override
     public HttpSolrClientJdkImpl.Builder withOptionalBasicAuthCredentials(String credentials) {
       super.withOptionalBasicAuthCredentials(credentials);
@@ -392,10 +379,10 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
     }
 
     /**
-     * Use the provided SSLContext. See {@link HttpClient.Builder#sslContext(SSLContext
-     * sslContext)}.
+     * Use the provided SSLContext. See {@link
+     * java.net.http.HttpClient.Builder#sslContext(SSLContext)}.
      *
-     * @param sslContext
+     * @param sslContext the ssl context to use
      * @return this
      */
     public HttpSolrClientJdkImpl.Builder withSSLContext(SSLContext sslContext) {
