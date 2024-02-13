@@ -23,8 +23,8 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import jakarta.inject.Inject;
 import java.util.HashMap;
 import org.apache.solr.client.api.endpoint.InstallShardDataApi;
+import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.api.collections.InstallShardDataCmd;
 import org.apache.solr.common.SolrException;
@@ -59,9 +59,9 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse installShardData(
+  public AsyncJerseyResponse installShardData(
       String collName, String shardName, InstallShardDataRequestBody requestBody) throws Exception {
-    final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    final var response = instantiateJerseyResponse(AsyncJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
     if (requestBody == null) {
@@ -97,6 +97,11 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
             DEFAULT_COLLECTION_OP_TIMEOUT);
     if (remoteResponse.getException() != null) {
       throw remoteResponse.getException();
+    }
+
+    if (requestBody.async != null) {
+      response.requestId = requestBody.async;
+      return response;
     }
 
     return response;
