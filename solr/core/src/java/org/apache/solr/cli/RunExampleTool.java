@@ -264,27 +264,42 @@ public class RunExampleTool extends ToolBase {
 
     String solrUrl = (String) nodeStatus.get("baseUrl");
 
-    // safe check if core / collection already exists
+    // If the example already exists then delete it so we can recreate it.
     boolean alreadyExists = false;
-    if (nodeStatus.get("cloud") != null) {
+    boolean cloudMode = nodeStatus.get("cloud") != null;
+    if (cloudMode) {
       if (SolrCLI.safeCheckCollectionExists(
           solrUrl, collectionName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
         alreadyExists = true;
-        echo(
-            "\nWARNING: Collection '"
-                + collectionName
-                + "' already exists!\nChecked collection existence using Collections API");
+        echo("\nWARNING: Collection '" + collectionName + "' already exists!");
       }
     } else {
       String coreName = collectionName;
       if (SolrCLI.safeCheckCoreExists(
           solrUrl, coreName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
         alreadyExists = true;
-        echo(
-            "\nWARNING: Core '"
-                + coreName
-                + "' already exists!\nChecked core existence using Core API command");
+        echo("\nWARNING: Core '" + coreName + "' already exists!");
       }
+    }
+
+    if (cloudMode && alreadyExists) {
+      String[] deleteArgs =
+          new String[] {"-c", collectionName, "-forceDeleteConfig", "-solrUrl", solrUrl};
+      DeleteTool deleteTool = new DeleteTool(stdout);
+      int deleteCode =
+          deleteTool.runTool(
+              SolrCLI.processCommandLineArgs(
+                  deleteTool.getName(), deleteTool.getOptions(), deleteArgs));
+      if (deleteCode != 0)
+        throw new Exception(
+            "Failed to delete " + collectionName + " using command: " + Arrays.asList(deleteArgs));
+      echo(
+          "\nWARNING: Deleted existing Collection '"
+              + collectionName
+              + "' and it's Config to create a fresh example setup!");
+      Thread.sleep(5000l);
+
+      alreadyExists = false;
     }
 
     if (!alreadyExists) {
