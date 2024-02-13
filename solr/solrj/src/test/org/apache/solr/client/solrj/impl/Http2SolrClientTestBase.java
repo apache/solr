@@ -1,5 +1,15 @@
 package org.apache.solr.client.solrj.impl;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Set;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -15,17 +25,6 @@ import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Set;
-
-import static org.hamcrest.CoreMatchers.instanceOf;
 
 public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
 
@@ -326,8 +325,8 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
 
     try (Http2SolrClientBase client =
         builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, builderType)
-                .withDefaultCollection(DEFAULT_CORE)
-                .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
+            .withDefaultCollection(DEFAULT_CORE)
+            .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
             .build(type)) {
       // test without request query params
       DebugServlet.clear();

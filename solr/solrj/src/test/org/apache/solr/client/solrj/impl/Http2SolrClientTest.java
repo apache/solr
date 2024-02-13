@@ -17,6 +17,11 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.LuceneTestCase.ThrowingRunnable;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -25,35 +30,12 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.SolrPing;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.BeforeClass;
 import org.junit.Test;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient.Builder> {
 
@@ -77,7 +59,9 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
         builder(
-        getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 2000,
+                getBaseUrl() + SLOW_SERVLET_PATH,
+                DEFAULT_CONNECTION_TIMEOUT,
+                2000,
                 Http2SolrClient.Builder.class)
             .withDefaultCollection(DEFAULT_CORE)
             .build()) {
@@ -93,8 +77,11 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
         builder(
-                getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0,
-                Http2SolrClient.Builder.class).withDefaultCollection(DEFAULT_CORE)
+                getBaseUrl() + DEBUG_SERVLET_PATH,
+                DEFAULT_CONNECTION_TIMEOUT,
+                0,
+                Http2SolrClient.Builder.class)
+            .withDefaultCollection(DEFAULT_CORE)
             .build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
@@ -108,7 +95,9 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
         builder(
-                getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0,
+                getBaseUrl() + SLOW_SERVLET_PATH,
+                DEFAULT_CONNECTION_TIMEOUT,
+                0,
                 Http2SolrClient.Builder.class)
             .withDefaultCollection(DEFAULT_CORE)
             .withRequestTimeout(500, TimeUnit.MILLISECONDS)
@@ -127,7 +116,9 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
   @Test
   public void testSolrExceptionCodeNotFromSolr() throws IOException, SolrServerException {
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH).withDefaultCollection(DEFAULT_CORE).build()) {
+        new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+            .withDefaultCollection(DEFAULT_CORE)
+            .build()) {
       super.testSolrExceptionCodeNotFromSolr(client);
     } finally {
       DebugServlet.clear();
@@ -148,7 +139,8 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", "\u1234");
-    Http2SolrClient.Builder b = new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE);
+    Http2SolrClient.Builder b =
+        new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE);
     if (rp != null) {
       b.withResponseParser(rp);
     }
@@ -212,7 +204,10 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
     DebugServlet.clear();
     String url = getBaseUrl() + "/debug/foo";
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).withResponseParser(new XMLResponseParser()).build()) {
+        new Http2SolrClient.Builder(url)
+            .withDefaultCollection(DEFAULT_CORE)
+            .withResponseParser(new XMLResponseParser())
+            .build()) {
       try {
         client.deleteByQuery("*:*");
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -228,15 +223,18 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
   public void testGetById() throws Exception {
     DebugServlet.clear();
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl()+ DEBUG_SERVLET_PATH).withDefaultCollection(DEFAULT_CORE).build()) {
+        new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+            .withDefaultCollection(DEFAULT_CORE)
+            .build()) {
       super.testGetById(client);
     }
   }
 
   @Test
   public void testUpdateDefault() throws Exception {
-    String url = getBaseUrl() +  DEBUG_SERVLET_PATH;
-    try (Http2SolrClient client = new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).build()) {
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).build()) {
       testUpdate(client, "javabin", "application/javabin");
     }
   }
@@ -453,7 +451,9 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
   @Test
   public void testNoCredentials() {
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH).withDefaultCollection(DEFAULT_CORE).build(); ) {
+        new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+            .withDefaultCollection(DEFAULT_CORE)
+            .build(); ) {
       super.testNoCredentials(client);
     }
   }
@@ -528,7 +528,8 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
                 getBaseUrl() + DEBUG_SERVLET_PATH,
                 DEFAULT_CONNECTION_TIMEOUT,
                 DEFAULT_CONNECTION_TIMEOUT,
-                Http2SolrClient.Builder.class).withDefaultCollection(DEFAULT_CORE)
+                Http2SolrClient.Builder.class)
+            .withDefaultCollection(DEFAULT_CORE)
             .build()) {
       super.testGetRawStream(client);
     }
