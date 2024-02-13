@@ -1,22 +1,24 @@
 package org.apache.solr.client.solrj.impl;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 import java.io.IOException;
 import java.net.Socket;
-import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.TimeUnit;
@@ -28,8 +30,12 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase<HttpSolrC
     @BeforeClass
     public static void beforeClass() {
         try {
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            SSLTestConfig stc = SolrTestCaseJ4.sslConfig;
+            keyManagerFactory.init(stc.defaultKeyStore(), stc.defaultKeyStorePassword().toCharArray());
+
             SSLContext sslContext = SSLContext.getInstance("SSL");
-            sslContext.init(null, new TrustManager[]{MOCK_TRUST_MANAGER}, new SecureRandom());
+            sslContext.init(keyManagerFactory.getKeyManagers(), new TrustManager[]{MOCK_TRUST_MANAGER}, stc.notSecureSecureRandom());
             allTrustingSslContext = sslContext;
         } catch(Exception e) {
             throw new RuntimeException(e);
