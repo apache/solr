@@ -91,3 +91,10 @@ If you don't yet have an account, you have to ask for one in the 'users' or 'dev
 1. Please do not delete older files that you have already added - the complete history of an issue is important.
 1. The "Activity" section of an issue by default only lists "Comments". If you click on the "All" sub-tab you can see all activity related to this issue, including any edits that might have been made to the summary or description, as well as an commits that mention this issue in the commit log.
 1. Have follow up work to an existing issue that is closed?  If an issue is closed, its supposed to remain closed since it has been "shipped" in a release. Create a new issue and link it.
+
+=== Where can I find information about test history?
+
+* http://fucit.org/solr-jenkins-reports/failure-report.html
+* https://ge.apache.org/scans/tests?search.relativeStartTime=P90D&search.rootProjectNames=solr*
+* https://lists.apache.org[Solr mailing list archives especially builds]
+

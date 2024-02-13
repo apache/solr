@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +56,7 @@ public class ModuleUtils {
    * @return set of raw volume names from sysprop and/or env.var
    */
   static Set<String> resolveFromSyspropOrEnv() {
-    return Set.copyOf(EnvUtils.getPropAsList("solr.modules", Collections.emptyList()));
+    return Set.copyOf(EnvUtils.getPropertyAsList("solr.modules", Collections.emptyList()));
   }
 
   /** Returns true if a module name is valid and exists in the system */

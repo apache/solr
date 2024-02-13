@@ -35,18 +35,18 @@ public class ClientUtilsTest extends SolrTestCase {
   }
 
   @Test
-  public void testDeterminesWhenToUseDefaultDataStore() {
+  public void testDeterminesWhenToUseDefaultCollection() {
     final var noDefaultNeededRequest = new CollectionAdminRequest.List();
     final var defaultNeededRequest = new UpdateRequest();
 
     assertFalse(
         "Expected default-coll to be skipped for collection-agnostic request",
-        ClientUtils.shouldApplyDefaultDataStore(null, noDefaultNeededRequest));
+        ClientUtils.shouldApplyDefaultCollection(null, noDefaultNeededRequest));
     assertTrue(
         "Expected default-coll to be used for collection-based request",
-        ClientUtils.shouldApplyDefaultDataStore(null, defaultNeededRequest));
+        ClientUtils.shouldApplyDefaultCollection(null, defaultNeededRequest));
     assertFalse(
         "Expected default-coll to be skipped when a collection is explicitly provided",
-        ClientUtils.shouldApplyDefaultDataStore("someCollection", defaultNeededRequest));
+        ClientUtils.shouldApplyDefaultCollection("someCollection", defaultNeededRequest));
   }
 }

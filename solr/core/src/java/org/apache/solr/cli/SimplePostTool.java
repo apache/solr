@@ -1089,9 +1089,6 @@ public class SimplePostTool {
       if (!credentials.contains(":")) {
         throw new Exception("credentials '" + credentials + "' must be of format user:pass");
       }
-      // urlc.setRequestProperty(
-      //    "Authorization",
-      //    "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(UTF_8)));
       urlc.setRequestProperty(
           "Authorization",
           "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(UTF_8)));

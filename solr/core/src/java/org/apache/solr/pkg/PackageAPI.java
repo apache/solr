@@ -41,13 +41,13 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.EnvUtils;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
 
 /** This implements the public end points (/api/cluster/package) of package API. */
 public class PackageAPI {
-  public final boolean enablePackages = EnvUtils.getPropAsBool("enable.packages", false);
+  public final boolean enablePackages = EnvUtils.getPropertyAsBool("enable.packages", false);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ERR_MSG =

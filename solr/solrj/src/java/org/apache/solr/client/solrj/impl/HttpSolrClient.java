@@ -189,7 +189,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     this.soTimeout = builder.socketTimeoutMillis;
     this.useMultiPartPost = builder.useMultiPartPost;
     this.urlParamNames = builder.urlParamNames;
-    this.defaultCollection = builder.defaultDataStore;
+    this.defaultCollection = builder.defaultCollection;
   }
 
   public Set<String> getUrlParamNames() {
@@ -244,7 +244,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   public NamedList<Object> request(
       final SolrRequest<?> request, final ResponseParser processor, String collection)
       throws SolrServerException, IOException {
-    if (ClientUtils.shouldApplyDefaultDataStore(collection, request))
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
       collection = defaultCollection;
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
@@ -297,7 +297,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       final SolrRequest<?> request, final ResponseParser processor)
       throws SolrServerException, IOException {
     HttpUriRequestResponse mrr = new HttpUriRequestResponse();
-    final HttpRequestBase method = createMethod(request, null);
+    final HttpRequestBase method = createMethod(request, defaultCollection);
     ExecutorService pool =
         ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrNamedThreadFactory("httpUriRequest"));
     try {

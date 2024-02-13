@@ -133,7 +133,8 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
           /** no solrj API for ReplicationHandler */
           private GenericSolrRequest makeReplicationReq(SolrParams p) {
-            return new GenericSolrRequest(GenericSolrRequest.METHOD.GET, "/replication", p);
+            return new GenericSolrRequest(GenericSolrRequest.METHOD.GET, "/replication", p)
+                .setRequiresCollection(true);
           }
 
           /**
@@ -369,7 +370,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
             .iterator()
             .next();
     coreName = r.getCoreName();
-    coreClient = getHttpSolrClient(r.getCoreUrl());
+    coreClient = getHttpSolrClient(r);
   }
 
   /**

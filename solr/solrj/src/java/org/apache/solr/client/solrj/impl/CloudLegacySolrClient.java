@@ -64,7 +64,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
     this.stateProvider = builder.stateProvider;
     this.retryExpiryTimeNano = builder.retryExpiryTimeNano;
-    this.defaultCollection = builder.defaultDataStore;
+    this.defaultCollection = builder.defaultCollection;
     this.collectionStateCache.timeToLiveMs =
         TimeUnit.MILLISECONDS.convert(builder.timeToLiveSeconds, TimeUnit.SECONDS);
     this.clientIsInternal = builder.httpClient == null;
@@ -235,16 +235,6 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     /** Whether or not to use the default ZK ACLs when building a ZK Client. */
     public Builder canUseZkACLs(boolean canUseZkACLs) {
       this.canUseZkACLs = canUseZkACLs;
-      return this;
-    }
-
-    /**
-     * Sets a default collection for all collection-based requests.
-     *
-     * <p>Identical to {@link #withDefaultDataStore(String)} for this builder
-     */
-    public Builder withDefaultCollection(String defaultCollection) {
-      this.defaultDataStore = defaultCollection;
       return this;
     }
 
