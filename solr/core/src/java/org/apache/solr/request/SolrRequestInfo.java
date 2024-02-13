@@ -236,7 +236,7 @@ public class SolrRequestInfo {
    * empty) {@link QueryLimits} object if it has not been created, and will then return the same
    * object on every subsequent invocation.
    *
-   * @return The {@code QueryLimits} object for the current requet.
+   * @return The {@code QueryLimits} object for the current request.
    */
   public QueryLimits getLimits() {
     return req == null

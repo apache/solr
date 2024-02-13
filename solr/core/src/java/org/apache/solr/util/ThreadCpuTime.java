@@ -47,17 +47,17 @@ public class ThreadCpuTime {
         threadBean.setThreadCpuTimeEnabled(true);
       }
       THREAD_MX_BEAN = threadBean;
-    } catch (UnsupportedOperationException e) {
+    } catch (UnsupportedOperationException | SecurityException e) {
       THREAD_MX_BEAN = null;
-      log.info("Operation Cpu Time is not supported.");
+      log.info("Thread CPU time monitoring is not available.");
     }
   }
 
   private final long startCpuTimeNanos;
 
   /**
-   * Create an instance to track the current thread's usage of cpu and memory. The usage information
-   * can later be retrieved by any thread by calling {@link #getCpuTimeMs()}.
+   * Create an instance to track the current thread's usage of CPU. The usage information can later
+   * be retrieved by any thread by calling {@link #getCpuTimeMs()}.
    */
   public ThreadCpuTime() {
     if (THREAD_MX_BEAN != null) {
@@ -72,7 +72,9 @@ public class ThreadCpuTime {
   }
 
   /**
-   * Return initial value of CPU time for this thread when this instance was created.
+   * Return the initial value of CPU time for this thread when this instance was first created.
+   * NOTE: absolute value returned by this method has no meaning by itself, it should only be used
+   * when comparing elapsed time between this value and {@link #getCurrentCpuTimeNs()}.
    *
    * @return current value, or {@link #UNSUPPORTED} if not supported.
    */
@@ -96,9 +98,9 @@ public class ThreadCpuTime {
   }
 
   /**
-   * Get the cpu usage information for the thread that created this {@link ThreadCpuTime}. The
+   * Get the CPU usage information for the thread that created this {@link ThreadCpuTime}. The
    * information will track the thread's cpu since the creation of this {@link ThreadCpuTime}
-   * instance, if the VM's cpu tracking is disabled, returned value counr be {@link #UNSUPPORTED}
+   * instance, if the VM's cpu tracking is disabled, returned value will be {@link #UNSUPPORTED}.
    */
   public Optional<Long> getCpuTimeMs() {
     long cpuTimeNs = getCurrentCpuTimeNs();

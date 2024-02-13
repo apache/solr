@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search;
 
-import static org.apache.solr.search.CpuTimeQueryLimit.hasCpuLimit;
+import static org.apache.solr.search.CpuQueryTimeLimit.hasCpuLimit;
 import static org.apache.solr.search.SolrQueryTimeLimit.hasTimeLimit;
 
 import java.util.ArrayList;
@@ -36,6 +36,7 @@ public class QueryLimits implements QueryTimeout {
 
   public static QueryLimits NONE = new QueryLimits();
 
+  // initialize here for consistency between logging and monitoring
   private ThreadCpuTime threadCpuTime = new ThreadCpuTime();
 
   private QueryLimits() {}
@@ -51,10 +52,14 @@ public class QueryLimits implements QueryTimeout {
       limits.add(new SolrQueryTimeLimit(req));
     }
     if (hasCpuLimit(req)) {
-      limits.add(new CpuTimeQueryLimit(req, threadCpuTime));
+      limits.add(new CpuQueryTimeLimit(req, threadCpuTime));
     }
   }
 
+  /**
+   * Return the instance used for reporting and monitoring total CPU time spent on processing this
+   * request and its child requests.
+   */
   public ThreadCpuTime getThreadCpuTime() {
     return threadCpuTime;
   }

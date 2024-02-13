@@ -26,13 +26,13 @@ import org.apache.solr.util.ThreadCpuTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CpuTimeQueryLimit implements QueryTimeout {
+public class CpuQueryTimeLimit implements QueryTimeout {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final long limitAt;
   private final ThreadCpuTime threadCpuTime;
 
-  public CpuTimeQueryLimit(SolrQueryRequest req, ThreadCpuTime threadCpuTime) {
+  public CpuQueryTimeLimit(SolrQueryRequest req, ThreadCpuTime threadCpuTime) {
     if (!ThreadCpuTime.isSupported()) {
       throw new IllegalArgumentException("Thread CPU time monitoring is not available.");
     }
@@ -41,15 +41,16 @@ public class CpuTimeQueryLimit implements QueryTimeout {
 
     if (reqCpuLimit <= 0L) {
       throw new IllegalArgumentException(
-          "Check for limit with hasLimit(req) before creating a CpuTimeLimit");
+          "Check for limit with hasCpuLimit(req) before creating a CpuQueryTimeLimit");
     }
+    // account for the time already spent
     limitAt =
         threadCpuTime.getStartCpuTimeNs()
             + TimeUnit.NANOSECONDS.convert(reqCpuLimit, TimeUnit.MILLISECONDS);
   }
 
   @VisibleForTesting
-  CpuTimeQueryLimit(long limitMs) {
+  CpuQueryTimeLimit(long limitMs) {
     this.threadCpuTime = new ThreadCpuTime();
     limitAt =
         threadCpuTime.getCurrentCpuTimeNs()
