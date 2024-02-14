@@ -149,9 +149,6 @@ public class LBHttpSolrClient extends LBSolrClient {
           .withResponseParser(parser)
           .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
           .withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
-
-      // Note that this may override the value extracted from the base URL..should we log a warning
-      // here?
       if (defaultCollection != null) {
         clientBuilder.withDefaultCollection(defaultCollection);
       }
