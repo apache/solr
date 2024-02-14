@@ -1901,7 +1901,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           maxScoreCollector = new MaxScoreCollector();
           collector = MultiCollector.wrap(topCollector, maxScoreCollector);
         }
-        ScoreMode scoreModeUsed =
+        final ScoreMode scoreModeUsed =
             buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter).scoreMode();
 
         totalHits = topCollector.getTotalHits();
@@ -1926,10 +1926,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         if (log.isInfoEnabled()) {
           log.info("using CollectorManager");
         }
-        SearchResult searchResult =
+        final SearchResult searchResult =
             searchCollectorManagers(len, cmd, query, true, needScores, false);
-        Object[] res = searchResult.result;
-        TopDocsResult result = (TopDocsResult) res[0];
+        final Object[] res = searchResult.result;
+        final TopDocsResult result = (TopDocsResult) res[0];
 
         totalHits = result.totalHits;
         topDocs = result.topDocs;
