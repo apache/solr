@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.URLUtil;
 import org.slf4j.MDC;
 
 /**
@@ -95,25 +94,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
   @Override
   protected SolrClient getClient(String baseUrl) {
-    final String effectiveDefaultCollection = getEffectiveDefaultCollection(baseUrl);
-    return new DelegatingSolrClient(solrClient) {
-      @Override
-      public String getDefaultCollection() {
-        return effectiveDefaultCollection;
-      }
-    };
-  }
-
-  private String getEffectiveDefaultCollection(String baseUrl) {
-    if (getDefaultCollection() != null) {
-      return getDefaultCollection();
-    } else if (!URLUtil.isBaseUrl(baseUrl)) {
-      return URLUtil.extractCoreFromCoreUrl(baseUrl);
-    } else if (solrClient.getDefaultCollection() != null) {
-      return solrClient.getDefaultCollection();
-    } else {
-      return null;
-    }
+    return solrClient;
   }
 
   @Override
@@ -212,65 +193,64 @@ public class LBHttp2SolrClient extends LBSolrClient {
       RetryListener listener) {
     rsp.server = baseUrl;
     req.getRequest().setBasePath(baseUrl);
-    final String effectiveDefaultCollection =
-        req.getRequest().requiresCollection() ? getEffectiveDefaultCollection(baseUrl) : null;
-    return solrClient.asyncRequest(
-        req.getRequest(),
-        effectiveDefaultCollection,
-        new AsyncListener<>() {
-          @Override
-          public void onSuccess(NamedList<Object> result) {
-            rsp.rsp = result;
-            if (isZombie) {
-              zombieServers.remove(baseUrl);
-            }
-            listener.onSuccess(rsp);
-          }
-
-          @Override
-          public void onFailure(Throwable oe) {
-            try {
-              throw (Exception) oe;
-            } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-              listener.onFailure(e, false);
-            } catch (SolrException e) {
-              // we retry on 404 or 403 or 503 or 500
-              // unless it's an update - then we only retry on connect exception
-              if (!isNonRetryable && RETRY_CODES.contains(e.code())) {
-                listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
-              } else {
-                // Server is alive but the request was likely malformed or invalid
+    return ((Http2SolrClient) getClient(baseUrl))
+        .asyncRequest(
+            req.getRequest(),
+            null,
+            new AsyncListener<>() {
+              @Override
+              public void onSuccess(NamedList<Object> result) {
+                rsp.rsp = result;
                 if (isZombie) {
                   zombieServers.remove(baseUrl);
                 }
-                listener.onFailure(e, false);
+                listener.onSuccess(rsp);
               }
-            } catch (SocketException e) {
-              if (!isNonRetryable || e instanceof ConnectException) {
-                listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
-              } else {
-                listener.onFailure(e, false);
+
+              @Override
+              public void onFailure(Throwable oe) {
+                try {
+                  throw (Exception) oe;
+                } catch (BaseHttpSolrClient.RemoteExecutionException e) {
+                  listener.onFailure(e, false);
+                } catch (SolrException e) {
+                  // we retry on 404 or 403 or 503 or 500
+                  // unless it's an update - then we only retry on connect exception
+                  if (!isNonRetryable && RETRY_CODES.contains(e.code())) {
+                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
+                  } else {
+                    // Server is alive but the request was likely malformed or invalid
+                    if (isZombie) {
+                      zombieServers.remove(baseUrl);
+                    }
+                    listener.onFailure(e, false);
+                  }
+                } catch (SocketException e) {
+                  if (!isNonRetryable || e instanceof ConnectException) {
+                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
+                  } else {
+                    listener.onFailure(e, false);
+                  }
+                } catch (SocketTimeoutException e) {
+                  if (!isNonRetryable) {
+                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
+                  } else {
+                    listener.onFailure(e, false);
+                  }
+                } catch (SolrServerException e) {
+                  Throwable rootCause = e.getRootCause();
+                  if (!isNonRetryable && rootCause instanceof IOException) {
+                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
+                  } else if (isNonRetryable && rootCause instanceof ConnectException) {
+                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
+                  } else {
+                    listener.onFailure(e, false);
+                  }
+                } catch (Exception e) {
+                  listener.onFailure(new SolrServerException(e), false);
+                }
               }
-            } catch (SocketTimeoutException e) {
-              if (!isNonRetryable) {
-                listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
-              } else {
-                listener.onFailure(e, false);
-              }
-            } catch (SolrServerException e) {
-              Throwable rootCause = e.getRootCause();
-              if (!isNonRetryable && rootCause instanceof IOException) {
-                listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
-              } else if (isNonRetryable && rootCause instanceof ConnectException) {
-                listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
-              } else {
-                listener.onFailure(e, false);
-              }
-            } catch (Exception e) {
-              listener.onFailure(new SolrServerException(e), false);
-            }
-          }
-        });
+            });
   }
 
   public static class Builder {

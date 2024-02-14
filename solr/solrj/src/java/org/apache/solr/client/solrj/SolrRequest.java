@@ -177,11 +177,11 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   /**
    * Determines whether this request should use or ignore any specified collections (esp. {@link
-   * SolrClient#getDefaultCollection})
+   * SolrClient#defaultCollection})
    *
    * <p>Many Solr requests target a particular core or collection. But not all of them - many Solr
    * APIs (e.g. security or other admin APIs) are agnostic of collections entirely. This method
-   * gives these requests a way to opt out of using {@link SolrClient#getDefaultCollection} or other
+   * gives these requests a way to opt out of using {@link SolrClient#defaultCollection} or other
    * specified collections.
    */
   public boolean requiresCollection() {

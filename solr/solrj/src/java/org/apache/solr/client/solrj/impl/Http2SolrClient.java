@@ -556,7 +556,7 @@ public class Http2SolrClient extends SolrClient {
   public NamedList<Object> request(SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
     if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest))
-      collection = getDefaultCollection();
+      collection = defaultCollection;
     String url = getRequestPath(solrRequest, collection);
     Throwable abortCause = null;
     Request req = null;
