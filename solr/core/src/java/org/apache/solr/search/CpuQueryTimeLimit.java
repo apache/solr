@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.params.CommonParams;
@@ -29,16 +30,14 @@ import org.slf4j.LoggerFactory;
 public class CpuQueryTimeLimit implements QueryTimeout {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final long limitAt;
+  private final long limitAtNs;
   private final ThreadCpuTime threadCpuTime;
 
   public CpuQueryTimeLimit(SolrQueryRequest req, ThreadCpuTime threadCpuTime) {
     if (!ThreadCpuTime.isSupported()) {
       throw new IllegalArgumentException("Thread CPU time monitoring is not available.");
     }
-    if (threadCpuTime == null) {
-      throw new IllegalArgumentException("Thread CPU time monitor must not be null.");
-    }
+    Objects.requireNonNull(threadCpuTime, "Thread CPU time monitor must not be null.");
     this.threadCpuTime = threadCpuTime;
     long reqCpuLimit = req.getParams().getLong(CommonParams.CPU_ALLOWED, -1L);
 
@@ -46,8 +45,8 @@ public class CpuQueryTimeLimit implements QueryTimeout {
       throw new IllegalArgumentException(
           "Check for limit with hasCpuLimit(req) before creating a CpuQueryTimeLimit");
     }
-    // account for the time already spent
-    limitAt =
+    // calculate when the time limit is reached, account for the time already spent
+    limitAtNs =
         threadCpuTime.getStartCpuTimeNs()
             + TimeUnit.NANOSECONDS.convert(reqCpuLimit, TimeUnit.MILLISECONDS);
   }
@@ -55,7 +54,7 @@ public class CpuQueryTimeLimit implements QueryTimeout {
   @VisibleForTesting
   CpuQueryTimeLimit(long limitMs) {
     this.threadCpuTime = new ThreadCpuTime();
-    limitAt =
+    limitAtNs =
         threadCpuTime.getCurrentCpuTimeNs()
             + TimeUnit.NANOSECONDS.convert(limitMs, TimeUnit.MILLISECONDS);
   }
@@ -67,6 +66,6 @@ public class CpuQueryTimeLimit implements QueryTimeout {
   /** Return true if a max limit value is set and the current usage has exceeded the limit. */
   @Override
   public boolean shouldExit() {
-    return limitAt - threadCpuTime.getCurrentCpuTimeNs() < 0L;
+    return limitAtNs - threadCpuTime.getCurrentCpuTimeNs() < 0L;
   }
 }

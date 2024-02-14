@@ -17,6 +17,8 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -61,11 +63,34 @@ public class TestCpuQueryTimeLimit extends SolrCloudTestCase {
         limitMs < wallTimeDeltaMs);
   }
 
+  private Path createConfigSet() throws Exception {
+    Path configSet = createTempDir();
+    copyMinConf(configSet.toFile());
+    // insert an expensive search component
+    Path solrConfig = configSet.resolve("conf/solrconfig.xml");
+    Files.writeString(
+        solrConfig,
+        Files.readString(solrConfig)
+            .replace(
+                "<requestHandler",
+                "<searchComponent name=\"expensiveSearchComponent\"\n"
+                    + "                   class=\"org.apache.solr.search.ExpensiveSearchComponent\"/>\n"
+                    + "\n"
+                    + "  <requestHandler")
+            .replace(
+                "class=\"solr.SearchHandler\">",
+                "class=\"solr.SearchHandler\">\n"
+                    + "    <arr name=\"first-components\">\n"
+                    + "      <str>expensiveSearchComponent</str>\n"
+                    + "    </arr>\n"));
+    return configSet.resolve("conf");
+  }
+
   @Test
   public void testDistribLimit() throws Exception {
     Assume.assumeTrue("Thread CPU time monitoring is not available", ThreadCpuTime.isSupported());
     MiniSolrCloudCluster cluster =
-        configureCluster(2).addConfig("conf", configset("query-limits")).configure();
+        configureCluster(2).addConfig("conf", createConfigSet()).configure();
     String COLLECTION = "test";
     try {
       SolrClient solrClient = cluster.getSolrClient();
