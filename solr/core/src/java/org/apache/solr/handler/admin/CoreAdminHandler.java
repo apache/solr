@@ -28,13 +28,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
@@ -427,11 +427,15 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   public static class CoreAdminAsyncTracker {
-    private static final int MAX_TRACKED_REQUESTS = 100;
     public static final String RUNNING = "running";
     public static final String COMPLETED = "completed";
     public static final String FAILED = "failed";
-    public final Map<String, Map<String, TaskObject>> requestStatusMap;
+
+    private final long runningTimeoutNanos;
+    private final long completedTimeoutNanos;
+    private final long purgePeriodNanos;
+    private final Map<String, TaskObject> requestStatusMap;
+    private volatile long lastPurge;
 
     // Executor for all standard tasks (the ones that are not flagged as expensive)
     // We always keep 50 live threads
@@ -448,11 +452,25 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
             new SolrNamedThreadFactory("parallelCoreAdminAPIExpensiveExecutor"));
 
     public CoreAdminAsyncTracker() {
-      HashMap<String, Map<String, TaskObject>> map = new HashMap<>(3, 1.0f);
-      map.put(RUNNING, Collections.synchronizedMap(new LinkedHashMap<>()));
-      map.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<>()));
-      map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<>()));
-      requestStatusMap = Collections.unmodifiableMap(map);
+      this(
+          TimeUnit.MINUTES.toNanos(
+              Long.getLong("solr.admin.requests.running.timeout.minutes", 60L)),
+          TimeUnit.MINUTES.toNanos(
+              Long.getLong("solr.admin.requests.completed.timeout.minutes", 5L)),
+          TimeUnit.MINUTES.toNanos(Long.getLong("solr.admin.requests.purge.minutes", 1L)));
+    }
+
+    /**
+     * @param runningTimeoutNanos The time-to-keep for tasks in the RUNNING state.
+     * @param completedTimeoutNanos The time-to-keep for tasks in the COMPLETED or FAILED state
+     *     after the status was polled.
+     */
+    CoreAdminAsyncTracker(
+        long runningTimeoutNanos, long completedTimeoutNanos, long purgePeriodNanos) {
+      this.runningTimeoutNanos = runningTimeoutNanos;
+      this.completedTimeoutNanos = completedTimeoutNanos;
+      this.purgePeriodNanos = purgePeriodNanos;
+      requestStatusMap = Collections.synchronizedMap(new HashMap<>());
     }
 
     public void shutdown() {
@@ -460,13 +478,21 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       ExecutorUtil.shutdownAndAwaitTermination(expensiveExecutor);
     }
 
-    public Map<String, TaskObject> getRequestStatusMap(String key) {
-      return requestStatusMap.get(key);
+    public TaskObject getAsyncRequestForStatus(String key) {
+      TaskObject task = requestStatusMap.get(key);
+
+      if (task != null && !RUNNING.equals(task.status)) {
+        // This is to return the retention time of this task.
+        // Once the task is completed and we polled the status, this is very likely we won't poll it
+        // again.
+        task.polledNanos = System.nanoTime();
+      }
+
+      return task;
     }
 
     public void submitAsyncTask(TaskObject taskObject) throws SolrException {
-      ensureTaskIdNotInUse(taskObject.taskId);
-      addTask(RUNNING, taskObject);
+      addTask(taskObject);
 
       Runnable command =
           () -> {
@@ -497,42 +523,45 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       }
     }
 
-    /** Helper method to add a task to a tracking type. */
-    private void addTask(String type, TaskObject o, boolean limit) {
-      synchronized (getRequestStatusMap(type)) {
-        if (limit && getRequestStatusMap(type).size() == MAX_TRACKED_REQUESTS) {
-          String key = getRequestStatusMap(type).entrySet().iterator().next().getKey();
-          getRequestStatusMap(type).remove(key);
-        }
-        addTask(type, o);
-      }
-    }
-
-    private void addTask(String type, TaskObject o) {
-      synchronized (getRequestStatusMap(type)) {
-        getRequestStatusMap(type).put(o.taskId, o);
-      }
-    }
-
-    /** Helper method to remove a task from a tracking map. */
-    private void removeTask(String map, String taskId) {
-      synchronized (getRequestStatusMap(map)) {
-        getRequestStatusMap(map).remove(taskId);
-      }
-    }
-
-    private void ensureTaskIdNotInUse(String taskId) throws SolrException {
-      if (getRequestStatusMap(RUNNING).containsKey(taskId)
-          || getRequestStatusMap(COMPLETED).containsKey(taskId)
-          || getRequestStatusMap(FAILED).containsKey(taskId)) {
+    private void addTask(TaskObject taskObject) {
+      // Ensure task ID is not already in use
+      if (requestStatusMap.containsKey(taskObject.taskId)) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST, "Duplicate request with the same requestid found.");
       }
+
+      long currentTime = System.nanoTime();
+      if (currentTime > lastPurge + purgePeriodNanos) {
+        synchronized (requestStatusMap) {
+          // Check the condition a second time now we are in the synchronized block.
+          // If two threads entered the previous 'if' concurrently, only the first one in
+          // the synchronized block will actually do the purge.
+          if (currentTime > lastPurge + purgePeriodNanos) {
+            requestStatusMap.values().removeIf(t -> isExpired(t, currentTime));
+            lastPurge = currentTime;
+          }
+        }
+      }
+
+      taskObject.status = RUNNING;
+      taskObject.startedNanos = System.nanoTime();
+      requestStatusMap.put(taskObject.taskId, taskObject);
+    }
+
+    /**
+     * Check if a tracked async task is expired and so should not be tracked anymore.
+     *
+     * <p>Any task which is older than {@link #runningTimeoutNanos} (an hour by default) is
+     * considered expired. When a task is already completed or failed, it is also expired {@link
+     * #completedTimeoutNanos} (5 minutes by default) after the last poll of the status.
+     */
+    private boolean isExpired(TaskObject task, long currentNanos) {
+      return (task.startedNanos > 0 && currentNanos > task.startedNanos + runningTimeoutNanos)
+          || (task.polledNanos > 0 && currentNanos > task.startedNanos + completedTimeoutNanos);
     }
 
     private void finishTask(TaskObject taskObject, boolean successful) {
-      removeTask(RUNNING, taskObject.taskId);
-      addTask(successful ? COMPLETED : FAILED, taskObject, true);
+      taskObject.status = successful ? COMPLETED : FAILED;
     }
 
     /**
@@ -546,6 +575,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       final Callable<SolrQueryResponse> task;
       public String rspInfo;
       public Object operationRspInfo;
+      private volatile String status;
+      private volatile long startedNanos;
+      private volatile long polledNanos;
 
       public TaskObject(
           String taskId, String action, boolean expensive, Callable<SolrQueryResponse> task) {
@@ -573,6 +605,10 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
       public void setOperationRspObject(SolrQueryResponse rspObject) {
         this.operationRspInfo = rspObject.getResponse();
+      }
+
+      public String getStatus() {
+        return status;
       }
     }
   }

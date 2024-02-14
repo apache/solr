@@ -43,6 +43,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker;
+import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.TaskObject;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -527,5 +529,34 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         "Missing required parameter: core",
         e.getMessage());
     admin.close();
+  }
+
+  @Test
+  public void testTrackedRequestExpiration() throws Exception {
+    // No delay to purge tracked tasks, and timeouts are set to 0, so we will try
+    // to purge tasks each time. This is to keep test execution super short
+    CoreAdminAsyncTracker asyncTracker = new CoreAdminAsyncTracker(0L, 0L, 0L);
+    try {
+      TaskObject task1 = new TaskObject("id1", "ACTION", false, SolrQueryResponse::new);
+      TaskObject task2 = new TaskObject("id2", "ACTION", false, SolrQueryResponse::new);
+
+      // Submit first task and wait until its status is changed to COMPLETED
+      asyncTracker.submitAsyncTask(task1);
+      while (!CoreAdminAsyncTracker.COMPLETED.equals(task1.getStatus())) {
+        Thread.sleep(10L);
+      }
+
+      assertEquals(
+          CoreAdminAsyncTracker.COMPLETED,
+          asyncTracker.getAsyncRequestForStatus("id1").getStatus());
+
+      // submit another task to force a purge of tracked requests.
+      // Check status of the first request is not available anymore
+      asyncTracker.submitAsyncTask(task2);
+      assertNull(asyncTracker.getAsyncRequestForStatus("id1"));
+
+    } finally {
+      asyncTracker.shutdown();
+    }
   }
 }

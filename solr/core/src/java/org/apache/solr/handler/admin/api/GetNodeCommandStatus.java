@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.COMPLETED;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.FAILED;
-import static org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.RUNNING;
 
 import jakarta.inject.Inject;
 import org.apache.solr.client.api.endpoint.GetNodeCommandStatusApi;
@@ -26,6 +25,7 @@ import org.apache.solr.client.api.model.GetNodeCommandStatusResponse;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler.CoreAdminAsyncTracker.TaskObject;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -51,25 +51,24 @@ public class GetNodeCommandStatus extends CoreAdminAPIBase implements GetNodeCom
   public GetNodeCommandStatusResponse getCommandStatus(String requestId) {
     ensureRequiredParameterProvided(CoreAdminParams.REQUESTID, requestId);
     var requestStatusResponse = new GetNodeCommandStatusResponse();
-    if (coreAdminAsyncTracker.getRequestStatusMap(RUNNING).containsKey(requestId)) {
-      requestStatusResponse.status = RUNNING;
-    } else if (coreAdminAsyncTracker.getRequestStatusMap(COMPLETED).containsKey(requestId)) {
-      requestStatusResponse.status = COMPLETED;
-      requestStatusResponse.response =
-          coreAdminAsyncTracker.getRequestStatusMap(COMPLETED).get(requestId).getRspObject();
-      requestStatusResponse.response =
-          coreAdminAsyncTracker
-              .getRequestStatusMap(COMPLETED)
-              .get(requestId)
-              .getOperationRspObject();
-    } else if (coreAdminAsyncTracker.getRequestStatusMap(FAILED).containsKey(requestId)) {
-      requestStatusResponse.status = FAILED;
-      requestStatusResponse.response =
-          coreAdminAsyncTracker.getRequestStatusMap(FAILED).get(requestId).getRspObject();
-    } else {
+
+    TaskObject taskObject = coreAdminAsyncTracker.getAsyncRequestForStatus(requestId);
+    String status = taskObject != null ? taskObject.getStatus() : null;
+
+    if (status == null) {
       requestStatusResponse.status = "notfound";
       requestStatusResponse.msg = "No task found in running, completed or failed tasks";
+    } else {
+      requestStatusResponse.status = status;
+
+      if (taskObject.getStatus().equals(COMPLETED)) {
+        requestStatusResponse.response = taskObject.getRspObject();
+        requestStatusResponse.response = taskObject.getOperationRspObject();
+      } else if (taskObject.getStatus().equals(FAILED)) {
+        requestStatusResponse.response = taskObject.getRspObject();
+      }
     }
+
     return requestStatusResponse;
   }
 }
