@@ -120,9 +120,22 @@ public class Replica extends ZkNodeProps implements MapWriter {
      */
     PULL(false, false, true, CollectionAdminParams.PULL_REPLICAS);
 
+    /** Whether replicas of this type join the leader election and can be elected. */
     public final boolean leaderEligible;
+
+    /**
+     * Whether replicas of this type require a transaction log. A transaction log will be created
+     * only if this is {@code true}.
+     */
     public final boolean requireTransactionLog;
+
+    /**
+     * Whether replicas of this type continuously replica from the leader, if they are not
+     * themselves the leader.
+     */
     public final boolean replicateFromLeader;
+
+    /** Name of the property in messages that contains the number of replicas of this type. */
     public final String numReplicasPropertyName;
 
     Type(
