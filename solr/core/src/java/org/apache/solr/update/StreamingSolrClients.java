@@ -161,9 +161,9 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2Solr
     /**
      * @param baseSolrUrl the base URL of a Solr node. Should <em>not</em> contain a collection or
      *     core name
-     * @param client
-     * @param req
-     * @param errors
+     * @param client the client to use in making requests
+     * @param req the command distributor request object for this client
+     * @param errors a collector for any errors
      */
     public Builder(
         String baseSolrUrl,
