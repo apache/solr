@@ -2053,7 +2053,7 @@ public class CoreContainer {
           assert replica != null : cd.getCloudDescriptor().getCoreNodeName() + " had no replica";
           if (replica.getType().replicateFromLeader) {
             getZkController().stopReplicationFromLeader(core.getName());
-            if (!replica.getType().leaderEligible || !cd.getCloudDescriptor().isLeader()) {
+            if (!cd.getCloudDescriptor().isLeader()) {
               getZkController()
                   .startReplicationFromLeader(
                       newCore.getName(), replica.getType().requireTransactionLog);
