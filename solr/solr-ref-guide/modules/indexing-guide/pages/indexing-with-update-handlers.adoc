@@ -666,7 +666,7 @@ Example: `map=left:right` or `f.subject.map=history:bunk`
 |===
 +
 If `true`, split a field into multiple values by a separate parser.
-This parameter is used on a per-field basis.
+This parameter is used on a per-field basis, for example `f.FIELD_NAME_GOES_HERE.split=true`.
 
 `overwrite`::
 +
