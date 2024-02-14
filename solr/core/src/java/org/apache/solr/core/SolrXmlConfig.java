@@ -636,17 +636,10 @@ public class SolrXmlConfig {
   }
 
   private static PluginInfo[] getBackupRepositoryPluginInfos(List<ConfigNode> cfg) {
-    if (cfg.isEmpty()) {
-      return new PluginInfo[0];
-    }
-
-    PluginInfo[] configs = new PluginInfo[cfg.size()];
-    for (int i = 0; i < cfg.size(); i++) {
-      ConfigNode c = cfg.get(i);
-      configs[i] = new PluginInfo(c, "BackupRepositoryFactory", true, true);
-    }
-
-    return configs;
+    return cfg.stream()
+        .map(c -> new PluginInfo(c, "BackupRepositoryFactory", true, true))
+        .filter(PluginInfo::isEnabled)
+        .toArray(PluginInfo[]::new);
   }
 
   private static PluginInfo[] getClusterPlugins(SolrResourceLoader loader, ConfigNode root) {
