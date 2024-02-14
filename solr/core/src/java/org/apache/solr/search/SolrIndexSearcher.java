@@ -1884,12 +1884,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (log.isInfoEnabled()) {
         log.info("calling from 2, query: {}", query.getClass());
       }
-      final boolean allowMT = allowMT(query);
       final TopDocs topDocs;
-      if (pf.postFilter != null
-          || cmd.getSegmentTerminateEarly()
-          || cmd.getTimeAllowed() > 0
-          || !allowMT) {
+      if (!allowMT(pf.postFilter, cmd, query)) {
         if (log.isInfoEnabled()) {
           log.info("skipping collector manager");
         }
@@ -2233,12 +2229,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // no docs on this page, so cursor doesn't change
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
-      final boolean allowMT = allowMT(query);
       final TopDocs topDocs;
-      if (pf.postFilter != null
-          || cmd.getSegmentTerminateEarly()
-          || cmd.getTimeAllowed() > 0
-          || !allowMT) {
+      if (!allowMT(pf.postFilter, cmd, query)) {
         @SuppressWarnings({"rawtypes"})
         final TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(len, cmd);
         final DocSetCollector setCollector = new DocSetCollector(maxDoc);
@@ -2923,10 +2915,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return warmupTime;
   }
 
-  private static boolean allowMT(Query query) {
-    MTCollectorQueryCheck allowMT = new MTCollectorQueryCheck();
-    query.visit(allowMT);
-    return allowMT.allowed();
+  private static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd, Query query) {
+    if (postFilter != null || cmd.getSegmentTerminateEarly() || cmd.getTimeAllowed() > 0) {
+      return false;
+    } else {
+      MTCollectorQueryCheck allowMT = new MTCollectorQueryCheck();
+      query.visit(allowMT);
+      return allowMT.allowed();
+    }
   }
 
   /**
