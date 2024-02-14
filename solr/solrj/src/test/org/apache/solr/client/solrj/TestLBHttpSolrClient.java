@@ -126,14 +126,12 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
   public void testSimple() throws Exception {
     String[] solrUrls = new String[solr.length];
     for (int i = 0; i < solr.length; i++) {
-      solrUrls[i] = solr[i].getBaseUrl();
+      solrUrls[i] = solr[i].getUrl();
     }
-    final String collection = solr[0].getDefaultCollection();
     try (LBHttpSolrClient client =
         new LBHttpSolrClient.Builder()
             .withHttpClient(httpClient)
             .withBaseSolrUrls(solrUrls)
-            .withDefaultCollection(collection)
             .setAliveCheckInterval(500)
             .build()) {
       SolrQuery solrQuery = new SolrQuery("*:*");
@@ -175,14 +173,12 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
   public void testTwoServers() throws Exception {
     String[] solrUrls = new String[2];
     for (int i = 0; i < 2; i++) {
-      solrUrls[i] = solr[i].getBaseUrl();
+      solrUrls[i] = solr[i].getUrl();
     }
-    final String collection = solr[0].getDefaultCollection();
     try (LBHttpSolrClient client =
         new LBHttpSolrClient.Builder()
             .withHttpClient(httpClient)
             .withBaseSolrUrls(solrUrls)
-            .withDefaultCollection(collection)
             .setAliveCheckInterval(500)
             .build()) {
       SolrQuery solrQuery = new SolrQuery("*:*");
@@ -216,12 +212,11 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     for (int i = 0; i < solr.length; i++) {
       solrUrls[i] = solr[i].getUrl();
     }
-    final String collection = solr[0].getDefaultCollection();
+
     try (LBHttpSolrClient client =
         new LBHttpSolrClient.Builder()
             .withHttpClient(httpClient)
             .withBaseSolrUrls(solrUrls)
-            .withDefaultCollection(collection)
             .withConnectionTimeout(500, TimeUnit.MILLISECONDS)
             .withSocketTimeout(500, TimeUnit.MILLISECONDS)
             .setAliveCheckInterval(500)
@@ -282,15 +277,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     }
 
     public String getUrl() {
-      return getBaseUrl() + "/" + getDefaultCollection();
-    }
-
-    public String getBaseUrl() {
-      return buildUrl(port);
-    }
-
-    public String getDefaultCollection() {
-      return "collection1";
+      return buildUrl(port) + "/collection1";
     }
 
     public String getBaseUrl() {

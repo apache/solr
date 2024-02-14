@@ -42,8 +42,7 @@ public class LBHttpSolrClientBadInputTest extends SolrJettyTestBase {
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
     try (SolrClient client =
         new LBHttpSolrClient.Builder()
-            .withBaseSolrUrls(getBaseUrl())
-            .withDefaultCollection(ANY_COLLECTION)
+            .withBaseSolrUrls(getBaseUrl() + "/" + ANY_COLLECTION)
             .build()) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
