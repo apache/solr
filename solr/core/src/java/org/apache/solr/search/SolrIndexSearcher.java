@@ -2178,8 +2178,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     final float[] scores;
     DocSet set = null;
 
-    boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
-    int maxDoc = maxDoc();
+    final boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
+    final int maxDoc = maxDoc();
     cmd.setMinExactCount(Integer.MAX_VALUE); // We need the full DocSet
 
     final ProcessedFilter pf = getProcessedFilter(cmd.getFilterList());
@@ -2234,14 +2234,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
       final boolean allowMT = allowMT(query);
-      TopDocs topDocs;
+      final TopDocs topDocs;
       if (pf.postFilter != null
           || cmd.getSegmentTerminateEarly()
           || cmd.getTimeAllowed() > 0
           || !allowMT) {
         @SuppressWarnings({"rawtypes"})
         final TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(len, cmd);
-        DocSetCollector setCollector = new DocSetCollector(maxDoc);
+        final DocSetCollector setCollector = new DocSetCollector(maxDoc);
         MaxScoreCollector maxScoreCollector = null;
         List<Collector> collectors = new ArrayList<>(Arrays.asList(topCollector, setCollector));
 
