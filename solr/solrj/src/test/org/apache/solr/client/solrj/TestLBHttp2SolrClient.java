@@ -102,7 +102,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       docs.add(doc);
     }
     SolrResponseBase resp;
-    try (SolrClient client = getHttpSolrClient(solrInstance.getUrl())) {
+    try (SolrClient client = getHttpSolrClient(solrInstance.getBaseUrl(), solrInstance.getDefaultCollection())) {
       resp = client.add(docs);
       assertEquals(0, resp.getStatus());
       resp = client.commit();
