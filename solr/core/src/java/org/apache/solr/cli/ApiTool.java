@@ -52,7 +52,7 @@ public class ApiTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("u")
+        Option.builder()
             .longOpt("get")
             .argName("URL")
             .hasArg()

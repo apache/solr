@@ -53,7 +53,7 @@ teardown() {
   assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
   
   # Test api
-  run solr api -u name:password -get "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=*:*" -verbose
+  run solr api -u name:password --get "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=*:*" -verbose
   assert_output --partial '"numFound":0'
   
   # Test delete
