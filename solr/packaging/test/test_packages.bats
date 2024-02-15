@@ -40,7 +40,7 @@ teardown() {
   run solr package
   refute_output --partial "No Solr nodes are running."
 
-  run solr package -help
+  run solr package --help
   assert_output --partial "Add a repository to Solr"
 
   run solr package list-available

@@ -480,7 +480,7 @@ echo.
 IF "%ZK_FULL%"=="true" (
   goto zk_full_usage
 ) ELSE (
-  echo Type bin/solr zk -help for full usage help
+  echo Type bin/solr zk --help for full usage help
 )
 goto done
 
@@ -1329,7 +1329,7 @@ for /f "usebackq" %%i in (`dir /b "%SOLR_TIP%\bin" ^| findstr /i "^solr-.*\.port
           @echo.
           set has_info=1
           echo Found Solr process %%k running on port !SOME_SOLR_PORT!
-          REM Passing in %2 (-h or -help) directly is captured by a custom help path for usage output
+          REM Passing in %2 (-h or --help) directly is captured by a custom help path for usage output
           "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
             -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
             -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^

@@ -31,7 +31,7 @@ $ bin/solr post -url http://localhost:8983/gettingstarted/update example/films/f
 ----
 
 This will contact the server at `localhost:8983`.
-The `-help` (or simply `-h`) option will output information on its usage (i.e., `bin/solr post -help)`.
+The `--help` (or simply `-h`) option will output information on its usage (i.e., `bin/solr post -h)`.
 
 == Using the bin/solr post Tool
 
@@ -59,7 +59,7 @@ usage: post
                                               content as Solr commands to
                                               /update instead of
                                               /update/json/docs
- -help                                        Print this message
+ --help                                       Print this message
  -mode <mode>                                 Files crawls files, web
                                               crawls website. default:
                                               files.

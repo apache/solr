@@ -36,11 +36,11 @@ The `start` and `restart` commands have several options to allow you to run in S
 
 `bin/solr start [options]`
 
-`bin/solr start -help`
+`bin/solr start --help`
 
 `bin/solr restart [options]`
 
-`bin/solr restart -help`
+`bin/solr restart --help`
 
 When using the `restart` command, you must pass all of the parameters you initially passed when you started Solr.
 Behind the scenes, a stop request is initiated, so Solr will be stopped before being started again.
@@ -388,7 +388,7 @@ The command will wait up to 180 seconds for Solr to stop gracefully and then wil
 
 `bin/solr stop [options]`
 
-`bin/solr stop -help`
+`bin/solr stop --help`
 
 ==== Stop Parameters
 
@@ -546,7 +546,7 @@ The health report provides information about the state of every replica for all 
 
 `bin/solr healthcheck [options]`
 
-`bin/solr healthcheck -help`
+`bin/solr healthcheck --help`
 
 ==== Healthcheck Parameters
 
@@ -656,7 +656,7 @@ The `create` command creates a core or collection depending on whether Solr is r
 
 `bin/solr create [options]`
 
-`bin/solr create -help`
+`bin/solr create --help`
 
 ==== Create Core or Collection Parameters
 
@@ -1145,7 +1145,7 @@ The operations are available as sub-commands, which each have their own set of o
 
 `bin/solr zk [sub-command] [options]`
 
-`bin/solr zk -help`
+`bin/solr zk --help`
 
 The basic usage of bin/solr zk is:
 
@@ -1736,7 +1736,7 @@ If you have configured basicAuth or TLS with your Solr you may find this easier 
 
 The `bin/solr api` command takes the following parameters:
 
-`-get <url>`::
+`--get <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1762,12 +1762,12 @@ This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or 
 Simple search passing in Basic authentication credentials:
 
 [source,bash]
-$ bin/solr api -get http://localhost:8983/solr/techproducts/select?q=*:* -u user:password
+$ bin/solr api --get http://localhost:8983/solr/techproducts/select?q=*:* -u user:password
 
 
 Here is an example of sending a SQL query to the techproducts `/sql` end point (assumes you started Solr in Cloud mode with the SQL module enabled):
 
 [source,bash]
-$ bin/solr api -get http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
+$ bin/solr api --get http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
 
 Results are streamed to the terminal.

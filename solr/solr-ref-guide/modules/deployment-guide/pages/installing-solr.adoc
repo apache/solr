@@ -238,5 +238,5 @@ To see all available options for creating a new core, execute:
 
 [source,bash]
 ----
-bin/solr create -help
+bin/solr create --help
 ----

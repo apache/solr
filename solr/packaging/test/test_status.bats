@@ -49,7 +49,7 @@ teardown() {
 }
 
 @test "status help flag outputs message highlighting not to use solrUrl." {
-  run solr status -help
+  run solr status --help
   assert_output --partial 'usage: status'
   refute_output --partial 'ERROR'
 }

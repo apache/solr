@@ -103,7 +103,7 @@ setup() {
 }
 
 @test "assert help flag prints help" {
-  run solr assert -help
+  run solr assert --help
   assert_output --partial 'usage: assert'
   refute_output --partial 'ERROR'
 }

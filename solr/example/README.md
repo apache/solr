@@ -39,7 +39,7 @@ For instance, if you want to run the SolrCloud example, do:
 To see all the options available when starting Solr:
 
 ```
-  bin/solr start -help
+  bin/solr start --help
 ```
 
 After starting a Solr example, direct your Web browser to:
