@@ -49,8 +49,7 @@ public class ZkLsTool extends ToolBase {
             .desc("Path to list.")
             .build(),
         SolrCLI.OPTION_RECURSE,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_ZKHOST);
   }
 
   @Override

@@ -327,7 +327,7 @@ public class PackageTool extends ToolBase {
             .desc("List of parameters to be used with deploy command.")
             .longOpt("param")
             .build(),
-        Option.builder("u")
+        Option.builder()
             .required(false)
             .desc("If a deployment is an update over a previous deployment.")
             .longOpt("update")
@@ -342,13 +342,7 @@ public class PackageTool extends ToolBase {
             .desc("Don't prompt for input; accept all default choices, defaults to false.")
             .longOpt("noprompt")
             .build(),
-        // u was taken, can we change that instead?
-        Option.builder("credentials")
-            .argName("credentials")
-            .hasArg()
-            .required(false)
-            .desc(
-                "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
-            .build());
+            SolrCLI.OPTION_CREDENTIALS
+        );
   }
 }

@@ -48,8 +48,7 @@ public class ZkMkrootTool extends ToolBase {
             .required(true)
             .desc("Path to create.")
             .build(),
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_ZKHOST);
   }
 
   @Override

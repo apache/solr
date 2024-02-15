@@ -112,8 +112,7 @@ public class CreateTool extends ToolBase {
             .required(false)
             .desc("Configuration name; default is the collection name.")
             .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override

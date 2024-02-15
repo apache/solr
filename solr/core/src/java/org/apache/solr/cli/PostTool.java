@@ -42,7 +42,7 @@ public class PostTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("u")
+        Option.builder()
             .longOpt("url")
             .argName("url")
             .hasArg()
@@ -56,15 +56,18 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc("Name of the collection.")
             .build(),
-        Option.builder("skipcommit")
+        Option.builder()
+                .longOpt("skipcommit")
             .required(false)
             .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
             .build(),
-        Option.builder("optimize")
+        Option.builder("o")
+                .longOpt("optimize")
             .required(false)
             .desc("Issue an optimize at end of posting documents.")
             .build(),
-        Option.builder("mode")
+        Option.builder()
+                .longOpt("mode")
             .argName("mode")
             .hasArg(true)
             .required(false)
@@ -106,10 +109,10 @@ public class PostTool extends ToolBase {
             .required(false)
             .desc("values must be URL-encoded; these pass through to Solr update request.")
             .build(),
-        Option.builder("o")
+        Option.builder()
             .longOpt("out")
             .required(false)
-            .desc("sends Solr response outputs to console")
+            .desc("sends Solr response outputs to console.")
             .build(),
         Option.builder("f")
             .longOpt("format")

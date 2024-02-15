@@ -45,19 +45,20 @@ public class ZkCpTool extends ToolBase {
     return List.of(
         Option.builder("src")
             .argName("src")
+                .longOpt("source")
             .hasArg()
             .required(true)
             .desc("Source file or directory, may be local or a Znode.")
             .build(),
         Option.builder("dst")
             .argName("dst")
+                .longOpt("destination")
             .hasArg()
             .required(true)
             .desc("Destination of copy, may be local or a Znode.")
             .build(),
         SolrCLI.OPTION_RECURSE,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_ZKHOST);
   }
 
   @Override
