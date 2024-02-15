@@ -915,10 +915,10 @@ Here are some example usages:
 
 [source,plain]
 ----
-Usage: solr auth enable [-type basicAuth] -credentials user:pass [-blockUnknown <true|false>] [-updateIncludeFileOnly <true|false>] [-V]
-       solr auth enable [-type basicAuth] -prompt <true|false> [-blockUnknown <true|false>] [-updateIncludeFileOnly <true|false>] [-V]
-       solr auth enable -type kerberos -config <kerberos configs> [-updateIncludeFileOnly <true|false>] [-V]
-       solr auth disable [-updateIncludeFileOnly <true|false>] [-V]
+Usage: solr auth enable [--type basicAuth] --credentials user:pass [--blockUnknown <true|false>] [--updateIncludeFileOnly <true|false>] [-v]
+       solr auth enable [--type basicAuth] --prompt <true|false> [--blockUnknown <true|false>] [--updateIncludeFileOnly <true|false>] [-v]
+       solr auth enable --type kerberos --config <kerberos configs> [--updateIncludeFileOnly <true|false>] [-v]
+       solr auth disable [--updateIncludeFileOnly <true|false>] [-v]
 ----
 
 

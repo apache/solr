@@ -485,9 +485,9 @@ IF "%ZK_FULL%"=="true" (
 goto done
 
 :auth_usage
-echo Usage: solr auth enable [-type basicAuth] -credentials user:pass [-blockUnknown ^<true^|false^>] [-updateIncludeFileOnly ^<true^|false^>] [-V]
-echo        solr auth enable [-type basicAuth] -prompt ^<true^|false^> [-blockUnknown ^<true^|false^>] [-updateIncludeFileOnly ^<true^|false^>] [-V]
-echo        solr auth disable [-updateIncludeFileOnly ^<true^|false^>] [-V]
+echo Usage: solr auth enable [--type basicAuth] --credentials user:pass [--blockUnknown ^<true^|false^>] [--updateIncludeFileOnly ^<true^|false^>] [-v]
+echo        solr auth enable [--type basicAuth] --prompt ^<true^|false^> [--blockUnknown ^<true^|false^>] [--updateIncludeFileOnly ^<true^|false^>] [-v]
+echo        solr auth disable [--updateIncludeFileOnly ^<true^|false^>] [-v]
 echo.
 echo  Updates or enables/disables authentication.  Must be run on the machine hosting Solr.
 echo.

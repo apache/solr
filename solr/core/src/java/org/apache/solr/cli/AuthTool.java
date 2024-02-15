@@ -68,46 +68,45 @@ public class AuthTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("type")
-            .argName("type")
+        Option.builder()
+                .longOpt("type")
             .hasArg()
             .desc(
                 "The authentication mechanism to enable (basicAuth or kerberos). Defaults to 'basicAuth'.")
             .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        Option.builder("prompt")
-            .argName("prompt")
+        Option.builder()
+            .longOpt("prompt")
             .hasArg()
             .desc(
-                "Prompts the user to provide the credentials. Use either -credentials or -prompt, not both.")
+                "Prompts the user to provide the credentials. Use either --credentials or --prompt, not both.")
             .build(),
-        Option.builder("config")
-            .argName("config")
+        Option.builder()
+            .longOpt("config")
             .hasArgs()
             .desc(
                 "Configuration parameters (Solr startup parameters). Required for Kerberos authentication.")
             .build(),
-        Option.builder("blockUnknown")
-            .argName("blockUnknown")
+        Option.builder()
+            .longOpt("blockUnknown")
             .desc(
                 "Blocks all access for unknown users (requires authentication for all endpoints).")
             .hasArg()
             .build(),
-        Option.builder("solrIncludeFile")
-            .argName("solrIncludeFile")
+        Option.builder()
+            .longOpt("solrIncludeFile")
             .hasArg()
             .desc(
                 "The Solr include file which contains overridable environment variables for configuring Solr configurations.")
             .build(),
-        Option.builder("updateIncludeFileOnly")
-            .argName("updateIncludeFileOnly")
+        Option.builder()
+            .longOpt("updateIncludeFileOnly")
             .desc(
                 "Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
                     + " authentication (i.e. don't update security.json).")
             .hasArg()
             .build(),
-        Option.builder("authConfDir")
-            .argName("authConfDir")
+        Option.builder()
+            .longOpt("authConfDir")
             .hasArg()
             .required()
             .desc(
@@ -115,7 +114,7 @@ public class AuthTool extends ToolBase {
             .build(),
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_VERBOSE);
+            SolrCLI.OPTION_CREDENTIALS);
   }
 
   private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, String argName) {
@@ -282,7 +281,7 @@ public class AuthTool extends ToolBase {
     switch (cmd) {
       case "enable":
         if (!prompt && !cli.hasOption("credentials")) {
-          CLIO.out("Option -credentials or -prompt is required with enable.");
+          CLIO.out("Option --credentials or --prompt is required with enable.");
           new HelpFormatter()
               .printHelp("bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptions(this));
           SolrCLI.exit(1);
