@@ -50,7 +50,7 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.ThreadCpuTime;
+import org.apache.solr.util.ThreadCpuTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +77,7 @@ public abstract class RequestHandlerBase
 
   private PluginInfo pluginInfo;
 
-  protected boolean publishCpuTime = Boolean.getBoolean(ThreadCpuTime.ENABLE_CPU_TIME);
+  protected boolean publishCpuTime = Boolean.getBoolean(ThreadCpuTimer.ENABLE_CPU_TIME);
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
   public RequestHandlerBase() {
@@ -217,12 +217,12 @@ public abstract class RequestHandlerBase
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    ThreadCpuTime threadCpuTime = null;
+    ThreadCpuTimer threadCpuTimer = null;
     if (publishCpuTime) {
-      threadCpuTime =
+      threadCpuTimer =
           SolrRequestInfo.getRequestInfo() == null
-              ? new ThreadCpuTime()
-              : SolrRequestInfo.getRequestInfo().getThreadCpuTime();
+              ? new ThreadCpuTimer()
+              : SolrRequestInfo.getRequestInfo().getThreadCpuTimer();
     }
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
@@ -254,16 +254,16 @@ public abstract class RequestHandlerBase
       metrics.totalTime.inc(elapsed);
 
       if (publishCpuTime) {
-        Optional<Long> cpuTime = threadCpuTime.getCpuTimeMs();
+        Optional<Long> cpuTime = threadCpuTimer.getCpuTimeMs();
         if (cpuTime.isPresent()) {
           // add CPU_TIME if not already added by SearchHandler
           NamedList<Object> header = rsp.getResponseHeader();
           if (header != null) {
-            if (header.get(ThreadCpuTime.CPU_TIME) == null) {
-              header.add(ThreadCpuTime.CPU_TIME, cpuTime.get());
+            if (header.get(ThreadCpuTimer.CPU_TIME) == null) {
+              header.add(ThreadCpuTimer.CPU_TIME, cpuTime.get());
             }
           }
-          rsp.addToLog(ThreadCpuTime.LOCAL_CPU_TIME, cpuTime.get());
+          rsp.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, cpuTime.get());
         }
       }
     }

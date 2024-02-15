@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * <p>Calling code should create an instance of this class when starting the operation, and then can
  * get the {@link #getCpuTimeMs()} at any time thereafter.
  */
-public class ThreadCpuTime {
+public class ThreadCpuTimer {
   private static final long UNSUPPORTED = -1;
   public static final String CPU_TIME = "cpuTime";
   public static final String LOCAL_CPU_TIME = "localCpuTime";
@@ -59,7 +59,7 @@ public class ThreadCpuTime {
    * Create an instance to track the current thread's usage of CPU. The usage information can later
    * be retrieved by any thread by calling {@link #getCpuTimeMs()}.
    */
-  public ThreadCpuTime() {
+  public ThreadCpuTimer() {
     if (THREAD_MX_BEAN != null) {
       this.startCpuTimeNanos = THREAD_MX_BEAN.getCurrentThreadCpuTime();
     } else {
@@ -98,8 +98,8 @@ public class ThreadCpuTime {
   }
 
   /**
-   * Get the CPU usage information for the thread that created this {@link ThreadCpuTime}. The
-   * information will track the thread's cpu since the creation of this {@link ThreadCpuTime}
+   * Get the CPU usage information for the thread that created this {@link ThreadCpuTimer}. The
+   * information will track the thread's cpu since the creation of this {@link ThreadCpuTimer}
    * instance, if the VM's cpu tracking is disabled, returned value will be {@link #UNSUPPORTED}.
    */
   public Optional<Long> getCpuTimeMs() {

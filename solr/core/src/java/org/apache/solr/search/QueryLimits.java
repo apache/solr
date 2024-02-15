@@ -16,14 +16,13 @@
  */
 package org.apache.solr.search;
 
-import static org.apache.solr.search.CpuQueryTimeLimit.hasCpuLimit;
-import static org.apache.solr.search.SolrQueryTimeLimit.hasTimeLimit;
+import static org.apache.solr.search.CpuAllowedLimit.hasCpuLimit;
+import static org.apache.solr.search.TimeAllowedLimit.hasTimeLimit;
 
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.ThreadCpuTime;
 
 /**
  * Represents the limitations on the query. These limits might be wall clock time, cpu time, memory,
@@ -43,14 +42,13 @@ public class QueryLimits implements QueryTimeout {
    * statement will hinge on hasXXXLimit() static method attached to the implementation class.
    *
    * @param req the current SolrQueryRequest.
-   * @param threadCpuTime current thread CPU time monitor.
    */
-  public QueryLimits(SolrQueryRequest req, ThreadCpuTime threadCpuTime) {
+  public QueryLimits(SolrQueryRequest req) {
     if (hasTimeLimit(req)) {
-      limits.add(new SolrQueryTimeLimit(req));
+      limits.add(new TimeAllowedLimit(req));
     }
     if (hasCpuLimit(req)) {
-      limits.add(new CpuQueryTimeLimit(req, threadCpuTime));
+      limits.add(new CpuAllowedLimit(req));
     }
   }
 

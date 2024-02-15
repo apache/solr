@@ -33,7 +33,7 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.QueryLimits;
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.solr.util.ThreadCpuTime;
+import org.apache.solr.util.ThreadCpuTimer;
 import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,7 @@ public class SolrRequestInfo {
   private static final ThreadLocal<Deque<SolrRequestInfo>> threadLocal =
       ThreadLocal.withInitial(ArrayDeque::new);
   static final Object LIMITS_KEY = new Object();
-  static final Object CPU_TIME_KEY = new Object();
+  static final Object CPU_TIMER_KEY = new Object();
 
   private int refCount = 1; // prevent closing when still used
 
@@ -83,7 +83,7 @@ public class SolrRequestInfo {
       // New SRI instances inherit limits and thread CPU from prior SRI regardless of parameters.
       // This ensures these two properties cannot be changed or removed for a given thread once set.
       // if req is null then limits will be an empty instance with no limits anyway.
-      info.req.getContext().put(CPU_TIME_KEY, stack.peek().getThreadCpuTime());
+      info.req.getContext().put(CPU_TIMER_KEY, stack.peek().getThreadCpuTimer());
       info.req.getContext().put(LIMITS_KEY, stack.peek().getLimits());
     }
     // this creates both new QueryLimits and new ThreadCpuTime if not already set
@@ -244,12 +244,10 @@ public class SolrRequestInfo {
    */
   public QueryLimits getLimits() {
     // make sure the ThreadCpuTime is always initialized
-    getThreadCpuTime();
+    getThreadCpuTimer();
     return req == null
         ? QueryLimits.NONE
-        : (QueryLimits)
-            req.getContext()
-                .computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(req, getThreadCpuTime()));
+        : (QueryLimits) req.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(req));
   }
 
   /**
@@ -257,12 +255,13 @@ public class SolrRequestInfo {
    * of a new instance if it hasn't been yet created, or will retrieve the already existing instance
    * from the "bottom" of the request stack.
    *
-   * @return the {@link ThreadCpuTime} object for the current request.
+   * @return the {@link ThreadCpuTimer} object for the current request.
    */
-  public ThreadCpuTime getThreadCpuTime() {
+  public ThreadCpuTimer getThreadCpuTimer() {
     return req == null
-        ? new ThreadCpuTime()
-        : (ThreadCpuTime) req.getContext().computeIfAbsent(CPU_TIME_KEY, k -> new ThreadCpuTime());
+        ? new ThreadCpuTimer()
+        : (ThreadCpuTimer)
+            req.getContext().computeIfAbsent(CPU_TIMER_KEY, k -> new ThreadCpuTimer());
   }
 
   public SolrDispatchFilter.Action getAction() {
