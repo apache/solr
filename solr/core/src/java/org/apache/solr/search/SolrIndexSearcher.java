@@ -1950,7 +1950,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
 
       ids = new int[nDocsReturned];
-      scores = (cmd.getFlags() & GET_SCORES) != 0 ? new float[nDocsReturned] : null;
+      scores = needScores ? new float[nDocsReturned] : null;
       for (int i = 0; i < nDocsReturned; i++) {
         ScoreDoc scoreDoc = topDocs.scoreDocs[i];
         ids[i] = scoreDoc.doc;
@@ -2305,7 +2305,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       nDocsReturned = topDocs.scoreDocs.length;
 
       ids = new int[nDocsReturned];
-      scores = (cmd.getFlags() & GET_SCORES) != 0 ? new float[nDocsReturned] : null;
+      scores = needScores ? new float[nDocsReturned] : null;
       for (int i = 0; i < nDocsReturned; i++) {
         ScoreDoc scoreDoc = topDocs.scoreDocs[i];
         ids[i] = scoreDoc.doc;
