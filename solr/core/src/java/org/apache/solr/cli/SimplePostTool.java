@@ -36,7 +36,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -66,8 +65,9 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
+import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RTimer;
-import org.apache.solr.util.SolrVersion;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -112,6 +112,7 @@ public class SimplePostTool {
   int delay = 0;
   String fileTypes;
   URL solrUrl;
+  String credentials;
   OutputStream out = null;
   String type;
   String format;
@@ -256,10 +257,12 @@ public class SimplePostTool {
       urlStr = SimplePostTool.appendParam(urlStr, params);
       URL url = new URL(urlStr);
       String user = null;
+      String credentials = null;
       if (url.getUserInfo() != null && url.getUserInfo().trim().length() > 0) {
         user = url.getUserInfo().split(":")[0];
       } else if (System.getProperty(BASIC_AUTH) != null) {
         user = System.getProperty(BASIC_AUTH).trim().split(":")[0];
+        credentials = System.getProperty(BASIC_AUTH).trim();
       }
       if (user != null) {
         info("Basic Authentication enabled, user=" + user);
@@ -290,7 +293,19 @@ public class SimplePostTool {
       boolean optimize = isOn(System.getProperty("optimize", DEFAULT_OPTIMIZE));
 
       return new SimplePostTool(
-          mode, url, auto, type, format, recursive, delay, fileTypes, out, commit, optimize, args);
+          mode,
+          url,
+          credentials,
+          auto,
+          type,
+          format,
+          recursive,
+          delay,
+          fileTypes,
+          out,
+          commit,
+          optimize,
+          args);
     } catch (MalformedURLException e) {
       fatal("System Property 'url' is not a valid URL: " + urlStr);
       return null;
@@ -316,6 +331,7 @@ public class SimplePostTool {
   public SimplePostTool(
       String mode,
       URL url,
+      String credentials,
       boolean auto,
       String type,
       String format,
@@ -328,6 +344,7 @@ public class SimplePostTool {
       String[] args) {
     this.mode = mode;
     this.solrUrl = url;
+    this.credentials = credentials;
     this.auto = auto;
     this.type = type;
     this.format = format;
@@ -409,7 +426,6 @@ public class SimplePostTool {
     } catch (MalformedURLException e) {
       fatal("Wrong URL trying to append /extract to " + solrUrl);
     }
-    return;
   }
 
   private void doStdinMode() {
@@ -519,14 +535,7 @@ public class SimplePostTool {
     int filesPosted = 0;
     for (int j = startIndexInArgs; j < args.length; j++) {
       File srcFile = new File(args[j]);
-      boolean isValidPath = checkIsValidPath(srcFile);
-      if (isValidPath && srcFile.isDirectory() && srcFile.canRead()) {
-        filesPosted += postDirectory(srcFile, out, type);
-      } else if (isValidPath && srcFile.isFile() && srcFile.canRead()) {
-        filesPosted += postFiles(new File[] {srcFile}, out, type);
-      } else {
-        filesPosted += handleGlob(srcFile, out, type);
-      }
+      filesPosted = getFilesPosted(out, type, srcFile);
     }
     return filesPosted;
   }
@@ -544,14 +553,20 @@ public class SimplePostTool {
     reset();
     int filesPosted = 0;
     for (File srcFile : files) {
-      boolean isValidPath = checkIsValidPath(srcFile);
-      if (isValidPath && srcFile.isDirectory() && srcFile.canRead()) {
-        filesPosted += postDirectory(srcFile, out, type);
-      } else if (isValidPath && srcFile.isFile() && srcFile.canRead()) {
-        filesPosted += postFiles(new File[] {srcFile}, out, type);
-      } else {
-        filesPosted += handleGlob(srcFile, out, type);
-      }
+      filesPosted = getFilesPosted(out, type, srcFile);
+    }
+    return filesPosted;
+  }
+
+  private int getFilesPosted(final OutputStream out, final String type, final File srcFile) {
+    int filesPosted = 0;
+    boolean isValidPath = checkIsValidPath(srcFile);
+    if (isValidPath && srcFile.isDirectory() && srcFile.canRead()) {
+      filesPosted += postDirectory(srcFile, out, type);
+    } else if (isValidPath && srcFile.isFile() && srcFile.canRead()) {
+      filesPosted += postFiles(new File[] {srcFile}, out, type);
+    } else {
+      filesPosted += handleGlob(srcFile, out, type);
     }
     return filesPosted;
   }
@@ -758,39 +773,6 @@ public class SimplePostTool {
       numPages += webCrawl(level + 1, out);
     }
     return numPages;
-  }
-
-  public static class BAOS extends ByteArrayOutputStream {
-    public ByteBuffer getByteBuffer() {
-      return ByteBuffer.wrap(super.buf, 0, super.count);
-    }
-  }
-
-  public static ByteBuffer inputStreamToByteArray(InputStream is) throws IOException {
-    return inputStreamToByteArray(is, Integer.MAX_VALUE);
-  }
-
-  /**
-   * Reads an input stream into a byte array
-   *
-   * @param is the input stream
-   * @return the byte array
-   * @throws IOException If there is a low-level I/O error.
-   */
-  public static ByteBuffer inputStreamToByteArray(InputStream is, long maxSize) throws IOException {
-    try (BAOS bos = new BAOS()) {
-      long sz = 0;
-      int next = is.read();
-      while (next > -1) {
-        if (++sz > maxSize) {
-          throw new BufferOverflowException();
-        }
-        bos.write(next);
-        next = is.read();
-      }
-      bos.flush();
-      return bos.getByteBuffer();
-    }
   }
 
   /**
@@ -1098,19 +1080,18 @@ public class SimplePostTool {
     return success;
   }
 
-  private static void basicAuth(HttpURLConnection urlc) throws Exception {
+  private void basicAuth(HttpURLConnection urlc) throws Exception {
     if (urlc.getURL().getUserInfo() != null) {
       String encoding =
           Base64.getEncoder().encodeToString(urlc.getURL().getUserInfo().getBytes(US_ASCII));
       urlc.setRequestProperty("Authorization", "Basic " + encoding);
-    } else if (System.getProperty(BASIC_AUTH) != null) {
-      String basicauth = System.getProperty(BASIC_AUTH).trim();
-      if (!basicauth.contains(":")) {
-        throw new Exception("System property '" + BASIC_AUTH + "' must be of format user:pass");
+    } else if (credentials != null) {
+      if (!credentials.contains(":")) {
+        throw new Exception("credentials '" + credentials + "' must be of format user:pass");
       }
       urlc.setRequestProperty(
           "Authorization",
-          "Basic " + Base64.getEncoder().encodeToString(basicauth.getBytes(UTF_8)));
+          "Basic " + Base64.getEncoder().encodeToString(credentials.getBytes(UTF_8)));
     }
   }
 
@@ -1325,7 +1306,7 @@ public class SimplePostTool {
             }
 
             // Read into memory, so that we later can pull links from the page without re-fetching
-            res.content = inputStreamToByteArray(is);
+            res.content = Utils.toByteArray(is);
             is.close();
           } else {
             warn("Skipping URL with unsupported type " + type);

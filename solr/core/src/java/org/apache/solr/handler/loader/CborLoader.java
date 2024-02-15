@@ -123,6 +123,11 @@ public class CborLoader {
     if (t == JsonToken.VALUE_NUMBER_INT || t == JsonToken.VALUE_NUMBER_FLOAT) {
       return p.getNumberValue();
     }
+    if (t == JsonToken.START_OBJECT) {
+      Object[] returnVal = new Object[1];
+      new CborLoader(cborFactory, d -> returnVal[0] = d).handleDoc(p);
+      return returnVal[0];
+    }
     throw new RuntimeException("Unknown type :" + t);
   }
 

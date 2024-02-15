@@ -203,7 +203,7 @@ def checkAllJARs(topDir, gitRevision, version):
 
     for file in files:
       if file.lower().endswith('.jar'):
-        if ((normRoot.endswith('/modules/extraction/lib') and file.startswith('jakarta.activation-'))
+        if ((normRoot.endswith('/modules/extraction/lib') and (file.startswith('jakarta.activation-') or file.startswith('jakarta.xml')))
             or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))
             or (normRoot.endswith('/server/solr-webapp/webapp/WEB-INF/lib') and file.startswith('jakarta.'))
             or (normRoot.endswith('/server/lib/ext') and file.startswith('jetty-servlet-api-'))):
@@ -220,6 +220,7 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
   ents = getDirEntries(urlString)
   artifact = None
   changesURL = None
+  openApiURL = None
   mavenURL = None
   dockerURL = None
   artifactURL = None
@@ -243,6 +244,10 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
       if text not in ('changes/', 'changes-%s/' % version):
         raise RuntimeError('solr: found %s vs expected changes-%s/' % (text, version))
       changesURL = subURL
+    elif text.startswith('openApi'):
+      if text not in ('openApi/', 'openApi-%s/' % version):
+        raise RuntimeError('solr: found %s vs expected openApi-%s/' % (text, version))
+      openApiURL = subURL
     elif artifact is None:
       artifact = text
       artifactURL = subURL
@@ -296,6 +301,12 @@ def checkSigs(urlString, version, tmpDir, isSigned, keysFile):
     raise RuntimeError('solr is missing changes-%s' % version)
   testChanges(version, changesURL)
 
+  if openApiURL is None:
+    stopGpgAgent(gpgHomeDir, logfile)
+    raise RuntimeError('solr is missing OpenAPI specification' % version)
+  testOpenApi(version, openApiURL)
+
+
   for artifact, urlString in artifacts: # pylint: disable=redefined-argument-from-local
     print('  download %s...' % artifact)
     scriptutil.download(artifact, urlString, tmpDir, force_clean=FORCE_CLEAN)
@@ -348,6 +359,17 @@ def testChanges(version, changesURLString):
 
   s = load(changesURL)
   checkChangesContent(s, version, changesURL, True)
+
+def testOpenApi(version, openApiDirUrl):
+  print('  check OpenAPI specification...')
+  specFound = False
+  expectedSpecFileName = 'solr-openapi-' + version + '.json'
+  for text, subURL in getDirEntries(openApiDirUrl):
+    if text == expectedSpecFileName:
+      specFound = True
+
+  if not specFound:
+    raise RuntimeError('Did not see %s in %s' % expectedSpecFileName, openApiDirUrl)
 
 
 def testChangesText(dir, version):
@@ -606,7 +628,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     expected_src_root_folders = ['buildSrc', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'versions.lock', 'versions.props']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
+    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'api', 'core', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)

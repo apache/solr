@@ -70,7 +70,7 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
       }
     }
 
-    return createRequest(rb, uniqueShards.toArray(new String[uniqueShards.size()]));
+    return createRequest(rb, uniqueShards.toArray(new String[0]));
   }
 
   private ShardRequest[] createRequestForAllShards(ResponseBuilder rb) {

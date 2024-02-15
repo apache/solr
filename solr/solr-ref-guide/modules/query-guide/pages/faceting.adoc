@@ -67,7 +67,7 @@ When using these parameters, it is important to remember that "term" is a very s
 For text fields that include stemming, lowercasing, or word splitting, the resulting terms may not be what you expect.
 
 If you want Solr to perform both analysis (for searching) and faceting on the full literal strings, use the `copyField` directive in your Schema to create two versions of the field: one Text and one String.
-The Text field should have `indexed="true" docValues=“false"` if used for searching but not faceting and the String field should have `indexed="false" docValues="true"` if used for faceting but not searching.
+The Text field should have `indexed="true" docValues="false"` if used for searching but not faceting and the String field should have `indexed="false" docValues="true"` if used for faceting but not searching.
 (For more information about the `copyField` directive, see xref:indexing-guide:copy-fields.adoc[].)
 
 Unless otherwise specified, all of the parameters below can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.<parameter>`
@@ -398,8 +398,8 @@ To ensure you avoid double-counting, do not choose both `lower` and `upper`, do 
 +
 The `facet.range.other` parameter specifies that in addition to the counts for each range constraint between `facet.range.start` and `facet.range.end`, counts should also be computed for these options:
 
-* `before`: All records with field values lower then lower bound of the first range.
-* `after`: All records with field values greater then the upper bound of the last range.
+* `before`: All records with field values lower than lower bound of the first range.
+* `after`: All records with field values greater than the upper bound of the last range.
 * `between`: All records with field values between the start and end bounds of all ranges.
 * `none`: Do not compute any counts.
 * `all`: Compute counts for before, between, and after.

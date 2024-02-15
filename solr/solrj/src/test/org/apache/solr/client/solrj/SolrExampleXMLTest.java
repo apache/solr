@@ -35,12 +35,11 @@ public class SolrExampleXMLTest extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(getServerUrl());
-    httpSolrClientBuilder.allowMultiPartPost(random().nextBoolean());
-
-    httpSolrClientBuilder
+    return new HttpSolrClient.Builder(getBaseUrl())
+        .withDefaultCollection(DEFAULT_TEST_CORENAME)
+        .allowMultiPartPost(random().nextBoolean())
         .withRequestWriter(new RequestWriter())
-        .withResponseParser(new XMLResponseParser());
-    return httpSolrClientBuilder.build();
+        .withResponseParser(new XMLResponseParser())
+        .build();
   }
 }

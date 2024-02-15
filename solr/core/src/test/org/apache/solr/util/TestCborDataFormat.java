@@ -27,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -42,6 +43,7 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.MapSolrParams;
@@ -95,6 +97,15 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       Object o = objectMapper.readValue(b, Object.class);
       List<Object> l = (List<Object>) Utils.getObjectByPath(o, false, "response/docs");
       assertEquals(1100, l.size());
+      client.deleteByQuery(testCollection, "*:*").getStatus();
+      index(
+          testCollection,
+          client,
+          createCborReq(getNestedDocs().getBytes(StandardCharsets.UTF_8)),
+          false);
+      SolrQuery q = new SolrQuery("*:*").setRows(100);
+      QueryResponse result = new QueryRequest(q).process(client, testCollection);
+      assertEquals(6, result.getResults().size());
     } finally {
       System.clearProperty("managed.schema.mutable");
       cluster.shutdown();
@@ -148,6 +159,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       throws SolrServerException, IOException {
     GenericSolrRequest req =
         new GenericSolrRequest(SolrRequest.METHOD.POST, "/schema")
+            .setRequiresCollection(true)
             .setContentWriter(
                 new RequestWriter.StringPayloadContentWriter(
                     "{\n"
@@ -169,6 +181,7 @@ public class TestCborDataFormat extends SolrCloudTestCase {
             SolrRequest.METHOD.POST,
             "/update/json/docs",
             new MapSolrParams(Map.of("commit", "true")))
+        .setRequiresCollection(true)
         .withContent(b, "application/json");
   }
 
@@ -180,13 +193,15 @@ public class TestCborDataFormat extends SolrCloudTestCase {
 
     return new GenericSolrRequest(
             SolrRequest.METHOD.POST, "/update", new MapSolrParams(Map.of("commit", "true")))
-        .withContent(baos.toByteArray(), "application/javabin");
+        .withContent(baos.toByteArray(), "application/javabin")
+        .setRequiresCollection(true);
   }
 
   private GenericSolrRequest createCborReq(byte[] b) throws IOException {
     return new GenericSolrRequest(
             SolrRequest.METHOD.POST, "/update/cbor", new MapSolrParams(Map.of("commit", "true")))
-        .withContent(serializeToCbor(b), "application/cbor");
+        .withContent(serializeToCbor(b), "application/cbor")
+        .setRequiresCollection(true);
   }
 
   @SuppressWarnings("unchecked")
@@ -226,5 +241,44 @@ public class TestCborDataFormat extends SolrCloudTestCase {
     jsonGenerator.writeTree(jsonNode);
     jsonGenerator.close();
     return baos.toByteArray();
+  }
+
+  private String getNestedDocs() throws IOException {
+    return "[{ \"id\": \"P11!prod\",\n"
+        + "   \"name_s\": \"Swingline Stapler\",\n"
+        + "   \"type_s\": \"PRODUCT\",\n"
+        + "   \"description_s\": \"The Cadillac of office staplers ...\",\n"
+        + "   \"skus\": [\n"
+        + "       { \"id\": \"P11!S21\",\n"
+        + "         \"type_s\": \"SKU\",\n"
+        + "         \"color_s\": \"RED\",\n"
+        + "         \"price_i\": 42,\n"
+        + "         \"manuals\": [\n"
+        + "             { \"id\": \"P11!D41\",\n"
+        + "               \"type_s\": \"MANUAL\",\n"
+        + "               \"name_s\": \"Red Swingline Brochure\",\n"
+        + "               \"pages_i\":1,\n"
+        + "               \"content_s\": \"...\"\n"
+        + "             } ]\n"
+        + "       },\n"
+        + "       { \"id\": \"P11!S31\",\n"
+        + "         \"type_s\": \"SKU\",\n"
+        + "         \"color_s\": \"BLACK\",\n"
+        + "         \"price_i\": 3\n"
+        + "       },\n"
+        + "       { \"id\": \"P11!D51\",\n"
+        + "         \"type_s\": \"MANUAL\",\n"
+        + "         \"name_s\": \"Quick Reference Guide\",\n"
+        + "         \"pages_i\":1,\n"
+        + "         \"content_s\": \"How to use your stapler ...\"\n"
+        + "       },\n"
+        + "       { \"id\": \"P11!D61\",\n"
+        + "         \"type_s\": \"MANUAL\",\n"
+        + "         \"name_s\": \"Warranty Details\",\n"
+        + "         \"pages_i\":42,\n"
+        + "         \"content_s\": \"... lifetime guarantee ...\"\n"
+        + "       }\n"
+        + "    ]\n"
+        + "} ]";
   }
 }

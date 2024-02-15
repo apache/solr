@@ -105,7 +105,10 @@
 # -a option on start script, those options will be appended as well. Examples:
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.autoSoftCommit.maxTime=3000"
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.autoCommit.maxTime=60000"
-#SOLR_OPTS="$SOLR_OPTS -Dsolr.clustering.enabled=true"
+
+# Most properties have an environment variable equivalent.
+# A naming convention is that SOLR_FOO_BAR maps to solr.foo.bar
+#SOLR_CLUSTERING_ENABLED=true
 
 # Location where the bin/solr script will save PID files for running instances
 # If not set, the script will create PID files in $SOLR_TIP/bin
@@ -154,6 +157,8 @@
 # environments where security is not a concern, 0.0.0.0 can be used to allow
 # Solr to accept connections on all network interfaces.
 #SOLR_JETTY_HOST="127.0.0.1"
+# Sets the network interface the Embedded ZK binds to.
+#SOLR_ZK_EMBEDDED_HOST="127.0.0.1"
 
 # Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
 # to enable https module with custom jetty configuration.
@@ -171,11 +176,13 @@
 # Verify client's hostname during SSL handshake
 #SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
 # SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
-# this to false can be useful to disable these checks when re-using a certificate on many hosts
+# this to false can be useful to disable these checks when re-using a certificate on many hosts.
+# This will also be used for the default value of whether SNI Host checking should be enabled.
 #SOLR_SSL_CHECK_PEER_NAME=true
 # Override Key/Trust Store types if necessary
 #SOLR_SSL_KEY_STORE_TYPE=PKCS12
 #SOLR_SSL_TRUST_STORE_TYPE=PKCS12
+#SOLR_SSL_RELOAD_ENABLED=true
 
 # Uncomment if you want to override previously defined SSL values for HTTP client
 # otherwise keep them commented and the above values will automatically be set for HTTP clients

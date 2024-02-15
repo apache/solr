@@ -47,7 +47,10 @@ public class TestBatchUpdate extends SolrJettyTestBase {
   @Test
   public void testWithXml() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getServerUrl()).withRequestWriter(new RequestWriter()).build()) {
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+            .withRequestWriter(new RequestWriter())
+            .build()) {
       client.deleteByQuery("*:*"); // delete everything!
       doIt(client);
     }
@@ -56,7 +59,8 @@ public class TestBatchUpdate extends SolrJettyTestBase {
   @Test
   public void testWithBinary() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getServerUrl())
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new BinaryRequestWriter())
             .build()) {
       client.deleteByQuery("*:*"); // delete everything!
@@ -67,7 +71,8 @@ public class TestBatchUpdate extends SolrJettyTestBase {
   @Test
   public void testWithBinaryBean() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getServerUrl())
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new BinaryRequestWriter())
             .build()) {
       client.deleteByQuery("*:*"); // delete everything!

@@ -36,6 +36,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  */
 public abstract class DocTransformer {
   protected ResultContext context;
+
   /**
    * @return The name of the transformer
    */

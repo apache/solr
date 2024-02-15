@@ -18,6 +18,8 @@ package org.apache.solr.logging;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,7 +40,7 @@ public abstract class LogWatcher<E> {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected CircularList<E> history;
+  protected CircularList<SolrDocument> history;
   protected long last = -1;
 
   /**
@@ -64,8 +66,16 @@ public abstract class LogWatcher<E> {
   public abstract String getThreshold();
 
   public void add(E event, long timstamp) {
-    history.add(event);
+    history.add(unmodifiable(toSolrDocument(event)));
     last = timstamp;
+  }
+
+  /**
+   * Since we store the derivative {@link SolrDocument} instances and potentially return the same
+   * instance to multiple callers, we should guard against modification.
+   */
+  private static SolrDocument unmodifiable(SolrDocument doc) {
+    return new SolrDocument(Collections.unmodifiableMap(doc.getFieldValueMap()));
   }
 
   public long getLastEvent() {
@@ -82,24 +92,22 @@ public abstract class LogWatcher<E> {
     }
 
     SolrDocumentList docs = new SolrDocumentList();
-    Iterator<E> iter = history.iterator();
+    Iterator<SolrDocument> iter = history.iterator();
     while (iter.hasNext()) {
-      E e = iter.next();
-      long ts = getTimestamp(e);
+      SolrDocument logEventEntry = iter.next();
+      long ts = ((Date) logEventEntry.getFirstValue("time")).getTime();
       if (ts == since) {
         if (found != null) {
           found.set(true);
         }
       }
       if (ts > since) {
-        docs.add(toSolrDocument(e));
+        docs.add(logEventEntry);
       }
     }
     docs.setNumFound(docs.size()); // make it not look too funny
     return docs;
   }
-
-  public abstract long getTimestamp(E event);
 
   public abstract SolrDocument toSolrDocument(E event);
 

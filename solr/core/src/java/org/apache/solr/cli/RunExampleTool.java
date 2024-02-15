@@ -51,7 +51,12 @@ import org.apache.solr.common.SolrException;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
-/** Supports an interactive session with the user to launch (or relaunch the -e cloud example) */
+/**
+ * Supports start command in the bin/solr script.
+ *
+ * <p>Enhances start command by providing an interactive session with the user to launch (or
+ * relaunch the -e cloud example)
+ */
 public class RunExampleTool extends ToolBase {
 
   private static final String PROMPT_FOR_NUMBER = "Please enter %s [%d]: ";
@@ -251,7 +256,9 @@ public class RunExampleTool extends ToolBase {
 
     boolean isCloudMode = cli.hasOption('c');
     String zkHost = cli.getOptionValue('z');
-    int port = Integer.parseInt(cli.getOptionValue('p', "8983"));
+    int port =
+        Integer.parseInt(
+            cli.getOptionValue('p', System.getenv().getOrDefault("SOLR_PORT", "8983")));
     Map<String, Object> nodeStatus =
         startSolr(new File(exDir, "solr"), isCloudMode, cli, port, zkHost, 30);
 
@@ -263,7 +270,8 @@ public class RunExampleTool extends ToolBase {
     // safe check if core / collection already exists
     boolean alreadyExists = false;
     if (nodeStatus.get("cloud") != null) {
-      if (SolrCLI.safeCheckCollectionExists(solrUrl, collectionName)) {
+      if (SolrCLI.safeCheckCollectionExists(
+          solrUrl, collectionName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
         alreadyExists = true;
         echo(
             "\nWARNING: Collection '"
@@ -272,7 +280,8 @@ public class RunExampleTool extends ToolBase {
       }
     } else {
       String coreName = collectionName;
-      if (SolrCLI.safeCheckCoreExists(solrUrl, coreName)) {
+      if (SolrCLI.safeCheckCoreExists(
+          solrUrl, coreName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
         alreadyExists = true;
         echo(
             "\nWARNING: Core '"
@@ -316,22 +325,21 @@ public class RunExampleTool extends ToolBase {
         String updateUrl = String.format(Locale.ROOT, "%s/%s/update", solrUrl, collectionName);
         echo("Indexing tech product example docs from " + exampledocsDir.getAbsolutePath());
 
-        String currentPropVal = System.getProperty("url");
-        System.setProperty("url", updateUrl);
-        String currentTypeVal = System.getProperty("type");
-        // We assume that example docs are always in XML.
-        System.setProperty("type", "application/xml");
-        SimplePostTool.main(new String[] {exampledocsDir.getAbsolutePath() + "/*.xml"});
-        if (currentPropVal != null) {
-          System.setProperty("url", currentPropVal); // reset
-        } else {
-          System.clearProperty("url");
-        }
-        if (currentTypeVal != null) {
-          System.setProperty("type", currentTypeVal); // reset
-        } else {
-          System.clearProperty("type");
-        }
+        String[] args =
+            new String[] {
+              "post",
+              "-commit",
+              "-url",
+              updateUrl,
+              "-type",
+              "application/xml",
+              exampledocsDir.getAbsolutePath() + "/*.xml"
+            };
+        PostTool postTool = new PostTool();
+        CommandLine postToolCli =
+            SolrCLI.parseCmdLine(postTool.getName(), args, postTool.getOptions());
+        postTool.runTool(postToolCli);
+
       } else {
         echo(
             "exampledocs directory not found, skipping indexing step for the techproducts example");
@@ -399,16 +407,24 @@ public class RunExampleTool extends ToolBase {
                 + "        }\n");
 
         File filmsJsonFile = new File(exampleDir, "films/films.json");
-        String updateUrl = String.format(Locale.ROOT, "%s/%s/update/json", solrUrl, collectionName);
+        String updateUrl = String.format(Locale.ROOT, "%s/%s/update", solrUrl, collectionName);
         echo("Indexing films example docs from " + filmsJsonFile.getAbsolutePath());
-        String currentPropVal = System.getProperty("url");
-        System.setProperty("url", updateUrl);
-        SimplePostTool.main(new String[] {filmsJsonFile.getAbsolutePath()});
-        if (currentPropVal != null) {
-          System.setProperty("url", currentPropVal); // reset
-        } else {
-          System.clearProperty("url");
-        }
+        String[] args =
+            new String[] {
+              "post",
+              "-url",
+              updateUrl,
+              "-type",
+              "application/json",
+              "-filetypes",
+              "json",
+              exampleDir.toString()
+            };
+        PostTool postTool = new PostTool();
+        CommandLine postToolCli =
+            SolrCLI.parseCmdLine(postTool.getName(), args, postTool.getOptions());
+        postTool.runTool(postToolCli);
+
       } catch (Exception ex) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
       }
@@ -427,6 +443,13 @@ public class RunExampleTool extends ToolBase {
     boolean prompt = !cli.hasOption("noprompt");
     int numNodes = 2;
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
+    int defaultPort =
+        Integer.parseInt(
+            cli.getOptionValue('p', System.getenv().getOrDefault("SOLR_PORT", "8983")));
+    if (defaultPort != 8983) {
+      // Override the old default port numbers if user has started the example overriding SOLR_PORT
+      cloudPorts = new int[] {defaultPort, defaultPort + 1, defaultPort + 2, defaultPort + 3};
+    }
     File cloudDir = new File(exampleDir, "cloud");
     if (!cloudDir.isDirectory()) cloudDir.mkdir();
 
@@ -517,41 +540,15 @@ public class RunExampleTool extends ToolBase {
     waitToSeeLiveNodes(zkHost, numNodes);
 
     // create the collection
-    String collectionName = createCloudExampleCollection(numNodes, readInput, prompt, solrUrl);
-
-    // update the config to enable soft auto-commit
-    echo("\nEnabling auto soft-commits with maxTime 3 secs using the Config API");
-    setCollectionConfigProperty(solrUrl, collectionName);
+    String collectionName =
+        createCloudExampleCollection(
+            numNodes,
+            readInput,
+            prompt,
+            solrUrl,
+            cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
 
     echo("\n\nSolrCloud example running, please visit: " + solrUrl + " \n");
-  }
-
-  protected void setCollectionConfigProperty(String solrUrl, String collectionName) {
-    ConfigTool configTool = new ConfigTool(stdout);
-    String[] configArgs =
-        new String[] {
-          "-collection",
-          collectionName,
-          "-property",
-          "updateHandler.autoSoftCommit.maxTime",
-          "-value",
-          "3000",
-          "-solrUrl",
-          solrUrl
-        };
-
-    // let's not fail if we get this far ... just report error and finish up
-    try {
-      configTool.runTool(
-          SolrCLI.processCommandLineArgs(
-              configTool.getName(), configTool.getOptions(), configArgs));
-    } catch (Exception exc) {
-      CLIO.err(
-          "Failed to update '"
-              + "updateHandler.autoSoftCommit.maxTime"
-              + "' property due to: "
-              + exc);
-    }
   }
 
   /** wait until the number of live nodes == numNodes. */
@@ -611,6 +608,7 @@ public class RunExampleTool extends ToolBase {
     String memArg = (memory != null) ? " -m " + memory : "";
     String cloudModeArg = cloudMode ? "-cloud " : "";
     String forceArg = cli.hasOption("force") ? " -force" : "";
+    String verboseArg = verbose ? "-V" : "";
 
     String addlOpts = cli.getOptionValue('a');
     String addlOptsArg = (addlOpts != null) ? " -a \"" + addlOpts + "\"" : "";
@@ -631,7 +629,7 @@ public class RunExampleTool extends ToolBase {
     String startCmd =
         String.format(
             Locale.ROOT,
-            "\"%s\" start %s -p %d -s \"%s\" %s %s %s %s %s %s",
+            "\"%s\" start %s -p %d -s \"%s\" %s %s %s %s %s %s %s",
             callScript,
             cloudModeArg,
             port,
@@ -640,6 +638,7 @@ public class RunExampleTool extends ToolBase {
             zkHostArg,
             memArg,
             forceArg,
+            verboseArg,
             extraArgs,
             addlOptsArg);
     startCmd = startCmd.replaceAll("\\s+", " ").trim(); // for pretty printing
@@ -651,7 +650,9 @@ public class RunExampleTool extends ToolBase {
         String.format(
             Locale.ROOT, "%s://%s:%d/solr", urlScheme, (host != null ? host : "localhost"), port);
 
-    Map<String, Object> nodeStatus = checkPortConflict(solrUrl, solrHomeDir, port);
+    String credentials = null; // for now we don't need it for example tool.  But we should.
+
+    Map<String, Object> nodeStatus = checkPortConflict(solrUrl, credentials, solrHomeDir, port);
     if (nodeStatus != null)
       return nodeStatus; // the server they are trying to start is already running
 
@@ -698,16 +699,18 @@ public class RunExampleTool extends ToolBase {
     }
     if (code != 0) throw new Exception("Failed to start Solr using command: " + startCmd);
 
-    return getNodeStatus(solrUrl, maxWaitSecs);
+    return getNodeStatus(
+        solrUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()), maxWaitSecs);
   }
 
-  protected Map<String, Object> checkPortConflict(String solrUrl, File solrHomeDir, int port) {
+  protected Map<String, Object> checkPortConflict(
+      String solrUrl, String credentials, File solrHomeDir, int port) {
     // quickly check if the port is in use
     if (isPortAvailable(port)) return null; // not in use ... try to start
 
     Map<String, Object> nodeStatus = null;
     try {
-      nodeStatus = (new StatusTool()).getStatus(solrUrl);
+      nodeStatus = (new StatusTool()).getStatus(solrUrl, credentials);
     } catch (Exception ignore) {
       /* just trying to determine if this example is already running. */
     }
@@ -756,7 +759,8 @@ public class RunExampleTool extends ToolBase {
   }
 
   protected String createCloudExampleCollection(
-      int numNodes, Scanner readInput, boolean prompt, String solrUrl) throws Exception {
+      int numNodes, Scanner readInput, boolean prompt, String solrUrl, String credentials)
+      throws Exception {
     // yay! numNodes SolrCloud nodes running
     int numShards = 2;
     int replicationFactor = 2;
@@ -780,7 +784,7 @@ public class RunExampleTool extends ToolBase {
 
         // Test for existence and then prompt to either create another collection or skip the
         // creation step
-        if (SolrCLI.safeCheckCollectionExists(solrUrl, collectionName)) {
+        if (SolrCLI.safeCheckCollectionExists(solrUrl, credentials, collectionName)) {
           echo("\nCollection '" + collectionName + "' already exists!");
           int oneOrTwo =
               promptForInt(
@@ -836,7 +840,7 @@ public class RunExampleTool extends ToolBase {
       }
     } else {
       // must verify if default collection exists
-      if (SolrCLI.safeCheckCollectionExists(solrUrl, collectionName)) {
+      if (SolrCLI.safeCheckCollectionExists(solrUrl, collectionName, credentials)) {
         echo(
             "\nCollection '"
                 + collectionName
@@ -845,7 +849,7 @@ public class RunExampleTool extends ToolBase {
       }
     }
 
-    // invoke the CreateCollectionTool
+    // invoke the CreateTool
     String[] createArgs =
         new String[] {
           "-name", collectionName,
@@ -857,11 +861,11 @@ public class RunExampleTool extends ToolBase {
           "-solrUrl", solrUrl
         };
 
-    CreateCollectionTool createCollectionTool = new CreateCollectionTool(stdout);
+    CreateTool createTool = new CreateTool(stdout);
     int createCode =
-        createCollectionTool.runTool(
+        createTool.runTool(
             SolrCLI.processCommandLineArgs(
-                createCollectionTool.getName(), createCollectionTool.getOptions(), createArgs));
+                createTool.getName(), createTool.getOptions(), createArgs));
 
     if (createCode != 0)
       throw new Exception(
@@ -879,13 +883,14 @@ public class RunExampleTool extends ToolBase {
     return configDir.isDirectory();
   }
 
-  protected Map<String, Object> getNodeStatus(String solrUrl, int maxWaitSecs) throws Exception {
+  protected Map<String, Object> getNodeStatus(String solrUrl, String credentials, int maxWaitSecs)
+      throws Exception {
     StatusTool statusTool = new StatusTool();
     if (verbose) echo("\nChecking status of Solr at " + solrUrl + " ...");
 
     URL solrURL = new URL(solrUrl);
     Map<String, Object> nodeStatus =
-        statusTool.waitToSeeSolrUp(solrUrl, maxWaitSecs, TimeUnit.SECONDS);
+        statusTool.waitToSeeSolrUp(solrUrl, credentials, maxWaitSecs, TimeUnit.SECONDS);
     nodeStatus.put("baseUrl", solrUrl);
     CharArr arr = new CharArr();
     new JSONWriter(arr, 2).write(nodeStatus);

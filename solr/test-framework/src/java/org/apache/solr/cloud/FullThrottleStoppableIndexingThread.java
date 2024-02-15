@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /** */
   private final HttpClient httpClient;
 
@@ -62,6 +63,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
     cusc =
         new ErrorLoggingConcurrentUpdateSolrClient.Builder(
                 ((HttpSolrClient) clients.get(0)).getBaseURL())
+            .withDefaultCollection(clients.get(0).getDefaultCollection())
             .withHttpClient(httpClient)
             .withQueueSize(8)
             .withThreadCount(2)
@@ -126,6 +128,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
       cusc =
           new ErrorLoggingConcurrentUpdateSolrClient.Builder(
                   ((HttpSolrClient) clients.get(clientIndex)).getBaseURL())
+              .withDefaultCollection(clients.get(clientIndex).getDefaultCollection())
               .withHttpClient(httpClient)
               .withQueueSize(30)
               .withThreadCount(3)

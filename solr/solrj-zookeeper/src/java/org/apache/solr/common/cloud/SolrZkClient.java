@@ -34,6 +34,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -69,8 +70,6 @@ import org.slf4j.LoggerFactory;
 public class SolrZkClient implements Closeable {
 
   static final String NEWL = System.getProperty("line.separator");
-
-  static final int DEFAULT_CLIENT_CONNECT_TIMEOUT = 30000;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -119,7 +118,8 @@ public class SolrZkClient implements Closeable {
         builder.zkACLProvider,
         builder.higherLevelIsClosed,
         builder.compressor,
-        builder.solrClassLoader);
+        builder.solrClassLoader,
+        builder.useDefaultCredsAndACLs);
   }
 
   private SolrZkClient(
@@ -132,7 +132,8 @@ public class SolrZkClient implements Closeable {
       ZkACLProvider zkACLProvider,
       IsClosed higherLevelIsClosed,
       Compressor compressor,
-      SolrClassLoader solrClassLoader) {
+      SolrClassLoader solrClassLoader,
+      boolean useDefaultCredsAndACLs) {
 
     if (zkServerAddress == null) {
       // only tests should create one without server address
@@ -149,9 +150,14 @@ public class SolrZkClient implements Closeable {
 
     this.solrClassLoader = solrClassLoader;
     if (!strat.hasZkCredentialsToAddAutomatically()) {
-      zkCredentialsInjector = createZkCredentialsInjector();
+      zkCredentialsInjector =
+          useDefaultCredsAndACLs
+              ? createZkCredentialsInjector()
+              : new DefaultZkCredentialsInjector();
       ZkCredentialsProvider zkCredentialsToAddAutomatically =
-          createZkCredentialsToAddAutomatically();
+          useDefaultCredsAndACLs
+              ? createZkCredentialsToAddAutomatically()
+              : new DefaultZkCredentialsProvider();
       strat.setZkCredentialsToAddAutomatically(zkCredentialsToAddAutomatically);
     }
 
@@ -211,7 +217,8 @@ public class SolrZkClient implements Closeable {
     }
     assert ObjectReleaseTracker.track(this);
     if (zkACLProvider == null) {
-      this.zkACLProvider = createZkACLProvider();
+      this.zkACLProvider =
+          useDefaultCredsAndACLs ? createZkACLProvider() : new DefaultZkACLProvider();
     } else {
       this.zkACLProvider = zkACLProvider;
     }
@@ -534,6 +541,27 @@ public class SolrZkClient implements Closeable {
       metrics.bytesWritten.add(data.length);
     }
     return result;
+  }
+
+  /**
+   * Returns path of created node
+   *
+   * @param stat Output argument that captures created node details
+   */
+  public String create(
+      final String path,
+      final byte[] data,
+      final CreateMode createMode,
+      boolean retryOnConnLoss,
+      Stat stat)
+      throws KeeperException, InterruptedException {
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(
+          () -> keeper.create(path, data, zkACLProvider.getACLsToAdd(path), createMode, stat));
+    } else {
+      List<ACL> acls = zkACLProvider.getACLsToAdd(path);
+      return keeper.create(path, data, acls, createMode, stat);
+    }
   }
 
   /**
@@ -1127,14 +1155,15 @@ public class SolrZkClient implements Closeable {
 
   public static class Builder {
     public String zkServerAddress;
-    public int zkClientTimeout = DEFAULT_CLIENT_CONNECT_TIMEOUT;
-    public int zkClientConnectTimeout = DEFAULT_CLIENT_CONNECT_TIMEOUT;
+    public int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
+    public int zkClientConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
     public OnReconnect onReconnect;
     public BeforeReconnect beforeReconnect;
     public ZkClientConnectionStrategy connectionStrategy;
     public ZkACLProvider zkACLProvider;
     public IsClosed higherLevelIsClosed;
     public SolrClassLoader solrClassLoader;
+    public boolean useDefaultCredsAndACLs = true;
 
     public Compressor compressor;
 
@@ -1143,13 +1172,25 @@ public class SolrZkClient implements Closeable {
       return this;
     }
 
-    public Builder withTimeout(int i, TimeUnit unit) {
-      this.zkClientTimeout = (int) unit.toMillis(i);
+    /**
+     * Sets the Zk client session timeout
+     *
+     * @param zkClientTimeout timeout value
+     * @param unit time unit
+     */
+    public Builder withTimeout(int zkClientTimeout, TimeUnit unit) {
+      this.zkClientTimeout = Math.toIntExact(unit.toMillis(zkClientTimeout));
       return this;
     }
 
-    public Builder withConnTimeOut(int i, TimeUnit unit) {
-      this.zkClientConnectTimeout = (int) unit.toMillis(i);
+    /**
+     * Sets the Zk connection timeout
+     *
+     * @param zkConnectTimeout timeout value
+     * @param unit time unit
+     */
+    public Builder withConnTimeOut(int zkConnectTimeout, TimeUnit unit) {
+      this.zkClientConnectTimeout = Math.toIntExact(unit.toMillis(zkConnectTimeout));
       return this;
     }
 
@@ -1185,6 +1226,11 @@ public class SolrZkClient implements Closeable {
 
     public Builder withSolrClassLoader(SolrClassLoader solrClassLoader) {
       this.solrClassLoader = solrClassLoader;
+      return this;
+    }
+
+    public Builder withUseDefaultCredsAndACLs(boolean useDefaultCredsAndACLs) {
+      this.useDefaultCredsAndACLs = useDefaultCredsAndACLs;
       return this;
     }
 

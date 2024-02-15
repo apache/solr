@@ -845,7 +845,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     for (TextFragment fragment : frags) {
       fragTexts.add(fragment.toString());
     }
-    return fragTexts.toArray(new String[fragTexts.size()]);
+    return fragTexts.toArray(new String[0]);
   }
 
   /**
@@ -906,7 +906,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       }
     }
 
-    String[] altTexts = listFields.toArray(new String[listFields.size()]);
+    String[] altTexts = listFields.toArray(new String[0]);
 
     Encoder encoder = getEncoder(fieldName, params);
     List<String> altList = new ArrayList<>();

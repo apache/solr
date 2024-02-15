@@ -38,6 +38,14 @@ setup() {
   refute_output --partial 'ERROR'
 }
 
+@test "start h flag prints help" {
+  run solr start -h
+  assert_output --partial 'Usage: solr start'
+  refute_output --partial 'ERROR: Hostname is required when using the -h option!'
+}
+
+
+
 @test "stop help flag prints help" {
   run solr stop -help
   assert_output --partial 'Usage: solr stop'
@@ -54,6 +62,8 @@ setup() {
   run solr status -help
   assert_output --partial 'usage: status'
   refute_output --partial 'ERROR'
+  # Make sure custom selection of options for status help works.
+  refute_output --partial '-solrUrl'
 }
 
 @test "healthcheck help flag prints help" {
@@ -65,18 +75,6 @@ setup() {
 @test "create help flag prints help" {
   run solr create --help
   assert_output --partial 'usage: create'
-  refute_output --partial 'ERROR'
-}
-
-@test "createcore help flag prints help" {
-  run solr create_core --help
-  assert_output --partial 'usage: create_core'
-  refute_output --partial 'ERROR'
-}
-
-@test "createcollection help flag prints help" {
-  run solr create_collection -h
-  assert_output --partial 'usage: create_collection'
   refute_output --partial 'ERROR'
 }
 

@@ -37,7 +37,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cli.SimplePostTool;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
@@ -99,14 +98,13 @@ public class TestSolrConfigHandler extends RestTestBase {
   }
 
   public static ByteBuffer generateZip(Class<?>... classes) throws IOException {
-    SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
+    Utils.BAOS bos = new Utils.BAOS();
     try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
       zipOut.setLevel(ZipOutputStream.DEFLATED);
       for (Class<?> c : classes) {
         String path = c.getName().replace('.', '/').concat(".class");
         ZipEntry entry = new ZipEntry(path);
-        ByteBuffer b =
-            SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
+        ByteBuffer b = Utils.toByteArray(c.getClassLoader().getResourceAsStream(path));
         zipOut.putNextEntry(entry);
         zipOut.write(b.array(), b.arrayOffset(), b.limit());
         zipOut.closeEntry();
@@ -135,17 +133,14 @@ public class TestSolrConfigHandler extends RestTestBase {
     if (random().nextBoolean()) {
       log.info("These tests are run with V2 API");
       restTestHarness.setServerProvider(
-          () -> jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
+          () -> getBaseUrl() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
     }
   }
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
-    client = null;
+    solrClientTestRule.reset();
+
     if (restTestHarness != null) {
       restTestHarness.close();
     }
@@ -975,7 +970,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         TIMEOUT_S);
     RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
     restTestHarness.setServerProvider(
-        () -> jetty.getBaseUrl().toString() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
+        () -> getBaseUrl() + "/____v2/cores/" + DEFAULT_TEST_CORENAME);
 
     Map<?, ?> rsp =
         TestSolrConfigHandler.testForResponseElement(
@@ -1015,5 +1010,59 @@ public class TestSolrConfigHandler extends RestTestBase {
       log.error(response);
       return new LinkedHashMapWriter<>();
     }
+  }
+
+  public void testCacheDisableSolrConfig() throws Exception {
+    RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
+    restTestHarness.setServerProvider(() -> getBaseUrl());
+    MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);
+    assertNotNull(
+        confMap._get(
+            asList("metrics", "solr.core.collection1", "CACHE.searcher.fieldValueCache"), null));
+    // Here documentCache is disabled at initialization in SolrConfig
+    assertNull(
+        confMap._get(
+            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+    restTestHarness.setServerProvider(oldProvider);
+  }
+
+  public void testSetPropertyCacheSize() throws Exception {
+    RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
+    // Changing cache size
+    String payload = "{'set-property' : { 'query.documentCache.size': 399} }";
+    runConfigCommand(restTestHarness, "/config", payload);
+    MapWriter overlay = getRespMap("/config/overlay", restTestHarness);
+    assertEquals("399", overlay._getStr("overlay/props/query/documentCache/size", null));
+    // Setting size only will not enable the cache
+    restTestHarness.setServerProvider(() -> getBaseUrl());
+    MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);
+    assertNull(
+        confMap._get(
+            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+    restTestHarness.setServerProvider(oldProvider);
+  }
+
+  public void testSetPropertyEnableAndDisableCache() throws Exception {
+    RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
+    // Enabling Cache
+    String payload = "{'set-property' : { 'query.documentCache.enabled': true} }";
+    runConfigCommand(restTestHarness, "/config", payload);
+    restTestHarness.setServerProvider(() -> getBaseUrl());
+    MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);
+    assertNotNull(
+        confMap._get(
+            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+
+    // Disabling Cache
+    payload = "{ 'set-property' : { 'query.documentCache.enabled': false } }";
+    restTestHarness.setServerProvider(oldProvider);
+    runConfigCommand(restTestHarness, "/config", payload);
+    restTestHarness.setServerProvider(() -> getBaseUrl());
+    confMap = getRespMap("/admin/metrics", restTestHarness);
+    assertNull(
+        confMap._get(
+            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+
+    restTestHarness.setServerProvider(oldProvider);
   }
 }

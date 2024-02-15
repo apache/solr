@@ -17,22 +17,19 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.ZkConfigSetService;
@@ -45,6 +42,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -494,7 +492,10 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
       assertNotNull(collection);
       assertEquals("conf1", collection.get("configName"));
-      //      assertEquals("1", collection.get("nrtReplicas"));
+
+      Instant creationTime = Instant.ofEpochMilli((long) collection.get("creationTimeMillis"));
+      assertEquals(
+          creationTime, client.getClusterState().getCollection(COLLECTION_NAME).getCreationTime());
     }
   }
 
@@ -536,23 +537,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotNull(newVersion);
       assertTrue(newVersion > znodeVersion);
     }
-  }
-
-  private static long totalexpectedV2Calls;
-
-  public static <T extends SolrResponse> SolrRequest<T> setV2(SolrRequest<T> req) {
-    if (V2Request.v2Calls.get() == null) V2Request.v2Calls.set(new AtomicLong());
-    totalexpectedV2Calls = V2Request.v2Calls.get().get();
-    if (random().nextBoolean()) {
-      req.setUseV2(true);
-      req.setUseBinaryV2(random().nextBoolean());
-      totalexpectedV2Calls++;
-    }
-    return req;
-  }
-
-  public static void assertV2CallsCount() {
-    assertEquals(totalexpectedV2Calls, V2Request.v2Calls.get().get());
   }
 
   private void clusterStatusWithRouteKey() throws IOException, SolrServerException {
@@ -1315,6 +1299,33 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertEquals(2, configMisses.longValue());
     } finally {
       cl.shutdown();
+    }
+  }
+
+  @Test
+  public void testCreateCollectionBooleanValues() throws Exception {
+    try (CloudSolrClient client = createCloudClient(null)) {
+      String collectionName = "testCreateCollectionBooleanValues";
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CREATE.toString());
+      params.set("name", collectionName);
+      params.set("collection.configName", "conf1");
+      params.set("numShards", "1");
+      params.set(CollectionAdminParams.PER_REPLICA_STATE, "False");
+      QueryRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      try {
+        client.request(request);
+        waitForCollection(ZkStateReader.from(cloudClient), collectionName, 1);
+      } finally {
+        try {
+          CollectionAdminRequest.deleteCollection(collectionName).process(client);
+        } catch (Exception e) {
+          // Delete if possible, ignore otherwise. If the test failed, let the original exception
+          // bubble up
+        }
+      }
     }
   }
 }

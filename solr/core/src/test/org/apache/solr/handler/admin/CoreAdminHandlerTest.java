@@ -301,12 +301,12 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     Files.writeString(renamePropFile, "", StandardCharsets.UTF_8);
 
     JettySolrRunner runner =
-        new JettySolrRunner(
-            solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig("/solr"));
+        new JettySolrRunner(solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig());
     runner.start();
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl() + "/corex")
+        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+            .withDefaultCollection("corex")
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
@@ -374,12 +374,12 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
     JettySolrRunner runner =
-        new JettySolrRunner(
-            solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig("/solr"));
+        new JettySolrRunner(solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig());
     runner.start();
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl() + "/corex")
+        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+            .withDefaultCollection("corex")
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
@@ -390,7 +390,8 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     }
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl() + "/corex")
+        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+            .withDefaultCollection("corex")
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
@@ -414,7 +415,8 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
             BaseHttpSolrClient.RemoteSolrException.class,
             () -> {
               try (SolrClient client =
-                  new HttpSolrClient.Builder(runner.getBaseUrl() + "/corex")
+                  new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+                      .withDefaultCollection("corex")
                       .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
                       .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT * 1000, TimeUnit.MILLISECONDS)
                       .build()) {
@@ -436,12 +438,12 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     Path corex = solrHomeDirectory.resolve("corex");
     Files.writeString(corex.resolve("core.properties"), "", StandardCharsets.UTF_8);
     JettySolrRunner runner =
-        new JettySolrRunner(
-            solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig("/solr"));
+        new JettySolrRunner(solrHomeDirectory.toAbsolutePath().toString(), buildJettyConfig());
     runner.start();
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(runner.getBaseUrl() + "/corex")
+        new HttpSolrClient.Builder(runner.getBaseUrl().toString())
+            .withDefaultCollection("corex")
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withSocketTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {

@@ -163,7 +163,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             if (o instanceof List) {
               @SuppressWarnings("unchecked")
               List<String> l = (List<String>) o;
-              return l.toArray(new String[l.size()]);
+              return l.toArray(new String[0]);
             }
 
             return o;

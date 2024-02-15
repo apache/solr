@@ -50,7 +50,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.KnnCollector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.packed.PackedInts;
@@ -97,7 +97,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     in = reader;
     in.registerParentReader(this);
     if (reader.leaves().isEmpty()) {
-      metaData = new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
+      metaData = new LeafMetaData(Version.LATEST.major, Version.LATEST, null, false);
     } else {
       Version minVersion = Version.LATEST;
       for (LeafReaderContext leafReaderContext : reader.leaves()) {
@@ -109,9 +109,13 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
           minVersion = leafVersion;
         }
       }
-      int createdVersionMajor =
-          reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor();
-      metaData = new LeafMetaData(createdVersionMajor, minVersion, null);
+      LeafMetaData leafMetaData = reader.leaves().get(0).reader().getMetaData();
+      metaData =
+          new LeafMetaData(
+              leafMetaData.getCreatedVersionMajor(),
+              minVersion,
+              leafMetaData.getSort(),
+              leafMetaData.hasBlocks());
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
   }
@@ -368,14 +372,14 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public TopDocs searchNearestVectors(
-      String field, float[] target, int k, Bits acceptDocs, int visitedLimit) throws IOException {
+  public void searchNearestVectors(
+      String field, float[] target, KnnCollector knnCollector, Bits acceptDocs) throws IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public TopDocs searchNearestVectors(
-      String field, byte[] target, int k, Bits acceptDocs, int visitedLimit) throws IOException {
+  public void searchNearestVectors(
+      String field, byte[] target, KnnCollector knnCollector, Bits acceptDocs) throws IOException {
     throw new UnsupportedOperationException();
   }
 

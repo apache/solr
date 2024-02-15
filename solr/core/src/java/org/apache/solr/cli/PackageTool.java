@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cli;
 
-import static org.apache.solr.cli.SolrCLI.getSolrClient;
 import static org.apache.solr.packagemanager.PackageUtils.print;
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
@@ -31,13 +30,8 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.packagemanager.PackageManager;
 import org.apache.solr.packagemanager.PackageUtils;
@@ -48,6 +42,7 @@ import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Supports package command in the bin/solr script. */
 public class PackageTool extends ToolBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -64,8 +59,6 @@ public class PackageTool extends ToolBase {
     return "package";
   }
 
-  public static String solrUrl = null;
-  public static String solrBaseUrl = null;
   public PackageManager packageManager;
   public RepositoryManager repositoryManager;
 
@@ -83,19 +76,16 @@ public class PackageTool extends ToolBase {
         printHelp();
         return;
       }
-
-      solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length - 1];
-      solrBaseUrl = solrUrl.replaceAll("/solr$", ""); // strip out ending "/solr"
-      log.info("Solr url:{}, solr base url: {}", solrUrl, solrBaseUrl);
-      String zkHost = getZkHost(cli);
+      String solrUrl = SolrCLI.normalizeSolrUrl(cli);
+      String zkHost = SolrCLI.getZkHost(cli);
       if (zkHost == null) {
         throw new SolrException(ErrorCode.INVALID_STATE, "Package manager runs only in SolrCloud");
       }
 
       log.info("ZK: {}", zkHost);
 
-      try (SolrClient solrClient = new Http2SolrClient.Builder(solrBaseUrl).build()) {
-        packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost);
+      try (SolrClient solrClient = SolrCLI.getSolrClient(cli, true)) {
+        packageManager = new PackageManager(solrClient, solrUrl, zkHost);
         try {
           repositoryManager = new RepositoryManager(solrClient, packageManager);
 
@@ -246,7 +236,7 @@ public class PackageTool extends ToolBase {
 
     } catch (Exception ex) {
       // We need to print this since SolrCLI drops the stack trace in favour
-      // of brevity. Package tool should surely print full stacktraces!
+      // of brevity. Package tool should surely print the full stacktrace!
       ex.printStackTrace();
       throw ex;
     }
@@ -318,15 +308,7 @@ public class PackageTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("solrUrl")
-            .argName("URL")
-            .hasArg()
-            .required(true)
-            .desc(
-                "Address of the Solr Web application, defaults to: "
-                    + SolrCLI.DEFAULT_SOLR_URL
-                    + '.')
-            .build(),
+        SolrCLI.OPTION_SOLRURL,
         Option.builder("collections")
             .argName("COLLECTIONS")
             .hasArg()
@@ -359,33 +341,14 @@ public class PackageTool extends ToolBase {
             .required(false)
             .desc("Don't prompt for input; accept all default choices, defaults to false.")
             .longOpt("noprompt")
+            .build(),
+        // u was taken, can we change that instead?
+        Option.builder("credentials")
+            .argName("credentials")
+            .hasArg()
+            .required(false)
+            .desc(
+                "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
             .build());
-  }
-
-  private String getZkHost(CommandLine cli) throws Exception {
-    String zkHost = cli.getOptionValue("zkHost");
-    if (zkHost != null) return zkHost;
-
-    try (SolrClient solrClient = getSolrClient(solrUrl)) {
-      // hit Solr to get system info
-      NamedList<Object> systemInfo =
-          solrClient.request(
-              new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-
-      // convert raw JSON into user-friendly output
-      StatusTool statusTool = new StatusTool();
-      Map<String, Object> status = statusTool.reportStatus(systemInfo, solrClient);
-      @SuppressWarnings({"unchecked"})
-      Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
-      if (cloud != null) {
-        String zookeeper = (String) cloud.get("ZooKeeper");
-        if (zookeeper.endsWith("(embedded)")) {
-          zookeeper = zookeeper.substring(0, zookeeper.length() - "(embedded)".length());
-        }
-        zkHost = zookeeper;
-      }
-    }
-
-    return zkHost;
   }
 }

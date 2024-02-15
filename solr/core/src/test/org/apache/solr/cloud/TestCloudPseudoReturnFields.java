@@ -67,6 +67,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
 
   /** A collection specific client for operations at the cloud level */
   private static CloudSolrClient COLLECTION_CLIENT;
+
   /** One client per node */
   private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
@@ -97,7 +98,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     waitForRecoveriesToFinish(COLLECTION_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl().toString(), COLLECTION_NAME));
     }
 
     assertEquals(

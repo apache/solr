@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>9.7</luceneMatchVersion>
+  <luceneMatchVersion>9.9</luceneMatchVersion>
 
   <!-- <lib/> directives can be used to instruct Solr to load any Jars
        identified and use them to resolve any "plugins" specified in
@@ -301,7 +301,7 @@
       -->
 
     <autoSoftCommit>
-      <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime>
+      <maxTime>${solr.autoSoftCommit.maxTime:3000}</maxTime>
     </autoSoftCommit>
 
     <!-- Update Related Event Listeners
@@ -494,23 +494,6 @@
       -->
     <queryResultMaxDocsCached>200</queryResultMaxDocsCached>
 
-  <!-- Use Filter For Sorted Query
-
-   A possible optimization that attempts to use a filter to
-   satisfy a search.  If the requested sort does not include
-   score, then the filterCache will be checked for a filter
-   matching the query. If found, the filter will be used as the
-   source of document ids, and then the sort will be applied to
-   that.
-
-   For most situations, this will not be useful unless you
-   frequently get the same search repeatedly with different sort
-   options, and none of them ever use "score"
--->
-    <!--
-       <useFilterForSortedQuery>true</useFilterForSortedQuery>
-      -->
-
     <!-- Query Related Event Listeners
 
          Various IndexSearcher related events can trigger Listeners to
@@ -558,52 +541,6 @@
     <useColdSearcher>false</useColdSearcher>
 
   </query>
-
-  <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     Circuit Breaker Section - This section consists of configurations for
-     circuit breakers
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-  <!-- Circuit breakers are designed to allow stability and predictable query
-     execution. They prevent operations that can take down the node and cause
-     noisy neighbour issues.
-
-     The CircuitBreakerManager is the default manager for all circuit breakers.
-     The enabled flag here controls the activation/deactivation of all circuit
-     breakers specified within.
-  -->
-  <circuitBreaker class="solr.CircuitBreakerManager" enabled="true">
-    <!-- Memory Circuit Breaker
-
-     Specific configuration for max JVM heap usage circuit breaker. This configuration defines
-     whether the circuit breaker is enabled and the threshold percentage of maximum heap allocated
-     beyond which queries will be rejected until the current JVM usage goes below the threshold.
-     The valid value for this range is 50-95.
-
-     Consider a scenario where the max heap allocated is 4 GB and memThreshold is defined as 75.
-     Threshold JVM usage will be 4 * 0.75 = 3 GB. Its generally a good idea to keep this value
-     between 75 - 80% of maximum heap allocated.
-
-     If, at any point, the current JVM heap usage goes above 3 GB, queries will be rejected until
-     the heap usage goes below 3 GB again. If you see queries getting rejected with 503 error code,
-     check for "Circuit Breakers tripped" in logs and the corresponding error message should tell
-     you what transpired (if the failure was caused by tripped circuit breakers).
-    -->
-    <!--
-    <str name="memEnabled">true</str>
-    <str name="memThreshold">75</str>
-    -->
-
-    <!-- CPU Circuit Breaker Configuration
-
-     Specific configuration for CPU utilization based circuit breaker. This configuration defines
-     whether the circuit breaker is enabled and the average load over the last minute at which the
-     circuit breaker should start rejecting queries.
-    -->
-    <!--
-    <str name="cpuEnabled">true</str>
-    <str name="cpuThreshold">75</str>
-    -->
-  </circuitBreaker>
 
   <!-- Request Dispatcher
 

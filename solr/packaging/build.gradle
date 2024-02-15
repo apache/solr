@@ -238,6 +238,15 @@ task integrationTests(type: BatsTask) {
   def integrationTestOutput = "$buildDir/test-output"
   def solrHome = "$integrationTestOutput/solr-home"
   def solrTestFailuresDir = "$integrationTestOutput/failure-snapshots"
+  var solrPort = Integer.parseInt((String) project.findProperty('bats.port') ?: System.getProperty("bats.port", "-1"))
+  while (solrPort > 64000 || solrPort < 0) { // We need room for +1000 for ZK
+    try (ServerSocket s = new ServerSocket(0)) {
+      solrPort = s.getLocalPort()
+    } catch (Exception e) {
+      println("WARN: Could not assign random port for Bats tests. Using default port 8983.")
+      solrPort = 8983
+    }
+  }
 
   inputs.dir(distDir)
   outputs.dir(integrationTestOutput)
@@ -250,12 +259,18 @@ task integrationTests(type: BatsTask) {
 
     // TODO - if quiet then don't tee
     standardOutput = new TeeOutputStream(System.out, new FileOutputStream("$integrationTestOutput/test-output.txt"))
-
+    println("Running BATS tests with Solr base port ${solrPort}")
   }
 
   environment SOLR_TIP: distDir.toString()
   environment SOLR_HOME: solrHome
+  environment SOLR_PID_DIR: solrHome
+  environment SOLR_PORT: solrPort
+  environment SOLR2_PORT: solrPort + 1
+  environment SOLR3_PORT: solrPort + 2
+  environment ZK_PORT: solrPort + 1000
   environment SOLR_LOGS_DIR: "$solrHome/logs"
+  environment TEST_OUTPUT_DIR: integrationTestOutput
   environment TEST_FAILURE_DIR: solrTestFailuresDir
   environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
 }
@@ -281,6 +296,7 @@ class BatsTask extends Exec {
     // Note: tests to run must be listed after all other arguments
     // Additional debugging output: -x, --verbose-run
     setArgs(['-T', '--print-output-on-failure'] + (testFiles.empty ? testDir : testFiles))
+
 
     super.exec()
   }

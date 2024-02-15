@@ -16,13 +16,17 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.SynchronousQueue;
@@ -30,6 +34,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -145,10 +150,23 @@ public class ExecutorUtil {
         nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), threadFactory);
   }
 
-  /** See {@link java.util.concurrent.Executors#newSingleThreadExecutor(ThreadFactory)} */
+  /**
+   * See {@link java.util.concurrent.Executors#newSingleThreadExecutor(ThreadFactory)}. Note the
+   * thread is always active, even if no tasks are submitted to the executor.
+   */
   public static ExecutorService newMDCAwareSingleThreadExecutor(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(
         1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), threadFactory);
+  }
+
+  /**
+   * Similar to {@link #newMDCAwareSingleThreadExecutor(ThreadFactory)}, but the thread will not be
+   * kept active after the specified time if no task is submitted to the executor.
+   */
+  public static ExecutorService newMDCAwareSingleLazyThreadExecutor(
+      ThreadFactory threadFactory, long keepAliveTime, TimeUnit unit) {
+    return new MDCAwareThreadPoolExecutor(
+        0, 1, keepAliveTime, unit, new LinkedBlockingQueue<>(), threadFactory);
   }
 
   /** Create a cached thread pool using a named thread factory */
@@ -163,9 +181,14 @@ public class ExecutorUtil {
   }
 
   public static ExecutorService newMDCAwareCachedThreadPool(
-      int maxThreads, ThreadFactory threadFactory) {
+      int maxThreads, int queueCapacity, ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(
-        0, maxThreads, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(maxThreads), threadFactory);
+        0,
+        maxThreads,
+        60L,
+        TimeUnit.SECONDS,
+        new LinkedBlockingQueue<>(queueCapacity),
+        threadFactory);
   }
 
   @SuppressForbidden(reason = "class customizes ThreadPoolExecutor so it can be used instead")
@@ -328,5 +351,49 @@ public class ExecutorUtil {
   public static void setServerThreadFlag(Boolean flag) {
     if (flag == null) isServerPool.remove();
     else isServerPool.set(flag);
+  }
+
+  /**
+   * Takes an executor and a list of Callables and executes them returning the results as a list.
+   * The method waits for the return of every task even if one of them throws an exception. If any
+   * exception happens it will be thrown, wrapped into an IOException, and other following
+   * exceptions will be added as `addSuppressed` to the original exception
+   *
+   * @param <T> the response type
+   * @param service executor
+   * @param tasks the list of callables to be executed
+   * @return results list
+   * @throws IOException in case any exceptions happened
+   */
+  public static <T> Collection<T> submitAllAndAwaitAggregatingExceptions(
+      ExecutorService service, List<? extends Callable<T>> tasks) throws IOException {
+    List<T> results = new ArrayList<>(tasks.size());
+    IOException parentException = null;
+
+    // Could alternatively use service.invokeAll, but this way we can start looping over futures
+    // before all are done
+    List<Future<T>> futures =
+        tasks.stream().map(service::submit).collect(Collectors.toUnmodifiableList());
+    for (Future<T> f : futures) {
+      try {
+        results.add(f.get());
+      } catch (ExecutionException e) {
+        if (parentException == null) {
+          parentException = new IOException(e.getCause());
+        } else {
+          parentException.addSuppressed(e.getCause());
+        }
+      } catch (Exception e) {
+        if (parentException == null) {
+          parentException = new IOException(e);
+        } else {
+          parentException.addSuppressed(e);
+        }
+      }
+    }
+    if (parentException != null) {
+      throw parentException;
+    }
+    return results;
   }
 }

@@ -36,17 +36,20 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import javax.inject.Inject;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import org.apache.solr.client.api.model.CreateCollectionRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -65,8 +68,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SolrJerseyResponse;
-import org.apache.solr.jersey.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.TimeZoneUtils;
@@ -159,8 +160,8 @@ public class CreateAliasAPI extends AdminAPIBase {
     }
 
     if (requestBody.collCreationParameters != null) {
-      requestBody.collCreationParameters.addToRemoteMessageWithPrefix(
-          remoteMessage, "create-collection.");
+      CreateCollection.addToRemoteMessageWithPrefix(
+          requestBody.collCreationParameters, remoteMessage, "create-collection.");
     }
     return new ZkNodeProps(remoteMessage);
   }
@@ -203,7 +204,7 @@ public class CreateAliasAPI extends AdminAPIBase {
     final SolrParams createCollectionParams =
         getHierarchicalParametersByPrefix(params, CREATE_COLLECTION_PREFIX);
     createBody.collCreationParameters =
-        CreateCollectionAPI.CreateCollectionRequestBody.fromV1Params(createCollectionParams, false);
+        CreateCollection.createRequestBodyFromV1Params(createCollectionParams, false);
 
     return createBody;
   }
@@ -239,7 +240,7 @@ public class CreateAliasAPI extends AdminAPIBase {
     public List<RoutedAliasProperties> routers;
 
     @JsonProperty("create-collection")
-    public CreateCollectionAPI.CreateCollectionRequestBody collCreationParameters;
+    public CreateCollectionRequestBody collCreationParameters;
 
     public void validate() {
       SolrIdentifierValidator.validateAliasName(name);
@@ -257,8 +258,7 @@ public class CreateAliasAPI extends AdminAPIBase {
               BAD_REQUEST, "Collections cannot be specified when creating a routed alias.");
         }
 
-        final CreateCollectionAPI.CreateCollectionRequestBody createCollReqBody =
-            collCreationParameters;
+        final var createCollReqBody = collCreationParameters;
         if (createCollReqBody != null) {
           if (createCollReqBody.name != null) {
             throw new SolrException(

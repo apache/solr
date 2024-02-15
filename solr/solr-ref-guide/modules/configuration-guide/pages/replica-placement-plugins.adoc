@@ -25,7 +25,8 @@ It can also enforce additional constraints on operations such as collection or r
 In earlier versions of Solr, this functionality was provided using either per-collection rules, or with the autoscaling framework.
 
 == Plugin Configuration
-Replica placement plugin configurations are maintained using the `/cluster/plugin` API.
+Replica placement plugin configurations are configured either xref:configuring-solr-xml.adoc#the-replicaplacementfactory-element[ in the `solr.xml` file], or using the `/cluster/plugin` API.
+Any plugin configured in `solr.xml` will be used as long as no replica placement plugin is defined as a cluster plugin.
 There can be only one cluster-wide plugin configuration at a time, and it uses a pre-defined plugin name: `.placement-plugin`.
 
 There are several placement plugins included in the Solr distribution.
@@ -132,7 +133,7 @@ If `withCollection` or `withCollectionShards` are defined and applicable to the 
 ** Iterate over the number of replicas to place (for the current replica type for the current shard):
 *** Based on the number of replicas per AZ collected previously, pick the non-empty set of nodes having the lowest number of replicas.
 Then pick the first node in that set.
-That's the node the replica is placed one.
+That's the node the replica is placed on.
 Remove the node from the set of available nodes for the given AZ and increase the number of replicas placed on that AZ.
 ** During this process, the number of cores on the nodes in general is tracked to take into account placement decisions so that not all shards decide to put their replicas on the same nodes (they might though if these are the less loaded nodes).
 
@@ -147,7 +148,7 @@ This plugin supports the following configuration parameters:
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `20` Gigabytes
+|Optional |Default: `5` Gigabytes
 |===
 +
 If a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.

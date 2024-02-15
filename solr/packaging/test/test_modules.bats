@@ -31,8 +31,8 @@ teardown() {
 
 @test "SQL Module" {
   run solr start -c -Dsolr.modules=sql
-  run solr create_collection -c COLL_NAME
-  run solr api -get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10
+  run solr create -c COLL_NAME
+  run solr api -get http://localhost:${SOLR_PORT}/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10
   assert_output --partial '"docs":'
   assert_output --partial '"EOF":true'
   assert_output --partial '"RESPONSE_TIME":'
@@ -52,7 +52,7 @@ teardown() {
     -Dsolr.kerberos.cookie.domain=test
 
   # Upload the custom security.json and wait for Solr to try to load it
-  solr zk cp "${security_json}" zk:security.json -z localhost:9983
+  solr zk cp "${security_json}" zk:security.json -z localhost:${ZK_PORT}
   sleep 1
 
   run cat "${SOLR_LOGS_DIR}/solr.log"
@@ -61,7 +61,11 @@ teardown() {
 }
 
 @test "icu collation in analysis-extras module" {
-  run solr start -c -Dsolr.modules=analysis-extras
-  run solr create_collection -c COLL_NAME -d test/analysis_extras_config/conf
+  local solr_include_file="${BATS_TEST_TMPDIR}/solr.include"
+  echo "SOLR_MODULES=analysis-extras" > "${solr_include_file}"
+
+  export SOLR_INCLUDE="${solr_include_file}"
+  run solr start -c
+  run solr create -c COLL_NAME -d test/analysis_extras_config/conf
   assert_output --partial "Created collection 'COLL_NAME'"
 }

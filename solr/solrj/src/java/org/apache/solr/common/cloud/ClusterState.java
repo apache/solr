@@ -18,7 +18,9 @@ package org.apache.solr.common.cloud;
 
 import static org.apache.solr.common.util.Utils.STANDARDOBJBUILDER;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
@@ -48,7 +51,7 @@ import org.slf4j.LoggerFactory;
  *
  * @lucene.experimental
  */
-public class ClusterState implements JSONWriter.Writable {
+public class ClusterState implements MapWriter {
 
   /** Cluster Prop that is http or https. */
   public static final String URL_SCHEME = "urlScheme";
@@ -223,28 +226,35 @@ public class ClusterState implements JSONWriter.Writable {
    *     Json representation of a {@link DocCollection} as written by {@link #write(JSONWriter)}. It
    *     can represent one or more collections.
    * @param liveNodes list of live nodes
+   * @param creationTime assigns this date to all {@link DocCollection} referenced by the returned
+   *     {@link ClusterState}
    * @return the ClusterState
    */
   public static ClusterState createFromJson(
-      int version, byte[] bytes, Set<String> liveNodes, DocCollection.PrsSupplier prsSupplier) {
+      int version,
+      byte[] bytes,
+      Set<String> liveNodes,
+      Instant creationTime,
+      DocCollection.PrsSupplier prsSupplier) {
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> stateMap =
         (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length, STR_INTERNER_OBJ_BUILDER);
-    return createFromCollectionMap(version, stateMap, liveNodes, prsSupplier);
+    return createFromCollectionMap(version, stateMap, liveNodes, creationTime, prsSupplier);
   }
 
   @Deprecated
   public static ClusterState createFromJson(int version, byte[] bytes, Set<String> liveNodes) {
-    return createFromJson(version, bytes, liveNodes, null);
+    return createFromJson(version, bytes, liveNodes, Instant.EPOCH, null);
   }
 
   public static ClusterState createFromCollectionMap(
       int version,
       Map<String, Object> stateMap,
       Set<String> liveNodes,
+      Instant creationTime,
       DocCollection.PrsSupplier prsSupplier) {
     Map<String, CollectionRef> collections = CollectionUtil.newLinkedHashMap(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
@@ -252,7 +262,11 @@ public class ClusterState implements JSONWriter.Writable {
       @SuppressWarnings({"unchecked"})
       DocCollection coll =
           collectionFromObjects(
-              collectionName, (Map<String, Object>) entry.getValue(), version, prsSupplier);
+              collectionName,
+              (Map<String, Object>) entry.getValue(),
+              version,
+              creationTime,
+              prsSupplier);
       collections.put(collectionName, new CollectionRef(coll));
     }
 
@@ -262,12 +276,16 @@ public class ClusterState implements JSONWriter.Writable {
   @Deprecated
   public static ClusterState createFromCollectionMap(
       int version, Map<String, Object> stateMap, Set<String> liveNodes) {
-    return createFromCollectionMap(version, stateMap, liveNodes, null);
+    return createFromCollectionMap(version, stateMap, liveNodes, Instant.EPOCH, null);
   }
 
   // TODO move to static DocCollection.loadFromMap
   public static DocCollection collectionFromObjects(
-      String name, Map<String, Object> objs, int version, DocCollection.PrsSupplier prsSupplier) {
+      String name,
+      Map<String, Object> objs,
+      int version,
+      Instant creationTime,
+      DocCollection.PrsSupplier prsSupplier) {
     Map<String, Object> props;
     Map<String, Slice> slices;
 
@@ -302,19 +320,17 @@ public class ClusterState implements JSONWriter.Writable {
       router = DocRouter.getDocRouter((String) routerProps.get("name"));
     }
 
-    return DocCollection.create(name, slices, props, router, version, prsSupplier);
+    return DocCollection.create(name, slices, props, router, version, creationTime, prsSupplier);
   }
 
   @Override
-  public void write(JSONWriter jsonWriter) {
-    LinkedHashMap<String, DocCollection> map = new LinkedHashMap<>();
+  public void writeMap(EntryWriter ew) throws IOException {
     for (Entry<String, CollectionRef> e : collectionStates.entrySet()) {
       if (e.getValue().getClass() == CollectionRef.class) {
         DocCollection coll = e.getValue().get();
-        map.put(coll.getName(), coll);
+        ew.put(coll.getName(), coll);
       }
     }
-    jsonWriter.write(map);
   }
 
   @Override

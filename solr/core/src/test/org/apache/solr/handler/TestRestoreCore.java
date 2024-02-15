@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,7 +53,6 @@ public class TestRestoreCore extends SolrJettyTestBase {
   private static final String CONF_DIR =
       "solr" + File.separator + DEFAULT_TEST_CORENAME + File.separator + "conf" + File.separator;
 
-  private static String context = "/solr";
   private static long docsSeed; // see indexDocs()
 
   private static JettySolrRunner createAndStartJetty(ReplicationTestHelper.SolrInstance instance)
@@ -62,7 +62,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
         new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
-    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
+    JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
     jetty.start();
     return jetty;
@@ -70,7 +70,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   private static SolrClient createNewSolrClient(int port) {
 
-    final String baseUrl = buildUrl(port, context);
+    final String baseUrl = buildUrl(port);
     return new HttpSolrClient.Builder(baseUrl)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
@@ -129,7 +129,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
           .getCoreContainer()
           .getAllowPaths()
           .add(Path.of(location)); // Allow core to be created outside SOLR_HOME
-      params += "&location=" + URLEncoder.encode(location, "UTF-8");
+      params += "&location=" + URLEncoder.encode(location, StandardCharsets.UTF_8);
     }
 
     // named snapshot vs default snapshot name
@@ -189,7 +189,8 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   public void testBackupFailsMissingAllowPaths() throws Exception {
     final String params =
-        "&location=" + URLEncoder.encode(createTempDir().toFile().getAbsolutePath(), "UTF-8");
+        "&location="
+            + URLEncoder.encode(createTempDir().toFile().getAbsolutePath(), StandardCharsets.UTF_8);
     Throwable t =
         expectThrows(
             IOException.class,
@@ -208,7 +209,11 @@ public class TestRestoreCore extends SolrJettyTestBase {
     String location = createTempDir().toFile().getAbsolutePath();
     leaderJetty.getCoreContainer().getAllowPaths().add(Path.of(location));
     String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
-    String params = "&name=" + snapshotName + "&location=" + URLEncoder.encode(location, "UTF-8");
+    String params =
+        "&name="
+            + snapshotName
+            + "&location="
+            + URLEncoder.encode(location, StandardCharsets.UTF_8);
     String baseUrl = leaderJetty.getBaseUrl().toString();
 
     TestReplicationHandlerBackup.runBackupCommand(

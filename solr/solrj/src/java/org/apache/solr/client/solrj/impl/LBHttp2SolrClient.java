@@ -23,7 +23,6 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -86,9 +85,11 @@ import org.slf4j.MDC;
 public class LBHttp2SolrClient extends LBSolrClient {
   private final Http2SolrClient solrClient;
 
-  private LBHttp2SolrClient(Http2SolrClient solrClient, List<String> baseSolrUrls) {
-    super(baseSolrUrls);
-    this.solrClient = solrClient;
+  private LBHttp2SolrClient(Builder builder) {
+    super(Arrays.asList(builder.baseSolrUrls));
+    this.solrClient = builder.http2SolrClient;
+    this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
+    this.defaultCollection = builder.defaultCollection;
   }
 
   @Override
@@ -258,6 +259,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     private final String[] baseSolrUrls;
     private long aliveCheckIntervalMillis =
         TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
+    protected String defaultCollection;
 
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
       this.http2SolrClient = http2Client;
@@ -279,11 +281,14 @@ public class LBHttp2SolrClient extends LBSolrClient {
       return this;
     }
 
+    /** Sets a default for core or collection based requests. */
+    public LBHttp2SolrClient.Builder withDefaultCollection(String defaultCoreOrCollection) {
+      this.defaultCollection = defaultCoreOrCollection;
+      return this;
+    }
+
     public LBHttp2SolrClient build() {
-      LBHttp2SolrClient solrClient =
-          new LBHttp2SolrClient(this.http2SolrClient, Arrays.asList(this.baseSolrUrls));
-      solrClient.aliveCheckIntervalMillis = this.aliveCheckIntervalMillis;
-      return solrClient;
+      return new LBHttp2SolrClient(this);
     }
   }
 }

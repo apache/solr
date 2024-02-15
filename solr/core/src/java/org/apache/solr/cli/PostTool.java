@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 
+/** Supports post command in the bin/solr script. */
 public class PostTool extends ToolBase {
 
   public PostTool() {
@@ -45,21 +46,25 @@ public class PostTool extends ToolBase {
             .longOpt("url")
             .argName("url")
             .hasArg()
-            .required(true)
+            .required(false)
             .desc("<base Solr update URL>")
             .build(),
         Option.builder("c")
-            .longOpt("commit")
+            .longOpt("name")
+            .argName("NAME")
+            .hasArg()
             .required(false)
-            .desc("Issue a commit at end of post")
+            .desc("Name of the collection.")
             .build(),
-        Option.builder("o")
-            .longOpt("optimize")
+        Option.builder("skipcommit")
             .required(false)
-            .desc("Issue an optimize at end of post")
+            .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
             .build(),
-        Option.builder("m")
-            .longOpt("mode")
+        Option.builder("optimize")
+            .required(false)
+            .desc("Issue an optimize at end of posting documents.")
+            .build(),
+        Option.builder("mode")
             .argName("mode")
             .hasArg(true)
             .required(false)
@@ -99,7 +104,7 @@ public class PostTool extends ToolBase {
             .argName("<key>=<value>[&<key>=<value>...]")
             .hasArg(true)
             .required(false)
-            .desc("values must be URL-encoded; these pass through to Solr update request")
+            .desc("values must be URL-encoded; these pass through to Solr update request.")
             .build(),
         Option.builder("o")
             .longOpt("out")
@@ -110,16 +115,26 @@ public class PostTool extends ToolBase {
             .longOpt("format")
             .required(false)
             .desc(
-                "sends application/json content as Solr commands to /update instead of /update/json/docs")
-            .build());
+                "sends application/json content as Solr commands to /update instead of /update/json/docs.")
+            .build(),
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
-    String url = cli.getOptionValue("url");
-    URL solrUrl = new URL(url);
+    URL solrUrl = null;
+    if (cli.hasOption("url")) {
+      String url = cli.getOptionValue("url");
+      solrUrl = new URL(url);
+    } else if (cli.hasOption("c")) {
+      String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("c") + "/update";
+      solrUrl = new URL(url);
+    } else {
+      throw new IllegalArgumentException(
+          "Must specify either -url or -c parameter to post documents.");
+    }
 
     String mode = SimplePostTool.DEFAULT_DATA_MODE;
     if (cli.hasOption("mode")) {
@@ -145,14 +160,27 @@ public class PostTool extends ToolBase {
     int recursive = Integer.parseInt(cli.getOptionValue("recursive", "1"));
 
     OutputStream out = cli.hasOption("out") ? CLIO.getOutStream() : null;
-    boolean commit = cli.hasOption("commit");
+    boolean commit = cli.hasOption("skipcommit") ? false : true;
     boolean optimize = cli.hasOption("optimize");
+
+    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
 
     String[] args = cli.getArgs();
 
     SimplePostTool spt =
         new SimplePostTool(
-            mode, solrUrl, auto, type, format, recursive, delay, fileTypes, out, commit, optimize,
+            mode,
+            solrUrl,
+            credentials,
+            auto,
+            type,
+            format,
+            recursive,
+            delay,
+            fileTypes,
+            out,
+            commit,
+            optimize,
             args);
 
     spt.execute();

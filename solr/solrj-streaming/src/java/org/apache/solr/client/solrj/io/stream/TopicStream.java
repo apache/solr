@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.client.solrj.io.stream.StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.SORT;
@@ -32,15 +33,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -60,8 +60,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 /**
  * @since 6.0.0
@@ -78,6 +76,9 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   private Map<String, Long> checkpoints = new HashMap<>();
   private String checkpointCollection;
   private long initialCheckpoint = -1;
+
+  private transient SolrClientCache clientCache;
+  private transient boolean doCloseCache;
 
   public TopicStream(
       String zkHost,
@@ -310,6 +311,12 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   @Override
   public void open() throws IOException {
+    if (clientCache == null) {
+      doCloseCache = true;
+      clientCache = new SolrClientCache();
+    } else {
+      doCloseCache = false;
+    }
     this.tuples = new TreeSet<>();
     this.solrStreams = new ArrayList<>();
     this.eofTuples = Collections.synchronizedMap(new HashMap<>());
@@ -318,16 +325,6 @@ public class TopicStream extends CloudSolrStream implements Expressible {
       // Each worker must maintain its own checkpoints
       this.id = this.id + "_" + streamContext.workerID;
     }
-
-    if (streamContext.getSolrClientCache() != null) {
-      cloudSolrClient = streamContext.getSolrClientCache().getCloudSolrClient(zkHost);
-    } else {
-      final List<String> hosts = new ArrayList<>();
-      hosts.add(zkHost);
-      cloudSolrClient = new CloudLegacySolrClient.Builder(hosts, Optional.empty()).build();
-      this.cloudSolrClient.connect();
-    }
-
     if (checkpoints.size() == 0) {
       getPersistedCheckpoints();
       if (checkpoints.size() == 0) {
@@ -340,30 +337,15 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   }
 
   private void openStreams() throws IOException {
-
-    ExecutorService service =
-        ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("TopicStream"));
-    try {
-      List<Future<TupleWrapper>> futures = new ArrayList<>();
-      for (TupleStream solrStream : solrStreams) {
-        StreamOpener so = new StreamOpener((SolrStream) solrStream, comp);
-        Future<TupleWrapper> future = service.submit(so);
-        futures.add(future);
-      }
-
-      try {
-        for (Future<TupleWrapper> f : futures) {
-          TupleWrapper w = f.get();
-          if (w != null) {
-            tuples.add(w);
-          }
-        }
-      } catch (Exception e) {
-        throw new IOException(e);
-      }
-    } finally {
-      service.shutdown();
-    }
+    List<Callable<TupleWrapper>> tasks =
+        solrStreams.stream()
+            .map(s -> new StreamOpener((SolrStream) s, comp))
+            .collect(Collectors.toUnmodifiableList());
+    var results =
+        submitAllAndAwaitAggregatingExceptions(tasks, "TopicStream").stream()
+            .filter(Objects::nonNull)
+            .collect(Collectors.toUnmodifiableList());
+    tuples.addAll(results);
   }
 
   @Override
@@ -384,8 +366,8 @@ public class TopicStream extends CloudSolrStream implements Expressible {
         }
       }
 
-      if (streamContext != null && streamContext.getSolrClientCache() == null) {
-        cloudSolrClient.close();
+      if (doCloseCache) {
+        clientCache.close();
       }
     }
   }
@@ -426,6 +408,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   }
 
   private void getCheckpoints() throws IOException {
+    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
     this.checkpoints = new HashMap<>();
     Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -483,9 +466,11 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   private void persistCheckpoints() throws IOException {
 
-    if (cloudSolrClient == null) {
+    if (clientCache == null) {
       return;
     }
+
+    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
     UpdateRequest request = new UpdateRequest();
     request.setParam("collection", checkpointCollection);
     SolrInputDocument doc = new SolrInputDocument();
@@ -504,6 +489,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   }
 
   private void getPersistedCheckpoints() throws IOException {
+    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
     Slice[] slices = CloudSolrStream.getSlices(checkpointCollection, cloudSolrClient, false);
 
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
@@ -537,47 +523,50 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   @Override
   protected void constructStreams() throws IOException {
-    try {
-      Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
+    var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
+    Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
 
-      ModifiableSolrParams mParams = new ModifiableSolrParams(params);
-      mParams.set(DISTRIB, "false"); // We are the aggregator.
-      String fl = mParams.get("fl");
-      mParams.set(SORT, "_version_ asc");
-      if (!fl.contains(VERSION_FIELD)) {
-        fl += ",_version_";
-      }
-      mParams.set("fl", fl);
-
-      Random random = new Random();
-
-      Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
-
-      for (Slice slice : slices) {
-        ModifiableSolrParams localParams = new ModifiableSolrParams(mParams);
-        long checkpoint = checkpoints.get(slice.getName());
-
-        Collection<Replica> replicas = slice.getReplicas();
-        List<Replica> shuffler = new ArrayList<>();
-        for (Replica replica : replicas) {
-          if (replica.getState() == Replica.State.ACTIVE
-              && liveNodes.contains(replica.getNodeName())) shuffler.add(replica);
-        }
-
-        Replica rep = shuffler.get(random.nextInt(shuffler.size()));
-        ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-        String url = zkProps.getCoreUrl();
-        SolrStream solrStream = new SolrStream(url, localParams);
-        solrStream.setSlice(slice.getName());
-        solrStream.setCheckpoint(checkpoint);
-        solrStream.setTrace(true);
-        if (streamContext != null) {
-          solrStream.setStreamContext(streamContext);
-        }
-        solrStreams.add(solrStream);
-      }
-    } catch (Exception e) {
-      throw new IOException(e);
+    ModifiableSolrParams mParams = new ModifiableSolrParams(params);
+    mParams.set(DISTRIB, "false"); // We are the aggregator.
+    String fl = mParams.get("fl");
+    mParams.set(SORT, "_version_ asc");
+    if (!fl.contains(VERSION_FIELD)) {
+      fl += ",_version_";
     }
+    mParams.set("fl", fl);
+
+    Random random = new Random();
+
+    Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
+
+    for (Slice slice : slices) {
+      ModifiableSolrParams localParams = new ModifiableSolrParams(mParams);
+      long checkpoint = checkpoints.get(slice.getName());
+
+      Collection<Replica> replicas = slice.getReplicas();
+      List<Replica> shuffler = new ArrayList<>();
+      for (Replica replica : replicas) {
+        if (replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName()))
+          shuffler.add(replica);
+      }
+
+      Replica rep = shuffler.get(random.nextInt(shuffler.size()));
+      ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
+      String url = zkProps.getCoreUrl();
+      SolrStream solrStream = new SolrStream(url, localParams);
+      solrStream.setSlice(slice.getName());
+      solrStream.setCheckpoint(checkpoint);
+      solrStream.setTrace(true);
+      if (streamContext != null) {
+        solrStream.setStreamContext(streamContext);
+      }
+      solrStreams.add(solrStream);
+    }
+  }
+
+  @Override
+  public void setStreamContext(StreamContext context) {
+    super.setStreamContext(context);
+    this.clientCache = context.getSolrClientCache();
   }
 }

@@ -57,7 +57,7 @@ The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache
 
 |LongPointField |Long field (64-bit signed integer). This class encodes foo values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
-|NestPathField | Specialized field type storing ehanced information, when xref:indexing-nested-documents.adoc#schema-configuration[working with nested documents].
+|NestPathField | Specialized field type storing enhanced information, when xref:indexing-nested-documents.adoc#schema-configuration[working with nested documents].
 
 |PointType |A single-valued n-dimensional point. It's both for sorting spatial data that is _not_ lat-lon, and for some more rare use-cases. (NOTE: this is _not_ related to the "Point" based numeric fields). See xref:query-guide:spatial-search.adoc[] for more information.
 

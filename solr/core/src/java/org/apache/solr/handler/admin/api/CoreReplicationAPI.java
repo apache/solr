@@ -21,18 +21,18 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PER
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.List;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
