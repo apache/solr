@@ -22,7 +22,7 @@ setup() {
 }
 
 @test "solr help flag prints help" {
-  run -1 solr -help
+  run -1 solr --help
   assert_output --partial 'Usage: solr COMMAND OPTIONS'
   refute_output --partial 'ERROR'
 }
@@ -33,7 +33,7 @@ setup() {
 }
 
 @test "start help flag prints help" {
-  run solr start -help
+  run solr start --help
   assert_output --partial 'Usage: solr start'
   refute_output --partial 'ERROR'
 }
@@ -47,19 +47,19 @@ setup() {
 
 
 @test "stop help flag prints help" {
-  run solr stop -help
+  run solr stop --help
   assert_output --partial 'Usage: solr stop'
   refute_output --partial 'ERROR'
 }
 
 @test "restart help flag prints help" {
-  run solr restart -help
+  run solr restart --help
   assert_output --partial 'Usage: solr restart'
   refute_output --partial 'ERROR'
 }
 
 @test "status help flag prints help" {
-  run solr status -help
+  run solr status --help
   assert_output --partial 'usage: status'
   refute_output --partial 'ERROR'
   # Make sure custom selection of options for status help works.
@@ -85,17 +85,19 @@ setup() {
 }
 
 @test "version help flag prints help" {
-  skip "Currently the version -help flag doesn't return nice help text!"
+  run solr version -h
+  assert_output --partial 'usage: version'
+  refute_output --partial 'ERROR'
 }
 
 @test "zk help flag prints help" {
-  run solr zk -help
+  run solr zk --help
   assert_output --partial 'Usage: solr zk'
   refute_output --partial 'ERROR'
 }
 
 @test "auth help flag prints help" {
-  run solr auth -help
+  run solr auth --help
   assert_output --partial 'Usage: solr auth'
   refute_output --partial 'ERROR'
 }
