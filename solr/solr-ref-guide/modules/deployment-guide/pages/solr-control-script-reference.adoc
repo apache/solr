@@ -142,7 +142,7 @@ You cannot use this option when running examples with the `-e` option.
 +
 *Example*: `bin/solr start -f`
 
-`-host <hostname>`::
+`--host <hostname>`::
 +
 [%autowidth,frame=none]
 |===
@@ -152,7 +152,7 @@ You cannot use this option when running examples with the `-e` option.
 Specify the hostname for this Solr instance.
 If this is not specified, `localhost` is assumed.
 +
-*Example*: `bin/solr start -host search.mysolr.com`
+*Example*: `bin/solr start --host search.mysolr.com`
 
 `-m <memory>`::
 +

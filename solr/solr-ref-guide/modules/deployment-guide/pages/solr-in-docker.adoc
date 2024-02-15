@@ -225,7 +225,7 @@ The same works if you use the <<docker-compose,example docker compose cluster>>,
 [source,bash]
 ----
 docker run -e SOLR_HOST=solr1 --network=mycluster_solr solr solr create -c books -p 8983
-docker run --rm -v "$PWD/mydata:/mydata" --network=mycluster_solr solr post  -c books /mydata/books.csv -host solr1
+docker run --rm -v "$PWD/mydata:/mydata" --network=mycluster_solr solr post -c books /mydata/books.csv --host solr1
 ----
 
 Alternatively, you can make the data available on a volume at Solr start time, and then load it from `docker exec` or a custom start script.

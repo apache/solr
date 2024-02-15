@@ -501,8 +501,8 @@ public class SolrCLI implements CLIO {
     print(
         "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
     print("");
-    print("Pass -help or -h after any COMMAND to see command-specific usage information,");
-    print("such as:    ./solr start -help or ./solr stop -h");
+    print("Pass --help or -h after any COMMAND to see command-specific usage information,");
+    print("such as:    ./solr start --help or ./solr stop -h");
   }
 
   /**
