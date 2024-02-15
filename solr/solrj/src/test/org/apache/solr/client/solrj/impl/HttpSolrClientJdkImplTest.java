@@ -139,129 +139,7 @@ public class HttpSolrClientJdkImplTest
       DebugServlet.responseBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />";
     } else {
       DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
-      byte[] javabin = {
-        (byte) 0x02,
-        (byte) 0xa2,
-        (byte) 0xe0,
-        (byte) 0x2e,
-        (byte) 0x72,
-        (byte) 0x65,
-        (byte) 0x73,
-        (byte) 0x70,
-        (byte) 0x6f,
-        (byte) 0x6e,
-        (byte) 0x73,
-        (byte) 0x65,
-        (byte) 0x48,
-        (byte) 0x65,
-        (byte) 0x61,
-        (byte) 0x64,
-        (byte) 0x65,
-        (byte) 0x72,
-        (byte) 0xa4,
-        (byte) 0xe0,
-        (byte) 0x2b,
-        (byte) 0x7a,
-        (byte) 0x6b,
-        (byte) 0x43,
-        (byte) 0x6f,
-        (byte) 0x6e,
-        (byte) 0x6e,
-        (byte) 0x65,
-        (byte) 0x63,
-        (byte) 0x74,
-        (byte) 0x65,
-        (byte) 0x64,
-        (byte) 0x01,
-        (byte) 0xe0,
-        (byte) 0x26,
-        (byte) 0x73,
-        (byte) 0x74,
-        (byte) 0x61,
-        (byte) 0x74,
-        (byte) 0x75,
-        (byte) 0x73,
-        (byte) 0x06,
-        (byte) 0x00,
-        (byte) 0x00,
-        (byte) 0x00,
-        (byte) 0x00,
-        (byte) 0xe0,
-        (byte) 0x25,
-        (byte) 0x51,
-        (byte) 0x54,
-        (byte) 0x69,
-        (byte) 0x6d,
-        (byte) 0x65,
-        (byte) 0x06,
-        (byte) 0x00,
-        (byte) 0x00,
-        (byte) 0x00,
-        (byte) 0x00,
-        (byte) 0xe0,
-        (byte) 0x26,
-        (byte) 0x70,
-        (byte) 0x61,
-        (byte) 0x72,
-        (byte) 0x61,
-        (byte) 0x6d,
-        (byte) 0x73,
-        (byte) 0xa4,
-        (byte) 0xe0,
-        (byte) 0x21,
-        (byte) 0x71,
-        (byte) 0x21,
-        (byte) 0x7a,
-        (byte) 0xe0,
-        (byte) 0x24,
-        (byte) 0x72,
-        (byte) 0x6f,
-        (byte) 0x77,
-        (byte) 0x73,
-        (byte) 0x21,
-        (byte) 0x30,
-        (byte) 0xe0,
-        (byte) 0x22,
-        (byte) 0x77,
-        (byte) 0x74,
-        (byte) 0x27,
-        (byte) 0x6a,
-        (byte) 0x61,
-        (byte) 0x76,
-        (byte) 0x61,
-        (byte) 0x62,
-        (byte) 0x69,
-        (byte) 0x6e,
-        (byte) 0xe0,
-        (byte) 0x27,
-        (byte) 0x76,
-        (byte) 0x65,
-        (byte) 0x72,
-        (byte) 0x73,
-        (byte) 0x69,
-        (byte) 0x6f,
-        (byte) 0x6e,
-        (byte) 0x21,
-        (byte) 0x32,
-        (byte) 0xe0,
-        (byte) 0x28,
-        (byte) 0x72,
-        (byte) 0x65,
-        (byte) 0x73,
-        (byte) 0x70,
-        (byte) 0x6f,
-        (byte) 0x6e,
-        (byte) 0x73,
-        (byte) 0x65,
-        (byte) 0x0c,
-        (byte) 0x84,
-        (byte) 0x60,
-        (byte) 0x60,
-        (byte) 0x00,
-        (byte) 0x01,
-        (byte) 0x80
-      };
-      DebugServlet.responseBody = javabin;
+      DebugServlet.responseBody = javabinResponse();
     }
     String url = getBaseUrl() + "/debug/foo";
     SolrQuery q = new SolrQuery("foo");
@@ -525,6 +403,32 @@ public class HttpSolrClientJdkImplTest
         DEFAULT_CONNECTION_TIMEOUT,
         HttpSolrClientJdkImpl.Builder.class);
   }
+
+  private byte[] javabinResponse() {
+    String[] str = JAVABIN_STR.split(" ");
+    byte[] bytes = new byte[str.length];
+    for (int i = 0; i < str.length; i++) {
+      int asInt = 0;
+      bytes[i] = (byte) Integer.decode("#" + str[i]).intValue();
+    }
+    return bytes;
+  }
+
+  private static final String JAVABIN_STR =
+      "02 A2 e0 2e 72 65 73 70 6f "
+          + "6e 73 65 48 65 61 64 65 72 "
+          + "a4 e0 2b 7a 6b 43 6f 6e 6e "
+          + "65 63 74 65 64 01 e0 26 73 "
+          + "74 61 74 75 73 06 00 00 00 "
+          + "00 e0 25 51 54 69 6d 65 06 "
+          + "00 00 00 00 e0 26 70 61 72 "
+          + "61 6d 73 a4 e0 21 71 21 7a "
+          + "e0 24 72 6f 77 73 21 30 e0 "
+          + "22 77 74 27 6a 61 76 61 62 "
+          + "69 6e e0 27 76 65 72 73 69 "
+          + "6f 6e 21 32 e0 28 72 65 73 "
+          + "70 6f 6e 73 65 0c 84 60 60 "
+          + "00 01 80";
 
   /**
    * Taken from: https://www.baeldung.com/java-httpclient-ssl sec 4.1, 2024/02/12. This is an
