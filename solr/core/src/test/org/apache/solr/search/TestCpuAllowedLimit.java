@@ -22,10 +22,12 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.apache.solr.util.ThreadCpuTimer;
-import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -38,14 +40,74 @@ public class TestCpuAllowedLimit extends SolrTestCaseJ4 {
 
   @ClassRule public static final SolrJettyTestRule solrRule = new SolrJettyTestRule();
 
-  @BeforeClass
-  public static void setup() {
-    System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
+  private static int NUM_CORES = 3;
+  private static String[] CORE_NAMES;
+  private static String[] SHARD_URLS;
+
+  private static Path createConfigSet() throws Exception {
+    Path configSet = createTempDir();
+    copyMinConf(configSet.toFile());
+    // insert an expensive search component
+    Path solrConfig = configSet.resolve("conf/solrconfig.xml");
+    Files.writeString(
+        solrConfig,
+        Files.readString(solrConfig)
+            .replace(
+                "<requestHandler",
+                "<searchComponent name=\"expensiveSearchComponent\"\n"
+                    + "                   class=\"org.apache.solr.search.ExpensiveSearchComponent\"/>\n"
+                    + "\n"
+                    + "  <requestHandler")
+            .replace(
+                "class=\"solr.SearchHandler\">",
+                "class=\"solr.SearchHandler\">\n"
+                    + "    <arr name=\"first-components\">\n"
+                    + "      <str>expensiveSearchComponent</str>\n"
+                    + "    </arr>\n"));
+    return configSet.resolve("conf");
   }
 
-  @AfterClass
-  public static void teardown() {
-    System.clearProperty(ThreadCpuTimer.ENABLE_CPU_TIME);
+  @BeforeClass
+  public static void setup() throws Exception {
+    System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
+    System.setProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST, "true");
+    solrRule.startSolr(createTempDir());
+    Path configset = createConfigSet();
+    String baseShardUrl = solrRule.getBaseUrl().replaceAll("https?://", "");
+    CORE_NAMES = new String[NUM_CORES];
+    SHARD_URLS = new String[NUM_CORES];
+    for (int i = 0; i < NUM_CORES; i++) {
+      String core = "core" + (i + 1);
+      CORE_NAMES[i] = core;
+      SHARD_URLS[i] = baseShardUrl + "/" + core;
+      solrRule.newCollection(core).withConfigSet(configset.toString()).create();
+      SolrClient solrClient = solrRule.getSolrClient();
+      // add some docs
+      for (int j = 0; j < 10; j++) {
+        solrClient.add(core, sdoc("id", "id-" + core + "-" + j));
+      }
+      solrClient.commit(core);
+    }
+  }
+
+  private static SolrQuery createQuery(boolean distrib, String... params) {
+    SolrQuery query = new SolrQuery();
+    query.addField("id");
+    if (distrib) {
+      query.set("distrib", "true");
+      query.set("shards", String.join(",", SHARD_URLS));
+      query.set(ShardParams.SHARDS_INFO, "true");
+      query.set("debug", "true");
+      query.set("stats", "true");
+      query.set("stats.field", "id");
+      query.set(ShardParams.SHARDS_TOLERANT, "true");
+    }
+    if (params != null) {
+      for (int i = 0; i < params.length; i += 2) {
+        query.set(params[i], params[i + 1]);
+      }
+    }
+    return query;
   }
 
   @Test
@@ -76,49 +138,18 @@ public class TestCpuAllowedLimit extends SolrTestCaseJ4 {
         limitMs < wallTimeDeltaMs);
   }
 
-  private Path createConfigSet() throws Exception {
-    Path configSet = createTempDir();
-    copyMinConf(configSet.toFile());
-    // insert an expensive search component
-    Path solrConfig = configSet.resolve("conf/solrconfig.xml");
-    Files.writeString(
-        solrConfig,
-        Files.readString(solrConfig)
-            .replace(
-                "<requestHandler",
-                "<searchComponent name=\"expensiveSearchComponent\"\n"
-                    + "                   class=\"org.apache.solr.search.ExpensiveSearchComponent\"/>\n"
-                    + "\n"
-                    + "  <requestHandler")
-            .replace(
-                "class=\"solr.SearchHandler\">",
-                "class=\"solr.SearchHandler\">\n"
-                    + "    <arr name=\"first-components\">\n"
-                    + "      <str>expensiveSearchComponent</str>\n"
-                    + "    </arr>\n"));
-    return configSet.resolve("conf");
-  }
-
   @Test
   public void testDistribLimit() throws Exception {
     Assume.assumeTrue("Thread CPU time monitoring is not available", ThreadCpuTimer.isSupported());
-    solrRule.startSolr(createTempDir());
-    String COLLECTION = "test";
-    solrRule.newCollection(COLLECTION).withConfigSet(createConfigSet().toString()).create();
-    SolrClient solrClient = solrRule.getSolrClient();
 
-    // add some docs
-    for (int i = 0; i < 10; i++) {
-      solrClient.add(COLLECTION, sdoc("id", "id-" + i));
-    }
-    solrClient.commit(COLLECTION);
+    SolrClient solrClient = solrRule.getSolrClient(CORE_NAMES[0]);
 
     // no limits set - should eventually complete
     long sleepMs = 1000;
     QueryResponse rsp =
         solrClient.query(
-            COLLECTION,
-            params(
+            createQuery(
+                true,
                 "q",
                 "id:*",
                 "sort",
@@ -134,8 +165,8 @@ public class TestCpuAllowedLimit extends SolrTestCaseJ4 {
     // timeAllowed set, should return partial results
     rsp =
         solrClient.query(
-            COLLECTION,
-            params(
+            createQuery(
+                true,
                 "q",
                 "id:*",
                 "sort",
@@ -150,8 +181,8 @@ public class TestCpuAllowedLimit extends SolrTestCaseJ4 {
     // cpuAllowed set with large value, should return full results
     rsp =
         solrClient.query(
-            COLLECTION,
-            params(
+            createQuery(
+                true,
                 "q",
                 "id:*",
                 "sort",
@@ -166,8 +197,8 @@ public class TestCpuAllowedLimit extends SolrTestCaseJ4 {
     // cpuAllowed set, should return partial results
     rsp =
         solrClient.query(
-            COLLECTION,
-            params(
+            createQuery(
+                true,
                 "q",
                 "id:*",
                 "sort",
