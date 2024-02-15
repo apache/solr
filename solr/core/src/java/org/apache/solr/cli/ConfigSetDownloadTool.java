@@ -47,12 +47,14 @@ public class ConfigSetDownloadTool extends ToolBase {
     return List.of(
         Option.builder("confname")
             .argName("confname")
+            .longOpt("confname")
             .hasArg()
             .required(true)
             .desc("Configset name in ZooKeeper.")
             .build(),
         Option.builder("confdir")
             .argName("confdir")
+            .longOpt("confdir")
             .hasArg()
             .required(true)
             .desc("Local directory with configs.")

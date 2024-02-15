@@ -47,18 +47,21 @@ public class ConfigSetUploadTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder("confname")
+            .longOpt("confname")
             .argName("confname") // Comes out in help message
             .hasArg() // Has one sub-argument
             .required(true) // confname argument must be present
             .desc("Configset name in ZooKeeper.")
             .build(), // passed as -confname value
         Option.builder("confdir")
+            .longOpt("confdir")
             .argName("confdir")
             .hasArg()
             .required(true)
             .desc("Local directory with configs.")
             .build(),
         Option.builder("configsetsDir")
+            .longOpt("configsetsDir")
             .argName("configsetsDir")
             .hasArg()
             .required(false)

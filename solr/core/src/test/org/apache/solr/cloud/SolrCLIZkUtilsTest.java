@@ -89,13 +89,13 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     String[] args =
         new String[] {
-          "-confname",
+          "--confname",
           "upconfig2",
-          "-confdir",
+          "--confdir",
           "cloud-subdirs",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
-          "-configsetsDir",
+          "--configsetsDir",
           configSet.toAbsolutePath().toString(),
         };
 
@@ -109,13 +109,13 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // do we barf on a bogus path?
     args =
         new String[] {
-          "-confname",
+          "--confname",
           "upconfig3",
-          "-confdir",
+          "--confdir",
           "nothinghere",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
-          "-configsetsDir",
+          "--configsetsDir",
           configSet.toAbsolutePath().toString(),
         };
 
@@ -145,11 +145,11 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     String[] args =
         new String[] {
-          "-confname",
+          "--confname",
           "downconfig1",
-          "-confdir",
+          "--confdir",
           tmp.toAbsolutePath().toString(),
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -172,11 +172,11 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     downTool = new ConfigSetDownloadTool();
     args =
         new String[] {
-          "-confname",
+          "--confname",
           "downconfig2",
-          "-confdir",
+          "--confdir",
           tmp2.toAbsolutePath().toString(),
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -205,8 +205,8 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new String[] {
           "-src", "zk:/configs/cp1",
           "-dst", "zk:/cp2",
-          "-recurse", "true",
-          "-zkHost", zkAddr,
+          "--recurse", "true",
+          "--zkHost", zkAddr,
         };
 
     ZkCpTool cpTool = new ZkCpTool();
@@ -224,9 +224,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "zk:/configs/cp1",
           "-dst",
           "file:" + tmp.toAbsolutePath(),
-          "-recurse",
+          "--recurse",
           "true",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -243,9 +243,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "zk:/configs/cp1",
           "-dst",
           tmp.toAbsolutePath().toString(),
-          "-recurse",
+          "--recurse",
           "true",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -261,9 +261,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           srcPathCheck.toAbsolutePath().toString(),
           "-dst",
           "zk:/cp3",
-          "-recurse",
+          "--recurse",
           "true",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -279,9 +279,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "file:" + srcPathCheck.toAbsolutePath(),
           "-dst",
           "zk:/cp4",
-          "-recurse",
+          "--recurse",
           "true",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -293,7 +293,12 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // try with recurse not specified
     args =
         new String[] {
-          "-src", "file:" + srcPathCheck.toAbsolutePath(), "-dst", "zk:/cp5Fail", "-zkHost", zkAddr,
+          "-src",
+          "file:" + srcPathCheck.toAbsolutePath(),
+          "-dst",
+          "zk:/cp5Fail",
+          "--zkHost",
+          zkAddr,
         };
 
     res =
@@ -307,9 +312,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "file:" + srcPathCheck.toAbsolutePath(),
           "-dst",
           "zk:/cp6Fail",
-          "-recurse",
+          "--recurse",
           "false",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -325,7 +330,14 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     String localSlash = tmp.normalize() + File.separator + "cpToLocal" + File.separator;
     args =
         new String[] {
-          "-src", "zk:/cp3/schema.xml", "-dst", localSlash, "-recurse", "false", "-zkHost", zkAddr,
+          "-src",
+          "zk:/cp3/schema.xml",
+          "-dst",
+          localSlash,
+          "--recurse",
+          "false",
+          "--zkHost",
+          zkAddr,
         };
 
     res =
@@ -343,9 +355,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "file:" + srcPathCheck.normalize().toAbsolutePath() + File.separator + "solrconfig.xml",
           "-dst",
           "zk:/powerup/",
-          "-recurse",
+          "--recurse",
           "false",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -364,9 +376,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "file:" + srcPathCheck.normalize().toAbsolutePath() + File.separator + "solrconfig.xml",
           "-dst",
           "zk:/copyUpFile.xml",
-          "-recurse",
+          "--recurse",
           "false",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -388,9 +400,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "zk:/cp4/solrconfig.xml",
           "-dst",
           "file:" + localNamed,
-          "-recurse",
+          "--recurse",
           "false",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -415,8 +427,8 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new String[] {
           "-src", "zk:/cp4/solrconfig.xml",
           "-dst", "zk:/",
-          "-recurse", "false",
-          "-zkHost", zkAddr,
+          "--recurse", "false",
+          "--zkHost", zkAddr,
         };
 
     res =
@@ -433,9 +445,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "file:" + srcPathCheck.toAbsolutePath(),
           "-dst",
           "zk:/cp7/",
-          "-recurse",
+          "--recurse",
           "true",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -457,9 +469,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "file:" + file.toAbsolutePath(),
           "-dst",
           "zk:/cp7/conf/stopwords/",
-          "-recurse",
+          "--recurse",
           "false",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -483,9 +495,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "zk:/cp7",
           "-dst",
           "file:" + tmp.toAbsolutePath(),
-          "-recurse",
+          "--recurse",
           "true",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
     res =
@@ -503,9 +515,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "file:" + tmp.toAbsolutePath(),
           "-dst",
           "zk:/cp9",
-          "-recurse",
+          "--recurse",
           "true",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -528,9 +540,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "file:" + emptyFile.toAbsolutePath(),
           "-dst",
           "zk:/cp7/conf/stopwords/emptyfile",
-          "-recurse",
+          "--recurse",
           "false",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -546,9 +558,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "zk:/cp7/conf/stopwords/emptyfile",
           "-dst",
           "file:" + emptyDest.toAbsolutePath(),
-          "-recurse",
+          "--recurse",
           "false",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
     res =
@@ -565,9 +577,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "file:" + emptyFile.getParent().getParent().toString(),
           "-dst",
           "zk:/cp10",
-          "-recurse",
+          "--recurse",
           "true",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
 
@@ -583,9 +595,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
           "zk:/cp10",
           "-dst",
           "file:" + tmp2.toAbsolutePath(),
-          "-recurse",
+          "--recurse",
           "true",
-          "-zkHost",
+          "--zkHost",
           zkAddr,
         };
     res =
@@ -611,7 +623,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new String[] {
           "-src", "zk:/configs/mv1",
           "-dst", "zk:/mv2",
-          "-zkHost", zkAddr,
+          "--zkHost", zkAddr,
         };
 
     ZkMvTool mvTool = new ZkMvTool();
@@ -629,7 +641,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // Now fail if we specify "file:". Everything should still be in /mv2
     args =
         new String[] {
-          "-src", "file:" + File.separator + "mv2", "-dst", "/mv3", "-zkHost", zkAddr,
+          "-src", "file:" + File.separator + "mv2", "-dst", "/mv3", "--zkHost", zkAddr,
         };
 
     // Still in mv2
@@ -642,7 +654,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new String[] {
           "-src", "/mv2",
           "-dst", "/mv4",
-          "-zkHost", zkAddr,
+          "--zkHost", zkAddr,
         };
 
     res =
@@ -658,7 +670,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new String[] {
           "-src", "/mv4/solrconfig.xml",
           "-dst", "/testmvsingle/solrconfig.xml",
-          "-zkHost", zkAddr,
+          "--zkHost", zkAddr,
         };
 
     res =
@@ -675,7 +687,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new String[] {
           "-src", "/mv4/schema.xml",
           "-dst", "/parentnode/",
-          "-zkHost", zkAddr,
+          "--zkHost", zkAddr,
         };
 
     res =
@@ -701,7 +713,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // Should only find a single level.
     String[] args =
         new String[] {
-          "-path", "/configs", "-zkHost", zkAddr,
+          "-path", "/configs", "--zkHost", zkAddr,
         };
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -720,7 +732,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new String[] {
           "-path", "/configs",
           "-recurse", "false",
-          "-zkHost", zkAddr,
+          "--zkHost", zkAddr,
         };
 
     res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
@@ -735,7 +747,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new String[] {
           "-path", "/configs",
           "-recurse", "true",
-          "-zkHost", zkAddr,
+          "--zkHost", zkAddr,
         };
 
     res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
@@ -750,7 +762,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new String[] {
           "-path", "/",
           "-recurse", "true",
-          "-zkHost", zkAddr,
+          "--zkHost", zkAddr,
         };
 
     res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
@@ -762,7 +774,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     args =
         new String[] {
-          "-path", "/", "-zkHost", zkAddr,
+          "-path", "/", "--zkHost", zkAddr,
         };
 
     res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
@@ -775,7 +787,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new String[] {
           "-path", "/configs/",
           "-recurse", "true",
-          "-zkHost", zkAddr,
+          "--zkHost", zkAddr,
         };
 
     res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
@@ -798,7 +810,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // Should fail if recurse not set.
     String[] args =
         new String[] {
-          "-path", "/configs/rm1", "-zkHost", zkAddr,
+          "-path", "/configs/rm1", "--zkHost", zkAddr,
         };
 
     ZkRmTool tool = new ZkRmTool();
@@ -815,7 +827,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new String[] {
           "-path", "zk:/configs/rm1",
           "-recurse", "false",
-          "-zkHost", zkAddr,
+          "--zkHost", zkAddr,
         };
 
     res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
@@ -827,7 +839,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new String[] {
           "-path", "/configs/rm1",
           "-recurse", "true",
-          "-zkHost", zkAddr,
+          "--zkHost", zkAddr,
         };
 
     res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
@@ -840,7 +852,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new String[] {
           "-path", "zk:/configs/rm2",
           "-recurse", "true",
-          "-zkHost", zkAddr,
+          "--zkHost", zkAddr,
         };
 
     res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
@@ -853,7 +865,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         new String[] {
           "-path", "zk:/",
           "-recurse", "true",
-          "-zkHost", zkAddr,
+          "--zkHost", zkAddr,
         };
 
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm3", zkAddr);
