@@ -58,14 +58,26 @@ public final class ReplicationTestHelper {
         new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
-    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
+    JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
     jetty.start();
     return jetty;
   }
 
+  /**
+   * @param baseUrl the root URL for a Solr node
+   */
   public static SolrClient createNewSolrClient(String baseUrl) {
+    return createNewSolrClient(baseUrl, null);
+  }
+
+  /**
+   * @param baseUrl the root URL for a Solr node
+   * @param collectionOrCore an optional default collection/core for the created client
+   */
+  public static SolrClient createNewSolrClient(String baseUrl, String collectionOrCore) {
     return new HttpSolrClient.Builder(baseUrl)
+        .withDefaultCollection(collectionOrCore)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
         .build();

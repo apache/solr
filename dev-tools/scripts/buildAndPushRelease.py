@@ -128,7 +128,7 @@ def prepare(root, version, pause_before_sign, mf_username, gpg_key_id, gpg_passw
   if dev_mode:
     cmd += ' -Pvalidation.git.failOnModified=false'
   if gpg_key_id is None:
-    cmd += ' -Psign=false -x signJarsPublication'  # Disable signing if no key provided to script
+    cmd += ' -Psign=false'  # Disable signing if no key provided to script
   else:
     cmd += ' -Psign --max-workers 2'
     if sign_gradle:
@@ -217,7 +217,7 @@ def pushLocal(version, root, rcNum, localDir):
   rev = open('%s/solr/distribution/build/release/.gitrev' % root, encoding='UTF-8').read()
 
   dir = 'solr-%s-RC%d-rev-%s' % (version, rcNum, rev)
-  os.makedirs('%s/%s/solr' % (localDir, dir))
+  os.makedirs('%s/%s/solr/%s' % (localDir, dir, version))
   print('  Solr')
   solr_dist_dir = '%s/solr/distribution/build/release' % root
   os.chdir(solr_dist_dir)
@@ -227,7 +227,7 @@ def pushLocal(version, root, rcNum, localDir):
   run('tar cf solr.tar *')
 
   print('    extract...')
-  os.chdir('%s/%s/solr' % (localDir, dir))
+  os.chdir('%s/%s/solr/%s' % (localDir, dir, version))
   run('tar xf "%s/solr.tar"' % solr_dist_dir)
   os.remove('%s/solr.tar' % solr_dist_dir)
   os.chdir('..')

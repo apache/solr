@@ -99,7 +99,7 @@ public class SplitShardTest extends SolrCloudTestCase {
                 .getActiveSlices()
                 .size(),
         COLLECTION_NAME,
-        activeClusterShape(6, 7));
+        activeClusterShape(6, 6));
 
     try {
       splitShard =
@@ -163,7 +163,7 @@ public class SplitShardTest extends SolrCloudTestCase {
                 .getActiveSlices()
                 .size(),
         collectionName,
-        activeClusterShape(3, 4));
+        activeClusterShape(3, 3));
     DocCollection coll = cluster.getSolrClient().getClusterState().getCollection(collectionName);
     Slice s1_0 = coll.getSlice("shard1_0");
     Slice s1_1 = coll.getSlice("shard1_1");
@@ -195,8 +195,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       if (!slice.getState().equals(Slice.State.ACTIVE)) continue;
       long lastReplicaCount = -1;
       for (Replica replica : slice.getReplicas()) {
-        SolrClient replicaClient =
-            getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
+        SolrClient replicaClient = getHttpSolrClient(replica);
         long numFound;
         try {
           numFound =
@@ -277,8 +276,7 @@ public class SplitShardTest extends SolrCloudTestCase {
           "Timed out waiting for sub shards to be active.",
           collectionName,
           activeClusterShape(
-              2,
-              3 * repFactor)); // 2 repFactor for the new split shards, 1 repFactor for old replicas
+              2, 2 * repFactor)); // parent shard replicas are ignored by activeClusterShape
 
       // make sure that docs were indexed during the split
       assertTrue(model.size() > docCount);

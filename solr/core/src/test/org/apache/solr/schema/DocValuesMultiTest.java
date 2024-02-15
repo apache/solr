@@ -197,6 +197,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
         "//result/doc[5]/arr[@name='booldv']/bool[1][.='false']",
         "//result/doc[5]/arr[@name='booldv']/bool[2][.='true']");
   }
+
   /**
    * Tests the ability to do basic queries (without scoring, just match-only) on float docvalues
    * fields that are not inverted (indexed "forward" only)

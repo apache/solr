@@ -19,7 +19,7 @@
 Query Re-Ranking allows you to run a simple query (A) for matching documents and then re-rank the top N documents using the scores from a more complex query (B).
 
 Since the more costly ranking from query B is only applied to the top _N_ documents, it will have less impact on performance then just using the complex query B by itself.
-The trade off is that documents which score very low using the simple query A may not be considered during the re-ranking phase, even if they would score very highly using query B.
+The trade-off is that documents which score very low using the simple query A may not be considered during the re-ranking phase, even if they would score very highly using query B.
 
 == Specifying a Ranking Query
 
@@ -39,7 +39,7 @@ You can also configure a custom {solr-javadocs}/core/org/apache/solr/search/QPar
 
 === ReRank Query Parser
 
-The `rerank` parser wraps a query specified by an local parameter, along with additional parameters indicating how many documents should be re-ranked, and how the final scores should be computed:
+The `rerank` parser wraps a query specified by a local parameter, along with additional parameters indicating how many documents should be re-ranked, and how the final scores should be computed:
 
 `reRankQuery`::
 +
@@ -69,6 +69,26 @@ This number will be treated as a minimum, and may be increased internally automa
 +
 A multiplicative factor that will be applied to the score from the reRankQuery for each of the top matching documents, before that score is combined with the original score.
 
+`reRankScale`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `none`
+|===
++
+Scales the rerank scores between min and max values. The format of this parameter value is `min-max` where
+min and max are positive integers. Example `reRankScale=0-1` rescales the rerank scores between 0 and 1.
+
+`reRankMainScale`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `none`
+|===
++
+Scales the main query scores between min and max values. The format of this parameter value is `min-max` where
+min and max are positive integers. Example `reRankMainScale=0-1` rescales the main query scores between 0 and 1.
+
 `reRankOperator`::
 +
 [%autowidth,frame=none]
@@ -76,7 +96,7 @@ A multiplicative factor that will be applied to the score from the reRankQuery f
 |Optional |Default: `add`
 |===
 +
-By default the score from the reRankQuery multiplied by the `reRankWeight` is added to the original score.
+By default, the score from the reRankQuery multiplied by the `reRankWeight` is added to the original score.
 
 In the example below using the default `add` behaviour, the top 1000 documents matching the query "greetings" will be re-ranked using the query "(hi hello hey hiya)".
 The resulting scores for each of those 1000 documents will be 3 times their score from the "(hi hello hey hiya)", plus the score from the original "greetings" query:

@@ -22,7 +22,7 @@
 The `search` function searches a SolrCloud collection and emits a stream of tuples that match the query.
 This is very similar to a standard Solr query, and uses many of the same parameters.
 
-This expression allows you to specify a request hander using the `qt` parameter.
+This expression allows you to specify a request handler using the `qt` parameter.
 By default, the `/select` handler is used.
 The `/select` handler can be used for simple rapid prototyping of expressions.
 For production, however, you will most likely want to use the `/export` handler which is designed to `sort` and `export` entire result sets.
@@ -36,6 +36,7 @@ To read more about the `/export` handler requirements review the section xref:ex
 * `fl`: (Mandatory) The list of fields to return.
 * `sort`: (Mandatory) The sort criteria.
 * `zkHost`: Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
+Zookeeper Credentials and ACLs will only be included if the same ZkHost is used as the Solr instance that you are connecting to (the `chroot` can be different).
 * `qt`: Specifies the query type, or request handler, to use.
 Set this to `/export` to work with large result sets.
 The default is `/select`.
@@ -310,24 +311,24 @@ knnSearch(collection1,
 
 == model
 
-The `model` function retrieves and caches logistic regression text classification models that are stored in a SolrCloud collection.
-The `model` function is designed to work with models that are created by the <<train,train function>>, but can also be used to retrieve text classification models trained outside of Solr, as long as they conform to the specified format.
+The `api` function retrieves and caches logistic regression text classification models that are stored in a SolrCloud collection.
+The `api` function is designed to work with models that are created by the <<train,train function>>, but can also be used to retrieve text classification models trained outside of Solr, as long as they conform to the specified format.
 After the model is retrieved it can be used by the xref:stream-decorator-reference.adoc#classify[classify function] to classify documents.
 
 A single model tuple is fetched and returned based on the *id* parameter.
 The model is retrieved by matching the *id* parameter with a model name in the index.
-If more then one iteration of the named model is stored in the index, the highest iteration is selected.
+If more than one iteration of the named model is stored in the index, the highest iteration is selected.
 
 === Caching with model
 
-The `model` function has an internal LRU (least-recently-used) cache so models do not have to be retrieved with each invocation of the `model` function.
+The `api` function has an internal LRU (least-recently-used) cache so models do not have to be retrieved with each invocation of the `api` function.
 The time to cache for each model ID can be passed as a parameter to the function call.
 Retrieving a cached model does not reset the time for expiring the model ID in the cache.
 
 === Model Storage
 
 The storage format of the models in Solr is below.
-The `train` function outputs the format below so you only need to know schema details if you plan to use the `model` function with logistic regression models trained outside of Solr.
+The `train` function outputs the format below so you only need to know schema details if you plan to use the `api` function with logistic regression models trained outside of Solr.
 
 * `name_s` (Single value, String, Stored): The name of the model.
 * `iteration_i` (Single value, Integer, Stored): The iteration number of the model.
@@ -399,12 +400,12 @@ The foreground and background counts are global for the collection.
 * `limit`: (Optional, Default 20) The max number of terms to return.
 * `minDocFreq`: (Optional, Defaults to 5 documents) The minimum number of documents the term must appear in on a shard.
 This is a float value.
-If greater then 1.0 then it's considered the absolute number of documents.
-If less then 1.0 it's treated as a percentage of documents.
+If greater than 1.0 then it's considered the absolute number of documents.
+If less than 1.0 it's treated as a percentage of documents.
 * `maxDocFreq`: (Optional, Defaults to 30% of documents) The maximum number of documents the term can appear in on a shard.
 This is a float value.
-If greater then 1.0 then it's considered the absolute number of documents.
-If less then 1.0 it's treated as a percentage of documents.
+If greater than 1.0 then it's considered the absolute number of documents.
+If less than 1.0 it's treated as a percentage of documents.
 * `minTermLength`: (Optional, Default 4) The minimum length of the term to be considered significant.
 
 === significantTerms Syntax
@@ -420,7 +421,7 @@ significantTerms(collection1,
                  minTermLength="5")
 ----
 
-In the example above the `significantTerms` function is querying `collection1` and returning at most 50 significant terms from the `authors` field that appear in 10 or more documents but not more then 20% of the corpus.
+In the example above the `significantTerms` function is querying `collection1` and returning at most 50 significant terms from the `authors` field that appear in 10 or more documents but not more than 20% of the corpus.
 
 == shortestPath
 
@@ -484,6 +485,7 @@ When used in parallel mode the partitionKeys parameter must be provided.
 * `fl`: (Mandatory) The list of fields to return.
 * `sort`: (Mandatory) The sort criteria.
 * `zkHost`: Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
+Zookeeper Credentials and ACLs will only be included if the same ZkHost is used as the Solr instance that you are connecting to (the `chroot` can be different).
 * `partitionKeys`: Comma delimited list of keys to partition the search results by.
 To be used with the parallel function for parallelizing operations across worker nodes.
 See the xref:stream-decorator-reference.adoc#parallel[parallel] function for details.
@@ -648,6 +650,7 @@ The checkpoints will be saved under this id.
 If not set, it defaults to the highest version in the index.
 Setting to 0 will process all records that match query in the index.
 * `zkHost`: (Optional) Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
+Zookeeper Credentials and ACLs will only be included if the same ZkHost is used as the Solr instance that you are connecting to (the `chroot` can be different).
 
 === topic Syntax
 

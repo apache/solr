@@ -46,6 +46,9 @@ If you are planning to upgrade your cluster using a rolling upgrade model (upgra
 
 Rolling upgrades from Solr 8 to Solr 9 require upgrading from Solr 8.7 or newer. If you run an 8.x. version prior to 8.7 we recommend that you first upgrade to 8.11.
 
+Certain commands, like a restore of a collection, might not complete properly if performed *during* an upgrade.
+They may need to be re-attempted after.
+
 *PKI Authentication*
 
 Internode communication secured by PKI Authentication has changed formats. For detailed information, see
@@ -59,10 +62,66 @@ A rolling upgrade from Solr 8 to Solr 9 requires the following multiple restart 
 
 === Reindexing After Upgrade
 
-It is always strongly recommended that you fully reindex your documents after a major version upgrade. For details, see the xref:indexing-guide:reindexing.adoc[] section, which covers several strategies for how to reindex.
+It is always strongly recommended that you fully reindex your documents after a major version upgrade if collection was created in Solr 8. It is mandatory to reindex your documents if collection was created on Solr 7 or older. For details, see the xref:indexing-guide:reindexing.adoc[] section, which covers several strategies for how to reindex.
 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
+
+== Solr 9.5
+=== Dependency Upgrades
+<<#solr-8-2,Solr 8.2 recommended using Zookeeper 3.5.5>> and now with Curator 5.5.0 requires https://curator.apache.org/docs/breaking-changes/[Zookeeper 3.5.x or higher]. This primarily affects users of `hadoop-auth`, but usage of Curator could affect other parts of Solr.
+
+=== Global Circuit Breakers
+* Circuit breakers can now be configured globally, not only per collection. See xref:deployment-guide:circuit-breakers.adoc[Configuring Circuit Breakers] for more information.
+
+=== Configuration and Ease-of-Use
+* Solr will now automatically resolve all environment variables with `SOLR_` prefix, and set the corresponding system property. This is useful for configuring more aspects of Solr through environment variables, such as for containers. Underscores are replaced with dots and strings are lowercased. For example, while you earlier had to set the system property `-Dsolr.clustering.enabled=true` to enable clustering, you can now set the equivalent environment variable `SOLR_CLUSTERING_ENABLED=true` instead.
+
+* Collection and Replica Properties may now be used as property substitution variables in configuration files (e.g. solrconfig.xml).
+
+* Solr now auto-reloads updated keystore and truststore files when TLS is enabled.
+
+* Tracing support has received a number of quality-of-life improvements, including improved tracking of distributed collection commands and increased coverage for internal requests made with the Apache and Jetty HTTP clients.
+
+== Solr 9.4
+=== The Built-In Config Sets
+* The build in ConfigSets (`_default` and `sample_techproducts_configs`), now use a default `autoSoftCommit` time of 3 seconds,
+meaning that documents will be searchable within 3 seconds of uploading them.
+Please refer to the xref:configuration-guide:commits-transaction-logs.adoc#hard-commits-vs-soft-commits[Soft Commit documentation]
+for more information on how this change will effect you.
+Upgrading existing clouds and use-cases that have custom configSets will not be affected by this change.
+
+=== Replica Placements
+* The default `minimalFreeDiskGB` value has been lowered from `20GB` to `5GB` when using the xref:configuration-guide:replica-placement-plugins.adoc#affinityplacementfactory[AffinityPlacementPlugin].
+Therefore, when using the default settings, nodes that were previously excluded from Replica placements due to low available disk space may be selected after upgrading.
+
+=== Embedded Zookeeper
+* The Embedded Zookeeper can now be configured to listen to (or bind to) more hosts than just `localhost`,
+see the  xref:deployment-guide:securing-solr.adoc#network-configuration[Network Configuration documentation] for more information.
+
+=== Circuit Breaker
+* The Circuit Breakers are now pluggable, and you can define multiple circuit breakers including custom ones. The existing `CircuitBreakerManager` is deprecated, and users are encouraged to switch to the new plugins. While the old `CircuitBreakerManager` returned HTTP 503 when a circuit breaker was tripped, the new plugins return HTTP 429.
+
+=== Security
+* Since Solr 8.4.1/8.5.0, the `solr.jetty.ssl.verifyClientHostName` sysProp and `SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION` envVar have been used incorrectly.
+It has instead been used to override the `solr.ssl.checkPeerName` sysProp in the `HTTP2SolrClient`.
+This has been fixed, and the setting once again tells the server to check the originating client hostname against the client certificate when doing mTLS.
+This option is still enabled by default.
+
+* The `solr.jetty.ssl.sniHostCheck` option now defaults to the value of `SOLR_SSL_CHECK_PEER_NAME`, if it is provided.
+This will enable client and server hostName check settings to be governed by the same environment variable.
+If users want separate client/server settings, they can manually override the `solr.jetty.ssl.sniHostCheck` option in `SOLR_OPTS`.
+
+=== Deprecations
+* The `rid` request id query parameter has been deprecated in favor of the always-on trace generation.
+To disable the `rid` generation set the system property `solr.disableRequestId` to `true`.
+To disable the always-on trace generation set the system property `solr.alwaysOnTraceId` to `false`.
+
+=== Learning To Rank
+* The FieldValueFeature class now always uses DocValues when docValues=true is set. A LegacyFieldValueFeature class provides the prior behaviour of not using DocValues when the docValues=true and stored=true field attributes are both set.
+
+=== Other
+* From Solr 9.4 using Lucene 9.8 onwards `DelegatingCollector.finish` clashes with the super class's `LeafCollector.finish` method. Any custom component extending the `DelegatingCollector` needs to rename the `finish` method to `complete` to follow Solr's implementation.
 
 == Solr 9.3
 === Binary Releases
@@ -73,14 +132,54 @@ Please refer to the https://solr.apache.org/downloads.html[Solr Downloads] site 
 === Shard Management
 * Solr now provides an xref:deployment-guide:shard-management.adoc#installsharddata["Install Shard"] API to allow users who have built (per-shard) indices offline to import them into SolrCloud shards.
 
-== Solr 9.3
 === Solr CLI
-* the bin/solr -i and bin/solr -info removed in favour of bin/solr status command.
+* The `bin/solr -i` and `bin/solr -info` options were removed in favour of the `bin/solr status` command.
 
 === Security
 * Use of `stream.file`, `stream.url` and `stream.body` params are no longer enabled via configuration in solrconfig.xml, nor dynamic equivalents with the config API.
 Older configuration now does nothing.
 Instead, set an env var: SOLR_ENABLE_REMOTE_STREAMING or SOLR_ENABLE_STREAM_BODY or system property equivalents.
+
+* The method for specifying sysProps that contain sensitive information has been streamlined.
+Now the sysProp `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_SYS_PROPS` are available to provide a comma-separated
+list of patterns to match sysProps that should be hidden or redacted.
+Please see the xref:configuration-guide:configuring-solr-xml.adoc#hiddenSysProps[hiddenSysProps section] for more information.
++
+The sysProp `-Dsolr.redaction.system.pattern` has been deprecated, use the above options instead.
++
+The `<hiddenSysProps>` solr.xml element under `<metrics>` has been deprecated.
+Instead, use the xref:configuration-guide:configuring-solr-xml.adoc#hiddenSysProps[<hiddenSysProps>] tag under `<solr>`, which accepts a comma-separated string.
+
+* The xref:indexing-guide:schema-designer.adoc[] now utilizes the same trust model as the xref:configuration-guide:configsets-api.adoc#configsets-upload[ConfigSet Upload API].
+
+=== Official Docker Image
+* The customization of the Official Solr Dockerfile has been changed.
+The customization options `SOLR_DOWNLOAD_URL`, `SOLR_CLOSER_URL`, `SOLR_DIST_URL` and `SOLR_ARCHIVE_URL`, have been removed.
+The only way to specify a custom location for the Solr binaries is through `SOLR_DOWNLOAD_SERVER`.
+If the server URL contains `apache.org`, then the Dockerfile will check gpg signature files.
+If the server URL does not contain `apache.org`, then the gpg signature checking will be skipped.
++
+It is still strongly recommended to use the Dockerfile included in the Solr binary TGZs if you want to build Solr images with custom versions of Solr.
+The custom version of Solr will include this Dockerfile when it is built.
+
+=== Deletion of unknown cores is now disabled by default
+ * When Solr loads a core from a filesystem it will check for corresponding cluster state in ZooKeeper.
+Prior to Solr 9.3, if no corresponding entry existed the core was deleted automatically to remove the orphaned files.
+As of Solr 9.3 that behaviour is no longer enabled by default. See xref:deployment-guide:taking-solr-to-production.adoc#unknown-core-deletion[Unknown core deletion].
+
+=== use of timeAllowed
+* Query timeouts with `timeAllowed` are implemented differently.
+It should be faster albeit have less fidelity – will not timeout a query outside of core query processing (e.g. won't cancel spellcheck or faceting).
+Use `solr.useExitableDirectoryReader` to use the previous behavior.
+Please share your experience with Solr developers!
+The previous behavior should not be enabled if timeAllowed isn't used because unfortunately its performance tax is now imposed on all queries, even those without timeAllowed.
+
+=== v2 API 
+* Solr's experimental "v2" API has seen a number of improvements in the 9.3 release.
++
+It is now approaching parity with the functionality offered by Solr's v1 API.  In particular 9.3 adds v2 "CRUD" endpoints for interacting with alias properties and collection snapshots.  Several lower-level "replication" APIs now also offer v2 equivalents.
++
+Additionally, the v2 API as a whole is being redesigned to be more REST-ful and intuitive.  To this end, 9.3 introduces backwards-incompatible changes to the v2 shard, replica, and backup creation and deletion APIs.  A number of lower-level "command" APIs have also been tweaked, including: collection reloading, collection renaming, "force leader", "balance shard unique", and all of Solr's "log level" and "log watcher" APIs.  Clients using Solr's v2 endpoints should check their usage against the full list of modified APIs in CHANGES.txt prior to upgrading.  Details on each are available in the 9.3 reference guide.
 
 == Solr 9.2
 === Upgrade to Jetty 10.x
@@ -175,7 +274,7 @@ Administrators that need Solr exposed more broadly can change the `SOLR_JETTY_HO
 If you rely upon the previous behavior, then you can change the `clientPortAddress` in `solr/server/solr/zoo.cfg`
 * Jetty low level request-logging in NCSA format is now enabled by default, with a retention of 3 days worth of logs.
 This may require some more disk space for logs than was the case in version 8.x. See xref:deployment-guide:configuring-logging.adoc[Configuring Logging] for how to change this.
-* Hadoop authentication support has been moved to the new `hadoop-auth` module. Existing Solr configurations do not need any Hadoop authentication related changes, however the module needs to be installed - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
+* Hadoop authentication support has been moved to the new `hadoop-auth` module. Users need to add the module `hadoop-auth` to classpath. The plugins has also changed package name to `org.apache.solr.security.hadoop`, but can still be loaded as shortform `class="solr.HadoopAuthPlugin"`, `class="solr.ConfigurableInternodeAuthHadoopPlugin"` or `class="solr.KerberosPlugin"`  - see the section xref:deployment-guide:hadoop-authentication-plugin.adoc[].
 * xref:deployment-guide:jwt-authentication-plugin.adoc[JWTAuthPlugin] has been moved to a module. Users need to add the module `jwt-auth` to classpath. The plugin has also
 changed package name to `org.apache.solr.security.jwt`, but can still be loaded as shortform `class="solr.JWTAuthPlugin"`.
 * Dependency updates - A lot of dependency updates removes several security issues from dependencies, and thus make Solr more secure.

@@ -22,87 +22,173 @@ resource configuration.
 
 == When To Use Circuit Breakers
 Circuit breakers should be used when the user wishes to trade request throughput for a higher Solr stability.
-If circuit breakers are enabled, requests may be rejected under the condition of high node duress with an appropriate HTTP error code (typically 503).
+If circuit breakers are enabled, requests may be rejected under the condition of high node duress with HTTP error code 429 'Too Many Requests'.
 
-It is up to the client to handle this error and potentially build a retrial logic as this should ideally be a transient situation.
+It is up to the client to handle this error and potentially build retry logic as this should be a transient situation.
+
+In a sharded collection, when a circuit breaker trips on one shard, the entire query will fail,
+even if the other shard requests succeed. This will multiply the failures seen by the end users.
+Setting the `shards.tolerant=true` parameter on requests can help with graceful degradation when
+circuit breaker thresholds are reached on some nodes. See the xref:deployment-guide:solrcloud-distributed-requests.adoc#shards-tolerant-parameter[`shards.tolerant` Parameter] for details.
 
 == Circuit Breaker Configurations
-All circuit breaker configurations are listed in the `<circuitBreaker>` tags in `solrconfig.xml` as shown below:
+Circuit breakers can be configured globally for the entire node, or for each collection individually, or a combination. Per-collection circuit breakers are checked before global circuit breakers, and if there is a conflict, the per-collection circuit breaker takes precedence.
+Typically, any per-collection circuit breaker thresholds are set lower than global thresholds.
 
-[source,xml]
-----
-<circuitBreaker class="solr.CircuitBreakerManager" enabled="true">
-  <!-- All specific configs in this section -->
-</circuitBreaker>
-----
+A circuit breaker can register itself to be checked for query requests and/or update requests. A user may register circuit breakers of the same type with different thresholds for each request type.
 
-The `enabled` attribute controls the global activation/deactivation of circuit breakers.
-If this flag is disabled, all circuit breakers will be disabled globally.
-Per circuit breaker configurations are specified in their respective sections later.
+=== Global Circuit Breakers
+Circuit breakers can be configured globally using environment variables, e.g. in `solr.in.sh`, or system properties. The variables available are:
 
-This attribute acts as the highest authority and global controller of circuit breakers.
-For using specific circuit breakers, each one needs to be individually enabled in addition to this flag being enabled.
+[options="header"]
+|===
+|Name |Environment Variable Name |System Property Name
+|JVM Heap Usage |`SOLR_CIRCUITBREAKER_QUERY_MEM`, `SOLR_CIRCUITBREAKER_UPDATE_MEM` |`solr.circuitbreaker.query.mem`, `solr.circuitbreaker.update.mem`
+|System CPU Usage |`SOLR_CIRCUITBREAKER_QUERY_CPU`, `SOLR_CIRCUITBREAKER_UPDATE_CPU` |`solr.circuitbreaker.query.cpu`, `solr.circuitbreaker.update.cpu`
+|System Load Average |`SOLR_CIRCUITBREAKER_QUERY_LOADAVG`, `SOLR_CIRCUITBREAKER_UPDATE_LOADAVG` |`solr.circuitbreaker.query.loadavg`, `solr.circuitbreaker.update.loadavg`
+|===
 
-`CircuitBreakerManager` is the default manager for all circuit breakers that should be defined in the tag unless the user wishes to use a custom implementation.
+For example, you can enable a global CPU circuit breaker that rejects update requests when above 95% CPU load, by setting the following environment variable: `SOLR_CIRCUITBREAKER_UPDATE_CPU=95`.
+
+=== Per Collection Circuit Breakers
+Circuit breakers are configured as independent `<circuitBreaker>` entries in `solrconfig.xml` as shown in the below examples. By default, only search requests are affected.
+
+[TIP]
+====
+HTTP error code from circuit breakers is configurable with java system property `solr.circuitbreaker.errorcode`.
+====
 
 == Currently Supported Circuit Breakers
 
 === JVM Heap Usage
 
-This circuit breaker tracks JVM heap memory usage and rejects incoming search requests with a 503 error code if the heap usage exceeds a configured percentage of maximum heap allocated to the JVM (-Xmx).
+This circuit breaker tracks JVM heap memory usage and rejects incoming requests with a 429 error code if the heap usage exceeds a configured percentage of maximum heap allocated to the JVM (-Xmx).
 The main configuration for this circuit breaker is controlling the threshold percentage at which the breaker will trip.
 
-Configuration for JVM heap usage based circuit breaker:
+To enable and configure the JVM heap usage based circuit breaker, add the following:
 
+.Per collection in `solrconfig.xml`
 [source,xml]
 ----
-<str name="memEnabled">true</str>
+<circuitBreaker class="org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker">
+ <double name="threshold">75</double>
+</circuitBreaker>
 ----
 
-Note that this configuration will be overridden by the global circuit breaker flag -- if circuit breakers are disabled, this flag will not help you.
-
-The triggering threshold is defined as a percentage of the max heap allocated to the JVM.
-It is controlled by the below configuration:
-
-[source,xml]
+.Global in `solr.in.sh`
+[source,bash]
 ----
-<str name="memThreshold">75</str>
+SOLR_CIRCUITBREAKER_QUERY_MEM=75
 ----
 
-It does not logically make sense to have a threshold below 50% and above 95% of the max heap allocated to the JVM.
+The `threshold` is defined as a percentage of the max heap allocated to the JVM.
+
+For the circuit breaker configuration, a value of "0" maps to 0% usage and a value of "100" maps to 100% usage.
+
+It does not logically make sense to have a threshold below 50% or above 95% of the max heap allocated to the JVM.
 Hence, the range of valid values for this parameter is [50, 95], both inclusive.
 
 Consider the following example:
 
-JVM has been allocated a maximum heap of 5GB (-Xmx) and `memThreshold` is set to `75`.
+JVM has been allocated a maximum heap of 5GB (-Xmx) and `threshold` is set to `75`.
 In this scenario, the heap usage at which the circuit breaker will trip is 3.75GB.
 
+=== System CPU Usage Circuit Breaker
+This circuit breaker tracks system CPU usage and triggers if the recent CPU usage exceeds a configurable threshold.
 
-=== CPU Utilization
+This is tracked with the JMX metric `OperatingSystemMXBean.getSystemCpuLoad()`. That measures the
+recent CPU usage for the whole system. This metric is provided by the `com.sun.management` package,
+which is not implemented on all JVMs. If the metric is not available, the circuit breaker will be
+disabled and log an error message. An alternative can then be to use the <<system-load-average-circuit-breaker>>.
 
-This circuit breaker tracks CPU utilization and triggers if the average CPU utilization over the last one minute exceeds a configurable threshold.
-Note that the value used in computation is over the last one minute -- so a sudden spike in traffic that goes down might still cause the circuit breaker to trigger for a short while before it resolves and updates the value.
-For more details of the calculation, please see https://en.wikipedia.org/wiki/Load_(computing)
+To enable and configure the CPU utilization based circuit breaker:
 
-Configuration for CPU utilization based circuit breaker:
-
+.Per collection in `solrconfig.xml`
 [source,xml]
 ----
-<str name="cpuEnabled">true</str>
+<circuitBreaker class="org.apache.solr.util.circuitbreaker.CPUCircuitBreaker">
+ <double  name="threshold">75</double>
+</circuitBreaker>
 ----
 
-Note that this configuration will be overridden by the global circuit breaker flag -- if circuit breakers are disabled, this flag will not help you.
+.Global in `solr.in.sh`
+[source,bash]
+----
+SOLR_CIRCUITBREAKER_QUERY_CPU=75
+----
 
-The triggering threshold is defined in units of CPU utilization.
-The configuration to control this is as below:
+The triggering threshold is defined in percent CPU usage. A value of "0" maps to 0% usage
+and a value of "100" maps to 100% usage. The example above will trip when the CPU usage is
+equal to or greater than 75%.
 
+=== System Load Average Circuit Breaker
+This circuit breaker tracks system load average and triggers if the recent load average exceeds a configurable threshold.
+
+This is tracked with the JMX metric `OperatingSystemMXBean.getSystemLoadAverage()`. That measures the
+recent load average for the whole system. A "load average" is the number of processes using or waiting for a CPU,
+usually averaged over one minute. Some systems include processes waiting on IO in the load average. Check the
+documentation for your system and JVM to understand this metric. For more information, see the
+https://en.wikipedia.org/wiki/Load_(computing)[Wikipedia page for Load],
+
+To enable and configure the Load average circuit breaker:
+
+.Per collection in `solrconfig.xml`
 [source,xml]
 ----
-<str name="cpuThreshold">75</str>
+<circuitBreaker class="org.apache.solr.util.circuitbreaker.LoadAverageCircuitBreaker">
+ <double  name="threshold">8.0</double>
+</circuitBreaker>
+----
+
+.Global in `solr.in.sh`
+[source,bash]
+----
+SOLR_CIRCUITBREAKER_QUERY_LOADAVG=8.0
+----
+
+The triggering threshold is a floating point number matching load average.
+The example circuit breaker above will trip when the load average is equal to or greater than 8.0.
+
+[NOTE]
+====
+The System Load Average Circuit breaker behavior is dependent on the operating system, and may not work on some operating systems like Microsoft Windows. See https://docs.oracle.com/en/java/javase/17/docs/api/java.management/java/lang/management/OperatingSystemMXBean.html#getSystemLoadAverage()[JavaDoc] for more.
+====
+
+== Advanced example
+
+In this example we will prevent update requests above 80% CPU load, and prevent query requests above 95% CPU load. Supported request types are `query` and `update`.
+This would prevent expensive bulk updates from impacting search. Note also the support for short-form class name.
+
+.Per collection in `solrconfig.xml`
+[source,xml]
+----
+<config>
+  <circuitBreaker class="solr.CPUCircuitBreaker">
+   <double  name="threshold">80</double>
+   <arr name="requestTypes">
+     <str>update</str>
+   </arr>
+  </circuitBreaker>
+
+  <circuitBreaker class="solr.CPUCircuitBreaker">
+   <double  name="threshold">95</double>
+   <arr name="requestTypes">
+     <str>query</str>
+   </arr>
+  </circuitBreaker>
+</config>
+----
+
+.Global in `solr.in.sh`
+[source,bash]
+----
+SOLR_CIRCUITBREAKER_UPDATE_CPU=80
+SOLR_CIRCUITBREAKER_QUERY_CPU=95
 ----
 
 == Performance Considerations
 
-It is worth noting that while JVM or CPU circuit breakers do not add any noticeable overhead per query, having too many circuit breakers checked for a single request can cause a performance overhead.
+While JVM or CPU circuit breakers do not add any noticeable overhead per request, having too many circuit breakers checked for a single request can cause a performance overhead.
 
-In addition, it is a good practice to exponentially back off while retrying requests on a busy node.
+In addition, it is a good practice to exponentially back off while retrying requests on a busy node. 
+See the https://en.wikipedia.org/wiki/Exponential_backoff[Wikipedia page for Exponential Backoff].

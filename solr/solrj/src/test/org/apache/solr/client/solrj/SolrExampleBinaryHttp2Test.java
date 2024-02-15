@@ -38,7 +38,8 @@ public class SolrExampleBinaryHttp2Test extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    return new Http2SolrClient.Builder(getServerUrl())
+    return new Http2SolrClient.Builder(getBaseUrl())
+        .withDefaultCollection(DEFAULT_TEST_CORENAME)
         .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
         .withRequestWriter(new BinaryRequestWriter())
         // where the magic happens

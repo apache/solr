@@ -48,7 +48,6 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
           + "  <solrcloud>\n"
           + "    <str name=\"host\">127.0.0.1</str>\n"
           + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
-          + "    <str name=\"hostContext\">${hostContext:solr}</str>\n"
           + "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n"
           + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
           + "    <int name=\"leaderVoteWait\">10000</int>\n"
@@ -73,7 +72,7 @@ public class GCSIncrementalBackupTest extends AbstractIncrementalBackupTest {
   @BeforeClass
   public static void setupClass() throws Exception {
 
-    configureCluster(NUM_SHARDS) // nodes
+    configureCluster(NUM_NODES) // nodes
         .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
         .withSolrXml(SOLR_XML)
         .configure();

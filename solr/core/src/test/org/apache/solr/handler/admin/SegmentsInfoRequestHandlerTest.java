@@ -36,6 +36,8 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
 
   private static final int NUM_SEGMENTS = 2;
 
+  private static final int NUM_FIELD_INFO_PROPERTIES = 6;
+
   private static int initialRefCount;
 
   @BeforeClass
@@ -154,18 +156,39 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testFieldInfo() throws Exception {
-    String[] segmentNamePatterns = new String[NUM_SEGMENTS];
+    String[] segmentNamePatterns = new String[NUM_SEGMENTS * NUM_FIELD_INFO_PROPERTIES];
     h.getCore()
         .withSearcher(
             (searcher) -> {
-              int i = 0;
+              int i = 0, j = 0;
+
               for (SegmentCommitInfo sInfo :
                   SegmentInfos.readLatestCommit(searcher.getIndexReader().directory())) {
                 assertTrue("Unexpected number of segment in the index: " + i, i < NUM_SEGMENTS);
-                segmentNamePatterns[i] =
+                segmentNamePatterns[j++] =
                     "boolean(//lst[@name='segments']/lst[@name='"
                         + sInfo.info.name
                         + "']/lst[@name='fields']/lst[@name='id']/str[@name='flags'])";
+                segmentNamePatterns[j++] =
+                    "boolean(//lst[@name='segments']/lst[@name='"
+                        + sInfo.info.name
+                        + "']/lst[@name='fields']/lst[@name='id']/int[@name='docCount'])";
+                segmentNamePatterns[j++] =
+                    "boolean(//lst[@name='segments']/lst[@name='"
+                        + sInfo.info.name
+                        + "']/lst[@name='fields']/lst[@name='id']/long[@name='termCount'])";
+                segmentNamePatterns[j++] =
+                    "boolean(//lst[@name='segments']/lst[@name='"
+                        + sInfo.info.name
+                        + "']/lst[@name='fields']/lst[@name='id']/long[@name='sumDocFreq'])";
+                segmentNamePatterns[j++] =
+                    "boolean(//lst[@name='segments']/lst[@name='"
+                        + sInfo.info.name
+                        + "']/lst[@name='fields']/lst[@name='id']/long[@name='sumTotalTermFreq'])";
+                segmentNamePatterns[j++] =
+                    "boolean(//lst[@name='segments']/lst[@name='"
+                        + sInfo.info.name
+                        + "']/lst[@name='fields']/lst[@name='id']/str[@name='schemaType'])";
                 i++;
               }
 

@@ -227,7 +227,7 @@ Pick one of the formats and index it into the "films" collection (in each exampl
 
 [,console]
 ----
-$ bin/post -c films example/films/films.json
+$ bin/solr post -c films example/films/films.json
 
 ----
 ====
@@ -238,7 +238,7 @@ $ bin/post -c films example/films/films.json
 
 [,console]
 ----
-$ java -jar -Dc=films -Dauto example\exampledocs\post.jar example\films\*.json
+$ bin/solr post -c films example\films\films.json
 ----
 ====
 --
@@ -253,7 +253,7 @@ $ java -jar -Dc=films -Dauto example\exampledocs\post.jar example\films\*.json
 
 [,console]
 ----
-$ bin/post -c films example/films/films.xml
+$ bin/solr post -c films example/films/films.xml
 
 ----
 ====
@@ -279,7 +279,7 @@ $ java -jar -Dc=films -Dauto example\exampledocs\post.jar example\films\*.xml
 
 [,console]
 ----
-$ bin/post -c films example/films/films.csv -params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
+$ bin/solr post -c films example/films/films.csv -params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
 
 ----
 ====
@@ -309,9 +309,7 @@ Each command will produce output similar to the below seen while indexing JSON:
 
 [,console]
 ----
-$ bin/post -c films example/films/films.json
-# bin/java -classpath /solr-{solr-full-version}/server/solr-webapp/webapp/WEB-INF/lib/solr-core-{solr-full-version}.jar -Dauto=yes -Dc=films -Ddata=files org.apache.solr.cli.SimplePostTool example/films/films.json
-SimplePostTool version 5.0.0
+$ bin/solr post -c films example/films/films.json
 Posting files to [base] url http://localhost:8983/solr/films/update...
 Entering auto mode. File endings considered are xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
 POSTing file films.json (application/json) to [base]/json/docs

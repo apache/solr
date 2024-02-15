@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout.SolrZkClientTimeoutAware;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
@@ -61,31 +62,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
    */
   protected CloudLegacySolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
-    if (builder.stateProvider == null) {
-      if (builder.zkHosts != null && builder.solrUrls != null) {
-        throw new IllegalArgumentException(
-            "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
-      }
-      if (builder.zkHosts != null) {
-        this.stateProvider =
-            ClusterStateProvider.newZkClusterStateProvider(builder.zkHosts, builder.zkChroot);
-      } else if (builder.solrUrls != null && !builder.solrUrls.isEmpty()) {
-        try {
-          this.stateProvider = new HttpClusterStateProvider(builder.solrUrls, builder.httpClient);
-        } catch (Exception e) {
-          throw new RuntimeException(
-              "Couldn't initialize a HttpClusterStateProvider (is/are the "
-                  + "Solr server(s), "
-                  + builder.solrUrls
-                  + ", down?)",
-              e);
-        }
-      } else {
-        throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
-      }
-    } else {
-      this.stateProvider = builder.stateProvider;
-    }
+    this.stateProvider = builder.stateProvider;
     this.retryExpiryTimeNano = builder.retryExpiryTimeNano;
     this.defaultCollection = builder.defaultCollection;
     this.collectionStateCache.timeToLiveMs =
@@ -190,10 +167,12 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     protected boolean shardLeadersOnly = true;
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
-    protected String defaultCollection;
     protected long retryExpiryTimeNano =
         TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
     protected ClusterStateProvider stateProvider;
+    private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
+    private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
+    private boolean canUseZkACLs = true;
 
     /** Constructor for use by subclasses. This constructor was public prior to version 9.0 */
     protected Builder() {}
@@ -251,6 +230,12 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     public Builder(List<String> zkHosts, Optional<String> zkChroot) {
       this.zkHosts = zkHosts;
       if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
+    }
+
+    /** Whether or not to use the default ZK ACLs when building a ZK Client. */
+    public Builder canUseZkACLs(boolean canUseZkACLs) {
+      this.canUseZkACLs = canUseZkACLs;
+      return this;
     }
 
     /** Provides a {@link HttpClient} for the builder to use when creating clients. */
@@ -364,17 +349,42 @@ public class CloudLegacySolrClient extends CloudSolrClient {
       return this;
     }
 
-    /** Sets the default collection for request. */
-    public Builder withDefaultCollection(String collection) {
-      this.defaultCollection = collection;
+    /**
+     * Sets the Zk connection timeout
+     *
+     * @param zkConnectTimeout timeout value
+     * @param unit time unit
+     */
+    public Builder withZkConnectTimeout(int zkConnectTimeout, TimeUnit unit) {
+      this.zkConnectTimeout = Math.toIntExact(unit.toMillis(zkConnectTimeout));
+      return this;
+    }
+
+    /**
+     * Sets the Zk client session timeout
+     *
+     * @param zkClientTimeout timeout value
+     * @param unit time unit
+     */
+    public Builder withZkClientTimeout(int zkClientTimeout, TimeUnit unit) {
+      this.zkClientTimeout = Math.toIntExact(unit.toMillis(zkClientTimeout));
       return this;
     }
 
     /** Create a {@link CloudLegacySolrClient} based on the provided configuration. */
     public CloudLegacySolrClient build() {
       if (stateProvider == null) {
-        if (!zkHosts.isEmpty()) {
-          this.stateProvider = ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot);
+        if (!zkHosts.isEmpty() && !solrUrls.isEmpty()) {
+          throw new IllegalArgumentException(
+              "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
+        } else if (!zkHosts.isEmpty()) {
+          this.stateProvider =
+              ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot, canUseZkACLs);
+          if (stateProvider instanceof SolrZkClientTimeoutAware) {
+            var timeoutAware = (SolrZkClientTimeoutAware) stateProvider;
+            timeoutAware.setZkClientTimeout(zkClientTimeout);
+            timeoutAware.setZkConnectTimeout(zkConnectTimeout);
+          }
         } else if (!this.solrUrls.isEmpty()) {
           try {
             stateProvider = new HttpClusterStateProvider(solrUrls, httpClient);

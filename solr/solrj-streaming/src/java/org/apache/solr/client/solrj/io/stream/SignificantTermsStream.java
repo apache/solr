@@ -17,10 +17,12 @@
 
 package org.apache.solr.client.solrj.io.stream;
 
+import static org.apache.solr.client.solrj.io.stream.StreamExecutorHelper.submitAllAndAwaitAggregatingExceptions;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -28,8 +30,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -47,9 +47,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 
 /**
  * @since 6.5.0
@@ -68,10 +66,9 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
   protected float maxDocFreq;
   protected int minTermLength;
 
-  protected transient SolrClientCache cache;
-  protected transient boolean isCloseCache;
-  protected transient StreamContext streamContext;
-  protected ExecutorService executorService;
+  private transient SolrClientCache clientCache;
+  private transient boolean doCloseCache;
+  private transient StreamContext streamContext;
 
   public SignificantTermsStream(
       String zkHost,
@@ -239,22 +236,18 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
 
   @Override
   public void setStreamContext(StreamContext context) {
-    this.cache = context.getSolrClientCache();
+    this.clientCache = context.getSolrClientCache();
     this.streamContext = context;
   }
 
   @Override
   public void open() throws IOException {
-    if (cache == null) {
-      isCloseCache = true;
-      cache = new SolrClientCache();
+    if (clientCache == null) {
+      doCloseCache = true;
+      clientCache = new SolrClientCache();
     } else {
-      isCloseCache = false;
+      doCloseCache = false;
     }
-
-    this.executorService =
-        ExecutorUtil.newMDCAwareCachedThreadPool(
-            new SolrNamedThreadFactory("SignificantTermsStream"));
   }
 
   @Override
@@ -262,9 +255,8 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     return null;
   }
 
-  private List<Future<NamedList<?>>> callShards(List<String> baseUrls) throws IOException {
-
-    List<Future<NamedList<?>>> futures = new ArrayList<>();
+  private Collection<NamedList<?>> callShards(List<String> baseUrls) throws IOException {
+    List<SignificantTermsCall> tasks = new ArrayList<>();
     for (String baseUrl : baseUrls) {
       SignificantTermsCall lc =
           new SignificantTermsCall(
@@ -274,22 +266,19 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
               this.minDocFreq,
               this.maxDocFreq,
               this.minTermLength,
-              this.numTerms);
-
-      Future<NamedList<?>> future = executorService.submit(lc);
-      futures.add(future);
+              this.numTerms,
+              streamContext.isLocal(),
+              clientCache);
+      tasks.add(lc);
     }
-
-    return futures;
+    return submitAllAndAwaitAggregatingExceptions(tasks, "SignificantTermsStream");
   }
 
   @Override
   public void close() throws IOException {
-    if (isCloseCache) {
-      cache.close();
+    if (doCloseCache) {
+      clientCache.close();
     }
-
-    executorService.shutdown();
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
@@ -314,9 +303,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
         Map<String, int[]> mergeFreqs = new HashMap<>();
         long numDocs = 0;
         long resultCount = 0;
-        for (Future<NamedList<?>> getTopTermsCall :
-            callShards(getShards(zkHost, collection, streamContext))) {
-          NamedList<?> fullResp = getTopTermsCall.get();
+        for (NamedList<?> fullResp : callShards(getShards(zkHost, collection, streamContext))) {
           Map<?, ?> stResp = (Map<?, ?>) fullResp.get("significantTerms");
 
           @SuppressWarnings({"unchecked"})
@@ -387,15 +374,17 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
     }
   }
 
-  protected class SignificantTermsCall implements Callable<NamedList<?>> {
+  protected static class SignificantTermsCall implements Callable<NamedList<?>> {
 
-    private String baseUrl;
-    private String field;
-    private float minDocFreq;
-    private float maxDocFreq;
-    private int numTerms;
-    private int minTermLength;
-    private Map<String, String> paramsMap;
+    private final String baseUrl;
+    private final String field;
+    private final float minDocFreq;
+    private final float maxDocFreq;
+    private final int numTerms;
+    private final int minTermLength;
+    private final Map<String, String> paramsMap;
+    private final boolean isLocal;
+    private final SolrClientCache clientCache;
 
     public SignificantTermsCall(
         String baseUrl,
@@ -404,7 +393,9 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
         float minDocFreq,
         float maxDocFreq,
         int minTermLength,
-        int numTerms) {
+        int numTerms,
+        boolean isLocal,
+        SolrClientCache clientCache) {
 
       this.baseUrl = baseUrl;
       this.field = field;
@@ -413,12 +404,14 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       this.paramsMap = paramsMap;
       this.numTerms = numTerms;
       this.minTermLength = minTermLength;
+      this.isLocal = isLocal;
+      this.clientCache = clientCache;
     }
 
     @Override
     public NamedList<?> call() throws Exception {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      SolrClient solrClient = cache.getHttpSolrClient(baseUrl);
+      SolrClient solrClient = clientCache.getHttpSolrClient(baseUrl);
 
       params.add(DISTRIB, "false");
       params.add("fq", "{!significantTerms}");
@@ -432,7 +425,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible {
       params.add("minTermLength", Integer.toString(minTermLength));
       params.add("field", field);
       params.add("numTerms", String.valueOf(numTerms * 5));
-      if (streamContext.isLocal()) {
+      if (isLocal) {
         params.add("distrib", "false");
       }
 

@@ -140,7 +140,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
   public void testConcurrentUpdate() throws Exception {
     TestServlet.clear();
 
-    String serverUrl = jetty.getBaseUrl().toString() + "/cuss/foo";
+    String serverUrl = getBaseUrl() + "/cuss/foo";
 
     int cussThreadCount = 2;
     int cussQueueSize = 100;
@@ -208,7 +208,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     int cussQueueSize = 10;
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(jetty.getBaseUrl().toString()))
+        (new ConcurrentUpdateSolrClient.Builder(getBaseUrl()))
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .build()) {
@@ -227,7 +227,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     }
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(jetty.getBaseUrl().toString() + "/collection1"))
+        (new ConcurrentUpdateSolrClient.Builder(getBaseUrl()))
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .build()) {
@@ -247,7 +248,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     int expected = numDocs * numRunnables;
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(jetty.getBaseUrl().toString()))
+        (new ConcurrentUpdateSolrClient.Builder(getBaseUrl()))
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .withPollQueueTime(0)
@@ -283,7 +284,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     }
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(jetty.getBaseUrl().toString() + "/collection1"))
+        (new ConcurrentUpdateSolrClient.Builder(getBaseUrl()))
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .build()) {

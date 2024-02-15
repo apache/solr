@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.DocumentAnalysisResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
@@ -38,7 +37,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  *
  * @since solr 1.4
  */
-public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisResponse> {
+public class DocumentAnalysisRequest
+    extends CollectionRequiringSolrRequest<DocumentAnalysisResponse> {
 
   private List<SolrInputDocument> documents = new ArrayList<>();
   private String query;

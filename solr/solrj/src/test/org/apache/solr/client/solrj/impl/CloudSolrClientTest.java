@@ -59,7 +59,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -69,6 +69,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
@@ -171,7 +172,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         "There should be one document because overwrite=true", 1, resp.getResults().getNumFound());
 
     new UpdateRequest()
-        .add(new SolrInputDocument(id, "1", "a_t", "hello1"), /* overwrite = */ false)
+        .add(new SolrInputDocument(id, "1", "a_t", "hello1"), /* overwrite= */ false)
         .add(new SolrInputDocument(id, "1", "a_t", "hello2"), false)
         .commit(cluster.getSolrClient(), "overwrite");
 
@@ -269,7 +270,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Iterator<Map.Entry<String, LBSolrClient.Req>> it = routes.entrySet().iterator();
     while (it.hasNext()) {
       Map.Entry<String, LBSolrClient.Req> entry = it.next();
-      String url = entry.getKey();
+      String coreUrl = entry.getKey();
+      final String baseUrl = URLUtil.extractBaseUrl(coreUrl);
+      final String coreName = URLUtil.extractCoreFromCoreUrl(coreUrl);
       UpdateRequest updateRequest = (UpdateRequest) entry.getValue().getRequest();
       SolrInputDocument doc = updateRequest.getDocuments().get(0);
       String id = doc.getField("id").getValue().toString();
@@ -277,7 +280,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       params.add("q", "id:" + id);
       params.add("distrib", "false");
       QueryRequest queryRequest = new QueryRequest(params);
-      try (SolrClient solrClient = getHttpSolrClient(url)) {
+      try (SolrClient solrClient = getHttpSolrClient(baseUrl, coreName)) {
         QueryResponse queryResponse = queryRequest.process(solrClient);
         SolrDocumentList docList = queryResponse.getResults();
         assertEquals(1, docList.getNumFound());
@@ -316,7 +319,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       it = routes.entrySet().iterator();
       while (it.hasNext()) {
         Map.Entry<String, LBSolrClient.Req> entry = it.next();
-        String url = entry.getKey();
+        String coreUrl = entry.getKey();
+        final String baseUrl = URLUtil.extractBaseUrl(coreUrl);
+        final String coreName = URLUtil.extractCoreFromCoreUrl(coreUrl);
         UpdateRequest updateRequest = (UpdateRequest) entry.getValue().getRequest();
         SolrInputDocument doc = updateRequest.getDocuments().get(0);
         String id = doc.getField("id").getValue().toString();
@@ -324,7 +329,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         params.add("q", "id:" + id);
         params.add("distrib", "false");
         QueryRequest queryRequest = new QueryRequest(params);
-        try (SolrClient solrClient = getHttpSolrClient(url)) {
+        try (SolrClient solrClient = getHttpSolrClient(baseUrl, coreName)) {
           QueryResponse queryResponse = queryRequest.process(solrClient);
           SolrDocumentList docList = queryResponse.getResults();
           assertEquals(1, docList.getNumFound());
@@ -594,7 +599,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     NamedList<Object> resp;
     try (SolrClient client =
-        new HttpSolrClient.Builder(baseUrl + "/" + collectionName)
+        new HttpSolrClient.Builder(baseUrl)
+            .withDefaultCollection(collectionName)
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
@@ -766,8 +772,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     SolrQuery q = new SolrQuery().setQuery("*:*");
     BaseHttpSolrClient.RemoteSolrException sse = null;
 
-    final String url = r.getBaseUrl() + "/" + COLLECTION;
-    try (SolrClient solrClient = getHttpSolrClient(url)) {
+    try (SolrClient solrClient = getHttpSolrClient(r.getBaseUrl(), COLLECTION)) {
 
       if (log.isInfoEnabled()) {
         log.info("should work query, result {}", solrClient.query(q));
@@ -813,8 +818,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     log.info("the node which does not serve this collection{} ", theNode);
     assertNotNull(theNode);
 
-    final String solrClientUrl = theNode + "/" + COLLECTION;
-    try (SolrClient solrClient = getHttpSolrClient(solrClientUrl)) {
+    try (SolrClient solrClient = getHttpSolrClient(theNode, COLLECTION)) {
 
       q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + (coll.getZNodeVersion() - 1));
       try {
@@ -1184,8 +1188,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
     c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-    PerReplicaStates prs =
-        PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
+    PerReplicaStates prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
     assertEquals(4, prs.states.size());
 
     JettySolrRunner jsr = null;
@@ -1195,7 +1198,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       // Now let's do an add replica
       CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
           .process(cluster.getSolrClient());
-      prs = PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
+      prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
       assertEquals(5, prs.states.size());
 
       // create a collection with PRS and v2 API
@@ -1211,7 +1214,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       cluster.waitForActiveCollection(testCollection, 2, 4);
       c = cluster.getZkStateReader().getCollection(testCollection);
       c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
-      prs = PerReplicaStatesFetcher.fetch(collectionPath, cluster.getZkClient(), null);
+      prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
       assertEquals(4, prs.states.size());
     } finally {
       if (jsr != null) {

@@ -21,43 +21,33 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
-import org.apache.solr.cli.ConfigTool;
-import org.apache.solr.cli.CreateCollectionTool;
+import org.apache.solr.cli.CreateTool;
 import org.apache.solr.cli.DeleteTool;
 import org.apache.solr.cli.HealthcheckTool;
 import org.apache.solr.cli.SolrCLI;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Emulates bin/solr -e cloud -noprompt; bin/post -c gettingstarted example/exampledocs/*.xml; this
- * test is useful for catching regressions in indexing the example docs in collections that use data
- * driven functionality and managed schema features of the default configset (configsets/_default).
+ * Emulates bin/solr start -e cloud -noprompt; bin/solr post -c gettingstarted
+ * example/exampledocs/*.xml; this test is useful for catching regressions in indexing the example
+ * docs in collections that use data driven functionality and managed schema features of the default
+ * configset (configsets/_default).
  */
 public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
@@ -107,7 +97,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // NOTE: not calling SolrCLI.main as the script does because it calls System.exit which is a
     // no-no in a JUnit test
 
-    CreateCollectionTool tool = new CreateCollectionTool();
+    CreateTool tool = new CreateTool();
     CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
     log.info("Creating the '{}' collection using SolrCLI with: {}", testCollectionName, solrUrl);
     tool.runTool(cli);
@@ -125,7 +115,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         invalidToolExitStatus,
         tool.runTool(cli));
 
-    // now index docs like bin/post would, but we can't use SimplePostTool because it uses
+    // now index docs like bin/solr post would, but we can't use SimplePostTool because it uses
     // System.exit when it encounters an error, which JUnit doesn't like ...
     log.info("Created collection, now posting example docs!");
     Path exampleDocsDir = Path.of(ExternalPaths.SOURCE_HOME, "example", "exampledocs");
@@ -175,9 +165,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     }
     assertEquals("*:* found unexpected number of documents", expectedXmlDocCount, numFound);
 
-    log.info("Updating Config for {}", testCollectionName);
-    doTestConfigUpdate(testCollectionName, solrUrl);
-
     log.info("Running healthcheck for {}", testCollectionName);
     doTestHealthcheck(testCollectionName, cloudClient.getClusterStateProvider().getQuorumHosts());
 
@@ -191,7 +178,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   protected void doTestHealthcheck(String testCollectionName, String zkHost) throws Exception {
     String[] args =
         new String[] {
-          "-collection", testCollectionName,
+          "-name", testCollectionName,
           "-zkHost", zkHost
         };
     HealthcheckTool tool = new HealthcheckTool();
@@ -210,104 +197,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     assertEquals("Delete action failed!", 0, tool.runTool(cli));
     assertFalse(
         SolrCLI.safeCheckCollectionExists(
-            solrUrl, testCollectionName)); // it should not exist anymore
-  }
-
-  /**
-   * Uses the SolrCLI config action to activate soft auto-commits for the getting started
-   * collection.
-   */
-  protected void doTestConfigUpdate(String testCollectionName, String solrUrl) throws Exception {
-    if (!solrUrl.endsWith("/")) solrUrl += "/";
-
-    try (SolrClient solrClient = SolrCLI.getSolrClient(solrUrl)) {
-      NamedList<Object> configJson =
-          solrClient.request(
-              new GenericSolrRequest(SolrRequest.METHOD.GET, "/" + testCollectionName + "/config"));
-      Object maxTimeFromConfig =
-          configJson._get("/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
-      assertNotNull(maxTimeFromConfig);
-      assertEquals(-1, maxTimeFromConfig);
-
-      String prop = "updateHandler.autoSoftCommit.maxTime";
-      Integer maxTime = 3000;
-      String[] args =
-          new String[] {
-            "-collection", testCollectionName,
-            "-property", prop,
-            "-value", maxTime.toString(),
-            "-solrUrl", solrUrl
-          };
-
-      Map<String, Integer> startTimes = getSoftAutocommitInterval(testCollectionName, solrClient);
-
-      ConfigTool tool = new ConfigTool();
-      CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
-      log.info("Sending set-property '{}'={} to SolrCLI.ConfigTool.", prop, maxTime);
-      assertEquals("Set config property failed!", 0, tool.runTool(cli));
-
-      configJson =
-          solrClient.request(
-              new GenericSolrRequest(SolrRequest.METHOD.GET, "/" + testCollectionName + "/config"));
-      maxTimeFromConfig =
-          configJson._get("/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
-      assertNotNull(maxTimeFromConfig);
-      assertEquals(maxTime, maxTimeFromConfig);
-
-      if (log.isInfoEnabled()) {
-        log.info("live_nodes_count :  {}", cloudClient.getClusterState().getLiveNodes());
-      }
-
-      // Need to use the _get(List, Object) here because of /query in the path
-      assertEquals(
-          "Should have been able to get a value from the /query request handler",
-          "explicit",
-          configJson._get(
-              Arrays.asList("config", "requestHandler", "/query", "defaults", "echoParams"),
-              Collections.emptyMap()));
-
-      // Since it takes some time for this command to complete we need to make sure all the reloads
-      // for all the cores have been done.
-      boolean allGood = false;
-      Map<String, Integer> curSoftCommitInterval = null;
-      for (int idx = 0; idx < 600 && !allGood; ++idx) {
-        curSoftCommitInterval = getSoftAutocommitInterval(testCollectionName, solrClient);
-        // no point in even trying if they're not the same size!
-        if (curSoftCommitInterval.size() > 0 && curSoftCommitInterval.size() == startTimes.size()) {
-          allGood = true;
-          for (Map.Entry<String, Integer> currEntry : curSoftCommitInterval.entrySet()) {
-            if (!currEntry.getValue().equals(maxTime)) {
-              allGood = false;
-            }
-          }
-        }
-        if (!allGood) {
-          Thread.sleep(100);
-        }
-      }
-      assertTrue("All cores should have been reloaded within 60 seconds!!!", allGood);
-    }
-  }
-
-  // Collect all the autoSoftCommit intervals.
-  private Map<String, Integer> getSoftAutocommitInterval(String collection, SolrClient solrClient)
-      throws Exception {
-    Map<String, Integer> ret = new HashMap<>();
-    DocCollection coll = cloudClient.getClusterState().getCollection(collection);
-    for (Slice slice : coll.getActiveSlices()) {
-      for (Replica replica : slice.getReplicas()) {
-        NamedList<Object> configJson =
-            solrClient.request(
-                new GenericSolrRequest(
-                    SolrRequest.METHOD.GET,
-                    "/" + replica.get(ZkStateReader.CORE_NAME_PROP) + "/config"));
-        Integer maxTime =
-            (Integer)
-                configJson._get(
-                    "/config/updateHandler/autoSoftCommit/maxTime", Collections.emptyMap());
-        ret.put(replica.getCoreName(), maxTime);
-      }
-    }
-    return ret;
+            solrUrl, testCollectionName, null)); // it should not exist anymore
   }
 }

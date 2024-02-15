@@ -21,9 +21,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import org.noggit.JSONWriter;
 
 /** Interface to help do push writing to an array */
-public interface IteratorWriter {
+public interface IteratorWriter extends JSONWriter.Writable {
   /**
    * @param iw after this method returns , the ItemWriter Object is invalid Do not hold a reference
    *     to this object
@@ -85,5 +86,31 @@ public interface IteratorWriter {
       throw new RuntimeException(e);
     }
     return l;
+  }
+
+  @Override
+  default void write(JSONWriter writer) {
+    writer.startArray();
+    try {
+      writeIter(
+          new IteratorWriter.ItemWriter() {
+            boolean first = true;
+
+            @Override
+            public IteratorWriter.ItemWriter add(Object o) {
+              if (first) {
+                first = false;
+              } else {
+                writer.writeValueSeparator();
+              }
+              writer.indent();
+              writer.write(o);
+              return this;
+            }
+          });
+    } catch (IOException e) {
+      throw new RuntimeException("this should never happen", e);
+    }
+    writer.endArray();
   }
 }

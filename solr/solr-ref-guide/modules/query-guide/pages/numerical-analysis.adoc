@@ -55,7 +55,7 @@ These are the new zoomed in x-axis points, between 0 and 3.
 Notice that we are sampling a specific area of the curve.
 
 Then the `predict` function is used to predict y-axis points for the sampled x-axis, for all three interpolation functions.
-Finally all three prediction vectors are plotted with the sampled x-axis points.
+Finally, all three prediction vectors are plotted with the sampled x-axis points.
 
 The red line is the `lerp` interpolation, the blue line is the `akima` and the purple line is the `spline` interpolation.
 You can see they each produce different curves in between the control points.
@@ -64,7 +64,7 @@ You can see they each produce different curves in between the control points.
 === Smoothing Interpolation
 
 The `loess` function is a smoothing interpolator which means it doesn't derive a function that passes through the original control points.
-Instead the `loess` function returns a function that smooths the original control points.
+Instead, the `loess` function returns a function that smooths the original control points.
 
 A technique known as local regression is used to compute the smoothed curve.
 The size of the neighborhood of the local regression can be adjusted to control how close the new curve conforms to the original control points.

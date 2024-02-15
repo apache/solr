@@ -24,7 +24,6 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 
 /**
@@ -73,12 +72,8 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     if (System.getProperty("solr.data.dir") == null) {
       nodeProperties.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
     }
-    jetty =
-        new JettySolrRunner(
-            homeDir.toAbsolutePath().toString(), nodeProperties, buildJettyConfig("/solr"));
 
-    jetty.start();
-    port = jetty.getLocalPort();
+    solrClientTestRule.startSolr(homeDir, nodeProperties, buildJettyConfig());
 
     // createJetty(homeDir.getAbsolutePath(), null, null);
   }

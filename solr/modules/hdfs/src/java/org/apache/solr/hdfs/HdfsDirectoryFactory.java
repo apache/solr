@@ -47,11 +47,11 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -187,7 +187,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
       initKerberos();
     }
     if (StrUtils.isNullOrEmpty(
-        System.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
+        EnvUtils.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
       System.setProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED, "false");
     }
   }
@@ -294,7 +294,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   boolean getConfig(String name, boolean defaultValue) {
     Boolean value = params.getBool(name);
     if (value == null) {
-      String sysValue = System.getProperty(name);
+      String sysValue = EnvUtils.getProperty(name);
       if (sysValue != null) {
         value = Boolean.valueOf(sysValue);
       }
@@ -305,7 +305,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   int getConfig(String name, int defaultValue) {
     Integer value = params.getInt(name);
     if (value == null) {
-      String sysValue = System.getProperty(name);
+      String sysValue = EnvUtils.getProperty(name);
       if (sysValue != null) {
         value = Integer.parseInt(sysValue);
       }
@@ -316,7 +316,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   String getConfig(String name, String defaultValue) {
     String value = params.get(name);
     if (value == null) {
-      value = System.getProperty(name);
+      value = EnvUtils.getProperty(name);
     }
     return value == null ? defaultValue : value;
   }
@@ -476,11 +476,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
 
     return normalize(
         SolrPaths.normalizeDir(
-            ZkController.trimLeadingAndTrailingSlashes(hdfsDataDir)
-                + "/"
-                + path
-                + "/"
-                + cd.getDataDir()));
+            trimLeadingAndTrailingSlashes(hdfsDataDir) + "/" + path + "/" + cd.getDataDir()));
   }
 
   /**
@@ -723,5 +719,22 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   @Override
   public UpdateLog newDefaultUpdateLog() {
     return new HdfsUpdateLog(getConfDir());
+  }
+
+  /**
+   * Utility method for trimming and leading and/or trailing slashes from its input. May return the
+   * empty string. May return null if and only if the input is null.
+   */
+  public static String trimLeadingAndTrailingSlashes(final String in) {
+    if (null == in) return in;
+
+    String out = in;
+    if (out.startsWith("/")) {
+      out = out.substring(1);
+    }
+    if (out.endsWith("/")) {
+      out = out.substring(0, out.length() - 1);
+    }
+    return out;
   }
 }

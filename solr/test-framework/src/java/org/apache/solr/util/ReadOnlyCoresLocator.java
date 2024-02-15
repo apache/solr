@@ -46,4 +46,10 @@ public abstract class ReadOnlyCoresLocator implements CoresLocator {
   public void swap(CoreContainer cc, CoreDescriptor cd1, CoreDescriptor cd2) {
     // no-op
   }
+
+  @Override
+  public CoreDescriptor reload(CoreDescriptor cd, CoreContainer cc) {
+    // no-op
+    return cd;
+  }
 }

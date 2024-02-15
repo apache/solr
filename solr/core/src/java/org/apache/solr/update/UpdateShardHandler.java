@@ -21,7 +21,6 @@ import static org.apache.solr.util.stats.InstrumentedHttpRequestExecutor.KNOWN_M
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
@@ -80,8 +79,6 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private final CloseableHttpClient defaultClient;
 
-  private final InstrumentedPoolingHttpClientConnectionManager updateOnlyConnectionManager;
-
   private final InstrumentedPoolingHttpClientConnectionManager recoveryOnlyConnectionManager;
 
   private final InstrumentedPoolingHttpClientConnectionManager defaultConnectionManager;
@@ -90,16 +87,12 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private final InstrumentedHttpListenerFactory updateHttpListenerFactory;
 
-  private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private SolrMetricsContext solrMetricsContext;
 
   private int socketTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
   private int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
-    updateOnlyConnectionManager =
-        new InstrumentedPoolingHttpClientConnectionManager(
-            HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
     recoveryOnlyConnectionManager =
         new InstrumentedPoolingHttpClientConnectionManager(
             HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
@@ -108,8 +101,6 @@ public class UpdateShardHandler implements SolrInfoBean {
             HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     if (cfg != null) {
-      updateOnlyConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
-      updateOnlyConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
       recoveryOnlyConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
       recoveryOnlyConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
       defaultConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());

@@ -33,13 +33,16 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.ZkTestServer;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.ExternalPaths;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
+import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -280,5 +283,66 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     assertFalse(Thread.currentThread().isInterrupted());
     SolrZkClient.checkInterrupted(new InterruptedException());
     assertTrue(Thread.currentThread().isInterrupted());
+  }
+
+  @Test
+  public void testInstantiationWithSolrResourceLoader() {
+    enableCustomCredentialsProvider();
+    SolrResourceLoader solrResourceLoader =
+        new SolrResourceLoader(Path.of("."), ClassLoader.getSystemClassLoader());
+    new SolrZkClient.Builder()
+        .withUrl(zkServer.getZkHost())
+        .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+        .withSolrClassLoader(solrResourceLoader)
+        .build()
+        .close(); // no more tests needed. We only test class instantiation
+  }
+
+  private static void enableCustomCredentialsProvider() {
+    System.setProperty(
+        SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
+        DigestZkCredentialsProvider.class.getName());
+    System.setProperty(
+        SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME, DigestZkACLProvider.class.getName());
+    System.setProperty(
+        SolrZkClient.ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME,
+        CustomZkCredentialsInjector.class.getName());
+  }
+
+  public static class CustomZkCredentialsInjector implements ZkCredentialsInjector {
+    @Override
+    public List<ZkCredential> getZkCredentials() {
+      return List.of(new ZkCredential("someuser", "somepass", ZkCredential.Perms.READ));
+    }
+  }
+
+  @Test
+  public void testCreateWithStat() throws InterruptedException, KeeperException {
+    String path = "/collections/" + "collectionName_" + getSaferTestName();
+    try {
+      Stat createStat = new Stat();
+      defaultClient.create(
+          path, "hello".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, false, createStat);
+      Stat readStat = new Stat();
+      defaultClient.getData(path, null, readStat, false);
+      assertEquals(createStat, readStat);
+    } finally {
+      defaultClient.delete(path, 0, false);
+    }
+  }
+
+  @Test
+  public void testCreateWithStatAndRetry() throws InterruptedException, KeeperException {
+    String path = "/collections/" + "collectionName_" + getSaferTestName();
+    try {
+      Stat createStat = new Stat();
+      defaultClient.create(
+          path, "hello".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT, true, createStat);
+      Stat readStat = new Stat();
+      defaultClient.getData(path, null, readStat, false);
+      assertEquals(createStat, readStat);
+    } finally {
+      defaultClient.delete(path, 0, false);
+    }
   }
 }

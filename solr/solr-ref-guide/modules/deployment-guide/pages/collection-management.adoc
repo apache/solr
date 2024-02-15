@@ -250,6 +250,7 @@ If `true` the states of individual replicas will be maintained as individual chi
 +
 Set core property _name_ to _value_.
 See the section xref:configuration-guide:core-discovery.adoc[] for details on supported properties and values.
+Those properties are also applied to every new core that will be created when adding replicas to the collection later on.
 +
 [WARNING]
 ====
@@ -321,28 +322,14 @@ http://localhost:8983/solr/admin/collections?action=RELOAD&name=techproducts_v2
 ====
 [.tab-label]*V2 API*
 
-With the v2 API, the `reload` command is provided as part of the JSON data that contains the required parameters:
+With the v2 API, the `reload` command is provided as a part of URL path. The request body is optional if the optional `async` parameter is omitted:
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/collections/techproducts_v2/reload -H 'Content-Type: application/json' -d '
   {
-    "reload": {}
+    "async": "someAsyncId"
   }
-'
-----
-
-Additional parameters can be passed in via the `reload` key:
-
-[source,bash]
-----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d '
-  {
-    "reload": {
-      "async": "reload1"
-    }
-  }
-'
 ----
 ====
 --
@@ -357,7 +344,8 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-T
 |===
 +
 The name of the collection to reload.
-This parameter is required by the V1 API.
+This parameter is required.
+It appears as a query-parameter on v1 requests, and in the URL path of v2 requests.
 
 `async`::
 +
@@ -542,7 +530,7 @@ Aliases that refer to more than 1 collection are not supported.
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&target=renamedCollection
+http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&target=newName
 ----
 ====
 
@@ -554,7 +542,7 @@ http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&
 ----
 curl -X POST http://localhost:8983/api/collections/techproducts/rename -H 'Content-Type: application/json' -d '
   {
-    "to": "new_name"
+    "to": "newName"
   }
 '
 ----
@@ -1265,6 +1253,7 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
     },
     "gettingstarted": {
         "znodeVersion": 16,
+        "creationTimeMillis": 1706228861003,
         "properties": {
             "nrtReplicas": "2",
             "pullReplicas": "0",
@@ -1677,6 +1666,23 @@ The upper-bound on how many backups should be retained at the backup location.
 If the current number exceeds this bound, older backups will be deleted until only `maxNumBackupPoints` backups remain.
 This parameter has no effect if `incremental=false` is specified.
 
+`backupConfigset`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Indicates if configset files should be included with the index backup or not. Note that in order to restore a collection, the configset must either exist in ZooKeeper or be part of the backup. Only set this to `false` if you can restore configsets by other means external to Solr (i.e. you have it stored with your application source code, is part of your ZooKeeper backups, etc).
+
+`property.<propertyName>` (V1), `extraProperties` (V2)::
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Allows storing additional key/value pairs for custom information related to the backup. In v2, the value is a map of key-value pairs.
+
 `incremental`::
 +
 [%autowidth,frame=none]
@@ -1705,7 +1711,7 @@ Valid options are `copy-files` (which backs up both the collection configset and
 |Optional |Default: none
 |===
 +
-The name of a the collection "snapshot" to create a backup from.
+The name of the collection "snapshot" to create a backup from.
 If not provided, Solr will create the backup from the current collection state (instead of a previous snapshotted state).
 
 [example.tab-pane#backup-response-incremental]

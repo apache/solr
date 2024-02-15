@@ -36,6 +36,7 @@ import org.apache.solr.util.RefCounted;
 public class JoinQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "join";
+
   /** Choose the internal algorithm */
   private static final String METHOD = "method";
 
@@ -153,7 +154,14 @@ public class JoinQParserPlugin extends QParserPlugin {
         CoreContainer container = qparser.req.getCoreContainer();
 
         // if in SolrCloud mode, fromIndex should be the name of a single-sharded collection
-        coreName = ScoreJoinQParserPlugin.getCoreName(fromIndex, container);
+        coreName =
+            ScoreJoinQParserPlugin.getCoreName(
+                fromIndex,
+                container,
+                qparser.req.getCore(),
+                toField,
+                fromField,
+                qparser.localParams);
 
         final SolrCore fromCore = container.getCore(coreName);
         if (fromCore == null) {
@@ -226,6 +234,7 @@ public class JoinQParserPlugin extends QParserPlugin {
 
   private static final EnumSet<Method> JOIN_METHOD_ALLOWLIST =
       EnumSet.of(Method.index, Method.topLevelDV, Method.dvWithScore);
+
   /**
    * A helper method for other plugins to create (non-scoring) JoinQueries wrapped around arbitrary
    * queries against the same core.

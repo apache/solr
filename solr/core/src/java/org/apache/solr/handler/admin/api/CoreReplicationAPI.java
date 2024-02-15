@@ -20,14 +20,19 @@ import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONT
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import java.util.List;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.jersey.JacksonReflectMapWriter;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.jersey.SolrJerseyResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -46,10 +51,21 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
 
   @GET
   @Path("/indexversion")
-  @Produces({"application/json", "application/xml", BINARY_CONTENT_TYPE_V2})
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
   @PermissionName(CORE_READ_PERM)
   public IndexVersionResponse fetchIndexVersion() throws IOException {
     return doFetchIndexVersion();
+  }
+
+  @GET
+  @Path("/files")
+  @Produces({MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, BINARY_CONTENT_TYPE_V2})
+  @PermissionName(CORE_READ_PERM)
+  public FileListResponse fetchFileList(
+      @Parameter(description = "The generation number of the index", required = true)
+          @QueryParam("generation")
+          long gen) {
+    return doFetchFileList(gen);
   }
 
   /** Response for {@link CoreReplicationAPI#fetchIndexVersion()}. */
@@ -70,6 +86,53 @@ public class CoreReplicationAPI extends ReplicationAPIBase {
       this.indexVersion = indexVersion;
       this.generation = generation;
       this.status = status;
+    }
+  }
+
+  /** Response for {@link CoreReplicationAPI#fetchFileList(long)}. */
+  public static class FileListResponse extends SolrJerseyResponse {
+    @JsonProperty("filelist")
+    public List<FileMetaData> fileList;
+
+    @JsonProperty("confFiles")
+    public List<FileMetaData> confFiles;
+
+    @JsonProperty("status")
+    public String status;
+
+    @JsonProperty("message")
+    public String message;
+
+    @JsonProperty("exception")
+    public Exception exception;
+
+    public FileListResponse() {}
+  }
+
+  /**
+   * Contained in {@link CoreReplicationAPI.FileListResponse}, this holds metadata from a file for
+   * an index
+   */
+  public static class FileMetaData implements JacksonReflectMapWriter {
+
+    @JsonProperty("size")
+    public long size;
+
+    @JsonProperty("name")
+    public String name;
+
+    @JsonProperty("checksum")
+    public long checksum;
+
+    @JsonProperty("alias")
+    public String alias;
+
+    public FileMetaData() {}
+
+    public FileMetaData(long size, String name, long checksum) {
+      this.size = size;
+      this.name = name;
+      this.checksum = checksum;
     }
   }
 }

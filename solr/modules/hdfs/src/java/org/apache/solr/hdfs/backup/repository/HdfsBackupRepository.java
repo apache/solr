@@ -19,10 +19,8 @@ package org.apache.solr.hdfs.backup.repository;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.Objects;
 import org.apache.hadoop.conf.Configuration;
@@ -38,15 +36,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.backup.repository.BackupRepository;
+import org.apache.solr.core.backup.repository.AbstractBackupRepository;
 import org.apache.solr.hdfs.HdfsDirectoryFactory;
 import org.apache.solr.hdfs.store.HdfsDirectory;
 import org.apache.solr.hdfs.store.HdfsDirectory.HdfsIndexInput;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class HdfsBackupRepository implements BackupRepository {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+public class HdfsBackupRepository extends AbstractBackupRepository {
 
   private static final String HDFS_UMASK_MODE_PARAM = "solr.hdfs.permissions.umask-mode";
   private static final String HDFS_COPY_BUFFER_SIZE_PARAM = "solr.hdfs.buffer.size";
@@ -55,12 +50,11 @@ public class HdfsBackupRepository implements BackupRepository {
   private Configuration hdfsConfig = null;
   private FileSystem fileSystem = null;
   private Path baseHdfsPath = null;
-  private NamedList<?> config = null;
   protected int copyBufferSize = HdfsDirectory.DEFAULT_BUFFER_SIZE;
 
   @Override
   public void init(NamedList<?> args) {
-    this.config = args;
+    super.init(args);
 
     // Configure the size of the buffer used for copying index files to/from HDFS, if specified.
     if (args.get(HDFS_COPY_BUFFER_SIZE_PARAM) != null) {
@@ -217,16 +211,12 @@ public class HdfsBackupRepository implements BackupRepository {
   }
 
   @Override
-  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
-      throws IOException {
+  public void delete(URI path, Collection<String> files) throws IOException {
     if (files.isEmpty()) return;
 
     for (String file : files) {
       Path filePath = new Path(new Path(path), file);
-      boolean success = fileSystem.delete(filePath, false);
-      if (!ignoreNoSuchFileException && !success) {
-        throw new NoSuchFileException(filePath.toString());
-      }
+      fileSystem.delete(filePath, false);
     }
   }
 }

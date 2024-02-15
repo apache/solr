@@ -31,6 +31,7 @@ import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
 import org.apache.solr.cluster.placement.impl.AttributeFetcherImpl;
 import org.apache.solr.cluster.placement.impl.AttributeValuesImpl;
+import org.apache.solr.cluster.placement.impl.BalancePlanFactoryImpl;
 import org.apache.solr.cluster.placement.impl.CollectionMetricsBuilder;
 import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
 import org.apache.solr.cluster.placement.impl.PlacementPlanFactoryImpl;
@@ -108,6 +109,8 @@ public class Builders {
     private static final PlacementPlanFactory PLACEMENT_PLAN_FACTORY =
         new PlacementPlanFactoryImpl();
 
+    private static final BalancePlanFactory BALANCE_PLAN_FACTORY = new BalancePlanFactoryImpl();
+
     public PlacementContext buildPlacementContext() {
       Cluster cluster = build();
       AttributeFetcher attributeFetcher = buildAttributeFetcher();
@@ -125,6 +128,11 @@ public class Builders {
         @Override
         public PlacementPlanFactory getPlacementPlanFactory() {
           return PLACEMENT_PLAN_FACTORY;
+        }
+
+        @Override
+        public BalancePlanFactory getBalancePlanFactory() {
+          return BALANCE_PLAN_FACTORY;
         }
       };
     }
@@ -178,10 +186,12 @@ public class Builders {
       if (!collectionBuilders.isEmpty()) {
         Map<Node, Object> nodeToCoreCount =
             metrics.computeIfAbsent(NodeMetricImpl.NUM_CORES, n -> new HashMap<>());
+        Map<Node, Object> nodeToFreeDisk =
+            metrics.computeIfAbsent(NodeMetricImpl.FREE_DISK_GB, n -> new HashMap<>());
         collectionBuilders.forEach(
             builder -> {
-              collectionMetrics.put(
-                  builder.collectionName, builder.collectionMetricsBuilder.build());
+              CollectionMetrics thisCollMetrics = builder.collectionMetricsBuilder.build();
+              collectionMetrics.put(builder.collectionName, thisCollMetrics);
               SolrCollection collection = builder.build();
               collection
                   .iterator()
@@ -195,6 +205,19 @@ public class Builders {
                                         replica.getNode(),
                                         (node, count) ->
                                             (count == null) ? 1 : ((Number) count).intValue() + 1);
+                                    double leaderDiskSpace =
+                                        thisCollMetrics
+                                            .getShardMetrics(shard.getShardName())
+                                            .flatMap(
+                                                m -> m.getReplicaMetrics(replica.getReplicaName()))
+                                            .flatMap(
+                                                m ->
+                                                    m.getReplicaMetric(
+                                                        ReplicaMetricImpl.INDEX_SIZE_GB))
+                                            .orElse(0D);
+                                    nodeToFreeDisk.computeIfPresent(
+                                        replica.getNode(),
+                                        (node, freeDisk) -> ((Double) freeDisk) - leaderDiskSpace);
                                   }));
             });
       }

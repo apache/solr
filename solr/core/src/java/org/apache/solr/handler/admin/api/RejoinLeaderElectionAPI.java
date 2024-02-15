@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REJOINLEADERELECTION;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
@@ -59,10 +58,6 @@ public class RejoinLeaderElectionAPI {
     final RejoinLeaderElectionPayload v2Body = payload.get();
     final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
     v1Params.put(ACTION, REJOINLEADERELECTION.name().toLowerCase(Locale.ROOT));
-    if (v2Body.electionNode != null) {
-      v1Params.remove("electionNode");
-      v1Params.put(ELECTION_NODE_PROP, v2Body.electionNode);
-    }
     if (v2Body.coreNodeName != null) {
       v1Params.remove("coreNodeName");
       v1Params.put(CORE_NODE_NAME_PROP, v2Body.coreNodeName);

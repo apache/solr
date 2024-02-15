@@ -65,7 +65,6 @@ import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SolrQueryTimeoutImpl;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SyntaxError;
@@ -97,7 +96,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrParams params = req.getParams();
 
-    SolrQueryTimeoutImpl.set(req);
     try {
 
       // Set field flags
@@ -267,8 +265,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
       }
     } catch (ExitableDirectoryReader.ExitingReaderException ex) {
       log.warn("Query: {}; ", req.getParamString(), ex);
-    } finally {
-      SolrQueryTimeoutImpl.reset();
     }
   }
 
@@ -310,7 +306,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           }
         }
       }
-      String[] fields = list.toArray(new String[list.size()]);
+      String[] fields = list.toArray(new String[0]);
       if (fields.length < 1) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
@@ -459,6 +455,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
       }
       return results;
     }
+
     /**
      * Yields terms with boosts from the boosted MLT query.
      *
