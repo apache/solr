@@ -27,7 +27,7 @@ setup() {
   # however that defeats our test so fake that out via -solrIncludeFile param specifing a bogus path.
   solr auth enable --type basicAuth --credentials name:password --solrIncludeFile /force/credentials/to/be/supplied
   
-  solr assert -credentials name:password --cloud http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --credentials name:password --cloud http://localhost:${SOLR_PORT} --timeout 5000
 }
 
 teardown() {

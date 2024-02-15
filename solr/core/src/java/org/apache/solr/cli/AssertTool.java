@@ -189,8 +189,8 @@ public class AssertTool extends ToolBase {
     if (cli.hasOption("X")) {
       ret += assertFileNotExists(cli.getOptionValue("X"));
     }
-    if (cli.hasOption("u")) {
-      ret += sameUser(cli.getOptionValue("u"));
+    if (cli.hasOption("same-user")) {
+      ret += sameUser(cli.getOptionValue("same-user"));
     }
     if (cli.hasOption("s")) {
       ret +=
