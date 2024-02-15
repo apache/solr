@@ -46,14 +46,14 @@ public class ZkMvTool extends ToolBase {
     return List.of(
         Option.builder("src")
             .argName("src")
-                .longOpt("source")
+            .longOpt("source")
             .hasArg()
             .required(true)
             .desc("Source Znode to move from.")
             .build(),
         Option.builder("dst")
             .argName("dst")
-                .longOpt("destination")
+            .longOpt("destination")
             .hasArg()
             .required(true)
             .desc("Destination Znode to move to.")

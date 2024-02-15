@@ -126,7 +126,7 @@ public class AssertTool extends ToolBase {
             .desc("Return an exit code instead of printing error message on assert fail.")
             .longOpt("exitcode")
             .build(),
-            SolrCLI.OPTION_CREDENTIALS);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override

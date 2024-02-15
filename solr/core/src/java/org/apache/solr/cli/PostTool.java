@@ -57,17 +57,17 @@ public class PostTool extends ToolBase {
             .desc("Name of the collection.")
             .build(),
         Option.builder()
-                .longOpt("skipcommit")
+            .longOpt("skipcommit")
             .required(false)
             .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
             .build(),
         Option.builder("o")
-                .longOpt("optimize")
+            .longOpt("optimize")
             .required(false)
             .desc("Issue an optimize at end of posting documents.")
             .build(),
         Option.builder()
-                .longOpt("mode")
+            .longOpt("mode")
             .argName("mode")
             .hasArg(true)
             .required(false)

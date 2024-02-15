@@ -342,7 +342,6 @@ public class PackageTool extends ToolBase {
             .desc("Don't prompt for input; accept all default choices, defaults to false.")
             .longOpt("noprompt")
             .build(),
-            SolrCLI.OPTION_CREDENTIALS
-        );
+        SolrCLI.OPTION_CREDENTIALS);
   }
 }

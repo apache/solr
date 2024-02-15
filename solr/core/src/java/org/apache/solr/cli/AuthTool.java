@@ -69,7 +69,7 @@ public class AuthTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder()
-                .longOpt("type")
+            .longOpt("type")
             .hasArg()
             .desc(
                 "The authentication mechanism to enable (basicAuth or kerberos). Defaults to 'basicAuth'.")
@@ -114,7 +114,7 @@ public class AuthTool extends ToolBase {
             .build(),
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_ZKHOST,
-            SolrCLI.OPTION_CREDENTIALS);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   private void ensureArgumentIsValidBooleanIfPresent(CommandLine cli, String argName) {
