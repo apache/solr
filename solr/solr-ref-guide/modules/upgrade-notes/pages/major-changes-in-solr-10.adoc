@@ -26,6 +26,11 @@ Before starting an upgrade to this version of Solr, please take the time to revi
 
 // TODO add similar text that previous releases have at this spot.
 
+=== Solr CLI and Scripts
+
+The Solr CLI has gone through some signficant rennovations to reduce technical debt, and function more consistently and predictably.
+You will need to review any custom scripts that use the `bin/solr` command to ensure that you are using the correct options. 
+
 === SolrJ
 
 Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like ZooKeeper.  If you require such functionality, you need to add additional dependencies.
