@@ -2288,10 +2288,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
 
         populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
-        //        if (cmd.getSort() != null && !(cmd.getQuery() instanceof RankQuery) &&
-        // needScores) {
-        //          TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
-        //        }
+        if (cmd.getSort() != null && !(cmd.getQuery() instanceof RankQuery) && needScores) {
+          TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
+        }
         // nDocsReturned = topDocs.scoreDocs.length;
         // TODO: Is this correct?
         // hitsRelation = topDocs.totalHits.relation;

@@ -1786,7 +1786,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         CommonParams.ROWS,
         "200",
         CommonParams.SORT,
-        "id asc");
+        "score desc, id asc");
     assertIsExactHitCount(
         "q", "{!cache=false}id:1", CommonParams.MIN_EXACT_COUNT, "1", CommonParams.ROWS, "1");
     assertApproximatedHitCount(
