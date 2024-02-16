@@ -103,6 +103,7 @@ Optimizations
 
 * GITHUB#2217: Scale to 10K+ collections better in ZkStateReader.refreshCollectionsList (David Smiley)
 
+* SOLR-17099: snitch does not return spurious tags (Pierre Salagnac)
 
 Bug Fixes
 ---------------------
