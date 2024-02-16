@@ -168,7 +168,7 @@ public class PackageTool extends ToolBase {
                   String packageName = parsedVersion.first();
                   String version = parsedVersion.second();
                   boolean noprompt = cli.hasOption('y');
-                  boolean isUpdate = cli.hasOption("update") || cli.hasOption('u');
+                  boolean isUpdate = cli.hasOption("update");
                   String[] collections =
                       cli.hasOption("collections")
                           ? PackageUtils.validateCollections(
@@ -184,7 +184,7 @@ public class PackageTool extends ToolBase {
                       noprompt);
                 } else {
                   PackageUtils.printRed(
-                      "Either specify -cluster to deploy cluster level plugins or -collections <list-of-collections> to deploy collection level plugins");
+                      "Either specify --cluster to deploy cluster level plugins or --collections <list-of-collections> to deploy collection level plugins");
                 }
                 break;
               }
@@ -309,14 +309,16 @@ public class PackageTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         SolrCLI.OPTION_SOLRURL,
-        Option.builder("collections")
+        Option.builder()
+                .longOpt("collections")
             .argName("COLLECTIONS")
             .hasArg()
             .required(false)
             .desc(
                 "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
             .build(),
-        Option.builder("cluster")
+        Option.builder()
+                .longOpt("cluster")
             .required(false)
             .desc("Specifies that this action should affect cluster-level plugins only.")
             .build(),

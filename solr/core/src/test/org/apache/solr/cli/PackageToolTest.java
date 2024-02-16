@@ -128,35 +128,33 @@ public class PackageToolTest extends SolrCloudTestCase {
 
     run(
         tool,
-        new String[] {"-solrUrl", solrUrl, "list-installed", "-credentials", USER + ":" + PASS});
+        new String[] {"--solrUrl", solrUrl, "list-installed", "--credentials", USER + ":" + PASS});
 
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solrUrl",
           solrUrl,
-          "-credentials",
-          USER + ":" + PASS,
           "add-repo",
           "fullstory",
           "http://localhost:" + repositoryServer.getPort(),
-          "-credentials",
+          "--credentials",
           USER + ":" + PASS
         });
 
     run(
         tool,
-        new String[] {"-solrUrl", solrUrl, "list-available", "-credentials", USER + ":" + PASS});
+        new String[] {"--solrUrl", solrUrl, "list-available", "--credentials", USER + ":" + PASS});
 
     run(
         tool,
         new String[] {
-          "-solrUrl", solrUrl, "install", "question-answer:1.0.0", "-credentials", USER + ":" + PASS
+          "--solrUrl", solrUrl, "install", "question-answer:1.0.0", "--credentials", USER + ":" + PASS
         });
 
     run(
         tool,
-        new String[] {"-solrUrl", solrUrl, "list-installed", "-credentials", USER + ":" + PASS});
+        new String[] {"--solrUrl", solrUrl, "list-installed", "--credentials", USER + ":" + PASS});
 
     withBasicAuth(CollectionAdminRequest.createCollection("abc", "conf1", 1, 1))
         .processAndWait(cluster.getSolrClient(), 10);
@@ -168,22 +166,22 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "-solrUrl", solrUrl, "list-deployed", "question-answer", "-credentials", USER + ":" + PASS
+          "--solrUrl", solrUrl, "list-deployed", "question-answer", "--credentials", USER + ":" + PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solrUrl",
           solrUrl,
           "deploy",
           "question-answer",
           "-y",
-          "-collections",
+          "--collections",
           "abc",
           "-p",
           "RH-HANDLER-PATH=" + rhPath,
-          "-credentials",
+          "--credentials",
           USER + ":" + PASS
         });
     assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0", USER + ":" + PASS);
@@ -191,13 +189,13 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "-solrUrl", solrUrl, "list-deployed", "question-answer", "-credentials", USER + ":" + PASS
+          "--solrUrl", solrUrl, "list-deployed", "question-answer", "--credentials", USER + ":" + PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl", solrUrl, "list-deployed", "-c", "abc", "-credentials", USER + ":" + PASS
+          "--solrUrl", solrUrl, "list-deployed", "-c", "abc", "--credentials", USER + ":" + PASS
         });
 
     // Should we test the "auto-update to latest" functionality or the default explicit deploy
@@ -211,14 +209,14 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "-solrUrl",
+            "--solrUrl",
             solrUrl,
             "deploy",
             "question-answer:latest",
             "-y",
-            "-collections",
+            "--collections",
             "abc",
-            "-credentials",
+            "--credentials",
             USER + ":" + PASS
           });
       assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.0.0", USER + ":" + PASS);
@@ -226,7 +224,7 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "-solrUrl", solrUrl, "install", "question-answer", "-credentials", USER + ":" + PASS
+            "--solrUrl", solrUrl, "install", "question-answer", "--credentials", USER + ":" + PASS
           });
       assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.1.0", USER + ":" + PASS);
     } else {
@@ -235,7 +233,7 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "-solrUrl", solrUrl, "install", "question-answer", "-credentials", USER + ":" + PASS
+            "--solrUrl", solrUrl, "install", "question-answer", "--credentials", USER + ":" + PASS
           });
       assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0", USER + ":" + PASS);
 
@@ -244,32 +242,32 @@ public class PackageToolTest extends SolrCloudTestCase {
         run(
             tool,
             new String[] {
-              "-solrUrl",
+              "--solrUrl",
               solrUrl,
               "deploy",
               "--update",
               "-y",
               "question-answer",
-              "-collections",
+              "--collections",
               "abc",
               "-p",
               "RH-HANDLER-PATH=" + rhPath,
-              "-credentials",
+              "--credentials",
               USER + ":" + PASS
             });
       } else {
         run(
             tool,
             new String[] {
-              "-solrUrl",
+              "--solrUrl",
               solrUrl,
               "deploy",
               "--update",
               "-y",
               "question-answer",
-              "-collections",
+              "--collections",
               "abc",
-              "-credentials",
+              "--credentials",
               USER + ":" + PASS
             });
       }
@@ -280,20 +278,20 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "-solrUrl",
+          "--solrUrl",
           solrUrl,
           "undeploy",
           "question-answer",
-          "-collections",
+          "--collections",
           "abc",
-          "-credentials",
+          "--credentials",
           USER + ":" + PASS
         });
 
     run(
         tool,
         new String[] {
-          "-solrUrl", solrUrl, "list-deployed", "question-answer", "-credentials", USER + ":" + PASS
+          "--solrUrl", solrUrl, "list-deployed", "question-answer", "--credentials", USER + ":" + PASS
         });
   }
 

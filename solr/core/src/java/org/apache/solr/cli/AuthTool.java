@@ -288,7 +288,7 @@ public class AuthTool extends ToolBase {
         } else if (!prompt
             && (cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()) == null
                 || !cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()).contains(":"))) {
-          CLIO.out("Option -credentials is not in correct format.");
+          CLIO.out("Option --credentials is not in correct format.");
           new HelpFormatter()
               .printHelp("bin/solr auth <enable|disable> [OPTIONS]", SolrCLI.getToolOptions(this));
           SolrCLI.exit(1);

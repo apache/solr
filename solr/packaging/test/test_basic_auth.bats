@@ -84,7 +84,7 @@ run solr create -c COLL_NAME
 
 @test "package with basic auth" {
   
-  run solr package deploy PACKAGE_NAME -credentials name:password -collections foo-1.2
+  run solr package deploy PACKAGE_NAME --credentials name:password --collections foo-1.2
   # verify that package tool is communicating with Solr via basic auth
   assert_output --partial "Collection(s) doesn't exist: [foo-1.2]"
   #assert_output --partial "Deployment successful"
