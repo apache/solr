@@ -321,7 +321,7 @@ public class DOMUtil {
       case Node.CDATA_SECTION_NODE: /* fall through */
       case Node.COMMENT_NODE: /* fall through */
       case Node.PROCESSING_INSTRUCTION_NODE: /* fall through */
-        buf.append(nd.getNodeValue());
+        buf.append(nd.getNodeValue().strip());
         break;
 
       case Node.DOCUMENT_NODE: /* fall through */
