@@ -110,7 +110,7 @@ Bug Fixes
 
 * SOLR-17148: Fixing Config API overlay property enabling or disabling the cache (Sanjay Dutt, hossman, Eric Pugh)
 
-* SOLR-6572: Extra leading or trailing whitespace in XML nodes in solrconfig.xml not supported
+* SOLR-6572: Extra leading or trailing whitespace in XML nodes in solrconfig.xml now ignored
   (Fredrik Rødland, Anurag Sharma via janhoy)
 
 Dependency Upgrades
