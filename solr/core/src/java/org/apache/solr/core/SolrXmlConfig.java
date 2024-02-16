@@ -655,17 +655,10 @@ public class SolrXmlConfig {
   }
 
   private static PluginInfo[] getBackupRepositoryPluginInfos(List<ConfigNode> cfg) {
-    if (cfg.isEmpty()) {
-      return new PluginInfo[0];
-    }
-
-    PluginInfo[] configs = new PluginInfo[cfg.size()];
-    for (int i = 0; i < cfg.size(); i++) {
-      ConfigNode c = cfg.get(i);
-      configs[i] = new PluginInfo(c, "BackupRepositoryFactory", true, true);
-    }
-
-    return configs;
+    return cfg.stream()
+        .map(c -> new PluginInfo(c, "BackupRepositoryFactory", true, true))
+        .filter(PluginInfo::isEnabled)
+        .toArray(PluginInfo[]::new);
   }
 
   private static PluginInfo[] getClusterPlugins(SolrResourceLoader loader, ConfigNode root) {
@@ -698,6 +691,7 @@ public class SolrXmlConfig {
     List<PluginInfo> plugins =
         nodes.stream()
             .map(n -> new PluginInfo(n, n.name(), true, true))
+            .filter(PluginInfo::isEnabled)
             .collect(Collectors.toList());
 
     // Cluster plugin names must be unique
@@ -800,6 +794,9 @@ public class SolrXmlConfig {
     boolean hasJmxReporter = false;
     for (ConfigNode node : metrics.getAll("reporter")) {
       PluginInfo info = getPluginInfo(node);
+      if (info == null) {
+        continue;
+      }
       String clazz = info.className;
       if (clazz != null && clazz.equals(SolrJmxReporter.class.getName())) {
         hasJmxReporter = true;
@@ -844,6 +841,7 @@ public class SolrXmlConfig {
 
   private static PluginInfo getPluginInfo(ConfigNode cfg) {
     if (cfg == null || !cfg.exists()) return null;
-    return new PluginInfo(cfg, cfg.name(), false, true);
+    final var pluginInfo = new PluginInfo(cfg, cfg.name(), false, true);
+    return pluginInfo.isEnabled() ? pluginInfo : null;
   }
 }
