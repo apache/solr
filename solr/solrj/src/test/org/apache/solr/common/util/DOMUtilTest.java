@@ -50,25 +50,35 @@ public class DOMUtilTest extends DOMUtilTestBase {
 
   public void testStripWhitespace() throws Exception {
     NamedList<Object> namedList = new SimpleOrderedMap<>();
-    //  SOLR-6572 lineshift in solrconfig.xml is not supported
+    // SOLR-6572 lineshift in solrconfig.xml is not supported
     // space after node value
-    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">no </bool>", "/bool" ), namedList, null );
-    assertTypeAndValue( namedList, "Boolean", false );
+    DOMUtil.addToNamedList(getNode("<bool name=\"Boolean\">no </bool>", "/bool"), namedList, null);
+    assertTypeAndValue(namedList, "Boolean", false);
     // tab after node value
-    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">no\t</bool>", "/bool" ), namedList, null );
-    assertTypeAndValue( namedList, "Boolean", false );
+    DOMUtil.addToNamedList(getNode("<bool name=\"Boolean\">no\t</bool>", "/bool"), namedList, null);
+    assertTypeAndValue(namedList, "Boolean", false);
     // newline after node valueO
-    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">no" + System.getProperty("line.separator") + "</bool>", "/bool" ), namedList, null );
-    assertTypeAndValue( namedList, "Boolean", false );
+    DOMUtil.addToNamedList(
+        getNode(
+            "<bool name=\"Boolean\">no" + System.getProperty("line.separator") + "</bool>",
+            "/bool"),
+        namedList,
+        null);
+    assertTypeAndValue(namedList, "Boolean", false);
     // space before node value
-    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\"> no</bool>", "/bool" ), namedList, null );
-    assertTypeAndValue( namedList, "Boolean", false );
+    DOMUtil.addToNamedList(getNode("<bool name=\"Boolean\"> no</bool>", "/bool"), namedList, null);
+    assertTypeAndValue(namedList, "Boolean", false);
     // tab before node value
-    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">\tno</bool>", "/bool" ), namedList, null );
-    assertTypeAndValue( namedList, "Boolean", false );
+    DOMUtil.addToNamedList(getNode("<bool name=\"Boolean\">\tno</bool>", "/bool"), namedList, null);
+    assertTypeAndValue(namedList, "Boolean", false);
     // newline before node value
-    DOMUtil.addToNamedList( getNode( "<bool name=\"Boolean\">" + System.getProperty("line.separator") + "no</bool>", "/bool" ), namedList, null );
-    assertTypeAndValue( namedList, "Boolean", false );
+    DOMUtil.addToNamedList(
+        getNode(
+            "<bool name=\"Boolean\">" + System.getProperty("line.separator") + "no</bool>",
+            "/bool"),
+        namedList,
+        null);
+    assertTypeAndValue(namedList, "Boolean", false);
   }
 
   private void assertTypeAndValue(NamedList<Object> namedList, String key, Object value) {
