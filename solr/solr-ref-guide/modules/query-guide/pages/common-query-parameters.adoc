@@ -327,8 +327,8 @@ Regular search and the JSON Facet component abandon requests in accordance with 
 This parameter specifies the amount of CPU time, in milliseconds, allowed for a search to complete.
 In contrast to the `timeAllowed` this parameter monitors the actual CPU usage by the thread that
 executes the query. The same CPU usage limit is applied to the query coordinator as to each replica
-that participates in the distributed search (although reaching this limit in the query coordinator is unlikely).
-Should any one of replicas locally exceed the allowed CPU time the whole distributed search will be terminated
+that participates in the distributed search (although reaching this limit first in the query coordinator is unlikely).
+Should any replica locally exceed the allowed CPU time the whole distributed search will be terminated
 (by canceling requests to other shards).
 
 All other considerations regarding partial results listed for the `timeAllowed` parameter apply here, too.
