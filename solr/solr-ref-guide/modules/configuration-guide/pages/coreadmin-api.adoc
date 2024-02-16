@@ -92,7 +92,7 @@ curl -X GET http://localhost:8983/api/cores?indexInfo=false
 |===
 +
 The name of a core, as listed in the "name" attribute of a `<core>` element in `solr.xml`.
-This parameter is required in v1, and part of the url in the v2 API.
+If this parameter is omitted, status of all the running cores is returned.
 
 `indexInfo`::
 +
