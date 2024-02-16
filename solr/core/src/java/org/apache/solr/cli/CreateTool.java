@@ -362,7 +362,7 @@ public class CreateTool extends ToolBase {
       final String configCommand =
           String.format(
               Locale.ROOT,
-              "bin/solr config -c %s -p 8983 -action set-user-property -property update.autoCreateFields -value false",
+              "bin/solr config -c %s -p 8983 --action set-user-property --property update.autoCreateFields --value false",
               collectionName);
       echo(
           "WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is");

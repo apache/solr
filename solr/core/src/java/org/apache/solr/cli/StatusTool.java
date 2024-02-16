@@ -69,8 +69,10 @@ public class StatusTool extends ToolBase {
     return List.of(
         // The solrUrl option is not exposed to the end user, and is
         // created by the bin/solr script and passed into this too.
-        Option.builder("solrUrl")
+        // Therefore we don't use the SolrCLI.OPTION_SOLRURL
+        Option.builder()
             .argName("URL")
+            .longOpt("solrUrl")
             .hasArg()
             .required(false)
             .desc("Property set by calling scripts, not meant for user configuration.")
