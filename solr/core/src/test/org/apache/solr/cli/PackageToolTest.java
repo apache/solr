@@ -149,7 +149,12 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "--solrUrl", solrUrl, "install", "question-answer:1.0.0", "--credentials", USER + ":" + PASS
+          "--solrUrl",
+          solrUrl,
+          "install",
+          "question-answer:1.0.0",
+          "--credentials",
+          USER + ":" + PASS
         });
 
     run(
@@ -166,7 +171,12 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "--solrUrl", solrUrl, "list-deployed", "question-answer", "--credentials", USER + ":" + PASS
+          "--solrUrl",
+          solrUrl,
+          "list-deployed",
+          "question-answer",
+          "--credentials",
+          USER + ":" + PASS
         });
 
     run(
@@ -189,7 +199,12 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "--solrUrl", solrUrl, "list-deployed", "question-answer", "--credentials", USER + ":" + PASS
+          "--solrUrl",
+          solrUrl,
+          "list-deployed",
+          "question-answer",
+          "--credentials",
+          USER + ":" + PASS
         });
 
     run(
@@ -291,7 +306,12 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "--solrUrl", solrUrl, "list-deployed", "question-answer", "--credentials", USER + ":" + PASS
+          "--solrUrl",
+          solrUrl,
+          "list-deployed",
+          "question-answer",
+          "--credentials",
+          USER + ":" + PASS
         });
   }
 

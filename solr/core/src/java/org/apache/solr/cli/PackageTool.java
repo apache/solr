@@ -310,7 +310,7 @@ public class PackageTool extends ToolBase {
     return List.of(
         SolrCLI.OPTION_SOLRURL,
         Option.builder()
-                .longOpt("collections")
+            .longOpt("collections")
             .argName("COLLECTIONS")
             .hasArg()
             .required(false)
@@ -318,7 +318,7 @@ public class PackageTool extends ToolBase {
                 "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
             .build(),
         Option.builder()
-                .longOpt("cluster")
+            .longOpt("cluster")
             .required(false)
             .desc("Specifies that this action should affect cluster-level plugins only.")
             .build(),
