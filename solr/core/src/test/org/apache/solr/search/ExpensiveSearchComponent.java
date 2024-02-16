@@ -17,14 +17,19 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.handler.component.ShardRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A search component used for testing "expensive" operations, i.e. those that take long wall-clock
@@ -58,6 +63,7 @@ import org.apache.solr.handler.component.SearchComponent;
  * both in the "prepare" and in the "process" stages of the distributed query processing.
  */
 public class ExpensiveSearchComponent extends SearchComponent {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
    * Generate memory load by allocating this number of random unicode strings, 100 characters each.
@@ -77,6 +83,7 @@ public class ExpensiveSearchComponent extends SearchComponent {
   public static final String STAGE_PROCESS = "process";
   public static final String STAGE_FINISH = "finish";
   public static final String STAGE_DISTRIB_PROCESS = "distrib";
+  public static final String STAGE_HANDLE_RESPONSES = "handle";
 
   private static final KeyPairGenerator kpg;
 
@@ -92,30 +99,53 @@ public class ExpensiveSearchComponent extends SearchComponent {
 
   final ArrayList<String> data = new ArrayList<>();
 
-  private void generateLoad(ResponseBuilder rb) {
+  private void generateLoad(ResponseBuilder rb, String stage) {
+    if (log.isTraceEnabled()) {
+      log.trace(
+          "-- {} generateLoad(): params: {} --\n{}",
+          stage,
+          rb.req.getParams().toString(),
+          new Exception());
+    }
     final long cpuLoadCount = rb.req.getParams().getLong(CPU_LOAD_COUNT_PARAM, 0L);
     final long sleepMs = rb.req.getParams().getLong(SLEEP_MS_PARAM, 0);
     final int memLoadCount = rb.req.getParams().getInt(MEM_LOAD_COUNT_PARAM, 0);
     data.clear();
     KeyPair kp = null;
     // create memory load
-    for (int j = 0; j < memLoadCount; j++) {
-      String str = TestUtil.randomUnicodeString(LuceneTestCase.random(), 100);
-      data.add(str);
+    if (memLoadCount > 0) {
+      if (log.isTraceEnabled()) {
+        log.trace("--- STAGE {}: creating mem load {}", stage, memLoadCount);
+      }
+      for (int j = 0; j < memLoadCount; j++) {
+        String str = TestUtil.randomUnicodeString(LuceneTestCase.random(), 100);
+        data.add(str);
+      }
     }
     // create CPU load
-    for (int i = 0; i < cpuLoadCount; i++) {
-      if (kpg == null) {
-        throw new RuntimeException("cannot generate consistent CPU load on this JVM.");
+    if (cpuLoadCount > 0) {
+      if (log.isTraceEnabled()) {
+        log.trace("--- STAGE {}: creating CPU load {}", stage, cpuLoadCount);
       }
-      kpg.initialize(1024);
-      kp = kpg.generateKeyPair();
+      for (int i = 0; i < cpuLoadCount; i++) {
+        if (kpg == null) {
+          throw new RuntimeException("cannot generate consistent CPU load on this JVM.");
+        }
+        kpg.initialize(1024);
+        kp = kpg.generateKeyPair();
+      }
     }
     if (kp != null) {
-      rb.rsp.add("keyPair", kp.getPublic().toString());
+      RSAPublicKey key = (RSAPublicKey) kp.getPublic();
+      rb.rsp.add(
+          "keyPair-" + stage,
+          key.getAlgorithm() + " " + key.getFormat() + " " + key.getModulus().bitLength());
     }
     // create wall-clock load
     if (sleepMs > 0) {
+      if (log.isTraceEnabled()) {
+        log.trace("--- STAGE {}: creating wall-clock load {}", stage, sleepMs);
+      }
       try {
         Thread.sleep(sleepMs);
       } catch (InterruptedException e) {
@@ -124,11 +154,8 @@ public class ExpensiveSearchComponent extends SearchComponent {
     }
   }
 
-  private static boolean hasStage(ResponseBuilder rb, String stageName, String defaultStages) {
-    String stages = rb.req.getParams().get(stageName);
-    if (stages == null) {
-      stages = defaultStages;
-    }
+  private static boolean hasStage(ResponseBuilder rb, String stageName) {
+    String stages = rb.req.getParams().get(STAGES_PARAM);
     if (stages == null) {
       return false;
     } else {
@@ -139,32 +166,38 @@ public class ExpensiveSearchComponent extends SearchComponent {
 
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
-    if (hasStage(rb, STAGE_PREPARE, null)) {
-      generateLoad(rb);
+    if (hasStage(rb, STAGE_PREPARE)) {
+      generateLoad(rb, STAGE_PREPARE);
     }
   }
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
-    // if the STAGES_PARAM is missing then at least run in process()
-    if (hasStage(rb, STAGE_PROCESS, STAGE_PROCESS)) {
-      generateLoad(rb);
+    if (hasStage(rb, STAGE_PROCESS)) {
+      generateLoad(rb, STAGE_PROCESS);
     }
   }
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (hasStage(rb, STAGE_FINISH, null)) {
-      generateLoad(rb);
+    if (hasStage(rb, STAGE_FINISH)) {
+      generateLoad(rb, STAGE_FINISH);
     }
   }
 
   @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
-    if (hasStage(rb, STAGE_DISTRIB_PROCESS, null)) {
-      generateLoad(rb);
+    if (hasStage(rb, STAGE_DISTRIB_PROCESS)) {
+      generateLoad(rb, STAGE_DISTRIB_PROCESS);
     }
     return ResponseBuilder.STAGE_DONE;
+  }
+
+  @Override
+  public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
+    if (hasStage(rb, STAGE_HANDLE_RESPONSES)) {
+      generateLoad(rb, STAGE_HANDLE_RESPONSES + " " + sreq);
+    }
   }
 
   @Override

@@ -72,7 +72,7 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
     CloudUtil.waitForState(
         cluster.getOpenOverseer().getSolrCloudManager(), "active", COLLECTION, clusterShape(3, 6));
     for (int j = 0; j < 100; j++) {
-      solrClient.add(COLLECTION, sdoc("id", "id-" + j));
+      solrClient.add(COLLECTION, sdoc("id", "id-" + j, "val_i", j % 5));
     }
     solrClient.commit(COLLECTION);
   }
@@ -112,6 +112,7 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
     SolrClient solrClient = cluster.getSolrClient();
 
     // no limits set - should eventually complete
+    log.info("--- No limits, full results ---");
     long sleepMs = 1000;
     QueryResponse rsp =
         solrClient.query(
@@ -124,7 +125,7 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 ExpensiveSearchComponent.SLEEP_MS_PARAM,
                 String.valueOf(sleepMs),
                 "stages",
-                "process"));
+                "prepare,process"));
     // System.err.println("rsp=" + rsp.jsonStr());
     assertEquals(rsp.getHeader().get("status"), 0);
     Number qtime = (Number) rsp.getHeader().get("QTime");
@@ -132,6 +133,7 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
     assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
 
     // timeAllowed set, should return partial results
+    log.info("--- timeAllowed, partial results ---");
     rsp =
         solrClient.query(
             COLLECTION,
@@ -143,13 +145,14 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 ExpensiveSearchComponent.SLEEP_MS_PARAM,
                 String.valueOf(sleepMs),
                 "stages",
-                "process",
+                "prepare,process",
                 "timeAllowed",
                 "500"));
     // System.err.println("rsp=" + rsp.jsonStr());
     assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
 
     // cpuAllowed set with large value, should return full results
+    log.info("--- cpuAllowed, full results ---");
     rsp =
         solrClient.query(
             COLLECTION,
@@ -161,13 +164,14 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 ExpensiveSearchComponent.CPU_LOAD_COUNT_PARAM,
                 "1",
                 "stages",
-                "process",
+                "prepare,process",
                 "cpuAllowed",
                 "1000"));
     // System.err.println("rsp=" + rsp.jsonStr());
     assertNull("should have full results", rsp.getHeader().get("partialResults"));
 
     // cpuAllowed set, should return partial results
+    log.info("--- cpuAllowed 1, partial results ---");
     rsp =
         solrClient.query(
             COLLECTION,
@@ -179,7 +183,26 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 ExpensiveSearchComponent.CPU_LOAD_COUNT_PARAM,
                 "10",
                 "stages",
-                "process",
+                "prepare,process",
+                "cpuAllowed",
+                "50"));
+    // System.err.println("rsp=" + rsp.jsonStr());
+    assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
+
+    // cpuAllowed set, should return partial results
+    log.info("--- cpuAllowed 2, partial results ---");
+    rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "sort",
+                "id desc",
+                ExpensiveSearchComponent.CPU_LOAD_COUNT_PARAM,
+                "10",
+                "stages",
+                "prepare,process",
                 "cpuAllowed",
                 "50"));
     // System.err.println("rsp=" + rsp.jsonStr());
