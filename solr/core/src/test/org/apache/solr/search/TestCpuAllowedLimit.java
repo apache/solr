@@ -64,7 +64,7 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
   public static void setup() throws Exception {
     System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
     Path configset = createConfigSet();
-    configureCluster(2).addConfig("conf", configset).configure();
+    configureCluster(1).addConfig("conf", configset).configure();
     SolrClient solrClient = cluster.getSolrClient();
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 2);
