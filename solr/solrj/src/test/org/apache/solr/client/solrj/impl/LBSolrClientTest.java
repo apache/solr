@@ -39,7 +39,7 @@ public class LBSolrClientTest extends SolrTestCase {
         new LBSolrClient.ServerIterator(req, new HashMap<>());
     List<String> actualServers = new ArrayList<>();
     while (serverIterator.hasNext()) {
-      actualServers.add(serverIterator.nextOrError());
+      actualServers.add(serverIterator.nextOrError().toString());
     }
     assertEquals(Arrays.asList("1", "2", "3", "4"), actualServers);
     assertFalse(serverIterator.hasNext());
@@ -53,16 +53,16 @@ public class LBSolrClientTest extends SolrTestCase {
         new LBSolrClient.Req(new QueryRequest(), Arrays.asList("1", "2", "3", "4"));
     LBSolrClient.ServerIterator serverIterator =
         new LBSolrClient.ServerIterator(req, zombieServers);
-    zombieServers.put("2", new LBSolrClient.ServerWrapper("2"));
+    zombieServers.put("2", new LBSolrClient.ServerWrapper(new LBSolrClient.Endpoint("2")));
 
     assertTrue(serverIterator.hasNext());
-    assertEquals("1", serverIterator.nextOrError());
+    assertEquals(new LBSolrClient.Endpoint("1"), serverIterator.nextOrError());
     assertTrue(serverIterator.hasNext());
-    assertEquals("3", serverIterator.nextOrError());
+    assertEquals(new LBSolrClient.Endpoint("2"), serverIterator.nextOrError());
     assertTrue(serverIterator.hasNext());
-    assertEquals("4", serverIterator.nextOrError());
+    assertEquals(new LBSolrClient.Endpoint("3"), serverIterator.nextOrError());
     assertTrue(serverIterator.hasNext());
-    assertEquals("2", serverIterator.nextOrError());
+    assertEquals(new LBSolrClient.Endpoint("4"), serverIterator.nextOrError());
   }
 
   @Test

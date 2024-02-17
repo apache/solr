@@ -130,7 +130,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
           @Override
           public void onFailure(Exception e, boolean retryReq) {
             if (retryReq) {
-              String url;
+              Endpoint url;
               try {
                 url = it.nextOrError(e);
               } catch (SolrServerException ex) {
@@ -138,7 +138,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
                 return;
               }
               try {
-                MDC.put("LBSolrClient.url", url);
+                MDC.put("LBSolrClient.url", url.toString());
                 synchronized (cancelled) {
                   if (cancelled.get()) {
                     return;
@@ -185,15 +185,15 @@ public class LBHttp2SolrClient extends LBSolrClient {
   }
 
   private Cancellable doRequest(
-      String baseUrl,
+      Endpoint baseUrl,
       Req req,
       Rsp rsp,
       boolean isNonRetryable,
       boolean isZombie,
       RetryListener listener) {
-    rsp.server = baseUrl;
-    req.getRequest().setBasePath(baseUrl);
-    return ((Http2SolrClient) getClient(baseUrl))
+    rsp.server = baseUrl.toString();
+    req.getRequest().setBasePath(baseUrl.toString());
+    return ((Http2SolrClient) getClient(baseUrl.toString()))
         .asyncRequest(
             req.getRequest(),
             null,
