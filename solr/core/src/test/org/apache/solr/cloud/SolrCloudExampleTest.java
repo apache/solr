@@ -20,22 +20,15 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.cli.CreateTool;
 import org.apache.solr.cli.DeleteTool;
 import org.apache.solr.cli.HealthcheckTool;
+import org.apache.solr.cli.PostTool;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.ExternalPaths;
@@ -122,38 +115,22 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     Path exampleDocsDir = Path.of(ExternalPaths.SOURCE_HOME, "example", "exampledocs");
     assertTrue(exampleDocsDir.toAbsolutePath() + " not found!", Files.isDirectory(exampleDocsDir));
 
-    List<Path> xmlFiles;
-    try (Stream<Path> stream = Files.walk(exampleDocsDir, 1)) {
-      xmlFiles =
-          stream
-              .filter(path -> path.getFileName().toString().endsWith(".xml"))
-              // don't rely on File.compareTo, it's behavior varies by OS
-              .sorted(Comparator.comparing(path -> path.getFileName().toString()))
-              // be explicit about the collection type because we will shuffle it later
-              .collect(Collectors.toCollection(ArrayList::new));
-    }
+    // now index only the XML docs like the bin/solr post script would do
+    String[] argsForPost =
+        new String[] {
+          "--solrUrl",
+          solrUrl + "/" + testCollectionName + "/update",
+          "-filetypes",
+          "xml",
+          exampleDocsDir.toAbsolutePath().toString()
+        };
 
-    // force a deterministic random ordering of the files so seeds reproduce regardless of
-    // platform/filesystem
-    Collections.shuffle(xmlFiles, new Random(random().nextLong()));
+    PostTool postTool = new PostTool();
+    CommandLine postCli =
+        SolrCLI.processCommandLineArgs(postTool.getName(), postTool.getOptions(), argsForPost);
+    postTool.runTool(postCli);
 
-    // if you add/remove example XML docs, you'll have to fix these expected values
-    int expectedXmlFileCount = 14;
     int expectedXmlDocCount = 32;
-
-    assertEquals(
-        "Unexpected # of example XML files in " + exampleDocsDir.toAbsolutePath(),
-        expectedXmlFileCount,
-        xmlFiles.size());
-
-    for (Path xml : xmlFiles) {
-      if (log.isInfoEnabled()) {
-        log.info("POSTing {}", xml.toAbsolutePath());
-      }
-      cloudClient.request(
-          new StreamingUpdateRequest("/update", xml, "application/xml"), testCollectionName);
-    }
-    cloudClient.commit(testCollectionName);
 
     int numFound = 0;
 
@@ -161,7 +138,9 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     for (int idx = 0; idx < 100; ++idx) {
       QueryResponse qr = cloudClient.query(testCollectionName, new SolrQuery("*:*"));
       numFound = (int) qr.getResults().getNumFound();
-      if (numFound == expectedXmlDocCount) break;
+      if (numFound == expectedXmlDocCount) {
+        break;
+      }
       Thread.sleep(100);
     }
     assertEquals("*:* found unexpected number of documents", expectedXmlDocCount, numFound);
