@@ -1,6 +1,5 @@
 = Solr in Docker
-:page-children: docker-faq, \
-    docker-networking
+:page-children: docker-faq
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
