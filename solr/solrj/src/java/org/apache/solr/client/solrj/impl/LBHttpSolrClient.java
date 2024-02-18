@@ -213,6 +213,26 @@ public class LBHttpSolrClient extends LBSolrClient {
     /**
      * Provide a Solr endpoint to be used when configuring {@link LBHttpSolrClient} instances.
      *
+     * <p>Method may be called multiple times. All provided values will be used. However, all
+     * endpoints must be of the same type: providing "base" endpoints via this method, and
+     * core/collection endpoints via {@link #withEndpoint(String, String)} is not allowed.
+     *
+     * <p>Users may provide
+     *
+     * @param baseSolrUrl
+     * @return
+     */
+    public Builder withEndpoint(String baseSolrUrl) {
+      return this;
+    }
+
+    public Builder withEndpoint(String baseSolrUrl, String core) {
+      return this;
+    }
+
+    /**
+     * Provide a Solr endpoint to be used when configuring {@link LBHttpSolrClient} instances.
+     *
      * <p>Method may be called multiple times. All provided values will be used.
      *
      * <p>Two different paths can be specified as a part of the URL:
