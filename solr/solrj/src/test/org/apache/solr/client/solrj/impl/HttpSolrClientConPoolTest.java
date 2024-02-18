@@ -122,8 +122,8 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
     try {
       final LBHttpSolrClient roundRobin =
           new LBHttpSolrClient.Builder()
-              .withBaseSolrUrl(fooUrl)
-              .withBaseSolrUrl(barUrl)
+              .withBaseEndpoint(fooUrl)
+              .withBaseEndpoint(barUrl)
               .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
               .withHttpClient(httpClient)
               .build();

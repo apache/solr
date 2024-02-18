@@ -102,7 +102,7 @@ public abstract class LBSolrClient extends SolrClient {
     solrQuery.setDistrib(false);
   }
 
-  protected static class Endpoint {
+  public static class Endpoint {
     private final String baseUrl;
     private final String core;
 
@@ -358,10 +358,10 @@ public abstract class LBSolrClient extends SolrClient {
     }
   }
 
-  public LBSolrClient(List<String> baseSolrUrls) {
-    if (!baseSolrUrls.isEmpty()) {
-      for (String s : baseSolrUrls) {
-        EndpointWrapper wrapper = createServerWrapper(new Endpoint(s));
+  public LBSolrClient(List<Endpoint> solrEndpoints) {
+    if (!solrEndpoints.isEmpty()) {
+      for (Endpoint s : solrEndpoints) {
+        EndpointWrapper wrapper = createServerWrapper(s);
         aliveServers.put(wrapper.getEndpoint().toString(), wrapper);
       }
       updateAliveList();
@@ -448,7 +448,7 @@ public abstract class LBSolrClient extends SolrClient {
     try {
       rsp.server = baseUrl.toString();
       req.getRequest().setBasePath(baseUrl.toString());
-      rsp.rsp = getClient(baseUrl.toString()).request(req.getRequest(), (String) null);
+      rsp.rsp = getClient(baseUrl).request(req.getRequest(), (String) null);
       if (isZombie) {
         zombieServers.remove(baseUrl);
       }
@@ -494,7 +494,7 @@ public abstract class LBSolrClient extends SolrClient {
     return ex;
   }
 
-  protected abstract SolrClient getClient(String baseUrl);
+  protected abstract SolrClient getClient(Endpoint endpoint);
 
   protected Exception addZombie(Endpoint serverStr, Exception e) {
     EndpointWrapper wrapper = createServerWrapper(serverStr);
@@ -547,7 +547,7 @@ public abstract class LBSolrClient extends SolrClient {
     try {
       QueryRequest queryRequest = new QueryRequest(solrQuery);
       queryRequest.setBasePath(zombieEndpoint.toString());
-      QueryResponse resp = queryRequest.process(getClient(zombieEndpoint.getBaseUrl()));
+      QueryResponse resp = queryRequest.process(getClient(zombieEndpoint));
       if (resp.getStatus() == 0) {
         // server has come back up.
         // make sure to remove from zombies before adding to alive to avoid a race condition
@@ -650,7 +650,7 @@ public abstract class LBSolrClient extends SolrClient {
       try {
         ++numServersTried;
         request.setBasePath(endpoint.toString());
-        return getClient(endpoint.toString()).request(request, collection);
+        return getClient(endpoint).request(request, collection);
       } catch (SolrException e) {
         // Server is alive but the request was malformed or invalid
         throw e;
@@ -681,7 +681,7 @@ public abstract class LBSolrClient extends SolrClient {
       try {
         ++numServersTried;
         request.setBasePath(endpoint.toString());
-        NamedList<Object> rsp = getClient(endpoint.toString()).request(request, collection);
+        NamedList<Object> rsp = getClient(endpoint).request(request, collection);
         // remove from zombie list *before* adding to alive to avoid a race that could lose a server
         zombieServers.remove(endpoint.toString());
         addToAlive(wrapper);
