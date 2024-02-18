@@ -25,17 +25,17 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.HttpUriRequestResponse;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
@@ -47,7 +47,9 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -69,6 +71,7 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * This class may change in future and customisations are not supported between versions in terms of
@@ -124,7 +127,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   private int retries;
   private boolean recoveringAfterStartup;
   private CoreContainer cc;
-  private volatile HttpUriRequest prevSendPreRecoveryHttpUriRequest;
+  private volatile Cancellable prevSendPreRecoveryHttpUriRequest;
   private final Replica.Type replicaType;
 
   private CoreDescriptor coreDescriptor;
@@ -176,15 +179,13 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   /** Builds a new HttpSolrClient for use in recovery. Caller must close */
-  private HttpSolrClient.Builder recoverySolrClientBuilder(String baseUrl, String leaderCoreName) {
+  private Http2SolrClient.Builder recoverySolrClientBuilder(String baseUrl, String leaderCoreName) {
     // workaround for SOLR-13605: get the configured timeouts & set them directly
     // (even though getRecoveryOnlyHttpClient() already has them set)
     final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
-    return (new HttpSolrClient.Builder(baseUrl)
+    return new Http2SolrClient.Builder(baseUrl)
         .withDefaultCollection(leaderCoreName)
-        .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
-        .withSocketTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
-        .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient()));
+        .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient());
   }
 
   // make sure any threads stop retrying
@@ -192,7 +193,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   public final void close() {
     close = true;
     if (prevSendPreRecoveryHttpUriRequest != null) {
-      prevSendPreRecoveryHttpUriRequest.abort();
+      prevSendPreRecoveryHttpUriRequest.cancel();
     }
     log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
   }
@@ -631,7 +632,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
                 .getSlice(cloudDesc.getShardId());
 
         try {
-          prevSendPreRecoveryHttpUriRequest.abort();
+          prevSendPreRecoveryHttpUriRequest.cancel();
         } catch (NullPointerException e) {
           // okay
         }
@@ -890,7 +891,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   private final void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice)
       throws SolrServerException, IOException, InterruptedException, ExecutionException {
-
     WaitForState prepCmd = new WaitForState();
     prepCmd.setCoreName(leaderCoreName);
     prepCmd.setNodeName(zkController.getNodeName());
@@ -911,18 +911,39 @@ public class RecoveryStrategy implements Runnable, Closeable {
     int readTimeout =
         conflictWaitMs
             + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "8000"));
-    try (HttpSolrClient client =
+    var recoveryExec =
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            1, new SolrNamedThreadFactory("sendPrepRecoveryCmd"));
+    try (Http2SolrClient client =
         recoverySolrClientBuilder(
                 leaderBaseUrl,
                 null) // leader core omitted since client only used for 'admin' request
-            .withSocketTimeout(readTimeout, TimeUnit.MILLISECONDS)
+            .withIdleTimeout(readTimeout, TimeUnit.MILLISECONDS)
+            .withExecutor(recoveryExec)
             .build()) {
-      HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);
-      prevSendPreRecoveryHttpUriRequest = mrr.httpUriRequest;
-
       log.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd);
+      MDC.put("HttpSolrClient.url", baseUrl);
+      prevSendPreRecoveryHttpUriRequest =
+          client.asyncRequest(
+              prepCmd,
+              null,
+              new AsyncListener<>() {
+                @Override
+                public void onSuccess(NamedList<Object> entries) {
+                  log.info(
+                      "Prep recovery command successfully send to [{}]; [{}]",
+                      leaderBaseUrl,
+                      prepCmd);
+                }
 
-      mrr.future.get();
+                @Override
+                public void onFailure(Throwable throwable) {
+                  log.error("Prep recovery command failed! [{}] [{}]", leaderBaseUrl, prepCmd);
+                }
+              });
+    } finally {
+      recoveryExec.shutdown();
+      MDC.remove("HttpSolrClient.url");
     }
   }
 }

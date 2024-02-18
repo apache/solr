@@ -97,6 +97,8 @@ Improvements
 
 * SOLR-17145: The INSTALLSHARDDATA API now includes a 'requestid' field when run asynchronously (Jason Gerlowski)
 
+* SOLR-16505: Switch UpdateShardHandler.getRecoveryOnlyHttpClient to Jetty HTTP2
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)

@@ -203,6 +203,9 @@ public class Http2SolrClient extends SolrClient {
     } else {
       this.urlParamNames = Set.of();
     }
+    if (builder.executor != null) {
+      this.executor = builder.executor;
+    }
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -500,7 +503,6 @@ public class Http2SolrClient extends SolrClient {
       String collection,
       AsyncListener<NamedList<Object>> asyncListener) {
     MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
-
     Request req;
     try {
       String url = getRequestPath(solrRequest, collection);
@@ -1160,7 +1162,6 @@ public class Http2SolrClient extends SolrClient {
      */
     public Builder withHttpClient(Http2SolrClient http2SolrClient) {
       this.httpClient = http2SolrClient.httpClient;
-
       if (this.basicAuthAuthorizationStr == null) {
         this.basicAuthAuthorizationStr = http2SolrClient.basicAuthAuthorizationStr;
       }
