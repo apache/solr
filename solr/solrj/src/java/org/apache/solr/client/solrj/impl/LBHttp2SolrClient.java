@@ -115,7 +115,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     Rsp rsp = new Rsp();
     boolean isNonRetryable =
         req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
-    ServerIterator it = new ServerIterator(req, zombieServers);
+    EndpointIterator it = new EndpointIterator(req, zombieServers);
     asyncListener.onStart();
     final AtomicBoolean cancelled = new AtomicBoolean(false);
     AtomicReference<Cancellable> currentCancellable = new AtomicReference<>();

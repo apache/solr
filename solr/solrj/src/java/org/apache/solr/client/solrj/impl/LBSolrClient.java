@@ -70,13 +70,13 @@ public abstract class LBSolrClient extends SolrClient {
 
   // keys to the maps are currently of the form "http://localhost:8983/solr"
   // which should be equivalent to HttpSolrServer.getBaseURL()
-  private final Map<String, ServerWrapper> aliveServers = new LinkedHashMap<>();
+  private final Map<String, EndpointWrapper> aliveServers = new LinkedHashMap<>();
   // access to aliveServers should be synchronized on itself
 
-  protected final Map<String, ServerWrapper> zombieServers = new ConcurrentHashMap<>();
+  protected final Map<String, EndpointWrapper> zombieServers = new ConcurrentHashMap<>();
 
   // changes to aliveServers are reflected in this array, no need to synchronize
-  private volatile ServerWrapper[] aliveServerList = new ServerWrapper[0];
+  private volatile EndpointWrapper[] aliveServerList = new EndpointWrapper[0];
 
   private volatile ScheduledExecutorService aliveCheckExecutor;
 
@@ -146,7 +146,7 @@ public abstract class LBSolrClient extends SolrClient {
     }
   }
 
-  protected static class ServerWrapper {
+  protected static class EndpointWrapper {
     final Endpoint endpoint;
 
     // "standard" endpoints are used by default.  They normally live in the alive list
@@ -156,7 +156,7 @@ public abstract class LBSolrClient extends SolrClient {
 
     int failedPings = 0;
 
-    ServerWrapper(Endpoint endpoint) {
+    EndpointWrapper(Endpoint endpoint) {
       this.endpoint = endpoint;
     }
 
@@ -181,13 +181,13 @@ public abstract class LBSolrClient extends SolrClient {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (!(obj instanceof ServerWrapper)) return false;
-      return endpoint.equals(((ServerWrapper) obj).getEndpoint());
+      if (!(obj instanceof EndpointWrapper)) return false;
+      return endpoint.equals(((EndpointWrapper) obj).getEndpoint());
     }
   }
 
-  protected static class ServerIterator {
-    Endpoint serverStr;
+  protected static class EndpointIterator {
+    Endpoint endpoint;
     List<Endpoint> skipped;
     int numServersTried;
     Iterator<Endpoint> it;
@@ -196,10 +196,10 @@ public abstract class LBSolrClient extends SolrClient {
     long timeAllowedNano;
     long timeOutTime;
 
-    final Map<String, ServerWrapper> zombieServers;
+    final Map<String, EndpointWrapper> zombieServers;
     final Req req;
 
-    public ServerIterator(Req req, Map<String, ServerWrapper> zombieServers) {
+    public EndpointIterator(Req req, Map<String, EndpointWrapper> zombieServers) {
       this.it = req.getEndpoints().iterator();
       this.req = req;
       this.zombieServers = zombieServers;
@@ -209,20 +209,20 @@ public abstract class LBSolrClient extends SolrClient {
     }
 
     public synchronized boolean hasNext() {
-      return serverStr != null;
+      return endpoint != null;
     }
 
     private void fetchNext() {
-      serverStr = null;
+      endpoint = null;
       if (req.numServersToTry != null && numServersTried > req.numServersToTry) {
         exceptionMessage = "Time allowed to handle this request exceeded";
         return;
       }
 
       while (it.hasNext()) {
-        serverStr = it.next();
+        endpoint = it.next();
         // if the server is currently a zombie, just skip to the next one
-        ServerWrapper wrapper = zombieServers.get(serverStr);
+        EndpointWrapper wrapper = zombieServers.get(endpoint);
         if (wrapper != null) {
           final int numDeadServersToTry = req.getNumDeadServersToTry();
           if (numDeadServersToTry > 0) {
@@ -238,12 +238,12 @@ public abstract class LBSolrClient extends SolrClient {
 
         break;
       }
-      if (serverStr == null && skipped != null) {
+      if (endpoint == null && skipped != null) {
         if (skippedIt == null) {
           skippedIt = skipped.iterator();
         }
         if (skippedIt.hasNext()) {
-          serverStr = skippedIt.next();
+          endpoint = skippedIt.next();
         }
       }
     }
@@ -266,7 +266,7 @@ public abstract class LBSolrClient extends SolrClient {
         throw new SolrServerException(
             "Time allowed to handle this request exceeded" + suffix, previousEx);
       }
-      if (serverStr == null) {
+      if (endpoint == null) {
         throw new SolrServerException(
             "No live SolrServers available to handle this request" + suffix, previousEx);
       }
@@ -281,7 +281,7 @@ public abstract class LBSolrClient extends SolrClient {
                 + suffix,
             previousEx);
       }
-      Endpoint rs = serverStr;
+      Endpoint rs = endpoint;
       fetchNext();
       return rs;
     }
@@ -361,7 +361,7 @@ public abstract class LBSolrClient extends SolrClient {
   public LBSolrClient(List<String> baseSolrUrls) {
     if (!baseSolrUrls.isEmpty()) {
       for (String s : baseSolrUrls) {
-        ServerWrapper wrapper = createServerWrapper(new Endpoint(s));
+        EndpointWrapper wrapper = createServerWrapper(new Endpoint(s));
         aliveServers.put(wrapper.getEndpoint().toString(), wrapper);
       }
       updateAliveList();
@@ -370,12 +370,12 @@ public abstract class LBSolrClient extends SolrClient {
 
   protected void updateAliveList() {
     synchronized (aliveServers) {
-      aliveServerList = aliveServers.values().toArray(new ServerWrapper[0]);
+      aliveServerList = aliveServers.values().toArray(new EndpointWrapper[0]);
     }
   }
 
-  protected ServerWrapper createServerWrapper(Endpoint baseUrl) {
-    return new ServerWrapper(baseUrl);
+  protected EndpointWrapper createServerWrapper(Endpoint baseUrl) {
+    return new EndpointWrapper(baseUrl);
   }
 
   public static String normalize(String server) {
@@ -404,12 +404,14 @@ public abstract class LBSolrClient extends SolrClient {
     Exception ex = null;
     boolean isNonRetryable =
         req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
-    ServerIterator serverIterator = new ServerIterator(req, zombieServers);
+    EndpointIterator endpointIterator = new EndpointIterator(req, zombieServers);
     Endpoint serverStr;
-    while ((serverStr = serverIterator.nextOrError(ex)) != null) {
+    while ((serverStr = endpointIterator.nextOrError(ex)) != null) {
       try {
         MDC.put("LBSolrClient.url", serverStr.toString());
-        ex = doRequest(serverStr, req, rsp, isNonRetryable, serverIterator.isServingZombieServer());
+        ex =
+            doRequest(
+                serverStr, req, rsp, isNonRetryable, endpointIterator.isServingZombieServer());
         if (ex == null) {
           return rsp; // SUCCESS
         }
@@ -495,7 +497,7 @@ public abstract class LBSolrClient extends SolrClient {
   protected abstract SolrClient getClient(String baseUrl);
 
   protected Exception addZombie(Endpoint serverStr, Exception e) {
-    ServerWrapper wrapper = createServerWrapper(serverStr);
+    EndpointWrapper wrapper = createServerWrapper(serverStr);
     wrapper.standard = false;
     zombieServers.put(serverStr.toString(), wrapper);
     startAliveCheckExecutor();
@@ -526,7 +528,7 @@ public abstract class LBSolrClient extends SolrClient {
       LBSolrClient lb = lbRef.get();
       if (lb != null && lb.zombieServers != null) {
         for (Object zombieServer : lb.zombieServers.values()) {
-          lb.checkAZombieServer((ServerWrapper) zombieServer);
+          lb.checkAZombieServer((EndpointWrapper) zombieServer);
         }
       }
     };
@@ -540,7 +542,7 @@ public abstract class LBSolrClient extends SolrClient {
     return requestWriter;
   }
 
-  private void checkAZombieServer(ServerWrapper zombieServer) {
+  private void checkAZombieServer(EndpointWrapper zombieServer) {
     final Endpoint zombieEndpoint = zombieServer.getEndpoint();
     try {
       QueryRequest queryRequest = new QueryRequest(solrQuery);
@@ -551,7 +553,7 @@ public abstract class LBSolrClient extends SolrClient {
         // make sure to remove from zombies before adding to alive to avoid a race condition
         // where another thread could mark it down, move it back to zombie, and then we delete
         // from zombie and lose it forever.
-        ServerWrapper wrapper = zombieServers.remove(zombieServer.getEndpoint().toString());
+        EndpointWrapper wrapper = zombieServers.remove(zombieServer.getEndpoint().toString());
         if (wrapper != null) {
           wrapper.failedPings = 0;
           if (wrapper.standard) {
@@ -573,17 +575,17 @@ public abstract class LBSolrClient extends SolrClient {
     }
   }
 
-  private ServerWrapper removeFromAlive(String key) {
+  private EndpointWrapper removeFromAlive(String key) {
     synchronized (aliveServers) {
-      ServerWrapper wrapper = aliveServers.remove(key);
+      EndpointWrapper wrapper = aliveServers.remove(key);
       if (wrapper != null) updateAliveList();
       return wrapper;
     }
   }
 
-  private void addToAlive(ServerWrapper wrapper) {
+  private void addToAlive(EndpointWrapper wrapper) {
     synchronized (aliveServers) {
-      ServerWrapper prev = aliveServers.put(wrapper.getEndpoint().getBaseUrl(), wrapper);
+      EndpointWrapper prev = aliveServers.put(wrapper.getEndpoint().getBaseUrl(), wrapper);
       // TODO: warn if there was a previous entry?
       updateAliveList();
     }
@@ -626,11 +628,11 @@ public abstract class LBSolrClient extends SolrClient {
       final SolrRequest<?> request, String collection, final Integer numServersToTry)
       throws SolrServerException, IOException {
     Exception ex = null;
-    ServerWrapper[] serverList = aliveServerList;
+    EndpointWrapper[] serverList = aliveServerList;
 
     final int maxTries = (numServersToTry == null ? serverList.length : numServersToTry.intValue());
     int numServersTried = 0;
-    Map<String, ServerWrapper> justFailed = null;
+    Map<String, EndpointWrapper> justFailed = null;
     if (ClientUtils.shouldApplyDefaultCollection(collection, request))
       collection = defaultCollection;
 
@@ -643,7 +645,7 @@ public abstract class LBSolrClient extends SolrClient {
         break;
       }
 
-      ServerWrapper wrapper = pickServer(serverList, request);
+      EndpointWrapper wrapper = pickServer(serverList, request);
       final var endpoint = wrapper.getEndpoint();
       try {
         ++numServersTried;
@@ -667,7 +669,7 @@ public abstract class LBSolrClient extends SolrClient {
     }
 
     // try other standard servers that we didn't try just now
-    for (ServerWrapper wrapper : zombieServers.values()) {
+    for (EndpointWrapper wrapper : zombieServers.values()) {
       final var endpoint = wrapper.getEndpoint();
       timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime);
       if (timeAllowedExceeded) {
@@ -729,12 +731,12 @@ public abstract class LBSolrClient extends SolrClient {
    * @param request the request will be sent to the picked server
    * @return the picked server
    */
-  protected ServerWrapper pickServer(ServerWrapper[] aliveServerList, SolrRequest<?> request) {
+  protected EndpointWrapper pickServer(EndpointWrapper[] aliveServerList, SolrRequest<?> request) {
     int count = counter.incrementAndGet() & Integer.MAX_VALUE;
     return aliveServerList[count % aliveServerList.length];
   }
 
-  private void moveAliveToDead(ServerWrapper wrapper) {
+  private void moveAliveToDead(EndpointWrapper wrapper) {
     wrapper = removeFromAlive(wrapper.getEndpoint().toString());
     if (wrapper == null) return; // another thread already detected the failure and removed it
     zombieServers.put(wrapper.getEndpoint().toString(), wrapper);
