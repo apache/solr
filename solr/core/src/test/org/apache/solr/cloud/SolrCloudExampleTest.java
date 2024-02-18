@@ -108,14 +108,11 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         invalidToolExitStatus,
         tool.runTool(cli));
 
-    // now index docs like bin/solr post would, but we can't use PostTool because it uses
-    // System.exit when it encounters an error, which JUnit doesn't like ...
-    // nocommit
+    // now index docs ...
     log.info("Created collection, now posting example docs!");
     Path exampleDocsDir = Path.of(ExternalPaths.SOURCE_HOME, "example", "exampledocs");
     assertTrue(exampleDocsDir.toAbsolutePath() + " not found!", Files.isDirectory(exampleDocsDir));
 
-    // now index only the XML docs like the bin/solr post script would do
     String[] argsForPost =
         new String[] {
           "--solrUrl",
