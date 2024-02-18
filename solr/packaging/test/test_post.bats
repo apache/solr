@@ -78,7 +78,7 @@ teardown() {
   
   solr create -c monitors_no_type -d _default
   
-  run solr post -url http://localhost:${SOLR_PORT}/solr/monitors_no_type/update -commit ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post -url http://localhost:${SOLR_PORT}/solr/monitors_no_type/update ${SOLR_TIP}/example/exampledocs/monitor.xml
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
@@ -87,7 +87,7 @@ teardown() {
   
   solr create -c books_no_type -d _default
   
-  run solr post -url http://localhost:${SOLR_PORT}/solr/books_no_type/update -commit ${SOLR_TIP}/example/exampledocs/books.json
+  run solr post -url http://localhost:${SOLR_PORT}/solr/books_no_type/update ${SOLR_TIP}/example/exampledocs/books.json
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
@@ -96,7 +96,7 @@ teardown() {
   
   solr create -c books_csv_no_type -d _default
   
-  run solr post -url http://localhost:${SOLR_PORT}/solr/books_csv_no_type/update -commit ${SOLR_TIP}/example/exampledocs/books.csv
+  run solr post -url http://localhost:${SOLR_PORT}/solr/books_csv_no_type/update ${SOLR_TIP}/example/exampledocs/books.csv
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
@@ -119,7 +119,7 @@ teardown() {
   solr create -c mixed_content -d _default
   
   # We filter to xml,json,and csv as we don't want to invoke the Extract handler.
-  run solr post -filetypes xml,json,csv -url http://localhost:${SOLR_PORT}/solr/mixed_content/update -commit ${SOLR_TIP}/example/exampledocs
+  run solr post -filetypes xml,json,csv -url http://localhost:${SOLR_PORT}/solr/mixed_content/update ${SOLR_TIP}/example/exampledocs
 
   assert_output --partial '16 files indexed.'
   refute_output --partial 'ERROR'
@@ -162,7 +162,7 @@ teardown() {
   run solr create -c test_args -d _default
   assert_output --partial "Created collection 'test_args'"
   
-  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -type application/xml -out -commit "<delete><query>*:*</query></delete>"
+  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -type application/xml -out "<delete><query>*:*</query></delete>"
   assert_output --partial '<int name="status">0</int>'
   
   # confirm default type
