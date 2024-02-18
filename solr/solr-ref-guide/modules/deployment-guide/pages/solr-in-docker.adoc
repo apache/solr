@@ -88,8 +88,37 @@ you can simply run:
 
 [source,bash]
 ----
-docker-compose up -d
+docker compose up -d
 ----
+
+Below is an example compose file that starts a Solr Cloud cluster with Zookeeper. By
+creating a Docker network, Solr can reach the zookeeper container with the internal
+name `zoo`.:
+
+[source,yaml]
+----
+version: '3'
+services:
+  solr:
+    image: solr:9-slim
+    ports:
+      - "8983:8983"
+    networks: [search]
+    environment:
+      ZK_HOST: "zoo:2181"
+    depends_on: [zoo]
+
+  zoo:
+    image: zookeeper:3.9
+    networks: [search]
+    environment:
+      ZOO_4LW_COMMANDS_WHITELIST: "mntr,conf,ruok"
+
+networks:
+  search:
+    driver: bridge
+----
+
 
 === Single-Command Demo
 
