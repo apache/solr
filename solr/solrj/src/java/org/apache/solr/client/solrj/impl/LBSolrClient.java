@@ -111,7 +111,7 @@ public abstract class LBSolrClient extends SolrClient {
     }
 
     public Endpoint(String baseUrl, String core) {
-      this.baseUrl = baseUrl;
+      this.baseUrl = normalize(baseUrl);
       this.core = core;
     }
 
