@@ -98,7 +98,6 @@ public class PostTool extends ToolBase {
   public static final String DEFAULT_CONTENT_TYPE = "application/json";
 
   // Input args
-  boolean auto = false;
   int recursive = 0;
   int delay = 0;
   String fileTypes = PostTool.DEFAULT_FILE_TYPES;
@@ -114,6 +113,7 @@ public class PostTool extends ToolBase {
 
   String[] args;
 
+  boolean auto = true;
   private int currentDepth;
 
   static HashMap<String, String> mimeMap;
@@ -217,16 +217,11 @@ public class PostTool extends ToolBase {
             .desc(
                 "If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
             .build(),
-        Option.builder("a")
-            .longOpt("auto")
-            .required(false)
-            .desc("If true, we'll guess type and add resourcename/url. Defaults to false.")
-            .build(),
         Option.builder("type")
             .argName("content-type")
             .hasArg(true)
             .required(false)
-            .desc("default: application/json")
+            .desc("Specify a specific mimetype to use, such as application/json.")
             .build(),
         Option.builder("filetypes")
             .argName("<type>[,<type>,...]")
@@ -281,16 +276,18 @@ public class PostTool extends ToolBase {
     if (cli.hasOption("mode")) {
       mode = cli.getOptionValue("mode");
     }
-    if (cli.hasOption("auto")) {
-      auto = true;
-    }
+
     if (cli.hasOption("type")) {
       type = cli.getOptionValue("type");
+      auto =
+          false; // Turn off automatically looking up the mimetype in favour of what is passed in.
     }
     format = cli.hasOption("format") ? FORMAT_SOLR : ""; // i.e not solr formatted json commands
 
     if (cli.hasOption("filetypes")) {
       fileTypes = cli.getOptionValue("filetypes");
+      // auto = false; // Turn off automatically looking up the mimetype in favour of the set of
+      // filetypes
     }
 
     int defaultDelay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
@@ -338,21 +335,22 @@ public class PostTool extends ToolBase {
   private void doFilesMode() {
     currentDepth = 0;
     // Skip posting files if special param "-" given
-    if (!args[0].equals("-")) {
-      info(
-          "Posting files to [base] url "
-              + solrUrl
-              + (!auto ? " using content-type " + (type == null ? DEFAULT_CONTENT_TYPE : type) : "")
-              + "...");
-      if (auto) {
-        info("Entering auto mode. File endings considered are " + fileTypes);
-      }
-      if (recursive > 0) {
-        info("Entering recursive mode, max depth=" + recursive + ", delay=" + delay + "s");
-      }
-      int numFilesPosted = postFiles(args, 0, out, type);
-      info(numFilesPosted + " files indexed.");
+    // if (!args[0].equals("-")) {
+    info(
+        "Posting files to [base] url "
+            + solrUrl
+            + (!auto ? " using content-type " + (type == null ? DEFAULT_CONTENT_TYPE : type) : "")
+            + "...");
+    if (auto) {
+      info("Entering auto mode. File endings considered are " + fileTypes);
     }
+    if (recursive > 0) {
+      info("Entering recursive mode, max depth=" + recursive + ", delay=" + delay + "s");
+    }
+    fileFilter = getFileFilterFromFileTypes(fileTypes);
+    int numFilesPosted = postFiles(args, 0, out, type);
+    info(numFilesPosted + " files indexed.");
+    // }
   }
 
   private void doArgsMode(String[] args) {
