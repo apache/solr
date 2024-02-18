@@ -69,6 +69,8 @@ public interface CommonParams {
 
   int ROWS_DEFAULT = 10;
 
+  String INDENT = "indent";
+
   // SOLR-4228 start
   /** handler value for SolrPing */
   String PING_HANDLER = "/admin/ping";
@@ -84,6 +86,7 @@ public interface CommonParams {
 
   /** "ping" value for SolrPing action */
   String PING = "ping";
+
   // SOLR-4228 end
 
   /** stylesheet to apply to XML results */
@@ -110,19 +113,23 @@ public interface CommonParams {
 
   /** {@link #DEBUG} value indicating an interest in debug output related to timing */
   String TIMING = "timing";
+
   /**
    * {@link #DEBUG} value indicating an interest in debug output related to the results (explains)
    */
   String RESULTS = "results";
+
   /**
    * {@link #DEBUG} value indicating an interest in debug output related to the Query (parsing,
    * etc.)
    */
   String QUERY = "query";
+
   /**
    * {@link #DEBUG} value indicating an interest in debug output related to the distributed tracking
    */
   String TRACK = "track";
+
   /**
    * boolean indicating whether score explanations should structured (true), or plain text (false)
    */
@@ -266,7 +273,9 @@ public interface CommonParams {
    * Request ID parameter added to all distributed queries (that do not opt out)
    *
    * @see #DISABLE_REQUEST_ID
+   * @deprecated this was replaced by the auto-generated trace ids
    */
+  @Deprecated(since = "9.4")
   String REQUEST_ID = "rid";
 
   /**
@@ -275,7 +284,9 @@ public interface CommonParams {
    * <p>Defaults to 'false' if not specified.
    *
    * @see #REQUEST_ID
+   * @deprecated this was replaced by the auto-generated trace ids
    */
+  @Deprecated(since = "9.4")
   String DISABLE_REQUEST_ID = "disableRequestId";
 
   /** Request Purpose parameter added to each internal shard request when using debug=track */

@@ -108,6 +108,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   private static final FacetField.FacetMethod TEST_ONLY_ONE_FACET_METHOD =
       null; // FacetField.FacetMethod.DEFAULT_METHOD;
 
+  @SuppressWarnings("MathAbsoluteNegative")
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     if (null != TEST_ONLY_ONE_FACET_METHOD) {
@@ -1444,7 +1445,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   List<String> getAlternatives(String field) {
-    int idx = field.lastIndexOf("_");
+    int idx = field.lastIndexOf('_');
     if (idx <= 0 || idx >= field.length()) return Collections.singletonList(field);
     String suffix = field.substring(idx);
     String[] alternativeSuffixes = suffixMap.get(suffix);
@@ -5085,6 +5086,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     final long current = actual.getAndSet(0);
     assertEquals(msg, expected, current);
   }
+
   /** atomically resets the actual AtomicLong value matches the expected and resets it to 0 */
   private static void assertEqualsAndReset(long expected, AtomicLong actual) {
     final long current = actual.getAndSet(0);

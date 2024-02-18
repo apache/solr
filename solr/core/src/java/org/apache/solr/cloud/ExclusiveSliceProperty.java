@@ -29,9 +29,9 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.StrUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,14 +76,14 @@ class ExclusiveSliceProperty {
 
   ExclusiveSliceProperty(ClusterState clusterState, ZkNodeProps message) {
     this.clusterState = clusterState;
-    String tmp = message.getStr(ZkStateReader.PROPERTY_PROP);
-    if (!StringUtils.startsWith(tmp, CollectionAdminParams.PROPERTY_PREFIX)) {
+    String tmp = message.getStr(ZkStateReader.PROPERTY_PROP, "");
+    if (!tmp.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
       tmp = CollectionAdminParams.PROPERTY_PREFIX + tmp;
     }
     this.property = tmp.toLowerCase(Locale.ROOT);
     collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
 
-    if (StringUtils.isBlank(collectionName) || StringUtils.isBlank(property)) {
+    if (StrUtils.isBlank(collectionName) || StrUtils.isBlank(property)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Overseer '"
@@ -144,7 +145,7 @@ class ExclusiveSliceProperty {
       boolean sliceHasProp = false;
       for (Replica replica : slice.getReplicas()) {
         if (onlyActiveNodes && isActive(replica) == false) {
-          if (StringUtils.isNotBlank(replica.getStr(property))) {
+          if (StrUtils.isNotBlank(replica.getStr(property))) {
             // Note, we won't be committing this to ZK until later.
             removeProp(slice, replica.getName());
           }
@@ -152,7 +153,7 @@ class ExclusiveSliceProperty {
         }
         allHosts.add(replica.getNodeName());
         String nodeName = replica.getNodeName();
-        if (StringUtils.isNotBlank(replica.getStr(property))) {
+        if (StrUtils.isNotBlank(replica.getStr(property))) {
           if (sliceHasProp) {
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,
@@ -237,7 +238,7 @@ class ExclusiveSliceProperty {
           ListIterator<SliceReplica> iter = ent.getValue().listIterator();
           while (iter.hasNext()) {
             SliceReplica sr = iter.next();
-            if (StringUtils.equals(slice, sr.slice.getName()) == false) {
+            if (Objects.equals(slice, sr.slice.getName()) == false) {
               continue;
             }
             if (nodesHostingProp.containsKey(ent.getKey()) == false) {
@@ -348,6 +349,7 @@ class ExclusiveSliceProperty {
     }
     return replica;
   }
+
   // Main entry point for carrying out the action. Returns "true" if we have actually moved
   // properties around.
 
@@ -402,6 +404,7 @@ class ExclusiveSliceProperty {
       this.replica = replica;
     }
 
+    @Override
     public String toString() {
       StringBuilder sb = new StringBuilder(System.lineSeparator()).append(System.lineSeparator());
       sb.append("    :")

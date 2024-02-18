@@ -26,32 +26,35 @@ To launch Solr, run: `bin/solr start -e cloud` on Unix or MacOS; `bin\solr.cmd s
 This will start an interactive session that will start two Solr "servers" on your machine.
 This command has an option to run without prompting you for input (`-noprompt`), but we want to modify two of the defaults so we won't use that option now.
 
-[source,subs="verbatim,attributes+"]
+[,console]
 ----
-solr-{solr-full-version}:$ ./bin/solr start -e cloud
+$ bin/solr start -e cloud
 
 Welcome to the SolrCloud example!
 
 This interactive session will help you launch a SolrCloud cluster on your local workstation.
 To begin, how many Solr nodes would you like to run in your local cluster? (specify 1-4 nodes) [2]:
 ----
+
 The first prompt asks how many nodes we want to run.
 Note the `[2]` at the end of the last line; that is the default number of nodes.
 Two is what we want for this example, so you can simply press kbd:[enter].
 
-[source,subs="verbatim,attributes+"]
+[,console]
 ----
 Ok, let's start up 2 Solr nodes for your example SolrCloud cluster.
 Please enter the port for node1 [8983]:
 ----
+
 This will be the port that the first node runs on.
 Unless you know you have something else running on port 8983 on your machine, accept this default option also by pressing kbd:[enter].
 If something is already using that port, you will be asked to choose another port.
 
-[source,subs="verbatim,attributes+"]
+[,console]
 ----
 Please enter the port for node2 [7574]:
 ----
+
 This is the port the second node will run on.
 Again, unless you know you have something else running on port 7574 on your machine, accept this default option also by pressing kbd:[enter].
 If something is already using that port, you will be asked to choose another port.
@@ -59,7 +62,7 @@ If something is already using that port, you will be asked to choose another por
 Solr will now initialize itself and start running on those two nodes.
 The script will print the commands it uses for your reference.
 
-[source,subs="verbatim,attributes+"]
+[,console]
 ----
 Starting up 2 Solr nodes for your example SolrCloud cluster.
 
@@ -88,7 +91,7 @@ Because we are starting in SolrCloud mode, and did not define any details about 
 
 After startup is complete, you'll be prompted to create a collection to use for indexing data.
 
-[source,subs="verbatim,attributes+"]
+[,console]
 ----
 Now let's create a new collection for indexing documents in your 2-node cluster.
 Please provide a name for your new collection: [gettingstarted]
@@ -99,7 +102,7 @@ This tutorial will ask you to index some sample data included with Solr, called 
 Let's name our collection "techproducts" so it's easy to differentiate from other collections we'll create later.
 Enter `techproducts` at the prompt and hit kbd:[enter].
 
-[source,subs="verbatim,attributes+"]
+[,console]
 ----
 How many shards would you like to split techproducts into? [2]
 ----
@@ -108,7 +111,7 @@ This is asking how many xref:solr-glossary.adoc#shard[shards] you want to split 
 Choosing "2" (the default) means we will split the index relatively evenly across both nodes, which is a good way to start.
 Accept the default by hitting kbd:[enter].
 
-[source,subs="verbatim,attributes+"]
+[,console]
 ----
 How many replicas per shard would you like to create? [2]
 ----
@@ -116,7 +119,7 @@ How many replicas per shard would you like to create? [2]
 A replica is a copy of the index that's used for failover (see also the xref:solr-glossary.adoc#replica[Solr Glossary definition]).
 Again, the default of "2" is fine to start with here also, so accept the default by hitting kbd:[enter].
 
-[source,subs="verbatim,attributes+"]
+[,console]
 ----
 Please choose a configuration for the techproducts collection, available options are:
 _default or sample_techproducts_configs [_default]
@@ -132,38 +135,9 @@ This configset is specifically designed to support the sample data we want to us
 
 At this point, Solr will create the collection and again output to the screen the commands it issues.
 
-[source,subs="verbatim,attributes+"]
+[,console]
 ----
-Uploading /solr-{solr-full-version}/server/solr/configsets/_default/conf for config techproducts to ZooKeeper at localhost:9983
-
-Connecting to ZooKeeper at localhost:9983 ...
-INFO  - 2017-07-27 12:48:59.289; org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider; Cluster at localhost:9983 ready
-Uploading /solr-{solr-full-version}/server/solr/configsets/sample_techproducts_configs/conf for config techproducts to ZooKeeper at localhost:9983
-
-Creating new collection 'techproducts' using command:
-http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts&numShards=2&replicationFactor=2&collection.configName=techproducts
-
-{
-  "responseHeader":{
-    "status":0,
-    "QTime":5460},
-  "success":{
-    "192.168.0.110:7574_solr":{
-      "responseHeader":{
-        "status":0,
-        "QTime":4056},
-      "core":"techproducts_shard1_replica_n1"},
-    "192.168.0.110:8983_solr":{
-      "responseHeader":{
-        "status":0,
-        "QTime":4056},
-      "core":"techproducts_shard2_replica_n2"}}}
-
-Enabling auto soft-commits with maxTime 3 secs using the Config API
-
-POSTing request to Config API: http://localhost:8983/solr/techproducts/config
-{"set-property":{"updateHandler.autoSoftCommit.maxTime":"3000"}}
-Successfully set-property updateHandler.autoSoftCommit.maxTime to 3000
+Created collection 'techproducts' with 2 shard(s), 2 replica(s) with config-set 'techproducts'
 
 SolrCloud example running, please visit: http://localhost:8983/solr
 ----
@@ -185,32 +159,29 @@ image::solr-tutorial/tutorial-solrcloud.png[]
 
 Your Solr server is up and running, but it doesn't contain any data yet, so we can't do any queries.
 
-Solr includes the `bin/post` tool in order to facilitate indexing various types of documents easily.
+Solr includes the `bin/solr post` tool in order to facilitate indexing various types of documents easily.
 We'll use this tool for the indexing examples below.
 
 You'll need a command shell to run some of the following examples, rooted in the Solr install directory; the shell from where you launched Solr works just fine.
-
-NOTE: Currently the `bin/post` tool does not have a comparable Windows script, but the underlying Java program invoked is available.
-We'll show examples below for Windows, but you can also see the section xref:indexing-guide:post-tool.adoc#post-tool-windows-support[Post Tool Windows Support].
 
 The data we will index is in the `example/exampledocs` directory.
 The documents are in a mix of document formats (JSON, CSV, etc.), and fortunately we can index them all at once:
 
 .Linux/Mac
-[source,subs="verbatim,attributes+"]
+[,console]
 ----
-solr-{solr-full-version}:$ bin/post -c techproducts example/exampledocs/*
+$ bin/solr post -c techproducts example/exampledocs/*
 ----
 
 .Windows
-[source,subs="verbatim,attributes+"]
+[,console]
 ----
-C:\solr-{solr-full-version}> java -jar -Dc=techproducts -Dauto example\exampledocs\post.jar example\exampledocs\*
+$ java -jar -Dc=techproducts -Dauto example\exampledocs\post.jar example\exampledocs\*
 ----
 
 You should see output similar to the following:
 
-[source,subs="verbatim,attributes+"]
+[,console]
 ----
 SimplePostTool version 5.0.0
 Posting files to [base] url http://localhost:8983/solr/techproducts/update...
@@ -260,10 +231,11 @@ If you click on it, your browser will show you the raw response.
 
 To use curl, give the same URL shown in your browser in quotes on the command line:
 
-[source,bash]
+[,console]
 ----
-curl "http://localhost:8983/solr/techproducts/select?indent=on&q=\*:*"
+$ curl "http://localhost:8983/solr/techproducts/select?indent=on&q=*:*"
 ----
+
 
 What's happening here is that we are using Solr's query parameter (`q`) with a special syntax that requests all documents in the index (`\*:*`).
 All of the documents are not returned to us, however, because of the default for a parameter called `rows`, which you can see in the form is `10`.
@@ -280,10 +252,11 @@ Enter "foundation" and hit btn:[Execute Query] again.
 
 If you prefer curl, enter something like this:
 
-[source,bash]
+[,console]
 ----
-curl "http://localhost:8983/solr/techproducts/select?q=foundation"
+$ curl "http://localhost:8983/solr/techproducts/select?q=foundation"
 ----
+
 
 You'll see something like this:
 
@@ -324,13 +297,14 @@ This is, again, default behavior.
 If you want to restrict the fields in the response, you can use the `fl` parameter, which takes a comma-separated list of field names.
 This is one of the available fields on the query form in the Admin UI.
 
-Put "id" (without quotes) in the "fl" box and hit btn:[Execute Query] agai
-Or, to specify it with curl:
+Put "id" (without quotes) in the "fl" box and hit btn:[Execute Query] again.
+Or, specify it with curl:
 
-[source,bash]
+[,console]
 ----
-curl "http://localhost:8983/solr/techproducts/select?q=foundation&fl=id"
+$ curl "http://localhost:8983/solr/techproducts/select?q=foundation&fl=id"
 ----
+
 
 You should only see the IDs of the matching records returned.
 
@@ -423,9 +397,9 @@ For example, search for "CAS latency" by entering that phrase in quotes to the `
 
 If you're following along with curl, note that the space between terms must be converted to "+" in a URL, as so:
 
-[source,bash]
+[,console]
 ----
-curl "http://localhost:8983/solr/techproducts/select?q=\"CAS+latency\""
+$ curl "http://localhost:8983/solr/techproducts/select?q=\"CAS+latency\""
 ----
 
 We get 2 results:
@@ -484,9 +458,9 @@ To find documents that contain both terms "electronics" and "music", enter `+ele
 If you're using curl, you must encode the `+` character because it has a reserved purpose in URLs (encoding the space character).
 The encoding for `+` is `%2B` as in:
 
-[source,bash]
+[,console]
 ----
-curl "http://localhost:8983/solr/techproducts/select?q=%2Belectronics%20%2Bmusic"
+$ curl "http://localhost:8983/solr/techproducts/select?q=%2Belectronics%20%2Bmusic"
 ----
 
 You should only get a single result.
@@ -494,9 +468,9 @@ You should only get a single result.
 To search for documents that contain the term "electronics" but *don't* contain the term "music", enter `+electronics -music` in the `q` box in the Admin UI.
 For curl, again, URL encode `+` as `%2B` as in:
 
-[source,bash]
+[,console]
 ----
-curl "http://localhost:8983/solr/techproducts/select?q=%2Belectronics+-music"
+$ curl "http://localhost:8983/solr/techproducts/select?q=%2Belectronics+-music"
 ----
 
 This time you get 13 results.
@@ -514,23 +488,23 @@ You can choose now to continue to the next example which will introduce more Sol
 If you decide not to continue with this tutorial, the data we've indexed so far is likely of little value to you.
 You can delete your installation and start over, or you can use the `bin/solr` script we started out with to delete this collection:
 
-[source,bash]
+[,console]
 ----
-bin/solr delete -c techproducts
+$ bin/solr delete -c techproducts
 ----
 
 And then create a new collection:
 
-[source,bash]
+[,console]
 ----
-bin/solr create -c <yourCollection> -s 2 -rf 2
+$ bin/solr create -c <yourCollection> -s 2 -rf 2
 ----
 
 To stop both of the Solr nodes we started, issue the command:
 
-[source,bash]
+[,console]
 ----
-bin/solr stop -all
+$ bin/solr stop -all
 ----
 
 For more information on start/stop and collection options with `bin/solr`, see xref:deployment-guide:solr-control-script-reference.adoc[].

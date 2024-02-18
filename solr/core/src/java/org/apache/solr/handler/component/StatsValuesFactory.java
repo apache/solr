@@ -109,6 +109,7 @@ public class StatsValuesFactory {
 
     /** may be null if we are collecting stats directly from a function ValueSource */
     protected final SchemaField sf;
+
     /** may be null if we are collecting stats directly from a function ValueSource */
     protected final FieldType ft;
 
@@ -128,11 +129,13 @@ public class StatsValuesFactory {
      * called at least once
      */
     private ValueSource valueSource;
+
     /**
      * Context to use when retrieving FunctionValues, will be null until/unless {@link
      * #setNextReader} is called at least once
      */
     private Map<Object, Object> vsContext;
+
     /**
      * Values to collect, will be null until/unless {@link #setNextReader} is called at least once
      */
@@ -147,6 +150,7 @@ public class StatsValuesFactory {
 
     /** Hash function that must be used by implementations of {@link #hash} */
     protected final HashFunction hasher;
+
     // if null, no HLL logic can be computed; not final because of "union" optimization (see below)
     private HLL hll;
 
@@ -363,6 +367,7 @@ public class StatsValuesFactory {
       return res;
     }
 
+    @Override
     public void setNextReader(LeafReaderContext ctx) throws IOException {
       if (valueSource == null) {
         // first time we've collected local values, get the right ValueSource
@@ -617,6 +622,7 @@ public class StatsValuesFactory {
       }
     }
 
+    @Override
     protected void updateMinMax(EnumFieldValue min, EnumFieldValue max) {
       if (computeMin) { // nested if to encourage JIT to optimize aware final var?
         if (null != min) {

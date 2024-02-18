@@ -70,12 +70,9 @@ public class ConfigSetCmds {
       throws IOException {
     byte[] oldPropsData = configSetService.downloadFileFromConfig(configName, propertyPath);
     if (oldPropsData != null) {
-      InputStreamReader reader =
-          new InputStreamReader(new ByteArrayInputStream(oldPropsData), StandardCharsets.UTF_8);
-      try {
+      try (InputStreamReader reader =
+          new InputStreamReader(new ByteArrayInputStream(oldPropsData), StandardCharsets.UTF_8)) {
         return ConfigSetProperties.readFromInputStream(reader);
-      } finally {
-        reader.close();
       }
     }
     return null;

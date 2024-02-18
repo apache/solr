@@ -21,7 +21,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
@@ -35,6 +34,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AD
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ALIASPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BACKUP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCE_REPLICAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATEALIAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
@@ -47,8 +47,10 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESNAPSHOT;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.INSTALLSHARDDATA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MAINTAINROUTEDALIAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATE_REPLICAS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_COLL_TASK;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_REPLICA_TASK;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_SHARD_TASK;
@@ -66,14 +68,15 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.SP
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import com.google.common.collect.ImmutableMap;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Context;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerNodePrioritizer;
@@ -88,10 +91,12 @@ import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,51 +145,98 @@ public class CollApiCmds {
 
     private CommandMap(OverseerNodePrioritizer overseerPrioritizer, CollectionCommandContext ccc) {
       commandMap =
-          new ImmutableMap.Builder<
-                  CollectionParams.CollectionAction, CollApiCmds.CollectionApiCommand>()
-              .put(REPLACENODE, new ReplaceNodeCmd(ccc))
-              .put(DELETENODE, new DeleteNodeCmd(ccc))
-              .put(BACKUP, new BackupCmd(ccc))
-              .put(RESTORE, new RestoreCmd(ccc))
-              .put(DELETEBACKUP, new DeleteBackupCmd(ccc))
-              .put(CREATESNAPSHOT, new CreateSnapshotCmd(ccc))
-              .put(DELETESNAPSHOT, new DeleteSnapshotCmd(ccc))
-              .put(SPLITSHARD, new SplitShardCmd(ccc))
-              .put(ADDROLE, new OverseerRoleCmd(ccc, ADDROLE, overseerPrioritizer))
-              .put(REMOVEROLE, new OverseerRoleCmd(ccc, REMOVEROLE, overseerPrioritizer))
-              .put(MOCK_COLL_TASK, new CollApiCmds.MockOperationCmd())
-              .put(MOCK_SHARD_TASK, new CollApiCmds.MockOperationCmd())
-              .put(MOCK_REPLICA_TASK, new CollApiCmds.MockOperationCmd())
-              .put(CREATESHARD, new CreateShardCmd(ccc))
-              .put(MIGRATE, new MigrateCmd(ccc))
-              .put(CREATE, new CreateCollectionCmd(ccc))
-              .put(MODIFYCOLLECTION, new CollApiCmds.ModifyCollectionCmd(ccc))
-              .put(ADDREPLICAPROP, new CollApiCmds.AddReplicaPropCmd(ccc))
-              .put(DELETEREPLICAPROP, new CollApiCmds.DeleteReplicaPropCmd(ccc))
-              .put(BALANCESHARDUNIQUE, new CollApiCmds.BalanceShardsUniqueCmd(ccc))
-              .put(REBALANCELEADERS, new CollApiCmds.RebalanceLeadersCmd(ccc))
-              .put(RELOAD, new CollApiCmds.ReloadCollectionCmd(ccc))
-              .put(DELETE, new DeleteCollectionCmd(ccc))
-              .put(CREATEALIAS, new CreateAliasCmd(ccc))
-              .put(DELETEALIAS, new DeleteAliasCmd(ccc))
-              .put(ALIASPROP, new SetAliasPropCmd(ccc))
-              .put(MAINTAINROUTEDALIAS, new MaintainRoutedAliasCmd(ccc))
-              .put(OVERSEERSTATUS, new OverseerStatusCmd(ccc))
-              .put(DELETESHARD, new DeleteShardCmd(ccc))
-              .put(DELETEREPLICA, new DeleteReplicaCmd(ccc))
-              .put(ADDREPLICA, new AddReplicaCmd(ccc))
-              .put(MOVEREPLICA, new MoveReplicaCmd(ccc))
-              .put(REINDEXCOLLECTION, new ReindexCollectionCmd(ccc))
-              .put(RENAME, new RenameCmd(ccc))
-              .build();
+          Map.ofEntries(
+              Map.entry(REPLACENODE, new ReplaceNodeCmd(ccc)),
+              Map.entry(MIGRATE_REPLICAS, new MigrateReplicasCmd(ccc)),
+              Map.entry(BALANCE_REPLICAS, new BalanceReplicasCmd(ccc)),
+              Map.entry(DELETENODE, new DeleteNodeCmd(ccc)),
+              Map.entry(BACKUP, new BackupCmd(ccc)),
+              Map.entry(RESTORE, new RestoreCmd(ccc)),
+              Map.entry(INSTALLSHARDDATA, new InstallShardDataCmd(ccc)),
+              Map.entry(DELETEBACKUP, new DeleteBackupCmd(ccc)),
+              Map.entry(CREATESNAPSHOT, new CreateSnapshotCmd(ccc)),
+              Map.entry(DELETESNAPSHOT, new DeleteSnapshotCmd(ccc)),
+              Map.entry(SPLITSHARD, new SplitShardCmd(ccc)),
+              Map.entry(ADDROLE, new OverseerRoleCmd(ccc, ADDROLE, overseerPrioritizer)),
+              Map.entry(REMOVEROLE, new OverseerRoleCmd(ccc, REMOVEROLE, overseerPrioritizer)),
+              Map.entry(MOCK_COLL_TASK, new CollApiCmds.MockOperationCmd()),
+              Map.entry(MOCK_SHARD_TASK, new CollApiCmds.MockOperationCmd()),
+              Map.entry(MOCK_REPLICA_TASK, new CollApiCmds.MockOperationCmd()),
+              Map.entry(CREATESHARD, new CreateShardCmd(ccc)),
+              Map.entry(MIGRATE, new MigrateCmd(ccc)),
+              Map.entry(CREATE, new CreateCollectionCmd(ccc)),
+              Map.entry(MODIFYCOLLECTION, new CollApiCmds.ModifyCollectionCmd(ccc)),
+              Map.entry(ADDREPLICAPROP, new CollApiCmds.AddReplicaPropCmd(ccc)),
+              Map.entry(DELETEREPLICAPROP, new CollApiCmds.DeleteReplicaPropCmd(ccc)),
+              Map.entry(BALANCESHARDUNIQUE, new CollApiCmds.BalanceShardsUniqueCmd(ccc)),
+              Map.entry(REBALANCELEADERS, new CollApiCmds.RebalanceLeadersCmd(ccc)),
+              Map.entry(RELOAD, new CollApiCmds.ReloadCollectionCmd(ccc)),
+              Map.entry(DELETE, new DeleteCollectionCmd(ccc)),
+              Map.entry(CREATEALIAS, new CreateAliasCmd(ccc)),
+              Map.entry(DELETEALIAS, new DeleteAliasCmd(ccc)),
+              Map.entry(ALIASPROP, new SetAliasPropCmd(ccc)),
+              Map.entry(MAINTAINROUTEDALIAS, new MaintainRoutedAliasCmd(ccc)),
+              Map.entry(OVERSEERSTATUS, new OverseerStatusCmd(ccc)),
+              Map.entry(DELETESHARD, new DeleteShardCmd(ccc)),
+              Map.entry(DELETEREPLICA, new DeleteReplicaCmd(ccc)),
+              Map.entry(ADDREPLICA, new AddReplicaCmd(ccc)),
+              Map.entry(MOVEREPLICA, new MoveReplicaCmd(ccc)),
+              Map.entry(REINDEXCOLLECTION, new ReindexCollectionCmd(ccc)),
+              Map.entry(RENAME, new RenameCmd(ccc)));
     }
 
     CollApiCmds.CollectionApiCommand getActionCommand(CollectionParams.CollectionAction action) {
-      return commandMap.get(action);
+      var command = commandMap.get(action);
+      if (command != null) {
+        return new TraceAwareCommand(commandMap.get(action));
+      } else {
+        return command;
+      }
+    }
+  }
+
+  public static class TraceAwareCommand implements CollectionApiCommand {
+
+    private final CollectionApiCommand command;
+    private final Context ctx =
+        TraceUtils.extractContext(null); // allows trace id to be generated if missing
+
+    public TraceAwareCommand(CollectionApiCommand command) {
+      this.command = command;
+    }
+
+    @Override
+    public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+        throws Exception {
+      final Span localSpan;
+      final Context localContext;
+      if (Span.current().isRecording()) {
+        localSpan = null;
+        localContext = ctx;
+      } else {
+        String collection =
+            Optional.ofNullable(message.getStr(COLLECTION_PROP, message.getStr(NAME)))
+                .orElse("unknown");
+        boolean isAsync = message.containsKey(ASYNC);
+        localSpan =
+            TraceUtils.startCollectionApiCommandSpan(
+                command.getClass().getSimpleName(), collection, isAsync);
+        localContext = ctx.with(localSpan);
+      }
+
+      try (var scope = localContext.makeCurrent()) {
+        assert scope != null; // prevent javac warning about scope being unused
+        command.call(state, message, results);
+      } finally {
+        if (localSpan != null) {
+          localSpan.end();
+        }
+      }
     }
   }
 
   public static class MockOperationCmd implements CollectionApiCommand {
+    @Override
     @SuppressForbidden(reason = "Needs currentTimeMillis for mock requests")
     public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
         throws InterruptedException {
@@ -207,6 +259,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
+    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RELOAD.toString());
@@ -231,27 +284,24 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
+    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
           message,
           COLLECTION_PROP,
-          SHARD_ID_PROP,
           CORE_NAME_PROP,
-          ELECTION_NODE_PROP,
           CORE_NODE_NAME_PROP,
           NODE_NAME_PROP,
           REJOIN_AT_HEAD_PROP);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(COLLECTION_PROP, message.getStr(COLLECTION_PROP));
-      params.set(SHARD_ID_PROP, message.getStr(SHARD_ID_PROP));
       params.set(REJOIN_AT_HEAD_PROP, message.getStr(REJOIN_AT_HEAD_PROP));
       params.set(
           CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REJOINLEADERELECTION.toString());
       params.set(CORE_NAME_PROP, message.getStr(CORE_NAME_PROP));
       params.set(CORE_NODE_NAME_PROP, message.getStr(CORE_NODE_NAME_PROP));
-      params.set(ELECTION_NODE_PROP, message.getStr(ELECTION_NODE_PROP));
       params.set(NODE_NAME_PROP, message.getStr(NODE_NAME_PROP));
 
       String baseUrl = ccc.getZkStateReader().getBaseUrlForNodeName(message.getStr(NODE_NAME_PROP));
@@ -275,6 +325,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
+    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
@@ -308,6 +359,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
+    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
@@ -336,10 +388,11 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
+    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
-      if (StringUtils.isBlank(message.getStr(COLLECTION_PROP))
-          || StringUtils.isBlank(message.getStr(PROPERTY_PROP))) {
+      if (StrUtils.isBlank(message.getStr(COLLECTION_PROP))
+          || StrUtils.isBlank(message.getStr(PROPERTY_PROP))) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "The '"
@@ -371,6 +424,7 @@ public class CollApiCmds {
       this.ccc = ccc;
     }
 
+    @Override
     public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
 

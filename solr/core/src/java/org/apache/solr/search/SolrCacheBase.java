@@ -52,7 +52,7 @@ public abstract class SolrCacheBase {
         // odd undocumented legacy behavior, -1 meant "all" (now "100%")
         strVal = ("-1".equals(input)) ? "100%" : input;
 
-        if (strVal.indexOf("%") == (strVal.length() - 1)) {
+        if (strVal.indexOf('%') == (strVal.length() - 1)) {
           autoWarmCount = 0;
           autoWarmPercentage = Integer.parseInt(strVal.substring(0, strVal.length() - 1));
           autoWarmByPercentage = true;

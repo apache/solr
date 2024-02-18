@@ -30,14 +30,13 @@ import static org.noggit.JSONParser.STRING;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 import org.noggit.JSONParser;
 
 /** A Streaming parser for json to emit one record at a time. */
@@ -64,6 +63,7 @@ public class JsonRecordReader {
   }
 
   private JsonRecordReader() {}
+
   /**
    * a '|' separated list of path expressions which define sub sections of the JSON stream that are
    * to be emitted as separate records. It is possible to have multiple levels of split one for
@@ -106,7 +106,7 @@ public class JsonRecordReader {
       return; // the path is "/"
     }
     // deal with how split behaves when separator starts with an empty string!
-    if ("".equals(paths.get(0).trim())) paths.remove(0);
+    if (paths.get(0).trim().isEmpty()) paths.remove(0);
     rootNode.build(paths, fieldName, multiValued, isRecord, path);
     rootNode.buildOptimize();
   }
@@ -184,7 +184,7 @@ public class JsonRecordReader {
     }
 
     private boolean hasParentRecord() {
-      return isRecord || parent != null && parent.hasParentRecord();
+      return isRecord || (parent != null && parent.hasParentRecord());
     }
 
     private boolean isMyChildARecord() {
@@ -285,14 +285,14 @@ public class JsonRecordReader {
         if (event == EOF) break;
         if (event == OBJECT_START) {
           handleObjectStart(
-              parser, handler, new LinkedHashMap<>(), new Stack<>(), recordStarted, null);
+              parser, handler, new LinkedHashMap<>(), new ArrayDeque<>(), recordStarted, null);
         } else if (event == ARRAY_START) {
           for (; ; ) {
             event = parser.nextEvent();
             if (event == ARRAY_END) break;
             if (event == OBJECT_START) {
               handleObjectStart(
-                  parser, handler, new LinkedHashMap<>(), new Stack<>(), recordStarted, null);
+                  parser, handler, new LinkedHashMap<>(), new ArrayDeque<>(), recordStarted, null);
             }
           }
         }
@@ -313,7 +313,7 @@ public class JsonRecordReader {
         final JSONParser parser,
         final Handler handler,
         final Map<String, Object> values,
-        final Stack<Set<String>> stack,
+        final ArrayDeque<Set<String>> stack,
         boolean recordStarted,
         MethodFrameWrapper frameWrapper)
         throws IOException {
@@ -369,7 +369,7 @@ public class JsonRecordReader {
                 parser,
                 (record, path) -> addChildDoc2ParentDoc(record, values, getPathSuffix(path)),
                 new LinkedHashMap<>(),
-                new Stack<>(),
+                new ArrayDeque<>(),
                 true,
                 this);
           } else {
@@ -497,7 +497,7 @@ public class JsonRecordReader {
 
     // returns the last key of the path
     private String getPathSuffix(String path) {
-      int indexOf = path.lastIndexOf("/");
+      int indexOf = path.lastIndexOf('/');
       if (indexOf == -1) return path;
       return path.substring(indexOf + 1);
     }
@@ -519,7 +519,7 @@ public class JsonRecordReader {
    * multiple separators appear.
    */
   private static List<String> splitEscapeQuote(String str) {
-    List<String> result = new LinkedList<>();
+    List<String> result = new ArrayList<>();
     String[] ss = str.split("/");
     for (int i = 0; i < ss.length; i++) { // i=1: skip separator at start of string
       StringBuilder sb = new StringBuilder();

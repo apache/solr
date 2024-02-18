@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -34,6 +33,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -48,8 +48,9 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
   private static final String COLLECTION_NAME = DEBUG_LABEL + "_collection";
 
-  /** A basic client for operations at the cloud level, default collection will be set */
-  private static CloudSolrClient CLOUD_CLIENT;
+  /** A collection specific client for operations at the cloud level */
+  private static CloudSolrClient COLLECTION_CLIENT;
+
   /** One client per node */
   private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
@@ -74,45 +75,44 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    CLOUD_CLIENT = cluster.getSolrClient();
-    CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
 
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
+    waitForRecoveriesToFinish(COLLECTION_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl().toString(), COLLECTION_NAME));
     }
 
     // index some docs...
-    CLOUD_CLIENT.add(
+    COLLECTION_CLIENT.add(
         sdoc(
             "id", "42",
             "title", "Tale of the Brown Fox: was he lazy?",
             "body", "No. The quick brown fox was a very brown fox who liked to get into trouble."));
-    CLOUD_CLIENT.add(
+    COLLECTION_CLIENT.add(
         sdoc(
             "id", "43",
             "title", "A fable in two acts",
             "body", "The brOwn fOx jumped. The lazy dog did not"));
-    CLOUD_CLIENT.add(
+    COLLECTION_CLIENT.add(
         sdoc(
             "id", "44",
             "title", "Why the LazY dog was lazy",
             "body",
                 "News flash: Lazy Dog was not actually lazy, it just seemed so compared to Fox"));
-    CLOUD_CLIENT.add(
+    COLLECTION_CLIENT.add(
         sdoc(
             "id", "45",
             "title", "Why Are We Lazy?",
             "body", "Because we are. that's why"));
-    CLOUD_CLIENT.commit();
+    COLLECTION_CLIENT.commit();
   }
 
   @AfterClass
   public static void afterClass() throws Exception {
-    if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
-      CLOUD_CLIENT = null;
+    if (null != COLLECTION_CLIENT) {
+      COLLECTION_CLIENT.close();
+      COLLECTION_CLIENT = null;
     }
     for (SolrClient client : CLIENTS) {
       client.close();
@@ -198,7 +198,7 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
     int numClients = CLIENTS.size();
     int idx = TestUtil.nextInt(rand, 0, numClients);
 
-    return (idx == numClients) ? CLOUD_CLIENT : CLIENTS.get(idx);
+    return (idx == numClients) ? COLLECTION_CLIENT : CLIENTS.get(idx);
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {

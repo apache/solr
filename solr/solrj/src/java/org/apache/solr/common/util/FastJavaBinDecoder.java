@@ -54,7 +54,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.SolrDocument;
@@ -783,7 +782,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
     if (e.type().isContainer) {
       Object ctx =
           e.type() == DataEntry.Type.KEYVAL_ITER
-              ? new LinkedHashMap(getSize(e))
+              ? CollectionUtil.newLinkedHashMap(getSize(e))
               : new ArrayList(getSize(e));
       if (e.ctx() != null) {
         if (e.isKeyValEntry()) {

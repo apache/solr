@@ -20,7 +20,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -37,7 +39,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
-import java.net.URLDecoder;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -70,7 +71,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
@@ -110,8 +110,8 @@ public class Utils {
     } else {
       copy =
           map instanceof LinkedHashMap
-              ? new LinkedHashMap<>(map.size())
-              : new HashMap<>(map.size());
+              ? CollectionUtil.newLinkedHashMap(map.size())
+              : CollectionUtil.newHashMap(map.size());
     }
     for (Object o : map.entrySet()) {
       Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
@@ -174,7 +174,7 @@ public class Utils {
 
   public static InputStream toJavabin(Object o) throws IOException {
     try (final JavaBinCodec jbc = new JavaBinCodec()) {
-      BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+      BAOS baos = new BAOS();
       jbc.marshal(o, baos);
       return new ByteArrayInputStream(baos.getbuf(), 0, baos.size());
     }
@@ -214,77 +214,30 @@ public class Utils {
     return writer;
   }
 
-  private static class MapWriterJSONWriter extends JSONWriter {
-
-    public MapWriterJSONWriter(CharArr out, int indentSize) {
-      super(out, indentSize);
-    }
-
-    @Override
-    public void handleUnknownClass(Object o) {
-      // avoid materializing MapWriter / IteratorWriter to Map / List
-      // instead serialize them directly
-      if (o instanceof MapWriter) {
-        MapWriter mapWriter = (MapWriter) o;
-        startObject();
-        final boolean[] first = new boolean[1];
-        first[0] = true;
-        int sz = mapWriter._size();
-        mapWriter._forEachEntry(
-            (k, v) -> {
-              if (first[0]) {
-                first[0] = false;
-              } else {
-                writeValueSeparator();
-              }
-              if (sz > 1) indent();
-              writeString(k.toString());
-              writeNameSeparator();
-              write(v);
-            });
-        endObject();
-      } else if (o instanceof IteratorWriter) {
-        IteratorWriter iteratorWriter = (IteratorWriter) o;
-        startArray();
-        final boolean[] first = new boolean[1];
-        first[0] = true;
-        try {
-          iteratorWriter.writeIter(
-              new IteratorWriter.ItemWriter() {
-                @Override
-                public IteratorWriter.ItemWriter add(Object o) throws IOException {
-                  if (first[0]) {
-                    first[0] = false;
-                  } else {
-                    writeValueSeparator();
-                  }
-                  indent();
-                  write(o);
-                  return this;
-                }
-              });
-        } catch (IOException e) {
-          throw new RuntimeException("this should never happen", e);
-        }
-        endArray();
-      } else {
-        super.handleUnknownClass(o);
-      }
-    }
-  }
-
   public static byte[] toJSON(Object o) {
     if (o == null) return new byte[0];
     CharArr out = new CharArr();
-    //    if (!(o instanceof List) && !(o instanceof Map)) {
-    //      if (o instanceof MapWriter) {
-    //        o = ((MapWriter) o).toMap(new LinkedHashMap<>());
-    //      } else if (o instanceof IteratorWriter) {
-    //        o = ((IteratorWriter) o).toList(new ArrayList<>());
-    //      }
-    //    }
-    new MapWriterJSONWriter(out, 2).write(o); // indentation by default
+    new JSONWriter(out, JSONWriter.DEFAULT_INDENT).write(o); // indentation by default
     return toUTF8(out);
+  }
+
+  /**
+   * @param indentSize The number of space characters to use as an indent. 0=newlines but no spaces,
+   *     -1=no indent at all.
+   */
+  public static byte[] toJSON(Object o, int indentSize) {
+    if (o == null) return new byte[0];
+    CharArr out = new CharArr();
+    new JSONWriter(out, indentSize).write(o);
+    return toUTF8(out);
+  }
+
+  /**
+   * @param indentSize The number of space characters to use as an indent. 0=newlines but no spaces,
+   *     -1=no indent at all.
+   */
+  public static String toJSONString(Object o, int indentSize) {
+    return new String(toJSON(o, indentSize), StandardCharsets.UTF_8);
   }
 
   public static String toJSONString(Object o) {
@@ -546,15 +499,19 @@ public class Utils {
         Object o = getVal(obj, s, -1);
         if (o == null) return null;
         if (idx > -1) {
-          if (o instanceof MapWriter) {
+          if (o instanceof List) {
+            List<?> l = (List<?>) o;
+            o = idx < l.size() ? l.get(idx) : null;
+          } else if (o instanceof IteratorWriter) {
+            o = getValueAt((IteratorWriter) o, idx);
+          } else if (o instanceof MapWriter) {
             o = getVal(o, null, idx);
           } else if (o instanceof Map) {
             @SuppressWarnings("unchecked")
             Map<String, Object> map = (Map<String, Object>) o;
             o = getVal(new MapWriterMap(map), null, idx);
           } else {
-            List<?> l = (List<?>) o;
-            o = idx < l.size() ? l.get(idx) : null;
+            return null;
           }
         }
         if (!isMapLike(o)) return null;
@@ -771,14 +728,13 @@ public class Utils {
           "nodeName does not contain expected ':' separator: " + nodeName);
     }
 
-    final int _offset = nodeName.indexOf("_", colonAt);
+    final int _offset = nodeName.indexOf('_', colonAt);
     if (_offset < 0) {
       throw new IllegalArgumentException(
           "nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0, _offset);
-    final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
-    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + (isV2 ? "api" : path)));
+    return urlScheme + "://" + hostAndPort + "/" + (isV2 ? "api" : "solr");
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
@@ -809,7 +765,7 @@ public class Utils {
 
   public static InputStreamConsumer<ByteBuffer> newBytesConsumer(int maxSize) {
     return is -> {
-      try (BinaryRequestWriter.BAOS bos = new BinaryRequestWriter.BAOS()) {
+      try (BAOS bos = new BAOS()) {
         long sz = 0;
         int next = is.read();
         while (next > -1) {
@@ -892,6 +848,45 @@ public class Utils {
   public static final String CATCH_ALL_PROPERTIES_METHOD_NAME = "unknownProperties";
 
   /**
+   * Return a writable object that will be serialized using the reflection-friendly properties of
+   * the class, notably the fields that have the {@link JsonProperty} annotation.
+   *
+   * <p>If the class has no reflection-friendly fields, then it will be serialized as a string,
+   * using the class's name and {@code toString()} method.
+   *
+   * @param o the object to get a serializable version of
+   * @return a serializable version of the object
+   */
+  public static Object getReflectWriter(Object o) {
+    List<FieldWriter> fieldWriters = null;
+    try {
+      fieldWriters =
+          Utils.getReflectData(
+              o.getClass(),
+              // TODO Should we be lenient here and accept both the Jackson and our homegrown
+              // annotation?
+              field ->
+                  field.getAnnotation(com.fasterxml.jackson.annotation.JsonProperty.class) != null,
+              JsonAnyGetter.class,
+              field -> {
+                final com.fasterxml.jackson.annotation.JsonProperty prop =
+                    field.getAnnotation(com.fasterxml.jackson.annotation.JsonProperty.class);
+                return prop.value().isEmpty() ? field.getName() : prop.value();
+              });
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
+    if (!fieldWriters.isEmpty()) {
+      return new DelegateReflectWriter(o, fieldWriters);
+    } else {
+      // Do not serialize an empty class, use a string representation instead.
+      // This is because the class is likely not using the serialization annotations
+      // and still expects to provide some information.
+      return o.getClass().getName() + ':' + o;
+    }
+  }
+
+  /**
    * Convert an input object to a map, writing only those fields that match a provided {@link
    * Predicate}
    *
@@ -915,14 +910,7 @@ public class Utils {
     } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
     }
-    for (FieldWriter fieldWriter : fieldWriters) {
-      try {
-        fieldWriter.write(ew, o);
-      } catch (Throwable e) {
-        throw new RuntimeException(e);
-        // should not happen
-      }
-    }
+    reflectWrite(ew, o, fieldWriters);
   }
 
   private static List<FieldWriter> getReflectData(
@@ -949,6 +937,26 @@ public class Utils {
     final List<FieldWriter> mutableFieldWriters = new ArrayList<>(cachedReflectData);
     addCatchAllFieldWriter(mutableFieldWriters, catchAllAnnotation, lookup, c);
     return Collections.unmodifiableList(mutableFieldWriters);
+  }
+
+  /**
+   * Convert an input object to a map, using the provided {@link FieldWriter}s.
+   *
+   * @param ew an {@link org.apache.solr.common.MapWriter.EntryWriter} to do the actual map
+   *     insertion/writing
+   * @param o the object to be converted
+   * @param fieldWriters a list of fields to write and how to write them
+   */
+  private static void reflectWrite(
+      MapWriter.EntryWriter ew, Object o, List<FieldWriter> fieldWriters) {
+    for (FieldWriter fieldWriter : fieldWriters) {
+      try {
+        fieldWriter.write(ew, o);
+      } catch (Throwable e) {
+        throw new RuntimeException(e);
+        // should not happen
+      }
+    }
   }
 
   private static List<FieldWriter> addTraditionalFieldWriters(
@@ -1025,9 +1033,121 @@ public class Utils {
     }
   }
 
-  private static Map<Class<?>, List<FieldWriter>> storedReflectData = new ConcurrentHashMap<>();
+  /**
+   * Produce a Map representation of the provided object using reflection to identify annotated
+   * fields.
+   *
+   * <p>The provided object is not required to be a {@link MapWriter}.
+   */
+  public static Map<String, Object> reflectToMap(Object toReflect) {
+    return ((Utils.DelegateReflectWriter) Utils.getReflectWriter(toReflect)).toMap(new HashMap<>());
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public static Map<String, Object> convertToMap(MapWriter m, Map<String, Object> map) {
+    try {
+      m.writeMap(
+          new MapWriter.EntryWriter() {
+            @Override
+            public MapWriter.EntryWriter put(CharSequence k, Object v) {
+              return writeEntry(k, v);
+            }
+
+            private MapWriter.EntryWriter writeEntry(CharSequence k, Object v) {
+              if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+              if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
+              if (v instanceof Iterable) {
+                List lst = new ArrayList();
+                for (Object vv : (Iterable) v) {
+                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+                  if (vv instanceof IteratorWriter)
+                    vv = ((IteratorWriter) vv).toList(new ArrayList<>());
+                  lst.add(vv);
+                }
+                v = lst;
+              }
+              if (v instanceof Map) {
+                Map map = new LinkedHashMap();
+                for (Map.Entry<?, ?> entry : ((Map<?, ?>) v).entrySet()) {
+                  Object vv = entry.getValue();
+                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+                  if (vv instanceof IteratorWriter)
+                    vv = ((IteratorWriter) vv).toList(new ArrayList<>());
+                  map.put(entry.getKey(), vv);
+                }
+                v = map;
+              }
+              map.put(k == null ? null : k.toString(), v);
+              // note: It'd be nice to assert that there is no previous value at 'k' but it's
+              // possible the passed map is already populated and the intention is to overwrite.
+              return this;
+            }
+          });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return map;
+  }
+
+  private static final Map<Class<?>, List<FieldWriter>> storedReflectData =
+      new ConcurrentHashMap<>();
+
+  public static class DelegateReflectWriter implements MapWriter {
+    private final Object object;
+    private final List<Utils.FieldWriter> fieldWriters;
+
+    DelegateReflectWriter(Object object, List<Utils.FieldWriter> fieldWriters) {
+      this.object = object;
+      this.fieldWriters = fieldWriters;
+    }
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      Utils.reflectWrite(ew, object, fieldWriters);
+    }
+  }
 
   interface FieldWriter {
     void write(MapWriter.EntryWriter ew, Object inst) throws Throwable;
+  }
+
+  public static class BAOS extends ByteArrayOutputStream {
+    public ByteBuffer getByteBuffer() {
+      return ByteBuffer.wrap(super.buf, 0, super.count);
+    }
+
+    /*
+     * A hack to get access to the protected internal buffer and avoid an additional copy
+     */
+    public byte[] getbuf() {
+      return super.buf;
+    }
+  }
+
+  public static ByteBuffer toByteArray(InputStream is) throws IOException {
+    return toByteArray(is, Integer.MAX_VALUE);
+  }
+
+  /**
+   * Reads an input stream into a byte array
+   *
+   * @param is the input stream
+   * @return the byte array
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public static ByteBuffer toByteArray(InputStream is, long maxSize) throws IOException {
+    try (BAOS bos = new BAOS()) {
+      long sz = 0;
+      int next = is.read();
+      while (next > -1) {
+        if (++sz > maxSize) {
+          throw new BufferOverflowException();
+        }
+        bos.write(next);
+        next = is.read();
+      }
+      bos.flush();
+      return bos.getByteBuffer();
+    }
   }
 }

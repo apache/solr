@@ -37,10 +37,10 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
@@ -61,6 +61,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   SolrClient leaderClient, followerClient;
   ReplicationTestHelper.SolrInstance leader = null, follower = null;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     originalDiskSpaceprovider = IndexFetcher.usableDiskSpaceProvider;
@@ -80,9 +81,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     leaderJetty = createAndStartJetty(leader);
     leaderClient =
         ReplicationTestHelper.createNewSolrClient(
-            TestReplicationHandler.buildUrl(leaderJetty.getLocalPort())
-                + "/"
-                + DEFAULT_TEST_CORENAME);
+            TestReplicationHandler.buildUrl(leaderJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
     System.setProperty(TEST_URL_ALLOW_LIST, leaderJetty.getBaseUrl().toString());
 
     follower =
@@ -92,9 +91,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     followerJetty = createAndStartJetty(follower);
     followerClient =
         ReplicationTestHelper.createNewSolrClient(
-            TestReplicationHandler.buildUrl(followerJetty.getLocalPort())
-                + "/"
-                + DEFAULT_TEST_CORENAME);
+            TestReplicationHandler.buildUrl(followerJetty.getLocalPort()), DEFAULT_TEST_CORENAME);
 
     System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }

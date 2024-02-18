@@ -26,7 +26,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -38,6 +37,7 @@ import org.apache.solr.common.cloud.ClusterStateUtil;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
@@ -60,13 +60,14 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         .configure();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
     collection = getSaferTestName();
-    cluster.getSolrClient().setDefaultCollection(collection);
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     super.tearDown();
@@ -80,7 +81,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collection, 1, 2);
 
     UpdateResponse updateResponse =
-        new UpdateRequest().add("id", "1").commit(cluster.getSolrClient(), null);
+        new UpdateRequest().add("id", "1").commit(cluster.getSolrClient(), collection);
     assertEquals(0, updateResponse.getStatus());
 
     Replica oldLeader = corruptLeader(collection);
@@ -110,9 +111,12 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         getNonLeader(shard).getNodeName());
 
     // Check that we can continue indexing after this
-    updateResponse = new UpdateRequest().add("id", "2").commit(cluster.getSolrClient(), null);
+    updateResponse = new UpdateRequest().add("id", "2").commit(cluster.getSolrClient(), collection);
     assertEquals(0, updateResponse.getStatus());
-    try (SolrClient followerClient = new HttpSolrClient.Builder(oldLeader.getCoreUrl()).build()) {
+    try (SolrClient followerClient =
+        new HttpSolrClient.Builder(oldLeader.getBaseUrl())
+            .withDefaultCollection(oldLeader.getCoreName())
+            .build()) {
       QueryResponse queryResponse = new QueryRequest(new SolrQuery("*:*")).process(followerClient);
       assertEquals(
           queryResponse.getResults().toString(), 2, queryResponse.getResults().getNumFound());
@@ -127,9 +131,9 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       Replica oldLeader = dc.getLeader("shard1");
       log.info("Will crash leader : {}", oldLeader);
 
-      try (SolrClient solrClient =
-          new HttpSolrClient.Builder(dc.getLeader("shard1").getCoreUrl()).build()) {
-        new UpdateRequest().add("id", "99").commit(solrClient, null);
+      final Replica leaderReplica = dc.getLeader("shard1");
+      try (SolrClient solrClient = new HttpSolrClient.Builder(leaderReplica.getBaseUrl()).build()) {
+        new UpdateRequest().add("id", "99").commit(solrClient, leaderReplica.getCoreName());
         fail("Should have injected tragedy");
       } catch (RemoteSolrException e) {
         // solrClient.add would throw RemoteSolrException with code 500

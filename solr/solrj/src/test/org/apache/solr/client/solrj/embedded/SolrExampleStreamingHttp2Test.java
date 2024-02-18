@@ -26,11 +26,16 @@ import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 
+/**
+ * A subclass of SolrExampleTests that explicitly uses the HTTP2 client and the streaming update
+ * client for communication.
+ */
 public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
 
   @BeforeClass
@@ -40,14 +45,16 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    // setup the server...
-    String url = jetty.getBaseUrl().toString() + "/collection1";
+    String url = getBaseUrl();
     // smaller queue size hits locks more often
-    Http2SolrClient solrClient = new Http2SolrClient.Builder().build();
-    solrClient.setParser(new XMLResponseParser());
-    solrClient.setRequestWriter(new RequestWriter());
+    Http2SolrClient solrClient =
+        new Http2SolrClient.Builder()
+            .withRequestWriter(new RequestWriter())
+            .withResponseParser(new XMLResponseParser())
+            .build();
     ConcurrentUpdateHttp2SolrClient concurrentClient =
         new ErrorTrackingConcurrentUpdateSolrClient.Builder(url, solrClient)
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(2)
             .withThreadCount(5)
             .build();
@@ -57,15 +64,16 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
   public void testWaitOptions() throws Exception {
     // SOLR-3903
     final List<Throwable> failures = new ArrayList<>();
-    final String serverUrl = jetty.getBaseUrl().toString() + "/collection1";
+    final String serverUrl = getBaseUrl();
     try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
         ConcurrentUpdateHttp2SolrClient concurrentClient =
             new FailureRecordingConcurrentUpdateSolrClient.Builder(serverUrl, http2Client)
+                .withDefaultCollection(DEFAULT_TEST_CORENAME)
                 .withQueueSize(2)
                 .withThreadCount(2)
                 .build()) {
       int docId = 42;
-      for (UpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
+      for (AbstractUpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
         for (boolean waitSearch : Arrays.asList(true, false)) {
           for (boolean waitFlush : Arrays.asList(true, false)) {
             UpdateRequest updateRequest = new UpdateRequest();

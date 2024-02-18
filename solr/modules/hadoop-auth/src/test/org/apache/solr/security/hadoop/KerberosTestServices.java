@@ -19,7 +19,6 @@ package org.apache.solr.security.hadoop;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -31,6 +30,8 @@ import javax.security.auth.login.Configuration;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.hadoop.minikdc.MiniKdc;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
+import org.apache.solr.client.solrj.util.Constants;
+import org.apache.solr.common.util.EnvUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,7 +140,7 @@ public class KerberosTestServices {
       clientOptions.put("storeKey", "true");
       clientOptions.put("useTicketCache", "false");
       clientOptions.put("refreshKrb5Config", "true");
-      String jaasProp = System.getProperty("solr.jaas.debug");
+      String jaasProp = EnvUtils.getProperty("solr.jaas.debug");
       if (jaasProp != null && "true".equalsIgnoreCase(jaasProp)) {
         clientOptions.put("debug", "true");
       }
@@ -190,7 +191,7 @@ public class KerberosTestServices {
   }
 
   public static final String krb5LoginModuleName =
-      System.getProperty("java.vendor").contains("IBM")
+      Constants.IS_IBM_JAVA
           ? "com.ibm.security.auth.module.Krb5LoginModule"
           : "com.sun.security.auth.module.Krb5LoginModule";
 
@@ -199,9 +200,9 @@ public class KerberosTestServices {
    * and https://issues.apache.org/jira/browse/DIRKRB-753
    */
   static final List<String> incompatibleLanguagesWithMiniKdc =
-      Arrays.asList(
+      List.of(
           "mzn", "ps", "mr", "uz", "ks", "bn", "my", "sd", "pa", "ar", "th", "dz", "ja", "ne",
-          "ckb", "fa", "lrc", "ur", "ig", "sat", "mni", "sa", "as");
+          "ckb", "fa", "lrc", "ur", "ig", "sat", "mni", "sa", "as", "raj", "bho", "bgc");
 
   public static class Builder {
     private File kdcWorkDir;

@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -62,7 +63,6 @@ public abstract class LBSolrClient extends SolrClient {
   // defaults
   protected static final Set<Integer> RETRY_CODES =
       new HashSet<>(Arrays.asList(404, 403, 503, 500));
-  private static final int CHECK_INTERVAL = 60 * 1000; // 1 minute between checks
   private static final int NONSTANDARD_PING_LIMIT =
       5; // number of times we'll ping dead servers not in the server list
 
@@ -78,18 +78,17 @@ public abstract class LBSolrClient extends SolrClient {
 
   private volatile ScheduledExecutorService aliveCheckExecutor;
 
-  private int interval = CHECK_INTERVAL;
+  protected long aliveCheckIntervalMillis =
+      TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
   protected volatile ResponseParser parser;
   protected volatile RequestWriter requestWriter;
 
-  protected Set<String> queryParams = new HashSet<>();
-
   static {
     solrQuery.setRows(0);
-    /**
+    /*
      * Default sort (if we don't supply a sort) is by score and since we request 0 rows any sorting
      * and scoring is not necessary. SolrQuery.DOCID schema-independently specifies a non-scoring
      * sort. <code>_docid_ asc</code> sort is efficient, <code>_docid_ desc</code> sort is not, so
@@ -320,23 +319,6 @@ public abstract class LBSolrClient extends SolrClient {
     return new ServerWrapper(baseUrl);
   }
 
-  public Set<String> getQueryParams() {
-    return queryParams;
-  }
-
-  /**
-   * Expert Method.
-   *
-   * @param queryParams set of param keys to only send via the query string
-   */
-  public void setQueryParams(Set<String> queryParams) {
-    this.queryParams = queryParams;
-  }
-
-  public void addQueryParams(String queryOnlyParam) {
-    this.queryParams.add(queryOnlyParam);
-  }
-
   public static String normalize(String server) {
     if (server.endsWith("/")) server = server.substring(0, server.length() - 1);
     return server;
@@ -377,7 +359,10 @@ public abstract class LBSolrClient extends SolrClient {
       }
     }
     throw new SolrServerException(
-        "No live SolrServers available to handle this request:" + zombieServers.keySet(), ex);
+        "No live SolrServers available to handle this request. (Tracking "
+            + zombieServers.size()
+            + " not live)",
+        ex);
   }
 
   /**
@@ -458,20 +443,6 @@ public abstract class LBSolrClient extends SolrClient {
     return e;
   }
 
-  /**
-   * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
-   * this to set that interval
-   *
-   * @param interval time in milliseconds
-   */
-  public void setAliveCheckInterval(int interval) {
-    if (interval <= 0) {
-      throw new IllegalArgumentException(
-          "Alive check interval must be " + "positive, specified value = " + interval);
-    }
-    this.interval = interval;
-  }
-
   private void startAliveCheckExecutor() {
     // double-checked locking, but it's OK because we don't *do* anything with aliveCheckExecutor
     // if it's not null.
@@ -483,8 +454,8 @@ public abstract class LBSolrClient extends SolrClient {
                   new SolrNamedThreadFactory("aliveCheckExecutor"));
           aliveCheckExecutor.scheduleAtFixedRate(
               getAliveCheckRunner(new WeakReference<>(this)),
-              this.interval,
-              this.interval,
+              this.aliveCheckIntervalMillis,
+              this.aliveCheckIntervalMillis,
               TimeUnit.MILLISECONDS);
         }
       }
@@ -504,26 +475,6 @@ public abstract class LBSolrClient extends SolrClient {
 
   public ResponseParser getParser() {
     return parser;
-  }
-
-  /**
-   * Changes the {@link ResponseParser} that will be used for the internal SolrServer objects.
-   *
-   * @param parser Default Response Parser chosen to parse the response if the parser were not
-   *     specified as part of the request.
-   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
-   */
-  public void setParser(ResponseParser parser) {
-    this.parser = parser;
-  }
-
-  /**
-   * Changes the {@link RequestWriter} that will be used for the internal SolrServer objects.
-   *
-   * @param requestWriter Default RequestWriter, used to encode requests sent to the server.
-   */
-  public void setRequestWriter(RequestWriter requestWriter) {
-    this.requestWriter = requestWriter;
   }
 
   public RequestWriter getRequestWriter() {
@@ -624,12 +575,15 @@ public abstract class LBSolrClient extends SolrClient {
     final int maxTries = (numServersToTry == null ? serverList.length : numServersToTry.intValue());
     int numServersTried = 0;
     Map<String, ServerWrapper> justFailed = null;
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
+      collection = defaultCollection;
 
     boolean timeAllowedExceeded = false;
     long timeAllowedNano = getTimeAllowedInNanos(request);
     long timeOutTime = System.nanoTime() + timeAllowedNano;
     for (int attempts = 0; attempts < maxTries; attempts++) {
-      if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
+      timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime);
+      if (timeAllowedExceeded) {
         break;
       }
 
@@ -657,12 +611,13 @@ public abstract class LBSolrClient extends SolrClient {
 
     // try other standard servers that we didn't try just now
     for (ServerWrapper wrapper : zombieServers.values()) {
-      if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
+      timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime);
+      if (timeAllowedExceeded) {
         break;
       }
 
       if (wrapper.standard == false
-          || justFailed != null && justFailed.containsKey(wrapper.getBaseUrl())) continue;
+          || (justFailed != null && justFailed.containsKey(wrapper.getBaseUrl()))) continue;
       try {
         ++numServersTried;
         request.setBasePath(wrapper.baseUrl);

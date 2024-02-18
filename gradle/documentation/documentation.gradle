@@ -26,7 +26,7 @@ configure(rootProject) {
     // In the case of a 'SNAPSHOT' luceneDocVersion this URL won't actually exist, but that shouldn't mater since
     // we can't release Solr pointed at a Lucene SNAPSHOT, so we won't be publishing in this state...
     luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url',
-        "https://lucene.apache.org/core/${-> getVersion("org.apache.lucene", "lucene-core").replace('.', '_')}")
+        "https://lucene.apache.org/core/${-> luceneBaseVersionProvider.get().replace('.', '_')}")
 
     solrDocUrl = project.propertyOrDefault('solr.javadoc.url', {
       if (project.version != project.baseVersion) {

@@ -252,7 +252,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     final Set<String> shardsThatChange = new HashSet<>();
 
     int coresCompared = 0;
-    int totalDocsOnAllShards = 0;
+    long totalDocsOnAllShards = 0;
     final DocCollection collectionState =
         cluster.getSolrClient().getClusterState().getCollection(COLLECTION);
     for (Slice shard : collectionState) {
@@ -315,7 +315,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     for (Replica replica : collectionState.getReplicas()) {
 
       String coreName = replica.getCoreName();
-      try (SolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
+      try (SolrClient client = getHttpSolrClient(replica)) {
 
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("command", "indexversion");

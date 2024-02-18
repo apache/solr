@@ -60,6 +60,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
     System.clearProperty("solr.retries.to.followers");
   }
 
+  @Override
   @Test
   public void test() throws Exception {
     waitForThingsToLevelOut(15, TimeUnit.SECONDS);
@@ -124,7 +125,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
       // SolrQuery("*:*")).getResults().getNumFound();
 
       // Wait until new leader is elected
-      while (deadJetty == leaderJetty) {
+      while (deadJetty.equals(leaderJetty)) {
         updateMappingsFromZk(this.jettys, this.clients);
         leaderJetty = shardToLeaderJetty.get("shard1");
       }
@@ -189,13 +190,13 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
               overseerClient.close();
               overseerClient = electNewOverseer(zkAddress);
             } catch (Exception e) {
-              // e.printStackTrace();
+              log.error("error killing overseer", e);
             }
           }
           try {
             Thread.sleep(100);
           } catch (Exception e) {
-            // e.printStackTrace();
+            log.error("error during sleep", e);
           }
         }
       } catch (Exception t) {
@@ -246,7 +247,11 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
    */
   private SolrZkClient electNewOverseer(String address)
       throws KeeperException, InterruptedException {
-    SolrZkClient zkClient = new SolrZkClient(address, TIMEOUT);
+    SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(address)
+            .withTimeout(TIMEOUT, TimeUnit.MILLISECONDS)
+            .build();
     ZkStateReader reader = new ZkStateReader(zkClient);
     LeaderElector overseerElector = new LeaderElector(zkClient);
     UpdateShardHandler updateShardHandler =
@@ -259,10 +264,10 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
               "/admin/cores",
               reader,
               null,
-              new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build());
+              new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build());
       overseer.close();
       ElectionContext ec =
-          new OverseerElectionContext(zkClient, overseer, address.replaceAll("/", "_"));
+          new OverseerElectionContext(zkClient, overseer, address.replace("/", "_"));
       overseerElector.setup(ec);
       overseerElector.joinElection(ec, false);
     }

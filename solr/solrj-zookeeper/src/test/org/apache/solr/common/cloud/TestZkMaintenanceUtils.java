@@ -18,13 +18,13 @@ package org.apache.solr.common.cloud;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -67,13 +67,14 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
    * @throws InterruptedException when having trouble creating test nodes
    * @throws KeeperException error when talking to zookeeper
    * @throws SolrServerException when having trouble connecting to solr
-   * @throws UnsupportedEncodingException when getBytes() uses unknown encoding
    */
   @Test
-  public void testClean()
-      throws KeeperException, InterruptedException, SolrServerException,
-          UnsupportedEncodingException {
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+  public void testClean() throws KeeperException, InterruptedException, SolrServerException {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       /* PREPARE */
       String path = "/myPath/isTheBest";
       String data1 = "myStringData1";
@@ -132,7 +133,11 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
 
   @Test
   public void testTraverseZkTree() throws Exception {
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       zkClient.makePath("/testTraverseZkTree/1/1", true, true);
       zkClient.makePath("/testTraverseZkTree/1/2", false, true);
       zkClient.makePath("/testTraverseZkTree/2", false, true);
@@ -160,7 +165,11 @@ public class TestZkMaintenanceUtils extends SolrTestCaseJ4 {
   // SOLR-14993
   @Test
   public void testOneByteFile() throws Exception {
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), 10000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
       byte[] oneByte = new byte[1];
       oneByte[0] = 0x30;
       zkClient.makePath("/test1byte/one", oneByte, true);

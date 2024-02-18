@@ -102,10 +102,12 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     this.collection = collection;
   }
 
+  @Override
   public String toString() {
     return "SolrTable {" + collection + "}";
   }
 
+  @Override
   public RelDataType getRowType(RelDataTypeFactory typeFactory) {
     if (protoRowType == null) {
       protoRowType = schema.getRelDataType(collection);
@@ -211,6 +213,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     return new AbstractEnumerable<>() {
       // Use original fields list to make sure only the fields specified are enumerated
+      @Override
       public Enumerator<Object> enumerator() {
         return new SolrEnumerator(finalStream, fields);
       }
@@ -880,7 +883,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       }
     }
 
-    return adjustedSorts.toArray(new FieldComparator[adjustedSorts.size()]);
+    return adjustedSorts.toArray(new FieldComparator[0]);
   }
 
   private TupleStream handleStats(
@@ -910,11 +913,13 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     return new StatsStream(zk, collection, solrParams, metrics);
   }
 
+  @Override
   public <T> Queryable<T> asQueryable(
       QueryProvider queryProvider, SchemaPlus schema, String tableName) {
     return new SolrQueryable<>(queryProvider, schema, this, tableName);
   }
 
+  @Override
   public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
     final RelOptCluster cluster = context.getCluster();
     return new SolrTableScan(
@@ -928,6 +933,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       super(queryProvider, schema, table, tableName);
     }
 
+    @Override
     public Enumerator<T> enumerator() {
       @SuppressWarnings("unchecked")
       final Enumerable<T> enumerable = (Enumerable<T>) getTable().query(getProperties());

@@ -35,15 +35,18 @@ public class ExternalPaths {
    * and if it is null, those paths will just be relative to 'null' and may not be meaningful.
    */
   public static final String SOURCE_HOME = determineSourceHome();
+
   /**
    * @see #SOURCE_HOME
    */
   public static String WEBAPP_HOME = new File(SOURCE_HOME, "webapp/web").getAbsolutePath();
+
   /**
    * @see #SOURCE_HOME
    */
   public static String DEFAULT_CONFIGSET =
       new File(SOURCE_HOME, "server/solr/configsets/_default/conf").getAbsolutePath();
+
   /**
    * @see #SOURCE_HOME
    */

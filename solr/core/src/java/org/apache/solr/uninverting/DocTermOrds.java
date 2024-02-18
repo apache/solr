@@ -539,7 +539,7 @@ public class DocTermOrds implements Accountable {
         if ((pass << 16) > maxDoc) break;
       }
     }
-    indexedTermsArray = indexedTerms.toArray(new BytesRef[indexedTerms.size()]);
+    indexedTermsArray = indexedTerms.toArray(new BytesRef[0]);
 
     long endTime = System.nanoTime();
 
@@ -603,7 +603,7 @@ public class DocTermOrds implements Accountable {
   private final class OrdWrappedTermsEnum extends BaseTermsEnum {
     private final TermsEnum termsEnum;
     private BytesRef term;
-    private long ord = -indexInterval - 1; // force "real" seek
+    private long ord = -indexInterval - 1L; // force "real" seek
 
     public OrdWrappedTermsEnum(LeafReader reader) throws IOException {
       assert indexedTermsArray != null;
@@ -667,7 +667,7 @@ public class DocTermOrds implements Accountable {
         // we hit the term exactly... lucky us!
         TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(target);
         assert seekStatus == TermsEnum.SeekStatus.FOUND;
-        ord = startIdx << indexIntervalBits;
+        ord = (long) startIdx << indexIntervalBits;
         setTerm();
         assert term != null;
         return SeekStatus.FOUND;
@@ -696,7 +696,7 @@ public class DocTermOrds implements Accountable {
         // seek to the right block
         TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(indexedTermsArray[startIdx]);
         assert seekStatus == TermsEnum.SeekStatus.FOUND;
-        ord = startIdx << indexIntervalBits;
+        ord = (long) startIdx << indexIntervalBits;
         setTerm();
         assert term != null; // should be non-null since it's in the index
       }
@@ -728,7 +728,7 @@ public class DocTermOrds implements Accountable {
         final int idx = (int) (targetOrd >>> indexIntervalBits);
         final BytesRef base = indexedTermsArray[idx];
         // System.out.println("  do seek term=" + base.utf8ToString());
-        ord = idx << indexIntervalBits;
+        ord = (long) idx << indexIntervalBits;
         delta = (int) (targetOrd - ord);
         final TermsEnum.SeekStatus seekStatus = termsEnum.seekCeil(base);
         assert seekStatus == TermsEnum.SeekStatus.FOUND;
@@ -952,7 +952,7 @@ public class DocTermOrds implements Accountable {
             assert te.ord() >= 0;
             return -te.ord() - 1;
           default: /* END */
-            return -numTerms() - 1;
+            return -numTerms() - 1L;
         }
       } catch (IOException e) {
         throw new RuntimeException(e);

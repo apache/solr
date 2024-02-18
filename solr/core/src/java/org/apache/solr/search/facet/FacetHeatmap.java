@@ -109,6 +109,7 @@ public class FacetHeatmap extends FacetRequest {
       super(parent, key);
     }
 
+    @Override
     public FacetHeatmap parse(Object argsObj) {
       assert facet == null;
 

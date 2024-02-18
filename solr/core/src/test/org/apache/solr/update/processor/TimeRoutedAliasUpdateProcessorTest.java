@@ -67,7 +67,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -85,25 +84,17 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   private CloudSolrClient solrClient;
 
   private int lastDocId = 0;
-  private int numDocsDeletedOrFailed = 0;
+  private long numDocsDeletedOrFailed = 0;
 
   @Before
   public void doBefore() throws Exception {
     configureCluster(4).configure();
-    solrClient = getCloudSolrClient(cluster);
+    solrClient = cluster.getSolrClient();
     // log this to help debug potential causes of problems
     if (log.isInfoEnabled()) {
       log.info("SolrClient: {}", solrClient);
       log.info("ClusterStateProvider {}", solrClient.getClusterStateProvider()); // nowarn
     }
-  }
-
-  @After
-  public void doAfter() throws Exception {
-    if (null != solrClient) {
-      solrClient.close();
-    }
-    shutdownCluster();
   }
 
   @Test
@@ -807,7 +798,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       try {
         solrClient.query(col, params("q", "*:*", "rows", "10"));
       } catch (SolrException e) {
-        e.printStackTrace();
+        log.error("Unable to query ", e);
         fail("Unable to query " + col);
       }
     }
@@ -852,7 +843,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   }
 
   private void assertInvariants(String... expectedColls) throws IOException, SolrServerException {
-    final int expectNumFound =
+    final long expectNumFound =
         lastDocId - numDocsDeletedOrFailed; // lastDocId is effectively # generated docs
 
     final List<String> cols =
@@ -864,7 +855,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
         cols.stream().sorted(Collections.reverseOrder()).toArray(),
         cols.toArray());
 
-    int totalNumFound = 0;
+    long totalNumFound = 0;
     Instant colEndInstant = null; // exclusive end
     for (String col : cols) { // ASSUMPTION: reverse sorted order
       final Instant colStartInstant = TimeRoutedAlias.parseInstantFromCollectionName(alias, col);

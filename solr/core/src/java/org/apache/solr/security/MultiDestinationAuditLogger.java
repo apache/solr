@@ -54,7 +54,6 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   private ResourceLoader loader;
   List<AuditLoggerPlugin> plugins = new ArrayList<>();
   List<String> pluginNames = new ArrayList<>();
-  SolrMetricsContext solrMetricsContext;
 
   /**
    * Passes the AuditEvent to all sub plugins in parallel. The event should be a {@link AuditEvent}

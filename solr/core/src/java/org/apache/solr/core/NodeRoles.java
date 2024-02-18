@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 
@@ -37,7 +36,7 @@ public class NodeRoles {
 
   public NodeRoles(String rolesString) {
     Map<Role, String> roles = new EnumMap<>(Role.class);
-    if (StringUtils.isEmpty(rolesString)) {
+    if (StrUtils.isNullOrEmpty(rolesString)) {
       rolesString = DEFAULT_ROLES_STRING;
     }
     List<String> rolesList = StrUtils.splitSmart(rolesString, ',');

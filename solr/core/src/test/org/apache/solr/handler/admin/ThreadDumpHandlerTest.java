@@ -172,6 +172,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
       assertFalse("ownerT is still alive", ownerT.isAlive());
       blockedT.join(1000);
       assertFalse("blockedT is still alive", blockedT.isAlive());
+      assertTrue(failures.isEmpty());
     }
   }
 
@@ -298,6 +299,7 @@ public class ThreadDumpHandlerTest extends SolrTestCaseJ4 {
       assertFalse("ownerT is still alive", ownerT.isAlive());
       blockedT.join(1000);
       assertFalse("blockedT is still alive", blockedT.isAlive());
+      assertTrue(failures.isEmpty());
     }
   }
 

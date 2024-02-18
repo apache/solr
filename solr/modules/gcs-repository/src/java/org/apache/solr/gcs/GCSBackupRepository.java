@@ -38,10 +38,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -56,19 +54,19 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.backup.repository.AbstractBackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** {@link BackupRepository} implementation that stores files in Google Cloud Storage ("GCS"). */
-public class GCSBackupRepository implements BackupRepository {
+public class GCSBackupRepository extends AbstractBackupRepository {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int LARGE_BLOB_THRESHOLD_BYTE_SIZE = 5 * 1024 * 1024;
   private static final Storage.BlobWriteOption[] NO_WRITE_OPTIONS = new Storage.BlobWriteOption[0];
 
   protected Storage storage;
 
-  private NamedList<?> config = null;
   protected String bucketName = null;
   protected String credentialPath = null;
   protected int writeBufferSizeBytes;
@@ -98,7 +96,7 @@ public class GCSBackupRepository implements BackupRepository {
 
   @Override
   public void init(NamedList<?> args) {
-    this.config = args;
+    super.init(args);
     final GCSConfigParser configReader = new GCSConfigParser();
     final GCSConfigParser.GCSConfig parsedConfig = configReader.parseConfiguration(config);
 
@@ -206,7 +204,7 @@ public class GCSBackupRepository implements BackupRepository {
     final String blobName = appendTrailingSeparatorIfNecessary(path.toString());
 
     final String pathStr = blobName;
-    final LinkedList<String> result = new LinkedList<>();
+    final List<String> result = new ArrayList<>();
     storage
         .list(
             bucketName,
@@ -324,8 +322,7 @@ public class GCSBackupRepository implements BackupRepository {
   }
 
   @Override
-  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
-      throws IOException {
+  public void delete(URI path, Collection<String> files) {
     if (files.isEmpty()) {
       return;
     }
@@ -334,14 +331,7 @@ public class GCSBackupRepository implements BackupRepository {
         files.stream()
             .map(file -> BlobId.of(bucketName, prefix + file))
             .collect(Collectors.toList());
-    List<Boolean> result = storage.delete(blobDeletes);
-    if (!ignoreNoSuchFileException) {
-      int failedDelete = result.indexOf(Boolean.FALSE);
-      if (failedDelete != -1) {
-        throw new NoSuchFileException(
-            "File " + blobDeletes.get(failedDelete).getName() + " was not found");
-      }
-    }
+    storage.delete(blobDeletes);
   }
 
   @Override
@@ -352,8 +342,10 @@ public class GCSBackupRepository implements BackupRepository {
     blobName = appendTrailingSeparatorIfNecessary(blobName);
     blobName += destFileName;
     final BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, blobName).build();
-    try (ChecksumIndexInput input =
-        sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+    try (IndexInput input =
+        shouldVerifyChecksum
+            ? sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)
+            : sourceDir.openInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
       if (input.length() <= CodecUtil.footerLength()) {
         throw new CorruptIndexException("file is too small:" + input.length(), input);
       }
@@ -393,14 +385,18 @@ public class GCSBackupRepository implements BackupRepository {
   @Override
   public void close() throws IOException {}
 
-  private void writeBlobMultipart(BlobInfo blobInfo, ChecksumIndexInput indexInput, int blobSize)
+  private void writeBlobMultipart(BlobInfo blobInfo, IndexInput indexInput, int blobSize)
       throws IOException {
     byte[] bytes = new byte[blobSize];
-    indexInput.readBytes(bytes, 0, blobSize - CodecUtil.footerLength());
-    long checksum = CodecUtil.checkFooter(indexInput);
-    ByteBuffer footerBuffer =
-        ByteBuffer.wrap(bytes, blobSize - CodecUtil.footerLength(), CodecUtil.footerLength());
-    writeFooter(checksum, footerBuffer);
+    if (shouldVerifyChecksum) {
+      indexInput.readBytes(bytes, 0, blobSize - CodecUtil.footerLength());
+      long checksum = CodecUtil.checkFooter((ChecksumIndexInput) indexInput);
+      ByteBuffer footerBuffer =
+          ByteBuffer.wrap(bytes, blobSize - CodecUtil.footerLength(), CodecUtil.footerLength());
+      writeFooter(checksum, footerBuffer);
+    } else {
+      indexInput.readBytes(bytes, 0, blobSize);
+    }
     try {
       storage.create(blobInfo, bytes, Storage.BlobTargetOption.doesNotExist());
     } catch (final StorageException se) {
@@ -411,15 +407,17 @@ public class GCSBackupRepository implements BackupRepository {
     }
   }
 
-  private void writeBlobResumable(BlobInfo blobInfo, ChecksumIndexInput indexInput)
-      throws IOException {
+  private void writeBlobResumable(BlobInfo blobInfo, IndexInput indexInput) throws IOException {
     try {
       final WriteChannel writeChannel = storage.writer(blobInfo, getDefaultBlobWriteOptions());
 
       ByteBuffer buffer = ByteBuffer.allocate(writeBufferSizeBytes);
       writeChannel.setChunkSize(writeBufferSizeBytes);
 
-      long remain = indexInput.length() - CodecUtil.footerLength();
+      long remain =
+          shouldVerifyChecksum
+              ? indexInput.length() - CodecUtil.footerLength()
+              : indexInput.length();
       while (remain > 0) {
         // reading
         int byteReads = (int) Math.min(buffer.capacity(), remain);
@@ -432,9 +430,11 @@ public class GCSBackupRepository implements BackupRepository {
         buffer.clear();
         remain -= byteReads;
       }
-      long checksum = CodecUtil.checkFooter(indexInput);
-      ByteBuffer bytes = getFooter(checksum);
-      writeChannel.write(bytes);
+      if (shouldVerifyChecksum) {
+        long checksum = CodecUtil.checkFooter((ChecksumIndexInput) indexInput);
+        ByteBuffer bytes = getFooter(checksum);
+        writeChannel.write(bytes);
+      }
       writeChannel.close();
     } catch (final StorageException se) {
       if (se.getCode() == HTTP_PRECON_FAILED) {

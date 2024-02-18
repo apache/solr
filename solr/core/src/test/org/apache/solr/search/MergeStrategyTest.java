@@ -107,14 +107,17 @@ public class MergeStrategyTest extends BaseDistributedSearchTestCase {
           @Override
           public void merge(ResponseBuilder rb, ShardRequest sreq) {}
 
+          @Override
           public boolean mergesIds() {
             return true;
           }
 
+          @Override
           public boolean handlesMergeFields() {
             return false;
           }
 
+          @Override
           public void handleMergeFields(ResponseBuilder rb, SolrIndexSearcher searcher) {}
 
           @Override
@@ -128,14 +131,17 @@ public class MergeStrategyTest extends BaseDistributedSearchTestCase {
           @Override
           public void merge(ResponseBuilder rb, ShardRequest sreq) {}
 
+          @Override
           public boolean mergesIds() {
             return true;
           }
 
+          @Override
           public boolean handlesMergeFields() {
             return false;
           }
 
+          @Override
           public void handleMergeFields(ResponseBuilder rb, SolrIndexSearcher searcher) {}
 
           @Override
@@ -149,14 +155,17 @@ public class MergeStrategyTest extends BaseDistributedSearchTestCase {
           @Override
           public void merge(ResponseBuilder rb, ShardRequest sreq) {}
 
+          @Override
           public boolean mergesIds() {
             return false;
           }
 
+          @Override
           public boolean handlesMergeFields() {
             return false;
           }
 
+          @Override
           public void handleMergeFields(ResponseBuilder rb, SolrIndexSearcher searcher) {}
 
           @Override

@@ -94,18 +94,30 @@ public class SliceMutator {
             cloudManager
                 .getClusterStateProvider()
                 .getClusterProperty(ZkStateReader.URL_SCHEME, "http"));
-    Replica replica =
-        new Replica(
-            coreNodeName,
-            Utils.makeMap(
-                ZkStateReader.CORE_NAME_PROP, message.getStr(ZkStateReader.CORE_NAME_PROP),
-                ZkStateReader.STATE_PROP, message.getStr(ZkStateReader.STATE_PROP),
-                ZkStateReader.NODE_NAME_PROP, nodeName,
-                ZkStateReader.BASE_URL_PROP, baseUrl,
-                ZkStateReader.REPLICA_TYPE, message.get(ZkStateReader.REPLICA_TYPE)),
-            coll,
-            slice);
 
+    Map<String, Object> replicaProps =
+        Utils.makeMap(
+            ZkStateReader.CORE_NAME_PROP,
+            message.getStr(ZkStateReader.CORE_NAME_PROP),
+            ZkStateReader.STATE_PROP,
+            message.getStr(ZkStateReader.STATE_PROP),
+            ZkStateReader.NODE_NAME_PROP,
+            nodeName,
+            ZkStateReader.BASE_URL_PROP,
+            baseUrl,
+            ZkStateReader.FORCE_SET_STATE_PROP,
+            "false",
+            ZkStateReader.REPLICA_TYPE,
+            message.get(ZkStateReader.REPLICA_TYPE));
+
+    // add user-defined properties
+    for (String prop : message.keySet()) {
+      if (prop.startsWith(CollectionAdminParams.PROPERTY_PREFIX)) {
+        replicaProps.put(prop, message.get(prop));
+      }
+    }
+
+    Replica replica = new Replica(coreNodeName, replicaProps, coll, slice);
     return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
   }
 
@@ -160,7 +172,7 @@ public class SliceMutator {
           ZkCoreNodeProps.getCoreUrl(
               replica.getBaseUrl(), replica.getStr(ZkStateReader.CORE_NAME_PROP));
 
-      if (replica == oldLeader && !coreURL.equals(leaderUrl)) {
+      if (replica.equals(oldLeader) && !coreURL.equals(leaderUrl)) {
         replica = ReplicaMutator.unsetLeader(replica);
       } else if (coreURL.equals(leaderUrl)) {
         newLeader = replica = ReplicaMutator.setLeader(replica);

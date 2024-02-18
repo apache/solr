@@ -47,14 +47,22 @@ public class WrapperDownloader {
   public static void main(String[] args) {
     if (args.length != 1) {
       System.err.println("Usage: java WrapperDownloader.java <destination>");
-      System.exit(1);
+      System.exit(2);
     }
 
     try {
+      checkVersion();
       new WrapperDownloader().run(Paths.get(args[0]));
     } catch (Exception e) {
       System.err.println("ERROR: " + e.getMessage());
-      System.exit(1);
+      System.exit(3);
+    }
+  }
+
+  public static void checkVersion() {
+    int major = Runtime.getRuntime().version().feature();
+    if (major < 11 || major > 21) {
+      throw new IllegalStateException("java version must be between 11 and 21, your version: " + major);
     }
   }
 

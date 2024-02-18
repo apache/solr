@@ -42,18 +42,20 @@ public class ExportQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "xport";
 
+  @Override
   public QParser createParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
     return new ExportQParser(qstr, localParams, params, request);
   }
 
-  public class ExportQParser extends QParser {
+  public static class ExportQParser extends QParser {
 
     public ExportQParser(
         String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
       super(qstr, localParams, params, request);
     }
 
+    @Override
     public Query parse() throws SyntaxError {
       try {
         return new ExportQuery(localParams, params, req);
@@ -63,21 +65,24 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
   }
 
-  public class ExportQuery extends RankQuery {
+  public static class ExportQuery extends RankQuery {
     private Query mainQuery;
     private Object id;
 
+    @Override
     public RankQuery clone() {
       ExportQuery clone = new ExportQuery();
       clone.id = id;
       return clone;
     }
 
+    @Override
     public RankQuery wrap(Query mainQuery) {
       this.mainQuery = mainQuery;
       return this;
     }
 
+    @Override
     public MergeStrategy getMergeStrategy() {
       return null;
     }
@@ -88,15 +93,17 @@ public class ExportQParserPlugin extends QParserPlugin {
       return mainQuery.createWeight(searcher, scoreMode, boost);
     }
 
+    @Override
     public Query rewrite(IndexReader reader) throws IOException {
       Query q = mainQuery.rewrite(reader);
-      if (q == mainQuery) {
+      if (q.equals(mainQuery)) {
         return super.rewrite(reader);
       } else {
         return clone().wrap(q);
       }
     }
 
+    @Override
     public TopDocsCollector<ScoreDoc> getTopDocsCollector(
         int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
       int leafCount = searcher.getTopReaderContext().leaves().size();
@@ -104,10 +111,12 @@ public class ExportQParserPlugin extends QParserPlugin {
       return new ExportCollector(sets);
     }
 
+    @Override
     public int hashCode() {
       return classHash() + 31 * id.hashCode() + 31 * Objects.hash(mainQuery);
     }
 
+    @Override
     public boolean equals(Object other) {
       return sameClassAs(other) && equalsTo(getClass().cast(other));
     }
@@ -116,6 +125,7 @@ public class ExportQParserPlugin extends QParserPlugin {
       return Objects.equals(id, other.id) && Objects.equals(mainQuery, other.mainQuery);
     }
 
+    @Override
     public String toString(String s) {
       return s;
     }
@@ -168,6 +178,7 @@ public class ExportQParserPlugin extends QParserPlugin {
       return docs;
     }
 
+    @Override
     public TopDocs topDocs(int start, int howMany) {
 
       assert (sets != null);

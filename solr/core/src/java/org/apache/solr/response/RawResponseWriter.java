@@ -38,6 +38,9 @@ import org.apache.solr.request.SolrQueryRequest;
  * @since solr 1.3
  */
 public class RawResponseWriter implements BinaryQueryResponseWriter {
+
+  public static final String CONTENT_TYPE = "application/vnd.apache.solr.raw";
+
   /**
    * The key that should be used to add a ContentStream to the SolrQueryResponse if you intend to
    * use this Writer.
@@ -45,6 +48,14 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
   public static final String CONTENT = "content";
 
   private String _baseWriter = null;
+
+  /**
+   * A fallback writer used for requests that don't return raw content and that aren't associated
+   * with a particular SolrCore
+   *
+   * <p>Populated upon first use.
+   */
+  private QueryResponseWriter defaultWriter;
 
   @Override
   public void init(NamedList<?> n) {
@@ -56,9 +67,20 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
     }
   }
 
-  // Even if this is null, it should be ok
   protected QueryResponseWriter getBaseWriter(SolrQueryRequest request) {
-    return request.getCore().getQueryResponseWriter(_baseWriter);
+    if (request.getCore() != null) {
+      return request.getCore().getQueryResponseWriter(_baseWriter);
+    }
+
+    // Requests to a specific core already have writers, but we still need a 'default writer' for
+    // non-core
+    // (i.e. container-level) APIs
+    synchronized (this) {
+      if (defaultWriter == null) {
+        defaultWriter = new JSONResponseWriter();
+      }
+    }
+    return defaultWriter;
   }
 
   @Override

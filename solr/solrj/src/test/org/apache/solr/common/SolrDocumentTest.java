@@ -247,12 +247,9 @@ public class SolrDocumentTest extends SolrTestCase {
   }
 
   public void testMapInterface() {
-    SolrDocument doc = new SolrDocument();
-    assertTrue(doc instanceof Map);
     assertTrue(Map.class.isAssignableFrom(SolrDocument.class));
 
     SolrInputDocument indoc = new SolrInputDocument();
-    assertTrue(indoc instanceof Map);
     assertTrue(Map.class.isAssignableFrom(indoc.getClass()));
   }
 }

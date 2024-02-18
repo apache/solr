@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import static java.util.Collections.singletonList;
 
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -31,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.ZkTestServer.LimitViolationAction;
@@ -76,6 +76,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     fixShardCount(3);
   }
 
+  @Override
   protected String getCloudSolrConfig() {
     return "solrconfig-tlog.xml";
   }
@@ -239,7 +240,10 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     SolrInputDocument doc = new SolrInputDocument();
 
     addFields(doc, fields);
-    addFields(doc, "rnd_s", RandomStringUtils.random(random().nextInt(100) + 100));
+    addFields(
+        doc,
+        "rnd_s",
+        RandomStrings.randomAsciiLettersOfLength(random(), random().nextInt(100) + 100));
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);

@@ -114,12 +114,6 @@ public class MetricUtilsTest extends SolrTestCaseJ4 {
         };
     registry.register("memory.expected.error", error);
 
-    MetricsMap metricsMapWithMap =
-        new MetricsMap(
-            (detailed, map) -> {
-              map.put("foo", "bar");
-            });
-    registry.register("mapWithMap", metricsMapWithMap);
     MetricsMap metricsMap =
         new MetricsMap(
             map -> {

@@ -20,6 +20,7 @@ package org.apache.solr.search;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.query.FilterQuery;
@@ -27,8 +28,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.join.FiltersQParser;
 
 /**
- * Create a boolean query from sub queries. Sub queries can be marked as must, must_not, filter or
- * should
+ * Create a boolean query from sub queries. Sub queries can be marked as {@code must}, {@code
+ * must_not}, {@code filter}, or {@code should}.
  *
  * <p>Example: <code>{!bool should=title:lucene should=title:solr must_not=id:1}</code>
  */
@@ -42,6 +43,13 @@ public class BoolQParserPlugin extends QParserPlugin {
       @Override
       public Query parse() throws SyntaxError {
         return parseImpl();
+      }
+
+      @Override
+      protected BooleanQuery.Builder createBuilder() {
+        BooleanQuery.Builder builder = super.createBuilder();
+        builder.setMinimumNumberShouldMatch(localParams.getInt("mm", 0));
+        return builder;
       }
 
       @Override
@@ -60,7 +68,7 @@ public class BoolQParserPlugin extends QParserPlugin {
 
       @Override
       protected Map<QParser, BooleanClause.Occur> clauses() throws SyntaxError {
-        Map<QParser, BooleanClause.Occur> clauses = new IdentityHashMap<>();
+        IdentityHashMap<QParser, BooleanClause.Occur> clauses = new IdentityHashMap<>();
         SolrParams solrParams = SolrParams.wrapDefaults(localParams, params);
         addQueries(clauses, solrParams.getParams("must"), BooleanClause.Occur.MUST);
         addQueries(clauses, solrParams.getParams("must_not"), BooleanClause.Occur.MUST_NOT);

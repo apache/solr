@@ -44,7 +44,7 @@ public class CSVRequestHandlerTest extends SolrTestCaseJ4 {
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
 
     CSVLoader loader = new CSVLoader();
-    loader.load(req, rsp, new ContentStreamBase.StringStream.StringStream(csvString), p);
+    loader.load(req, rsp, new ContentStreamBase.StringStream(csvString), p);
 
     AddUpdateCommand add = p.addCommands.get(0);
     assertEquals(200, add.commitWithin);

@@ -22,22 +22,30 @@ pluginManagement {
     }
 }
 
+plugins {
+    id 'com.gradle.enterprise' version '3.15.1'
+    id 'com.gradle.common-custom-user-data-gradle-plugin' version '1.12'
+}
+
+apply from: file('gradle/ge.gradle')
+
 rootProject.name = "solr-root"
 
 includeBuild("dev-tools/solr-missing-doclet")
 
+include "solr:api"
 include "solr:solrj"
 include "solr:solrj-zookeeper"
+include "solr:solrj-streaming"
 include "solr:core"
 include "solr:server"
 include "solr:modules:analysis-extras"
-include "solr:modules:analytics"
 include "solr:modules:clustering"
+include "solr:modules:opentelemetry"
 include "solr:modules:extraction"
 include "solr:modules:gcs-repository"
 include "solr:modules:hadoop-auth"
 include "solr:modules:hdfs"
-include "solr:modules:jaegertracer-configurator"
 include "solr:modules:jwt-auth"
 include "solr:modules:langid"
 include "solr:modules:ltr"

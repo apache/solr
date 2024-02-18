@@ -32,7 +32,7 @@ public class Checksum {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof Checksum)) return false;
     Checksum checksum = (Checksum) o;
     return size == checksum.size && this.checksum == checksum.checksum;
   }

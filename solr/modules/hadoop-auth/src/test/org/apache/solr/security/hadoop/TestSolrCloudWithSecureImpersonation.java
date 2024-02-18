@@ -30,7 +30,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -38,8 +37,10 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -59,7 +60,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     org.apache.hadoop.security.Groups hGroups =
         new org.apache.hadoop.security.Groups(new Configuration());
     try {
-      List<String> g = hGroups.getGroups(System.getProperty("user.name"));
+      List<String> g = hGroups.getGroups(EnvUtils.getProperty("user.name"));
       if (g != null && g.size() > 0) {
         group = g.get(0);
       }
@@ -112,7 +113,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     SolrRequestParsers.DEFAULT.setAddRequestHeadersToContext(true);
     System.setProperty("collectionsHandler", ImpersonatorCollectionsHandler.class.getName());
 
-    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
+    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig());
     JettySolrRunner runner = miniCluster.getJettySolrRunners().get(0);
     solrClient = new HttpSolrClient.Builder(runner.getBaseUrl().toString()).build();
   }
@@ -279,7 +280,8 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @Test
   public void testProxyValidateGroup() throws Exception {
-    solrClient.request(getProxyRequest("anyHostUsersGroup", System.getProperty("user.name"), null));
+    solrClient.request(
+        getProxyRequest("anyHostUsersGroup", EnvUtils.getProperty("user.name"), null));
     assertTrue(ImpersonatorCollectionsHandler.called.get());
   }
 
@@ -338,7 +340,8 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     // try a command to each node, one of them must be forwarded
     for (JettySolrRunner jetty : miniCluster.getJettySolrRunners()) {
       try (HttpSolrClient client =
-          new HttpSolrClient.Builder(jetty.getBaseUrl().toString() + "/" + collectionName)
+          new HttpSolrClient.Builder(jetty.getBaseUrl().toString())
+              .withDefaultCollection(collectionName)
               .build()) {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("q", "*:*");

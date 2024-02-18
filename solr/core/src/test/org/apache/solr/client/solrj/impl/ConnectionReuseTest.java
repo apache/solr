@@ -17,7 +17,10 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,9 +47,12 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressSSL
 public class ConnectionReuseTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private AtomicInteger id = new AtomicInteger();
   private HttpClientContext context = HttpClientContext.create();
@@ -77,19 +83,33 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
     switch (random().nextInt(3)) {
       case 0:
         // currently, only testing with 1 thread
-        return getConcurrentUpdateSolrClient(url.toString() + "/" + COLLECTION, httpClient, 6, 1);
+        return new ConcurrentUpdateSolrClient.Builder(url.toString())
+            .withDefaultCollection(COLLECTION)
+            .withHttpClient(httpClient)
+            .withQueueSize(6)
+            .withThreadCount(1)
+            .build();
       case 1:
-        return getHttpSolrClient(url.toString() + "/" + COLLECTION, httpClient);
+        return new HttpSolrClient.Builder(url.toString())
+            .withDefaultCollection(COLLECTION)
+            .withHttpClient(httpClient)
+            .build();
       case 2:
-        CloudSolrClient client =
-            getCloudSolrClient(
-                cluster.getZkServer().getZkAddress(),
-                random().nextBoolean(),
-                httpClient,
-                30000,
-                60000);
-        client.setDefaultCollection(COLLECTION);
-        return client;
+        var builder =
+            new RandomizingCloudSolrClientBuilder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty());
+        boolean shardLeadersOnly = random().nextBoolean();
+        if (shardLeadersOnly) {
+          builder.sendUpdatesOnlyToShardLeaders();
+        } else {
+          builder.sendUpdatesToAllReplicasInShard();
+        }
+        builder.withDefaultCollection(COLLECTION);
+        return builder
+            .withHttpClient(httpClient)
+            .withConnectionTimeout(30000)
+            .withSocketTimeout(60000)
+            .build();
     }
     throw new RuntimeException("impossible");
   }
@@ -124,7 +144,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
           try {
             client.add(c.solrDoc);
           } catch (Exception e) {
-            e.printStackTrace();
+            log.error("error adding doc", e);
           }
           if (!done
               && i > 0

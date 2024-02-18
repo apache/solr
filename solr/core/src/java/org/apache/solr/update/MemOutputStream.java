@@ -17,7 +17,7 @@
 package org.apache.solr.update;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.common.util.FastOutputStream;
 
@@ -25,7 +25,7 @@ import org.apache.solr.common.util.FastOutputStream;
  * @lucene.internal
  */
 public class MemOutputStream extends FastOutputStream {
-  public List<byte[]> buffers = new LinkedList<>();
+  public List<byte[]> buffers = new ArrayList<>();
 
   public MemOutputStream(byte[] tempBuffer) {
     super(null, tempBuffer, 0);

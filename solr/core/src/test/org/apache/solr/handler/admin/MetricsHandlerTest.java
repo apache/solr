@@ -93,6 +93,10 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     // response wasn't serialized, so we get here whatever MetricUtils produced instead of NamedList
     assertNotNull(((MapWriter) o)._get("count", null));
     assertEquals(0L, ((MapWriter) nl.get("SEARCHER.new.errors"))._get("count", null));
+    assertNotNull(nl.get("INDEX.segments")); // int gauge
+    assertTrue((int) ((MapWriter) nl.get("INDEX.segments"))._get("value", null) >= 0);
+    assertNotNull(nl.get("INDEX.sizeInBytes")); // long gauge
+    assertTrue((long) ((MapWriter) nl.get("INDEX.sizeInBytes"))._get("value", null) >= 0);
     nl = (NamedList<?>) values.get("solr.node");
     assertNotNull(nl.get("CONTAINER.cores.loaded")); // int gauge
     assertEquals(1, ((MapWriter) nl.get("CONTAINER.cores.loaded"))._get("value", null));
@@ -240,9 +244,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertNotNull(values.get("metrics"));
     values = (NamedList<?>) values.get("metrics");
     assertEquals(1, values.size());
-    assertEquals(13, ((NamedList<?>) values.get("solr.node")).size());
     assertNotNull(values.get("solr.node"));
     values = (NamedList<?>) values.get("solr.node");
+    assertEquals(27, values.size());
     assertNotNull(values.get("CONTAINER.cores.lazy")); // this is a gauge node
     assertNotNull(values.get("CONTAINER.threadPool.coreContainerWorkExecutor.completed"));
     assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
@@ -266,7 +270,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     values = (NamedList<?>) values.get("metrics");
     assertNotNull(values.get("solr.node"));
     values = (NamedList<?>) values.get("solr.node");
-    assertEquals(5, values.size());
+    assertEquals(7, values.size());
     assertNotNull(values.get("CONTAINER.threadPool.coreContainerWorkExecutor.completed"));
     assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
 

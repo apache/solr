@@ -172,6 +172,7 @@ public class TestToleratedUpdateError extends SolrTestCase {
 
   private static final Coppier MAP_COPPIER =
       new Coppier() {
+        @Override
         public ToleratedUpdateError copy(ToleratedUpdateError in) {
           return ToleratedUpdateError.parseMap(in.getSimpleMap());
         }
@@ -179,6 +180,7 @@ public class TestToleratedUpdateError extends SolrTestCase {
 
   private static final Coppier METADATA_COPPIER =
       new Coppier() {
+        @Override
         public ToleratedUpdateError copy(ToleratedUpdateError in) {
           return ToleratedUpdateError.parseMetadataIfToleratedUpdateError(
               in.getMetadataKey(), in.getMetadataValue());

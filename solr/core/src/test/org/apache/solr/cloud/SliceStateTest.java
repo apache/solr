@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -59,7 +60,8 @@ public class SliceStateTest extends SolrTestCaseJ4 {
 
     ClusterState clusterState = new ClusterState(liveNodes, collectionStates);
     byte[] bytes = Utils.toJSON(clusterState);
-    ClusterState loadedClusterState = ClusterState.createFromJson(-1, bytes, liveNodes);
+    ClusterState loadedClusterState =
+        ClusterState.createFromJson(-1, bytes, liveNodes, Instant.now(), null);
 
     assertSame(
         "Default state not set to active",

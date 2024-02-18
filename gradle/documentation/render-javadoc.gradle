@@ -29,7 +29,7 @@ allprojects {
     }
 
     dependencies {
-      missingdoclet "org.apache.lucene.tools:missing-doclet"
+      missingdoclet "org.apache.solr.tools:missing-doclet"
     }
 
     ext {
@@ -49,7 +49,7 @@ allprojects {
       description "Generates Javadoc API documentation for each module. This directly invokes javadoc tool."
       group "documentation"
 
-      taskResources = resources
+      taskResources = project.relativePath(resources)
       dependsOn sourceSets.main.compileClasspath
       classpath = sourceSets.main.compileClasspath
       srcDirSet = sourceSets.main.java
@@ -61,12 +61,14 @@ allprojects {
       description "Generates Javadoc API documentation for the site (relative links)."
       group "documentation"
 
-      taskResources = resources
+      taskResources = project.relativePath(resources)
       dependsOn sourceSets.main.compileClasspath
       classpath = sourceSets.main.compileClasspath;
       srcDirSet = sourceSets.main.java;
 
       relativeProjectLinks = true
+
+      enableSearch = true
 
       // Place the documentation under Lucene or Solr's documentation directory.
       // docroot is defined in 'documentation.gradle'
@@ -85,8 +87,8 @@ allprojects {
     title = "Solr ${project.version} ${project.name} API"
 
     offlineLinks += [
-        "https://docs.oracle.com/en/java/javase/11/docs/api/": javaJavadocPackages,
-        "https://junit.org/junit4/javadoc/4.12/": junitJavadocPackages
+        "https://docs.oracle.com/en/java/javase/11/docs/api/": project.relativePath(javaJavadocPackages),
+        "https://junit.org/junit4/javadoc/4.12/": project.relativePath(junitJavadocPackages)
     ]
 
     solrDocUrl = provider({ rootProject.solrDocUrl })
@@ -112,17 +114,6 @@ configure(project(":solr:modules:analysis-extras")) {
     javadocMissingIgnore = [
         "org.apache.solr.schema",
         "org.apache.solr.update.processor"
-    ]
-  }
-}
-
-configure(project(":solr:modules:analytics")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages SOLR-15604
-    javadocMissingIgnore = [
-        "org.apache.solr.handler",
-        "org.apache.solr.handler.component",
-        "org.apache.solr.response"
     ]
   }
 }
@@ -160,6 +151,7 @@ configure(project(":solr:test-framework")) {
         "org.apache.solr",
         "org.apache.solr.analysis",
         "org.apache.solr.cloud",
+        "org.apache.solr.cloud.api.collections",
         "org.apache.solr.common.cloud",
         "org.apache.solr.core",
         "org.apache.solr.handler",
@@ -229,6 +221,9 @@ class RenderJavadocTask extends DefaultTask {
   boolean linksource = false
 
   @Input
+  boolean enableSearch = false
+
+  @Input
   boolean relativeProjectLinks = false
 
   @Input
@@ -296,7 +291,9 @@ class RenderJavadocTask extends DefaultTask {
     opts << [ '-encoding', 'UTF-8' ]
     opts << [ '-charset', 'UTF-8' ]
     opts << [ '-docencoding', 'UTF-8' ]
-    opts << '-noindex'
+    if (!enableSearch) {
+      opts << '-noindex'
+    }
     opts << '-author'
     opts << '-version'
     if (linksource) {

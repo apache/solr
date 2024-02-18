@@ -19,11 +19,13 @@ package org.apache.solr.search.join;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortField.Type;
@@ -98,19 +100,11 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (obj == null) return false;
-      if (getClass() != obj.getClass()) return false;
+      if (!(obj instanceof BlockJoinSortFieldValueSource)) return false;
       BlockJoinSortFieldValueSource other = (BlockJoinSortFieldValueSource) obj;
-      if (childField == null) {
-        if (other.childField != null) return false;
-      } else if (!childField.equals(other.childField)) return false;
-      if (childFilter == null) {
-        if (other.childFilter != null) return false;
-      } else if (!childFilter.equals(other.childFilter)) return false;
-      if (parentFilter == null) {
-        if (other.parentFilter != null) return false;
-      } else if (!parentFilter.equals(other.parentFilter)) return false;
-      return true;
+      return Objects.equals(childField, other.childField)
+          && Objects.equals(childFilter, other.childFilter)
+          && Objects.equals(parentFilter, other.parentFilter);
     }
 
     @Override
@@ -131,8 +125,8 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
           childField.getName(), type, reverse, parentFilter, childFilter) {
         @SuppressWarnings("unchecked")
         @Override
-        public FieldComparator<?> getComparator(int numHits, boolean enableSkipping) {
-          final FieldComparator<?> comparator = super.getComparator(numHits, enableSkipping);
+        public FieldComparator<?> getComparator(int numHits, Pruning pruning) {
+          final FieldComparator<?> comparator = super.getComparator(numHits, pruning);
           return type == Type.STRING
               ? new BytesToStringComparator((FieldComparator<BytesRef>) comparator)
               : comparator;
@@ -190,7 +184,7 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
       childFilter =
           BlockJoinParentQParser.getCachedBitSetProducer(fp.getReq(), bjQ.getChildQuery());
 
-      if (sortFieldName == null || sortFieldName.equals("")) {
+      if (sortFieldName == null || sortFieldName.isEmpty()) {
         throw new SyntaxError("field is omitted in " + fp.getString());
       }
 

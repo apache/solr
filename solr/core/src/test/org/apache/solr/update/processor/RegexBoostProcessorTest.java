@@ -62,6 +62,7 @@ public class RegexBoostProcessorTest extends SolrTestCaseJ4 {
     factory = null;
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     document = new SolrInputDocument();

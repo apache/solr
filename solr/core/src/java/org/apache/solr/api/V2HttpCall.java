@@ -23,15 +23,14 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN_OR_REMOTEQ
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEQUERY;
 
-import io.opentracing.Span;
-import io.opentracing.tag.Tags;
+import io.opentelemetry.api.trace.Span;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,13 +38,12 @@ import java.util.Set;
 import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.annotation.SolrThreadSafe;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -65,13 +63,14 @@ import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.servlet.cache.Method;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // class that handle the '/v2' path
-@SolrThreadSafe
+@ThreadSafe
 public class V2HttpCall extends HttpSolrCall {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private Api api;
@@ -91,6 +90,7 @@ public class V2HttpCall extends HttpSolrCall {
     super(solrDispatchFilter, cc, request, response, retry);
   }
 
+  @Override
   @SuppressForbidden(
       reason =
           "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
@@ -137,7 +137,7 @@ public class V2HttpCall extends HttpSolrCall {
         assert core == null;
       }
 
-      if ("c".equals(prefix) || "collections".equals(prefix)) {
+      if (pathSegments.size() > 1 && ("c".equals(prefix) || "collections".equals(prefix))) {
         origCorename = pathSegments.get(1);
 
         DocCollection collection =
@@ -148,6 +148,11 @@ public class V2HttpCall extends HttpSolrCall {
                 SolrException.ErrorCode.BAD_REQUEST, "no such collection or alias");
           }
         } else {
+          // Certain HTTP methods are only used for admin APIs, check for those and short-circuit
+          if (List.of("delete").contains(req.getMethod().toLowerCase(Locale.ROOT))) {
+            initAdminRequest(path);
+            return;
+          }
           boolean isPreferLeader = (path.endsWith("/update") || path.contains("/update/"));
           core = getCoreByCollection(collection.getName(), isPreferLeader);
           if (core == null) {
@@ -313,7 +318,7 @@ public class V2HttpCall extends HttpSolrCall {
   }
 
   public static class CompositeApi extends Api {
-    private LinkedList<Api> apis = new LinkedList<>();
+    private final List<Api> apis = new ArrayList<>();
 
     public CompositeApi(Api api) {
       super(ApiBag.EMPTY_SPEC);
@@ -334,14 +339,19 @@ public class V2HttpCall extends HttpSolrCall {
   }
 
   private boolean invokeJerseyRequest(
-      CoreContainer cores, SolrCore core, ApplicationHandler primary, SolrQueryResponse rsp) {
-    return invokeJerseyRequest(cores, core, primary, rsp, Map.of());
+      CoreContainer cores,
+      SolrCore core,
+      ApplicationHandler jerseyHandler,
+      PluginBag<SolrRequestHandler> requestHandlers,
+      SolrQueryResponse rsp) {
+    return invokeJerseyRequest(cores, core, jerseyHandler, requestHandlers, rsp, Map.of());
   }
 
   private boolean invokeJerseyRequest(
       CoreContainer cores,
       SolrCore core,
       ApplicationHandler jerseyHandler,
+      PluginBag<SolrRequestHandler> requestHandlers,
       SolrQueryResponse rsp,
       Map<String, String> additionalProperties) {
     final ContainerRequest containerRequest =
@@ -352,6 +362,8 @@ public class V2HttpCall extends HttpSolrCall {
     containerRequest.setProperty(RequestContextKeys.SOLR_QUERY_REQUEST, solrReq);
     containerRequest.setProperty(RequestContextKeys.SOLR_QUERY_RESPONSE, rsp);
     containerRequest.setProperty(RequestContextKeys.CORE_CONTAINER, cores);
+    containerRequest.setProperty(
+        RequestContextKeys.RESOURCE_TO_RH_MAPPING, requestHandlers.getJaxrsRegistry());
     containerRequest.setProperty(RequestContextKeys.HTTP_SERVLET_REQ, req);
     containerRequest.setProperty(RequestContextKeys.REQUEST_TYPE, requestType);
     containerRequest.setProperty(RequestContextKeys.SOLR_PARAMS, queryParams);
@@ -398,7 +410,12 @@ public class V2HttpCall extends HttpSolrCall {
     SolrQueryResponse solrResp = new SolrQueryResponse();
     final boolean jerseyResourceFound =
         invokeJerseyRequest(
-            cores, null, cores.getJerseyApplicationHandler(), solrResp, suppressNotFoundProp);
+            cores,
+            null,
+            cores.getJerseyApplicationHandler(),
+            cores.getRequestHandlers(),
+            solrResp,
+            suppressNotFoundProp);
     if (jerseyResourceFound) {
       logAndFlushAdminRequest(solrResp);
       return;
@@ -412,7 +429,8 @@ public class V2HttpCall extends HttpSolrCall {
   @Override
   protected void handleAdmin(SolrQueryResponse solrResp) {
     if (api == null) {
-      invokeJerseyRequest(cores, null, cores.getJerseyApplicationHandler(), solrResp);
+      invokeJerseyRequest(
+          cores, null, cores.getJerseyApplicationHandler(), cores.getRequestHandlers(), solrResp);
     } else {
       SolrCore.preDecorateResponse(solrReq, solrResp);
       try {
@@ -446,10 +464,20 @@ public class V2HttpCall extends HttpSolrCall {
           Map.of(RequestContextKeys.SUPPRESS_ERROR_ON_NOT_FOUND_EXCEPTION, "true");
       final boolean resourceFound =
           invokeJerseyRequest(
-              cores, core, core.getJerseyApplicationHandler(), rsp, suppressNotFoundProp);
+              cores,
+              core,
+              core.getJerseyApplicationHandler(),
+              core.getRequestHandlers(),
+              rsp,
+              suppressNotFoundProp);
       if (!resourceFound) {
+        // Whatever this API call is, it's not a core-level request so make sure we free our
+        // SolrCore counter
+        core.close();
+        core = null;
         response.getHeaderNames().stream().forEach(name -> response.setHeader(name, null));
-        invokeJerseyRequest(cores, null, cores.getJerseyApplicationHandler(), rsp);
+        invokeJerseyRequest(
+            cores, null, cores.getJerseyApplicationHandler(), cores.getRequestHandlers(), rsp);
       }
     } else {
       SolrCore.preDecorateResponse(solrReq, rsp);
@@ -474,29 +502,12 @@ public class V2HttpCall extends HttpSolrCall {
         coreOrColName = pathTemplateValues.get("core");
       }
     }
-    if (coreOrColName != null) {
-      span.setTag(Tags.DB_INSTANCE, coreOrColName);
-    }
+    TraceUtils.setDbInstance(span, coreOrColName);
 
     // Get the templatize-ed path, ex: "/c/{collection}"
     final String path = computeEndpointPath();
-
-    String verb = null;
-    // if this api has commands ...
-    final Map<String, JsonSchemaValidator> validators = getValidators(); // should be cached
-    if (validators != null && validators.isEmpty() == false && solrReq != null) {
-      boolean validateInput = true; // because getCommands caches it; and we want it validated later
-      // does this request have one command?
-      List<CommandOperation> cmds = solrReq.getCommands(validateInput);
-      if (cmds.size() == 1) {
-        verb = cmds.get(0).name;
-      }
-    }
-    if (verb == null) {
-      verb = req.getMethod().toLowerCase(Locale.ROOT);
-    }
-
-    span.setOperationName(verb + ":" + path);
+    final String verb = req.getMethod().toLowerCase(Locale.ROOT);
+    span.updateName(verb + ":" + path);
   }
 
   /** Example: /c/collection1/ and template map collection->collection1 produces /c/{collection}. */

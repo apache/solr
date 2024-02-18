@@ -26,7 +26,7 @@ In Solr, this basic paginated searching is supported using the `start` and `rows
 
 === Basic Pagination Examples
 
-The easiest way to think about simple pagination, is to simply multiply the page number you want (treating the "first" page number as "0") by the number of rows per page; such as in the following pseudo-code:
+The easiest way to think about simple pagination, is to simply multiply the page number you want (treating the "first" page number as "0") by the number of rows per page; such as in the following pseudocode:
 
 [source,plain]
 ----
@@ -87,7 +87,7 @@ For a ten shard index, ten million entries must be retrieved and sorted to figur
 As an alternative to increasing the "start" parameter to request subsequent pages of sorted results, Solr supports using a "Cursor" to scan through results.
 
 Cursors in Solr are a logical concept that doesn't involve caching any state information on the server.
-Instead the sort values of the last document returned to the client are used to compute a "mark" representing a logical point in the ordered space of sort values.
+Instead, the sort values of the last document returned to the client are used to compute a "mark" representing a logical point in the ordered space of sort values.
 That "mark" can be specified in the parameters of subsequent requests to tell Solr where to continue.
 
 === Using Cursors
@@ -127,7 +127,7 @@ Requiring that the uniqueKey field be used as a clause in the sort criteria guar
 
 ==== Fetch All Docs
 
-The pseudo-code shown here shows the basic logic involved in fetching all documents matching a query using a cursor:
+The pseudocode shown here shows the basic logic involved in fetching all documents matching a query using a cursor:
 
 [source,plain]
 ----
@@ -145,7 +145,7 @@ while (not $done) {
 }
 ----
 
-Using SolrJ, this pseudo-code would be:
+Using SolrJ, this pseudocode would be:
 
 [source,java]
 ----
@@ -254,9 +254,9 @@ In a nutshell: When fetching all results matching a query using `cursorMark`, th
 
 [TIP]
 ====
-One way to ensure that a document will never be returned more then once, is to use the uniqueKey field as the primary (and therefore: only significant) sort criterion.
+One way to ensure that a document will never be returned more than once, is to use the uniqueKey field as the primary (and therefore: only significant) sort criterion.
 
-In this situation, you will be guaranteed that each document is only returned once, no matter how it may be be modified during the use of the cursor.
+In this situation, you will be guaranteed that each document is only returned once, no matter how it may be modified during the use of the cursor.
 ====
 
 === "Tailing" a Cursor
@@ -270,7 +270,7 @@ Client applications can continuously poll a cursor using a `sort=timestamp asc, 
 
 Another common example is when you have uniqueKey values that always increase as new documents are created, and you can continuously poll a cursor using `sort=id asc` to be notified about new documents.
 
-The pseudo-code for tailing a cursor is only a slight modification from our early example for processing all docs matching a query:
+The pseudocode for tailing a cursor is only a slight modification from our early example for processing all docs matching a query:
 
 [source,plain]
 ----

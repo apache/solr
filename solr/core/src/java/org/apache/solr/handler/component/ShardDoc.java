@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.util.List;
+import java.util.Objects;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.solr.common.util.NamedList;
 
@@ -44,6 +45,7 @@ public class ShardDoc extends FieldDoc {
   // retrieval stage.
 
   public int positionInResponse;
+
   // the ordinal position in the merged response arraylist
 
   public ShardDoc(float score, Object[] fields, Object uniqueId, String shard) {
@@ -59,13 +61,10 @@ public class ShardDoc extends FieldDoc {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof ShardDoc)) return false;
 
     ShardDoc shardDoc = (ShardDoc) o;
-
-    if (id != null ? !id.equals(shardDoc.id) : shardDoc.id != null) return false;
-
-    return true;
+    return Objects.equals(id, shardDoc.id);
   }
 
   @Override

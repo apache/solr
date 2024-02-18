@@ -45,11 +45,11 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
   public static void beforeTests() throws Exception {
     initCore("solrconfig-tlog.xml", "schema-pseudo-fields.xml");
 
-    assertU(adoc("id", "42", "val_i", "1", "ssto", "X", "subject", "aaa"));
-    assertU(adoc("id", "43", "val_i", "9", "ssto", "X", "subject", "bbb"));
-    assertU(adoc("id", "44", "val_i", "4", "ssto", "X", "subject", "aaa"));
-    assertU(adoc("id", "45", "val_i", "6", "ssto", "X", "subject", "aaa"));
-    assertU(adoc("id", "46", "val_i", "3", "ssto", "X", "subject", "ggg"));
+    assertU(adoc("id", "42", "newid", "420", "val_i", "1", "ssto", "X", "subject", "aaa"));
+    assertU(adoc("id", "43", "newid", "430", "val_i", "9", "ssto", "X", "subject", "bbb"));
+    assertU(adoc("id", "44", "newid", "440", "val_i", "4", "ssto", "X", "subject", "aaa"));
+    assertU(adoc("id", "45", "newid", "450", "val_i", "6", "ssto", "X", "subject", "aaa"));
+    assertU(adoc("id", "46", "newid", "460", "val_i", "3", "ssto", "X", "subject", "ggg"));
     assertU(commit());
   }
 
@@ -58,7 +58,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     // uncommitted doc in transaction log at start of every test
     // Even if an RTG causes ulog to re-open realtime searcher, next test method
     // will get another copy of doc 99 in the ulog
-    assertU(adoc("id", "99", "val_i", "1", "ssto", "X", "subject", "uncommitted"));
+    assertU(adoc("id", "99", "newid", "990", "val_i", "1", "ssto", "X", "subject", "uncommitted"));
   }
 
   public void testMultiValued() throws Exception {
@@ -110,6 +110,20 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
         "/doc=={'val2_ss':10,'val_ss':1,'subject':'uncommitted'}");
   }
 
+  public void testMovePk() {
+
+    for (String fl : new String[] {"oldid:id,id:newid,val_i,subject,ssto"}) {
+      assertQ(
+          "fl=" + fl + " ... all real fields",
+          req("q", "*:*", "rows", "1", "fl", fl),
+          "//result[@numFound='5']",
+          "//result/doc/str[@name='id'][.='420' or .='430' or .='440' or .='450' or .='460']",
+          "//result/doc/int[@name='val_i']",
+          "//result/doc/str[@name='ssto']",
+          "//result/doc/str[@name='subject']");
+    }
+  }
+
   public void testAllRealFields() {
 
     for (String fl : ALL_REAL_FIELDS) {
@@ -121,7 +135,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
           "//result/doc/int[@name='val_i']",
           "//result/doc/str[@name='ssto']",
           "//result/doc/str[@name='subject']",
-          "//result/doc[count(*)=5]");
+          "//result/doc[count(*)=6]");
     }
   }
 
@@ -137,7 +151,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
             "//doc/int[@name='val_i']",
             "//doc/str[@name='ssto']",
             "//doc/str[@name='subject']",
-            "//doc[count(*)=5]");
+            "//doc[count(*)=6]");
       }
     }
   }
@@ -178,7 +192,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
           "//result/doc/str[@name='ssto']",
           "//result/doc/str[@name='subject']",
           "//result/doc/float[@name='score']",
-          "//result/doc[count(*)=6]");
+          "//result/doc[count(*)=7]");
     }
   }
 
@@ -195,7 +209,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
             "//doc/int[@name='val_i']",
             "//doc/str[@name='ssto']",
             "//doc/str[@name='subject']",
-            "//doc[count(*)=5]");
+            "//doc[count(*)=6]");
       }
     }
   }

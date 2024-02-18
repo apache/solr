@@ -21,7 +21,6 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.util.StrUtils.splitSmart;
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -63,9 +63,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
   @Override
   public synchronized Collection<Api> getApis() {
-    ImmutableList.Builder<Api> l = ImmutableList.builder();
-    for (V2EndPoint op : getEndPoints()) l.add(getApi(op));
-    return l.build();
+    return getEndPoints().stream().map(this::getApi).collect(Collectors.toUnmodifiableList());
   }
 
   private Api getApi(final V2EndPoint op) {
@@ -165,7 +163,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             if (o instanceof List) {
               @SuppressWarnings("unchecked")
               List<String> l = (List<String>) o;
-              return l.toArray(new String[l.size()]);
+              return l.toArray(new String[0]);
             }
 
             return o;

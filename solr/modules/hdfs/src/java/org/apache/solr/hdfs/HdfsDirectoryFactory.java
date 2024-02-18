@@ -18,21 +18,20 @@ package org.apache.solr.hdfs;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.RemovalListener;
-import com.google.common.cache.RemovalNotification;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileContext;
@@ -48,14 +47,14 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -132,18 +131,12 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   private static Boolean kerberosInit;
 
   // we use this cache for FileSystem instances when we don't have access to a long lived instance
-  private com.google.common.cache.Cache<String, FileSystem> tmpFsCache =
-      CacheBuilder.newBuilder()
-          .concurrencyLevel(10)
+  private final com.github.benmanes.caffeine.cache.Cache<String, FileSystem> tmpFsCache =
+      Caffeine.newBuilder()
           .maximumSize(1000)
           .expireAfterAccess(5, TimeUnit.MINUTES)
           .removalListener(
-              new RemovalListener<String, FileSystem>() {
-                @Override
-                public void onRemoval(RemovalNotification<String, FileSystem> rn) {
-                  IOUtils.closeQuietly(rn.getValue());
-                }
-              })
+              (String key, FileSystem fs, RemovalCause cause) -> IOUtils.closeQuietly(fs))
           .build();
 
   private static final class MetricsHolder {
@@ -193,7 +186,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
     if (kerberosEnabled) {
       initKerberos();
     }
-    if (StringUtils.isEmpty(System.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
+    if (StrUtils.isNullOrEmpty(
+        EnvUtils.getProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED))) {
       System.setProperty(SplitShardCmd.SHARDSPLIT_CHECKDISKSPACE_ENABLED, "false");
     }
   }
@@ -300,7 +294,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   boolean getConfig(String name, boolean defaultValue) {
     Boolean value = params.getBool(name);
     if (value == null) {
-      String sysValue = System.getProperty(name);
+      String sysValue = EnvUtils.getProperty(name);
       if (sysValue != null) {
         value = Boolean.valueOf(sysValue);
       }
@@ -311,7 +305,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   int getConfig(String name, int defaultValue) {
     Integer value = params.getInt(name);
     if (value == null) {
-      String sysValue = System.getProperty(name);
+      String sysValue = EnvUtils.getProperty(name);
       if (sysValue != null) {
         value = Integer.parseInt(sysValue);
       }
@@ -322,7 +316,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   String getConfig(String name, String defaultValue) {
     String value = params.get(name);
     if (value == null) {
-      value = System.getProperty(name);
+      value = EnvUtils.getProperty(name);
     }
     return value == null ? defaultValue : value;
   }
@@ -418,6 +412,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
     return conf;
   }
 
+  @Override
   protected synchronized void removeDirectory(final CacheValue cacheValue) {
     FileSystem fileSystem = getCachedFileSystem(cacheValue.path);
 
@@ -471,20 +466,17 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
     String path;
     if (cd.getCloudDescriptor() != null) {
       path =
-          URLEncoder.encode(cd.getCloudDescriptor().getCollectionName(), "UTF-8")
+          URLEncoder.encode(cd.getCloudDescriptor().getCollectionName(), StandardCharsets.UTF_8)
               + "/"
-              + URLEncoder.encode(cd.getCloudDescriptor().getCoreNodeName(), "UTF-8");
+              + URLEncoder.encode(
+                  cd.getCloudDescriptor().getCoreNodeName(), StandardCharsets.UTF_8);
     } else {
       path = cd.getName();
     }
 
     return normalize(
         SolrPaths.normalizeDir(
-            ZkController.trimLeadingAndTrailingSlashes(hdfsDataDir)
-                + "/"
-                + path
-                + "/"
-                + cd.getDataDir()));
+            trimLeadingAndTrailingSlashes(hdfsDataDir) + "/" + path + "/" + cd.getDataDir()));
   }
 
   /**
@@ -516,13 +508,17 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   }
 
   private FileSystem getCachedFileSystem(String pathStr) {
-    try {
-      // no need to close the fs, the cache will do it
-      Path path = new Path(pathStr);
-      return tmpFsCache.get(pathStr, () -> FileSystem.get(path.toUri(), getConf(path)));
-    } catch (ExecutionException e) {
-      throw new RuntimeException(e);
-    }
+    // no need to close the fs, the cache will do it
+    Path path = new Path(pathStr);
+    return tmpFsCache.get(
+        pathStr,
+        k -> {
+          try {
+            return FileSystem.get(path.toUri(), getConf(path));
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   public String getConfDir() {
@@ -691,6 +687,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   }
 
   // perform an atomic rename if possible
+  @Override
   public void renameWithOverwrite(Directory dir, String fileName, String toName)
       throws IOException {
     String hdfsDirPath = getPath(dir);
@@ -722,5 +719,22 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
   @Override
   public UpdateLog newDefaultUpdateLog() {
     return new HdfsUpdateLog(getConfDir());
+  }
+
+  /**
+   * Utility method for trimming and leading and/or trailing slashes from its input. May return the
+   * empty string. May return null if and only if the input is null.
+   */
+  public static String trimLeadingAndTrailingSlashes(final String in) {
+    if (null == in) return in;
+
+    String out = in;
+    if (out.startsWith("/")) {
+      out = out.substring(1);
+    }
+    if (out.endsWith("/")) {
+      out = out.substring(0, out.length() - 1);
+    }
+    return out;
   }
 }

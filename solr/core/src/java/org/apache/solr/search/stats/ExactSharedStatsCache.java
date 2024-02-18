@@ -82,19 +82,23 @@ public class ExactSharedStatsCache extends ExactStatsCache {
     }
   }
 
+  @Override
   protected Map<String, CollectionStats> getPerShardColStats(ResponseBuilder rb, String shard) {
     return perShardColStats.get(shard);
   }
 
+  @Override
   protected TermStats getPerShardTermStats(SolrQueryRequest req, String t, String shard) {
     Map<String, TermStats> cache = perShardTermStats.get(shard);
     return (cache != null) ? cache.get(t) : null; // Term doesn't exist in shard;
   }
 
+  @Override
   protected void addToGlobalColStats(SolrQueryRequest req, Entry<String, CollectionStats> e) {
     currentGlobalColStats.put(e.getKey(), e.getValue());
   }
 
+  @Override
   protected void addToGlobalTermStats(SolrQueryRequest req, Entry<String, TermStats> e) {
     currentGlobalTermStats.put(e.getKey(), e.getValue());
   }

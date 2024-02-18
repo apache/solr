@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-_Note: this is a guide for using Solr with Docker without an orchestration tool like Kubernetes. While this approach would still work, it is more recommended to use tools like Kubernetes for production environments. This arcticle is good & recommended for local development only. For using Solr with Kubernetes, see https://solr.apache.org/operator/[Solr Operator] project, or for example https://lucidworks.com/2019/02/07/running-solr-on-kubernetes-part-1/[this blog post]._
+_Note: this is a guide for using Solr with Docker without an orchestration tool like Kubernetes. While this approach would still work, it is more recommended to use tools like Kubernetes for production environments. This arcticle is good & recommended for local development only. For using Solr with Kubernetes, see https://solr.apache.org/operator/[Solr Operator] project, or for example https://lucidworks.com/post/running-solr-on-kubernetes-part-1/[this blog post]._
 
 In this example we'll create a cluster with 3 ZooKeeper nodes and 3 Solr nodes, distributed over 3 machines (trinity10, trinity20, trinity30).
 We'll use an overlay network, specify fixed IP addresses when creating containers, and we'll pass in explicit `/etc/hosts` entries to make sure they are available even when nodes are down.
@@ -197,15 +197,15 @@ Next let's create a collection:
 
 [source,bash]
 ----
-ssh -n $ZKSOLR1_HOST docker exec -i zksolr1 /opt/solr/bin/solr create_collection -c my_collection1 -shards 2 -p 8983
+ssh -n $ZKSOLR1_HOST docker exec -i zksolr1 /opt/solr/bin/solr create -c my_collection1 -shards 2 -p 8983
 ----
 
 To load data, and see it was split over shards:
 
 [source,bash,subs="attributes"]
 ----
-docker exec -it --user=solr zksolr1 bin/post -c my_collection1 example/exampledocs/manufacturers.xml
-# /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -classpath /opt/solr/server/lib/ext/*:/opt/solr/server/solr-webapp/webapp/WEB-INF/lib/* -Dauto=yes -Dc=my_collection1 -Ddata=files org.apache.solr.util.SimplePostTool example/exampledocs/manufacturers.xml
+docker exec -it --user=solr zksolr1 bin/solr post -c my_collection1 example/exampledocs/manufacturers.xml
+# /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -classpath /opt/solr/server/lib/ext/*:/opt/solr/server/solr-webapp/webapp/WEB-INF/lib/* -Dauto=yes -Dc=my_collection1 -Ddata=files org.apache.solr.cli.SimplePostTool example/exampledocs/manufacturers.xml
 # SimplePostTool version {solr-full-version}
 # Posting files to [base] url http://localhost:8983/solr/my_collection1/update...
 # Entering auto mode. File endings considered are xml,json,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log

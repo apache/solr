@@ -19,7 +19,10 @@ package org.apache.solr.search;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -97,14 +100,14 @@ public class QueryUtils {
       BoostQuery bq = (BoostQuery) q;
       Query subQ = bq.getQuery();
       Query absSubQ = getAbs(subQ);
-      if (absSubQ == subQ) return q;
+      if (absSubQ.equals(subQ)) return q;
       return new BoostQuery(absSubQ, bq.getBoost());
     }
 
     if (q instanceof WrappedQuery) {
       Query subQ = ((WrappedQuery) q).getWrappedQuery();
       Query absSubQ = getAbs(subQ);
-      if (absSubQ == subQ) return q;
+      if (absSubQ.equals(subQ)) return q;
       return new WrappedQuery(absSubQ);
     }
 
@@ -226,14 +229,11 @@ public class QueryUtils {
    * Parse the filter queries in Solr request
    *
    * @param req Solr request
-   * @param fixNegativeQueries if true, negative queries are rewritten by adding a MatchAllDocs
-   *     query clause
    * @return and array of Query. If the request does not contain filter queries, returns an empty
    *     list.
    * @throws SyntaxError if an error occurs during parsing
    */
-  public static List<Query> parseFilterQueries(SolrQueryRequest req, boolean fixNegativeQueries)
-      throws SyntaxError {
+  public static List<Query> parseFilterQueries(SolrQueryRequest req) throws SyntaxError {
 
     String[] filterQueriesStr = req.getParams().getParams(CommonParams.FQ);
 
@@ -244,9 +244,6 @@ public class QueryUtils {
           QParser fqp = QParser.getParser(fq, req);
           fqp.setIsFilter(true);
           Query query = fqp.getQuery();
-          if (fixNegativeQueries) {
-            query = makeQueryable(query);
-          }
           filters.add(query);
         }
       }
@@ -254,5 +251,50 @@ public class QueryUtils {
     }
 
     return Collections.emptyList();
+  }
+
+  /**
+   * Returns a Set containing all of the Queries in the designated SolrQueryRequest possessing a tag
+   * in the provided list of desired tags. The Set uses reference equality so, for example, it will
+   * have 2 elements if the caller requests the tag "t1" for a request where
+   * "fq={!tag=t1}a:b&amp;fq={!tag=t1}a:b". The Set will be empty (not null) if there are no
+   * matches.
+   *
+   * <p>This method assumes that the provided SolrQueryRequest's context has been populated with a
+   * "tags" entry, which should be a Map from a tag name to a Collection of QParsers. In general,
+   * the "tags" entry will not be present until the QParsers have been instantiated, for example via
+   * QueryComponent.prepare()
+   *
+   * @param req Solr request
+   * @param desiredTags the tags to look for
+   * @return Set of Queries in the given SolrQueryRequest possessing any of the desiredTags
+   */
+  public static Set<Query> getTaggedQueries(SolrQueryRequest req, Collection<String> desiredTags) {
+    Map<?, ?> tagMap = (Map<?, ?>) req.getContext().get("tags");
+
+    if (tagMap == null || tagMap.isEmpty() || desiredTags == null || desiredTags.isEmpty()) {
+      return Collections.emptySet();
+    }
+
+    Set<Query> taggedQueries = Collections.newSetFromMap(new IdentityHashMap<>());
+
+    for (String tagName : desiredTags) {
+      Object tagVal = tagMap.get(tagName);
+      if (!(tagVal instanceof Collection)) continue;
+      for (Object obj : (Collection<?>) tagVal) {
+        if (!(obj instanceof QParser)) continue;
+        QParser qParser = (QParser) obj;
+        Query query;
+        try {
+          query = qParser.getQuery();
+        } catch (SyntaxError syntaxError) {
+          // should not happen since we should only be retrieving a previously parsed query
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
+        }
+        taggedQueries.add(query);
+      }
+    }
+
+    return taggedQueries;
   }
 }

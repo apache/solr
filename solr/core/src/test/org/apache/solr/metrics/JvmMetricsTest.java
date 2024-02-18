@@ -31,7 +31,6 @@ import org.junit.Test;
 
 /** Test {@link OperatingSystemMetricSet} and proper JVM metrics registration. */
 public class JvmMetricsTest extends SolrJettyTestBase {
-
   static final String[] STRING_OS_METRICS = {"arch", "name", "version"};
   static final String[] NUMERIC_OS_METRICS = {"availableProcessors", "systemLoadAverage"};
 
@@ -79,7 +78,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
       assertNotNull(name, metrics.get(name));
       Object g = metrics.get(name);
       assertTrue(g instanceof Gauge);
-      Object v = ((Gauge) g).getValue();
+      Object v = ((Gauge<?>) g).getValue();
       assertTrue(v instanceof Long);
     }
   }
@@ -90,11 +89,12 @@ public class JvmMetricsTest extends SolrJettyTestBase {
       // make sure it's set
       System.setProperty("basicauth", "foo:bar");
     }
-    SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
+    SolrMetricManager metricManager = getJetty().getCoreContainer().getMetricManager();
     Map<String, Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
-    MetricsMap map =
-        (MetricsMap) ((SolrMetricManager.GaugeWrapper) metrics.get("system.properties")).getGauge();
-    assertNotNull(map);
+    Metric metric = metrics.get("system.properties");
+    assertNotNull(metrics.toString(), metric);
+    MetricsMap map = (MetricsMap) ((SolrMetricManager.GaugeWrapper<?>) metric).getGauge();
+    assertNotNull(metrics.toString(), map);
     Map<String, Object> values = map.getValue();
     System.getProperties()
         .forEach(
@@ -115,45 +115,39 @@ public class JvmMetricsTest extends SolrJettyTestBase {
     String solrXml = Files.readString(home.resolve("solr.xml"), StandardCharsets.UTF_8);
     NodeConfig config = SolrXmlConfig.fromString(home, solrXml);
     NodeConfig.NodeConfigBuilder.DEFAULT_HIDDEN_SYS_PROPS.forEach(
-        s -> {
-          assertTrue(s, config.getMetricsConfig().getHiddenSysProps().contains(s));
-        });
+        s -> assertTrue(s, config.isSysPropHidden(s)));
 
     // custom config
     solrXml = Files.readString(home.resolve("solr-hiddensysprops.xml"), StandardCharsets.UTF_8);
     NodeConfig config2 = SolrXmlConfig.fromString(home, solrXml);
-    Arrays.asList("foo", "bar", "baz")
-        .forEach(
-            s -> {
-              assertTrue(s, config2.getMetricsConfig().getHiddenSysProps().contains(s));
-            });
+    Arrays.asList("foo", "bar", "baz").forEach(s -> assertTrue(s, config2.isSysPropHidden(s)));
   }
 
   @Test
   public void testSetupJvmMetrics() {
-    SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
+    SolrMetricManager metricManager = getJetty().getCoreContainer().getMetricManager();
     Map<String, Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
     assertTrue(metrics.size() > 0);
     assertTrue(
         metrics.toString(),
-        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("buffers.")).count() > 0);
+        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("buffers.")));
     assertTrue(
         metrics.toString(),
-        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("classes.")).count() > 0);
+        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("classes.")));
     assertTrue(
         metrics.toString(),
-        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("os.")).count() > 0);
+        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("os.")));
     assertTrue(
         metrics.toString(),
-        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("gc.")).count() > 0);
+        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("gc.")));
     assertTrue(
         metrics.toString(),
-        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("memory.")).count() > 0);
+        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("memory.")));
     assertTrue(
         metrics.toString(),
-        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("threads.")).count() > 0);
+        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("threads.")));
     assertTrue(
         metrics.toString(),
-        metrics.entrySet().stream().filter(e -> e.getKey().startsWith("system.")).count() > 0);
+        metrics.entrySet().stream().anyMatch(e -> e.getKey().startsWith("system.")));
   }
 }

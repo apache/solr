@@ -31,7 +31,6 @@ public class QueryCommand {
   private String queryID;
   private boolean isQueryCancellable;
   private List<Query> filterList;
-  private DocSet filter;
   private Sort sort;
   private int offset;
   private int len;
@@ -79,10 +78,6 @@ public class QueryCommand {
    * @throws IllegalArgumentException if filter is not null.
    */
   public QueryCommand setFilterList(List<Query> filterList) {
-    if (filter != null) {
-      throw new IllegalArgumentException(
-          "Either filter or filterList may be set in the QueryCommand, but not both.");
-    }
     this.filterList = filterList;
     return this;
   }
@@ -93,31 +88,11 @@ public class QueryCommand {
    * @throws IllegalArgumentException if filter is not null.
    */
   public QueryCommand setFilterList(Query f) {
-    if (filter != null) {
-      throw new IllegalArgumentException(
-          "Either filter or filterList may be set in the QueryCommand, but not both.");
-    }
     filterList = null;
     if (f != null) {
       filterList = new ArrayList<>(2);
       filterList.add(f);
     }
-    return this;
-  }
-
-  public DocSet getFilter() {
-    return filter;
-  }
-
-  /**
-   * @throws IllegalArgumentException if filterList is not null.
-   */
-  public QueryCommand setFilter(DocSet filter) {
-    if (filterList != null) {
-      throw new IllegalArgumentException(
-          "Either filter or filterList may be set in the QueryCommand, but not both.");
-    }
-    this.filter = filter;
     return this;
   }
 

@@ -19,8 +19,8 @@ package org.apache.solr.cluster.placement.impl;
 
 import java.util.Objects;
 import java.util.function.Function;
+import org.apache.solr.client.solrj.impl.NodeValueFetcher;
 import org.apache.solr.cluster.placement.NodeMetric;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
 
 /**
  * Node metric identifier, corresponding to a node-level metric registry and the internal metric
@@ -40,14 +40,17 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
 
   /** Number of all cores. */
   public static final NodeMetricImpl<Integer> NUM_CORES =
-      new NodeMetricImpl<>(ImplicitSnitch.CORES);
+      new NodeMetricImpl<>(NodeValueFetcher.CORES);
 
   public static final NodeMetricImpl<Double> HEAP_USAGE =
-      new NodeMetricImpl<>(ImplicitSnitch.HEAPUSAGE);
+      new NodeMetricImpl<>(NodeValueFetcher.Tags.HEAPUSAGE.tagName);
 
   /** System load average. */
   public static final NodeMetricImpl<Double> SYSLOAD_AVG =
-      new NodeMetricImpl<>("sysLoadAvg", Registry.SOLR_JVM, "os.systemLoadAverage");
+      new NodeMetricImpl<>(
+          NodeValueFetcher.Tags.SYSLOADAVG.tagName,
+          Registry.SOLR_JVM,
+          NodeValueFetcher.Tags.SYSLOADAVG.prefix);
 
   /** Number of available processors. */
   public static final NodeMetricImpl<Integer> AVAILABLE_PROCESSORS =
@@ -75,6 +78,7 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
     this.registry = Registry.UNSPECIFIED;
   }
 
+  @Override
   public Registry getRegistry() {
     return registry;
   }
@@ -84,7 +88,7 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (!(o instanceof NodeMetricImpl)) {
       return false;
     }
     if (!super.equals(o)) {

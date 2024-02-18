@@ -75,15 +75,15 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @Test
   public void testArbitraryJsonIndexing() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     assertNumFound("*:*", 0); // make sure it got in
 
     // two docs, one with uniqueKey, another without it
     String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
-    HttpClient httpClient = client.getHttpClient();
-    HttpPost post = new HttpPost(client.getBaseURL() + "/update/json/docs");
+    HttpClient httpClient = getHttpClient();
+    HttpPost post = new HttpPost(getCoreUrl() + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
     post.setEntity(
         new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
@@ -97,7 +97,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @Test
   public void testFieldMutating() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
     assertNumFound("*:*", 0); // make sure it got in
@@ -110,8 +110,8 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
             + "{\"p%q\" : \"name\"}"
             + "{\"p.q\" : \"name\"}"
             + "{\"a&b\" : \"name\"}";
-    HttpClient httpClient = client.getHttpClient();
-    HttpPost post = new HttpPost(client.getBaseURL() + "/update/json/docs");
+    HttpClient httpClient = getHttpClient();
+    HttpPost post = new HttpPost(getCoreUrl() + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
     post.setEntity(
         new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
@@ -130,20 +130,15 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @Override
   public SolrClient createNewSolrClient() {
-    try {
-      // setup the server...
-      String url = jetty.getBaseUrl().toString() + "/collection1";
-      HttpSolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
-      client.setUseMultiPartPost(random().nextBoolean());
-
-      if (random().nextBoolean()) {
-        client.setParser(new BinaryResponseParser());
-        client.setRequestWriter(new BinaryRequestWriter());
-      }
-
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
+    HttpSolrClient.Builder httpSolrClientBuilder =
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+            .allowMultiPartPost(random().nextBoolean());
+    if (random().nextBoolean()) {
+      httpSolrClientBuilder
+          .withRequestWriter(new BinaryRequestWriter())
+          .withResponseParser(new BinaryResponseParser());
     }
+    return httpSolrClientBuilder.build();
   }
 }

@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.api.Api;
@@ -42,7 +41,10 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.jersey.APIConfigProvider;
+import org.apache.solr.jersey.APIConfigProviderBinder;
 import org.apache.solr.jersey.JerseyApplications;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrRequestHandler;
@@ -63,27 +65,43 @@ public class PluginBag<T> implements AutoCloseable {
   private final Class<T> klass;
   private SolrCore core;
   private final SolrConfig.SolrPluginInfo meta;
+
+  private final boolean loadV2ApisIfPresent;
   private final ApiBag apiBag;
   private final ResourceConfig jerseyResources;
 
-  public static class JerseyMetricsLookupRegistry
+  /**
+   * Allows JAX-RS 'filters' to find the requestHandler (if any) associated particular JAX-RS
+   * resource classes
+   *
+   * <p>Used primarily by JAX-RS when recording per-request metrics, which requires a {@link
+   * org.apache.solr.handler.RequestHandlerBase.HandlerMetrics} object from the relevant
+   * requestHandler.
+   */
+  public static class JaxrsResourceToHandlerMappings
       extends HashMap<Class<? extends JerseyResource>, RequestHandlerBase> {}
 
-  private final JerseyMetricsLookupRegistry infoBeanByResource;
+  private final JaxrsResourceToHandlerMappings jaxrsResourceRegistry;
+
+  public JaxrsResourceToHandlerMappings getJaxrsRegistry() {
+    return jaxrsResourceRegistry;
+  }
 
   /** Pass needThreadSafety=true if plugins can be added and removed concurrently with lookups. */
   public PluginBag(Class<T> klass, SolrCore core, boolean needThreadSafety) {
-    if (klass == SolrRequestHandler.class) {
+    if (klass == SolrRequestHandler.class && V2ApiUtils.isEnabled()) {
+      this.loadV2ApisIfPresent = true;
       this.apiBag = new ApiBag(core != null);
-      this.infoBeanByResource = new JerseyMetricsLookupRegistry();
+      this.jaxrsResourceRegistry = new JaxrsResourceToHandlerMappings();
       this.jerseyResources =
           (core == null)
-              ? new JerseyApplications.CoreContainerApp(infoBeanByResource)
-              : new JerseyApplications.SolrCoreApp(core, infoBeanByResource);
+              ? new JerseyApplications.CoreContainerApp()
+              : new JerseyApplications.SolrCoreApp();
     } else {
+      this.loadV2ApisIfPresent = false;
       this.apiBag = null;
       this.jerseyResources = null;
-      this.infoBeanByResource = null;
+      this.jaxrsResourceRegistry = null;
     }
     this.core = core;
     this.klass = klass;
@@ -218,7 +236,7 @@ public class PluginBag<T> implements AutoCloseable {
       }
     }
 
-    if (apiBag != null) {
+    if (loadV2ApisIfPresent) {
       if (plugin.isLoaded()) {
         T inst = plugin.get();
         if (inst instanceof ApiSupport) {
@@ -226,7 +244,7 @@ public class PluginBag<T> implements AutoCloseable {
           if (registerApi == null) registerApi = apiSupport.registerV2();
           if (disableHandler == null) disableHandler = !apiSupport.registerV1();
 
-          if (registerApi) {
+          if (registerApi && V2ApiUtils.isEnabled()) {
             Collection<Api> apis = apiSupport.getApis();
             if (apis != null) {
               Map<String, String> nameSubstitutes = singletonMap(HANDLER_NAME, name);
@@ -239,17 +257,22 @@ public class PluginBag<T> implements AutoCloseable {
             //  resource registers under?
             Collection<Class<? extends JerseyResource>> jerseyApis =
                 apiSupport.getJerseyResources();
-            if (!CollectionUtils.isEmpty(jerseyApis)) {
+            if (jerseyApis != null) {
               for (Class<? extends JerseyResource> jerseyClazz : jerseyApis) {
                 if (log.isDebugEnabled()) {
                   log.debug("Registering jersey resource class: {}", jerseyClazz.getName());
                 }
                 jerseyResources.register(jerseyClazz);
-                // See MetricsBeanFactory javadocs for a better understanding of this resource->RH
+                // See RequestMetricHandling javadocs for a better understanding of this
+                // resource->RH
                 // mapping
-                if (inst instanceof RequestHandlerBase) {
-                  infoBeanByResource.put(jerseyClazz, (RequestHandlerBase) inst);
+                if (apiSupport instanceof RequestHandlerBase) {
+                  jaxrsResourceRegistry.put(jerseyClazz, (RequestHandlerBase) apiSupport);
                 }
+              }
+              if (apiSupport instanceof APIConfigProvider) {
+                jerseyResources.register(
+                    new APIConfigProviderBinder((APIConfigProvider<?>) apiSupport));
               }
             }
           }
@@ -301,7 +324,7 @@ public class PluginBag<T> implements AutoCloseable {
   }
 
   /**
-   * Initializes the plugins after reading the meta data from {@link
+   * Initializes the plugins after reading the metadata from {@link
    * org.apache.solr.core.SolrConfig}.
    *
    * @param defaults These will be registered if not explicitly specified
@@ -398,6 +421,7 @@ public class PluginBag<T> implements AutoCloseable {
       return Optional.ofNullable(inst);
     }
 
+    @Override
     public T get() {
       return inst;
     }
@@ -435,6 +459,7 @@ public class PluginBag<T> implements AutoCloseable {
       return pluginInfo;
     }
 
+    @Override
     public String toString() {
       return String.valueOf(inst);
     }

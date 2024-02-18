@@ -28,13 +28,14 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -170,7 +171,7 @@ public class TestImpersonationWithHadoopAuth extends SolrCloudTestCase {
   @Test
   public void testProxyValidateGroup() throws Exception {
     try (SolrClient solrClient = newSolrClient()) {
-      solrClient.request(getProxyRequest("anyHostUsersGroup", System.getProperty("user.name")));
+      solrClient.request(getProxyRequest("anyHostUsersGroup", EnvUtils.getProperty("user.name")));
       assertTrue(ImpersonatorCollectionsHandler.called.get());
     }
   }
@@ -210,7 +211,8 @@ public class TestImpersonationWithHadoopAuth extends SolrCloudTestCase {
     // try a command to each node, one of them must be forwarded
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       try (SolrClient client =
-          new HttpSolrClient.Builder(jetty.getBaseUrl().toString() + "/" + collectionName)
+          new HttpSolrClient.Builder(jetty.getBaseUrl().toString())
+              .withDefaultCollection(collectionName)
               .build()) {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("q", "*:*");

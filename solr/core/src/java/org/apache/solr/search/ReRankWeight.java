@@ -30,17 +30,39 @@ public class ReRankWeight extends FilterWeight {
 
   private final IndexSearcher searcher;
   private final Rescorer reRankQueryRescorer;
+  private final ReRankScaler reRankScaler;
+  private final ReRankOperator reRankOperator;
 
   public ReRankWeight(
-      Query mainQuery, Rescorer reRankQueryRescorer, IndexSearcher searcher, Weight mainWeight)
+      Query mainQuery,
+      Rescorer reRankQueryRescorer,
+      IndexSearcher searcher,
+      Weight mainWeight,
+      ReRankScaler reRankScaler,
+      ReRankOperator reRankOperator)
       throws IOException {
     super(mainQuery, mainWeight);
     this.searcher = searcher;
     this.reRankQueryRescorer = reRankQueryRescorer;
+    this.reRankScaler = reRankScaler;
+    this.reRankOperator = reRankOperator;
   }
 
+  @Override
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
     final Explanation mainExplain = in.explain(context, doc);
-    return reRankQueryRescorer.explain(searcher, mainExplain, context.docBase + doc);
+    final Explanation reRankExplain =
+        reRankQueryRescorer.explain(searcher, mainExplain, context.docBase + doc);
+    if (reRankScaler != null && reRankScaler.scaleScores()) {
+      Explanation reScaleExplain =
+          reRankScaler.explain(context.docBase + doc, mainExplain, reRankExplain);
+      if (reScaleExplain != null) {
+        // Can be null if only reRankScore is scaled and is not a reRank match
+        return reScaleExplain;
+      } else {
+        return reRankExplain;
+      }
+    }
+    return reRankExplain;
   }
 }

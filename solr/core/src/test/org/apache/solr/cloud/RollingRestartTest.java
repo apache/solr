@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -95,9 +94,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
         chaosMonkey.stopJetty(cloudJetty);
         zkStateReader.updateLiveNodes();
         boolean liveDesignates =
-            CollectionUtils.intersection(zkStateReader.getClusterState().getLiveNodes(), designates)
-                    .size()
-                > 0;
+            zkStateReader.getClusterState().getLiveNodes().stream().anyMatch(designates::contains);
         if (liveDesignates) {
           boolean success =
               waitUntilOverseerDesignateIsLeader(zkStateReader.getZkClient(), designates);
@@ -127,9 +124,7 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
 
         zkStateReader.updateLiveNodes();
         sawLiveDesignate =
-            CollectionUtils.intersection(zkStateReader.getClusterState().getLiveNodes(), designates)
-                    .size()
-                > 0;
+            zkStateReader.getClusterState().getLiveNodes().stream().anyMatch(designates::contains);
       }
     }
 

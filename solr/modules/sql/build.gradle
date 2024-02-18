@@ -22,11 +22,10 @@ description = 'SQL Module'
 dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
+  implementation project(':solr:solrj-streaming')
   implementation project(':solr:solrj-zookeeper')
 
   implementation 'org.slf4j:slf4j-api'
-
-  implementation 'com.google.guava:guava'
 
   // SQL Parser via Calcite
   implementation ('org.apache.calcite:calcite-core', {
@@ -48,8 +47,6 @@ dependencies {
   testImplementation 'junit:junit'
 
   testRuntimeOnly project(':solr:modules:analysis-extras')
-
-  testImplementation 'org.apache.commons:commons-lang3'
 }
 
 
@@ -57,13 +54,13 @@ dependencies {
 // of the SQL module so we can avoid duplication of the test resource files like
 // schemas and SolrConfigs. This can be improved later by making the test classes
 // load the resources from core directories directly.
-task copySolrCoreTestResources(type: Copy) {
+tasks.register('copySolrCoreTestResources', Copy) {
   from(project(':solr:core').sourceSets.test.resources.srcDirs) {
     exclude '**/*.java'
   }
   into sourceSets.test.output.resourcesDir
 }
 
-tasks.processTestResources.configure {
+tasks.named('processTestResources').configure {
   dependsOn copySolrCoreTestResources
 }

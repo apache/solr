@@ -33,6 +33,7 @@ public class RefreshCollectionMessage implements Overseer.Message {
     this.collection = collection;
   }
 
+  @Override
   public ClusterState run(ClusterState clusterState, Overseer overseer, ZkStateWriter zkStateWriter)
       throws Exception {
     Stat stat =

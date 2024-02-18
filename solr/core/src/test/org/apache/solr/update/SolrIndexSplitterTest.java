@@ -16,12 +16,11 @@
  */
 package org.apache.solr.update;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
@@ -102,7 +101,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           new SplitIndexCommand(
               request,
               rsp,
-              Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()),
+              List.of(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()),
               null,
               ranges,
               new PlainIdRouter(),
@@ -192,7 +191,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           new SplitIndexCommand(
               request,
               rsp,
-              Lists.newArrayList(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()),
+              List.of(indexDir1.getAbsolutePath(), indexDir2.getAbsolutePath()),
               null,
               ranges,
               new PlainIdRouter(),
@@ -268,14 +267,12 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           h.getCoreContainer()
               .create(
                   "split1",
-                  ImmutableMap.of(
-                      "dataDir", indexDir1.getAbsolutePath(), "configSet", "cloud-minimal"));
+                  Map.of("dataDir", indexDir1.getAbsolutePath(), "configSet", "cloud-minimal"));
       core2 =
           h.getCoreContainer()
               .create(
                   "split2",
-                  ImmutableMap.of(
-                      "dataDir", indexDir2.getAbsolutePath(), "configSet", "cloud-minimal"));
+                  Map.of("dataDir", indexDir2.getAbsolutePath(), "configSet", "cloud-minimal"));
 
       LocalSolrQueryRequest request = null;
       try {
@@ -286,7 +283,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
                 request,
                 rsp,
                 null,
-                Lists.newArrayList(core1, core2),
+                List.of(core1, core2),
                 ranges,
                 new PlainIdRouter(),
                 null,
@@ -352,7 +349,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           new SplitIndexCommand(
               request,
               rsp,
-              Lists.newArrayList(
+              List.of(
                   indexDir1.getAbsolutePath(),
                   indexDir2.getAbsolutePath(),
                   indexDir3.getAbsolutePath()),
@@ -458,9 +455,9 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
           new SplitIndexCommand(
               request,
               rsp,
-              Lists.newArrayList(indexDir.getAbsolutePath()),
+              List.of(indexDir.getAbsolutePath()),
               null,
-              Lists.newArrayList(splitKeyRange),
+              List.of(splitKeyRange),
               new CompositeIdRouter(),
               null,
               splitKey,

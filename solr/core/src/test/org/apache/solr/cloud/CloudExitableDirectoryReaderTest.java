@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -39,6 +38,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster.JettySolrRunnerWithMetrics;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.response.SolrQueryResponse;
@@ -98,7 +98,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
             (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
 
     fiveHundredsByNode = new LinkedHashMap<>();
-    int httpOk = 0;
+    long httpOk = 0;
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       MetricRegistry metricRegistry = ((JettySolrRunnerWithMetrics) jetty).getMetricRegistry();
 
@@ -301,7 +301,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
         }; // add more cases here
 
     params.add(cases[random().nextInt(cases.length)]);
-    for (; ; creep *= 1.5) {
+    for (; ; creep = (int) (creep * 1.5)) {
       try (Trap catchClass = catchCount(creep)) {
 
         params.set("boundary", creep);

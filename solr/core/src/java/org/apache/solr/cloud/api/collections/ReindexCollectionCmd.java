@@ -21,8 +21,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -49,6 +47,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -105,16 +104,16 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   public static final String PHASE = "phase";
 
   private static final List<String> COLLECTION_PARAMS =
-      Arrays.asList(
-          ZkStateReader.CONFIGNAME_PROP,
-          ZkStateReader.NUM_SHARDS_PROP,
-          ZkStateReader.NRT_REPLICAS,
-          ZkStateReader.PULL_REPLICAS,
-          ZkStateReader.TLOG_REPLICAS,
-          ZkStateReader.REPLICATION_FACTOR,
-          "shards",
-          CollectionAdminParams.CREATE_NODE_SET_PARAM,
-          CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM);
+      Stream.concat(
+              CollectionHandlingUtils.numReplicasProperties().stream(),
+              Stream.of(
+                  ZkStateReader.CONFIGNAME_PROP,
+                  ZkStateReader.NUM_SHARDS_PROP,
+                  ZkStateReader.REPLICATION_FACTOR,
+                  "shards",
+                  CollectionAdminParams.CREATE_NODE_SET_PARAM,
+                  CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM))
+          .collect(Collectors.toUnmodifiableList());
 
   private final CollectionCommandContext ccc;
 
@@ -138,10 +137,9 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       return states.get(p);
     }
 
-    static Map<String, State> states =
-        Collections.unmodifiableMap(
-            Stream.of(State.values())
-                .collect(Collectors.toMap(State::toLower, Function.identity())));
+    static final Map<String, State> states =
+        Stream.of(State.values())
+            .collect(Collectors.toUnmodifiableMap(State::toLower, Function.identity()));
   }
 
   public enum Cmd {
@@ -161,9 +159,9 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       return cmds.get(p);
     }
 
-    static Map<String, Cmd> cmds =
-        Collections.unmodifiableMap(
-            Stream.of(Cmd.values()).collect(Collectors.toMap(Cmd::toLower, Function.identity())));
+    static final Map<String, Cmd> cmds =
+        Stream.of(Cmd.values())
+            .collect(Collectors.toUnmodifiableMap(Cmd::toLower, Function.identity()));
   }
 
   private String zkHost;
@@ -251,9 +249,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     String query = message.getStr(CommonParams.Q, "*:*");
     String fl = message.getStr(CommonParams.FL, "*");
     Integer rf = message.getInt(ZkStateReader.REPLICATION_FACTOR, coll.getReplicationFactor());
-    Integer numNrt = message.getInt(ZkStateReader.NRT_REPLICAS, coll.getNumNrtReplicas());
-    Integer numTlog = message.getInt(ZkStateReader.TLOG_REPLICAS, coll.getNumTlogReplicas());
-    Integer numPull = message.getInt(ZkStateReader.PULL_REPLICAS, coll.getNumPullReplicas());
+    ReplicaCount numReplicas = ReplicaCount.fromMessage(message, coll);
     int numShards = message.getInt(ZkStateReader.NUM_SHARDS_PROP, coll.getActiveSlices().size());
     DocRouter router = coll.getRouter();
     if (router == null) {
@@ -276,6 +272,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     }
     String chkCollection = CHK_COL_PREFIX + extCollection;
     String daemonUrl = null;
+    Replica daemonReplica = null;
     Exception exc = null;
     boolean createdTarget = false;
     try {
@@ -340,15 +337,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       if (rf != null) {
         propMap.put(ZkStateReader.REPLICATION_FACTOR, rf);
       }
-      if (numNrt != null) {
-        propMap.put(ZkStateReader.NRT_REPLICAS, numNrt);
-      }
-      if (numTlog != null) {
-        propMap.put(ZkStateReader.TLOG_REPLICAS, numTlog);
-      }
-      if (numPull != null) {
-        propMap.put(ZkStateReader.PULL_REPLICAS, numPull);
-      }
+      numReplicas.writeProps(propMap);
       // create the target collection
       cmd = new ZkNodeProps(propMap);
       cmdResults = new NamedList<>();
@@ -470,8 +459,8 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
             "Unable to copy documents from " + collection + " to " + targetCollection,
             e);
       }
-      daemonUrl = getDaemonUrl(rsp, coll);
-      if (daemonUrl == null) {
+      daemonReplica = getReplicaForDaemon(rsp, coll);
+      if (daemonReplica == null) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Unable to copy documents from "
@@ -481,13 +470,13 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 + ": "
                 + Utils.toJSONString(rsp));
       }
-      reindexingState.put("daemonUrl", daemonUrl);
+      reindexingState.put("daemonUrl", daemonReplica.getCoreUrl());
       reindexingState.put("daemonName", targetCollection);
       reindexingState.put(PHASE, "copying documents");
       setReindexingState(collection, State.RUNNING, reindexingState);
 
       // wait for the daemon to finish
-      waitForDaemon(targetCollection, daemonUrl, collection, targetCollection, reindexingState);
+      waitForDaemon(targetCollection, daemonReplica, collection, targetCollection, reindexingState);
       if (maybeAbort(collection)) {
         aborted = true;
         return;
@@ -599,7 +588,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
             collection,
             targetCollection,
             chkCollection,
-            daemonUrl,
+            daemonReplica,
             targetCollection,
             createdTarget);
         if (exc != null) {
@@ -679,7 +668,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   // XXX see #waitForDaemon() for why we need this
-  private String getDaemonUrl(SolrResponse rsp, DocCollection coll) {
+  private Replica getReplicaForDaemon(SolrResponse rsp, DocCollection coll) {
     @SuppressWarnings({"unchecked"})
     Map<String, Object> rs = (Map<String, Object>) rsp.getResponse().get("result-set");
     if (rs == null || rs.isEmpty()) {
@@ -723,7 +712,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     // build a baseUrl of the replica
     for (Replica r : coll.getReplicas()) {
       if (replicaName.equals(r.getCoreName())) {
-        return r.getBaseUrl() + "/" + r.getCoreName();
+        return r;
       }
     }
     return null;
@@ -735,14 +724,17 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   @SuppressWarnings({"unchecked"})
   private void waitForDaemon(
       String daemonName,
-      String daemonUrl,
+      Replica daemonReplica,
       String sourceCollection,
       String targetCollection,
       Map<String, Object> reindexingState)
       throws Exception {
     HttpClient client = ccc.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
     try (SolrClient solrClient =
-        new HttpSolrClient.Builder().withHttpClient(client).withBaseSolrUrl(daemonUrl).build()) {
+        new HttpSolrClient.Builder()
+            .withHttpClient(client)
+            .withBaseSolrUrl(daemonReplica.getBaseUrl())
+            .build()) {
       ModifiableSolrParams q = new ModifiableSolrParams();
       q.set(CommonParams.QT, "/stream");
       q.set("action", "list");
@@ -754,7 +746,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
         isRunning = false;
         statusCheck++;
         try {
-          NamedList<Object> rsp = solrClient.request(req);
+          NamedList<Object> rsp = solrClient.request(req, daemonReplica.getCoreName());
           Map<String, Object> rs = (Map<String, Object>) rsp.get("result-set");
           if (rs == null || rs.isEmpty()) {
             throw new SolrException(
@@ -783,7 +775,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
         } catch (Exception e) {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
-              "Exception waiting for daemon " + daemonName + " at " + daemonUrl,
+              "Exception waiting for daemon " + daemonName + " at " + daemonReplica.getCoreUrl(),
               e);
         }
         if (statusCheck % 5 == 0) {
@@ -796,11 +788,17 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @SuppressWarnings({"unchecked"})
-  private void killDaemon(String daemonName, String daemonUrl) throws Exception {
-    log.debug("-- killing daemon {} at {}", daemonName, daemonUrl);
+  private void killDaemon(String daemonName, Replica daemonReplica) throws Exception {
+    if (log.isDebugEnabled()) {
+      log.debug("-- killing daemon {} at {}", daemonName, daemonReplica.getCoreUrl());
+    }
     HttpClient client = ccc.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
     try (SolrClient solrClient =
-        new HttpSolrClient.Builder().withHttpClient(client).withBaseSolrUrl(daemonUrl).build()) {
+        new HttpSolrClient.Builder()
+            .withHttpClient(client)
+            .withDefaultCollection(daemonReplica.getCoreName())
+            .withBaseSolrUrl(daemonReplica.getBaseUrl())
+            .build()) {
       ModifiableSolrParams q = new ModifiableSolrParams();
       q.set(CommonParams.QT, "/stream");
       // we should really use 'kill' here, but then we will never
@@ -901,7 +899,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       String collection,
       String targetCollection,
       String chkCollection,
-      String daemonUrl,
+      Replica daemonReplica,
       String daemonName,
       boolean createdTarget)
       throws Exception {
@@ -910,8 +908,8 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     // 2. cleanup target / chk collections IFF the source collection still exists and is not empty
     // 3. cleanup collection state
 
-    if (daemonUrl != null) {
-      killDaemon(daemonName, daemonUrl);
+    if (daemonReplica != null) {
+      killDaemon(daemonName, daemonReplica);
     }
     ClusterState clusterState = ccc.getSolrCloudManager().getClusterState();
     NamedList<Object> cmdResults = new NamedList<>();

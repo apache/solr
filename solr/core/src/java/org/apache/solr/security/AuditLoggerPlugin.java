@@ -386,7 +386,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   }
 
   /** Set of rules for when audit logging should be muted. */
-  private class MuteRules {
+  private static class MuteRules {
     private List<List<MuteRule>> rules;
 
     MuteRules(Object o) {

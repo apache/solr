@@ -243,7 +243,7 @@ public class PathTrie<T> {
       if (n == null) {
         n = children.get("*");
         if (n != null) {
-          StringBuffer sb = new StringBuffer();
+          StringBuilder sb = new StringBuilder();
           for (int i = index; i < pathSegments.size(); i++) {
             sb.append("/").append(pathSegments.get(i));
           }

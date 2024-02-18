@@ -72,6 +72,7 @@ public class OcmhCollectionCommandContext implements CollectionCommandContext {
     ocmh.overseer.offerStateUpdate(data);
   }
 
+  @Override
   public void offerStateUpdate(MapWriter mw) throws KeeperException, InterruptedException {
     ocmh.overseer.offerStateUpdate(mw);
   }

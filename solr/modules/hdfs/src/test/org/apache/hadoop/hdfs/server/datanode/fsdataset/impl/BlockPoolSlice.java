@@ -55,12 +55,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -496,7 +498,7 @@ public class BlockPoolSlice {
           File.pathSeparator + "." + file.getName() + ".restart");
       Scanner sc = null;
       try {
-        sc = new Scanner(restartMeta, "UTF-8");
+        sc = new Scanner(restartMeta, StandardCharsets.UTF_8);
         // The restart meta file exists
         if (sc.hasNextLong() && (sc.nextLong() > timer.now())) {
           // It didn't expire. Load the replica as a RBW.
@@ -538,7 +540,7 @@ public class BlockPoolSlice {
     }
 
     ReplicaInfo tmpReplicaInfo = volumeMap.addAndGet(bpid, newReplica);
-    ReplicaInfo oldReplica = (tmpReplicaInfo == newReplica) ? null
+    ReplicaInfo oldReplica = (tmpReplicaInfo.equals(newReplica)) ? null
         : tmpReplicaInfo;
     if (oldReplica != null) {
       // We have multiple replicas of the same block so decide which one
@@ -640,7 +642,7 @@ public class BlockPoolSlice {
     final ReplicaInfo replicaToDelete =
         selectReplicaToDelete(replica1, replica2);
     final ReplicaInfo replicaToKeep =
-        (replicaToDelete != replica1) ? replica1 : replica2;
+        (!Objects.equals(replicaToDelete, replica1)) ? replica1 : replica2;
     // Update volumeMap and delete the replica
     volumeMap.add(bpid, replicaToKeep);
     if (replicaToDelete != null) {
@@ -673,7 +675,7 @@ public class BlockPoolSlice {
       replicaToKeep = replica1;
     }
 
-    replicaToDelete = (replicaToKeep == replica1) ? replica2 : replica1;
+    replicaToDelete = (replicaToKeep.equals(replica1)) ? replica2 : replica1;
 
     if (LOG.isDebugEnabled()) {
       LOG.debug("resolveDuplicateReplicas decide to keep {}.  Will try to delete {}", replicaToKeep, replicaToDelete);

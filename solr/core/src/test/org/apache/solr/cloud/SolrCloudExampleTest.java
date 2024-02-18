@@ -16,49 +16,38 @@
  */
 package org.apache.solr.cloud;
 
-import static java.util.Arrays.asList;
-import static org.apache.solr.common.util.Utils.fromJSONString;
-import static org.apache.solr.common.util.Utils.getObjectByPath;
-
 import java.io.File;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
+import org.apache.solr.cli.CreateTool;
+import org.apache.solr.cli.DeleteTool;
+import org.apache.solr.cli.HealthcheckTool;
+import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.ExternalPaths;
-import org.apache.solr.util.SolrCLI;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Emulates bin/solr -e cloud -noprompt; bin/post -c gettingstarted example/exampledocs/*.xml; this
- * test is useful for catching regressions in indexing the example docs in collections that use data
- * driven functionality and managed schema features of the default configset (configsets/_default).
+ * Emulates bin/solr start -e cloud -noprompt; bin/solr post -c gettingstarted
+ * example/exampledocs/*.xml; this test is useful for catching regressions in indexing the example
+ * docs in collections that use data driven functionality and managed schema features of the default
+ * configset (configsets/_default).
  */
 public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
@@ -70,7 +59,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   }
 
   @Test
-  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void testLoadDocsIntoGettingStartedCollection() throws Exception {
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
@@ -109,9 +97,8 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // NOTE: not calling SolrCLI.main as the script does because it calls System.exit which is a
     // no-no in a JUnit test
 
-    SolrCLI.CreateCollectionTool tool = new SolrCLI.CreateCollectionTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
+    CreateTool tool = new CreateTool();
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
     log.info("Creating the '{}' collection using SolrCLI with: {}", testCollectionName, solrUrl);
     tool.runTool(cli);
     assertTrue(
@@ -121,7 +108,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     // verify the collection is usable ...
     ensureAllReplicasAreActive(testCollectionName, "shard1", 2, 2, 20);
     ensureAllReplicasAreActive(testCollectionName, "shard2", 2, 2, 10);
-    cloudClient.setDefaultCollection(testCollectionName);
 
     int invalidToolExitStatus = 1;
     assertEquals(
@@ -129,7 +115,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
         invalidToolExitStatus,
         tool.runTool(cli));
 
-    // now index docs like bin/post would, but we can't use SimplePostTool because it uses
+    // now index docs like bin/solr post would, but we can't use SimplePostTool because it uses
     // System.exit when it encounters an error, which JUnit doesn't like ...
     log.info("Created collection, now posting example docs!");
     Path exampleDocsDir = Path.of(ExternalPaths.SOURCE_HOME, "example", "exampledocs");
@@ -163,23 +149,21 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
       if (log.isInfoEnabled()) {
         log.info("POSTing {}", xml.toAbsolutePath());
       }
-      cloudClient.request(new StreamingUpdateRequest("/update", xml, "application/xml"));
+      cloudClient.request(
+          new StreamingUpdateRequest("/update", xml, "application/xml"), testCollectionName);
     }
-    cloudClient.commit();
+    cloudClient.commit(testCollectionName);
 
     int numFound = 0;
 
     // give the update a chance to take effect.
     for (int idx = 0; idx < 100; ++idx) {
-      QueryResponse qr = cloudClient.query(new SolrQuery("*:*"));
+      QueryResponse qr = cloudClient.query(testCollectionName, new SolrQuery("*:*"));
       numFound = (int) qr.getResults().getNumFound();
       if (numFound == expectedXmlDocCount) break;
       Thread.sleep(100);
     }
     assertEquals("*:* found unexpected number of documents", expectedXmlDocCount, numFound);
-
-    log.info("Updating Config for {}", testCollectionName);
-    doTestConfigUpdate(testCollectionName, solrUrl);
 
     log.info("Running healthcheck for {}", testCollectionName);
     doTestHealthcheck(testCollectionName, cloudClient.getClusterStateProvider().getQuorumHosts());
@@ -194,12 +178,11 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
   protected void doTestHealthcheck(String testCollectionName, String zkHost) throws Exception {
     String[] args =
         new String[] {
-          "-collection", testCollectionName,
+          "-name", testCollectionName,
           "-zkHost", zkHost
         };
-    SolrCLI.HealthcheckTool tool = new SolrCLI.HealthcheckTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
+    HealthcheckTool tool = new HealthcheckTool();
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
     assertEquals("Healthcheck action failed!", 0, tool.runTool(cli));
   }
 
@@ -209,122 +192,11 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           "-name", testCollectionName,
           "-solrUrl", solrUrl
         };
-    SolrCLI.DeleteTool tool = new SolrCLI.DeleteTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
+    DeleteTool tool = new DeleteTool();
+    CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
     assertEquals("Delete action failed!", 0, tool.runTool(cli));
     assertFalse(
         SolrCLI.safeCheckCollectionExists(
-            solrUrl, testCollectionName)); // it should not exist anymore
-  }
-
-  /**
-   * Uses the SolrCLI config action to activate soft auto-commits for the getting started
-   * collection.
-   */
-  protected void doTestConfigUpdate(String testCollectionName, String solrUrl) throws Exception {
-    if (!solrUrl.endsWith("/")) solrUrl += "/";
-    String configUrl = solrUrl + testCollectionName + "/config";
-
-    Map<String, Object> configJson = SolrCLI.getJson(configUrl);
-    Object maxTimeFromConfig =
-        SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);
-    assertNotNull(maxTimeFromConfig);
-    assertEquals(-1L, maxTimeFromConfig);
-
-    String prop = "updateHandler.autoSoftCommit.maxTime";
-    Long maxTime = 3000L;
-    String[] args =
-        new String[] {
-          "-collection", testCollectionName,
-          "-property", prop,
-          "-value", maxTime.toString(),
-          "-solrUrl", solrUrl
-        };
-
-    Map<String, Long> startTimes = getSoftAutocommitInterval(testCollectionName);
-
-    SolrCLI.ConfigTool tool = new SolrCLI.ConfigTool();
-    CommandLine cli =
-        SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
-    log.info("Sending set-property '{}'={} to SolrCLI.ConfigTool.", prop, maxTime);
-    assertEquals("Set config property failed!", 0, tool.runTool(cli));
-
-    configJson = SolrCLI.getJson(configUrl);
-    maxTimeFromConfig = SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);
-    assertNotNull(maxTimeFromConfig);
-    assertEquals(maxTime, maxTimeFromConfig);
-
-    // Just check that we can access paths with slashes in them both through an intermediate method
-    // and explicitly using atPath.
-    assertEquals(
-        "Should have been able to get a value from the /query request handler",
-        "explicit",
-        SolrCLI.asString("/config/requestHandler/\\/query/defaults/echoParams", configJson));
-
-    assertEquals(
-        "Should have been able to get a value from the /query request handler",
-        "explicit",
-        SolrCLI.atPath("/config/requestHandler/\\/query/defaults/echoParams", configJson));
-
-    if (log.isInfoEnabled()) {
-      log.info("live_nodes_count :  {}", cloudClient.getClusterState().getLiveNodes());
-    }
-
-    // Since it takes some time for this command to complete we need to make sure all the reloads
-    // for all the cores have been done.
-    boolean allGood = false;
-    Map<String, Long> curSoftCommitInterval = null;
-    for (int idx = 0; idx < 600 && allGood == false; ++idx) {
-      curSoftCommitInterval = getSoftAutocommitInterval(testCollectionName);
-      // no point in even trying if they're not the same size!
-      if (curSoftCommitInterval.size() > 0 && curSoftCommitInterval.size() == startTimes.size()) {
-        allGood = true;
-        for (Map.Entry<String, Long> currEntry : curSoftCommitInterval.entrySet()) {
-          if (currEntry.getValue().equals(maxTime) == false) {
-            allGood = false;
-          }
-        }
-      }
-      if (allGood == false) {
-        Thread.sleep(100);
-      }
-    }
-    assertTrue("All cores should have been reloaded within 60 seconds!!!", allGood);
-  }
-
-  // Collect all the autoSoftCommit intervals.
-  private Map<String, Long> getSoftAutocommitInterval(String collection) throws Exception {
-    Map<String, Long> ret = new HashMap<>();
-    DocCollection coll = cloudClient.getClusterState().getCollection(collection);
-    for (Slice slice : coll.getActiveSlices()) {
-      for (Replica replica : slice.getReplicas()) {
-        String uri =
-            ""
-                + replica.get(ZkStateReader.BASE_URL_PROP)
-                + "/"
-                + replica.get(ZkStateReader.CORE_NAME_PROP)
-                + "/config";
-        Map<?, ?> respMap = getAsMap(cloudClient, uri);
-        Long maxTime =
-            (Long)
-                (getObjectByPath(
-                    respMap, true, asList("config", "updateHandler", "autoSoftCommit", "maxTime")));
-        ret.put(replica.getCoreName(), maxTime);
-      }
-    }
-    return ret;
-  }
-
-  private Map<?, ?> getAsMap(CloudSolrClient cloudClient, String uri) throws Exception {
-    HttpGet get = new HttpGet(uri);
-    HttpEntity entity = null;
-    try {
-      entity = ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(get).getEntity();
-      String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-      return (Map<?, ?>) fromJSONString(response);
-    } finally {
-      EntityUtils.consumeQuietly(entity);
-    }
+            solrUrl, testCollectionName, null)); // it should not exist anymore
   }
 }

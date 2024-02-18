@@ -16,95 +16,38 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.junit.Test;
 
 /** Test the LBHttp2SolrClient. */
 public class LBHttp2SolrClientTest extends SolrTestCase {
 
   /**
-   * Test method for {@link LBHttp2SolrClient#setParser(ResponseParser)}.
-   *
-   * <p>Validate that the parser passed in is used in the base <code>Http2SolrClient</code>
-   * instance.
+   * Test method for {@link LBHttp2SolrClient.Builder} that validates that the query param keys
+   * passed in by the base <code>Http2SolrClient
+   * </code> instance are used by the LBHttp2SolrClient.
    */
   @Test
-  public void testLBHttp2SolrClientSetRequestParser() throws IOException {
+  public void testLBHttp2SolrClientWithTheseParamNamesInTheUrl() {
     String url = "http://127.0.0.1:8080";
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder(url).build();
-        LBHttp2SolrClient testClient = new LBHttp2SolrClient(http2Client, url)) {
-      testClient.setParser(null);
-      assertNull("Generated lb client should have null parser.", testClient.getParser());
-      assertNull("Generated base client should have null parser.", http2Client.getParser());
+    Set<String> urlParamNames = new HashSet<>(2);
+    urlParamNames.add("param1");
 
-      ResponseParser parser = new NoOpResponseParser("json");
-      testClient.setParser(parser);
-      assertEquals("Wrong parser found in lb client.", parser, testClient.getParser());
-      assertEquals("Wrong parser found in base client.", parser, http2Client.getParser());
-    }
-  }
+    try (Http2SolrClient http2SolrClient =
+            new Http2SolrClient.Builder(url).withTheseParamNamesInTheUrl(urlParamNames).build();
+        LBHttp2SolrClient testClient =
+            new LBHttp2SolrClient.Builder(http2SolrClient, url).build()) {
 
-  /**
-   * Test method for {@link LBHttp2SolrClient#setRequestWriter(RequestWriter)}.
-   *
-   * <p>Validate that the requestWriter passed in is used in the base <code>Http2SolrClient</code>
-   * instance.
-   */
-  @Test
-  public void testLBHttp2SolrClientSetRequestWriter() throws IOException {
-    String url = "http://127.0.0.1:8080";
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder(url).build();
-        LBHttp2SolrClient testClient = new LBHttp2SolrClient(http2Client, url)) {
-      testClient.setRequestWriter(null);
-      assertNull("Generated lb client should have null writer.", testClient.getRequestWriter());
-      assertNull("Generated base client should have null writer.", http2Client.getRequestWriter());
-
-      RequestWriter writer = new BinaryRequestWriter();
-      testClient.setRequestWriter(writer);
-      assertEquals("Wrong writer found in lb client.", writer, testClient.getRequestWriter());
-      assertEquals("Wrong writer found in base client.", writer, http2Client.getRequestWriter());
-    }
-  }
-
-  /**
-   * Test method for {@link LBHttp2SolrClient#setQueryParams(Set)} and {@link
-   * LBHttp2SolrClient#addQueryParams(String)}.
-   *
-   * <p>Validate that the query params passed in are used in the base <code>Http2SolrClient</code>
-   * instance.
-   */
-  @Test
-  public void testLBHttp2SolrClientSetQueryParams() throws IOException {
-    String url = "http://127.0.0.1:8080";
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder(url).build();
-        LBHttp2SolrClient testClient = new LBHttp2SolrClient(http2Client, url)) {
-      Set<String> queryParams = new HashSet<>(2);
-      queryParams.add("param1=this");
-      testClient.setQueryParams(new HashSet<>(queryParams));
       assertArrayEquals(
-          "Wrong queryParams found in lb client.",
-          queryParams.toArray(),
-          testClient.getQueryParams().toArray());
+          "Wrong urlParamNames found in lb client.",
+          urlParamNames.toArray(),
+          testClient.getUrlParamNames().toArray());
       assertArrayEquals(
-          "Wrong queryParams found in base client.",
-          queryParams.toArray(),
-          http2Client.getQueryParams().toArray());
-
-      testClient.addQueryParams("param2=that");
-      queryParams.add("param2=that");
-      assertArrayEquals(
-          "Wrong queryParams found in lb client.",
-          queryParams.toArray(),
-          testClient.getQueryParams().toArray());
-      assertArrayEquals(
-          "Wrong queryParams found in base client.",
-          queryParams.toArray(),
-          http2Client.getQueryParams().toArray());
+          "Wrong urlParamNames found in base client.",
+          urlParamNames.toArray(),
+          http2SolrClient.getUrlParamNames().toArray());
     }
   }
 }

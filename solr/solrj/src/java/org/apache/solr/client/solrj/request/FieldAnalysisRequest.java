@@ -16,10 +16,9 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.FieldAnalysisResponse;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -30,7 +29,7 @@ import org.apache.solr.common.params.SolrParams;
  *
  * @since solr.14
  */
-public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
+public class FieldAnalysisRequest extends CollectionRequiringSolrRequest<FieldAnalysisResponse> {
 
   private String fieldValue;
   private String query;
@@ -183,7 +182,7 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
    */
   public FieldAnalysisRequest addFieldName(String fieldName) {
     if (fieldNames == null) {
-      fieldNames = new LinkedList<>();
+      fieldNames = new ArrayList<>();
     }
     fieldNames.add(fieldName);
     return this;
@@ -218,7 +217,7 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
    */
   public FieldAnalysisRequest addFieldType(String fieldTypeName) {
     if (fieldTypes == null) {
-      fieldTypes = new LinkedList<>();
+      fieldTypes = new ArrayList<>();
     }
     fieldTypes.add(fieldTypeName);
     return this;

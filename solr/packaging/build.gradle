@@ -29,7 +29,9 @@ description = 'Solr distribution packaging'
 
 ext {
   distDir = file("$buildDir/solr-${version}")
+  slimDistDir = file("$buildDir/solr-${version}-slim")
   devDir = file("$buildDir/dev")
+  slimDevDir = file("$buildDir/dev-slim")
 }
 
 configurations {
@@ -39,12 +41,10 @@ configurations {
   server
   docs
   docker
-  solrTgz
-  solrTgzSignature
-}
-
-artifacts {
-  solrTgz(distTar)
+  solrFullTgz
+  solrSlimTgz
+  solrFullTgzSignature
+  solrSlimTgzSignature
 }
 
 dependencies {
@@ -62,14 +62,19 @@ dependencies {
 
   docker project(path: ':solr:docker', configuration: 'packaging')
 
-  solrTgzSignature files("$buildDir/distributions/solr-${version}.tgz.asc") {
-    builtBy ":solr:distribution:signBinaryTgz"
+  solrFullTgzSignature files("$buildDir/distributions/solr-${version}.tgz.asc") {
+    builtBy ":solr:distribution:signFullBinaryTgz"
+  }
+
+  solrSlimTgzSignature files("$buildDir/distributions/solr-${version}-slim.tgz.asc") {
+    builtBy ":solr:distribution:signSlimBinaryTgz"
   }
 }
 
 distributions {
-  main {
+  slim {
     distributionBaseName = 'solr'
+    distributionClassifier = "slim"
     contents {
 
       from(rootDir, {
@@ -92,16 +97,8 @@ distributions {
         into 'lib'
       })
 
-      from(configurations.modules, {
-        into "modules"
-      })
-
       from(configurations.example, {
         into "example"
-      })
-
-      from(configurations.prometheusExporter, {
-        into "prometheus-exporter"
       })
 
       from(configurations.server, {
@@ -128,41 +125,103 @@ distributions {
           "**/bin/postlogs",
           "**/bin/solr",
           "**/bin/init.d/solr",
-          "**/bin/solr-exporter",
       ]) { copy ->
         copy.setMode(0755)
       }
 
     }
   }
+  full {
+    distributionBaseName = 'solr'
+    contents {
+      // Build on-top of the slim distribution
+      with(distributions.slim.getContents())
+
+      from(configurations.modules, {
+        into "modules"
+      })
+
+      from(configurations.prometheusExporter, {
+        into "prometheus-exporter"
+        filesMatching([
+            "bin/*",
+        ]) { copy ->
+          copy.setMode(0755)
+        }
+      })
+    }
+  }
 }
 
-installDist {
+installFullDist {
   into distDir
 }
 
-task dev(type: Copy) {
-  description "Assemble Solr distribution into 'development' folder at ${devDir}"
+installSlimDist {
+  into slimDistDir
+}
+
+assembleDist {
+  dependsOn tasks.assembleFullDist
+  dependsOn tasks.assembleSlimDist
+}
+
+installDist {
+  dependsOn tasks.installFullDist
+  dependsOn tasks.installSlimDist
+}
+
+task devFull(type: Copy) {
+  description "Assemble Full Solr distribution into 'development' folder at ${devDir}"
   group "build"
 
-  from installDist.outputs
+  from installFullDist.outputs
   into devDir
 }
 
-distTar {
+task devSlim(type: Copy) {
+  description "Assemble Slim Solr distribution into 'development' folder at ${slimDevDir}"
+  group "build"
+
+  from installSlimDist.outputs
+  into slimDevDir
+}
+
+task dev {
+  description "Assemble Solr distributions into 'development' folders at ${devDir} and ${slimDevDir}"
+  group "build"
+
+  dependsOn tasks.devFull
+  dependsOn tasks.devSlim
+}
+
+fullDistTar {
   compression = Compression.GZIP
 }
 
-distZip.enabled = false
+slimDistTar {
+  compression = Compression.GZIP
+}
 
-assemble.dependsOn installDist
+distTar.dependsOn tasks.fullDistTar
+distTar.dependsOn tasks.slimDistTar
+
+fullDistZip.enabled = false
+slimDistZip.enabled = false
+
+assemble.dependsOn tasks.installDist
+assemble.dependsOn tasks.installSlimDist
+
+artifacts {
+  solrFullTgz(fullDistTar)
+  solrSlimTgz(slimDistTar)
+}
 
 task downloadBats(type: NpmTask) {
   group = 'Build Dependency Download'
-  args = ["install", "bats@1.8.0",
-                     "ztombol/bats-support#v0.2.0",
-                     "ztombol/bats-assert#v0.3.0",
-                     "ztombol/bats-file#v0.2.0",
+  args = ["install", "https://github.com/bats-core/bats-core#v1.8.2",
+                     "https://github.com/bats-core/bats-assert#v2.0.0",
+                     "https://github.com/bats-core/bats-file#v0.3.0",
   ]
 
   inputs.files("${project.ext.nodeProjectDir}/package.json")
@@ -173,12 +232,21 @@ task downloadBats(type: NpmTask) {
 }
 
 task integrationTests(type: BatsTask) {
-  dependsOn installDist
+  dependsOn installFullDist
   dependsOn downloadBats
 
   def integrationTestOutput = "$buildDir/test-output"
   def solrHome = "$integrationTestOutput/solr-home"
   def solrTestFailuresDir = "$integrationTestOutput/failure-snapshots"
+  var solrPort = Integer.parseInt((String) project.findProperty('bats.port') ?: System.getProperty("bats.port", "-1"))
+  while (solrPort > 64000 || solrPort < 0) { // We need room for +1000 for ZK
+    try (ServerSocket s = new ServerSocket(0)) {
+      solrPort = s.getLocalPort()
+    } catch (Exception e) {
+      println("WARN: Could not assign random port for Bats tests. Using default port 8983.")
+      solrPort = 8983
+    }
+  }
 
   inputs.dir(distDir)
   outputs.dir(integrationTestOutput)
@@ -191,12 +259,18 @@ task integrationTests(type: BatsTask) {
 
     // TODO - if quiet then don't tee
     standardOutput = new TeeOutputStream(System.out, new FileOutputStream("$integrationTestOutput/test-output.txt"))
-
+    println("Running BATS tests with Solr base port ${solrPort}")
   }
 
   environment SOLR_TIP: distDir.toString()
   environment SOLR_HOME: solrHome
+  environment SOLR_PID_DIR: solrHome
+  environment SOLR_PORT: solrPort
+  environment SOLR2_PORT: solrPort + 1
+  environment SOLR3_PORT: solrPort + 2
+  environment ZK_PORT: solrPort + 1000
   environment SOLR_LOGS_DIR: "$solrHome/logs"
+  environment TEST_OUTPUT_DIR: integrationTestOutput
   environment TEST_FAILURE_DIR: solrTestFailuresDir
   environment BATS_LIB_PREFIX: "$nodeProjectDir/node_modules"
 }
@@ -221,7 +295,8 @@ class BatsTask extends Exec {
 
     // Note: tests to run must be listed after all other arguments
     // Additional debugging output: -x, --verbose-run
-    setArgs(['--print-output-on-failure'] + (testFiles.empty ? testDir : testFiles))
+    setArgs(['-T', '--print-output-on-failure'] + (testFiles.empty ? testDir : testFiles))
+
 
     super.exec()
   }

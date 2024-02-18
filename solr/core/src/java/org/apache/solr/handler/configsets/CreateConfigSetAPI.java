@@ -24,7 +24,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_P
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
@@ -65,7 +64,7 @@ public class CreateConfigSetAPI extends ConfigSetAPIBase {
 
     if (!DISABLE_CREATE_AUTH_CHECKS
         && !isTrusted(obj.getRequest().getUserPrincipal(), coreContainer.getAuthenticationPlugin())
-        && isCurrentlyTrusted(createConfigPayload.baseConfigSet)) {
+        && configSetService.isConfigSetTrusted(createConfigPayload.baseConfigSet)) {
       throw new SolrException(
           SolrException.ErrorCode.UNAUTHORIZED,
           "Can't create a configset with an unauthenticated request from a trusted "
@@ -75,7 +74,7 @@ public class CreateConfigSetAPI extends ConfigSetAPIBase {
     final Map<String, Object> configsetCommandMsg = new HashMap<>();
     configsetCommandMsg.put(NAME, createConfigPayload.name);
     configsetCommandMsg.put(ConfigSetCmds.BASE_CONFIGSET, createConfigPayload.baseConfigSet);
-    if (!MapUtils.isEmpty(createConfigPayload.properties)) {
+    if (createConfigPayload.properties != null) {
       for (Map.Entry<String, Object> e : createConfigPayload.properties.entrySet()) {
         configsetCommandMsg.put(
             ConfigSetCmds.CONFIG_SET_PROPERTY_PREFIX + e.getKey(), e.getValue());

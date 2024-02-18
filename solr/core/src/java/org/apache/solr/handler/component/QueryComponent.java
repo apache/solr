@@ -42,6 +42,7 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Sort;
@@ -88,6 +89,7 @@ import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.RankQuery;
+import org.apache.solr.search.ReRankQParserPlugin;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
@@ -204,7 +206,7 @@ public class QueryComponent extends SearchComponent {
         List<Query> filters = rb.getFilters();
         // if filters already exists, make a copy instead of modifying the original
         filters = filters == null ? new ArrayList<>(fqs.length) : new ArrayList<>(filters);
-        filters.addAll(QueryUtils.parseFilterQueries(req, false));
+        filters.addAll(QueryUtils.parseFilterQueries(req));
 
         // only set the filters if they are not empty otherwise
         // fq=&someotherParam= will trigger all docs filter for every request
@@ -496,7 +498,12 @@ public class QueryComponent extends SearchComponent {
           // :TODO: would be simpler to always serialize every position of SortField[]
           if (type == SortField.Type.SCORE || type == SortField.Type.DOC) continue;
 
-          FieldComparator<?> comparator = sortField.getComparator(1, true);
+          FieldComparator<?> comparator =
+              sortField.getComparator(
+                  1,
+                  schemaFields.size() > 1
+                      ? Pruning.GREATER_THAN
+                      : Pruning.GREATER_THAN_OR_EQUAL_TO);
           LeafFieldComparator leafComparator = null;
           Object[] vals = new Object[nDocs];
 
@@ -757,6 +764,7 @@ public class QueryComponent extends SearchComponent {
     boolean distribSinglePass = rb.req.getParams().getBool(ShardParams.DISTRIB_SINGLE_PASS, false);
 
     if (distribSinglePass
+        || singlePassExplain(rb.req.getParams())
         || (fields != null
             && fields.wantsField(keyFieldName)
             && fields.getRequestedFieldNames() != null
@@ -838,6 +846,36 @@ public class QueryComponent extends SearchComponent {
     rb.addRequest(this, sreq);
   }
 
+  private boolean singlePassExplain(SolrParams params) {
+
+    /*
+     * Currently there is only one explain that requires a single pass
+     * and that is the reRank when scaling is used.
+     */
+
+    String rankQuery = params.get(CommonParams.RQ);
+    if (rankQuery != null) {
+      if (rankQuery.contains(ReRankQParserPlugin.RERANK_MAIN_SCALE)
+          || rankQuery.contains(ReRankQParserPlugin.RERANK_SCALE)) {
+        boolean debugQuery = params.getBool(CommonParams.DEBUG_QUERY, false);
+        if (debugQuery) {
+          return true;
+        } else {
+          String[] debugParams = params.getParams(CommonParams.DEBUG);
+          if (debugParams != null) {
+            for (String debugParam : debugParams) {
+              if (debugParam.equals("true")) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
   protected boolean addFL(StringBuilder fl, String field, boolean additionalAdded) {
     if (additionalAdded) fl.append(",");
     fl.append(field);
@@ -906,9 +944,11 @@ public class QueryComponent extends SearchComponent {
             t = ((SolrServerException) t).getCause();
           }
           nl.add("error", t.toString());
-          StringWriter trace = new StringWriter();
-          t.printStackTrace(new PrintWriter(trace));
-          nl.add("trace", trace.toString());
+          if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
+            StringWriter trace = new StringWriter();
+            t.printStackTrace(new PrintWriter(trace));
+            nl.add("trace", trace.toString());
+          }
           if (srsp.getShardAddress() != null) {
             nl.add("shardAddress", srsp.getShardAddress());
           }
@@ -1272,13 +1312,15 @@ public class QueryComponent extends SearchComponent {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       boolean returnScores = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0;
 
-      String keyFieldName = rb.req.getSchema().getUniqueKeyField().getName();
+      final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
+      String keyFieldName = uniqueKey;
       boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
       if (rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName) != null) {
         // if id was renamed we need to use the new name
         keyFieldName = rb.rsp.getReturnFields().getFieldRenames().get(keyFieldName);
       }
-
+      String lastKeyString = "<empty>";
+      Boolean shardDocFoundInResults = null;
       for (ShardResponse srsp : sreq.responses) {
         if (srsp.getException() != null) {
           // Don't try to get the documents if there was an exception in the shard
@@ -1295,9 +1337,11 @@ public class QueryComponent extends SearchComponent {
                 t = ((SolrServerException) t).getCause();
               }
               nl.add("error", t.toString());
-              StringWriter trace = new StringWriter();
-              t.printStackTrace(new PrintWriter(trace));
-              nl.add("trace", trace.toString());
+              if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
+                StringWriter trace = new StringWriter();
+                t.printStackTrace(new PrintWriter(trace));
+                nl.add("trace", trace.toString());
+              }
             }
           }
 
@@ -1323,9 +1367,11 @@ public class QueryComponent extends SearchComponent {
                 (SolrDocumentList)
                     SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "response", false));
         for (SolrDocument doc : docs) {
-          Object id = doc.getFieldValue(keyFieldName);
-          ShardDoc sdoc = rb.resultIds.get(id.toString());
+          final Object id = doc.getFieldValue(keyFieldName);
+          lastKeyString = id.toString();
+          final ShardDoc sdoc = rb.resultIds.get(lastKeyString);
           if (sdoc != null) {
+            shardDocFoundInResults = Boolean.TRUE;
             if (returnScores) {
               doc.setField("score", sdoc.score);
             } else {
@@ -1338,8 +1384,27 @@ public class QueryComponent extends SearchComponent {
               doc.removeFields(keyFieldName);
             }
             rb.getResponseDocs().set(sdoc.positionInResponse, doc);
+          } else {
+            if (shardDocFoundInResults == null) {
+              shardDocFoundInResults = Boolean.FALSE;
+            }
           }
         }
+      }
+      if (Objects.equals(shardDocFoundInResults, Boolean.FALSE) && !rb.resultIds.isEmpty()) {
+        String keyMsg =
+            !uniqueKey.equals(keyFieldName)
+                ? "(either " + uniqueKey + " or " + keyFieldName + ")"
+                : uniqueKey;
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Unable to merge shard response. Perhaps uniqueKey "
+                + keyMsg
+                + " was erased by renaming via fl parameters."
+                + " Expecting:"
+                + rb.resultIds.keySet()
+                + ", a sample of keys received:"
+                + lastKeyString);
       }
     }
   }

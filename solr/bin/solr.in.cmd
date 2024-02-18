@@ -25,6 +25,16 @@ REM to use, but you can set a specific path for Solr to use without
 REM affecting other Java applications on your server/workstation.
 REM set SOLR_JAVA_HOME=
 
+REM This controls the number of seconds that the solr script will wait for
+REM Solr to stop gracefully. If the graceful stop fails, the script will
+REM forcibly stop Solr.
+REM set SOLR_STOP_WAIT=180
+
+REM This controls the number of seconds that the solr script will wait for
+REM Solr to start. If the start fails you should inspect the Solr log files
+REM for more information.
+REM set SOLR_START_WAIT=30
+
 REM Increase Java Min/Max Heap as needed to support your indexing / query needs
 REM set SOLR_JAVA_MEM=-Xms512m -Xmx512m
 
@@ -68,6 +78,12 @@ REM set SOLR_HOST=192.168.1.1
 REM By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
 REM set SOLR_WAIT_FOR_ZK=30
 
+REM By default Solr will log a warning for cores that are not registered in Zookeeper at startup
+REM but otherwise ignore them. This protects against misconfiguration (e.g. connecting to the
+REM wrong Zookeeper instance or chroot), however you need to manually delete the cores if
+REM they are no longer required. Set to "true" to have Solr automatically delete unknown cores.
+REM set SOLR_DELETE_UNKNOWN_CORES=false
+
 REM By default the start script uses UTC; override the timezone if needed
 REM set SOLR_TIMEZONE=UTC
 
@@ -84,7 +100,10 @@ REM start command line as-is, in ADDITION to other options. If you specify the
 REM -a option on start script, those options will be appended as well. Examples:
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoSoftCommit.maxTime=3000
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.autoCommit.maxTime=60000
-REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.clustering.enabled=true
+
+REM Most properties have an environment variable equivalent.
+REM A naming convention is that SOLR_FOO_BAR maps to solr.foo.bar
+REM SOLR_CLUSTERING_ENABLED=true
 
 REM Path to a directory for Solr to store cores and their data. By default, Solr will use server\solr
 REM If solr.xml is not stored in ZooKeeper, this directory needs to contain solr.xml
@@ -114,6 +133,8 @@ REM set this value as narrowly as required before going to production. In
 REM environments where security is not a concern, 0.0.0.0 can be used to allow
 REM Solr to accept connections on all network interfaces.
 REM set SOLR_JETTY_HOST=127.0.0.1
+REM Sets the network interface the Embedded ZK binds to.
+REM set SOLR_ZK_EMBEDDED_HOST=127.0.0.1
 
 REM Restrict access to solr by IP address.
 REM Specify a comma-separated list of addresses or networks, for example:
@@ -141,7 +162,8 @@ REM set SOLR_SSL_WANT_CLIENT_AUTH=false
 REM Verify client hostname during SSL handshake
 REM set SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
 REM SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
-REM this to false can be useful to disable these checks when re-using a certificate on many hosts
+REM this to false can be useful to disable these checks when re-using a certificate on many hosts.
+REM This will also be used for the default value of whether SNI Host checking should be enabled.
 REM set SOLR_SSL_CHECK_PEER_NAME=true
 REM Override Key/Trust Store types if necessary
 REM set SOLR_SSL_KEY_STORE_TYPE=PKCS12
@@ -228,7 +250,7 @@ REM This parameter lets you specify file system path(s) to explicitly allow. The
 REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path
 
 REM Before version 9.0, Solr required a copy of solr.xml file in $SOLR_HOME. Now Solr will use a default file if not found.
-REM To restore the old behaviour, set the variable below to true
+REM To restore the old behavior, set the variable below to true
 REM set SOLR_SOLRXML_REQUIRED=false
 
 REM Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
@@ -237,3 +259,7 @@ REM set SOLR_OPTS=%SOLR_OPTS% -Dlog4j2.formatMsgNoLookups=true
 
 REM The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
 REM set SOLR_MODULES=extraction,ltr
+
+REM Configure the default replica placement plugin to use if one is not configured in cluster properties
+REM See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
+REM set SOLR_PLACEMENTPLUGIN_DEFAULT=simple

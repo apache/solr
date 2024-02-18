@@ -43,11 +43,9 @@ gradlew --write-locks
 ### `solr/licenses` update
 
 ```
-git rm lucene-*-9.3.0.jar.sha1
+gradlew updateLicenses
 
-# ???manually get new .sha1 files???
-
-git add lucene-*-9.4.0.jar.sha1
+git add solr/licenses
 ```
 
 ## Code
@@ -78,16 +76,11 @@ gradlew precommit
 gradlew test
 ```
 
-## Documentation
-
-### `solr/solr-ref-guide/antora.yml` update
-
-```
-- lucene-javadocs: 'https://lucene.apache.org/core/9_3_0'
-+ lucene-javadocs: 'https://lucene.apache.org/core/9_4_0'
-```
-
 ## Finish
 
 Push the local branch to github (fork) and open a pull request.
+
+## Looking for something else?
+
+Thanks for reading these upgrade steps! But perhaps you were looking for information on trying out prerelease Lucene changes or joint local Solr and Lucene development? If so then please see the 'Update Lucene prerelease' and 'Lucene local dependency substitution' sections in the [help/dependencies.txt](../help/dependencies.txt) documentation.
 

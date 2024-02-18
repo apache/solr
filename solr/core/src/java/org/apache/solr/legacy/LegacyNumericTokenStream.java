@@ -99,11 +99,13 @@ public final class LegacyNumericTokenStream extends TokenStream {
   public interface LegacyNumericTermAttribute extends Attribute {
     /** Returns current shift value, undefined before first token */
     int getShift();
+
     /**
      * Returns current token's raw value as {@code long} with all {@link #getShift} applied,
      * undefined before first token
      */
     long getRawValue();
+
     /**
      * Returns value size in bits (32 for {@code float}, {@code int}; 64 for {@code double}, {@code
      * long})
@@ -252,14 +254,12 @@ public final class LegacyNumericTokenStream extends TokenStream {
     @Override
     public boolean equals(Object obj) {
       if (this == obj) return true;
-      if (obj == null) return false;
-      if (getClass() != obj.getClass()) return false;
+      if (!(obj instanceof LegacyNumericTermAttributeImpl)) return false;
       LegacyNumericTermAttributeImpl other = (LegacyNumericTermAttributeImpl) obj;
       if (precisionStep != other.precisionStep) return false;
       if (shift != other.shift) return false;
       if (value != other.value) return false;
-      if (valueSize != other.valueSize) return false;
-      return true;
+      return valueSize == other.valueSize;
     }
   }
 

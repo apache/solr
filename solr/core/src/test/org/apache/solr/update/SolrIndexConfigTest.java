@@ -68,6 +68,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     initCore(solrConfigFileName, schemaFileName);
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     System.clearProperty("mergePolicySort");

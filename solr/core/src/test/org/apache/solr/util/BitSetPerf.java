@@ -69,7 +69,7 @@ public class BitSetPerf {
     FixedBitSet obs = new FixedBitSet(bitSetSize);
     randomSets(bitSetSize, numBitsSet, bs, obs);
 
-    int ret = 0;
+    long ret = 0;
 
     final RTimer timer = new RTimer();
 

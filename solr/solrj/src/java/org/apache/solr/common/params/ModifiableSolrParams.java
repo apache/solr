@@ -16,6 +16,9 @@
  */
 package org.apache.solr.common.params;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.INDENT;
+
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -74,6 +77,7 @@ public class ModifiableSolrParams extends SolrParams {
     if (val != null) set(name, String.valueOf(val));
     return this;
   }
+
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
 
@@ -174,6 +178,16 @@ public class ModifiableSolrParams extends SolrParams {
 
   // ----------------------------------------------------------------
   // ----------------------------------------------------------------
+
+  public void setShardAttributesToParams(int purpose) {
+    remove(ShardParams.SHARDS); // not a top-level request
+    set(DISTRIB, Boolean.FALSE.toString()); // not a top-level request
+    remove(INDENT);
+    remove(CommonParams.HEADER_ECHO_PARAMS);
+    set(ShardParams.IS_SHARD, true); // a sub (shard) request
+    set(ShardParams.SHARDS_PURPOSE, purpose);
+    set(CommonParams.OMIT_HEADER, false);
+  }
 
   @Override
   public String get(String param) {

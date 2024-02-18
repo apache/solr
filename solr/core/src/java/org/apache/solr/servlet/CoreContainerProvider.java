@@ -23,6 +23,7 @@ import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIB
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_LEVEL;
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_MUTECONSOLE;
 
+import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
 import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
@@ -41,11 +42,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -55,11 +56,15 @@ import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.UnavailableException;
 import org.apache.http.client.HttpClient;
+import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.util.VectorUtil;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean.Group;
@@ -71,7 +76,6 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricManager.ResolutionStrategy;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.servlet.RateLimitManager.Builder;
-import org.apache.solr.util.SolrVersion;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +95,6 @@ public class CoreContainerProvider implements ServletContextListener {
   private RateLimitManager rateLimitManager;
   private final CountDownLatch init = new CountDownLatch(1);
   private String registryName;
-  private final boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
   // AFAIK the only reason we need this is to support JettySolrRunner for tests. In tests we might
   // have multiple CoreContainers in the same JVM, but I *think* that doesn't happen in a real
   // server.
@@ -226,9 +229,23 @@ public class CoreContainerProvider implements ServletContextListener {
         StartupLoggingUtils.changeLogLevel(logLevel);
       }
 
+      // Do initial logs for experimental Lucene classes.
+      // TODO: Use "MethodHandles.lookup().ensureClassInitialized()" instead of "Class.forName()"
+      //   once JDK 15+ is mandatory
+      Stream.of(MMapDirectory.class, VectorUtil.class)
+          .forEach(
+              cls -> {
+                try {
+                  Class.forName(cls.getName());
+                } catch (ReflectiveOperationException re) {
+                  throw new SolrException(
+                      ErrorCode.SERVER_ERROR, "Could not load Lucene class: " + cls.getName());
+                }
+              });
+
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
-      setupJvmMetrics(coresInit);
+      setupJvmMetrics(coresInit, coresInit.getNodeConfig().getMetricsConfig());
 
       SolrZkClient zkClient = null;
       ZkController zkController = coresInit.getZkController();
@@ -250,8 +267,7 @@ public class CoreContainerProvider implements ServletContextListener {
       }
     } catch (Throwable t) {
       // catch this so our filter still works
-      log.error("Could not start Solr. Check solr/home property and the logs");
-      SolrCore.log(t);
+      log.error("Could not start Solr. Check solr/home property and the logs", t);
       if (t instanceof Error) {
         throw (Error) t;
       }
@@ -412,10 +428,10 @@ public class CoreContainerProvider implements ServletContextListener {
     return coreContainer;
   }
 
-  private void setupJvmMetrics(CoreContainer coresInit) {
+  private void setupJvmMetrics(CoreContainer coresInit, MetricsConfig config) {
     metricManager = coresInit.getMetricManager();
     registryName = SolrMetricManager.getRegistryName(Group.jvm);
-    final Set<String> hiddenSysProps = coresInit.getConfig().getMetricsConfig().getHiddenSysProps();
+    final NodeConfig nodeConfig = coresInit.getConfig();
     try {
       metricManager.registerAll(
           registryName, new AltBufferPoolMetricSet(), ResolutionStrategy.IGNORE, "buffers");
@@ -427,19 +443,35 @@ public class CoreContainerProvider implements ServletContextListener {
           registryName, new GarbageCollectorMetricSet(), ResolutionStrategy.IGNORE, "gc");
       metricManager.registerAll(
           registryName, new MemoryUsageGaugeSet(), ResolutionStrategy.IGNORE, "memory");
-      metricManager.registerAll(
-          registryName,
-          new ThreadStatesGaugeSet(),
-          ResolutionStrategy.IGNORE,
-          "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
+
+      if (config.getCacheConfig() != null
+          && config.getCacheConfig().threadsIntervalSeconds != null) {
+        if (log.isInfoEnabled()) {
+          log.info(
+              "Threads metrics will be cached for {} seconds",
+              config.getCacheConfig().threadsIntervalSeconds);
+        }
+        metricManager.registerAll(
+            registryName,
+            new CachedThreadStatesGaugeSet(
+                config.getCacheConfig().threadsIntervalSeconds, TimeUnit.SECONDS),
+            SolrMetricManager.ResolutionStrategy.IGNORE,
+            "threads");
+      } else {
+        metricManager.registerAll(
+            registryName,
+            new ThreadStatesGaugeSet(),
+            SolrMetricManager.ResolutionStrategy.IGNORE,
+            "threads");
+      }
+
       MetricsMap sysprops =
           new MetricsMap(
               map ->
                   System.getProperties()
                       .forEach(
                           (k, v) -> {
-                            //noinspection SuspiciousMethodCalls
-                            if (!hiddenSysProps.contains(k)) {
+                            if (!nodeConfig.isSysPropHidden(String.valueOf(k))) {
                               map.putNoEx(String.valueOf(k), v);
                             }
                           }));
@@ -451,18 +483,6 @@ public class CoreContainerProvider implements ServletContextListener {
           ResolutionStrategy.IGNORE,
           "properties",
           "system");
-      MetricsMap sysenv =
-          new MetricsMap(
-              map ->
-                  System.getenv()
-                      .forEach(
-                          (k, v) -> {
-                            if (!hiddenSysProps.contains(k)) {
-                              map.putNoEx(String.valueOf(k), v);
-                            }
-                          }));
-      metricManager.registerGauge(
-          null, registryName, sysenv, metricTag, ResolutionStrategy.IGNORE, "env", "system");
     } catch (Exception e) {
       log.warn("Error registering JVM metrics", e);
     }
@@ -475,10 +495,6 @@ public class CoreContainerProvider implements ServletContextListener {
   @VisibleForTesting
   void setRateLimitManager(RateLimitManager rateLimitManager) {
     this.rateLimitManager = rateLimitManager;
-  }
-
-  public boolean isV2Enabled() {
-    return isV2Enabled;
   }
 
   private static class ContextInitializationKey {
@@ -512,7 +528,7 @@ public class CoreContainerProvider implements ServletContextListener {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof ContextInitializationKey)) return false;
       ContextInitializationKey that = (ContextInitializationKey) o;
       return ctx.equals(that.ctx);
     }

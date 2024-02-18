@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -69,6 +68,7 @@ import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
@@ -194,7 +194,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         }
       } else {
         for (String fq : fqs) {
-          if (StringUtils.isNotBlank(fq) && !fq.equals("*:*")) {
+          if (StrUtils.isNotBlank(fq) && !fq.equals("*:*")) {
             QParser fqp = QParser.getParser(fq, req);
             newFilters.add(fqp.getQuery());
           }
@@ -432,7 +432,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       newFilters.add(groupQuery);
     }
 
-    SolrIndexSearcher.ProcessedFilter pfilter = searcher.getProcessedFilter(null, newFilters);
+    SolrIndexSearcher.ProcessedFilter pfilter = searcher.getProcessedFilter(newFilters);
     if (pfilter.postFilter != null) {
       pfilter.postFilter.setLastDelegate(groupExpandCollector);
       collector = pfilter.postFilter;
@@ -557,6 +557,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
     }
 
+    @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       final int docBase = context.docBase;
 
@@ -656,6 +657,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       this.collapsedSet = collapsedSet;
     }
 
+    @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       final int docBase = context.docBase;
 

@@ -41,9 +41,9 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -96,6 +96,7 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   public static void disableMetrics() {
     System.clearProperty("metricsEnabled");
   }
+
   /** Used to check metric counts for PKI auth */
   protected void assertPkiAuthMetricsMinimums(
       int requests,

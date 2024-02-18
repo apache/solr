@@ -18,25 +18,26 @@ package org.apache.solr.common.cloud;
 
 import static org.apache.solr.common.util.Utils.STANDARDOBJBUILDER;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
@@ -50,7 +51,7 @@ import org.slf4j.LoggerFactory;
  *
  * @lucene.experimental
  */
-public class ClusterState implements JSONWriter.Writable {
+public class ClusterState implements MapWriter {
 
   /** Cluster Prop that is http or https. */
   public static final String URL_SCHEME = "urlScheme";
@@ -67,7 +68,7 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   private static Map<String, CollectionRef> getRefMap(Map<String, DocCollection> collectionStates) {
-    Map<String, CollectionRef> collRefs = new LinkedHashMap<>(collectionStates.size());
+    Map<String, CollectionRef> collRefs = CollectionUtil.newLinkedHashMap(collectionStates.size());
     for (Entry<String, DocCollection> entry : collectionStates.entrySet()) {
       final DocCollection c = entry.getValue();
       collRefs.put(entry.getKey(), new CollectionRef(c));
@@ -80,7 +81,7 @@ public class ClusterState implements JSONWriter.Writable {
    * loaded (parameter order different from constructor above to have different erasures)
    */
   public ClusterState(Map<String, CollectionRef> collectionStates, Set<String> liveNodes) {
-    this.liveNodes = new HashSet<>(liveNodes.size());
+    this.liveNodes = CollectionUtil.newHashSet(liveNodes.size());
     this.liveNodes.addAll(liveNodes);
     this.collectionStates = new LinkedHashMap<>(collectionStates);
     this.immutableCollectionStates = Collections.unmodifiableMap(this.collectionStates);
@@ -160,7 +161,7 @@ public class ClusterState implements JSONWriter.Writable {
    * @return a map of collection name vs DocCollection object
    */
   public Map<String, DocCollection> getCollectionsMap() {
-    Map<String, DocCollection> result = new HashMap<>(collectionStates.size());
+    Map<String, DocCollection> result = CollectionUtil.newHashMap(collectionStates.size());
     for (Entry<String, CollectionRef> entry : collectionStates.entrySet()) {
       DocCollection collection = entry.getValue().get();
       if (collection != null) {
@@ -225,35 +226,66 @@ public class ClusterState implements JSONWriter.Writable {
    *     Json representation of a {@link DocCollection} as written by {@link #write(JSONWriter)}. It
    *     can represent one or more collections.
    * @param liveNodes list of live nodes
+   * @param creationTime assigns this date to all {@link DocCollection} referenced by the returned
+   *     {@link ClusterState}
    * @return the ClusterState
    */
-  public static ClusterState createFromJson(int version, byte[] bytes, Set<String> liveNodes) {
+  public static ClusterState createFromJson(
+      int version,
+      byte[] bytes,
+      Set<String> liveNodes,
+      Instant creationTime,
+      DocCollection.PrsSupplier prsSupplier) {
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> stateMap =
         (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length, STR_INTERNER_OBJ_BUILDER);
-    return createFromCollectionMap(version, stateMap, liveNodes);
+    return createFromCollectionMap(version, stateMap, liveNodes, creationTime, prsSupplier);
+  }
+
+  @Deprecated
+  public static ClusterState createFromJson(int version, byte[] bytes, Set<String> liveNodes) {
+    return createFromJson(version, bytes, liveNodes, Instant.EPOCH, null);
   }
 
   public static ClusterState createFromCollectionMap(
-      int version, Map<String, Object> stateMap, Set<String> liveNodes) {
-    Map<String, CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
+      int version,
+      Map<String, Object> stateMap,
+      Set<String> liveNodes,
+      Instant creationTime,
+      DocCollection.PrsSupplier prsSupplier) {
+    Map<String, CollectionRef> collections = CollectionUtil.newLinkedHashMap(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
       String collectionName = entry.getKey();
       @SuppressWarnings({"unchecked"})
       DocCollection coll =
-          collectionFromObjects(collectionName, (Map<String, Object>) entry.getValue(), version);
+          collectionFromObjects(
+              collectionName,
+              (Map<String, Object>) entry.getValue(),
+              version,
+              creationTime,
+              prsSupplier);
       collections.put(collectionName, new CollectionRef(coll));
     }
 
     return new ClusterState(collections, liveNodes);
   }
 
+  @Deprecated
+  public static ClusterState createFromCollectionMap(
+      int version, Map<String, Object> stateMap, Set<String> liveNodes) {
+    return createFromCollectionMap(version, stateMap, liveNodes, Instant.EPOCH, null);
+  }
+
   // TODO move to static DocCollection.loadFromMap
-  private static DocCollection collectionFromObjects(
-      String name, Map<String, Object> objs, int version) {
+  public static DocCollection collectionFromObjects(
+      String name,
+      Map<String, Object> objs,
+      int version,
+      Instant creationTime,
+      DocCollection.PrsSupplier prsSupplier) {
     Map<String, Object> props;
     Map<String, Slice> slices;
 
@@ -261,9 +293,6 @@ public class ClusterState implements JSONWriter.Writable {
       if (log.isDebugEnabled()) {
         log.debug("a collection {} has per-replica state", name);
       }
-      // this collection has replica states stored outside
-      ReplicaStatesProvider rsp = REPLICASTATES_PROVIDER.get();
-      if (rsp instanceof StatesProvider) ((StatesProvider) rsp).isPerReplicaState = true;
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(CollectionStateProps.SHARDS);
@@ -274,8 +303,8 @@ public class ClusterState implements JSONWriter.Writable {
       props = Collections.emptyMap();
     } else {
       slices = Slice.loadAllFromMap(name, sliceObjs);
-      props = new HashMap<>(objs);
       objs.remove(CollectionStateProps.SHARDS);
+      props = new HashMap<>(objs);
     }
 
     Object routerObj = props.get(CollectionStateProps.DOC_ROUTER);
@@ -291,19 +320,17 @@ public class ClusterState implements JSONWriter.Writable {
       router = DocRouter.getDocRouter((String) routerProps.get("name"));
     }
 
-    return new DocCollection(name, slices, props, router, version);
+    return DocCollection.create(name, slices, props, router, version, creationTime, prsSupplier);
   }
 
   @Override
-  public void write(JSONWriter jsonWriter) {
-    LinkedHashMap<String, DocCollection> map = new LinkedHashMap<>();
+  public void writeMap(EntryWriter ew) throws IOException {
     for (Entry<String, CollectionRef> e : collectionStates.entrySet()) {
       if (e.getValue().getClass() == CollectionRef.class) {
         DocCollection coll = e.getValue().get();
-        map.put(coll.getName(), coll);
+        ew.put(coll.getName(), coll);
       }
     }
-    jsonWriter.write(map);
   }
 
   @Override
@@ -317,8 +344,7 @@ public class ClusterState implements JSONWriter.Writable {
   @Override
   public boolean equals(Object obj) {
     if (this == obj) return true;
-    if (obj == null) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (!(obj instanceof ClusterState)) return false;
     ClusterState other = (ClusterState) obj;
     if (liveNodes == null) {
       return other.liveNodes == null;
@@ -425,63 +451,6 @@ public class ClusterState implements JSONWriter.Writable {
 
   public int size() {
     return collectionStates.size();
-  }
-
-  interface ReplicaStatesProvider {
-
-    Optional<ReplicaStatesProvider> get();
-
-    PerReplicaStates getStates();
-  }
-
-  private static final ReplicaStatesProvider EMPTYSTATEPROVIDER =
-      new ReplicaStatesProvider() {
-        @Override
-        public Optional<ReplicaStatesProvider> get() {
-          return Optional.empty();
-        }
-
-        @Override
-        public PerReplicaStates getStates() {
-          throw new RuntimeException("Invalid operation");
-        }
-      };
-
-  private static ThreadLocal<ReplicaStatesProvider> REPLICASTATES_PROVIDER = new ThreadLocal<>();
-
-  public static ReplicaStatesProvider getReplicaStatesProvider() {
-    return (REPLICASTATES_PROVIDER.get() == null)
-        ? EMPTYSTATEPROVIDER
-        : REPLICASTATES_PROVIDER.get();
-  }
-
-  public static void initReplicaStateProvider(Supplier<PerReplicaStates> replicaStatesSupplier) {
-    REPLICASTATES_PROVIDER.set(new StatesProvider(replicaStatesSupplier));
-  }
-
-  public static void clearReplicaStateProvider() {
-    REPLICASTATES_PROVIDER.remove();
-  }
-
-  private static class StatesProvider implements ReplicaStatesProvider {
-    private final Supplier<PerReplicaStates> replicaStatesSupplier;
-    private PerReplicaStates perReplicaStates;
-    private boolean isPerReplicaState = false;
-
-    public StatesProvider(Supplier<PerReplicaStates> replicaStatesSupplier) {
-      this.replicaStatesSupplier = replicaStatesSupplier;
-    }
-
-    @Override
-    public Optional<ReplicaStatesProvider> get() {
-      return isPerReplicaState ? Optional.of(this) : Optional.empty();
-    }
-
-    @Override
-    public PerReplicaStates getStates() {
-      if (perReplicaStates == null) perReplicaStates = replicaStatesSupplier.get();
-      return perReplicaStates;
-    }
   }
 
   private static volatile Function<JSONParser, ObjectBuilder> STR_INTERNER_OBJ_BUILDER =

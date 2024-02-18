@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.params;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -23,9 +24,12 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** */
 public class SolrParamTest extends SolrTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void testParamIterators() {
 
@@ -301,7 +305,7 @@ public class SolrParamTest extends SolrTestCase {
     } catch (SolrException sx) {
       return sx.code();
     } catch (Exception ex) {
-      ex.printStackTrace();
+      log.error("error running", ex);
       return 500;
     }
     return 200;

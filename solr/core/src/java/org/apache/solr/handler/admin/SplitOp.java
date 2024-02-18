@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Terms;
@@ -68,6 +69,11 @@ import org.slf4j.LoggerFactory;
 class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @Override
+  public boolean isExpensive() {
+    return true;
+  }
 
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
@@ -262,8 +268,9 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
         DocCollection collection = clusterState.getCollection(collectionName);
         String sliceName = parentCore.getCoreDescriptor().getCloudDescriptor().getShardId();
         Slice slice = collection.getSlice(sliceName);
-        DocRouter router =
-            collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
+        CompositeIdRouter router =
+            (CompositeIdRouter)
+                (collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT);
         DocRouter.Range currentRange = slice.getRange();
 
         Object routerObj =
@@ -353,7 +360,10 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
    * Returns a list of range counts sorted by the range lower bound
    */
   static Collection<RangeCount> getHashHistogram(
-      SolrIndexSearcher searcher, String prefixField, DocRouter router, DocCollection collection)
+      SolrIndexSearcher searcher,
+      String prefixField,
+      CompositeIdRouter router,
+      DocCollection collection)
       throws IOException {
     RTimer timer = new RTimer();
     TreeMap<DocRouter.Range, RangeCount> counts = new TreeMap<>();
@@ -373,14 +383,18 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
     while ((term = termsEnum.next()) != null) {
       numPrefixes++;
 
-      String termStr = term.utf8ToString();
-      int firstSep = termStr.indexOf(CompositeIdRouter.SEPARATOR);
       // truncate to first separator since we don't support multiple levels currently
       // NOTE: this does not currently work for tri-level composite ids since the number of bits
       // allocated to the first ID is 16 for a 2 part id and 8 for a 3 part id!
-      if (firstSep != termStr.length() - 1 && firstSep > 0) {
-        numTriLevel++;
-        termStr = termStr.substring(0, firstSep + 1);
+      String termStr;
+      int routeKeyLen = router.getRouteKeyWithSeparator(term.bytes, term.offset, term.length);
+      if (routeKeyLen == 0 || routeKeyLen == term.length) {
+        termStr = term.utf8ToString();
+      } else {
+        int prevLen = term.length;
+        term.length = routeKeyLen;
+        termStr = term.utf8ToString();
+        term.length = prevLen; // restore    (Question: must we do this?)
       }
 
       DocRouter.Range range = router.getSearchRangeSingle(termStr, null, collection);
@@ -417,7 +431,10 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
    * (i.e. the terms are full IDs, not just prefixes)
    */
   static Collection<RangeCount> getHashHistogramFromId(
-      SolrIndexSearcher searcher, String idField, DocRouter router, DocCollection collection)
+      SolrIndexSearcher searcher,
+      String idField,
+      CompositeIdRouter router,
+      DocCollection collection)
       throws IOException {
     RTimer timer = new RTimer();
 
@@ -432,9 +449,8 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
     int numCollisions = 0;
     long sumBuckets = 0;
 
-    byte sep = (byte) CompositeIdRouter.SEPARATOR.charAt(0);
     TermsEnum termsEnum = terms.iterator();
-    BytesRef currPrefix = new BytesRef(); // prefix of the previous "id" term
+    BytesRef currPrefix = new BytesRef(); // prefix of the previous "id" term WITH SEPARATOR
     int bucketCount = 0; // count of the number of docs in the current bucket
 
     // We're going to iterate over all terms, so do the minimum amount of work per term.
@@ -444,7 +460,9 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       BytesRef term = termsEnum.next();
 
       // compare to current prefix bucket and see if this new term shares the same prefix
-      if (term != null && term.length >= currPrefix.length && currPrefix.length > 0) {
+      if (term != null && currPrefix.length > 0) {
+        // since currPrefix includes the trailing separator, we can assume startsWith is a
+        // sufficient test
         if (StringHelper.startsWith(term, currPrefix)) {
           bucketCount++; // use 1 since we are dealing with unique ids
           continue;
@@ -473,25 +491,16 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
       // if the current term is null, we ran out of values
       if (term == null) break;
 
-      // find the new prefix (if any)
-
-      // resize if needed
-      if (currPrefix.length < term.length) {
-        currPrefix.bytes = new byte[term.length + 10];
-      }
-
-      // Copy the bytes up to and including the separator, and set the length if the separator is
-      // found. If there was no separator, then length remains 0 and it's the indicator that we have
-      // no prefix bucket
-      currPrefix.length = 0;
-      for (int i = 0; i < term.length; i++) {
-        byte b = term.bytes[i + term.offset];
-        currPrefix.bytes[i] = b;
-        if (b == sep) {
-          currPrefix.length = i + 1;
-          bucketCount++;
-          break;
+      // find the new prefix (if any), with trailing separator
+      currPrefix.length = router.getRouteKeyWithSeparator(term.bytes, term.offset, term.length);
+      if (currPrefix.length > 0) {
+        // resize if needed
+        if (currPrefix.length > currPrefix.bytes.length) {
+          currPrefix.bytes = new byte[currPrefix.length + 10];
         }
+        System.arraycopy(term.bytes, term.offset, currPrefix.bytes, 0, currPrefix.length);
+
+        bucketCount++;
       }
     }
 
@@ -596,7 +605,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
     // The middle should never be the last, since that means that we won't actually do a split.
     // Minimising the error (above) should already ensure this never happens.
-    assert middle != last;
+    assert !Objects.equals(middle, last);
 
     // Make sure to include the shard's current range in the new ranges so we don't create useless
     // empty shards.

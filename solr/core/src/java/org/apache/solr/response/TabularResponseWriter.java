@@ -17,8 +17,6 @@
 
 package org.apache.solr.response;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Collection;
@@ -27,6 +25,8 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
@@ -63,16 +63,18 @@ public abstract class TabularResponseWriter extends TextResponseWriter {
       } else {
         // get the list of fields from the index
         Iterable<String> all = req.getSearcher().getFieldNames();
+        Set<String> allSet =
+            StreamSupport.stream(all.spliterator(), false).collect(Collectors.toSet());
         if (fields == null) {
-          fields = Sets.newHashSet(all);
+          fields = allSet;
         } else {
-          Iterables.addAll(fields, all);
+          fields.addAll(allSet);
         }
       }
 
       if (explicitReqFields != null) {
         // add explicit requested fields
-        Iterables.addAll(fields, explicitReqFields);
+        fields.addAll(explicitReqFields);
       }
 
       if (returnFields.wantsScore()) {

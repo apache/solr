@@ -49,9 +49,9 @@ When heaps grow to larger sizes, it is imperative to test extensively before goi
 It is often better in these cases to run multiple JVMs, each with a limited amount of memory allocated to their heaps.
 One way to achieve this is to run Solr as a https://hub.docker.com/_/solr?tab=tags[Docker container].
 * It's good practice to periodically re-analyze the GC logs and/or monitor with xref:metrics-reporting.adoc[] to see if the memory usage has changed due to changes in your application, number of documents, etc.
-* On *nix systems, Solr will run with "OOM killer script" (see `solr/bin/oom_solr.sh`).
-This will forcefully stop Solr when the heap is exhausted rather than continue in an indeterminate state.
-You can additionally request a heap dump on OOM through the values in `solr.in.sh`
+* Solr will run with an option that causes the JVM to crash on OutOfMemoryError exceptions.
+This will forcefully stop Solr when a system resource is exhausted rather than continue in an indeterminate state.
+You can additionally request a heap dump on OOME through the values in `solr.in.sh`
 * All current (Java 11) garbage collectors can hit "stop the world" collections, which suspend the JVM until completed.
 If, through monitoring, these garbage collections are frequent and greater than your application can tolerate, additional tuning should be considered.
 "Stop the world" pauses greater than 5 seconds are rarely acceptable, and having them be less than 1 second is desirable.

@@ -16,11 +16,11 @@
  */
 package org.apache.solr.cloud;
 
-import com.google.common.collect.Maps;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
@@ -77,7 +77,7 @@ public class SizeLimitedDistributedMap extends DistributedMap {
             }
           };
 
-      Map<String, Long> childToModificationZxid = Maps.newHashMapWithExpectedSize(children.size());
+      Map<String, Long> childToModificationZxid = CollectionUtil.newHashMap(children.size());
       for (String child : children) {
         Stat stat = zookeeper.exists(dir + "/" + child, null, true);
         if (stat != null) {
@@ -91,9 +91,11 @@ public class SizeLimitedDistributedMap extends DistributedMap {
       for (String child : children) {
         Long id = childToModificationZxid.get(child);
         if (id != null && id <= topElementMzxId) {
-          zookeeper.delete(dir + "/" + child, -1, true);
-          if (onOverflowObserver != null)
-            onOverflowObserver.onChildDelete(child.substring(PREFIX.length()));
+          String trackingId = child.substring(PREFIX.length());
+          boolean removed = remove(trackingId);
+          if (removed && onOverflowObserver != null) {
+            onOverflowObserver.onChildDelete(trackingId);
+          } // else, probably multiple threads cleaning the queue simultaneously
         }
       }
     }

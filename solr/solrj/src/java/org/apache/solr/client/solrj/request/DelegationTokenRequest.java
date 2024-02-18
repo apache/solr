@@ -18,10 +18,10 @@
 package org.apache.solr.client.solrj.request;
 
 import java.util.Arrays;
-import java.util.Set;
 import java.util.TreeSet;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -61,7 +61,7 @@ public abstract class DelegationTokenRequest<
     public Get(String renewer) {
       super(METHOD.GET);
       this.renewer = renewer;
-      setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
+      setResponseParser(new JsonMapResponseParser());
       setQueryParams(new TreeSet<>(Arrays.asList(OP_KEY)));
     }
 
@@ -100,7 +100,7 @@ public abstract class DelegationTokenRequest<
     public Renew(String token) {
       super(METHOD.PUT);
       this.token = token;
-      setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
+      setResponseParser(new JsonMapResponseParser());
       setQueryParams(new TreeSet<>(Arrays.asList(OP_KEY, TOKEN_KEY)));
     }
 
@@ -131,7 +131,6 @@ public abstract class DelegationTokenRequest<
       super(METHOD.PUT);
       this.token = token;
       setResponseParser(new NoOpResponseParser());
-      Set<String> queryParams = new TreeSet<>();
       setQueryParams(new TreeSet<>(Arrays.asList(OP_KEY, TOKEN_KEY)));
     }
 

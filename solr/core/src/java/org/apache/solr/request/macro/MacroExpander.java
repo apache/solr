@@ -17,11 +17,11 @@
 package org.apache.solr.request.macro;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.search.StrParser;
 import org.apache.solr.search.SyntaxError;
 
@@ -52,7 +52,7 @@ public class MacroExpander {
   }
 
   public boolean expand() {
-    this.expanded = new HashMap<>(orig.size());
+    this.expanded = CollectionUtil.newHashMap(orig.size());
 
     boolean changed = false;
     for (Map.Entry<String, String[]> entry : orig.entrySet()) {

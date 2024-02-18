@@ -1179,13 +1179,16 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   /** sentinel object for {@link #checkReplay} */
   public Object SOFTCOMMIT =
       new Object() {
+        @Override
         public String toString() {
           return "SOFTCOMMIT";
         }
       };
+
   /** sentinel object for {@link #checkReplay} */
   public Object HARDCOMMIT =
       new Object() {
+        @Override
         public String toString() {
           return "HARDCOMMIT";
         }
@@ -1603,6 +1606,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     assertQ(req("q", "title_s:first1"), "//*[@numFound='0']"); // but the old value does not exist
     assertQ(req("q", "title_s:third"), "//*[@numFound='0']"); // doc3 does not exist
   }
+
   /**
    * Helper method that sets up a req/cmd to run {@link
    * AtomicUpdateDocumentMerger#computeInPlaceUpdatableFields} on the specified solr input document.

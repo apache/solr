@@ -22,9 +22,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import javax.xml.parsers.DocumentBuilder;
@@ -71,6 +71,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   public static void beforeTests() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
+
   // tests the performance of dynamic field creation and
   // field property testing.
   /*
@@ -295,7 +296,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     final String BAD_VALUE = "NOT_A_DATE";
     ignoreException(BAD_VALUE);
 
-    final List<String> FIELDS = new LinkedList<>();
+    final List<String> FIELDS = new ArrayList<>();
     for (String type :
         new String[] {"tdt", "tdt1", "tdtdv", "tdtdv1", "dt_dv", "dt_dvo", "dt", "dt1", "dt_os"}) {
       FIELDS.add("malformed_" + type);
@@ -351,7 +352,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     final String BAD_VALUE = "NOT_A_NUMBER";
     ignoreException(BAD_VALUE);
 
-    final List<String> FIELDS = new LinkedList<>();
+    final List<String> FIELDS = new ArrayList<>();
     for (String type :
         new String[] {
           "ti", "tf", "td", "tl",

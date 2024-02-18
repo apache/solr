@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -51,6 +50,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -74,8 +74,9 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
   private static final String COLLECTION_NAME = "test_col";
 
-  /** A basic client for operations at the cloud level, default collection will be set */
-  private static CloudSolrClient CLOUD_CLIENT;
+  /** A collection specific client for operations at the cloud level */
+  private static CloudSolrClient COLLECTION_CLIENT;
+
   /** One client per node */
   private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
@@ -127,22 +128,21 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
     configureCluster(numNodes).addConfig(configName, configDir).configure();
 
-    CLOUD_CLIENT = cluster.getSolrClient();
-    CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
         .withProperty("config", "solrconfig-tlog.xml")
         .withProperty("schema", "schema-minimal-atomic-stress.xml")
-        .process(CLOUD_CLIENT);
+        .process(COLLECTION_CLIENT);
 
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
+    waitForRecoveriesToFinish(COLLECTION_CLIENT);
 
     CLIENTS.clear();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       assertNotNull("Cluster contains null jetty?", jetty);
       final URL baseUrl = jetty.getBaseUrl();
       assertNotNull("Jetty has null baseUrl: " + jetty, baseUrl);
-      CLIENTS.add(getHttpSolrClient(baseUrl + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(getHttpSolrClient(baseUrl.toString(), COLLECTION_NAME));
     }
 
     // sanity check no one broke the assumptions we make about our schema
@@ -163,9 +163,9 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       ExecutorUtil.shutdownAndAwaitTermination(EXEC_SERVICE);
       EXEC_SERVICE = null;
     }
-    if (null != CLOUD_CLIENT) {
-      IOUtils.closeQuietly(CLOUD_CLIENT);
-      CLOUD_CLIENT = null;
+    if (null != COLLECTION_CLIENT) {
+      IOUtils.closeQuietly(COLLECTION_CLIENT);
+      COLLECTION_CLIENT = null;
     }
     for (SolrClient client : CLIENTS) {
       if (null == client) {
@@ -179,15 +179,15 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   @Before
   public void clearCloudCollection() throws Exception {
     TestInjection.reset();
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
+    waitForRecoveriesToFinish(COLLECTION_CLIENT);
 
-    assertEquals(0, CLOUD_CLIENT.deleteByQuery("*:*").getStatus());
-    assertEquals(0, CLOUD_CLIENT.optimize().getStatus());
+    assertEquals(0, COLLECTION_CLIENT.deleteByQuery("*:*").getStatus());
+    assertEquals(0, COLLECTION_CLIENT.optimize().getStatus());
 
     assertEquals(
         "Collection should be empty!",
         0,
-        CLOUD_CLIENT.query(params("q", "*:*")).getResults().getNumFound());
+        COLLECTION_CLIENT.query(params("q", "*:*")).getResults().getNumFound());
 
     final int injectionPercentage = (int) Math.ceil((float) atLeast(1) / 2);
     testInjection = usually() ? "false:0" : ("true:" + injectionPercentage);
@@ -301,7 +301,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       // and we will inc/dec by random smaller ints, to ensure we never over/under flow
       final int initValue = random().nextInt();
       SolrInputDocument doc = doc(f("id", "" + id), f(numericFieldName, initValue));
-      UpdateResponse rsp = update(doc).process(CLOUD_CLIENT);
+      UpdateResponse rsp = update(doc).process(COLLECTION_CLIENT);
       assertEquals(doc + " => " + rsp, 0, rsp.getStatus());
       if (0 == id % DOC_ID_INCR) {
         expected[id / DOC_ID_INCR] = new AtomicLong(initValue);
@@ -310,9 +310,10 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     assertNotNull("Sanity Check no off-by-one in expected init: ", expected[expected.length - 1]);
 
     // sanity check index contents
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
-    assertEquals(0, CLOUD_CLIENT.commit().getStatus());
-    assertEquals(numDocsInIndex, CLOUD_CLIENT.query(params("q", "*:*")).getResults().getNumFound());
+    waitForRecoveriesToFinish(COLLECTION_CLIENT);
+    assertEquals(0, COLLECTION_CLIENT.commit().getStatus());
+    assertEquals(
+        numDocsInIndex, COLLECTION_CLIENT.query(params("q", "*:*")).getResults().getNumFound());
 
     startTestInjection();
 
@@ -354,7 +355,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
         abortLatch.getCount());
 
     TestInjection.reset();
-    waitForRecoveriesToFinish(CLOUD_CLIENT);
+    waitForRecoveriesToFinish(COLLECTION_CLIENT);
 
     // check all the final index contents match our expectations
     int incorrectDocs = 0;
@@ -437,6 +438,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       counter.getAndAdd(delta);
     }
 
+    @Override
     public void run() {
       final String origThreadName = Thread.currentThread().getName();
       try {
@@ -517,7 +519,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   public static SolrClient getRandClient(Random rand) {
     int numClients = CLIENTS.size();
     int idx = TestUtil.nextInt(rand, 0, numClients);
-    return (idx == numClients) ? CLOUD_CLIENT : CLIENTS.get(idx);
+    return (idx == numClients) ? COLLECTION_CLIENT : CLIENTS.get(idx);
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
@@ -531,12 +533,12 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
    * Use the schema API to verify that the specified expected Field exists with those exact
    * attributes.
    *
-   * @see #CLOUD_CLIENT
+   * @see #COLLECTION_CLIENT
    */
   public static void checkExpectedSchemaField(Map<String, Object> expected) throws Exception {
     String fieldName = (String) expected.get("name");
     assertNotNull("expected contains no name: " + expected, fieldName);
-    FieldResponse rsp = new Field(fieldName).process(CLOUD_CLIENT);
+    FieldResponse rsp = new Field(fieldName).process(COLLECTION_CLIENT);
     assertNotNull("Field Null Response: " + fieldName, rsp);
     assertEquals("Field Status: " + fieldName + " => " + rsp, 0, rsp.getStatus());
     assertEquals("Field: " + fieldName, expected, rsp.getField());
@@ -546,13 +548,13 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
    * Use the schema API to verify that the specified expected FieldType exists with those exact
    * attributes.
    *
-   * @see #CLOUD_CLIENT
+   * @see #COLLECTION_CLIENT
    */
   public static void checkExpectedSchemaType(Map<String, Object> expected) throws Exception {
 
     String typeName = (String) expected.get("name");
     assertNotNull("expected contains no type: " + expected, typeName);
-    FieldTypeResponse rsp = new FieldType(typeName).process(CLOUD_CLIENT);
+    FieldTypeResponse rsp = new FieldType(typeName).process(COLLECTION_CLIENT);
     assertNotNull("FieldType Null Response: " + typeName, rsp);
     assertEquals("FieldType Status: " + typeName + " => " + rsp, 0, rsp.getStatus());
     assertEquals("FieldType: " + typeName, expected, rsp.getFieldType().getAttributes());

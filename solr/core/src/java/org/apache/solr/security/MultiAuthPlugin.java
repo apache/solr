@@ -34,8 +34,8 @@ import org.apache.solr.api.Api;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.api.ModifyMultiPluginAuthConfigAPI;
@@ -147,13 +147,13 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     Map<String, Object> schemeConfig = new HashMap<>(schemeMap);
 
     String scheme = (String) schemeConfig.remove(PROPERTY_SCHEME);
-    if (StringUtils.isEmpty(scheme)) {
+    if (StrUtils.isNullOrEmpty(scheme)) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "'scheme' is a required attribute: " + schemeMap);
     }
 
     String clazz = (String) schemeConfig.remove("class");
-    if (StringUtils.isEmpty(clazz)) {
+    if (StrUtils.isNullOrEmpty(clazz)) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "'class' is a required attribute: " + schemeMap);
     }

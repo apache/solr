@@ -19,7 +19,6 @@ package org.apache.solr.hdfs.update;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +29,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.FastOutputStream;
@@ -196,7 +196,7 @@ public class HdfsTransactionLog extends TransactionLog {
 
     synchronized (this) {
       globalStringList = (List<String>) header.get("strings");
-      globalStringMap = new HashMap<>(globalStringList.size());
+      globalStringMap = CollectionUtil.newHashMap(globalStringList.size());
       for (int i = 0; i < globalStringList.size(); i++) {
         globalStringMap.put(globalStringList.get(i), i + 1);
       }
@@ -352,6 +352,7 @@ public class HdfsTransactionLog extends TransactionLog {
     }
   }
 
+  @Override
   public String toString() {
     return "hdfs tlog{file=" + tlogFile.toString() + " refcount=" + refcount.get() + "}";
   }
@@ -365,6 +366,7 @@ public class HdfsTransactionLog extends TransactionLog {
     return new HDFSLogReader(startingPos);
   }
 
+  @Override
   public LogReader getSortedReader(long startingPos) {
     return new HDFSSortedLogReader(startingPos);
   }
@@ -376,7 +378,7 @@ public class HdfsTransactionLog extends TransactionLog {
   }
 
   public class HDFSLogReader extends LogReader {
-    FSDataFastInputStream fis;
+    FSDataFastInputStream hdfsFis;
     private LogCodec codec = new LogCodec(resolver);
     private long sz;
 
@@ -395,7 +397,7 @@ public class HdfsTransactionLog extends TransactionLog {
         }
 
         FSDataInputStream fdis = fs.open(tlogFile);
-        fis = new FSDataFastInputStream(fdis, pos);
+        hdfsFis = new FSDataFastInputStream(fdis, pos);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -407,8 +409,9 @@ public class HdfsTransactionLog extends TransactionLog {
      * @return The log record, or null if EOF
      * @throws IOException If there is a low-level I/O error.
      */
+    @Override
     public Object next() throws IOException, InterruptedException {
-      long pos = fis.position();
+      long pos = hdfsFis.position();
 
       synchronized (HdfsTransactionLog.this) {
         if (trace) {
@@ -425,35 +428,36 @@ public class HdfsTransactionLog extends TransactionLog {
       if (pos >= sz) {
         log.info("Read available inputstream data, opening new inputstream pos={} sz={}", pos, sz);
 
-        fis.close();
+        hdfsFis.close();
         initStream(pos);
       }
 
       if (pos == 0) {
-        readHeader(fis);
+        readHeader(hdfsFis);
 
         // shouldn't currently happen - header and first record are currently written at the same
         // time
         synchronized (HdfsTransactionLog.this) {
-          if (fis.position() >= getLogSize()) {
+          if (hdfsFis.position() >= getLogSize()) {
             return null;
           }
-          pos = fis.position();
+          pos = hdfsFis.position();
         }
       }
 
-      Object o = codec.readVal(fis);
+      Object o = codec.readVal(hdfsFis);
 
       // skip over record size
-      int size = fis.readInt();
-      assert size == fis.position() - pos - 4;
+      int size = hdfsFis.readInt();
+      assert size == hdfsFis.position() - pos - 4;
 
       return o;
     }
 
+    @Override
     public void close() {
       try {
-        fis.close();
+        hdfsFis.close();
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -467,7 +471,7 @@ public class HdfsTransactionLog extends TransactionLog {
             + "file="
             + tlogFile
             + ", position="
-            + fis.position()
+            + hdfsFis.position()
             + ", end="
             + getLogSize()
             + "}";
@@ -476,7 +480,7 @@ public class HdfsTransactionLog extends TransactionLog {
 
     @Override
     public long currentPos() {
-      return fis.position();
+      return hdfsFis.position();
     }
 
     @Override
@@ -514,7 +518,7 @@ public class HdfsTransactionLog extends TransactionLog {
           if (version < lastVersion) inOrder = false;
           lastVersion = version;
         }
-        fis.seek(startingPos);
+        hdfsFis.seek(startingPos);
       }
 
       if (inOrder) {
@@ -523,7 +527,7 @@ public class HdfsTransactionLog extends TransactionLog {
         if (iterator == null) iterator = versionToPos.values().iterator();
         if (!iterator.hasNext()) return null;
         long pos = iterator.next();
-        if (pos != currentPos()) fis.seek(pos);
+        if (pos != currentPos()) hdfsFis.seek(pos);
         return super.next();
       }
     }
@@ -543,6 +547,7 @@ public class HdfsTransactionLog extends TransactionLog {
 
     int nextLength; // length of the next record (the next one closer to the start of the log file)
     long prevPos; // where we started reading from last time (so prevPos - nextLength == start of
+
     // next record)
 
     public HDFSReverseReader() throws IOException {
@@ -570,6 +575,7 @@ public class HdfsTransactionLog extends TransactionLog {
      * @return The log record, or null if EOF
      * @throws IOException If there is a low-level I/O error.
      */
+    @Override
     public Object next() throws IOException {
       if (prevPos <= 0) return null;
 
@@ -611,10 +617,12 @@ public class HdfsTransactionLog extends TransactionLog {
     }
 
     /* returns the position in the log file of the last record returned by next() */
+    @Override
     public long position() {
       return prevPos + 4; // skip the length
     }
 
+    @Override
     public void close() {
       try {
         fis.close();
@@ -641,18 +649,18 @@ public class HdfsTransactionLog extends TransactionLog {
 }
 
 class FSDataFastInputStream extends FastInputStream {
-  private FSDataInputStream fis;
+  private final FSDataInputStream hdfsFis;
 
-  public FSDataFastInputStream(FSDataInputStream fis, long chPosition) {
+  public FSDataFastInputStream(FSDataInputStream hdfsFis, long chPosition) {
     // super(null, new byte[10],0,0);    // a small buffer size for testing purposes
     super(null);
-    this.fis = fis;
+    this.hdfsFis = hdfsFis;
     super.readFromStream = chPosition;
   }
 
   @Override
   public int readWrappedStream(byte[] target, int offset, int len) throws IOException {
-    return fis.read(readFromStream, target, offset, len);
+    return hdfsFis.read(readFromStream, target, offset, len);
   }
 
   public void seek(long position) throws IOException {
@@ -681,7 +689,7 @@ class FSDataFastInputStream extends FastInputStream {
 
   @Override
   public void close() throws IOException {
-    fis.close();
+    hdfsFis.close();
   }
 
   @Override

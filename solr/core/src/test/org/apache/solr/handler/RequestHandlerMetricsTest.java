@@ -42,6 +42,7 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
     configureCluster(1).addConfig("conf1", configset("cloud-aggregate-node-metrics")).configure();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -80,7 +81,7 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
     cloudClient.query(collection2, solrQuery);
 
     NamedList<Object> response =
-        cloudClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", null));
+        cloudClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics"));
 
     NamedList<Object> metrics = (NamedList<Object>) response.get("metrics");
 

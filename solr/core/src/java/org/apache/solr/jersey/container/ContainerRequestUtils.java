@@ -17,14 +17,14 @@
 
 package org.apache.solr.jersey.container;
 
+import jakarta.ws.rs.core.Configuration;
+import jakarta.ws.rs.core.SecurityContext;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Principal;
 import java.util.Enumeration;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.Configuration;
-import javax.ws.rs.core.SecurityContext;
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.internal.ContainerUtils;
@@ -44,18 +44,22 @@ public class ContainerRequestUtils {
   // all requests.
   public static final SecurityContext DEFAULT_SECURITY_CONTEXT =
       new SecurityContext() {
+        @Override
         public boolean isUserInRole(String role) {
           return false;
         }
 
+        @Override
         public boolean isSecure() {
           return false;
         }
 
+        @Override
         public Principal getUserPrincipal() {
           return null;
         }
 
+        @Override
         public String getAuthenticationScheme() {
           return null;
         }

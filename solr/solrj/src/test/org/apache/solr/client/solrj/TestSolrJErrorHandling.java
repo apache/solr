@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -102,18 +101,26 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
 
   @Test
   public void testWithXml() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    client.setRequestWriter(new RequestWriter());
-    client.deleteByQuery("*:*"); // delete everything!
-    doIt(client);
+    try (SolrClient client =
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+            .withRequestWriter(new RequestWriter())
+            .build()) {
+      client.deleteByQuery("*:*"); // delete everything!
+      doIt(client);
+    }
   }
 
   @Test
   public void testWithBinary() throws Exception {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    client.setRequestWriter(new BinaryRequestWriter());
-    client.deleteByQuery("*:*"); // delete everything!
-    doIt(client);
+    try (SolrClient client =
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+            .withRequestWriter(new BinaryRequestWriter())
+            .build()) {
+      client.deleteByQuery("*:*"); // delete everything!
+      doIt(client);
+    }
   }
 
   Iterator<SolrInputDocument> manyDocs(final int base, final int numDocs) {
@@ -146,7 +153,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   }
   ;
 
-  void doThreads(final HttpSolrClient client, final int numThreads, final int numRequests)
+  void doThreads(final SolrClient client, final int numThreads, final int numRequests)
       throws Exception {
     final AtomicInteger tries = new AtomicInteger(0);
 
@@ -191,7 +198,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     assertTrue("got unexpected exceptions. ", unexpected.isEmpty());
   }
 
-  int getCount(HttpSolrClient client) throws IOException, SolrServerException {
+  int getCount(SolrClient client) throws IOException, SolrServerException {
     client.commit();
     QueryResponse rsp = client.query(params("q", "id:test", "fl", "count_i", "wt", "json"));
     int count = ((Number) rsp.getResults().get(0).get("count_i")).intValue();
@@ -199,13 +206,13 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   }
 
   // this always failed with the Jetty 9.3 snapshot
-  void doIt(HttpSolrClient client) throws Exception {
+  void doIt(SolrClient client) throws Exception {
     client.deleteByQuery("*:*");
     doThreads(client, 10, 100);
     // doSingle(client, 1);
   }
 
-  void doSingle(HttpSolrClient client, int threadNum) {
+  void doSingle(SolrClient client, int threadNum) {
     try {
       client.add(manyDocs(threadNum * 1000000, 1000));
     } catch (BaseHttpSolrClient.RemoteSolrException e) {
@@ -270,9 +277,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     // sometimes succeeds with this size, but larger can cause OOM from command line
     String bodyString = getJsonDocs(200000);
 
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-
-    String urlString = client.getBaseURL() + "/update";
+    String urlString = getCoreUrl() + "/update";
 
     HttpURLConnection conn = null;
     URL url = new URL(urlString);
@@ -317,7 +322,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
       }
     }
 
-    String rbody = IOUtils.toString(is, StandardCharsets.UTF_8);
+    String rbody = new String(is.readAllBytes(), StandardCharsets.UTF_8);
     log.info("RESPONSE BODY:{}", rbody);
   }
 
@@ -325,7 +330,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   public void testRawSocket() throws Exception {
 
     String hostName = "127.0.0.1";
-    int port = jetty.getLocalPort();
+    int port = getJetty().getLocalPort();
 
     try (Socket socket = new Socket(hostName, port);
         OutputStream out = new BufferedOutputStream(socket.getOutputStream());

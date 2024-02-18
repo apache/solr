@@ -16,7 +16,6 @@
  */
 package org.apache.solr.update;
 
-import java.io.IOException;
 import java.util.concurrent.Callable;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -258,21 +257,44 @@ public class TestUpdate extends SolrTestCaseJ4 {
   }
 
   @Test // SOLR-8866
-  public void testUpdateLogThrowsForUnknownTypes() throws IOException {
+  public void testUpdateLogThrowsForUnknownTypes() {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "444");
     doc.addField("text", new Object()); // Object shouldn't be serialized later...
 
     AddUpdateCommand cmd = new AddUpdateCommand(req());
     cmd.solrDoc = doc;
-    try {
-      h.getCore().getUpdateHandler().addDoc(cmd); // should throw
-    } catch (SolrException e) {
-      if (e.getMessage().contains("serialize")) {
-        return; // passed test
-      }
-      throw e;
-    }
-    fail();
+
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> h.getCore().getUpdateHandler().addDoc(cmd));
+    assertEquals(
+        "TransactionLog doesn't know how to serialize class java.lang.Object; try implementing ObjectResolver?",
+        thrown.getMessage());
+  }
+
+  @Test // SOLR-16363
+  public void testAddDocLargeFieldThrowsSolrExceptionWrappedIllegalArgumentException() {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", 555);
+    // use invalid String.format parameter in field name to test DirectUpdateHandler2#addDoc
+    // exception logging
+    doc.addField("t%)_s", "a".repeat(50000));
+
+    AddUpdateCommand cmd = new AddUpdateCommand(req());
+    cmd.solrDoc = doc;
+
+    SolrException thrown =
+        assertThrows(SolrException.class, () -> h.getCore().getUpdateHandler().addDoc(cmd));
+    assertEquals(IllegalArgumentException.class, thrown.getCause().getClass());
+    assertEquals(
+        "Exception writing document id 555 to the index; possible analysis error: "
+            + "Document contains at least one immense term in field=\"t%)_s\" "
+            + "(whose UTF8 encoding is longer than the max length 32766), all of which were skipped.  "
+            + "Please correct the analyzer to not produce such terms.  "
+            + "The prefix of the first immense term is: "
+            + "'[97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97, 97]...', "
+            + "original message: bytes can be at most 32766 in length; got 50000. "
+            + "Perhaps the document has an indexed string field (solr.StrField) which is too large",
+        thrown.getMessage());
   }
 }

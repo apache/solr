@@ -35,7 +35,6 @@ public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider
   public static final String DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME =
       VMParamsZkCredentialsInjector.DEFAULT_DIGEST_PASSWORD_VM_PARAM_NAME;
 
-  private ZkCredentialsInjector zkCredentialsInjector;
   private DigestZkCredentialsProvider digestZkCredentialsProvider;
 
   public VMParamsSingleSetCredentialsDigestZkCredentialsProvider() {

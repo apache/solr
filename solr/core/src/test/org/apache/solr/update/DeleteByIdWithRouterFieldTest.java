@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -50,6 +51,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
   public static final int NUM_SHARDS = 3;
 
   private static final List<SolrClient> clients = new ArrayList<>(); // not CloudSolrClient
+  private static SolrClient solrClient;
 
   /**
    * A randomized prefix to put on every route value. This helps ensure that documents wind up on
@@ -75,11 +77,14 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient())
             .isSuccess());
 
-    cluster.getSolrClient().setDefaultCollection(COLL);
+    solrClient = cluster.basicSolrClientBuilder().withDefaultCollection(COLL).build();
 
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     for (Replica replica : clusterState.getCollection(COLL).getReplicas()) {
-      clients.add(getHttpSolrClient(replica.getCoreUrl()));
+      clients.add(
+          new HttpSolrClient.Builder(replica.getBaseUrl())
+              .withDefaultCollection(replica.getCoreName())
+              .build());
     }
   }
 
@@ -87,6 +92,8 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
   public static void afterClass() throws Exception {
     IOUtils.close(clients);
     clients.clear();
+    IOUtils.close(solrClient);
+
     RVAL_PRE = null;
   }
 
@@ -98,7 +105,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
         new UpdateRequest()
             .deleteByQuery("*:*")
             .setAction(UpdateRequest.ACTION.COMMIT, true, true)
-            .process(cluster.getSolrClient())
+            .process(solrClient)
             .getStatus());
   }
 
@@ -109,10 +116,10 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
       final String shardName = entry.getKey();
       final Slice slice = entry.getValue();
       final Replica leader = entry.getValue().getLeader();
-      try (SolrClient leaderClient = getHttpSolrClient(leader.getCoreUrl())) {
+      try (SolrClient leaderClient = getHttpSolrClient(leader)) {
         final SolrDocumentList leaderResults = leaderClient.query(params).getResults();
         for (Replica replica : slice) {
-          try (SolrClient replicaClient = getHttpSolrClient(replica.getCoreUrl())) {
+          try (SolrClient replicaClient = getHttpSolrClient(replica)) {
             final SolrDocumentList replicaResults = replicaClient.query(params).getResults();
             assertEquals(
                 "inconsistency w/leader: shard=" + shardName + "core=" + replica.getCoreName(),
@@ -130,7 +137,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
 
   private SolrClient getRandomSolrClient() {
     final int index = random().nextInt(clients.size() + 1);
-    return index == clients.size() ? cluster.getSolrClient() : clients.get(index);
+    return index == clients.size() ? solrClient : clients.get(index);
   }
 
   /**

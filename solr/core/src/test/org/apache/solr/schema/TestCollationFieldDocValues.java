@@ -16,13 +16,12 @@
  */
 package org.apache.solr.schema;
 
-import java.io.File;
-import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.Collator;
 import java.text.RuleBasedCollator;
 import java.util.Locale;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
@@ -56,21 +55,23 @@ public class TestCollationFieldDocValues extends SolrTestCaseJ4 {
    */
   public static String setupSolrHome() throws Exception {
     // make a solr home underneath the test's TEMP_DIR
-    File tmpFile = createTempDir("collation1").toFile();
+    Path tmpFile = createTempDir("collation1");
 
     // make data and conf dirs
-    new File(tmpFile, "data").mkdir();
-    File confDir = new File(tmpFile + "/collection1", "conf");
-    confDir.mkdirs();
+    Files.createDirectories(tmpFile.resolve("data"));
+    Path confDir = tmpFile.resolve("collection1").resolve("conf");
+    Files.createDirectories(confDir);
 
     // copy over configuration files
-    FileUtils.copyFile(
-        getFile("solr/collection1/conf/solrconfig-basic.xml"), new File(confDir, "solrconfig.xml"));
-    FileUtils.copyFile(
-        getFile("solr/collection1/conf/solrconfig.snippet.randomindexconfig.xml"),
-        new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
-    FileUtils.copyFile(
-        getFile("solr/collection1/conf/schema-collate-dv.xml"), new File(confDir, "schema.xml"));
+    Files.copy(
+        getFile("solr/collection1/conf/solrconfig-basic.xml").toPath(),
+        confDir.resolve("solrconfig.xml"));
+    Files.copy(
+        getFile("solr/collection1/conf/solrconfig.snippet.randomindexconfig.xml").toPath(),
+        confDir.resolve("solrconfig.snippet.randomindexconfig.xml"));
+    Files.copy(
+        getFile("solr/collection1/conf/schema-collate-dv.xml").toPath(),
+        confDir.resolve("schema.xml"));
 
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat
     RuleBasedCollator baseCollator =
@@ -84,11 +85,9 @@ public class TestCollationFieldDocValues extends SolrTestCaseJ4 {
     RuleBasedCollator tailoredCollator =
         new RuleBasedCollator(baseCollator.getRules() + DIN5007_2_tailorings);
     String tailoredRules = tailoredCollator.getRules();
-    FileOutputStream os = new FileOutputStream(new File(confDir, "customrules.dat"));
-    IOUtils.write(tailoredRules, os, "UTF-8");
-    os.close();
+    Files.writeString(confDir.resolve("customrules.dat"), tailoredRules, StandardCharsets.UTF_8);
 
-    return tmpFile.getAbsolutePath();
+    return tmpFile.toAbsolutePath().toString();
   }
 
   /**
@@ -150,6 +149,7 @@ public class TestCollationFieldDocValues extends SolrTestCaseJ4 {
         req("fl", "id", "q", "sort_ar:[\u062F TO \u0698]", "sort", "id asc"),
         "//*[@numFound='0']");
   }
+
   /**
    * Test canonical decomposition with turkish primary strength. With this sort order, İ is the
    * uppercase form of i, and I is the uppercase form of ı. We index a decomposed form of İ.

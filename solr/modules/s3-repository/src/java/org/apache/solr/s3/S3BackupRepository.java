@@ -36,9 +36,10 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.backup.repository.AbstractBackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,26 +48,24 @@ import org.slf4j.LoggerFactory;
  * A concrete implementation of {@link BackupRepository} interface supporting backup/restore of Solr
  * indexes to S3.
  */
-public class S3BackupRepository implements BackupRepository {
+public class S3BackupRepository extends AbstractBackupRepository {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int CHUNK_SIZE = 16 * 1024 * 1024; // 16 MBs
   static final String S3_SCHEME = "s3";
 
-  private NamedList<?> config;
   private S3StorageClient client;
 
   @Override
   public void init(NamedList<?> args) {
-    this.config = args;
+    super.init(args);
     S3BackupRepositoryConfig backupConfig = new S3BackupRepositoryConfig(this.config);
 
     // If a client was already created, close it to avoid any resource leak
     if (client != null) {
       client.close();
     }
-
     this.client = backupConfig.buildClient();
   }
 
@@ -78,7 +77,7 @@ public class S3BackupRepository implements BackupRepository {
 
   @Override
   public URI createURI(String location) {
-    if (StringUtils.isEmpty(location)) {
+    if (StrUtils.isNullOrEmpty(location)) {
       throw new IllegalArgumentException("cannot create URI with an empty location");
     }
 
@@ -99,7 +98,7 @@ public class S3BackupRepository implements BackupRepository {
 
   @Override
   public URI createDirectoryURI(String location) {
-    if (StringUtils.isEmpty(location)) {
+    if (StrUtils.isNullOrEmpty(location)) {
       throw new IllegalArgumentException("cannot create URI with an empty location");
     }
 
@@ -162,8 +161,7 @@ public class S3BackupRepository implements BackupRepository {
   }
 
   @Override
-  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
-      throws IOException {
+  public void delete(URI path, Collection<String> files) throws IOException {
     Objects.requireNonNull(path, "cannot delete files without a valid URI path");
     Objects.requireNonNull(files, "collection of files to delete cannot be null");
 
@@ -177,13 +175,7 @@ public class S3BackupRepository implements BackupRepository {
             .map(S3BackupRepository::getS3Path)
             .collect(Collectors.toSet());
 
-    try {
-      client.delete(filesToDelete);
-    } catch (S3NotFoundException e) {
-      if (!ignoreNoSuchFileException) {
-        throw e;
-      }
-    }
+    client.delete(filesToDelete);
   }
 
   @Override
@@ -202,7 +194,7 @@ public class S3BackupRepository implements BackupRepository {
   @Override
   public IndexInput openInput(URI path, String fileName, IOContext ctx) throws IOException {
     Objects.requireNonNull(path, "cannot open a input stream without a valid URI path");
-    if (StringUtils.isEmpty(fileName)) {
+    if (StrUtils.isNullOrEmpty(fileName)) {
       throw new IllegalArgumentException("need a valid file name to read from S3");
     }
 
@@ -272,10 +264,10 @@ public class S3BackupRepository implements BackupRepository {
   public void copyIndexFileFrom(
       Directory sourceDir, String sourceFileName, URI dest, String destFileName)
       throws IOException {
-    if (StringUtils.isEmpty(sourceFileName)) {
+    if (StrUtils.isNullOrEmpty(sourceFileName)) {
       throw new IllegalArgumentException("must have a valid source file name to copy");
     }
-    if (StringUtils.isEmpty(destFileName)) {
+    if (StrUtils.isNullOrEmpty(destFileName)) {
       throw new IllegalArgumentException("must have a valid destination file name to copy");
     }
 
@@ -286,8 +278,10 @@ public class S3BackupRepository implements BackupRepository {
       log.debug("Upload started to S3 '{}'", s3Path);
     }
 
-    try (ChecksumIndexInput indexInput =
-        sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+    try (IndexInput indexInput =
+        shouldVerifyChecksum
+            ? sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)
+            : sourceDir.openInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
       if (indexInput.length() <= CodecUtil.footerLength()) {
         throw new CorruptIndexException("file is too small:" + indexInput.length(), indexInput);
       }
@@ -297,7 +291,10 @@ public class S3BackupRepository implements BackupRepository {
 
         byte[] buffer = new byte[CHUNK_SIZE];
         int bufferLen;
-        long remaining = indexInput.length() - CodecUtil.footerLength();
+        long remaining =
+            shouldVerifyChecksum
+                ? indexInput.length() - CodecUtil.footerLength()
+                : indexInput.length();
 
         while (remaining > 0) {
           bufferLen = remaining >= CHUNK_SIZE ? CHUNK_SIZE : (int) remaining;
@@ -306,8 +303,10 @@ public class S3BackupRepository implements BackupRepository {
           outputStream.write(buffer, 0, bufferLen);
           remaining -= bufferLen;
         }
-        final long checksum = CodecUtil.checkFooter(indexInput);
-        writeFooter(checksum, outputStream);
+        if (shouldVerifyChecksum) {
+          long checksum = CodecUtil.checkFooter((ChecksumIndexInput) indexInput);
+          writeFooter(checksum, outputStream);
+        }
       }
     }
 
@@ -329,10 +328,10 @@ public class S3BackupRepository implements BackupRepository {
   public void copyIndexFileTo(
       URI sourceDir, String sourceFileName, Directory dest, String destFileName)
       throws IOException {
-    if (StringUtils.isEmpty(sourceFileName)) {
+    if (StrUtils.isNullOrEmpty(sourceFileName)) {
       throw new IllegalArgumentException("must have a valid source file name to copy");
     }
-    if (StringUtils.isEmpty(destFileName)) {
+    if (StrUtils.isNullOrEmpty(destFileName)) {
       throw new IllegalArgumentException("must have a valid destination file name to copy");
     }
 

@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
-import com.google.common.collect.ImmutableMap;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Date;
@@ -243,7 +242,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
           cores.create(
               "core1",
               cd.getInstanceDir(),
-              ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"),
+              Map.of("config", "solrconfig-searcher-listeners1.xml"),
               false);
 
       // validate that the new core was created with the correct solrconfig
@@ -303,7 +302,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
           cores.create(
               "core1",
               cd.getInstanceDir(),
-              ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"),
+              Map.of("config", "solrconfig-searcher-listeners1.xml"),
               false);
       coreCreated = true;
 
@@ -314,6 +313,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
       Thread t =
           new Thread() {
+            @Override
             public void run() {
               try {
                 doQuery(newCore);
@@ -375,7 +375,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
           cores.create(
               "core1",
               cd.getInstanceDir(),
-              ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"),
+              Map.of("config", "solrconfig-searcher-listeners1.xml"),
               false);
       coreCreated = true;
 
@@ -386,6 +386,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
       Thread t =
           new Thread() {
+            @Override
             public void run() {
               try {
                 doQuery(newCore);

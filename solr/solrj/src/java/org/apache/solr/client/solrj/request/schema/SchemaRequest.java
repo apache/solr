@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.request.schema;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
@@ -105,7 +105,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     if (analyzerAttributes != null) analyzerNamedList.addAll(analyzerAttributes);
     List<Map<String, Object>> charFiltersAttributes = analyzerDefinition.getCharFilters();
     if (charFiltersAttributes != null) {
-      List<NamedList<Object>> charFiltersList = new LinkedList<>();
+      List<NamedList<Object>> charFiltersList = new ArrayList<>();
       for (Map<String, Object> charFilterAttributes : charFiltersAttributes)
         charFiltersList.add(new NamedList<>(charFilterAttributes));
       analyzerNamedList.add("charFilters", charFiltersList);
@@ -116,7 +116,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
     }
     List<Map<String, Object>> filtersAttributes = analyzerDefinition.getFilters();
     if (filtersAttributes != null) {
-      List<NamedList<Object>> filtersList = new LinkedList<>();
+      List<NamedList<Object>> filtersList = new ArrayList<>();
       for (Map<String, Object> filterAttributes : filtersAttributes)
         filtersList.add(new NamedList<>(filterAttributes));
       analyzerNamedList.add("filters", filtersList);
@@ -758,7 +758,7 @@ public class SchemaRequest extends AbstractSchemaRequest<SchemaResponse> {
    * call either succeed or fail together.
    */
   public static class MultiUpdate extends Update {
-    private List<Update> updateSchemaRequests = new LinkedList<>();
+    private final List<Update> updateSchemaRequests = new ArrayList<>();
 
     public MultiUpdate(List<Update> updateSchemaRequests) {
       this(updateSchemaRequests, null);

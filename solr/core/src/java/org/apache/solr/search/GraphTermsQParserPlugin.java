@@ -157,7 +157,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
   }
 
   /** Similar to {@code TermsQuery} but adds a {@code maxDocFreq}. */
-  private class GraphTermsQuery extends Query implements ExtendedQuery {
+  private static class GraphTermsQuery extends Query implements ExtendedQuery {
     // Not a post filter. This will typically be used as the main query.
 
     private Term[] queryTerms;
@@ -180,19 +180,23 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       this.id = id;
     }
 
+    @Override
     public boolean getCache() {
       return false;
     }
 
+    @Override
     public void setCache(boolean cache) {
       // TODO support user choice
     }
 
+    @Override
     public int getCost() {
       // 0 is the default and keeping it avoids a needless wrapper for TwoPhaseIterator matchCost.
       return 0;
     }
 
+    @Override
     public void setCost(int cost) {}
 
     @Override
@@ -200,14 +204,17 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       return this;
     }
 
+    @Override
     public int hashCode() {
       return 31 * classHash() + id.hashCode();
     }
 
+    @Override
     public boolean equals(Object other) {
       return sameClassAs(other) && id == ((GraphTermsQuery) other).id;
     }
 
+    @Override
     public GraphTermsQuery clone() {
       GraphTermsQuery clone =
           new GraphTermsQuery(this.field, this.queryTerms, this.maxDocFreq, this.id);

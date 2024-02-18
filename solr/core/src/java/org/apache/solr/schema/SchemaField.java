@@ -102,6 +102,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
     return (properties & INDEXED) != 0;
   }
 
+  @Override
   public boolean stored() {
     return (properties & STORED) != 0;
   }
@@ -126,6 +127,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
     return (properties & STORE_TERMPAYLOADS) != 0;
   }
 
+  @Override
   public boolean omitNorms() {
     return (properties & OMIT_NORMS) != 0;
   }

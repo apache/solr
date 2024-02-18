@@ -78,9 +78,14 @@ allprojects {
       }
 
       // default excludes.
+      exclude '/lucene/**'
       exclude '**/build/**'
       exclude '**/.idea/**'
       exclude '**/.gradle/**'
+
+      // Exclude Eclipse
+      exclude ".metadata"
+      exclude ".settings"
 
       if (project == rootProject) {
         // ourselves :-)
@@ -125,6 +130,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
   private ProgressLoggerFactory progressLoggerFactory
 
   @InputFiles
+  @PathSensitive(PathSensitivity.RELATIVE)
   FileTree sourceFiles
 
   @Inject

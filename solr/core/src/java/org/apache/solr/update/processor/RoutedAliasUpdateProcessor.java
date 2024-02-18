@@ -26,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
@@ -41,6 +40,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -105,7 +105,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       aliasName = collectionProperties.get(RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP);
     }
     // fall back on core properties (legacy)
-    if (StringUtils.isBlank(aliasName)) {
+    if (StrUtils.isBlank(aliasName)) {
       aliasName = coreDescriptor.getCoreProperty(RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP, null);
     }
     final DistribPhase shardDistribPhase =
@@ -226,7 +226,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   public void finish() throws IOException {
     try {
       cmdDistrib.finish();
-      final List<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
+      final List<SolrCmdDistributor.SolrError> errors = cmdDistrib.getErrors();
       if (!errors.isEmpty()) {
         throw new DistributedUpdateProcessor.DistributedUpdatesAsyncException(errors);
       }

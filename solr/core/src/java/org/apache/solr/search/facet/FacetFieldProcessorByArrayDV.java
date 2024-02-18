@@ -215,7 +215,7 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     int segMax = singleDv.getValueCount();
     final SegCountPerSeg segCounter = getSegCountPerSeg(disi, segMax);
 
-    /**
+    /*
      * alternate trial implementations // ord // FieldUtil.visitOrds(singleDv, disi,
      * (doc,ord)->{counts[ord+1]++;} );
      *

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.metrics;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Reservoir;
@@ -28,15 +27,10 @@ import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 /** */
 public class MetricsConfigTest extends SolrTestCaseJ4 {
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   @Test
   public void testDefaults() {
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig.xml");

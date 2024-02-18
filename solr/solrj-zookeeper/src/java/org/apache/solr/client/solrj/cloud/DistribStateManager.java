@@ -17,14 +17,15 @@
 package org.apache.solr.client.solrj.cloud;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import org.apache.solr.common.SolrCloseable;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -77,16 +78,27 @@ public interface DistribStateManager extends SolrCloseable {
       throws AlreadyExistsException, IOException, KeeperException, InterruptedException;
 
   void removeData(String path, int version)
-      throws NoSuchElementException, IOException, NotEmptyException, KeeperException,
-          InterruptedException, BadVersionException;
+      throws NoSuchElementException,
+          IOException,
+          NotEmptyException,
+          KeeperException,
+          InterruptedException,
+          BadVersionException;
 
   void setData(String path, byte[] data, int version)
-      throws BadVersionException, NoSuchElementException, IOException, KeeperException,
+      throws BadVersionException,
+          NoSuchElementException,
+          IOException,
+          KeeperException,
           InterruptedException;
 
   List<OpResult> multi(final Iterable<Op> ops)
-      throws BadVersionException, NoSuchElementException, AlreadyExistsException, IOException,
-          KeeperException, InterruptedException;
+      throws BadVersionException,
+          NoSuchElementException,
+          AlreadyExistsException,
+          IOException,
+          KeeperException,
+          InterruptedException;
 
   /**
    * List a subtree including the root path, using breadth-first traversal.
@@ -96,7 +108,7 @@ public interface DistribStateManager extends SolrCloseable {
    */
   default List<String> listTree(String root)
       throws NoSuchElementException, IOException, KeeperException, InterruptedException {
-    Deque<String> queue = new LinkedList<>();
+    Deque<String> queue = new ArrayDeque<>();
     List<String> tree = new ArrayList<>();
     if (!root.startsWith("/")) {
       root = "/" + root;
@@ -123,6 +135,16 @@ public interface DistribStateManager extends SolrCloseable {
     throw new UnsupportedOperationException("Not implemented");
   }
 
+  default DocCollection.PrsSupplier getPrsSupplier(String collName) {
+    return () -> {
+      try {
+        return getReplicaStates(DocCollection.getCollectionPath(collName));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    };
+  }
+
   /**
    * Remove data recursively.
    *
@@ -131,8 +153,12 @@ public interface DistribStateManager extends SolrCloseable {
    * @param includeRoot when true delete also the root path
    */
   default void removeRecursively(String root, boolean ignoreMissing, boolean includeRoot)
-      throws NoSuchElementException, IOException, NotEmptyException, KeeperException,
-          InterruptedException, BadVersionException {
+      throws NoSuchElementException,
+          IOException,
+          NotEmptyException,
+          KeeperException,
+          InterruptedException,
+          BadVersionException {
     List<String> tree;
     try {
       tree = listTree(root);

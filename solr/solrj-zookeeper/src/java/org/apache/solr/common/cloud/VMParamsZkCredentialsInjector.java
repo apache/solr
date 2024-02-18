@@ -24,7 +24,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import org.apache.solr.common.SolrException;
@@ -119,16 +118,9 @@ public class VMParamsZkCredentialsInjector implements ZkCredentialsInjector {
         credentialsProps.getProperty(zkDigestReadonlyPasswordVMParamName);
 
     List<ZkCredential> zkCredentials =
-        new ArrayList<>(2) {
-          {
-            ZkCredential allUser =
-                new ZkCredential(digestAllUsername, digestAllPassword, Perms.ALL);
-            ZkCredential readUser =
-                new ZkCredential(digestReadonlyUsername, digestReadonlyPassword, Perms.READ);
-            add(allUser);
-            add(readUser);
-          }
-        };
+        List.of(
+            new ZkCredential(digestAllUsername, digestAllPassword, Perms.ALL),
+            new ZkCredential(digestReadonlyUsername, digestReadonlyPassword, Perms.READ));
     log.info(
         "Using zkCredentials: digestAllUsername: {}, digestReadonlyUsername: {}",
         digestAllUsername,

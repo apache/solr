@@ -16,13 +16,12 @@
  */
 package org.apache.solr.cloud;
 
-import com.google.common.base.Strings;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.PropertiesUtil;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
 
 /** SolrCloud metadata attached to a {@link CoreDescriptor}. */
@@ -54,19 +53,14 @@ public class CloudDescriptor {
   public CloudDescriptor(CoreDescriptor cd, String coreName, Properties props) {
     this.cd = cd;
     this.shardId = props.getProperty(CoreDescriptor.CORE_SHARD, null);
-    if (Strings.isNullOrEmpty(shardId)) this.shardId = null;
+    if (StrUtils.isNullOrEmpty(shardId)) this.shardId = null;
     // If no collection name is specified, we default to the core name
     this.collectionName = props.getProperty(CoreDescriptor.CORE_COLLECTION, coreName);
     this.roles = props.getProperty(CoreDescriptor.CORE_ROLES, null);
     this.nodeName = props.getProperty(CoreDescriptor.CORE_NODE_NAME);
-    if (Strings.isNullOrEmpty(nodeName)) this.nodeName = null;
+    if (StrUtils.isNullOrEmpty(nodeName)) this.nodeName = null;
     this.numShards = PropertiesUtil.toInteger(props.getProperty(CloudDescriptor.NUM_SHARDS), null);
-    String replicaTypeStr = props.getProperty(CloudDescriptor.REPLICA_TYPE);
-    if (Strings.isNullOrEmpty(replicaTypeStr)) {
-      this.replicaType = Replica.Type.NRT;
-    } else {
-      this.replicaType = Replica.Type.valueOf(replicaTypeStr);
-    }
+    this.replicaType = Replica.Type.get(props.getProperty(CloudDescriptor.REPLICA_TYPE));
     for (String propName : props.stringPropertyNames()) {
       if (propName.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
         collectionParams.put(
@@ -157,17 +151,17 @@ public class CloudDescriptor {
     if (reloadFrom == null) return;
 
     setShardId(
-        StringUtils.isEmpty(reloadFrom.getShardId()) ? getShardId() : reloadFrom.getShardId());
+        StrUtils.isNullOrEmpty(reloadFrom.getShardId()) ? getShardId() : reloadFrom.getShardId());
     setCollectionName(
-        StringUtils.isEmpty(reloadFrom.getCollectionName())
+        StrUtils.isNullOrEmpty(reloadFrom.getCollectionName())
             ? getCollectionName()
             : reloadFrom.getCollectionName());
-    setRoles(StringUtils.isEmpty(reloadFrom.getRoles()) ? getRoles() : reloadFrom.getRoles());
+    setRoles(StrUtils.isNullOrEmpty(reloadFrom.getRoles()) ? getRoles() : reloadFrom.getRoles());
     if (reloadFrom.getNumShards() != null) {
       setNumShards(reloadFrom.getNumShards());
     }
     setCoreNodeName(
-        StringUtils.isEmpty(reloadFrom.getCoreNodeName())
+        StrUtils.isNullOrEmpty(reloadFrom.getCoreNodeName())
             ? getCoreNodeName()
             : reloadFrom.getCoreNodeName());
     setLeader(reloadFrom.isLeader);

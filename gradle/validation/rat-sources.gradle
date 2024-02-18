@@ -41,6 +41,9 @@ allprojects {
             // Exclude any generated stuff.
             exclude "src/generated"
 
+            // Don't recurse into local Lucene dev repo.
+            exclude "/lucene"
+
             // Don't check any of the subprojects - they have their own rat tasks.
             exclude subprojects.collect { it.projectDir.name }
 
@@ -54,6 +57,10 @@ allprojects {
             // include build.gradle but exclude .gradle directories
             include "**/*.gradle"
             exclude ".gradle/**"
+
+            // Exclude Eclipse
+            exclude ".metadata"
+            exclude ".settings"
 
             // Include selected patterns from any source folders. We could make this
             // relative to source sets but it seems to be of little value - all our source sets

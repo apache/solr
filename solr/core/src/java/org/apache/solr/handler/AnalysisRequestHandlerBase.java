@@ -20,15 +20,14 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.analysis.TokenFilterFactory;
@@ -218,16 +217,12 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
 
   // a static mapping of the reflected attribute keys to the names used in Solr 1.4
   static Map<String, String> ATTRIBUTE_MAPPING =
-      Collections.unmodifiableMap(
-          new HashMap<String, String>() {
-            {
-              put(OffsetAttribute.class.getName() + "#startOffset", "start");
-              put(OffsetAttribute.class.getName() + "#endOffset", "end");
-              put(TypeAttribute.class.getName() + "#type", "type");
-              put(TokenTrackingAttribute.class.getName() + "#position", "position");
-              put(TokenTrackingAttribute.class.getName() + "#positionHistory", "positionHistory");
-            }
-          });
+      Map.of(
+          OffsetAttribute.class.getName() + "#startOffset", "start",
+          OffsetAttribute.class.getName() + "#endOffset", "end",
+          TypeAttribute.class.getName() + "#type", "type",
+          TokenTrackingAttribute.class.getName() + "#position", "position",
+          TokenTrackingAttribute.class.getName() + "#positionHistory", "positionHistory");
 
   /**
    * Converts the list of Tokens to a list of NamedLists representing the tokens.
@@ -241,7 +236,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       final List<AttributeSource> tokenList, AnalysisContext context) {
     final List<NamedList> tokensNamedLists = new ArrayList<>();
     final FieldType fieldType = context.getFieldType();
-    final AttributeSource[] tokens = tokenList.toArray(new AttributeSource[tokenList.size()]);
+    final AttributeSource[] tokens = tokenList.toArray(new AttributeSource[0]);
 
     // sort the tokens by absolute position
     ArrayUtil.timSort(
@@ -386,7 +381,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       }
     }
 
-    protected void addAttributes(AttributeSource attributeSource) {
+    private void addAttributes(AttributeSource attributeSource) {
       // note: ideally we wouldn't call addAttributeImpl which is marked internal. But nonetheless
       // it's possible this method is used by some custom attributes, especially since Solr doesn't
       // provide a way to customize the AttributeFactory which is the recommended way to choose
@@ -440,7 +435,11 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     @Override
     public int[] getPositions() {
       if (cachedPositions == null) {
-        cachedPositions = ArrayUtils.add(basePositions, position);
+        // add position to the end of basePositions array
+        int[] tmpPositions = new int[basePositions.length + 1];
+        System.arraycopy(basePositions, 0, tmpPositions, 0, basePositions.length);
+        tmpPositions[basePositions.length] = position;
+        cachedPositions = tmpPositions;
       }
       return cachedPositions;
     }
@@ -462,7 +461,9 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       reflector.reflect(TokenTrackingAttribute.class, "position", position);
       // convert to Integer[] array, as only such one can be serialized by ResponseWriters
       reflector.reflect(
-          TokenTrackingAttribute.class, "positionHistory", ArrayUtils.toObject(getPositions()));
+          TokenTrackingAttribute.class,
+          "positionHistory",
+          Arrays.stream(getPositions()).boxed().toArray(Integer[]::new));
     }
 
     @Override

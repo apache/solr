@@ -21,9 +21,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.Before;
@@ -83,7 +82,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
    */
   void pushContent(String path, String content) throws S3Exception {
     try (OutputStream output = client.pushStream(path)) {
-      IOUtils.write(content, output, Charset.defaultCharset());
+      output.write(content.getBytes(StandardCharsets.UTF_8));
     } catch (IOException e) {
       throw new S3Exception(e);
     }

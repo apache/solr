@@ -46,6 +46,7 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
 
   static final int TIMEOUT = 10000;
 
+  @Override
   public void distribSetUp() throws Exception {
     super.distribSetUp();
     try (ZkStateReader zkStateReader =

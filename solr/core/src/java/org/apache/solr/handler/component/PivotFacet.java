@@ -156,6 +156,7 @@ public class PivotFacet extends FacetBase {
     }
   }
 
+  @Override
   public String toString() {
     return "[" + facetStr + "] | " + this.getKey();
   }

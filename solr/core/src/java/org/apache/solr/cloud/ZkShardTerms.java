@@ -125,6 +125,7 @@ public class ZkShardTerms implements AutoCloseable {
   public ShardTerms getShardTerms() {
     return terms.get();
   }
+
   /**
    * Can this replica become leader?
    *
@@ -155,6 +156,7 @@ public class ZkShardTerms implements AutoCloseable {
     return terms.get().getTerm(coreNodeName) != null;
   }
 
+  @Override
   public void close() {
     // no watcher will be registered
     isClosed.set(true);

@@ -177,10 +177,12 @@ public final class ToleratedUpdateError {
     return entry;
   }
 
+  @Override
   public String toString() {
     return getMetadataKey() + "=>" + getMetadataValue();
   }
 
+  @Override
   public int hashCode() {
     int h = this.getClass().hashCode();
     h = h * 31 + type.hashCode();
@@ -189,6 +191,7 @@ public final class ToleratedUpdateError {
     return h;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o instanceof ToleratedUpdateError) {
       ToleratedUpdateError that = (ToleratedUpdateError) o;

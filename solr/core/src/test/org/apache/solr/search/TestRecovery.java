@@ -1352,6 +1352,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings("JdkObsolete")
   private void addDocs(int nDocs, int start, LinkedList<Long> versions) throws Exception {
     for (int i = 0; i < nDocs; i++) {
       versions.addFirst(addAndGetVersion(sdoc("id", Integer.toString(start + nDocs)), null));
@@ -1359,6 +1360,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings("JdkObsolete")
   public void testRemoveOldLogs() throws Exception {
     try {
       TestInjection.skipIndexWriterCommitOnClose = true;
@@ -1727,7 +1729,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
           content);
 
       // WARNING... assumes format of .00000n where n is less than 9
-      long logNumber = Long.parseLong(fname.substring(fname.lastIndexOf(".") + 1));
+      long logNumber = Long.parseLong(fname.substring(fname.lastIndexOf('.') + 1));
       String fname2 =
           String.format(
               Locale.ROOT, UpdateLog.LOG_FILENAME_PATTERN, UpdateLog.TLOG_NAME, logNumber + 1);
@@ -1967,7 +1969,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   }
 
   static class VersionProvider {
-    private static long version = 0;
+    private static long version = 1;
 
     static String getNextVersion() {
       return Long.toString(version++);
