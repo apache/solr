@@ -22,6 +22,20 @@
  -->
 
 <suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+  <suppress base="true">
+     <notes><![CDATA[
+     This CVE only affects the Kerby backend-ldap component, which Solr
+     does not include.
+     ]]></notes>
+     <cve>CVE-2023-25613</cve>
+  </suppress>
+  <suppress base="true">
+     <notes><![CDATA[
+     FP per issue #6388
+     ]]></notes>
+     <packageUrl regex="true">^pkg:maven/org\.apache\.rat/apache-rat@.*$</packageUrl>
+     <cpe>cpe:/a:line:line</cpe>
+  </suppress>
   <suppress>
     <notes><![CDATA[simple-xml-safe is a safe xml-safe fork]]></notes>
     <packageUrl regex="true">^pkg:maven/com\.carrotsearch\.thirdparty/simple\-xml\-safe@.*$</packageUrl>

@@ -95,6 +95,8 @@ Improvements
 
 * SOLR-16858: KnnQParser's "Pre-Filtering" behavior is now controlable via local params (hossman)
 
+* SOLR-17145: The INSTALLSHARDDATA API now includes a 'requestid' field when run asynchronously (Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
@@ -105,6 +107,8 @@ Optimizations
 Bug Fixes
 ---------------------
 * SOLR-17152: Better alignment of Admin UI graph (janhoy)
+
+* SOLR-17148: Fixing Config API overlay property enabling or disabling the cache (Sanjay Dutt, hossman, Eric Pugh)
 
 Dependency Upgrades
 ---------------------

@@ -1802,29 +1802,29 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   private void getDocListNC(QueryResult qr, QueryCommand cmd) throws IOException {
-    int len = cmd.getSupersetMaxDoc();
+    final int len = cmd.getSupersetMaxDoc();
     int last = len;
     if (last < 0 || last > maxDoc()) last = maxDoc();
     final int lastDocRequested = last;
-    int nDocsReturned;
-    int totalHits;
-    float maxScore;
-    int[] ids;
-    float[] scores;
+    final int nDocsReturned;
+    final int totalHits;
+    final float maxScore;
+    final int[] ids;
+    final float[] scores;
 
-    boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
+    final boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
 
-    ProcessedFilter pf = getProcessedFilter(cmd.getFilterList());
+    final ProcessedFilter pf = getProcessedFilter(cmd.getFilterList());
     final Query query =
         QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
-    Relation hitsRelation;
+    final Relation hitsRelation;
 
     // handle zero case...
     if (lastDocRequested <= 0) {
       final float[] topscore = new float[] {Float.NEGATIVE_INFINITY};
       final int[] numHits = new int[1];
 
-      Collector collector;
+      final Collector collector;
 
       if (!needScores) {
         collector =
@@ -1877,23 +1877,21 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
       MaxScoreCollector maxScoreCollector = null;
       Collector collector = topCollector;
-      if ((cmd.getFlags() & GET_SCORES) != 0) {
+      if (needScores) {
         maxScoreCollector = new MaxScoreCollector();
         collector = MultiCollector.wrap(topCollector, maxScoreCollector);
       }
-      ScoreMode scoreModeUsed =
+      final ScoreMode scoreModeUsed =
           buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter).scoreMode();
 
       totalHits = topCollector.getTotalHits();
-      TopDocs topDocs = topCollector.topDocs(0, len);
+      final TopDocs topDocs = topCollector.topDocs(0, len);
       if (scoreModeUsed == ScoreMode.COMPLETE || scoreModeUsed == ScoreMode.COMPLETE_NO_SCORES) {
         hitsRelation = TotalHits.Relation.EQUAL_TO;
       } else {
         hitsRelation = topDocs.totalHits.relation;
       }
-      if (cmd.getSort() != null
-          && cmd.getQuery() instanceof RankQuery == false
-          && (cmd.getFlags() & GET_SCORES) != 0) {
+      if (cmd.getSort() != null && cmd.getQuery() instanceof RankQuery == false && needScores) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
       }
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
@@ -1904,7 +1902,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               : 0.0f;
       nDocsReturned = topDocs.scoreDocs.length;
       ids = new int[nDocsReturned];
-      scores = (cmd.getFlags() & GET_SCORES) != 0 ? new float[nDocsReturned] : null;
+      scores = needScores ? new float[nDocsReturned] : null;
       for (int i = 0; i < nDocsReturned; i++) {
         ScoreDoc scoreDoc = topDocs.scoreDocs[i];
         ids[i] = scoreDoc.doc;
@@ -1920,22 +1918,22 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   // any DocSet returned is for the query only, without any filtering... that way it may
   // be cached if desired.
   private DocSet getDocListAndSetNC(QueryResult qr, QueryCommand cmd) throws IOException {
-    int len = cmd.getSupersetMaxDoc();
+    final int len = cmd.getSupersetMaxDoc();
     int last = len;
     if (last < 0 || last > maxDoc()) last = maxDoc();
     final int lastDocRequested = last;
-    int nDocsReturned;
-    int totalHits;
-    float maxScore;
-    int[] ids;
-    float[] scores;
-    DocSet set;
+    final int nDocsReturned;
+    final int totalHits;
+    final float maxScore;
+    final int[] ids;
+    final float[] scores;
+    final DocSet set;
 
-    boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
-    int maxDoc = maxDoc();
+    final boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
+    final int maxDoc = maxDoc();
     cmd.setMinExactCount(Integer.MAX_VALUE); // We need the full DocSet
 
-    ProcessedFilter pf = getProcessedFilter(cmd.getFilterList());
+    final ProcessedFilter pf = getProcessedFilter(cmd.getFilterList());
     final Query query =
         QueryUtils.combineQueryAndFilter(QueryUtils.makeQueryable(cmd.getQuery()), pf.filter);
 
@@ -1943,7 +1941,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (lastDocRequested <= 0) {
       final float[] topscore = new float[] {Float.NEGATIVE_INFINITY};
 
-      Collector collector;
+      final Collector collector;
       final DocSetCollector setCollector = new DocSetCollector(maxDoc);
 
       if (!needScores) {
@@ -1987,16 +1985,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
       final TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(len, cmd);
-      DocSetCollector setCollector = new DocSetCollector(maxDoc);
+      final DocSetCollector setCollector = new DocSetCollector(maxDoc);
       MaxScoreCollector maxScoreCollector = null;
       List<Collector> collectors = new ArrayList<>(Arrays.asList(topCollector, setCollector));
 
-      if ((cmd.getFlags() & GET_SCORES) != 0) {
+      if (needScores) {
         maxScoreCollector = new MaxScoreCollector();
         collectors.add(maxScoreCollector);
       }
 
-      Collector collector = MultiCollector.wrap(collectors);
+      final Collector collector = MultiCollector.wrap(collectors);
 
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
@@ -2005,10 +2003,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       totalHits = topCollector.getTotalHits();
       assert (totalHits == set.size()) || qr.isPartialResults();
 
-      TopDocs topDocs = topCollector.topDocs(0, len);
-      if (cmd.getSort() != null
-          && !(cmd.getQuery() instanceof RankQuery)
-          && (cmd.getFlags() & GET_SCORES) != 0) {
+      final TopDocs topDocs = topCollector.topDocs(0, len);
+      if (cmd.getSort() != null && !(cmd.getQuery() instanceof RankQuery) && needScores) {
         TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
       }
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
@@ -2019,7 +2015,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       nDocsReturned = topDocs.scoreDocs.length;
 
       ids = new int[nDocsReturned];
-      scores = (cmd.getFlags() & GET_SCORES) != 0 ? new float[nDocsReturned] : null;
+      scores = needScores ? new float[nDocsReturned] : null;
       for (int i = 0; i < nDocsReturned; i++) {
         ScoreDoc scoreDoc = topDocs.scoreDocs[i];
         ids[i] = scoreDoc.doc;
