@@ -40,7 +40,7 @@ import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.InvalidPathException;
+import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -69,6 +69,8 @@ import javax.xml.xpath.XPathFactory;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RTimer;
 import org.w3c.dom.Document;
@@ -88,11 +90,6 @@ public class PostTool extends ToolBase {
   static final String FORMAT_SOLR = "solr";
   static final String DATA_MODE_WEB = "web";
 
-  private static final String DEFAULT_COMMIT = "yes";
-  private static final String DEFAULT_OPTIMIZE = "no";
-  private static final String DEFAULT_OUT = "no";
-  private static final String DEFAULT_AUTO = "no";
-  private static final String DEFAULT_RECURSIVE = "0";
   private static final int DEFAULT_WEB_DELAY = 10;
   private static final int MAX_WEB_DEPTH = 10;
   public static final String DEFAULT_CONTENT_TYPE = "application/json";
@@ -109,7 +106,7 @@ public class PostTool extends ToolBase {
   String mode = DEFAULT_DATA_MODE;
   boolean commit;
   boolean optimize;
-  boolean dryRun;
+  boolean dryRun; // Avoids actual network traffic to Solr
 
   String[] args;
 
@@ -124,15 +121,13 @@ public class PostTool extends ToolBase {
 
   static final Set<String> DATA_MODES = new HashSet<>();
 
-  // Used in tests to avoid doing actual network traffic
-  boolean mockMode = false;
   PostTool.PageFetcher pageFetcher;
 
   static {
-    DATA_MODES.add(PostTool.DATA_MODE_FILES);
+    DATA_MODES.add(DATA_MODE_FILES);
     DATA_MODES.add(DATA_MODE_ARGS);
     DATA_MODES.add(DATA_MODE_STDIN);
-    DATA_MODES.add(PostTool.DATA_MODE_WEB);
+    DATA_MODES.add(DATA_MODE_WEB);
 
     mimeMap = new HashMap<>();
     mimeMap.put("xml", "application/xml");
@@ -202,7 +197,8 @@ public class PostTool extends ToolBase {
             .argName("mode")
             .hasArg(true)
             .required(false)
-            .desc("Files crawls files, web crawls website. default: files.")
+            .desc(
+                "Files crawls files, web crawls website, args processes input args, and stdin reads a command from standard in. default: files.")
             .build(),
         Option.builder("recursive")
             .argName("recursive")
@@ -248,7 +244,7 @@ public class PostTool extends ToolBase {
             .longOpt("dry-run")
             .required(false)
             .desc(
-                "Performs a dry run of the posting process without actually sending documents to Solr.")
+                "Performs a dry run of the posting process without actually sending documents to Solr.  Only works with files mode.")
             .build(),
         SolrCLI.OPTION_CREDENTIALS);
   }
@@ -269,25 +265,23 @@ public class PostTool extends ToolBase {
           "Must specify either -url or -c parameter to post documents.");
     }
 
-    if (cli.hasOption("dry-run")) {
-      dryRun = true;
-    }
-
     if (cli.hasOption("mode")) {
       mode = cli.getOptionValue("mode");
     }
 
+    if (cli.hasOption("dry-run")) {
+      dryRun = true;
+    }
+
     if (cli.hasOption("type")) {
       type = cli.getOptionValue("type");
-      auto =
-          false; // Turn off automatically looking up the mimetype in favour of what is passed in.
+      // Turn off automatically looking up the mimetype in favour of what is passed in.
+      auto = false;
     }
     format = cli.hasOption("format") ? FORMAT_SOLR : ""; // i.e not solr formatted json commands
 
     if (cli.hasOption("filetypes")) {
       fileTypes = cli.getOptionValue("filetypes");
-      // auto = false; // Turn off automatically looking up the mimetype in favour of the set of
-      // filetypes
     }
 
     int defaultDelay = (mode.equals((DATA_MODE_WEB)) ? 10 : 0);
@@ -309,7 +303,7 @@ public class PostTool extends ToolBase {
    * After initialization, call execute to start the post job. This method delegates to the correct
    * mode method.
    */
-  public void execute() {
+  public void execute() throws SolrServerException, IOException {
     final RTimer timer = new RTimer();
     if (PostTool.DATA_MODE_FILES.equals(mode)) {
       doFilesMode();
@@ -357,7 +351,7 @@ public class PostTool extends ToolBase {
 
   private void doArgsMode(String[] args) {
     info("POSTing args to " + solrUrl + "...");
-    for (String a : this.args) {
+    for (String a : args) {
       postData(stringToStream(a), null, out, type, solrUrl);
     }
   }
@@ -367,12 +361,10 @@ public class PostTool extends ToolBase {
     int numPagesPosted = 0;
     try {
       if (type != null) {
-        fatal("Specifying content-type with \"-Ddata=web\" is not supported");
+        throw new IllegalArgumentException(
+            "Specifying content-type with \"-Ddata=web\" is not supported");
       }
-      if (args[0].equals("-")) {
-        // Skip posting url if special param "-" given
-        return;
-      }
+
       // Set Extracting handler as default
       solrUrl = appendUrlPath(solrUrl, "/extract");
 
@@ -394,8 +386,9 @@ public class PostTool extends ToolBase {
       }
       numPagesPosted = postWebPages(args, 0, out);
       info(numPagesPosted + " web pages indexed.");
+
     } catch (MalformedURLException e) {
-      fatal("Wrong URL trying to append /extract to " + solrUrl);
+      warn("Wrong URL trying to append /extract to " + solrUrl);
     }
   }
 
@@ -421,12 +414,7 @@ public class PostTool extends ToolBase {
   }
 
   private boolean checkIsValidPath(File srcFile) {
-    try {
-      srcFile.toPath();
-      return true;
-    } catch (InvalidPathException e) {
-      return false;
-    }
+    return Files.exists(srcFile.toPath());
   }
 
   /**
@@ -443,24 +431,6 @@ public class PostTool extends ToolBase {
     int filesPosted = 0;
     for (int j = startIndexInArgs; j < args.length; j++) {
       File srcFile = new File(args[j]);
-      filesPosted = getFilesPosted(out, type, srcFile);
-    }
-    return filesPosted;
-  }
-
-  /**
-   * Post all filenames provided in args
-   *
-   * @param files array of Files
-   * @param startIndexInArgs offset to start
-   * @param out output stream to post data to
-   * @param type default content-type to use when posting (may be overridden in auto mode)
-   * @return number of files posted
-   */
-  public int postFiles(File[] files, int startIndexInArgs, OutputStream out, String type) {
-    reset();
-    int filesPosted = 0;
-    for (File srcFile : files) {
       filesPosted = getFilesPosted(out, type, srcFile);
     }
     return filesPosted;
@@ -740,16 +710,6 @@ public class PostTool extends ToolBase {
     return false;
   }
 
-  /**
-   * Tests if a string is either "true", "on", "yes" or "1"
-   *
-   * @param property the string to test
-   * @return true if "on"
-   */
-  protected static boolean isOn(String property) {
-    return ("true,on,yes,1".contains(property));
-  }
-
   static void warn(String msg) {
     CLIO.err("PostTool: WARNING: " + msg);
   }
@@ -758,21 +718,24 @@ public class PostTool extends ToolBase {
     CLIO.out(msg);
   }
 
-  static void fatal(String msg) {
-    CLIO.err("PostTool: FATAL: " + msg);
-    System.exit(2);
-  }
-
   /** Does a simple commit operation */
-  public void commit() {
+  public void commit() throws IOException, SolrServerException {
     info("COMMITting Solr index changes to " + solrUrl + "...");
-    doGet(appendParam(solrUrl.toString(), "commit=true"));
+    String url = solrUrl.toString();
+    url = url.substring(0, url.lastIndexOf("/update"));
+    try (final SolrClient client = SolrCLI.getSolrClient(url, credentials)) {
+      client.commit();
+    }
   }
 
   /** Does a simple optimize operation */
-  public void optimize() {
+  public void optimize() throws IOException, SolrServerException {
     info("Performing an OPTIMIZE to " + solrUrl + "...");
-    doGet(appendParam(solrUrl.toString(), "optimize=true"));
+    String url = solrUrl.toString();
+    url = url.substring(0, url.lastIndexOf("/update"));
+    try (final SolrClient client = SolrCLI.getSolrClient(url, credentials)) {
+      client.optimize();
+    }
   }
 
   /**
@@ -801,7 +764,7 @@ public class PostTool extends ToolBase {
   /** Opens the file and posts its contents to the solrUrl, writes to response to output. */
   public void postFile(File file, OutputStream output, String type) throws MalformedURLException {
     InputStream is = null;
-    // try {
+
     URL url = solrUrl;
     String suffix = "";
     if (auto) {
@@ -845,8 +808,7 @@ public class PostTool extends ToolBase {
               + file.getName()
               + (auto ? " (" + type + ")" : "")
               + " to [base]"
-              + suffix
-              + (mockMode ? " MOCK!" : ""));
+              + suffix);
     } else {
       try {
         info(
@@ -854,8 +816,7 @@ public class PostTool extends ToolBase {
                 + file.getName()
                 + (auto ? " (" + type + ")" : "")
                 + " to [base]"
-                + suffix
-                + (mockMode ? " MOCK!" : ""));
+                + suffix);
         is = new FileInputStream(file);
         postData(is, file.length(), output, type, url);
       } catch (IOException e) {
@@ -866,7 +827,7 @@ public class PostTool extends ToolBase {
             is.close();
           }
         } catch (IOException e) {
-          fatal("IOException while closing file: " + e);
+          warn("IOException while closing file: " + e);
         }
       }
     }
@@ -903,32 +864,6 @@ public class PostTool extends ToolBase {
     return (type != null) ? type : "application/octet-stream";
   }
 
-  /** Performs a simple get on the given URL */
-  public void doGet(String url) {
-    try {
-      doGet(new URL(url));
-    } catch (MalformedURLException e) {
-      warn("The specified URL " + url + " is not a valid URL. Please check");
-    }
-  }
-
-  /** Performs a simple get on the given URL */
-  public void doGet(URL url) {
-    try {
-      if (mockMode) {
-        return;
-      }
-      HttpURLConnection urlc = (HttpURLConnection) url.openConnection();
-      basicAuth(urlc);
-      urlc.connect();
-      checkResponseCode(urlc);
-    } catch (IOException e) {
-      warn("An error occurred getting data from " + url + ". Please check that Solr is running.");
-    } catch (Exception e) {
-      warn("An error occurred getting data from " + url + ". Message: " + e.getMessage());
-    }
-  }
-
   /**
    * Reads data from the data stream and posts it to solr, writes to the response to output
    *
@@ -936,7 +871,7 @@ public class PostTool extends ToolBase {
    */
   public boolean postData(
       InputStream data, Long length, OutputStream output, String type, URL url) {
-    if (mockMode) {
+    if (dryRun) {
       return true;
     }
 
@@ -951,7 +886,7 @@ public class PostTool extends ToolBase {
         try {
           urlConnection.setRequestMethod("POST");
         } catch (ProtocolException e) {
-          fatal("Shouldn't happen: HttpURLConnection doesn't support POST??" + e);
+          warn("Shouldn't happen: HttpURLConnection doesn't support POST??" + e);
         }
         urlConnection.setDoOutput(true);
         urlConnection.setDoInput(true);
@@ -966,16 +901,16 @@ public class PostTool extends ToolBase {
         }
         urlConnection.connect();
       } catch (IOException e) {
-        fatal("Connection error (is Solr running at " + solrUrl + " ?): " + e);
+        warn("Connection error (is Solr running at " + solrUrl + " ?): " + e);
         success = false;
       } catch (Exception e) {
-        fatal("POST failed with error " + e.getMessage());
+        warn("POST failed with error " + e.getMessage());
       }
 
       try (final OutputStream out = urlConnection.getOutputStream()) {
         pipe(data, out);
       } catch (IOException e) {
-        fatal("IOException while posting data: " + e);
+        warn("IOException while posting data: " + e);
       }
 
       try {
@@ -987,7 +922,7 @@ public class PostTool extends ToolBase {
         warn("IOException while reading response: " + e);
         success = false;
       } catch (GeneralSecurityException e) {
-        fatal(
+        warn(
             "Looks like Solr is secured and would not let us in. Try with another user in '-u' parameter");
       }
     } finally {
@@ -1139,11 +1074,10 @@ public class PostTool extends ToolBase {
 
   /** Inner class to filter files based on glob wildcards */
   static class GlobFileFilter implements FileFilter {
-    private String _pattern;
-    private Pattern p;
+    private final Pattern p;
 
     public GlobFileFilter(String pattern, boolean isRegex) {
-      _pattern = pattern;
+      String _pattern = pattern;
       if (!isRegex) {
         _pattern =
             _pattern
@@ -1161,7 +1095,8 @@ public class PostTool extends ToolBase {
       try {
         p = Pattern.compile(_pattern, Pattern.CASE_INSENSITIVE);
       } catch (PatternSyntaxException e) {
-        fatal("Invalid type list " + pattern + ". " + e.getDescription());
+        throw new IllegalArgumentException(
+            "Invalid type list " + pattern + ". " + e.getDescription());
       }
     }
 
@@ -1292,15 +1227,15 @@ public class PostTool extends ToolBase {
     /**
      * Finds links on a web page, using /extract?extractOnly=true
      *
-     * @param u the URL of the web page
+     * @param url the URL of the web page
      * @param is the input stream of the page
      * @param type the content-type
      * @param postUrl the URL (typically /solr/extract) in order to pull out links
      * @return a set of URIs parsed from the page
      */
-    protected Set<URI> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {
+    protected Set<URI> getLinksFromWebPage(URL url, InputStream is, String type, URL postUrl) {
       Set<URI> linksFromPage = new HashSet<>();
-      URL url = null;
+
       try {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         URL extractUrl = new URL(appendParam(postUrl.toString(), "extractOnly=true"));
@@ -1313,12 +1248,13 @@ public class PostTool extends ToolBase {
           NodeList links = getNodesFromXP(d, "/html/body//a/@href");
           for (int i = 0; i < links.getLength(); i++) {
             String link = links.item(i).getTextContent();
-            link = computeFullUrl(u, link);
+            link = computeFullUrl(url, link);
             if (link == null) {
               continue;
             }
             URI newUri = new URI(link);
-            if (newUri.getAuthority() == null || !newUri.getAuthority().equals(u.getAuthority())) {
+            if (newUri.getAuthority() == null
+                || !newUri.getAuthority().equals(url.getAuthority())) {
               linksFromPage.add(newUri);
             }
           }

@@ -153,7 +153,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testComputeFullUrl() throws IOException, URISyntaxException {
+  public void testComputeFullUrl() throws IOException {
 
     PostTool webPostTool = new PostTool();
 
@@ -175,7 +175,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testTypeSupported() throws IOException, URISyntaxException {
+  public void testTypeSupported() {
     PostTool postTool = new PostTool();
 
     assertTrue(postTool.typeSupported("application/pdf"));
@@ -215,12 +215,13 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testDoFilesMode() throws IOException, URISyntaxException {
+  public void testDoFilesMode() throws MalformedURLException {
     PostTool postTool = new PostTool();
-    postTool.mockMode = true;
     postTool.recursive = 0;
+    postTool.dryRun = true;
+    postTool.solrUrl = new URL("http://localhost:8983/solr/fake/update");
     File dir = getFile("exampledocs");
-    int num = postTool.postFiles(new File[] {dir}, 0, null, null);
+    int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
   }
 
@@ -228,8 +229,8 @@ public class PostToolTest extends SolrCloudTestCase {
   public void testDoWebMode() throws IOException, URISyntaxException {
     PostTool postTool = new PostTool();
     postTool.pageFetcher = new MockPageFetcher();
-    postTool.mockMode = true;
-    postTool.solrUrl = new URL("http://user:password@localhost:5150/solr/update");
+    postTool.dryRun = true;
+    postTool.solrUrl = new URL("http://user:password@localhost:5150/solr/fake/update");
 
     // Uses mock pageFetcher
     postTool.delay = 0;
@@ -252,7 +253,7 @@ public class PostToolTest extends SolrCloudTestCase {
   public void testRobotsExclusion() throws IOException, URISyntaxException {
     PostTool postTool = new PostTool();
     postTool.pageFetcher = new MockPageFetcher();
-    postTool.mockMode = true;
+    postTool.dryRun = true;
 
     assertFalse(postTool.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/")));
     assertTrue(postTool.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/disallowed")));
@@ -333,8 +334,8 @@ public class PostToolTest extends SolrCloudTestCase {
     }
 
     @Override
-    public Set<URI> getLinksFromWebPage(URL u, InputStream is, String type, URL postUrl) {
-      Set<URI> s = linkMap.get(PostTool.normalizeUrlEnding(u.toString()));
+    public Set<URI> getLinksFromWebPage(URL url, InputStream is, String type, URL postUrl) {
+      Set<URI> s = linkMap.get(PostTool.normalizeUrlEnding(url.toString()));
       if (s == null) {
         s = new HashSet<>();
       }
