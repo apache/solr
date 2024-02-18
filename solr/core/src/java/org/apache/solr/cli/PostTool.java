@@ -217,7 +217,7 @@ public class PostTool extends ToolBase {
             .desc(
                 "If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
             .build(),
-        Option.builder("auto")
+        Option.builder("a")
             .longOpt("auto")
             .required(false)
             .desc("If true, we'll guess type and add resourcename/url. Defaults to false.")
