@@ -245,9 +245,10 @@ public class PostTool extends ToolBase {
                 "sends application/json content as Solr commands to /update instead of /update/json/docs.")
             .build(),
         Option.builder()
-            .longOpt("dryrun")
+            .longOpt("dry-run")
             .required(false)
-            .desc("Performs a dry run of the posting process without sending documents to Solr.")
+            .desc(
+                "Performs a dry run of the posting process without actually sending documents to Solr.")
             .build(),
         SolrCLI.OPTION_CREDENTIALS);
   }
@@ -268,8 +269,7 @@ public class PostTool extends ToolBase {
           "Must specify either -url or -c parameter to post documents.");
     }
 
-    dryRun = false;
-    if (cli.hasOption("dryrun")) {
+    if (cli.hasOption("dry-run")) {
       dryRun = true;
     }
 
@@ -334,8 +334,7 @@ public class PostTool extends ToolBase {
 
   private void doFilesMode() {
     currentDepth = 0;
-    // Skip posting files if special param "-" given
-    // if (!args[0].equals("-")) {
+
     info(
         "Posting files to [base] url "
             + solrUrl
@@ -349,8 +348,11 @@ public class PostTool extends ToolBase {
     }
     fileFilter = getFileFilterFromFileTypes(fileTypes);
     int numFilesPosted = postFiles(args, 0, out, type);
-    info(numFilesPosted + " files indexed.");
-    // }
+    if (dryRun) {
+      info("Dry run complete. " + numFilesPosted + " would have been indexed.");
+    } else {
+      info(numFilesPosted + " files indexed.");
+    }
   }
 
   private void doArgsMode(String[] args) {
@@ -523,7 +525,7 @@ public class PostTool extends ToolBase {
         postFile(srcFile, out, type);
         Thread.sleep(delay * 1000L);
         filesPosted++;
-      } catch (InterruptedException e) {
+      } catch (InterruptedException | MalformedURLException e) {
         throw new RuntimeException(e);
       }
     }
@@ -797,65 +799,75 @@ public class PostTool extends ToolBase {
   }
 
   /** Opens the file and posts its contents to the solrUrl, writes to response to output. */
-  public void postFile(File file, OutputStream output, String type) {
+  public void postFile(File file, OutputStream output, String type) throws MalformedURLException {
     InputStream is = null;
-    try {
-      URL url = solrUrl;
-      String suffix = "";
-      if (auto) {
-        if (type == null) {
-          type = guessType(file);
-        }
-        // TODO: Add a flag that disables /update and sends all to /update/extract, to avoid CSV,
-        // JSON, and XML files
-        // TODO: from being interpreted as Solr documents internally
-        if (type.equals("application/json") && !PostTool.FORMAT_SOLR.equals(format)) {
-          suffix = "/json/docs";
-          String urlStr = appendUrlPath(solrUrl, suffix).toString();
-          url = new URL(urlStr);
-        } else if (type.equals("application/xml")
-            || type.equals("text/csv")
-            || type.equals("application/json")) {
-          // Default handler
-        } else {
-          // SolrCell
-          suffix = "/extract";
-          String urlStr = appendUrlPath(solrUrl, suffix).toString();
-          if (!urlStr.contains("resource.name")) {
-            urlStr =
-                appendParam(
-                    urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
-          }
-          if (!urlStr.contains("literal.id")) {
-            urlStr =
-                appendParam(
-                    urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
-          }
-          url = new URL(urlStr);
-        }
-      } else {
-        if (type == null) {
-          type = DEFAULT_CONTENT_TYPE;
-        }
+    // try {
+    URL url = solrUrl;
+    String suffix = "";
+    if (auto) {
+      if (type == null) {
+        type = guessType(file);
       }
+      // TODO: Add a flag that disables /update and sends all to /update/extract, to avoid CSV,
+      // JSON, and XML files
+      // TODO: from being interpreted as Solr documents internally
+      if (type.equals("application/json") && !PostTool.FORMAT_SOLR.equals(format)) {
+        suffix = "/json/docs";
+        String urlStr = appendUrlPath(solrUrl, suffix).toString();
+        url = new URL(urlStr);
+      } else if (type.equals("application/xml")
+          || type.equals("text/csv")
+          || type.equals("application/json")) {
+        // Default handler
+      } else {
+        // SolrCell
+        suffix = "/extract";
+        String urlStr = appendUrlPath(solrUrl, suffix).toString();
+        if (!urlStr.contains("resource.name")) {
+          urlStr =
+              appendParam(
+                  urlStr, "resource.name=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
+        }
+        if (!urlStr.contains("literal.id")) {
+          urlStr =
+              appendParam(urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
+        }
+        url = new URL(urlStr);
+      }
+    } else {
+      if (type == null) {
+        type = DEFAULT_CONTENT_TYPE;
+      }
+    }
+    if (dryRun) {
       info(
-          "POSTing file "
+          "DRY RUN of POSTing file "
               + file.getName()
               + (auto ? " (" + type + ")" : "")
               + " to [base]"
               + suffix
               + (mockMode ? " MOCK!" : ""));
-      is = new FileInputStream(file);
-      postData(is, file.length(), output, type, url);
-    } catch (IOException e) {
-      warn("Can't open/read file: " + file);
-    } finally {
+    } else {
       try {
-        if (is != null) {
-          is.close();
-        }
+        info(
+            "POSTing file "
+                + file.getName()
+                + (auto ? " (" + type + ")" : "")
+                + " to [base]"
+                + suffix
+                + (mockMode ? " MOCK!" : ""));
+        is = new FileInputStream(file);
+        postData(is, file.length(), output, type, url);
       } catch (IOException e) {
-        fatal("IOException while closing file: " + e);
+        warn("Can't open/read file: " + file);
+      } finally {
+        try {
+          if (is != null) {
+            is.close();
+          }
+        } catch (IOException e) {
+          fatal("IOException while closing file: " + e);
+        }
       }
     }
   }

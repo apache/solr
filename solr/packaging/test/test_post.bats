@@ -104,6 +104,16 @@ teardown() {
   assert_output --partial '"numFound":10'  
 }
 
+@test "crawling a directory as a dry-run" {
+  
+  # We filter to xml,json,and csv as we don't want to invoke the Extract handler, and are running it as a dry run
+  run solr post --dry-run -filetypes xml,json,csv -url http://localhost:${SOLR_PORT}/solr/foobar/update -skipcommit ${SOLR_TIP}/example/exampledocs
+
+  assert_output --partial 'Dry run complete. 16 would have been indexed.' 
+  refute_output --partial '16 files indexed.'
+  refute_output --partial 'ERROR'
+}
+
 @test "crawling a directory" {
   
   solr create -c mixed_content -d _default
