@@ -167,47 +167,6 @@ with support for Solr and Zookeeper. For Kubernetes, we provide the
 https://solr.apache.org/operator/[Solr Operator] sub project.
 There are also 3rd party Helm charts available.
 
-== Can I run ZooKeeper and Solr with Docker Links?
-
-Docker's https://docs.docker.com/engine/userguide/networking/default_network/dockerlinks/[Legacy container links] provide a way to
-pass connection configuration between containers.
-It only works on a single machine, on the default bridge.
-It provides no facilities for static IPs.
-Note: this feature is expected to be deprecated and removed in a future release.
-So really, see the "Can I run ZooKeeper and Solr clusters under Docker?" option above instead.
-
-But for some use-cases, such as quick demos or one-shot automated testing, it can be convenient.
-
-Run ZooKeeper, and define a name so we can link to it:
-
-[source,bash]
-----
-docker run --name zookeeper -d -p 2181:2181 -p 2888:2888 -p 3888:3888 jplock/zookeeper
-----
-
-Run two Solr nodes, linked to the zookeeper container:
-
-[source,bash]
-----
-docker run --name solr1 --link zookeeper:ZK -d -p 8983:8983 \
-      solr \
-      bash -c 'solr start -f -z $ZK_PORT_2181_TCP_ADDR:$ZK_PORT_2181_TCP_PORT'
-
-docker run --name solr2 --link zookeeper:ZK -d -p 8984:8983 \
-      solr \
-      bash -c 'solr start -f -z $ZK_PORT_2181_TCP_ADDR:$ZK_PORT_2181_TCP_PORT'
-----
-
-Create a collection:
-
-[source,bash]
-----
-docker exec -i -t solr1 solr create \
-        -c gettingstarted -shards 2 -p 8983
-----
-
-Then go to `+http://localhost:8983/solr/#/~cloud+` (adjust the hostname for your docker host) to see the two shards and Solr nodes.
-
 == How can I run ZooKeeper and Solr with Docker Compose?
 
 See the xref:solr-in-docker.adoc#docker-compose[docker compose example].
