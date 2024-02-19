@@ -43,7 +43,6 @@ import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SolrQueryTimeoutImpl;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
@@ -75,7 +74,6 @@ public class AnalyticsHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
-    SolrQueryTimeoutImpl.set(req);
     try {
       DocSet docs;
       try {
@@ -100,8 +98,6 @@ public class AnalyticsHandler extends RequestHandlerBase
       rsp.addResponse(new AnalyticsResponse(e));
     } catch (ExitableDirectoryReader.ExitingReaderException e) {
       rsp.addResponse(new AnalyticsResponse(new TimeExceededStubException(e)));
-    } finally {
-      SolrQueryTimeoutImpl.reset();
     }
   }
 
