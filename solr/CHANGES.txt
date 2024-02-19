@@ -78,7 +78,7 @@ Other Changes
 ==================  9.6.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-17141: Implement 'cpuAllowed' query parameter to limit the maximum CPU usage by a running query. (Andrzej Bialecki, Gus Heck, David Smiley)
 
 Improvements
 ---------------------
