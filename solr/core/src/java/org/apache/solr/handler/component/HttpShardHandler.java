@@ -52,13 +52,11 @@ import org.apache.solr.security.AllowListUrlChecker;
 public class HttpShardHandler extends ShardHandler {
   /**
    * If the request context map has an entry with this key and Boolean.TRUE as value, {@link
-   * #prepDistributed(ResponseBuilder)} will only include {@link
-   * org.apache.solr.common.cloud.Replica.Type#NRT} replicas as possible destination of the
-   * distributed request (or a leader replica of type {@link
-   * org.apache.solr.common.cloud.Replica.Type#TLOG}). This is used by the RealtimeGet handler,
+   * #prepDistributed(ResponseBuilder)} will only include replicas that support real-time requests
+   * as possible destination of the distributed request. This is used by the RealtimeGet handler,
    * since other types of replicas shouldn't respond to RTG requests
    */
-  public static String ONLY_NRT_REPLICAS = "distribOnlyRealtime";
+  public static String ONLY_REAL_TIME = "distribOnlyRealtime";
 
   private HttpShardHandlerFactory httpShardHandlerFactory;
   private Map<ShardResponse, Cancellable> responseCancellableMap;
@@ -288,7 +286,7 @@ public class HttpShardHandler extends ShardHandler {
 
     ReplicaSource replicaSource;
     if (zkController != null) {
-      boolean onlyNrt = Boolean.TRUE == req.getContext().get(ONLY_NRT_REPLICAS);
+      boolean onlyRealTime = Boolean.TRUE == req.getContext().get(ONLY_REAL_TIME);
 
       replicaSource =
           new CloudReplicaSource.Builder()
@@ -297,11 +295,11 @@ public class HttpShardHandler extends ShardHandler {
               .allowListUrlChecker(urlChecker)
               .replicaListTransformer(replicaListTransformer)
               .collection(cloudDescriptor.getCollectionName())
-              .onlyNrt(onlyNrt)
+              .onlyRealTime(onlyRealTime)
               .build();
       rb.slices = replicaSource.getSliceNames().toArray(new String[replicaSource.getSliceCount()]);
 
-      if (canShortCircuit(rb.slices, onlyNrt, params, cloudDescriptor)) {
+      if (canShortCircuit(rb.slices, onlyRealTime, params, cloudDescriptor)) {
         rb.isDistrib = false;
         rb.shortCircuitedURL =
             ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), coreDescriptor.getName());
@@ -320,7 +318,7 @@ public class HttpShardHandler extends ShardHandler {
                     .allowListUrlChecker(AllowListUrlChecker.ALLOW_ALL)
                     .replicaListTransformer(NoOpReplicaListTransformer.INSTANCE)
                     .collection(cloudDescriptor.getCollectionName())
-                    .onlyNrt(false)
+                    .onlyRealTime(false)
                     .build();
             final String adjective =
                 (allActiveReplicaSource.getReplicasBySlice(i).isEmpty() ? "active" : "eligible");
@@ -361,22 +359,22 @@ public class HttpShardHandler extends ShardHandler {
   }
 
   private boolean canShortCircuit(
-      String[] slices,
-      boolean onlyNrtReplicas,
-      SolrParams params,
-      CloudDescriptor cloudDescriptor) {
+      String[] slices, boolean onlyRealTime, SolrParams params, CloudDescriptor cloudDescriptor) {
     // Are we hosting the shard that this request is for, and are we active? If so, then handle it
     // ourselves and make it a non-distributed request.
     String ourSlice = cloudDescriptor.getShardId();
     String ourCollection = cloudDescriptor.getCollectionName();
-    // Some requests may only be fulfilled by replicas of type Replica.Type.NRT
+    // Some requests may only be fulfilled by leader replicas, or follower replicas that are
+    // always up-to-date with their leader.
     if (slices.length == 1
         && slices[0] != null
         && (slices[0].equals(ourSlice)
             || slices[0].equals(
                 ourCollection + "_" + ourSlice)) // handle the <collection>_<slice> format
         && cloudDescriptor.getLastPublished() == Replica.State.ACTIVE
-        && (!onlyNrtReplicas || cloudDescriptor.getReplicaType() == Replica.Type.NRT)) {
+        && (!onlyRealTime
+            || (cloudDescriptor.getReplicaType().follower
+                && !cloudDescriptor.getReplicaType().followerSkipCommit))) {
       // currently just a debugging parameter to check distrib search on a single node
       boolean shortCircuit = params.getBool("shortCircuit", true);
 

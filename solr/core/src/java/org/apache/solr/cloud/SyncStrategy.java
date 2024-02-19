@@ -21,14 +21,18 @@ import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -48,6 +52,10 @@ import org.slf4j.LoggerFactory;
 
 public class SyncStrategy {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final EnumSet<Replica.Type> followerReplicaTypes =
+      Arrays.stream(Replica.Type.values())
+          .filter(t -> t.follower)
+          .collect(Collectors.toCollection(() -> EnumSet.noneOf(Replica.Type.class)));
 
   private final boolean SKIP_AUTO_RECOVERY = Boolean.getBoolean("solrcloud.skip.autorecovery");
 
@@ -58,6 +66,7 @@ public class SyncStrategy {
   private final HttpClient client;
 
   private final ExecutorService updateExecutor;
+  private final ZkController zkController;
 
   private final List<RecoveryRequest> recoveryRequests = new ArrayList<>();
 
@@ -72,6 +81,7 @@ public class SyncStrategy {
     client = updateShardHandler.getDefaultHttpClient();
     shardHandler = cc.getShardHandlerFactory().getShardHandler();
     updateExecutor = updateShardHandler.getUpdateExecutor();
+    zkController = cc.getZkController();
   }
 
   private static class ShardCoreRequest extends ShardRequest {
@@ -80,15 +90,7 @@ public class SyncStrategy {
   }
 
   public PeerSync.PeerSyncResult sync(
-      ZkController zkController, SolrCore core, ZkNodeProps leaderProps) {
-    return sync(zkController, core, leaderProps, false);
-  }
-
-  public PeerSync.PeerSyncResult sync(
-      ZkController zkController,
-      SolrCore core,
-      ZkNodeProps leaderProps,
-      boolean peerSyncOnlyWithActive) {
+      SolrCore core, ZkNodeProps leaderProps, boolean peerSyncOnlyWithActive) {
     if (SKIP_AUTO_RECOVERY) {
       return PeerSync.PeerSyncResult.success();
     }
@@ -109,14 +111,11 @@ public class SyncStrategy {
       return PeerSync.PeerSyncResult.failure();
     }
 
-    return syncReplicas(zkController, core, leaderProps, peerSyncOnlyWithActive);
+    return syncReplicas(core, leaderProps, peerSyncOnlyWithActive);
   }
 
   private PeerSync.PeerSyncResult syncReplicas(
-      ZkController zkController,
-      SolrCore core,
-      ZkNodeProps leaderProps,
-      boolean peerSyncOnlyWithActive) {
+      SolrCore core, ZkNodeProps leaderProps, boolean peerSyncOnlyWithActive) {
     if (isClosed) {
       log.info("We have been closed, won't sync with replicas");
       return PeerSync.PeerSyncResult.failure();
@@ -131,9 +130,7 @@ public class SyncStrategy {
 
     // first sync ourselves - we are the potential leader after all
     try {
-      result =
-          syncWithReplicas(
-              zkController, core, leaderProps, collection, shardId, peerSyncOnlyWithActive);
+      result = syncWithReplicas(core, collection, shardId, peerSyncOnlyWithActive);
       success = result.isSuccess();
     } catch (Exception e) {
       log.error("Sync Failed", e);
@@ -148,7 +145,6 @@ public class SyncStrategy {
         log.info("Sync Success - now sync replicas to me");
 
         syncToMe(
-            zkController,
             collection,
             shardId,
             leaderProps,
@@ -168,12 +164,7 @@ public class SyncStrategy {
   }
 
   private PeerSync.PeerSyncResult syncWithReplicas(
-      ZkController zkController,
-      SolrCore core,
-      ZkNodeProps props,
-      String collection,
-      String shardId,
-      boolean peerSyncOnlyWithActive)
+      SolrCore core, String collection, String shardId, boolean peerSyncOnlyWithActive)
       throws Exception {
     List<ZkCoreNodeProps> nodes =
         zkController
@@ -181,7 +172,10 @@ public class SyncStrategy {
             .getReplicaProps(
                 collection,
                 shardId,
-                core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+                core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName(),
+                null,
+                null,
+                followerReplicaTypes);
 
     if (isClosed) {
       log.info("We have been closed, won't sync with replicas");
@@ -193,10 +187,8 @@ public class SyncStrategy {
       return PeerSync.PeerSyncResult.success();
     }
 
-    List<String> syncWith = new ArrayList<>(nodes.size());
-    for (ZkCoreNodeProps node : nodes) {
-      syncWith.add(node.getCoreUrl());
-    }
+    List<String> syncWith =
+        nodes.stream().map(ZkCoreNodeProps::getCoreUrl).collect(Collectors.toList());
 
     // if we can't reach a replica for sync, we still consider the overall sync a success
     // TODO: as an assurance, we should still try and tell the sync nodes that we couldn't reach
@@ -218,12 +210,7 @@ public class SyncStrategy {
   }
 
   private void syncToMe(
-      ZkController zkController,
-      String collection,
-      String shardId,
-      ZkNodeProps leaderProps,
-      CoreDescriptor cd,
-      int nUpdates) {
+      String collection, String shardId, ZkNodeProps leaderProps, CoreDescriptor cd, int nUpdates) {
 
     if (isClosed) {
       log.info("We have been closed, won't sync replicas to me.");
@@ -235,7 +222,13 @@ public class SyncStrategy {
     List<ZkCoreNodeProps> nodes =
         zkController
             .getZkStateReader()
-            .getReplicaProps(collection, shardId, cd.getCloudDescriptor().getCoreNodeName());
+            .getReplicaProps(
+                collection,
+                shardId,
+                cd.getCloudDescriptor().getCoreNodeName(),
+                null,
+                null,
+                followerReplicaTypes);
     if (nodes == null) {
       if (log.isInfoEnabled()) {
         log.info("{} has no replicas", ZkCoreNodeProps.getCoreUrl(leaderProps));

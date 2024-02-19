@@ -121,17 +121,18 @@ public class RealTimeGetComponent extends SearchComponent {
     if (cloudDesc != null) {
       Replica.Type replicaType = cloudDesc.getReplicaType();
       if (replicaType != null) {
-        if (replicaType == Replica.Type.PULL) {
+        // Only serve the request if the replica type is either a follower or a leader.
+        // Follower replicas should usually not respond to distrib /get requests, but
+        // internal requests are OK.
+        if (!replicaType.leaderEligible && !replicaType.follower) {
           throw new SolrException(
               ErrorCode.BAD_REQUEST,
               String.format(
                   Locale.ROOT,
                   "%s can't handle realtime get requests. Replicas of type %s do not support these type of requests",
                   cloudDesc.getCoreNodeName(),
-                  Replica.Type.PULL));
+                  replicaType));
         }
-        // non-leader TLOG replicas should not respond to distrib /get requests, but internal
-        // requests are OK
       }
     }
 
