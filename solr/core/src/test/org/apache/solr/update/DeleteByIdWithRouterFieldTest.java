@@ -303,7 +303,9 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
     final Map<String, List<String>> urlMap =
         docCol.getActiveSlices().stream()
             .collect(
-                Collectors.toMap(s -> s.getName(), s -> Collections.singletonList(s.getName())));
+                Collectors.toMap(
+                    s -> s.getName(),
+                    s -> Collections.singletonList(fakeSolrUrlForShard(s.getName()))));
 
     // simplified rote info we'll build up with the shards for each delete (after sanity checking
     // they have routing info at all)...
@@ -343,11 +345,17 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
               .getTargetSlice(id, doc, doc.getFieldValue(ROUTE_FIELD).toString(), params(), docCol);
       assertNotNull(id + " add route is null?", expectedShard);
       assertEquals(
-          "Wrong shard for delete of id: " + id, expectedShard.getName(), actualShard.toString());
+          "Wrong shard for delete of id: " + id,
+          fakeSolrUrlForShard(expectedShard.getName()),
+          actualShard.toString());
     }
 
     // sanity check no one broke our test and made it a waste of time
     assertEquals(100, add100Docs().getDocuments().size());
     assertEquals(100, actualDelRoutes.entrySet().size());
+  }
+
+  private static String fakeSolrUrlForShard(String shardName) {
+    return "http://localhost:8983/solr/" + shardName;
   }
 }
