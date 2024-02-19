@@ -69,6 +69,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
@@ -264,7 +265,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Iterator<Map.Entry<String, LBSolrClient.Req>> it = routes.entrySet().iterator();
     while (it.hasNext()) {
       Map.Entry<String, LBSolrClient.Req> entry = it.next();
-      String url = entry.getKey();
+      String coreUrl = entry.getKey();
+      final String baseUrl = URLUtil.extractBaseUrl(coreUrl);
+      final String coreName = URLUtil.extractCoreFromCoreUrl(coreUrl);
       UpdateRequest updateRequest = (UpdateRequest) entry.getValue().getRequest();
       SolrInputDocument doc = updateRequest.getDocuments().get(0);
       String id = doc.getField("id").getValue().toString();
@@ -272,7 +275,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       params.add("q", "id:" + id);
       params.add("distrib", "false");
       QueryRequest queryRequest = new QueryRequest(params);
-      try (SolrClient solrClient = getHttpSolrClient(url)) {
+      try (SolrClient solrClient = getHttpSolrClient(baseUrl, coreName)) {
         QueryResponse queryResponse = queryRequest.process(solrClient);
         SolrDocumentList docList = queryResponse.getResults();
         assertEquals(1, docList.getNumFound());
@@ -311,7 +314,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       it = routes.entrySet().iterator();
       while (it.hasNext()) {
         Map.Entry<String, LBSolrClient.Req> entry = it.next();
-        String url = entry.getKey();
+        String coreUrl = entry.getKey();
+        final String baseUrl = URLUtil.extractBaseUrl(coreUrl);
+        final String coreName = URLUtil.extractCoreFromCoreUrl(coreUrl);
         UpdateRequest updateRequest = (UpdateRequest) entry.getValue().getRequest();
         SolrInputDocument doc = updateRequest.getDocuments().get(0);
         String id = doc.getField("id").getValue().toString();
@@ -319,7 +324,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         params.add("q", "id:" + id);
         params.add("distrib", "false");
         QueryRequest queryRequest = new QueryRequest(params);
-        try (SolrClient solrClient = getHttpSolrClient(url)) {
+        try (SolrClient solrClient = getHttpSolrClient(baseUrl, coreName)) {
           QueryResponse queryResponse = queryRequest.process(solrClient);
           SolrDocumentList docList = queryResponse.getResults();
           assertEquals(1, docList.getNumFound());
@@ -587,7 +592,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     NamedList<Object> resp;
     try (SolrClient client =
-        new HttpSolrClient.Builder(baseUrl + "/" + collectionName)
+        new HttpSolrClient.Builder(baseUrl)
+            .withDefaultCollection(collectionName)
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
@@ -757,8 +763,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     SolrQuery q = new SolrQuery().setQuery("*:*");
     BaseHttpSolrClient.RemoteSolrException sse = null;
 
-    final String url = r.getBaseUrl() + "/" + COLLECTION;
-    try (SolrClient solrClient = getHttpSolrClient(url)) {
+    try (SolrClient solrClient = getHttpSolrClient(r.getBaseUrl(), COLLECTION)) {
 
       if (log.isInfoEnabled()) {
         log.info("should work query, result {}", solrClient.query(q));
@@ -804,8 +809,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     log.info("the node which does not serve this collection{} ", theNode);
     assertNotNull(theNode);
 
-    final String solrClientUrl = theNode + "/" + COLLECTION;
-    try (SolrClient solrClient = getHttpSolrClient(solrClientUrl)) {
+    try (SolrClient solrClient = getHttpSolrClient(theNode, COLLECTION)) {
 
       q.setParam(CloudSolrClient.STATE_VERSION, COLLECTION + ":" + (coll.getZNodeVersion() - 1));
       try {

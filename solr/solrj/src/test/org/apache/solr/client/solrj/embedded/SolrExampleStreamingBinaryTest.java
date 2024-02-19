@@ -36,7 +36,8 @@ public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
   public SolrClient createNewSolrClient() {
 
     SolrClient client =
-        new ErrorTrackingConcurrentUpdateSolrClient.Builder(getCoreUrl())
+        new ErrorTrackingConcurrentUpdateSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(2)
             .withThreadCount(5)
             .withResponseParser(new BinaryResponseParser())

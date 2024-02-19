@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -127,9 +128,8 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
                 0,
                 (Map<String, Object>) Utils.fromJSON(node.data),
                 Collections.emptySet(),
-                () ->
-                    PerReplicaStatesOps.fetch(
-                        DocCollection.getCollectionPath(collectionName), getZkClient(), null))
+                Instant.EPOCH,
+                null)
             .getCollection(collectionName);
 
     Set<String> knownKeys =

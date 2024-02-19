@@ -499,7 +499,7 @@ public class SolrCLI implements CLIO {
 
   /**
    * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
-   * is used, and warns those users. In the future we'll have url's with /api as well.
+   * is used, and warns those users. In the future we'll have urls ending with /api as well.
    *
    * @param solrUrl The user supplied url to Solr.
    * @return the solrUrl in the format that Solr expects to see internally.

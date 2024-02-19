@@ -20,6 +20,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySortedSet;
 
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -677,7 +678,7 @@ public class ZkStateReader implements SolrCloseable {
       // Don't mess with watchedCollections, they should self-manage.
 
       // First, drop any children that disappeared.
-      this.lazyCollectionStates.keySet().retainAll(children);
+      this.lazyCollectionStates.keySet().retainAll(new HashSet<>(children)); // Set avoids O(N^2)
       for (String coll : children) {
         // We will create an eager collection for any interesting collections, so don't add to lazy.
         if (!collectionWatches.watchedCollections().contains(coll)) {
@@ -1616,7 +1617,12 @@ public class ZkStateReader implements SolrCloseable {
         // TODO in Solr 10 remove that factory method
         ClusterState state =
             ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
-                stat.getVersion(), data, Collections.emptySet(), coll, zkClient);
+                stat.getVersion(),
+                data,
+                Collections.emptySet(),
+                coll,
+                zkClient,
+                Instant.ofEpochMilli(stat.getCtime()));
 
         ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
         return collectionRef == null ? null : collectionRef.get();

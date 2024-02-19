@@ -27,6 +27,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -1200,5 +1201,35 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
             CollectionAdminRequest.modifyCollection(collection, null)
                 .unsetAttribute("non_existent_attr")
                 .process(cluster.getSolrClient()));
+  }
+
+  @Test
+  public void testCollectionCreationTime() throws SolrServerException, IOException {
+    Instant beforeCreation = Instant.now();
+
+    String collectionName = getSaferTestName();
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
+
+    cluster.waitForActiveCollection(collectionName, 1, 1);
+
+    Instant afterCreation = Instant.now();
+
+    CollectionAdminRequest.ColStatus req = CollectionAdminRequest.collectionStatus(collectionName);
+    CollectionAdminResponse response = req.process(cluster.getSolrClient());
+    assertEquals(0, response.getStatus());
+
+    NamedList<?> colStatus = (NamedList<?>) response.getResponse().get(collectionName);
+    Long creationTimeMillis = (Long) colStatus._get("creationTimeMillis", null);
+    assertNotNull("creationTimeMillis was not included in COLSTATUS response", creationTimeMillis);
+
+    Instant creationTime = Instant.ofEpochMilli(creationTimeMillis);
+    assertTrue(
+        "COLSTATUS creationTimeMillis should be after the test started",
+        creationTime.isAfter(beforeCreation));
+    assertTrue(
+        "COLSTATUS creationTimeMillis should not be after the collection creation was completed",
+        creationTime.isBefore(afterCreation));
   }
 }

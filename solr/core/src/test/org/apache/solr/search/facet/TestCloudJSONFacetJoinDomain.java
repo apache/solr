@@ -124,7 +124,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners())
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl().toString(), COLLECTION_NAME));
 
     final int numDocs = atLeast(100);
     for (int id = 0; id < numDocs; id++) {
