@@ -1011,4 +1011,58 @@ public class TestSolrConfigHandler extends RestTestBase {
       return new LinkedHashMapWriter<>();
     }
   }
+
+  public void testCacheDisableSolrConfig() throws Exception {
+    RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
+    restTestHarness.setServerProvider(() -> getBaseUrl());
+    MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);
+    assertNotNull(
+        confMap._get(
+            asList("metrics", "solr.core.collection1", "CACHE.searcher.fieldValueCache"), null));
+    // Here documentCache is disabled at initialization in SolrConfig
+    assertNull(
+        confMap._get(
+            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+    restTestHarness.setServerProvider(oldProvider);
+  }
+
+  public void testSetPropertyCacheSize() throws Exception {
+    RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
+    // Changing cache size
+    String payload = "{'set-property' : { 'query.documentCache.size': 399} }";
+    runConfigCommand(restTestHarness, "/config", payload);
+    MapWriter overlay = getRespMap("/config/overlay", restTestHarness);
+    assertEquals("399", overlay._getStr("overlay/props/query/documentCache/size", null));
+    // Setting size only will not enable the cache
+    restTestHarness.setServerProvider(() -> getBaseUrl());
+    MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);
+    assertNull(
+        confMap._get(
+            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+    restTestHarness.setServerProvider(oldProvider);
+  }
+
+  public void testSetPropertyEnableAndDisableCache() throws Exception {
+    RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
+    // Enabling Cache
+    String payload = "{'set-property' : { 'query.documentCache.enabled': true} }";
+    runConfigCommand(restTestHarness, "/config", payload);
+    restTestHarness.setServerProvider(() -> getBaseUrl());
+    MapWriter confMap = getRespMap("/admin/metrics", restTestHarness);
+    assertNotNull(
+        confMap._get(
+            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+
+    // Disabling Cache
+    payload = "{ 'set-property' : { 'query.documentCache.enabled': false } }";
+    restTestHarness.setServerProvider(oldProvider);
+    runConfigCommand(restTestHarness, "/config", payload);
+    restTestHarness.setServerProvider(() -> getBaseUrl());
+    confMap = getRespMap("/admin/metrics", restTestHarness);
+    assertNull(
+        confMap._get(
+            asList("metrics", "solr.core.collection1", "CACHE.searcher.documentCache"), null));
+
+    restTestHarness.setServerProvider(oldProvider);
+  }
 }

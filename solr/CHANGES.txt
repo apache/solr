@@ -10,8 +10,6 @@ New Features
 ---------------------
 * SOLR-14496: Solr CLI commands now can interact with a Solr secured using Basic Authentication.  (Eric Pugh)
 
-* SOLR-16943: Extend Solr client tracing coverage to both Jetty Client and Apache HttpClient (Alex Deparvu, David Smiley)
-
 Improvements
 ---------------------
 
@@ -97,6 +95,8 @@ Improvements
 
 * SOLR-16858: KnnQParser's "Pre-Filtering" behavior is now controlable via local params (hossman)
 
+* SOLR-17145: The INSTALLSHARDDATA API now includes a 'requestid' field when run asynchronously (Jason Gerlowski)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
@@ -107,6 +107,8 @@ Optimizations
 Bug Fixes
 ---------------------
 * SOLR-17152: Better alignment of Admin UI graph (janhoy)
+
+* SOLR-17148: Fixing Config API overlay property enabling or disabling the cache (Sanjay Dutt, hossman, Eric Pugh)
 
 Dependency Upgrades
 ---------------------
@@ -144,6 +146,8 @@ Improvements
 * SOLR-13748: Add support for mm (min should match) parameter to bool query parser (Andrey Bozhko)
 
 * SOLR-17046: SchemaCodecFactory is now the implicit default codec factory.  (hossman)
+
+* SOLR-16943: Extend Solr client tracing coverage to both Jetty Client and Apache HttpClient (Alex Deparvu, David Smiley)
 
 * SOLR-16397: Swap core v2 endpoints have been updated to be more REST-ful.
   SWAP is now available at `POST /api/cores/coreName/swap` (Sanjay Dutt via Jason Gerlowski)
@@ -228,6 +232,48 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
+* PR#2055: Update org.mockito:mockito* from v5.5.0 to v5.8.0 (solrbot)
+
+* PR#2165: Update org.eclipse.jetty*:* to v10.0.19 (solrbot)
+
+* PR#2159: Update io.netty:* to v4.1.104.Final (solrbot)
+
+* PR#2048: Update dependency commons-cli:commons-cli to v1.6.0 (solrbot)
+
+* PR#2174: Update org.slf4j:* to v2.0.10 (solrbot)
+
+* PR#2135: Update dependency com.fasterxml.jackson:jackson-bom to v2.16.1 (solrbot)
+
+* PR#2138: Update dependency org.apache.commons:commons-compress to v1.25.0 (solrbot)
+
+* PR#2139: Update dependency org.apache.commons:commons-lang3 to v3.14.0 (solrbot)
+
+* PR#2035: Update dependency com.google.errorprone:error_prone_annotations to v2.23.0 (solrbot)
+
+* PR#2036: Update io.grpc:grpc-* to v1.59.0 (solrbot)
+
+* PR#2037: Update org.apache.logging.log4j:* to v2.21.0 (solrbot)
+
+* PR#2033: Update io.dropwizard.metrics:* to v4.2.21 (solrbot)
+
+* PR#2032: Update dependency io.swagger.core.v3:swagger-annotations to v2.2.17 (solrbot)
+
+* PR#2015: Update dependency org.codehaus.woodstox:stax2-api to v4.2.2 (solrbot)
+
+* PR#2034: Update dependency com.github.spotbugs:spotbugs-annotations to v4.8.0 (solrbot)
+
+* PR#2014: Update dependency com.google.guava:guava to v32.1.3-jre (solrbot)
+
+* PR#2010: Update dependency org.immutables:value-annotations to v2.10.0 (solrbot)
+
+* PR#2009: Update dependency io.opentelemetry:opentelemetry-bom to v1.31.0 (solrbot)
+
+* PR#2008: Update dependency org.semver4j:semver4j to v5.2.2 (solrbot)
+
+* PR#1989: Update org.apache.zookeeper:* to v3.9.1 (solrbot)
+
+* PR#1745: Update dependency com.google.cloud:google-cloud-bom to v0.204.0 (solrbot)
+
 * SOLR-17012: Update Apache Hadoop to 3.3.6 and Apache Curator to 5.5.0 (Kevin Risden)
 
 * SOLR-17026: Upgrade to Gradle 8.4 (Kevin Risden)
@@ -239,6 +285,10 @@ Dependency Upgrades
 Other Changes
 ---------------------
 * SOLR-17024: Remove support for the long-defunct "collectionDefaults" clusterprops key (Jason Gerlowski)
+
+* SOLR-17042: Deprecate the V2RequestSupport interface, and the associated `setUseV2` and `setUseBinaryV2` SolrRequest
+  methods.  SolrJ users looking to make use of v2 APIs in their applications can use the SolrRequest implementations
+  dedicated to that purpose. (Jason Gerlowski)
 
 * SOLR-17072: package CLI tool prints error JSONPath (Mikhail Khludnev)
 
