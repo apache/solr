@@ -100,23 +100,50 @@ public abstract class LBSolrClient extends SolrClient {
     solrQuery.setDistrib(false);
   }
 
+  /**
+   * A Solr endpoint for {@link LBSolrClient} to include in its load-balancing
+   *
+   * <p>Used in many places instead of the more common String URL to allow {@link LBSolrClient} to
+   * more easily determine whether a URL is a "base" or "core-aware" URL.
+   */
   public static class Endpoint {
     private final String baseUrl;
     private final String core;
 
+    /**
+     * Creates an {@link Endpoint} representing a "base" URL of a Solr node
+     *
+     * @param baseUrl a base Solr URL, in the form "http[s]://host:port/solr"
+     */
     public Endpoint(String baseUrl) {
       this(baseUrl, null);
     }
 
+    /**
+     * Create an {@link Endpoint} representing a Solr core or collection
+     *
+     * @param baseUrl a base Solr URL, in the form "http[s]://host:port/solr"
+     * @param core the name of a Solr core or collection
+     */
     public Endpoint(String baseUrl, String core) {
       this.baseUrl = normalize(baseUrl);
       this.core = core;
     }
 
+    /**
+     * Return the base URL of the Solr node this endpoint represents
+     *
+     * @return a base Solr URL, in the form "http[s]://host:port/solr"
+     */
     public String getBaseUrl() {
       return baseUrl;
     }
 
+    /**
+     * The core or collection this endpoint represents
+     *
+     * @return a core/collection name, or null if this endpoint doesn't represent a particular core.
+     */
     public String getCore() {
       return core;
     }
@@ -148,6 +175,12 @@ public abstract class LBSolrClient extends SolrClient {
       return Objects.equals(baseUrl, rhs.baseUrl) && Objects.equals(core, rhs.core);
     }
 
+    /**
+     * Create an {@link Endpoint} from a provided Solr URL
+     *
+     * <p>This method does its best to determine whether the provided URL is a Solr "base" URL or
+     * one which includes a core or collection name.
+     */
     public static Endpoint from(String unknownUrl) {
       if (URLUtil.isBaseUrl(unknownUrl)) {
         return new Endpoint(unknownUrl);
