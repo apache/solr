@@ -57,6 +57,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.URLUtil;
 import org.slf4j.MDC;
 
 public abstract class LBSolrClient extends SolrClient {
@@ -142,6 +143,14 @@ public abstract class LBSolrClient extends SolrClient {
       final Endpoint rhs = (Endpoint) obj;
 
       return Objects.equals(baseUrl, rhs.baseUrl) && Objects.equals(core, rhs.core);
+    }
+
+    public static Endpoint from(String unknownUrl) {
+      if (URLUtil.isBaseUrl(unknownUrl)) {
+        return new Endpoint(unknownUrl);
+      }
+      return new Endpoint(
+          URLUtil.extractBaseUrl(unknownUrl), URLUtil.extractCoreFromCoreUrl(unknownUrl));
     }
   }
 
@@ -292,16 +301,6 @@ public abstract class LBSolrClient extends SolrClient {
     protected List<Endpoint> endpoints;
     protected int numDeadServersToTry;
     private final Integer numServersToTry;
-
-    public Req(SolrRequest<?> request, List<String> servers) {
-      this(request, servers, null);
-    }
-
-    public Req(SolrRequest<?> request, List<String> servers, Integer numServersToTry) {
-      this.request = request;
-      this.numDeadServersToTry = -1;
-      this.numServersToTry = numServersToTry;
-    }
 
     public Req(SolrRequest<?> request, List<Endpoint> endpoints) {
       this(request, endpoints, null);

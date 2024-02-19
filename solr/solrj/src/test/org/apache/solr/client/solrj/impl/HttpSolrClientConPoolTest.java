@@ -162,7 +162,8 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
           } else {
             final UpdateRequest updateRequest = new UpdateRequest();
             updateRequest.add(doc); // here we mimic CloudSolrClient impl
-            final List<String> urls = Arrays.asList(fooUrl, barUrl);
+            final List<LBSolrClient.Endpoint> urls =
+                Arrays.asList(new LBSolrClient.Endpoint(fooUrl), new LBSolrClient.Endpoint(barUrl));
             Collections.shuffle(urls, random());
             LBSolrClient.Req req = new LBSolrClient.Req(updateRequest, urls);
             roundRobin.request(req);

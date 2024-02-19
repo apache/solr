@@ -18,9 +18,9 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -31,17 +31,21 @@ import org.junit.Test;
 
 public class LBSolrClientTest extends SolrTestCase {
 
+  private static final List<LBSolrClient.Endpoint> SOLR_ENDPOINTS =
+      List.of("1", "2", "3", "4").stream()
+          .map(url -> new LBSolrClient.Endpoint(url))
+          .collect(Collectors.toList());
+
   @Test
   public void testServerIterator() throws SolrServerException {
-    LBSolrClient.Req req =
-        new LBSolrClient.Req(new QueryRequest(), Arrays.asList("1", "2", "3", "4"));
+    LBSolrClient.Req req = new LBSolrClient.Req(new QueryRequest(), SOLR_ENDPOINTS);
     LBSolrClient.EndpointIterator endpointIterator =
         new LBSolrClient.EndpointIterator(req, new HashMap<>());
-    List<String> actualServers = new ArrayList<>();
+    List<LBSolrClient.Endpoint> actualServers = new ArrayList<>();
     while (endpointIterator.hasNext()) {
-      actualServers.add(endpointIterator.nextOrError().toString());
+      actualServers.add(endpointIterator.nextOrError());
     }
-    assertEquals(Arrays.asList("1", "2", "3", "4"), actualServers);
+    assertEquals(SOLR_ENDPOINTS, actualServers);
     assertFalse(endpointIterator.hasNext());
     LuceneTestCase.expectThrows(SolrServerException.class, endpointIterator::nextOrError);
   }
@@ -49,8 +53,7 @@ public class LBSolrClientTest extends SolrTestCase {
   @Test
   public void testServerIteratorWithZombieServers() throws SolrServerException {
     HashMap<String, LBSolrClient.EndpointWrapper> zombieServers = new HashMap<>();
-    LBSolrClient.Req req =
-        new LBSolrClient.Req(new QueryRequest(), Arrays.asList("1", "2", "3", "4"));
+    LBSolrClient.Req req = new LBSolrClient.Req(new QueryRequest(), SOLR_ENDPOINTS);
     LBSolrClient.EndpointIterator endpointIterator =
         new LBSolrClient.EndpointIterator(req, zombieServers);
     zombieServers.put("2", new LBSolrClient.EndpointWrapper(new LBSolrClient.Endpoint("2")));
@@ -69,8 +72,7 @@ public class LBSolrClientTest extends SolrTestCase {
   public void testServerIteratorTimeAllowed() throws SolrServerException, InterruptedException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.TIME_ALLOWED, 300);
-    LBSolrClient.Req req =
-        new LBSolrClient.Req(new QueryRequest(params), Arrays.asList("1", "2", "3", "4"), 2);
+    LBSolrClient.Req req = new LBSolrClient.Req(new QueryRequest(params), SOLR_ENDPOINTS, 2);
     LBSolrClient.EndpointIterator endpointIterator =
         new LBSolrClient.EndpointIterator(req, new HashMap<>());
     assertTrue(endpointIterator.hasNext());
@@ -81,8 +83,7 @@ public class LBSolrClientTest extends SolrTestCase {
 
   @Test
   public void testServerIteratorMaxRetry() throws SolrServerException {
-    LBSolrClient.Req req =
-        new LBSolrClient.Req(new QueryRequest(), Arrays.asList("1", "2", "3", "4"), 2);
+    LBSolrClient.Req req = new LBSolrClient.Req(new QueryRequest(), SOLR_ENDPOINTS, 2);
     LBSolrClient.EndpointIterator endpointIterator =
         new LBSolrClient.EndpointIterator(req, new HashMap<>());
     assertTrue(endpointIterator.hasNext());

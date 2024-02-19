@@ -314,7 +314,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
             .getRoutesToCollection(docCol.getRouter(), docCol, urlMap, params(), ROUTE_FIELD);
     for (LBSolrClient.Req lbreq : rawDelRoutes.values()) {
       assertTrue(lbreq.getRequest() instanceof UpdateRequest);
-      final String shard = lbreq.getServers().get(0);
+      final LBSolrClient.Endpoint shard = lbreq.getEndpoints().get(0);
       final UpdateRequest req = (UpdateRequest) lbreq.getRequest();
       for (Map.Entry<String, Map<String, Object>> entry : req.getDeleteByIdMap().entrySet()) {
         final String id = entry.getKey();
@@ -327,7 +327,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
             RVAL_PRE + id.substring(id.length() - 1),
             route.toString());
 
-        actualDelRoutes.put(id, shard);
+        actualDelRoutes.put(id, shard.toString());
       }
     }
 
@@ -342,7 +342,8 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
               .getRouter()
               .getTargetSlice(id, doc, doc.getFieldValue(ROUTE_FIELD).toString(), params(), docCol);
       assertNotNull(id + " add route is null?", expectedShard);
-      assertEquals("Wrong shard for delete of id: " + id, expectedShard.getName(), actualShard);
+      assertEquals(
+          "Wrong shard for delete of id: " + id, expectedShard.getName(), actualShard.toString());
     }
 
     // sanity check no one broke our test and made it a waste of time

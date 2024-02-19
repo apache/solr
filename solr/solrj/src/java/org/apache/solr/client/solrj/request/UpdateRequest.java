@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
@@ -229,7 +230,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
   }
 
   private interface ReqSupplier<T extends LBSolrClient.Req> {
-    T get(UpdateRequest request, List<String> servers);
+    T get(UpdateRequest request, List<LBSolrClient.Endpoint> servers);
   }
 
   private <T extends LBSolrClient.Req> Map<String, T> getRoutes(
@@ -272,7 +273,12 @@ public class UpdateRequest extends AbstractUpdateRequest {
           updateRequest.setBasicAuthCredentials(getBasicAuthUser(), getBasicAuthPassword());
           updateRequest.setResponseParser(getResponseParser());
           updateRequest.addHeaders(getHeaders());
-          request = reqSupplier.get(updateRequest, urls);
+          request =
+              reqSupplier.get(
+                  updateRequest,
+                  urls.stream()
+                      .map(url -> LBSolrClient.Endpoint.from(url))
+                      .collect(Collectors.toList()));
           routes.put(leaderUrl, request);
         }
         UpdateRequest urequest = (UpdateRequest) request.getRequest();
@@ -325,7 +331,12 @@ public class UpdateRequest extends AbstractUpdateRequest {
           urequest.deleteById(deleteId, route, version);
           urequest.setCommitWithin(getCommitWithin());
           urequest.setBasicAuthCredentials(getBasicAuthUser(), getBasicAuthPassword());
-          request = reqSupplier.get(urequest, urls);
+          request =
+              reqSupplier.get(
+                  urequest,
+                  urls.stream()
+                      .map(url -> LBSolrClient.Endpoint.from(url))
+                      .collect(Collectors.toList()));
           routes.put(leaderUrl, request);
         }
       }
