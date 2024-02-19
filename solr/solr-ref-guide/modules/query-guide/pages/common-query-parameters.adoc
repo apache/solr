@@ -331,6 +331,12 @@ that participates in the distributed search (although reaching this limit first 
 Should any replica locally exceed the allowed CPU time the whole distributed search will be terminated
 (by canceling requests to other shards).
 
+Note: the same CPU limit is applied to each stage in the distributed query processing. Typically this
+involves two or more stages (e.g. getting top document id-s, retrieving their fields, additional stages may be
+required for faceting, grouping, etc). For example, setting `cpuAllowed=500` gives a limit of at most
+500 ms of CPU time for each of these stages - meaning that the total CPU usage by the query may reach a multiple
+of the `cpuAllowed` value depending on the number of stages.
+
 All other considerations regarding partial results listed for the `timeAllowed` parameter apply here, too.
 
 == segmentTerminateEarly Parameter
