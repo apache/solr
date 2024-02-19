@@ -35,6 +35,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.solr.SolrTestCaseJ4;
 
 /**
  * Emulates bin/solr start -e cloud -noprompt; bin/solr post -c gettingstarted
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
  * docs in collections that use data driven functionality and managed schema features of the default
  * configset (configsets/_default).
  */
+@SolrTestCaseJ4.SuppressSSL
 public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

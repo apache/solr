@@ -719,7 +719,7 @@ public class PostTool extends ToolBase {
     info("COMMITting Solr index changes to " + solrUpdateUrl + "...");
     String url = solrUpdateUrl.toString();
     url = url.substring(0, url.lastIndexOf("/update"));
-    try (final SolrClient client = SolrCLI.getSolrClient(url, credentials)) {
+    try (final SolrClient client = SolrCLI.getSolrClient(url)) {
       client.commit();
     }
   }
@@ -729,7 +729,7 @@ public class PostTool extends ToolBase {
     info("Performing an OPTIMIZE to " + solrUpdateUrl + "...");
     String url = solrUpdateUrl.toString();
     url = url.substring(0, url.lastIndexOf("/update"));
-    try (final SolrClient client = SolrCLI.getSolrClient(url, credentials)) {
+    try (final SolrClient client = SolrCLI.getSolrClient(url)) {
       client.optimize();
     }
   }
