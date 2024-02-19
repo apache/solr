@@ -27,17 +27,17 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.request.SolrQueryRequest;
 
-public class MemQueryLimit implements QueryTimeout {
+public class MemAllowedLimit implements QueryTimeout {
   private static final double MEBI = 1024.0 * 1024.0;
   private static final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
   private static Method GET_BYTES_METHOD;
-  private static boolean available;
-  // this keeps the maxDelta recorded during previous execution
+  private static boolean supported;
+  // this keeps the maxDelta that was recorded during previous execution
   private static ThreadLocal<Long> previousMaxDelta =
       ThreadLocal.withInitial(() -> Long.valueOf(0L));
 
   static {
-    boolean testAvailable;
+    boolean testSupported;
     try {
       Class<?> sunThreadBeanClz = Class.forName("com.sun.management.ThreadMXBean");
       if (sunThreadBeanClz.isAssignableFrom(threadBean.getClass())) {
@@ -46,18 +46,18 @@ public class MemQueryLimit implements QueryTimeout {
         if (supported) {
           m = sunThreadBeanClz.getMethod("setThreadAllocatedMemoryEnabled", boolean.class);
           m.invoke(threadBean, Boolean.TRUE);
-          testAvailable = true;
+          testSupported = true;
           GET_BYTES_METHOD = sunThreadBeanClz.getMethod("getCurrentThreadAllocatedBytes");
         } else {
-          testAvailable = false;
+          testSupported = false;
         }
       } else {
-        testAvailable = false;
+        testSupported = false;
       }
     } catch (Exception e) {
-      testAvailable = false;
+      testSupported = false;
     }
-    available = testAvailable;
+    supported = testSupported;
   }
 
   static final int MIN_COUNT = 100;
@@ -67,8 +67,8 @@ public class MemQueryLimit implements QueryTimeout {
   private long initialBytes;
   private Histogram memHistogram;
 
-  public MemQueryLimit(SolrQueryRequest req) {
-    if (!available) {
+  public MemAllowedLimit(SolrQueryRequest req) {
+    if (!supported) {
       throw new IllegalArgumentException(
           "Per-thread memory allocation monitoring not available in this JVM.");
     }
@@ -76,7 +76,7 @@ public class MemQueryLimit implements QueryTimeout {
     float reqMemRatio = req.getParams().getFloat(CommonParams.MEM_ALLOWED_RATIO, -1.0f);
     if (reqMemLimit <= 0.0f && reqMemRatio <= 1.0f) {
       throw new IllegalArgumentException(
-          "Check for limit with hasMemLimit(req) before creating a MemQueryLimit!");
+          "Check for limit with hasMemLimit(req) before creating a MemAllowedLimit!");
     }
     if (reqMemRatio >= 0.0f && reqMemRatio < 1.0f) {
       throw new IllegalArgumentException(
@@ -86,7 +86,7 @@ public class MemQueryLimit implements QueryTimeout {
         req.getCore()
             .getCoreMetricManager()
             .getSolrMetricsContext()
-            .histogram("memQueryLimit", SolrInfoBean.Category.QUERY.toString());
+            .histogram(CommonParams.MEM_ALLOWED, SolrInfoBean.Category.QUERY.toString());
 
     init(reqMemLimit, reqMemRatio);
   }
@@ -107,14 +107,14 @@ public class MemQueryLimit implements QueryTimeout {
       }
       previousMaxDelta.set(0L);
     } catch (Exception e) {
-      available = false;
+      supported = false;
       throw new IllegalArgumentException(
           "Unexpected error checking thread allocation, disabling!", e);
     }
   }
 
   @VisibleForTesting
-  MemQueryLimit(float memLimit, float memLimitRatio, Histogram memHistogram) {
+  MemAllowedLimit(float memLimit, float memLimitRatio, Histogram memHistogram) {
     this.memHistogram = memHistogram;
     init(memLimit, memLimitRatio);
   }
@@ -124,8 +124,8 @@ public class MemQueryLimit implements QueryTimeout {
   }
 
   @VisibleForTesting
-  static boolean isAvailable() {
-    return available;
+  static boolean isSupported() {
+    return supported;
   }
 
   static boolean hasMemLimit(SolrQueryRequest req) {
@@ -147,7 +147,7 @@ public class MemQueryLimit implements QueryTimeout {
         if (initialBytes + maxDynamicDelta < currentAllocatedBytes) {
           return true;
         }
-        // don't exit - check the absolute limit, too
+        // don't exit yet - check the absolute limit, too
       }
       if (limitAtBytes > 0) {
         return limitAtBytes - currentAllocatedBytes < 0L;
@@ -155,7 +155,7 @@ public class MemQueryLimit implements QueryTimeout {
         return false;
       }
     } catch (Exception e) {
-      available = false;
+      supported = false;
       throw new IllegalArgumentException(
           "Unexpected error checking thread allocation, disabling!", e);
     }
