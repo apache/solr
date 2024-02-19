@@ -111,12 +111,13 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     log.info("Create collection {}", collectionName);
     boolean prsDefault = Boolean.parseBoolean(System.getProperty("solr.prs.default", "false"));
     final boolean isPRS = message.getBool(CollectionStateProps.PER_REPLICA_STATE, prsDefault);
-    // TODO remove
-    log.info(
-        "solr.prs.default : {} and collection prs : {}, isPRS : {}",
-        System.getProperty("solr.prs.default", null),
-        message.getStr(CollectionStateProps.PER_REPLICA_STATE),
-        isPRS);
+    if (log.isInfoEnabled()) {
+      log.info(
+          "solr.prs.default : {} and collection prs : {}, isPRS : {}",
+          System.getProperty("solr.prs.default", null),
+          message.getStr(CollectionStateProps.PER_REPLICA_STATE),
+          isPRS);
+    }
 
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(
