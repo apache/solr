@@ -130,7 +130,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     public final boolean requireTransactionLog;
 
     /**
-     * Whether replicas of this type continuously replica from the leader, if they are not
+     * Whether replicas of this type continuously replicate from the leader, if they are not
      * themselves the leader.
      */
     public final boolean replicateFromLeader;
