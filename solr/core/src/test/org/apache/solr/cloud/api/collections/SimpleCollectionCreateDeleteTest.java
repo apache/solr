@@ -129,7 +129,9 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
                 (Map<String, Object>) Utils.fromJSON(node.data),
                 Collections.emptySet(),
                 Instant.EPOCH,
-                null)
+                () ->
+                    PerReplicaStatesOps.fetch(
+                        DocCollection.getCollectionPath(collectionName), getZkClient(), null))
             .getCollection(collectionName);
 
     Set<String> knownKeys =
