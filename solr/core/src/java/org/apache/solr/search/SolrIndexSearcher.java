@@ -1943,16 +1943,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
 
         populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
-        if (cmd.getSort() != null && !(cmd.getQuery() instanceof RankQuery) && needScores) {
-          TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
-        }
+        hitsRelation =
+            populateScoresIfNeeded(cmd, needScores, topDocs, query, searchResult.scoreMode);
         nDocsReturned = topDocs.scoreDocs.length;
-        ScoreMode scoreModeUsed = searchResult.scoreMode;
-        if (scoreModeUsed == ScoreMode.COMPLETE || scoreModeUsed == ScoreMode.COMPLETE_NO_SCORES) {
-          hitsRelation = TotalHits.Relation.EQUAL_TO;
-        } else {
-          hitsRelation = topDocs.totalHits.relation;
-        }
       }
 
       ids = new int[nDocsReturned];
@@ -2292,9 +2285,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }
 
         populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
-        if (cmd.getSort() != null && !(cmd.getQuery() instanceof RankQuery) && needScores) {
-          TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
-        }
+        populateScoresIfNeeded(cmd, needScores, topDocs, query, ScoreMode.COMPLETE);
+        // TODO: Is this correct?
+        // hitsRelation = populateScoresIfNeeded(cmd, needScores, topDocs, query,
+        // searchResult.scoreMode);
+
         // nDocsReturned = topDocs.scoreDocs.length;
         // TODO: Is this correct?
         // hitsRelation = topDocs.totalHits.relation;
