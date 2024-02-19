@@ -27,11 +27,10 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 
-// TODO NOCOMMIT - revise these class level Javadocs
 /**
  * LBHttpSolrClient or "LoadBalanced HttpSolrClient" is a load balancing wrapper around {@link
- * HttpSolrClient}. This is useful when you have multiple Solr servers and the requests need to be
- * Load Balanced among them.
+ * HttpSolrClient}. This is useful when you have multiple Solr servers (also called endpoints) and
+ * requests need to be Load Balanced among them.
  *
  * <p>Do <b>NOT</b> use this class for indexing in leader/follower scenarios since documents must be
  * sent to the correct leader; no inter-node routing is done.
@@ -53,10 +52,15 @@ import org.apache.solr.common.util.CollectionUtil;
  * <blockquote>
  *
  * <pre>
- * SolrClient lbHttpSolrClient = new LBHttpSolrClient("http://host1:8080/solr/", "http://host2:8080/solr", "http://host2:8080/solr");
+ * SolrClient lbHttpSolrClient = new LBHttpSolrClient.Builder()
+ *     .withBaseEndpoints("http://host1:8080/solr", "http://host2:8080/solr", "http://host3:8080/solr")
+ *     .build();
  * //or if you wish to pass the HttpClient do as follows
- * httpClient httpClient = new HttpClient();
- * SolrClient lbHttpSolrClient = new LBHttpSolrClient(httpClient, "http://host1:8080/solr/", "http://host2:8080/solr", "http://host2:8080/solr");
+ * HttpClient httpClient = new HttpClient();
+ * SolrClient lbHttpSolrClient = new LBHttpSolrClient.Builder()
+ *     .withBaseEndpoints("http://host1:8080/solr", "http://host2:8080/solr", "http://host3:8080/solr")
+ *     .withHttpClient(httpClient)
+ *     .build();
  * </pre>
  *
  * </blockquote>
@@ -209,8 +213,7 @@ public class LBHttpSolrClient extends LBSolrClient {
     }
 
     /**
-     * Provide a "base" Solr endpoint to be used when configuring {@link LBHttpSolrClient}
-     * instances.
+     * Provide a "base" Solr URL to be used when configuring {@link LBHttpSolrClient} instances.
      *
      * <p>Method may be called multiple times. All provided values will be used. However, all
      * endpoints must be of the same type: providing a mix of"base" endpoints via this method and
@@ -228,7 +231,7 @@ public class LBHttpSolrClient extends LBSolrClient {
     }
 
     /**
-     * Provide multiple "base" Solr endpoints to be used when configuring {@link LBHttpSolrClient}
+     * Provide multiple "base" Solr URLs to be used when configuring {@link LBHttpSolrClient}
      * instances.
      *
      * <p>Method may be called multiple times. All provided values will be used. However, all
@@ -308,7 +311,7 @@ public class LBHttpSolrClient extends LBSolrClient {
       return this;
     }
 
-    /** Create a {@link HttpSolrClient} based on provided configuration. */
+    /** Create a {@link LBHttpSolrClient} based on provided configuration. */
     public LBHttpSolrClient build() {
       return new LBHttpSolrClient(this);
     }

@@ -529,8 +529,8 @@ public abstract class LBSolrClient extends SolrClient {
     return () -> {
       LBSolrClient lb = lbRef.get();
       if (lb != null && lb.zombieServers != null) {
-        for (Object zombieServer : lb.zombieServers.values()) {
-          lb.checkAZombieServer((EndpointWrapper) zombieServer);
+        for (EndpointWrapper zombieServer : lb.zombieServers.values()) {
+          lb.checkAZombieServer(zombieServer);
         }
       }
     };
@@ -548,8 +548,11 @@ public abstract class LBSolrClient extends SolrClient {
     final Endpoint zombieEndpoint = zombieServer.getEndpoint();
     try {
       QueryRequest queryRequest = new QueryRequest(solrQuery);
-      queryRequest.setBasePath(zombieEndpoint.toString());
-      QueryResponse resp = queryRequest.process(getClient(zombieEndpoint));
+      queryRequest.setBasePath(zombieEndpoint.getBaseUrl());
+      // First the one on the endpoint, then the default collection
+      final String effectiveCollection =
+          Objects.requireNonNullElse(zombieEndpoint.getCore(), getDefaultCollection());
+      QueryResponse resp = queryRequest.process(getClient(zombieEndpoint), effectiveCollection);
       if (resp.getStatus() == 0) {
         // server has come back up.
         // make sure to remove from zombies before adding to alive to avoid a race condition

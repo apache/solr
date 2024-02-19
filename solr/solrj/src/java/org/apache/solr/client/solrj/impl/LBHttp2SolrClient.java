@@ -41,8 +41,8 @@ import org.slf4j.MDC;
 // TODO NOCOMMIT - rework these Javadocs based on final interface
 /**
  * LBHttp2SolrClient or "LoadBalanced LBHttp2SolrClient" is a load balancing wrapper around {@link
- * Http2SolrClient}. This is useful when you have multiple Solr servers and the requests need to be
- * Load Balanced among them.
+ * Http2SolrClient}. This is useful when you have multiple Solr servers (also called endpoints) and
+ * requests need to be Load Balanced among them.
  *
  * <p>Do <b>NOT</b> use this class for indexing in leader/follower scenarios since documents must be
  * sent to the correct leader; no inter-node routing is done.
@@ -56,15 +56,16 @@ import org.slf4j.MDC;
  *
  * <p>Load balancing is done using a simple round-robin on the list of servers.
  *
- * <p>If a request to a server fails by an IOException due to a connection timeout or read timeout
- * then the host is taken off the list of live servers and moved to a 'dead server list' and the
- * request is resent to the next live server. This process is continued till it tries all the live
- * servers. If at least one server is alive, the request succeeds, and if not it fails.
+ * <p>If a request to an endpoint fails by an IOException due to a connection timeout or read
+ * timeout then the host is taken off the list of live servers and moved to a 'dead server list' and
+ * the request is resent to the next live server. This process is continued till it tries all the
+ * live servers. If at least one server is alive, the request succeeds, and if not it fails.
  *
  * <blockquote>
  *
  * <pre>
- * SolrClient lbHttp2SolrClient = new LBHttp2SolrClient(http2SolrClient, "http://host1:8080/solr/", "http://host2:8080/solr", "http://host2:8080/solr");
+ *
+ * SolrClient lbHttp2SolrClient = new LBHttp2SolrClient.Builder(http2SolrClient, Endpoint.from("http://host1:8080/solr"), Endpoint.from("http://host2:8080/solr")).build();
  * </pre>
  *
  * </blockquote>
