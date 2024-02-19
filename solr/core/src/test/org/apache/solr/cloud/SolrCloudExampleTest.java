@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cli.CreateCollectionTool;
 import org.apache.solr.cli.DeleteTool;
 import org.apache.solr.cli.HealthcheckTool;
@@ -35,7 +36,6 @@ import org.apache.solr.util.ExternalPaths;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.solr.SolrTestCaseJ4;
 
 /**
  * Emulates bin/solr start -e cloud -noprompt; bin/solr post -c gettingstarted
