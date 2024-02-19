@@ -41,7 +41,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -290,7 +289,7 @@ public abstract class LBSolrClient extends SolrClient {
   // Req should be parameterized too, but that touches a whole lotta code
   public static class Req {
     protected SolrRequest<?> request;
-    protected List<String> servers;
+    protected List<Endpoint> endpoints;
     protected int numDeadServersToTry;
     private final Integer numServersToTry;
 
@@ -300,8 +299,18 @@ public abstract class LBSolrClient extends SolrClient {
 
     public Req(SolrRequest<?> request, List<String> servers, Integer numServersToTry) {
       this.request = request;
-      this.servers = servers;
-      this.numDeadServersToTry = servers.size();
+      this.numDeadServersToTry = -1;
+      this.numServersToTry = numServersToTry;
+    }
+
+    public Req(SolrRequest<?> request, List<Endpoint> endpoints) {
+      this(request, endpoints, null);
+    }
+
+    public Req(SolrRequest<?> request, List<Endpoint> endpoints, Integer numServersToTry) {
+      this.request = request;
+      this.endpoints = endpoints;
+      this.numDeadServersToTry = endpoints.size();
       this.numServersToTry = numServersToTry;
     }
 
@@ -309,14 +318,8 @@ public abstract class LBSolrClient extends SolrClient {
       return request;
     }
 
-    // TODO NOCOMMIT - transition all 'getServers' usages below to 'getEndpoints' (and actually
-    // implement getEndpoints)
-    public List<String> getServers() {
-      return servers;
-    }
-
     public List<Endpoint> getEndpoints() {
-      return servers.stream().map(s -> new Endpoint(s)).collect(Collectors.toList());
+      return endpoints;
     }
 
     /**
