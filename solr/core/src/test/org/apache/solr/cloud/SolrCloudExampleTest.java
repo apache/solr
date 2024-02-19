@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cli.CreateTool;
 import org.apache.solr.cli.DeleteTool;
 import org.apache.solr.cli.HealthcheckTool;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
  * docs in collections that use data driven functionality and managed schema features of the default
  * configset (configsets/_default).
  */
+@SolrTestCaseJ4.SuppressSSL
 public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
