@@ -175,10 +175,9 @@ public class LBHttpSolrClient extends LBSolrClient {
     }
   }
 
-  // TODO NOCOMMIT - figure out if this makes sense in the new world or not
   @Override
-  public String removeSolrServer(String server) {
-    urlToClient.remove(server);
+  public String removeSolrServer(Endpoint server) {
+    urlToClient.remove(server.toString());
     return super.removeSolrServer(server);
   }
 

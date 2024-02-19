@@ -38,7 +38,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.MDC;
 
-// TODO NOCOMMIT - rework these Javadocs based on final interface
 /**
  * LBHttp2SolrClient or "LoadBalanced LBHttp2SolrClient" is a load balancing wrapper around {@link
  * Http2SolrClient}. This is useful when you have multiple Solr servers (also called endpoints) and

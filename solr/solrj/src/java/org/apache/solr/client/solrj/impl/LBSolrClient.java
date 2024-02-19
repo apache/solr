@@ -22,10 +22,8 @@ import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
-import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -123,12 +121,17 @@ public abstract class LBSolrClient extends SolrClient {
       return core;
     }
 
-    @Override
-    public String toString() {
+    /** Get the full URL, possibly including the collection/core if one was provided */
+    public String getUrl() {
       if (core == null) {
         return baseUrl;
       }
       return baseUrl + "/" + core;
+    }
+
+    @Override
+    public String toString() {
+      return getUrl();
     }
 
     @Override
@@ -171,10 +174,6 @@ public abstract class LBSolrClient extends SolrClient {
     public Endpoint getEndpoint() {
       return endpoint;
     }
-
-    // TODO NOCOMMIT - we probably want 'getBaseUrl' and 'getCore' helpers here, but I'm going to
-    // delete them as a way to make sure that I don't miss auditing any usages to make sure that
-    // they're accounting for the core/baseUrl correctly.
 
     @Override
     public String toString() {
@@ -575,7 +574,7 @@ public abstract class LBSolrClient extends SolrClient {
       // If the server doesn't belong in the standard set belonging to this load balancer
       // then simply drop it after a certain number of failed pings.
       if (!zombieServer.standard && zombieServer.failedPings >= NONSTANDARD_PING_LIMIT) {
-        zombieServers.remove(zombieEndpoint.toString());
+        zombieServers.remove(zombieEndpoint.getUrl());
       }
     }
   }
@@ -596,20 +595,11 @@ public abstract class LBSolrClient extends SolrClient {
     }
   }
 
-  public String removeSolrServer(String server) {
-    try {
-      server = new URL(server).toExternalForm();
-    } catch (MalformedURLException e) {
-      throw new RuntimeException(e);
-    }
-    if (server.endsWith("/")) {
-      server = server.substring(0, server.length() - 1);
-    }
-
+  public String removeSolrServer(Endpoint endpoint) {
     // there is a small race condition here - if the server is in the process of being moved between
     // lists, we could fail to remove it.
-    removeFromAlive(server);
-    zombieServers.remove(server);
+    removeFromAlive(endpoint.getUrl());
+    zombieServers.remove(endpoint.getUrl());
     return null;
   }
 
@@ -654,8 +644,11 @@ public abstract class LBSolrClient extends SolrClient {
       final var endpoint = wrapper.getEndpoint();
       try {
         ++numServersTried;
-        request.setBasePath(endpoint.toString());
-        return getClient(endpoint).request(request, collection);
+        request.setBasePath(endpoint.getBaseUrl());
+        // Choose the endpoint's core/collection over any specified by the user
+        final var effectiveCollection =
+            endpoint.getCore() == null ? collection : endpoint.getCore();
+        return getClient(endpoint).request(request, effectiveCollection);
       } catch (SolrException e) {
         // Server is alive but the request was malformed or invalid
         throw e;
@@ -664,7 +657,7 @@ public abstract class LBSolrClient extends SolrClient {
           ex = e;
           moveAliveToDead(wrapper);
           if (justFailed == null) justFailed = new HashMap<>();
-          justFailed.put(endpoint.toString(), wrapper);
+          justFailed.put(endpoint.getUrl(), wrapper);
         } else {
           throw e;
         }
@@ -682,13 +675,15 @@ public abstract class LBSolrClient extends SolrClient {
       }
 
       if (wrapper.standard == false
-          || (justFailed != null && justFailed.containsKey(endpoint.toString()))) continue;
+          || (justFailed != null && justFailed.containsKey(endpoint.getUrl()))) continue;
       try {
         ++numServersTried;
-        request.setBasePath(endpoint.toString());
-        NamedList<Object> rsp = getClient(endpoint).request(request, collection);
+        request.setBasePath(endpoint.getBaseUrl());
+        final String effectiveCollection =
+            endpoint.getCore() == null ? collection : endpoint.getCore();
+        NamedList<Object> rsp = getClient(endpoint).request(request, effectiveCollection);
         // remove from zombie list *before* adding to alive to avoid a race that could lose a server
-        zombieServers.remove(endpoint.toString());
+        zombieServers.remove(endpoint.getUrl());
         addToAlive(wrapper);
         return rsp;
       } catch (SolrException e) {
