@@ -384,7 +384,8 @@ public class TestHarness extends BaseTestHarness {
       assert null != mdcSnap; // prevent compiler warning of unused var
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(
-          new SolrRequestInfo(req, rsp)); // needed for limits to be valid. Normally invoked by HttpSolrCall
+          new SolrRequestInfo(
+              req, rsp)); // needed for limits to be valid. Normally invoked by HttpSolrCall
       core.execute(core.getRequestHandler(handler), req, rsp);
       if (rsp.getException() != null) {
         throw rsp.getException();
