@@ -37,6 +37,48 @@ public class LBSolrClientTest extends SolrTestCase {
           .collect(Collectors.toList());
 
   @Test
+  public void testEndpointCorrectlyBuildsFullUrl() {
+    final var baseUrlEndpoint = new LBSolrClient.Endpoint("http://localhost:8983/solr");
+    assertEquals("http://localhost:8983/solr", baseUrlEndpoint.getUrl());
+    assertEquals("http://localhost:8983/solr", baseUrlEndpoint.getBaseUrl());
+    assertNull(
+        "Expected core to be null, but was: " + baseUrlEndpoint.getCore(),
+        baseUrlEndpoint.getCore());
+
+    final var coreEndpoint = new LBSolrClient.Endpoint("http://localhost:8983/solr", "collection1");
+    assertEquals("http://localhost:8983/solr/collection1", coreEndpoint.getUrl());
+    assertEquals("http://localhost:8983/solr", coreEndpoint.getBaseUrl());
+    assertEquals("collection1", coreEndpoint.getCore());
+  }
+
+  @Test
+  public void testEndpointNormalizesProvidedBaseUrl() {
+    final var normalizedBaseUrl = "http://localhost:8983/solr";
+    final var noTrailingSlash = new LBSolrClient.Endpoint(normalizedBaseUrl);
+    final var trailingSlash = new LBSolrClient.Endpoint(normalizedBaseUrl + "/");
+
+    assertEquals(normalizedBaseUrl, noTrailingSlash.getBaseUrl());
+    assertEquals(normalizedBaseUrl, noTrailingSlash.getUrl());
+    assertEquals(normalizedBaseUrl, trailingSlash.getBaseUrl());
+    assertEquals(normalizedBaseUrl, trailingSlash.getUrl());
+  }
+
+  @Test
+  public void testEndpointFactoryParsesUrlsCorrectly() {
+    final var parsedFromBaseUrl =
+        LBSolrClient.Endpoint.from("http://localhost:8983/solr" + rareTrailingSlash());
+    assertEquals("http://localhost:8983/solr", parsedFromBaseUrl.getBaseUrl());
+    assertNull(
+        "Expected core to be null, but was: " + parsedFromBaseUrl.getCore(),
+        parsedFromBaseUrl.getCore());
+
+    final var parsedFromCoreUrl =
+        LBSolrClient.Endpoint.from("http://localhost:8983/solr/collection1" + rareTrailingSlash());
+    assertEquals("http://localhost:8983/solr", parsedFromCoreUrl.getBaseUrl());
+    assertEquals("collection1", parsedFromCoreUrl.getCore());
+  }
+
+  @Test
   public void testServerIterator() throws SolrServerException {
     LBSolrClient.Req req = new LBSolrClient.Req(new QueryRequest(), SOLR_ENDPOINTS);
     LBSolrClient.EndpointIterator endpointIterator =
@@ -91,5 +133,12 @@ public class LBSolrClientTest extends SolrTestCase {
     assertTrue(endpointIterator.hasNext());
     endpointIterator.nextOrError();
     LuceneTestCase.expectThrows(SolrServerException.class, endpointIterator::nextOrError);
+  }
+
+  private String rareTrailingSlash() {
+    if (rarely()) {
+      return "/";
+    }
+    return "";
   }
 }

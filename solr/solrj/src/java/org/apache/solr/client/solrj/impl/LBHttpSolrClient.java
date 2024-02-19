@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.CollectionUtil;
 
 /**
  * LBHttpSolrClient or "LoadBalanced HttpSolrClient" is a load balancing wrapper around {@link
