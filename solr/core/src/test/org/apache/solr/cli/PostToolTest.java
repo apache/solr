@@ -52,6 +52,11 @@ import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/**
+ * NOTE: do *not* use real hostnames, not even "example.com", in the webcrawler tests.
+ *
+ * A MockPageFetcher is used to prevent real HTTP requests from being executed.
+ */
 @SolrTestCaseJ4.SuppressSSL
 public class PostToolTest extends SolrCloudTestCase {
 
