@@ -112,7 +112,7 @@ public class LBHttpSolrClient extends LBSolrClient {
 
   private HttpClient constructClient(List<Endpoint> solrEndpoints) {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    if (CollectionUtil.isNotEmpty(solrEndpoints)) {
+    if (solrEndpoints != null && solrEndpoints.size() > 1) {
       // we prefer retrying another server
       params.set(HttpClientUtil.PROP_USE_RETRY, false);
     } else {
