@@ -110,7 +110,7 @@ public class PostToolTest extends SolrCloudTestCase {
 
     String[] args = {
       "post",
-      "--solrUrl",
+      "--solr-update-url",
       cluster.getJettySolrRunner(0).getBaseUrl() + "/" + collection + "/update",
       "--credentials",
       USER + ":" + PASS,
@@ -224,7 +224,7 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.recursive = 0;
     postTool.dryRun = true;
-    postTool.solrUrl = new URL("http://localhost:8983/solr/fake/update");
+    postTool.solrUpdateUrl = new URL("http://localhost:8983/solr/fake/update");
     File dir = getFile("exampledocs");
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
@@ -235,7 +235,7 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.pageFetcher = new MockPageFetcher();
     postTool.dryRun = true;
-    postTool.solrUrl = new URL("http://user:password@localhost:5150/solr/fake/update");
+    postTool.solrUpdateUrl = new URL("http://user:password@localhost:5150/solr/fake/update");
 
     // Uses mock pageFetcher
     postTool.delay = 0;

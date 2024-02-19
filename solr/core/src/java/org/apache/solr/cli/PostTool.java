@@ -98,7 +98,7 @@ public class PostTool extends ToolBase {
   int recursive = 0;
   int delay = 0;
   String fileTypes = PostTool.DEFAULT_FILE_TYPES;
-  URL solrUrl;
+  URL solrUpdateUrl;
   String credentials;
   OutputStream out = null;
   String type;
@@ -121,7 +121,7 @@ public class PostTool extends ToolBase {
 
   static final Set<String> DATA_MODES = new HashSet<>();
 
-  PostTool.PageFetcher pageFetcher;
+  PostTool.PageFetcher pageFetcher = new PostTool.PageFetcher();
 
   static {
     DATA_MODES.add(DATA_MODE_FILES);
@@ -173,10 +173,10 @@ public class PostTool extends ToolBase {
     return List.of(
         Option.builder("url")
             .argName("url")
-            .longOpt("solrUrl")
+            .longOpt("solr-update-url")
             .hasArg()
             .required(false)
-            .desc("<base Solr update URL>")
+            .desc("Solr Update URL, the full url to the update handler, including the /update.")
             .build(),
         Option.builder("c")
             .longOpt("name")
@@ -253,13 +253,13 @@ public class PostTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
-    solrUrl = null;
+    solrUpdateUrl = null;
     if (cli.hasOption("url")) {
       String url = cli.getOptionValue("url");
-      solrUrl = new URL(url);
+      solrUpdateUrl = new URL(url);
     } else if (cli.hasOption("c")) {
       String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("c") + "/update";
-      solrUrl = new URL(url);
+      solrUpdateUrl = new URL(url);
     } else {
       throw new IllegalArgumentException(
           "Must specify either -url or -c parameter to post documents.");
@@ -331,7 +331,7 @@ public class PostTool extends ToolBase {
 
     info(
         "Posting files to [base] url "
-            + solrUrl
+            + solrUpdateUrl
             + (!auto ? " using content-type " + (type == null ? DEFAULT_CONTENT_TYPE : type) : "")
             + "...");
     if (auto) {
@@ -350,9 +350,9 @@ public class PostTool extends ToolBase {
   }
 
   private void doArgsMode(String[] args) {
-    info("POSTing args to " + solrUrl + "...");
+    info("POSTing args to " + solrUpdateUrl + "...");
     for (String a : args) {
-      postData(stringToStream(a), null, out, type, solrUrl);
+      postData(stringToStream(a), null, out, type, solrUpdateUrl);
     }
   }
 
@@ -366,9 +366,9 @@ public class PostTool extends ToolBase {
       }
 
       // Set Extracting handler as default
-      solrUrl = appendUrlPath(solrUrl, "/extract");
+      solrUpdateUrl = appendUrlPath(solrUpdateUrl, "/extract");
 
-      info("Posting web pages to Solr url " + solrUrl);
+      info("Posting web pages to Solr url " + solrUpdateUrl);
       auto = true;
       info(
           "Entering auto mode. Indexing pages with content-types corresponding to file endings "
@@ -388,13 +388,13 @@ public class PostTool extends ToolBase {
       info(numPagesPosted + " web pages indexed.");
 
     } catch (MalformedURLException e) {
-      warn("Wrong URL trying to append /extract to " + solrUrl);
+      warn("Wrong URL trying to append /extract to " + solrUpdateUrl);
     }
   }
 
   private void doStdinMode() {
-    info("POSTing stdin to " + solrUrl + "...");
-    postData(System.in, null, out, type, solrUrl);
+    info("POSTing stdin to " + solrUpdateUrl + "...");
+    postData(System.in, null, out, type, solrUpdateUrl);
   }
 
   private void reset() {
@@ -606,7 +606,7 @@ public class PostTool extends ToolBase {
           URL postUrl =
               new URL(
                   appendParam(
-                      solrUrl.toString(),
+                      solrUpdateUrl.toString(),
                       "literal.id="
                           + URLEncoder.encode(url.toString(), UTF_8)
                           + "&literal.url="
@@ -720,8 +720,8 @@ public class PostTool extends ToolBase {
 
   /** Does a simple commit operation */
   public void commit() throws IOException, SolrServerException {
-    info("COMMITting Solr index changes to " + solrUrl + "...");
-    String url = solrUrl.toString();
+    info("COMMITting Solr index changes to " + solrUpdateUrl + "...");
+    String url = solrUpdateUrl.toString();
     url = url.substring(0, url.lastIndexOf("/update"));
     try (final SolrClient client = SolrCLI.getSolrClient(url, credentials)) {
       client.commit();
@@ -730,8 +730,8 @@ public class PostTool extends ToolBase {
 
   /** Does a simple optimize operation */
   public void optimize() throws IOException, SolrServerException {
-    info("Performing an OPTIMIZE to " + solrUrl + "...");
-    String url = solrUrl.toString();
+    info("Performing an OPTIMIZE to " + solrUpdateUrl + "...");
+    String url = solrUpdateUrl.toString();
     url = url.substring(0, url.lastIndexOf("/update"));
     try (final SolrClient client = SolrCLI.getSolrClient(url, credentials)) {
       client.optimize();
@@ -765,7 +765,7 @@ public class PostTool extends ToolBase {
   public void postFile(File file, OutputStream output, String type) throws MalformedURLException {
     InputStream is = null;
 
-    URL url = solrUrl;
+    URL url = solrUpdateUrl;
     String suffix = "";
     if (auto) {
       if (type == null) {
@@ -776,7 +776,7 @@ public class PostTool extends ToolBase {
       // TODO: from being interpreted as Solr documents internally
       if (type.equals("application/json") && !PostTool.FORMAT_SOLR.equals(format)) {
         suffix = "/json/docs";
-        String urlStr = appendUrlPath(solrUrl, suffix).toString();
+        String urlStr = appendUrlPath(solrUpdateUrl, suffix).toString();
         url = new URL(urlStr);
       } else if (type.equals("application/xml")
           || type.equals("text/csv")
@@ -785,7 +785,7 @@ public class PostTool extends ToolBase {
       } else {
         // SolrCell
         suffix = "/extract";
-        String urlStr = appendUrlPath(solrUrl, suffix).toString();
+        String urlStr = appendUrlPath(solrUpdateUrl, suffix).toString();
         if (!urlStr.contains("resource.name")) {
           urlStr =
               appendParam(
@@ -901,7 +901,7 @@ public class PostTool extends ToolBase {
         }
         urlConnection.connect();
       } catch (IOException e) {
-        warn("Connection error (is Solr running at " + solrUrl + " ?): " + e);
+        warn("Connection error (is Solr running at " + solrUpdateUrl + " ?): " + e);
         success = false;
       } catch (Exception e) {
         warn("POST failed with error " + e.getMessage());

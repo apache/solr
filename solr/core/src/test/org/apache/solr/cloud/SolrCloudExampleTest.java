@@ -115,7 +115,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
     String[] argsForPost =
         new String[] {
-          "--solrUrl",
+          "--solr-update-url",
           solrUrl + "/" + testCollectionName + "/update",
           "-filetypes",
           "xml",

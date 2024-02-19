@@ -139,7 +139,7 @@ teardown() {
     }
   }' "http://localhost:${SOLR_PORT}/solr/webcrawl/config"
   
-  run solr post -mode web -url http://localhost:${SOLR_PORT}/webcrawl/update -recursive 1 -delay 1 https://solr.apache.org
+  run solr post -mode web --solr-update-url http://localhost:${SOLR_PORT}/webcrawl/update -recursive 1 -delay 1 https://solr.apache.org
   assert_output --partial 'Entering crawl at level 0'
 }
 
