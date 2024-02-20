@@ -167,7 +167,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpSolrClientJdkImpl client =
         (HttpSolrClientJdkImpl)
-            builder(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000).build()) {
+            builder(getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 2000).build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
@@ -193,7 +193,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpSolrClientJdkImpl client =
         (HttpSolrClientJdkImpl)
-            builder(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
+            builder(getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0)
                 .withRequestTimeout(500, TimeUnit.MILLISECONDS)
                 .build()) {
       client.query(q, SolrRequest.METHOD.GET);
@@ -205,7 +205,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase {
 
   @Test
   public void testFollowRedirect() throws Exception {
-    final String clientUrl = getBaseUrl() + "/redirect/foo";
+    final String clientUrl = getBaseUrl() + REDIRECT_SERVLET_PATH;
     try (HttpSolrClientJdkImpl client = builder(clientUrl).withFollowRedirects(true).build()) {
       SolrQuery q = new SolrQuery("*:*");
       client.query(q);
@@ -214,7 +214,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase {
 
   @Test
   public void testDoNotFollowRedirect() throws Exception {
-    final String clientUrl = getBaseUrl() + "/redirect/foo";
+    final String clientUrl = getBaseUrl() + REDIRECT_SERVLET_PATH;
     try (HttpSolrClientJdkImpl client = builder(clientUrl).withFollowRedirects(false).build()) {
       SolrQuery q = new SolrQuery("*:*");
 
@@ -225,7 +225,7 @@ public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase {
 
   @Test
   public void testRedirectSwapping() throws Exception {
-    final String clientUrl = getBaseUrl() + "/redirect/foo";
+    final String clientUrl = getBaseUrl() + REDIRECT_SERVLET_PATH;
     SolrQuery q = new SolrQuery("*:*");
 
     // default for follow redirects is false
