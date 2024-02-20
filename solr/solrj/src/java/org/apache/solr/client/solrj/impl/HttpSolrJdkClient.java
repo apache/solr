@@ -52,7 +52,7 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
+public class HttpSolrJdkClient extends Http2SolrClientBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String USER_AGENT =
@@ -60,7 +60,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
 
   private HttpClient client;
 
-  protected HttpSolrClientJdkImpl(String serverBaseUrl, HttpSolrClientJdkImpl.Builder builder) {
+  protected HttpSolrJdkClient(String serverBaseUrl, HttpSolrJdkClient.Builder builder) {
     super(serverBaseUrl, builder);
 
     HttpClient.Redirect followRedirects =
@@ -312,7 +312,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
   }
 
   public static class Builder
-      extends HttpSolrClientBuilderBase<HttpSolrClientJdkImpl.Builder, HttpSolrClientJdkImpl> {
+      extends HttpSolrClientBuilderBase<HttpSolrJdkClient.Builder, HttpSolrJdkClient> {
 
     private SSLContext sslContext;
 
@@ -326,14 +326,14 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
     }
 
     @Override
-    public HttpSolrClientJdkImpl build() {
+    public HttpSolrJdkClient build() {
       if (idleTimeoutMillis == null || idleTimeoutMillis <= 0) {
         idleTimeoutMillis = (long) HttpClientUtil.DEFAULT_SO_TIMEOUT;
       }
       if (connectionTimeoutMillis == null) {
         connectionTimeoutMillis = (long) HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
       }
-      return new HttpSolrClientJdkImpl(baseSolrUrl, this);
+      return new HttpSolrJdkClient(baseSolrUrl, this);
     }
 
     /**
@@ -343,7 +343,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
      * @param sslContext the ssl context to use
      * @return this
      */
-    public HttpSolrClientJdkImpl.Builder withSSLContext(SSLContext sslContext) {
+    public HttpSolrJdkClient.Builder withSSLContext(SSLContext sslContext) {
       this.sslContext = sslContext;
       return this;
     }

@@ -27,8 +27,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 public class SSLConfig extends SSLConfigBase {
 
   /**
-   * NOTE: all other settings are ignored if useSsl is false; trustStore settings are ignored if
-   * clientAuth is false
+   *{@inheritDoc}
    */
   public SSLConfig(
       boolean useSsl,

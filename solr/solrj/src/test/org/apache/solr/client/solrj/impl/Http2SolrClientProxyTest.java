@@ -81,9 +81,9 @@ public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
   public void testProxyWithHttpSolrClientJdkImpl() throws Exception {
     assertNotNull(proxy);
     var builder =
-        new HttpSolrClientJdkImpl.Builder(url)
+        new HttpSolrJdkClient.Builder(url)
             .withProxyConfiguration(host, proxy.getListenPort(), false, false);
-    try (HttpSolrClientJdkImpl client = builder.build()) {
+    try (HttpSolrJdkClient client = builder.build()) {
       testProxy(client);
     }
     // This is a workaround for java.net.http.HttpClient not implementing closeable/autoclosable
