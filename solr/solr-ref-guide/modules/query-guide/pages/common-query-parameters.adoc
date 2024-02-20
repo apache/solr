@@ -339,6 +339,39 @@ of the `cpuAllowed` value depending on the number of stages.
 
 All other considerations regarding partial results listed for the `timeAllowed` parameter apply here, too.
 
+== memAllowed Parameter
+
+This parameter specifies the amount of memory (a float value, in MiB) allowed for a search thread to allocate
+during query execution. Similarly to the `cpuAllowed` this parameter monitors the additional memory
+allocated to the thread that executes the current query. Similarly, the same hard limit is applied to
+the query coordinator as to each replica that participates in the distributed search. As is the case with
+the `cpuAllowed` also here the limit is applied separately to each stage of the distributed query processing.
+
+=== memAllowedRatio Parameter
+
+In addition to the hard memory limit specified by `memAllowed` a soft (dynamic) limit may be specified, which is relative to the
+"typical" memory usage by recent queries. The `memAllowedRatio` parameter is a float value always greater than 1.0
+that specifies the maximum ratio of the currently allocated memory to the `p99` percentile in the histogram that tracks
+the recent values of memory allocated by queries executing on the replica. This parameter remains inactive until a minimum
+set of data points is collected (currently set at 100 queries). After that the histogram uses an exponentially
+decaying reservoir with a heavy bias towards the past 5 minutes of measurements.
+
+Example: let's assume that the last `N` queries (`N > 100`) allocated between `0.02 MiB` to `0.1 MiB` per query, so the `p99 ~= 0.1 MiB`.
+If the query parameter is set to `memAllowedRatio=5.0` then a query that allocated more than `0.5 MiB` will be terminated. Let's further assume
+that after a while the queries began to gradually consume more and more memory so the recent queries
+caused the `p99` to increase to `0.2 MiB` - and now only queries that allocate more than `1.0 MiB` will be terminated. Since the
+histogram uses an exponentially decaying reservoir then if recent queries begin allocating less memory this reference value of
+`p99` will decrease.
+
+When `memAllowed` is specified then it enforces the hard limit regardless of `memAllowedRatio` calculations. This way
+users can protect against this gradual "creep" exceeding
+absolute maximum reasonable values. At the same time by specifying `memAllowedRatio` they can quickly terminate
+sudden "non-typical" queries that still fit within `memAllowed` but would still cause harmful spikes in
+allocations and GC.
+
+Note: this functionality relies on an internal JVM class `com.sun.management.ThreadMXBean` - if this
+class is not available in the current JVM but the `memAllowed` parameter is used the query will return an error.
+
 == segmentTerminateEarly Parameter
 
 This parameter may be set to either `true` or `false`.
