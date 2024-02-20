@@ -336,14 +336,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // we can lose our core descriptor, so store it now
     this.coreDescriptor = core.getCoreDescriptor();
 
-    if (this.coreDescriptor.getCloudDescriptor().requiresTransactionLog()) {
+    if (this.coreDescriptor.getCloudDescriptor().getReplicaType().requireTransactionLog) {
       doSyncOrReplicateRecovery(core);
     } else {
       doReplicateOnlyRecovery(core);
     }
   }
 
-  private final void doReplicateOnlyRecovery(SolrCore core) throws InterruptedException {
+  private void doReplicateOnlyRecovery(SolrCore core) {
     final RTimer timer = new RTimer();
     boolean successfulRecovery = false;
 
@@ -396,8 +396,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
         log.info("Starting Replication Recovery.");
 
         try {
-          log.info("Stopping background replicate from leader process");
-          zkController.stopReplicationFromLeader(coreName);
+          if (replicaType.replicateFromLeader) {
+            log.info("Stopping background replicate from leader process");
+            zkController.stopReplicationFromLeader(coreName);
+          }
           replicate(zkController.getNodeName(), core, leaderprops);
 
           if (isClosed()) {
@@ -417,8 +419,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
         log.error("Error while trying to recover. core={}", coreName, e);
       } finally {
         if (successfulRecovery) {
-          log.info("Restarting background replicate from leader process");
-          zkController.startReplicationFromLeader(coreName, false);
+          if (replicaType.replicateFromLeader) {
+            log.info("Restarting background replicate from leader process");
+            zkController.startReplicationFromLeader(coreName, false);
+          }
           log.info("Registering as Active after recovery.");
           try {
             zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
@@ -583,7 +587,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       }
     }
 
-    if (replicaType == Replica.Type.TLOG) {
+    if (replicaType.replicateFromLeader) {
       zkController.stopReplicationFromLeader(coreName);
     }
 
@@ -735,7 +739,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         if (successfulRecovery) {
           log.info("Registering as Active after recovery.");
           try {
-            if (replicaType == Replica.Type.TLOG) {
+            if (replicaType.replicateFromLeader) {
               zkController.startReplicationFromLeader(coreName, true);
             }
             zkController.publish(this.coreDescriptor, Replica.State.ACTIVE);
@@ -770,8 +774,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
    * @param ourUrl if the leader url is the same as our url, we will skip trying to connect
    * @return the leader replica, or null if closed
    */
-  private final Replica pingLeader(
-      String ourUrl, CoreDescriptor coreDesc, boolean mayPutReplicaAsDown) throws Exception {
+  private Replica pingLeader(String ourUrl, CoreDescriptor coreDesc, boolean mayPutReplicaAsDown)
+      throws Exception {
     int numTried = 0;
     while (true) {
       CloudDescriptor cloudDesc = coreDesc.getCloudDescriptor();

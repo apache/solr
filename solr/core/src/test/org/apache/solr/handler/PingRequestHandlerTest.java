@@ -188,7 +188,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
           SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), configName);
       CollectionAdminRequest.createCollection(
               collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR)
-          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .setPerReplicaState(SolrCloudTestCase.isPRS())
           .process(miniCluster.getSolrClient());
 
       // Send distributed and non-distributed ping query

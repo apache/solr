@@ -144,7 +144,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
           SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
       CollectionAdminRequest.createCollection(collectionName, configName, 2, 2)
-          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .setPerReplicaState(SolrCloudTestCase.isPRS())
           .process(miniCluster.getSolrClient());
 
       QueryRequest req = new QueryRequest();
@@ -192,7 +192,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
           SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
       CollectionAdminRequest.createCollection(collectionName, configName, 2, 2)
-          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .setPerReplicaState(SolrCloudTestCase.isPRS())
           .process(miniCluster.getSolrClient());
 
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -246,7 +246,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
           SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
       CollectionAdminRequest.createCollection(collectionName, configName, 2, 1)
-          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .setPerReplicaState(SolrCloudTestCase.isPRS())
           .process(miniCluster.getSolrClient());
 
       ModifiableSolrParams params = new ModifiableSolrParams();
