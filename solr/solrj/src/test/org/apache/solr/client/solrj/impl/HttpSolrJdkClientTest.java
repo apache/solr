@@ -382,7 +382,9 @@ public class HttpSolrJdkClientTest extends Http2SolrClientTestBase {
 
     rp = new BinaryResponseParser();
     try (HttpSolrJdkClient client = builder(getBaseUrl()).withResponseParser(rp).build()) {
-      assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/vnd.apache.solr.javabin"));
+      assertTrue(
+          client.processorAcceptsMimeType(
+              rp.getContentTypes(), "application/vnd.apache.solr.javabin"));
       assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/octet-stream"));
       assertFalse(client.processorAcceptsMimeType(rp.getContentTypes(), "application/xml"));
     }
@@ -395,7 +397,6 @@ public class HttpSolrJdkClientTest extends Http2SolrClientTestBase {
       assertNull(client.contentTypeToEncoding("application/vnd.apache.solr.javabin"));
       assertNull(client.contentTypeToEncoding("application/octet-stream"));
       assertNull(client.contentTypeToEncoding("multipart/form-data; boundary=something"));
-
     }
   }
 
