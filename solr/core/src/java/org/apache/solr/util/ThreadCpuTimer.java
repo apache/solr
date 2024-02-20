@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * <p>Calling code should create an instance of this class when starting the operation, and then can
  * get the {@link #getCpuTimeMs()} at any time thereafter.
  */
-public class ThreadStats {
+public class ThreadCpuTimer {
   private static final long UNSUPPORTED = -1;
   public static final String CPU_TIME = "cpuTime";
   public static final String LOCAL_CPU_TIME = "localCpuTime";
@@ -47,44 +47,66 @@ public class ThreadStats {
         threadBean.setThreadCpuTimeEnabled(true);
       }
       THREAD_MX_BEAN = threadBean;
-    } catch (UnsupportedOperationException e) {
+    } catch (UnsupportedOperationException | SecurityException e) {
       THREAD_MX_BEAN = null;
-      log.info("Operation Cpu Time is not supported.");
+      log.info("Thread CPU time monitoring is not available.");
     }
   }
 
-  private final long threadId;
   private final long startCpuTimeNanos;
 
   /**
-   * Create an instance to track the current thread's usage of cpu and memory. The usage information
-   * can later be retrieved by any thread by calling {@link #getCpuTimeMs()}.
+   * Create an instance to track the current thread's usage of CPU. The usage information can later
+   * be retrieved by any thread by calling {@link #getCpuTimeMs()}.
    */
-  public ThreadStats() {
-    this.threadId = Thread.currentThread().getId();
+  public ThreadCpuTimer() {
     if (THREAD_MX_BEAN != null) {
-      this.startCpuTimeNanos = THREAD_MX_BEAN.getThreadCpuTime(threadId);
+      this.startCpuTimeNanos = THREAD_MX_BEAN.getCurrentThreadCpuTime();
     } else {
       this.startCpuTimeNanos = UNSUPPORTED;
     }
   }
 
+  public static boolean isSupported() {
+    return THREAD_MX_BEAN != null;
+  }
+
   /**
-   * Get the cpu usage information for the thread that created this {@link ThreadStats}. The
-   * information will track the thread's cpu since the creation of this {@link ThreadStats}
-   * instance, if the VM's cpu tracking is disabled, returned value counr be {@link #UNSUPPORTED}
+   * Return the initial value of CPU time for this thread when this instance was first created.
+   * NOTE: absolute value returned by this method has no meaning by itself, it should only be used
+   * when comparing elapsed time between this value and {@link #getCurrentCpuTimeNs()}.
+   *
+   * @return current value, or {@link #UNSUPPORTED} if not supported.
+   */
+  public long getStartCpuTimeNs() {
+    return startCpuTimeNanos;
+  }
+
+  /**
+   * Return current value of CPU time for this thread.
+   *
+   * @return current value, or {@link #UNSUPPORTED} if not supported.
+   */
+  public long getCurrentCpuTimeNs() {
+    if (THREAD_MX_BEAN != null) {
+      return this.startCpuTimeNanos != UNSUPPORTED
+          ? THREAD_MX_BEAN.getCurrentThreadCpuTime() - this.startCpuTimeNanos
+          : UNSUPPORTED;
+    } else {
+      return UNSUPPORTED;
+    }
+  }
+
+  /**
+   * Get the CPU usage information for the thread that created this {@link ThreadCpuTimer}. The
+   * information will track the thread's cpu since the creation of this {@link ThreadCpuTimer}
+   * instance, if the VM's cpu tracking is disabled, returned value will be {@link #UNSUPPORTED}.
    */
   public Optional<Long> getCpuTimeMs() {
-    if (THREAD_MX_BEAN != null) {
-      long cpuTimeMs =
-          this.startCpuTimeNanos != UNSUPPORTED
-              ? TimeUnit.NANOSECONDS.toMillis(
-                  THREAD_MX_BEAN.getThreadCpuTime(threadId) - this.startCpuTimeNanos)
-              : UNSUPPORTED;
-      return Optional.of(cpuTimeMs);
-    } else {
-      return Optional.empty();
-    }
+    long cpuTimeNs = getCurrentCpuTimeNs();
+    return cpuTimeNs != UNSUPPORTED
+        ? Optional.of(TimeUnit.MILLISECONDS.convert(cpuTimeNs, TimeUnit.NANOSECONDS))
+        : Optional.of(UNSUPPORTED);
   }
 
   @Override

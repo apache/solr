@@ -82,7 +82,7 @@ Other Changes
 ==================  9.6.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-17141: Implement 'cpuAllowed' query parameter to limit the maximum CPU usage by a running query. (Andrzej Bialecki, Gus Heck, David Smiley)
 
 Improvements
 ---------------------
@@ -100,6 +100,9 @@ Improvements
 * SOLR-16858: KnnQParser's "Pre-Filtering" behavior is now controlable via local params (hossman)
 
 * SOLR-17145: The INSTALLSHARDDATA API now includes a 'requestid' field when run asynchronously (Jason Gerlowski)
+
+* SOLR-17159: bin/solr post now has proper unit testing.  Users can specify a --dry-run option to 
+  simulate posting documents without sending them to Solr. (Eric Pugh)
 
 Optimizations
 ---------------------

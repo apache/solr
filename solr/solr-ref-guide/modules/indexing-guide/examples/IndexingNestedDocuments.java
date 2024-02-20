@@ -71,7 +71,6 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
     final String collection = "test_anon";
 
     CollectionAdminRequest.createCollection(collection, ANON_KIDS_CONFIG, 1, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     // configure the client with the default collection name, to simplify our example below.

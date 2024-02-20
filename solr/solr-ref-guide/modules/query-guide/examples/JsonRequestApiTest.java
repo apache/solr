@@ -62,7 +62,6 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");

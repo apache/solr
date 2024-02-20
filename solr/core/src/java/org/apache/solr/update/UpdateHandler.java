@@ -116,10 +116,13 @@ public abstract class UpdateHandler implements SolrInfoBean {
     parseEventListeners();
     PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
 
-    // If this is a replica of type PULL, don't create the update log
+    // If this replica doesn't require a transaction log, don't create it
     boolean skipUpdateLog =
         core.getCoreDescriptor().getCloudDescriptor() != null
-            && !core.getCoreDescriptor().getCloudDescriptor().requiresTransactionLog();
+            && !core.getCoreDescriptor()
+                .getCloudDescriptor()
+                .getReplicaType()
+                .requireTransactionLog;
     if (updateLog == null
         && ulogPluginInfo != null
         && ulogPluginInfo.isEnabled()
