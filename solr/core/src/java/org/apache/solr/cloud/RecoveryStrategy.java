@@ -47,9 +47,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -178,7 +176,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
     this.recoveringAfterStartup = recoveringAfterStartup;
   }
 
-  /** Builds a new HttpSolrClient for use in recovery. Caller must close */
   private Http2SolrClient.Builder recoverySolrClientBuilder(String baseUrl, String leaderCoreName) {
     // workaround for SOLR-13605: get the configured timeouts & set them directly
     // (even though getRecoveryOnlyHttpClient() already has them set)
@@ -915,15 +912,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
     int readTimeout =
         conflictWaitMs
             + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "8000"));
-    var recoveryExec =
-        ExecutorUtil.newMDCAwareFixedThreadPool(
-            1, new SolrNamedThreadFactory("sendPrepRecoveryCmd"));
     try (Http2SolrClient client =
         recoverySolrClientBuilder(
                 leaderBaseUrl,
                 null) // leader core omitted since client only used for 'admin' request
             .withIdleTimeout(readTimeout, TimeUnit.MILLISECONDS)
-            .withExecutor(recoveryExec)
             .build()) {
       log.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd);
       MDC.put("HttpSolrClient.url", baseUrl);
@@ -935,7 +928,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
                 @Override
                 public void onSuccess(NamedList<Object> entries) {
                   log.info(
-                      "Prep recovery command successfully send to [{}]; [{}]",
+                      "Prep recovery command successfully sent to [{}]; [{}]",
                       leaderBaseUrl,
                       prepCmd);
                 }
@@ -946,7 +939,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
                 }
               });
     } finally {
-      recoveryExec.shutdown();
       MDC.remove("HttpSolrClient.url");
     }
   }

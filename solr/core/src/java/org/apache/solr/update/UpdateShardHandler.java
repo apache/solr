@@ -75,7 +75,6 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private final Http2SolrClient updateOnlyClient;
 
-  // private final CloseableHttpClient recoveryOnlyClient;
   private final Http2SolrClient recoveryOnlyClient;
 
   private final CloseableHttpClient defaultClient;
@@ -86,9 +85,7 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private final InstrumentedHttpRequestExecutor httpRequestExecutor;
 
-  private final InstrumentedHttpListenerFactory updateHttpListenerFactory;
-
-  private final InstrumentedHttpListenerFactory recoverHttpListenerFactory;
+  private final InstrumentedHttpListenerFactory trackHttpSolrMetrics;
 
   private SolrMetricsContext solrMetricsContext;
 
@@ -123,8 +120,7 @@ public class UpdateShardHandler implements SolrInfoBean {
     log.debug("Created default UpdateShardHandler HTTP client with params: {}", clientParams);
 
     httpRequestExecutor = new InstrumentedHttpRequestExecutor(getMetricNameStrategy(cfg));
-    updateHttpListenerFactory = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
-    recoverHttpListenerFactory = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
+    trackHttpSolrMetrics = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
 
     defaultClient =
         HttpClientUtil.createClient(
@@ -149,10 +145,10 @@ public class UpdateShardHandler implements SolrInfoBean {
 
     updateOnlyClientBuilder.withTheseParamNamesInTheUrl(urlParamNames);
     updateOnlyClient = updateOnlyClientBuilder.build();
-    updateOnlyClient.addListenerFactory(updateHttpListenerFactory);
+    updateOnlyClient.addListenerFactory(trackHttpSolrMetrics);
 
     recoveryOnlyClient = recoveryOnlyClientBuilder.build();
-    recoveryOnlyClient.addListenerFactory(recoverHttpListenerFactory);
+    recoveryOnlyClient.addListenerFactory(trackHttpSolrMetrics);
 
     ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
     if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
@@ -216,7 +212,7 @@ public class UpdateShardHandler implements SolrInfoBean {
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
-    updateHttpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope);
+    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope);
     defaultConnectionManager.initializeMetrics(solrMetricsContext, expandedScope);
     updateExecutor =
         MetricUtils.instrumentedExecutorService(

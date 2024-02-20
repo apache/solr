@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -36,6 +37,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@Nightly
 public class RecoveryStrategyStressTest extends SolrCloudTestCase {
 
   @BeforeClass
@@ -50,12 +52,10 @@ public class RecoveryStrategyStressTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     waitForState(
         "Expected a collection with one shard and two replicas", collection, clusterShape(1, 4));
-
-    SolrClient solrClient =
-        cluster.basicSolrClientBuilder().withDefaultCollection(collection).build();
     final var scheduledExecutorService =
         Executors.newScheduledThreadPool(1, new SolrNamedThreadFactory("stressTestRecovery"));
-    try (solrClient) {
+    try (SolrClient solrClient =
+        cluster.basicSolrClientBuilder().withDefaultCollection(collection).build()) {
       final StoppableIndexingThread indexThread =
           new StoppableIndexingThread(null, solrClient, "1", true, 10, 1, true);
 
