@@ -235,16 +235,16 @@ public class HttpSolrJdkClient extends Http2SolrClientBase {
     }
   }
 
-  private static final Pattern MIME_TYPE_PATTERN = Pattern.compile("^(.*?)(?:;| |$)");
+  private static final Pattern MIME_TYPE_PATTERN = Pattern.compile("[^;]*");
 
   private String contentTypeToMimeType(String contentType) {
     Matcher mimeTypeMatcher = MIME_TYPE_PATTERN.matcher(contentType);
-    return mimeTypeMatcher.find() ? mimeTypeMatcher.group(1) : null;
+    return mimeTypeMatcher.find() ? mimeTypeMatcher.group() : null;
   }
 
-  private static final Pattern CHARSET_PATTERN = Pattern.compile("(?i)^.*charset=(.*)?(?:;| |$)");
+  private static final Pattern CHARSET_PATTERN = Pattern.compile("(?i)^.*charset=(.*)$");
 
-  private String contentTypeToEncoding(String contentType) {
+  protected String contentTypeToEncoding(String contentType) {
     Matcher encodingMatcher = CHARSET_PATTERN.matcher(contentType);
     return encodingMatcher.find() ? encodingMatcher.group(1) : null;
   }

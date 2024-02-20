@@ -371,6 +371,34 @@ public class HttpSolrJdkClientTest extends Http2SolrClientTestBase {
     }
   }
 
+  @Test
+  public void testProcessorMimeTypes() throws Exception {
+    ResponseParser rp = new XMLResponseParser();
+
+    try (HttpSolrJdkClient client = builder(getBaseUrl()).withResponseParser(rp).build()) {
+      assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/xml"));
+      assertFalse(client.processorAcceptsMimeType(rp.getContentTypes(), "application/json"));
+    }
+
+    rp = new BinaryResponseParser();
+    try (HttpSolrJdkClient client = builder(getBaseUrl()).withResponseParser(rp).build()) {
+      assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/vnd.apache.solr.javabin"));
+      assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/octet-stream"));
+      assertFalse(client.processorAcceptsMimeType(rp.getContentTypes(), "application/xml"));
+    }
+  }
+
+  @Test
+  public void testContentTypeToEncoding() throws Exception {
+    try (HttpSolrJdkClient client = builder(getBaseUrl()).build()) {
+      assertEquals("UTF-8", client.contentTypeToEncoding("application/xml; charset=UTF-8"));
+      assertNull(client.contentTypeToEncoding("application/vnd.apache.solr.javabin"));
+      assertNull(client.contentTypeToEncoding("application/octet-stream"));
+      assertNull(client.contentTypeToEncoding("multipart/form-data; boundary=something"));
+
+    }
+  }
+
   @Override
   protected String expectedUserAgent() {
     return "Solr[" + HttpSolrJdkClient.class.getName() + "] 1.0";
