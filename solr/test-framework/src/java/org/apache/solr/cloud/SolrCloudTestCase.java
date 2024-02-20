@@ -78,11 +78,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // TODO remove hardcoding
-  public static final String PRS_DEFAULT_PROP =
-      "true"; // System.getProperty("use.per-replica", null);
-  public static final Boolean USE_PER_REPLICA_STATE =
-      PRS_DEFAULT_PROP == null ? false : Boolean.parseBoolean(PRS_DEFAULT_PROP);
+  public static final String PRS_DEFAULT_PROP = System.getProperty("use.per-replica", null);
 
   // this is an important timeout for test stability - can't be too short
   public static final int DEFAULT_TIMEOUT = 45;
@@ -94,6 +90,13 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     ZkStateReader reader = cluster.getZkStateReader();
     if (reader == null) cluster.getSolrClient().connect();
     return cluster.getZkStateReader().getZkClient();
+  }
+
+  /** if the system property is not specified, use a random value */
+  public static boolean isPRS() {
+    return PRS_DEFAULT_PROP == null
+        ? random().nextBoolean()
+        : Boolean.parseBoolean(PRS_DEFAULT_PROP);
   }
 
   /**
@@ -131,8 +134,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setPrsDefault() {
-    if (PRS_DEFAULT_PROP != null) {
-      System.setProperty("solr.prs.default", PRS_DEFAULT_PROP);
+    if (isPRS()) {
+      System.setProperty("solr.prs.default", "true");
     }
   }
 
@@ -148,7 +151,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void unsetPrsDefault() {
-    if (PRS_DEFAULT_PROP != null) {
+    if (isPRS()) {
       System.clearProperty("solr.prs.default");
     }
   }

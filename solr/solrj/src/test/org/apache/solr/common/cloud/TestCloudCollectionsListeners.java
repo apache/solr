@@ -131,7 +131,6 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     ZkStateReader.from(client).removeCloudCollectionsListener(watcher1);
 
     CollectionAdminRequest.createCollection("testcollection2", "config", 4, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
     cluster.waitForActiveCollection("testcollection2", 4, 4);
 

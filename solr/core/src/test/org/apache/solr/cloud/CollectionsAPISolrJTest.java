@@ -1209,7 +1209,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     String collectionName = getSaferTestName();
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 1, 1);
