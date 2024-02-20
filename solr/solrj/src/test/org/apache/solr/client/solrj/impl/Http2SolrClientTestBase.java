@@ -74,7 +74,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
     super.tearDown();
   }
 
-  protected abstract <B extends HttpSolrClientBuilderBase<?,?>> B builder(
+  protected abstract <B extends HttpSolrClientBuilderBase<?, ?>> B builder(
       String url, int connectionTimeout, int socketTimeout);
 
   protected abstract String expectedUserAgent();
@@ -335,7 +335,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
     }
   }
 
-  protected  void testQueryString() throws Exception {
+  protected void testQueryString() throws Exception {
     final String clientUrl = getBaseUrl() + DEBUG_SERVLET_PATH;
     UpdateRequest req = new UpdateRequest();
 
@@ -359,7 +359,8 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
     }
     try (Http2SolrClientBase client =
         builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
-            .withTheseParamNamesInTheUrl(Set.of()).build()) {
+            .withTheseParamNamesInTheUrl(Set.of())
+            .build()) {
       req = new UpdateRequest();
       req.setQueryParams(Set.of("requestOnly"));
       setReqParamsOf(req, "requestOnly", "notRequest");

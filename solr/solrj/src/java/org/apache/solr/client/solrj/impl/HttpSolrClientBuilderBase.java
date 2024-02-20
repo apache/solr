@@ -24,7 +24,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
 
-public abstract class HttpSolrClientBuilderBase<B extends HttpSolrClientBuilderBase<?,?>, C extends Http2SolrClientBase> {
+public abstract class HttpSolrClientBuilderBase<
+    B extends HttpSolrClientBuilderBase<?, ?>, C extends Http2SolrClientBase> {
   protected Long idleTimeoutMillis;
   protected Long connectionTimeoutMillis;
   protected Long requestTimeoutMillis;
@@ -43,39 +44,39 @@ public abstract class HttpSolrClientBuilderBase<B extends HttpSolrClientBuilderB
   protected boolean proxyIsSocks4;
   protected boolean proxyIsSecure;
 
-  public abstract C build() ;
+  public abstract C build();
 
   /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
   @SuppressWarnings(value = "unchecked")
   public B withRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
-    return(B)  this;
+    return (B) this;
   }
 
   /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
   @SuppressWarnings(value = "unchecked")
   public B withResponseParser(ResponseParser responseParser) {
     this.responseParser = responseParser;
-    return(B)  this;
+    return (B) this;
   }
 
   /** Sets a default for core or collection based requests. */
   @SuppressWarnings(value = "unchecked")
   public B withDefaultCollection(String defaultCoreOrCollection) {
     this.defaultCollection = defaultCoreOrCollection;
-    return(B)  this;
+    return (B) this;
   }
 
   @SuppressWarnings(value = "unchecked")
   public B withFollowRedirects(boolean followRedirects) {
     this.followRedirects = followRedirects;
-    return(B)  this;
+    return (B) this;
   }
 
   @SuppressWarnings(value = "unchecked")
   public B withExecutor(ExecutorService executor) {
     this.executor = executor;
-    return(B)  this;
+    return (B) this;
   }
 
   @SuppressWarnings(value = "unchecked")
@@ -88,7 +89,7 @@ public abstract class HttpSolrClientBuilderBase<B extends HttpSolrClientBuilderB
     }
     this.basicAuthAuthorizationStr =
         Http2SolrClient.basicAuthCredentialsToAuthorizationString(user, pass);
-    return(B)  this;
+    return (B) this;
   }
 
   /**
@@ -102,7 +103,7 @@ public abstract class HttpSolrClientBuilderBase<B extends HttpSolrClientBuilderB
   @SuppressWarnings(value = "unchecked")
   public B withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
     this.urlParamNames = urlParamNames;
-    return(B)  this;
+    return (B) this;
   }
 
   /**
@@ -112,13 +113,13 @@ public abstract class HttpSolrClientBuilderBase<B extends HttpSolrClientBuilderB
   @SuppressWarnings(value = "unchecked")
   public B withMaxConnectionsPerHost(int max) {
     this.maxConnectionsPerHost = max;
-    return(B)  this;
+    return (B) this;
   }
 
   @SuppressWarnings(value = "unchecked")
   public B withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
     this.idleTimeoutMillis = TimeUnit.MILLISECONDS.convert(idleConnectionTimeout, unit);
-    return(B)  this;
+    return (B) this;
   }
 
   public Long getIdleTimeoutMillis() {
@@ -128,7 +129,7 @@ public abstract class HttpSolrClientBuilderBase<B extends HttpSolrClientBuilderB
   @SuppressWarnings(value = "unchecked")
   public B withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
     this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
-    return(B)  this;
+    return (B) this;
   }
 
   public Long getConnectionTimeout() {
@@ -169,13 +170,12 @@ public abstract class HttpSolrClientBuilderBase<B extends HttpSolrClientBuilderB
    * @return this Builder
    */
   @SuppressWarnings(value = "unchecked")
-  public B withProxyConfiguration(
-      String host, int port, boolean isSocks4, boolean isSecure) {
+  public B withProxyConfiguration(String host, int port, boolean isSocks4, boolean isSecure) {
     this.proxyHost = host;
     this.proxyPort = port;
     this.proxyIsSocks4 = isSocks4;
     this.proxyIsSecure = isSecure;
-    return(B)  this;
+    return (B) this;
   }
 
   /**

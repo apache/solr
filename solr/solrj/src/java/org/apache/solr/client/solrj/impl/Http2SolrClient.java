@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
@@ -806,7 +805,8 @@ public class Http2SolrClient extends Http2SolrClientBase {
     }
   }
 
-  public static class Builder extends HttpSolrClientBuilderBase<Http2SolrClient.Builder, Http2SolrClient> {
+  public static class Builder
+      extends HttpSolrClientBuilderBase<Http2SolrClient.Builder, Http2SolrClient> {
 
     private HttpClient httpClient;
 
@@ -823,10 +823,10 @@ public class Http2SolrClient extends Http2SolrClientBase {
     public Builder(String baseSolrUrl) {
       super();
       this.baseSolrUrl = baseSolrUrl;
-
     }
 
-    public HttpSolrClientBuilderBase<Http2SolrClient.Builder, Http2SolrClient> withSSLConfig(SSLConfig sslConfig) {
+    public HttpSolrClientBuilderBase<Http2SolrClient.Builder, Http2SolrClient> withSSLConfig(
+        SSLConfig sslConfig) {
       this.sslConfig = sslConfig;
       return this;
     }

@@ -21,7 +21,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.CookieStore;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
 import java.net.URI;
@@ -36,9 +35,6 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -315,7 +311,8 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         .collect(Collectors.joining(", "));
   }
 
-  public static class Builder extends HttpSolrClientBuilderBase<HttpSolrClientJdkImpl.Builder, HttpSolrClientJdkImpl> {
+  public static class Builder
+      extends HttpSolrClientBuilderBase<HttpSolrClientJdkImpl.Builder, HttpSolrClientJdkImpl> {
 
     private SSLContext sslContext;
 
