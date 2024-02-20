@@ -208,7 +208,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     } else {
       CollectionAdminRequest.Create create =
           CollectionAdminRequest.createCollection(name, config, 2, 1)
-              .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
+              .setPerReplicaState(SolrCloudTestCase.isPRS());
       response = create.process(solrCluster.getSolrClient());
       solrCluster.waitForActiveCollection(name, 2, 2);
     }
