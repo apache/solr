@@ -41,12 +41,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  * <p>It offers automatic failover when a server goes down and it detects when the server comes back
  * up.
  *
- * <p>Load balancing is done using a simple round-robin on the list of servers.
- *
- * <p>If a request to a server fails by an IOException due to a connection timeout or read timeout
- * then the host is taken off the list of live servers and moved to a 'dead server list' and the
- * request is resent to the next live server. This process is continued till it tries all the live
- * servers. If at least one server is alive, the request succeeds, and if not it fails.
+ * <p>Load balancing is done using a simple round-robin on the list of endpoints. Endpoint URLs are
+ * expected to point to the Solr "root" path (i.e. "/solr").
  *
  * <blockquote>
  *
@@ -54,19 +50,39 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  * SolrClient lbHttpSolrClient = new LBHttpSolrClient.Builder()
  *     .withBaseEndpoints("http://host1:8080/solr", "http://host2:8080/solr", "http://host3:8080/solr")
  *     .build();
- * //or if you wish to pass the HttpClient do as follows
- * HttpClient httpClient = new HttpClient();
+ * </pre>
+ *
+ * </blockquote>
+ *
+ * Users who wish to balance traffic across a specific set of replicas or cores may specify each
+ * endpoint as a root-URL and core-name pair. For example:
+ *
+ * <blockquote>
+ *
+ * <pre>
  * SolrClient lbHttpSolrClient = new LBHttpSolrClient.Builder()
- *     .withBaseEndpoints("http://host1:8080/solr", "http://host2:8080/solr", "http://host3:8080/solr")
- *     .withHttpClient(httpClient)
+ *     .withCollectionEndpoint("http://host1:8080/solr", "coreA")
+ *     .withCollectionEndpoint("http://host2:8080/solr", "coreB")
+ *     .withCollectionEndpoint("http://host3:8080/solr", "coreC")
+ *     .build();
+ * // Or, if you wish to provide all endpoints together:
+ * lbHttpSolrClient = new LBHttpSolrClient.Builder()
+ *     .withCollectionEndpoints(
+ *         new LBSolrClient.Endpoint("http://host1:8080/solr", "coreA"),
+ *         new LBSolrClient.Endpoint("http://host2:8080/solr", "coreB"),
+ *         new LBSolrClient.Endpoint("http://host3:8080/solr", "coreC"))
  *     .build();
  * </pre>
  *
  * </blockquote>
  *
- * This detects if a dead server comes alive automatically. The check is done in fixed intervals in
- * a dedicated thread. This interval can be set using {@link
- * LBHttpSolrClient.Builder#setAliveCheckInterval(int)} , the default is set to one minute.
+ * <p>If a request to an endpoint fails by an IOException due to a connection timeout or read
+ * timeout then the host is taken off the list of live endpoints and moved to a 'dead endpoint list'
+ * and the request is resent to the next live endpoint. This process is continued till it tries all
+ * the live endpoints. If at least one endpoint is alive, the request succeeds, and if not it fails.
+ *
+ * <p>Dead endpoints are periodically healthchecked on a fixed interval controlled by {@link
+ * LBHttpSolrClient.Builder#setAliveCheckInterval(int)}. The default is set to one minute.
  *
  * <p><b>When to use this?</b><br>
  * This can be used as a software load balancer when you do not wish to setup an external load
