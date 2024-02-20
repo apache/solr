@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
 
-public abstract class HttpSolrClientBuilderBase {
+public abstract class HttpSolrClientBuilderBase<B extends HttpSolrClientBuilderBase<?,?>, C extends Http2SolrClientBase> {
   protected Long idleTimeoutMillis;
   protected Long connectionTimeoutMillis;
   protected Long requestTimeoutMillis;
@@ -43,43 +43,43 @@ public abstract class HttpSolrClientBuilderBase {
   protected boolean proxyIsSocks4;
   protected boolean proxyIsSecure;
 
-  public HttpSolrClientBuilderBase() {}
-
-  protected abstract <B extends Http2SolrClientBase> B build(Class<B> type);
-
-  public HttpSolrClientBuilderBase(String baseSolrUrl) {
-    this.baseSolrUrl = baseSolrUrl;
-  }
+  public abstract C build() ;
 
   /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
-  public HttpSolrClientBuilderBase withRequestWriter(RequestWriter requestWriter) {
+  @SuppressWarnings(value = "unchecked")
+  public B withRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
-    return this;
+    return(B)  this;
   }
 
   /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
-  public HttpSolrClientBuilderBase withResponseParser(ResponseParser responseParser) {
+  @SuppressWarnings(value = "unchecked")
+  public B withResponseParser(ResponseParser responseParser) {
     this.responseParser = responseParser;
-    return this;
+    return(B)  this;
   }
 
   /** Sets a default for core or collection based requests. */
-  public HttpSolrClientBuilderBase withDefaultCollection(String defaultCoreOrCollection) {
+  @SuppressWarnings(value = "unchecked")
+  public B withDefaultCollection(String defaultCoreOrCollection) {
     this.defaultCollection = defaultCoreOrCollection;
-    return this;
+    return(B)  this;
   }
 
-  public HttpSolrClientBuilderBase withFollowRedirects(boolean followRedirects) {
+  @SuppressWarnings(value = "unchecked")
+  public B withFollowRedirects(boolean followRedirects) {
     this.followRedirects = followRedirects;
-    return this;
+    return(B)  this;
   }
 
-  public HttpSolrClientBuilderBase withExecutor(ExecutorService executor) {
+  @SuppressWarnings(value = "unchecked")
+  public B withExecutor(ExecutorService executor) {
     this.executor = executor;
-    return this;
+    return(B)  this;
   }
 
-  public HttpSolrClientBuilderBase withBasicAuthCredentials(String user, String pass) {
+  @SuppressWarnings(value = "unchecked")
+  public B withBasicAuthCredentials(String user, String pass) {
     if (user != null || pass != null) {
       if (user == null || pass == null) {
         throw new IllegalStateException(
@@ -88,7 +88,7 @@ public abstract class HttpSolrClientBuilderBase {
     }
     this.basicAuthAuthorizationStr =
         Http2SolrClient.basicAuthCredentialsToAuthorizationString(user, pass);
-    return this;
+    return(B)  this;
   }
 
   /**
@@ -99,32 +99,36 @@ public abstract class HttpSolrClientBuilderBase {
    *     query params.
    * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
    */
-  public HttpSolrClientBuilderBase withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
+  @SuppressWarnings(value = "unchecked")
+  public B withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
     this.urlParamNames = urlParamNames;
-    return this;
+    return(B)  this;
   }
 
   /**
    * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited to
    * 4
    */
-  public HttpSolrClientBuilderBase withMaxConnectionsPerHost(int max) {
+  @SuppressWarnings(value = "unchecked")
+  public B withMaxConnectionsPerHost(int max) {
     this.maxConnectionsPerHost = max;
-    return this;
+    return(B)  this;
   }
 
-  public HttpSolrClientBuilderBase withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
+  @SuppressWarnings(value = "unchecked")
+  public B withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
     this.idleTimeoutMillis = TimeUnit.MILLISECONDS.convert(idleConnectionTimeout, unit);
-    return this;
+    return(B)  this;
   }
 
   public Long getIdleTimeoutMillis() {
     return idleTimeoutMillis;
   }
 
-  public HttpSolrClientBuilderBase withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
+  @SuppressWarnings(value = "unchecked")
+  public B withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
     this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
-    return this;
+    return(B)  this;
   }
 
   public Long getConnectionTimeout() {
@@ -137,9 +141,10 @@ public abstract class HttpSolrClientBuilderBase {
    * @param requestTimeout The timeout in milliseconds
    * @return this Builder.
    */
-  public HttpSolrClientBuilderBase withRequestTimeout(long requestTimeout, TimeUnit unit) {
+  @SuppressWarnings(value = "unchecked")
+  public B withRequestTimeout(long requestTimeout, TimeUnit unit) {
     this.requestTimeoutMillis = TimeUnit.MILLISECONDS.convert(requestTimeout, unit);
-    return this;
+    return (B) this;
   }
 
   /**
@@ -148,9 +153,10 @@ public abstract class HttpSolrClientBuilderBase {
    * @param cookieStore The CookieStore to set. {@code null} will set the default.
    * @return this Builder
    */
-  public HttpSolrClientBuilderBase withCookieStore(CookieStore cookieStore) {
+  @SuppressWarnings(value = "unchecked")
+  public B withCookieStore(CookieStore cookieStore) {
     this.cookieStore = cookieStore;
-    return this;
+    return (B) this;
   }
 
   /**
@@ -162,13 +168,14 @@ public abstract class HttpSolrClientBuilderBase {
    * @param isSecure If true enables the secure flag on the proxy
    * @return this Builder
    */
-  public HttpSolrClientBuilderBase withProxyConfiguration(
+  @SuppressWarnings(value = "unchecked")
+  public B withProxyConfiguration(
       String host, int port, boolean isSocks4, boolean isSecure) {
     this.proxyHost = host;
     this.proxyPort = port;
     this.proxyIsSocks4 = isSocks4;
     this.proxyIsSecure = isSecure;
-    return this;
+    return(B)  this;
   }
 
   /**
@@ -178,7 +185,8 @@ public abstract class HttpSolrClientBuilderBase {
    * @param credentials The username and password formatted as username:password
    * @return this Builder
    */
-  public HttpSolrClientBuilderBase withOptionalBasicAuthCredentials(String credentials) {
+  @SuppressWarnings(value = "unchecked")
+  public B withOptionalBasicAuthCredentials(String credentials) {
     if (credentials != null) {
       if (credentials.indexOf(':') == -1) {
         throw new IllegalStateException(
@@ -188,6 +196,6 @@ public abstract class HttpSolrClientBuilderBase {
       String password = credentials.substring(credentials.indexOf(':') + 1, credentials.length());
       withBasicAuthCredentials(username, password);
     }
-    return this;
+    return (B) this;
   }
 }

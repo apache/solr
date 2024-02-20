@@ -43,7 +43,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 
-public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
+public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
 
   protected static final String DEFAULT_CORE = "foo";
   protected static final String SLOW_SERVLET_PATH = "/slow";
@@ -74,8 +74,8 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
     super.tearDown();
   }
 
-  protected abstract <B extends HttpSolrClientBuilderBase> B builder(
-      String url, int connectionTimeout, int socketTimeout, Class<B> type);
+  protected abstract <B extends HttpSolrClientBuilderBase<?,?>> B builder(
+      String url, int connectionTimeout, int socketTimeout);
 
   protected abstract String expectedUserAgent();
 
@@ -335,16 +335,15 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
     }
   }
 
-  protected <C extends Http2SolrClientBase, B extends HttpSolrClientBuilderBase>
-      void testQueryString(Class<C> type, Class<B> builderType) throws Exception {
+  protected  void testQueryString() throws Exception {
     final String clientUrl = getBaseUrl() + DEBUG_SERVLET_PATH;
     UpdateRequest req = new UpdateRequest();
 
     try (Http2SolrClientBase client =
-        builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, builderType)
+        builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
             .withDefaultCollection(DEFAULT_CORE)
             .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
-            .build(type)) {
+            .build()) {
       // test without request query params
       DebugServlet.clear();
       setReqParamsOf(req, "serverOnly", "notServer");
@@ -359,9 +358,8 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
       DebugServlet.clear();
     }
     try (Http2SolrClientBase client =
-        builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, builderType)
-            .withTheseParamNamesInTheUrl(Set.of())
-            .build(type)) {
+        builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
+            .withTheseParamNamesInTheUrl(Set.of()).build()) {
       req = new UpdateRequest();
       req.setQueryParams(Set.of("requestOnly"));
       setReqParamsOf(req, "requestOnly", "notRequest");
@@ -375,9 +373,9 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
       DebugServlet.clear();
     }
     try (Http2SolrClientBase client =
-        builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, builderType)
+        builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
             .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
-            .build(type)) {
+            .build()) {
       req = new UpdateRequest();
       req.setQueryParams(Set.of("requestOnly", "both"));
       setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
@@ -388,9 +386,9 @@ public abstract class Http2SolrClientTestBase<B> extends SolrJettyTestBase {
       verifyServletState(client, req);
     }
     try (Http2SolrClientBase client =
-        builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT, builderType)
+        builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
             .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
-            .build(type)) {
+            .build()) {
 
       // test with both request and server query params with single stream
       DebugServlet.clear();

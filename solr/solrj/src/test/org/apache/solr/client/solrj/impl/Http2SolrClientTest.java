@@ -36,7 +36,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Test;
 
-public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient.Builder> {
+public class Http2SolrClientTest extends Http2SolrClientTestBase {
 
   @Override
   protected String expectedUserAgent() {
@@ -44,26 +44,26 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
   }
 
   @Override
-  protected <B extends HttpSolrClientBuilderBase> B builder(
-      String url, int connectionTimeout, int socketTimeout, Class<B> type) {
+  @SuppressWarnings(value = "unchecked")
+  protected <B extends HttpSolrClientBuilderBase<?,?>> B builder(
+      String url, int connectionTimeout, int socketTimeout) {
     Http2SolrClient.Builder b =
         new Http2SolrClient.Builder(url)
             .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
             .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS);
-    return type.cast(b);
+    return (B) b;
   }
 
   @Test
   public void testTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        builder(
-                getBaseUrl() + SLOW_SERVLET_PATH,
-                DEFAULT_CONNECTION_TIMEOUT,
-                2000,
-                Http2SolrClient.Builder.class)
-            .withDefaultCollection(DEFAULT_CORE)
-            .build()) {
+                 (Http2SolrClient) builder(
+                         getBaseUrl() + SLOW_SERVLET_PATH,
+                         DEFAULT_CONNECTION_TIMEOUT,
+                         2000)
+                     .withDefaultCollection(DEFAULT_CORE)
+                     .build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
@@ -75,13 +75,12 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
   public void test0IdleTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        builder(
-                getBaseUrl() + DEBUG_SERVLET_PATH,
-                DEFAULT_CONNECTION_TIMEOUT,
-                0,
-                Http2SolrClient.Builder.class)
-            .withDefaultCollection(DEFAULT_CORE)
-            .build()) {
+                 (Http2SolrClient) builder(
+                         getBaseUrl() + DEBUG_SERVLET_PATH,
+                         DEFAULT_CONNECTION_TIMEOUT,
+                         0)
+                     .withDefaultCollection(DEFAULT_CORE)
+                     .build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -93,14 +92,13 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
   public void testRequestTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        builder(
-                getBaseUrl() + SLOW_SERVLET_PATH,
-                DEFAULT_CONNECTION_TIMEOUT,
-                0,
-                Http2SolrClient.Builder.class)
-            .withDefaultCollection(DEFAULT_CORE)
-            .withRequestTimeout(500, TimeUnit.MILLISECONDS)
-            .build()) {
+                 (Http2SolrClient) builder(
+                         getBaseUrl() + SLOW_SERVLET_PATH,
+                         DEFAULT_CONNECTION_TIMEOUT,
+                         0)
+                     .withDefaultCollection(DEFAULT_CORE)
+                     .withRequestTimeout(500, TimeUnit.MILLISECONDS)
+                     .build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
@@ -335,7 +333,7 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
 
   @Test
   public void testQueryString() throws Exception {
-    testQueryString(Http2SolrClient.class, Http2SolrClient.Builder.class);
+    super.testQueryString();
   }
 
   @Test
@@ -523,13 +521,12 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase<Http2SolrClient
   @Test
   public void testGetRawStream() throws Exception {
     try (Http2SolrClient client =
-        builder(
-                getBaseUrl() + DEBUG_SERVLET_PATH,
-                DEFAULT_CONNECTION_TIMEOUT,
-                DEFAULT_CONNECTION_TIMEOUT,
-                Http2SolrClient.Builder.class)
-            .withDefaultCollection(DEFAULT_CORE)
-            .build()) {
+                 (Http2SolrClient) builder(
+                         getBaseUrl() + DEBUG_SERVLET_PATH,
+                         DEFAULT_CONNECTION_TIMEOUT,
+                         DEFAULT_CONNECTION_TIMEOUT)
+                     .withDefaultCollection(DEFAULT_CORE)
+                     .build()) {
       super.testGetRawStream(client);
     }
   }

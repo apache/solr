@@ -806,7 +806,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
     }
   }
 
-  public static class Builder extends HttpSolrClientBuilderBase {
+  public static class Builder extends HttpSolrClientBuilderBase<Http2SolrClient.Builder, Http2SolrClient> {
 
     private HttpClient httpClient;
 
@@ -821,49 +821,13 @@ public class Http2SolrClient extends Http2SolrClientBase {
     }
 
     public Builder(String baseSolrUrl) {
-      super(baseSolrUrl);
+      super();
+      this.baseSolrUrl = baseSolrUrl;
+
     }
 
-    public Http2SolrClient.Builder withRequestWriter(RequestWriter requestWriter) {
-      super.withRequestWriter(requestWriter);
-      return this;
-    }
-
-    public Http2SolrClient.Builder withResponseParser(ResponseParser responseParser) {
-      super.withResponseParser(responseParser);
-      return this;
-    }
-
-    public Http2SolrClient.Builder withDefaultCollection(String defaultCoreOrCollection) {
-      super.withDefaultCollection(defaultCoreOrCollection);
-      return this;
-    }
-
-    @Override
-    public Http2SolrClient.Builder withFollowRedirects(boolean followRedirects) {
-      super.withFollowRedirects(followRedirects);
-      return this;
-    }
-
-    @Override
-    public Http2SolrClient.Builder withExecutor(ExecutorService executor) {
-      super.withExecutor(executor);
-      return this;
-    }
-
-    public HttpSolrClientBuilderBase withSSLConfig(SSLConfig sslConfig) {
+    public HttpSolrClientBuilderBase<Http2SolrClient.Builder, Http2SolrClient> withSSLConfig(SSLConfig sslConfig) {
       this.sslConfig = sslConfig;
-      return this;
-    }
-
-    public Http2SolrClient.Builder withBasicAuthCredentials(String user, String pass) {
-      super.withBasicAuthCredentials(user, pass);
-      return this;
-    }
-
-    @Override
-    public Http2SolrClient.Builder withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
-      super.withTheseParamNamesInTheUrl(urlParamNames);
       return this;
     }
 
@@ -876,12 +840,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
     @Deprecated(since = "9.2")
     public Http2SolrClient.Builder maxConnectionsPerHost(int max) {
       withMaxConnectionsPerHost(max);
-      return this;
-    }
-
-    @Override
-    public Http2SolrClient.Builder withMaxConnectionsPerHost(int max) {
-      super.withMaxConnectionsPerHost(max);
       return this;
     }
 
@@ -911,24 +869,12 @@ public class Http2SolrClient extends Http2SolrClientBase {
       return this;
     }
 
-    @Override
-    public Http2SolrClient.Builder withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
-      super.withIdleTimeout(idleConnectionTimeout, unit);
-      return this;
-    }
-
     /**
      * @deprecated Please use {@link #withConnectionTimeout(long, TimeUnit)}
      */
     @Deprecated(since = "9.2")
     public Http2SolrClient.Builder connectionTimeout(int connectionTimeout) {
       withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS);
-      return this;
-    }
-
-    @Override
-    public Http2SolrClient.Builder withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
-      super.withConnectionTimeout(connectionTimeout, unit);
       return this;
     }
 
@@ -942,31 +888,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
     @Deprecated(since = "9.2")
     public Http2SolrClient.Builder requestTimeout(int requestTimeout) {
       withRequestTimeout(requestTimeout, TimeUnit.MILLISECONDS);
-      return this;
-    }
-
-    @Override
-    public Http2SolrClient.Builder withRequestTimeout(long requestTimeout, TimeUnit unit) {
-      super.withRequestTimeout(requestTimeout, unit);
-      return this;
-    }
-
-    @Override
-    public Http2SolrClient.Builder withCookieStore(CookieStore cookieStore) {
-      super.withCookieStore(cookieStore);
-      return this;
-    }
-
-    @Override
-    public Http2SolrClient.Builder withProxyConfiguration(
-        String host, int port, boolean isSocks4, boolean isSecure) {
-      super.withProxyConfiguration(host, port, isSocks4, isSecure);
-      return this;
-    }
-
-    @Override
-    public Http2SolrClient.Builder withOptionalBasicAuthCredentials(String credentials) {
-      super.withOptionalBasicAuthCredentials(credentials);
       return this;
     }
 

@@ -315,7 +315,7 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         .collect(Collectors.joining(", "));
   }
 
-  public static class Builder extends HttpSolrClientBuilderBase {
+  public static class Builder extends HttpSolrClientBuilderBase<HttpSolrClientJdkImpl.Builder, HttpSolrClientJdkImpl> {
 
     private SSLContext sslContext;
 
@@ -324,14 +324,11 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
     }
 
     public Builder(String baseSolrUrl) {
-      super(baseSolrUrl);
+      super();
+      this.baseSolrUrl = baseSolrUrl;
     }
 
     @Override
-    protected <B extends Http2SolrClientBase> B build(Class<B> type) {
-      return type.cast(build());
-    }
-
     public HttpSolrClientJdkImpl build() {
       if (idleTimeoutMillis == null || idleTimeoutMillis <= 0) {
         idleTimeoutMillis = (long) HttpClientUtil.DEFAULT_SO_TIMEOUT;
@@ -340,92 +337,6 @@ public class HttpSolrClientJdkImpl extends Http2SolrClientBase {
         connectionTimeoutMillis = (long) HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
       }
       return new HttpSolrClientJdkImpl(baseSolrUrl, this);
-    }
-
-    @Override
-    public HttpSolrClientJdkImpl.Builder withRequestWriter(RequestWriter requestWriter) {
-      super.withRequestWriter(requestWriter);
-      return this;
-    }
-
-    @Override
-    public HttpSolrClientJdkImpl.Builder withResponseParser(ResponseParser responseParser) {
-      super.withResponseParser(responseParser);
-      return this;
-    }
-
-    @Override
-    public HttpSolrClientJdkImpl.Builder withDefaultCollection(String defaultCoreOrCollection) {
-      super.withDefaultCollection(defaultCoreOrCollection);
-      return this;
-    }
-
-    @Override
-    public HttpSolrClientJdkImpl.Builder withFollowRedirects(boolean followRedirects) {
-      super.withFollowRedirects(followRedirects);
-      return this;
-    }
-
-    @Override
-    public HttpSolrClientJdkImpl.Builder withExecutor(ExecutorService executor) {
-      super.withExecutor(executor);
-      return this;
-    }
-
-    public HttpSolrClientJdkImpl.Builder withBasicAuthCredentials(String user, String pass) {
-      super.withBasicAuthCredentials(user, pass);
-      return this;
-    }
-
-    @Override
-    public HttpSolrClientJdkImpl.Builder withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
-      super.withTheseParamNamesInTheUrl(urlParamNames);
-      return this;
-    }
-
-    @Override
-    public HttpSolrClientJdkImpl.Builder withMaxConnectionsPerHost(int max) {
-      super.withMaxConnectionsPerHost(max);
-      return this;
-    }
-
-    @Override
-    public HttpSolrClientJdkImpl.Builder withIdleTimeout(
-        long idleConnectionTimeout, TimeUnit unit) {
-      super.withIdleTimeout(idleConnectionTimeout, unit);
-      return this;
-    }
-
-    @Override
-    public HttpSolrClientJdkImpl.Builder withConnectionTimeout(
-        long connectionTimeout, TimeUnit unit) {
-      super.withConnectionTimeout(connectionTimeout, unit);
-      return this;
-    }
-
-    @Override
-    public HttpSolrClientJdkImpl.Builder withRequestTimeout(long requestTimeout, TimeUnit unit) {
-      super.withRequestTimeout(requestTimeout, unit);
-      return this;
-    }
-
-    @Override
-    public HttpSolrClientJdkImpl.Builder withCookieStore(CookieStore cookieStore) {
-      super.withCookieStore(cookieStore);
-      return this;
-    }
-
-    @Override
-    public HttpSolrClientJdkImpl.Builder withProxyConfiguration(
-        String host, int port, boolean isSocks4, boolean isSecure) {
-      super.withProxyConfiguration(host, port, isSocks4, isSecure);
-      return this;
-    }
-
-    @Override
-    public HttpSolrClientJdkImpl.Builder withOptionalBasicAuthCredentials(String credentials) {
-      super.withOptionalBasicAuthCredentials(credentials);
-      return this;
     }
 
     /**

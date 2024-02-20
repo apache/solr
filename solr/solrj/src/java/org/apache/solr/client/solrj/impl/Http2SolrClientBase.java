@@ -70,7 +70,7 @@ public abstract class Http2SolrClientBase extends SolrClient {
 
   protected final String basicAuthAuthorizationStr;
 
-  protected Http2SolrClientBase(String serverBaseUrl, HttpSolrClientBuilderBase builder) {
+  protected Http2SolrClientBase(String serverBaseUrl, HttpSolrClientBuilderBase<?, ?> builder) {
     if (serverBaseUrl != null) {
       if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
         serverBaseUrl = serverBaseUrl.substring(0, serverBaseUrl.length() - 1);

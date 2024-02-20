@@ -39,8 +39,7 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class HttpSolrClientJdkImplTest
-    extends Http2SolrClientTestBase<HttpSolrClientJdkImpl.Builder> {
+public class HttpSolrClientJdkImplTest extends Http2SolrClientTestBase {
 
   private static SSLContext allTrustingSslContext;
 
@@ -167,12 +166,11 @@ public class HttpSolrClientJdkImplTest
   public void testTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpSolrClientJdkImpl client =
-        builder(
-                getBaseUrl() + "/slow/foo",
-                DEFAULT_CONNECTION_TIMEOUT,
-                2000,
-                HttpSolrClientJdkImpl.Builder.class)
-            .build()) {
+                 (HttpSolrClientJdkImpl) builder(
+                         getBaseUrl() + "/slow/foo",
+                         DEFAULT_CONNECTION_TIMEOUT,
+                         2000)
+                     .build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
@@ -184,12 +182,11 @@ public class HttpSolrClientJdkImplTest
   public void test0IdleTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpSolrClientJdkImpl client =
-        builder(
-                getBaseUrl() + "/debug/foo",
-                DEFAULT_CONNECTION_TIMEOUT,
-                0,
-                HttpSolrClientJdkImpl.Builder.class)
-            .build()) {
+                 (HttpSolrClientJdkImpl) builder(
+                         getBaseUrl() + "/debug/foo",
+                         DEFAULT_CONNECTION_TIMEOUT,
+                         0)
+                     .build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -201,13 +198,12 @@ public class HttpSolrClientJdkImplTest
   public void testRequestTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpSolrClientJdkImpl client =
-        builder(
-                getBaseUrl() + "/slow/foo",
-                DEFAULT_CONNECTION_TIMEOUT,
-                0,
-                HttpSolrClientJdkImpl.Builder.class)
-            .withRequestTimeout(500, TimeUnit.MILLISECONDS)
-            .build()) {
+                 (HttpSolrClientJdkImpl) builder(
+                         getBaseUrl() + "/slow/foo",
+                         DEFAULT_CONNECTION_TIMEOUT,
+                         0)
+                     .withRequestTimeout(500, TimeUnit.MILLISECONDS)
+                     .build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
@@ -318,18 +314,17 @@ public class HttpSolrClientJdkImplTest
 
   @Test
   public void testQueryString() throws Exception {
-    testQueryString(HttpSolrClientJdkImpl.class, HttpSolrClientJdkImpl.Builder.class);
+    super.testQueryString();
   }
 
   @Test
   public void testGetRawStream() throws Exception {
     try (HttpSolrClientJdkImpl client =
-        builder(
-                getBaseUrl() + "/debug/foo",
-                DEFAULT_CONNECTION_TIMEOUT,
-                DEFAULT_CONNECTION_TIMEOUT,
-                HttpSolrClientJdkImpl.Builder.class)
-            .build()) {
+                 (HttpSolrClientJdkImpl) builder(
+                         getBaseUrl() + "/debug/foo",
+                         DEFAULT_CONNECTION_TIMEOUT,
+                         DEFAULT_CONNECTION_TIMEOUT)
+                     .build()) {
       super.testGetRawStream(client);
     }
   }
@@ -386,22 +381,22 @@ public class HttpSolrClientJdkImplTest
   }
 
   @Override
-  protected <B extends HttpSolrClientBuilderBase> B builder(
-      String url, int connectionTimeout, int socketTimeout, Class<B> type) {
+  @SuppressWarnings(value = "unchecked")
+  protected <B extends HttpSolrClientBuilderBase<?,?>> B builder(
+      String url, int connectionTimeout, int socketTimeout) {
     HttpSolrClientJdkImpl.Builder b =
         new HttpSolrClientJdkImpl.Builder(url)
             .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
             .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS)
             .withSSLContext(allTrustingSslContext);
-    return type.cast(b);
+    return (B) b;
   }
 
   private HttpSolrClientJdkImpl.Builder builder(String url) {
     return builder(
         url,
         DEFAULT_CONNECTION_TIMEOUT,
-        DEFAULT_CONNECTION_TIMEOUT,
-        HttpSolrClientJdkImpl.Builder.class);
+        DEFAULT_CONNECTION_TIMEOUT);
   }
 
   private byte[] javabinResponse() {
