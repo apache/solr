@@ -300,7 +300,8 @@ public class HttpSolrJdkClientTest extends Http2SolrClientTestBase {
   @Test
   public void testCollectionParameters() throws IOException, SolrServerException {
     HttpSolrJdkClient baseUrlClient = builder(getBaseUrl()).withDefaultCollection(null).build();
-    HttpSolrJdkClient collection1UrlClient = builder(getCoreUrl()).withDefaultCollection(null).build();
+    HttpSolrJdkClient collection1UrlClient =
+        builder(getCoreUrl()).withDefaultCollection(null).build();
     testCollectionParameters(baseUrlClient, collection1UrlClient);
   }
 
@@ -363,7 +364,9 @@ public class HttpSolrJdkClientTest extends Http2SolrClientTestBase {
   @Test
   public void testUseOptionalCredentialsWithNull() throws Exception {
     try (HttpSolrJdkClient client =
-        builder(getBaseUrl() + DEBUG_SERVLET_PATH).withOptionalBasicAuthCredentials(null).build(); ) {
+        builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+            .withOptionalBasicAuthCredentials(null)
+            .build(); ) {
       super.testUseOptionalCredentialsWithNull(client);
     }
   }

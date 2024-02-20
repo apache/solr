@@ -17,9 +17,7 @@
 
 package org.apache.solr.client.solrj.embedded;
 
-/**
- * Encapsulates settings related to SSL/TLS Configuration.
- */
+/** Encapsulates settings related to SSL/TLS Configuration. */
 public class SSLConfigBase {
   private boolean useSsl;
   private boolean clientAuth;
@@ -30,7 +28,7 @@ public class SSLConfigBase {
 
   /**
    * NOTE: all other settings are ignored if useSsl is false; trustStore settings are ignored if
-   *  clientAuth is false.
+   * clientAuth is false.
    *
    * @param useSsl - enable/disable SSL/TLS
    * @param clientAuth - whether client authentication should be requested.
@@ -64,7 +62,8 @@ public class SSLConfigBase {
   }
 
   /**
-   * Set whether client authentication should be requested. If set to false, truststore settings are ignored.
+   * Set whether client authentication should be requested. If set to false, truststore settings are
+   * ignored.
    *
    * @param clientAuth boolean
    */
@@ -73,7 +72,7 @@ public class SSLConfigBase {
   }
 
   /**
-   *  All other settings on this object are ignored unless this is true
+   * All other settings on this object are ignored unless this is true
    *
    * @return boolean
    */
@@ -82,7 +81,7 @@ public class SSLConfigBase {
   }
 
   /**
-   *  Whether client authentication should be requested.  If false, truststore settings are ignored.
+   * Whether client authentication should be requested. If false, truststore settings are ignored.
    *
    * @return
    */
@@ -109,7 +108,7 @@ public class SSLConfigBase {
   }
 
   /**
-   * The trustore to use.  Ignored if client auth is false.
+   * The trustore to use. Ignored if client auth is false.
    *
    * @return the truststore
    */

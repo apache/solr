@@ -26,9 +26,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  */
 public class SSLConfig extends SSLConfigBase {
 
-  /**
-   *{@inheritDoc}
-   */
+  /** {@inheritDoc} */
   public SSLConfig(
       boolean useSsl,
       boolean clientAuth,

@@ -108,7 +108,7 @@ public class HttpSolrJdkClient extends Http2SolrClientBase {
           }
         case POST:
           {
-            PreparePostPutRequestResult result =
+            PreparePostPutRequestReturnValue result =
                 preparePostPutRequest(reqb, solrRequest, queryParams);
             queryParams = result.queryParams;
             reqb.POST(result.bodyPublisher);
@@ -116,7 +116,7 @@ public class HttpSolrJdkClient extends Http2SolrClientBase {
           }
         case PUT:
           {
-            PreparePostPutRequestResult result =
+            PreparePostPutRequestReturnValue result =
                 preparePostPutRequest(reqb, solrRequest, queryParams);
             queryParams = result.queryParams;
             reqb.PUT(result.bodyPublisher);
@@ -154,18 +154,18 @@ public class HttpSolrJdkClient extends Http2SolrClientBase {
     }
   }
 
-  private static class PreparePostPutRequestResult {
+  private static class PreparePostPutRequestReturnValue {
     ModifiableSolrParams queryParams;
     HttpRequest.BodyPublisher bodyPublisher;
 
-    PreparePostPutRequestResult(
+    PreparePostPutRequestReturnValue(
         ModifiableSolrParams queryParams, HttpRequest.BodyPublisher bodyPublisher) {
       this.queryParams = queryParams;
       this.bodyPublisher = bodyPublisher;
     }
   }
 
-  private PreparePostPutRequestResult preparePostPutRequest(
+  private PreparePostPutRequestReturnValue preparePostPutRequest(
       HttpRequest.Builder reqb, SolrRequest<?> solrRequest, ModifiableSolrParams queryParams)
       throws IOException {
     RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
@@ -190,21 +190,21 @@ public class HttpSolrJdkClient extends Http2SolrClientBase {
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       contentWriter.write(baos);
       byte[] bytes = baos.toByteArray();
-      return new PreparePostPutRequestResult(
+      return new PreparePostPutRequestReturnValue(
           queryParams, HttpRequest.BodyPublishers.ofByteArray(bytes));
     } else if (streams != null && streams.size() == 1) {
       ContentStream contentStream = streams.iterator().next();
       InputStream is = contentStream.getStream();
-      return new PreparePostPutRequestResult(
+      return new PreparePostPutRequestReturnValue(
           queryParams, HttpRequest.BodyPublishers.ofInputStream(() -> is));
     } else if (queryParams != null && urlParamNames != null) {
       ModifiableSolrParams requestParams = queryParams;
       queryParams = calculateQueryParams(urlParamNames, requestParams);
       queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), requestParams));
-      return new PreparePostPutRequestResult(
+      return new PreparePostPutRequestReturnValue(
           queryParams, HttpRequest.BodyPublishers.ofString(requestParams.toString()));
     } else {
-      return new PreparePostPutRequestResult(queryParams, HttpRequest.BodyPublishers.noBody());
+      return new PreparePostPutRequestReturnValue(queryParams, HttpRequest.BodyPublishers.noBody());
     }
   }
 
