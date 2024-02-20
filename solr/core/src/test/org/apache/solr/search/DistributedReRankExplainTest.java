@@ -57,7 +57,6 @@ public class DistributedReRankExplainTest extends SolrCloudTestCase {
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
     CollectionAdminRequest.createCollection(collection, "conf1", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collection, 2, 2);

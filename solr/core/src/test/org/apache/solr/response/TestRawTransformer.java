@@ -109,7 +109,6 @@ public class TestRawTransformer extends SolrCloudTestCase {
     collectionProperties.put("schema", "schema_latest.xml");
     CloudSolrClient cloudSolrClient = cloud.getSolrClient();
     CollectionAdminRequest.createCollection("collection1", configName, numNodes, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setProperties(collectionProperties)
         .process(cloudSolrClient);
 
