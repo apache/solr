@@ -371,6 +371,10 @@ public abstract class Http2SolrClientBase extends SolrClient {
     return request instanceof V2Request || request.getPath().contains("/____v2");
   }
 
+  public String getBaseURL() {
+    return serverBaseUrl;
+  }
+
   public ResponseParser getParser() {
     return parser;
   }

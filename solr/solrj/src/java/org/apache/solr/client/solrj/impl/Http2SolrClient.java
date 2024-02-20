@@ -760,10 +760,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
     return requestWriter;
   }
 
-  public String getBaseURL() {
-    return serverBaseUrl;
-  }
-
   private static class AsyncTracker {
     private static final int MAX_OUTSTANDING_REQUESTS = 1000;
 
