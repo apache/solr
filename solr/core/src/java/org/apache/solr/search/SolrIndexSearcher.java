@@ -2307,9 +2307,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       return;
     }
 
-    // bit of a hack to tell if a set is sorted - do it better in the future.
-    boolean inOrder = set instanceof BitDocSet || set instanceof SortedIntDocSet;
-
     TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(nDocs, cmd);
 
     DocIterator iter = set.iterator();
