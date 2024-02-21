@@ -26,6 +26,7 @@ import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Set;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -260,27 +261,39 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
     }
   }
 
-  protected void testUpdate(Http2SolrClientBase client, String wt, String contentType)
+  protected enum WT { JAVABIN, XML};
+
+  protected void testUpdate(Http2SolrClientBase client, WT wt, String contentType, String docIdValue)
       throws Exception {
     DebugServlet.clear();
     UpdateRequest req = new UpdateRequest();
-    req.add(new SolrInputDocument());
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", docIdValue);
+    req.add(doc);
     req.setParam("a", "\u1234");
 
     try {
       client.request(req);
     } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
     }
+
     assertEquals("post", DebugServlet.lastMethod);
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-    assertEquals(wt, DebugServlet.parameters.get(CommonParams.WT)[0]);
+    assertEquals(wt.toString().toLowerCase(Locale.ROOT), DebugServlet.parameters.get(CommonParams.WT)[0]);
     assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     assertEquals(
         client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
     assertEquals(contentType, DebugServlet.headers.get("content-type"));
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+
+    if(wt==WT.XML) {
+      String requestBody = new String(DebugServlet.requestBody);
+      assertTrue(requestBody, requestBody.contains("<field name=\"id\">" + docIdValue));
+    } else if (wt==WT.JAVABIN) {
+      assertNotNull(DebugServlet.requestBody);
+    }
   }
 
   protected void testCollectionParameters(

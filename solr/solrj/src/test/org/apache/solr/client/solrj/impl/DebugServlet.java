@@ -50,6 +50,7 @@ public class DebugServlet extends HttpServlet {
   public static javax.servlet.http.Cookie[] cookies = null;
   public static List<String[]> responseHeaders = null;
   public static Object responseBody = null;
+  public static byte[] requestBody = null;
 
   public static void setErrorCode(Integer code) {
     errorCode = code;
@@ -125,6 +126,11 @@ public class DebugServlet extends HttpServlet {
     setParameters(req);
     setQueryString(req);
     setCookies(req);
+    try {
+     requestBody = req.getInputStream().readAllBytes();
+    } catch(Exception e) {
+      //ignore
+    }
     if (responseHeaders != null) {
       for (String[] h : responseHeaders) {
         resp.addHeader(h[0], h[1]);

@@ -226,7 +226,7 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).build()) {
-      testUpdate(client, "javabin", "application/javabin");
+      testUpdate(client, WT.JAVABIN, "application/javabin", "\u1234");
     }
   }
 
@@ -239,7 +239,7 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase {
             .withRequestWriter(new RequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build()) {
-      testUpdate(client, "xml", "application/xml; charset=UTF-8");
+      testUpdate(client, WT.XML, "application/xml; charset=UTF-8", "\u1234");
     }
   }
 
@@ -252,7 +252,7 @@ public class Http2SolrClientTest extends Http2SolrClientTestBase {
             .withRequestWriter(new BinaryRequestWriter())
             .withResponseParser(new BinaryResponseParser())
             .build()) {
-      testUpdate(client, "javabin", "application/javabin");
+      testUpdate(client, WT.JAVABIN, "application/javabin", "\u1234");
     }
   }
 

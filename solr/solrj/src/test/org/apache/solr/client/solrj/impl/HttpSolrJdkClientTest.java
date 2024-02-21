@@ -269,19 +269,27 @@ public class HttpSolrJdkClientTest extends Http2SolrClientTestBase {
   public void testUpdateDefault() throws Exception {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     try (HttpSolrJdkClient client = builder(url).build()) {
-      testUpdate(client, "javabin", "application/javabin");
+      testUpdate(client, WT.JAVABIN, "application/javabin", "\u1234");
     }
   }
 
   @Test
   public void testUpdateXml() throws Exception {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+
+    // 64k+ post body, just to be sure we are using the [in|out]put streams correctly.
+    StringBuilder sb = new StringBuilder();
+    for(int i=0 ; i<65535 ; i++) {
+      sb.append("A");
+    }
+    String value = sb.toString();
+
     try (HttpSolrJdkClient client =
         builder(url)
             .withRequestWriter(new RequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build()) {
-      testUpdate(client, "xml", "application/xml; charset=UTF-8");
+      testUpdate(client, WT.XML, "application/xml; charset=UTF-8", value);
     }
   }
 
@@ -293,7 +301,7 @@ public class HttpSolrJdkClientTest extends Http2SolrClientTestBase {
             .withRequestWriter(new BinaryRequestWriter())
             .withResponseParser(new BinaryResponseParser())
             .build()) {
-      testUpdate(client, "javabin", "application/javabin");
+      testUpdate(client, WT.JAVABIN, "application/javabin", "\u1234");
     }
   }
 
