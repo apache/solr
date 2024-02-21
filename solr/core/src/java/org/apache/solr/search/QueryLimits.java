@@ -62,6 +62,21 @@ public class QueryLimits implements QueryTimeout {
     return false;
   }
 
+  public void maybeExitWithException() throws QueryLimitsExceededException {
+    maybeExitWithException(null);
+  }
+
+  public void maybeExitWithException(String label) throws QueryLimitsExceededException {
+    if (isTimeoutEnabled() && shouldExit()) {
+      String msg = new StringBuilder("Limits exceeded!")
+          .append(label != null ? " (" + label + ")" : "")
+          .append(": ")
+          .append(limitStatusMessage())
+          .toString();
+      throw new QueryLimitsExceededException(msg);
+    }
+  }
+
   /**
    * Method to diagnose limit exceeded. Note that while this should always list the exceeded limit,
    * it may also nominate additional limits that have been exceeded since the actual check that

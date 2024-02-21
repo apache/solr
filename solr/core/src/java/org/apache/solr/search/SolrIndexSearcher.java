@@ -733,8 +733,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           setTimeout(requestInfo.getLimits()); // Lucene's method name is less than ideal here...
           super.search(leaves, weight, collector); // FYI protected access
           if (timedOut()) {
-            throw new LimitExceededFromScorerException(
-                "Limits exceeded! " + requestInfo.getLimits().limitStatusMessage());
+            throw new QueryLimitsExceededException(
+                "Limits exceeded! (search): " + requestInfo.getLimits().limitStatusMessage());
           }
         }
       }.searchWithTimeout();

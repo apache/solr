@@ -36,8 +36,10 @@ import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.EarlyTerminatingCollectorException;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +86,7 @@ public class SpellCheckCollator {
       IndexReader reader = ultimateResponse.req.getSearcher().getIndexReader();
       maxDocId = reader.maxDoc();
     }
+    QueryLimits queryLimits = SolrRequestInfo.getRequestInfo() != null ? SolrRequestInfo.getRequestInfo().getLimits() : QueryLimits.NONE;
 
     int tryNo = 0;
     int collNo = 0;
@@ -94,6 +97,7 @@ public class SpellCheckCollator {
             maxCollationEvaluations,
             suggestionsMayOverlap);
     while (tryNo < maxTries && collNo < maxCollations && possibilityIter.hasNext()) {
+      queryLimits.maybeExitWithException("SpellCheck collator");
 
       PossibilityIterator.RankedSpellPossibility possibility = possibilityIter.next();
       String collationQueryStr = getCollation(originalQuery, possibility.corrections);
