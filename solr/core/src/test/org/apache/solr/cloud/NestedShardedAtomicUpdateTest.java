@@ -35,6 +35,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,6 +49,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     final String configName = DEBUG_LABEL + "_config-set";
     final Path configDir = TEST_COLL1_CONF();
 
@@ -72,6 +74,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudTestCase {
   @AfterClass
   public static void afterClass() throws Exception {
     IOUtils.close(clients);
+    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Test

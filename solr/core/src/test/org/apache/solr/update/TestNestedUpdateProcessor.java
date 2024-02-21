@@ -34,7 +34,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.NestedUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.hamcrest.MatcherAssert;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -104,7 +106,13 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     initCore("solrconfig-minimal.xml", "schema-nest.xml");
+  }
+
+  @AfterClass
+  public static void afterTests() {
+    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Before

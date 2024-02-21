@@ -172,6 +172,14 @@ public class SolrTestCase extends LuceneTestCase {
     assumeFalse(PROP + " == true", systemPropertyAsBoolean(PROP, false));
   }
 
+  protected static void systemSetPropertySolrTestsMergePolicyFactory(String value) {
+    System.setProperty(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, value);
+  }
+
+  protected static void systemClearPropertySolrTestsMergePolicyFactory() {
+    System.clearProperty(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY);
+  }
+
   /**
    * Special hook for sanity checking if any tests trigger failures when an Assumption failure
    * occures in a {@link Before} method

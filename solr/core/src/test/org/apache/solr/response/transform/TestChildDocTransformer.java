@@ -27,8 +27,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BasicResultContext;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -39,7 +41,13 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     initCore("solrconfig.xml", "schema-root.xml"); // *not* the "nest" schema
+  }
+
+  @AfterClass
+  public static void afterTests() {
+    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @After

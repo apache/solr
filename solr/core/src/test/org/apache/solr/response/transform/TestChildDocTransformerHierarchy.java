@@ -29,7 +29,9 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BasicResultContext;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -51,6 +53,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     initCore("solrconfig-minimal.xml", "schema-nest.xml"); // use "nest" schema
 
     if (random().nextBoolean()) {
@@ -66,6 +69,11 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
       }
       assertU(commit());
     }
+  }
+
+  @AfterClass
+  public static void afterTests() {
+    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Before

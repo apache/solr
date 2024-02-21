@@ -66,6 +66,7 @@ import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.apache.solr.util.RefCounted;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
@@ -115,6 +116,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
                 new SolrNamedThreadFactory("AddBlockUpdateTest"));
 
     counter.set(0);
+    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     initCore("solrconfig.xml", "schema15.xml");
   }
 
@@ -155,6 +157,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       exe = null;
     }
     inputFactory = null;
+    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Test

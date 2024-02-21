@@ -35,6 +35,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -49,6 +50,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     final int numVals = atLeast(10);
     for (int i = 0; i < numVals; i++) {
       vals.add("" + Integer.toString(random().nextInt(1000000), Character.MAX_RADIX));
@@ -132,6 +134,8 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
   @AfterClass
   public static void cleanUpAfterClass() {
     IOUtils.closeQuietly(client);
+
+    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Test

@@ -25,6 +25,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SortSpecParsing;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,7 +34,13 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     initCore("solrconfig.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterTests() {
+    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   public void testEquality() {
