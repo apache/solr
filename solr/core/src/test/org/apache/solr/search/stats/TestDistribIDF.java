@@ -45,8 +45,6 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
 
   private MiniSolrCloudCluster solrCluster;
 
-  private static String COLLECTION = "collection1";
-
   @Override
   public void setUp() throws Exception {
     if (random().nextBoolean()) {
@@ -273,6 +271,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   public void testDisableDistribStats() throws Exception {
 
     // single collection with implicit router
+    final String COLLECTION = "collection1";
     createCollection(COLLECTION, "conf1", ImplicitDocRouter.NAME);
     SolrClient client = solrCluster.getSolrClient();
 
@@ -288,11 +287,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     doc.addField(ShardParams._ROUTE_, "b");
     client.add(COLLECTION, doc);
 
-    try {
-      client.commit(COLLECTION);
-    } catch (SolrServerException | IOException e) {
-      log.error("Exception while committing", e);
-    }
+    client.commit(COLLECTION);
     // distributed stats implicitly enabled by default
     SolrQuery query =
         new SolrQuery(
@@ -302,16 +297,16 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     QueryResponse rsp = client.query(COLLECTION, query);
     NamedList<Object> track = (NamedList<Object>) rsp.getDebugMap().get("track");
     assertNotNull(track);
-    assertNotNull(track.get("PARSE_QUERY"));
+    assertNotNull("stats cache hit",track.get("PARSE_QUERY"));
 
     // distributed stats explicitly disabled
     query.set(CommonParams.DISTRIB_STATS_CACHE, "false");
-    query.set(CommonParams.Q, "*:*");
-    query.set(CommonParams.FQ, "{!terms f=id}1,2");
+    query.set(CommonParams.Q, "{!terms f=id}1,2");
     rsp = client.query(COLLECTION, query);
     track = (NamedList<Object>) rsp.getDebugMap().get("track");
     assertNotNull(track);
-    assertNull(track.get("PARSE_QUERY"));
+    assertNull("NO stats cache hit", track.get("PARSE_QUERY"));
+    assertNotNull("just search",track.get("EXECUTE_QUERY"));
 
     // distributed stats explicitly enabled
     query.set(CommonParams.DISTRIB_STATS_CACHE, "true");
@@ -319,6 +314,6 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     rsp = client.query(COLLECTION, query);
     track = (NamedList<Object>) rsp.getDebugMap().get("track");
     assertNotNull(track);
-    assertNotNull(track.get("PARSE_QUERY"));
+    assertNotNull("stats cache hit",track.get("PARSE_QUERY"));
   }
 }
