@@ -115,24 +115,17 @@ public class HttpSolrJdkClient extends Http2SolrClientBase {
       switch (solrRequest.getMethod()) {
         case GET:
           {
-            validateGetRequest(solrRequest);
-            reqb.GET();
+            resp = doGet(url, reqb, solrRequest, queryParams);
             break;
           }
         case POST:
           {
-            PreparePostPutRequestReturnValue result =
-                preparePostPutRequest(reqb, solrRequest, queryParams);
-            queryParams = result.queryParams;
-            reqb.POST(result.bodyPublisher);
+            resp = doPutOrPost(url, false, reqb, solrRequest, queryParams);
             break;
           }
         case PUT:
           {
-            PreparePostPutRequestReturnValue result =
-                preparePostPutRequest(reqb, solrRequest, queryParams);
-            queryParams = result.queryParams;
-            reqb.PUT(result.bodyPublisher);
+            resp = doPutOrPost(url, true, reqb, solrRequest, queryParams);
             break;
           }
         default:
@@ -140,9 +133,6 @@ public class HttpSolrJdkClient extends Http2SolrClientBase {
             throw new IllegalStateException("Unsupported method: " + solrRequest.getMethod());
           }
       }
-      decorateRequest(reqb, solrRequest);
-      reqb.uri(new URI(url + "?" + queryParams));
-      resp = client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
       return processErrorsAndResponse(solrRequest, parser, resp, url);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
@@ -167,20 +157,19 @@ public class HttpSolrJdkClient extends Http2SolrClientBase {
     }
   }
 
-  private static class PreparePostPutRequestReturnValue {
-    ModifiableSolrParams queryParams;
-    HttpRequest.BodyPublisher bodyPublisher;
-
-    PreparePostPutRequestReturnValue(
-        ModifiableSolrParams queryParams, HttpRequest.BodyPublisher bodyPublisher) {
-      this.queryParams = queryParams;
-      this.bodyPublisher = bodyPublisher;
-    }
+  private HttpResponse<InputStream> doGet(String url, HttpRequest.Builder reqb, SolrRequest<?> solrRequest, ModifiableSolrParams queryParams)
+          throws IOException, InterruptedException, URISyntaxException {
+    validateGetRequest(solrRequest);
+    reqb.GET();
+    decorateRequest(reqb, solrRequest);
+    reqb.uri(new URI(url + "?" + queryParams));
+    return client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
   }
 
-  private PreparePostPutRequestReturnValue preparePostPutRequest(
-      HttpRequest.Builder reqb, SolrRequest<?> solrRequest, ModifiableSolrParams queryParams)
-      throws IOException {
+
+  private HttpResponse<InputStream> doPutOrPost(
+      String url, boolean isPut, HttpRequest.Builder reqb, SolrRequest<?> solrRequest, ModifiableSolrParams queryParams)
+          throws IOException, InterruptedException, URISyntaxException {
     RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
 
     Collection<ContentStream> streams = null;
@@ -198,27 +187,34 @@ public class HttpSolrJdkClient extends Http2SolrClientBase {
       throw new UnsupportedOperationException("This client does not support multipart.");
     }
 
+    HttpRequest.BodyPublisher bodyPublisher;
+
     if (contentWriter != null) {
       // TODO:  There is likely a more memory-efficient way to do this!
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       contentWriter.write(baos);
       byte[] bytes = baos.toByteArray();
-      return new PreparePostPutRequestReturnValue(
-          queryParams, HttpRequest.BodyPublishers.ofByteArray(bytes));
+      bodyPublisher = HttpRequest.BodyPublishers.ofByteArray(bytes);
     } else if (streams != null && streams.size() == 1) {
       ContentStream contentStream = streams.iterator().next();
       InputStream is = contentStream.getStream();
-      return new PreparePostPutRequestReturnValue(
-          queryParams, HttpRequest.BodyPublishers.ofInputStream(() -> is));
+      bodyPublisher = HttpRequest.BodyPublishers.ofInputStream(() -> is);
     } else if (queryParams != null && urlParamNames != null) {
       ModifiableSolrParams requestParams = queryParams;
       queryParams = calculateQueryParams(urlParamNames, requestParams);
       queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), requestParams));
-      return new PreparePostPutRequestReturnValue(
-          queryParams, HttpRequest.BodyPublishers.ofString(requestParams.toString()));
+      bodyPublisher = HttpRequest.BodyPublishers.ofString(requestParams.toString());
     } else {
-      return new PreparePostPutRequestReturnValue(queryParams, HttpRequest.BodyPublishers.noBody());
+      bodyPublisher = HttpRequest.BodyPublishers.noBody();
     }
+    if(isPut) {
+      reqb.PUT(bodyPublisher);
+    } else {
+      reqb.POST(bodyPublisher);
+    }
+    decorateRequest(reqb, solrRequest);
+    reqb.uri(new URI(url + "?" + queryParams));
+    return client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
   }
 
   private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {
