@@ -40,20 +40,31 @@ public final class QueryResultKey implements Accountable {
   final List<Query> filters;
   final int nc_flags; // non-comparable flags... ignored by hashCode and equals
   final int minExactCount;
-
+  final boolean enableDistribStats;
   private final int hc; // cached hashCode
   private final long ramBytesUsed; // cached
 
   public QueryResultKey(Query query, List<Query> filters, Sort sort, int nc_flags) {
-    this(query, filters, sort, nc_flags, Integer.MAX_VALUE);
+    this(query, filters, sort, nc_flags, Integer.MAX_VALUE, true);
   }
 
   public QueryResultKey(
       Query query, List<Query> filters, Sort sort, int nc_flags, int minExactCount) {
+    this(query, filters, sort, nc_flags, minExactCount, true);
+  }
+
+  public QueryResultKey(
+      Query query,
+      List<Query> filters,
+      Sort sort,
+      int nc_flags,
+      int minExactCount,
+      boolean enableDistribStats) {
     this.query = query;
     this.sort = sort;
     this.nc_flags = nc_flags;
     this.minExactCount = minExactCount;
+    this.enableDistribStats = enableDistribStats;
 
     int h = query.hashCode();
 
@@ -113,6 +124,7 @@ public final class QueryResultKey implements Accountable {
     if (!this.query.equals(other.query)) return false;
     if (!unorderedCompare(this.filters, other.filters)) return false;
     if (this.minExactCount != other.minExactCount) return false;
+    if (this.enableDistribStats != other.enableDistribStats) return false;
 
     for (int i = 0; i < sfields.size(); i++) {
       SortField sf1 = this.sfields.get(i);
