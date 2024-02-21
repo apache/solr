@@ -130,14 +130,15 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @Override
   public SolrClient createNewSolrClient() {
-    HttpSolrClient.Builder httpSolrClientBuilder = new HttpSolrClient.Builder(getCoreUrl());
+    HttpSolrClient.Builder httpSolrClientBuilder =
+        new HttpSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+            .allowMultiPartPost(random().nextBoolean());
     if (random().nextBoolean()) {
       httpSolrClientBuilder
           .withRequestWriter(new BinaryRequestWriter())
           .withResponseParser(new BinaryResponseParser());
     }
-    httpSolrClientBuilder.allowMultiPartPost(random().nextBoolean());
-
     return httpSolrClientBuilder.build();
   }
 }

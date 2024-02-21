@@ -60,6 +60,7 @@ A `zkConnected` header is included in every search response indicating if the no
 To prevent stale or incorrect results in the event that the request-serving node can't communicate with ZooKeeper, set the <<shards-tolerant-parameter,`shards.tolerant`>> parameter to `requireZkConnected`.
 This will cause requests to fail rather than setting a `zkConnected` header to `false`.
 
+[#shards-tolerant-parameter]
 === shards.tolerant Parameter
 
 In the event that one or more shards queried are unavailable, then Solr's default behavior is to fail the request.

@@ -52,6 +52,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,8 +101,13 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
    */
   protected ConcurrentUpdateSolrClient(Builder builder) {
     this.internalHttpClient = (builder.httpClient == null);
+    final var httpSolrClientBuilder =
+        (URLUtil.isBaseUrl(builder.baseSolrUrl))
+            ? new HttpSolrClient.Builder(builder.baseSolrUrl)
+            : new HttpSolrClient.Builder(URLUtil.extractBaseUrl(builder.baseSolrUrl))
+                .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(builder.baseSolrUrl));
     this.client =
-        new HttpSolrClient.Builder(builder.baseSolrUrl)
+        httpSolrClientBuilder
             .withHttpClient(builder.httpClient)
             .withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS)
             .withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS)
@@ -116,6 +122,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.soTimeout = builder.socketTimeoutMillis;
     this.pollQueueTimeMillis = builder.pollQueueTime;
     this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
+    this.defaultCollection = builder.defaultCollection;
 
     // make sure the stall time is larger than the polling time
     // to give a chance for the queue to change
@@ -316,7 +323,11 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           requestParams.set(CommonParams.VERSION, client.parser.getVersion());
 
           String basePath = client.getBaseURL();
-          if (update.getCollection() != null) basePath += "/" + update.getCollection();
+          if (update.getCollection() != null) {
+            basePath += "/" + update.getCollection();
+          } else if (client.getDefaultCollection() != null) {
+            basePath += "/" + client.getDefaultCollection();
+          }
 
           method = new HttpPost(basePath + "/update" + requestParams.toQueryString());
 
@@ -475,6 +486,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
+      collection = defaultCollection;
     if (!(request instanceof UpdateRequest)) {
       return client.request(request, collection);
     }

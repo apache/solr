@@ -31,6 +31,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -636,7 +637,8 @@ public class DistributedClusterStateUpdater {
               data,
               Collections.emptySet(),
               updater.getCollectionName(),
-              zkStateReader.getZkClient());
+              zkStateReader.getZkClient(),
+              Instant.ofEpochMilli(stat.getCtime()));
 
       return clusterState;
     }

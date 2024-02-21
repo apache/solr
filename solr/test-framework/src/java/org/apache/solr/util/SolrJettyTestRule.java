@@ -24,7 +24,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -119,8 +118,9 @@ public class SolrJettyTestRule extends SolrClientTestRule {
   }
 
   protected SolrClient newSolrClient(String collection) {
-    String url = getBaseUrl() + (StrUtils.isBlank(collection) ? "" : "/" + collection);
-    return new HttpSolrClient.Builder(url).build();
+    return new HttpSolrClient.Builder(getBaseUrl())
+        .withDefaultCollection(collection) // Properly handles when collection is 'null'
+        .build();
   }
 
   /** URL to Solr. */

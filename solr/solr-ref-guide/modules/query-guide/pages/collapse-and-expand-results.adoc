@@ -199,7 +199,7 @@ For example: searching for "grand child" documents and collapsing on a field tha
 
 [CAUTION]
 ====
-Specifing `hint=block` when collapsing on a field that is not unique per contiguous block of documents is not supported and may fail in unexpected ways; including the possibility of silently returning incorrect results.
+Specifying `hint=block` when collapsing on a field that is not unique per contiguous block of documents is not supported and may fail in unexpected ways; including the possibility of silently returning incorrect results.
 
 The implementation does not offer any safeguards against misuse on an unsupported field, since doing so would require the same group level tracking as the non-Block collapsing implementation -- defeating the purpose of this optimization.
 ====
@@ -228,7 +228,7 @@ q=foo&fq={!collapse field=ISBN}&expand=true
 
 [IMPORTANT]
 ====
-When used with CollapsingQParserPlugin and there are multiple collapse groups, the field is chosen from the group with least cost.
+When used with CollapsingQParserPlugin and there are multiple collapse groups, the field is chosen from the group with the least cost.
 If there are multiple collapse groups with same cost then the first specified one is chosen.
 ====
 

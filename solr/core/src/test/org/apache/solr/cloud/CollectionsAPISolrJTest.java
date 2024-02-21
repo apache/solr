@@ -24,8 +24,10 @@ import static org.apache.solr.common.params.CollectionAdminParams.DEFAULTS;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -91,7 +93,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     String collectionName = getSaferTestName();
     CollectionAdminResponse response =
         CollectionAdminRequest.createCollection(collectionName, 2, 2)
-            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
@@ -155,7 +156,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertEquals("2", String.valueOf(clusterProperty));
       CollectionAdminResponse response =
           CollectionAdminRequest.createCollection(COLL_NAME, "conf", null, null, null, null)
-              .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
               .process(cluster.getSolrClient());
       assertEquals(0, response.getStatus());
       assertTrue(response.isSuccess());
@@ -359,7 +359,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     final String collection = "aliasedCollection";
     CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     CollectionAdminResponse response =
@@ -375,7 +374,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public void testSplitShard() throws Exception {
     String collectionName = getSaferTestName();
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 2, 2);
@@ -435,7 +433,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     CollectionAdminResponse response =
         CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
-            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .withProperty(CoreAdminParams.DATA_DIR, dataDir.toString())
             .withProperty(CoreAdminParams.ULOG_DIR, ulogDir.toString())
             .process(cluster.getSolrClient());
@@ -460,7 +457,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public void testAddAndDeleteReplica() throws Exception {
     String collectionName = getSaferTestName();
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 1, 2);
@@ -544,7 +540,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     final String propName = "testProperty";
 
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
@@ -579,13 +574,12 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public void testColStatus() throws Exception {
     String collectionName = getSaferTestName();
     CollectionAdminRequest.createCollection(collectionName, "conf2", 2, 2)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 2, 4);
 
     SolrClient client = cluster.getSolrClient();
-    byte[] binData = collectionName.getBytes("UTF-8");
+    byte[] binData = collectionName.getBytes(StandardCharsets.UTF_8);
     // index some docs
     for (int i = 0; i < 10; i++) {
       SolrInputDocument doc = new SolrInputDocument();
@@ -1207,5 +1201,34 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
             CollectionAdminRequest.modifyCollection(collection, null)
                 .unsetAttribute("non_existent_attr")
                 .process(cluster.getSolrClient()));
+  }
+
+  @Test
+  public void testCollectionCreationTime() throws SolrServerException, IOException {
+    Instant beforeCreation = Instant.now();
+
+    String collectionName = getSaferTestName();
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+
+    cluster.waitForActiveCollection(collectionName, 1, 1);
+
+    Instant afterCreation = Instant.now();
+
+    CollectionAdminRequest.ColStatus req = CollectionAdminRequest.collectionStatus(collectionName);
+    CollectionAdminResponse response = req.process(cluster.getSolrClient());
+    assertEquals(0, response.getStatus());
+
+    NamedList<?> colStatus = (NamedList<?>) response.getResponse().get(collectionName);
+    Long creationTimeMillis = (Long) colStatus._get("creationTimeMillis", null);
+    assertNotNull("creationTimeMillis was not included in COLSTATUS response", creationTimeMillis);
+
+    Instant creationTime = Instant.ofEpochMilli(creationTimeMillis);
+    assertTrue(
+        "COLSTATUS creationTimeMillis should be after the test started",
+        creationTime.isAfter(beforeCreation));
+    assertTrue(
+        "COLSTATUS creationTimeMillis should not be after the collection creation was completed",
+        creationTime.isBefore(afterCreation));
   }
 }

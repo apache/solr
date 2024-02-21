@@ -23,10 +23,8 @@ For details on how to configure `core.properties`, see the section xref:core-dis
 
 == Defining solr.xml
 
-You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or `/var/solr/data`) or optionally in ZooKeeper when using SolrCloud. If `$SOLR_HOME/solr.xml` is not found, Solr will use the default `solr.xml` file.
-
-WARNING: Loading `solr.xml` from Zookeeper is deprecated, and will not be supported in a future version.
-Being the node config of Solr, this file must be available at early startup and also be allowed to differ between nodes.
+You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or `/var/solr/data`).
+If `$SOLR_HOME/solr.xml` is not found, Solr will use the default `solr.xml` file.
 
 The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and looks like this:
 
@@ -198,8 +196,21 @@ The root of the core discovery tree, defaults to `$SOLR_HOME`.
 +
 This attribute does not need to be set.
 +
-If used, this attribute should be set to the FQN (Fully qualified name) of a class that implements `CoresLocator`, and you must provide a constructor with one parameter of type `org.apache.solr.core.NodeConfig`.
-For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>`.
+If used, this attribute should be set to the FQN (fully qualified name) of a class that implements `CoresLocator`, and you must provide a constructor with one parameter of type `org.apache.solr.core.NodeConfig`.
+For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>` would configure a custom cores locator.
+
+`coreSorter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `org.apache.solr.core.CoreSorter`
+|===
++
+This attribute does not need to be set.
++
+If used, this attribute should be set to the FQN (fully qualified name) of a class that implements `CoreSorter`, and you must provide a constructor with one parameter of type `org.apache.solr.core.CoreContainer`.
+This service is used when Solr is starting to prioritize which cores should be loaded first.
+For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>` would configure a custom core sorter.
 
 `managementPath`::
 +
@@ -643,6 +654,40 @@ For configuring `stable` routing, the `hash` parameter implicitly defaults to a 
 +
 The `dividend` parameter must be configured explicitly; there is no implicit default.
 If only `dividend` routing is desired, `hash` may be explicitly set to the empty string, entirely disabling implicit hash-based routing.
+
+=== The <replicaPlacementFactory> Element
+
+A default xref:replica-placement-plugins.adoc[replica placement plugin] can be defined in `solr.xml`.
+To allow this, the `solr.cluster.plugin.edit.enabled` System Property must be set to false. This setting will disable the `/cluster/plugins` edit APIs, preventing modification of cluster plugins at runtime.
+
+[source,xml]
+----
+<replicaPlacementFactory class="org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory">
+  <int name="minimalFreeDiskGB">10</int>
+  <int name="prioritizedFreeDiskGB">200</int>
+</replicaPlacementFactory>
+----
+
+The `class` attribute should be set to the FQN (fully qualified name) of a class that extends `PlacementPluginFactory`.
+Sub-elements are specific to the implementation.
+
+=== The <clusterSingleton> Element
+One or more `clusterSingleton` elements may be declared in solr.xml.
+To allow this, the `solr.cluster.plugin.edit.enabled` System Property must be set to false. This setting will disable the `/cluster/plugins` edit APIs, preventing modification of cluster plugins at runtime.
+
+Each `clusterSingleton` element specifies a cluster plugin that should be loaded when Solr stars, along with it's associated configuration.
+
+[source,xml]
+----
+<clusterSingleton name="pluginName" class="qualified.plugin.class">
+  <int name="value1">20</int>
+</clusterSingleton>
+----
+
+The `name` attribute is required and must be unique for each `clusterSingleton`.
+
+The `class` attribute should be set to the FQN (fully qualified name) of a class that extends `ClusterSingleton`.
+Sub-elements are specific to the implementation, `value1` is provided as an example here.
 
 === The <metrics> Element
 

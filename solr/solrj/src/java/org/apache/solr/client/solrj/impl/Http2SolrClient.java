@@ -53,7 +53,6 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
@@ -106,6 +105,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HttpCookieStore;
+import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,6 +158,8 @@ public class Http2SolrClient extends SolrClient {
   final String basicAuthAuthorizationStr;
   private AuthenticationStoreHolder authenticationStore;
 
+  private KeyStoreScanner scanner;
+
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
     if (serverBaseUrl != null) {
       if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
@@ -189,6 +191,7 @@ public class Http2SolrClient extends SolrClient {
       this.parser = builder.responseParser;
     }
     updateDefaultMimeTypeForParser();
+    this.defaultCollection = builder.defaultCollection;
     if (builder.requestTimeoutMillis != null) {
       this.requestTimeoutMillis = builder.requestTimeoutMillis;
     } else {
@@ -236,6 +239,30 @@ public class Http2SolrClient extends SolrClient {
       sslContextFactory = getDefaultSslContextFactory();
     } else {
       sslContextFactory = builder.sslConfig.createClientContextFactory();
+    }
+
+    if (sslContextFactory != null
+        && sslContextFactory.getKeyStoreResource() != null
+        && builder.keyStoreReloadIntervalSecs != null
+        && builder.keyStoreReloadIntervalSecs > 0) {
+      scanner = new KeyStoreScanner(sslContextFactory);
+      try {
+        scanner.setScanInterval(
+            (int) Math.min(builder.keyStoreReloadIntervalSecs, Integer.MAX_VALUE));
+        scanner.start();
+        if (log.isDebugEnabled()) {
+          log.debug("Key Store Scanner started");
+        }
+      } catch (Exception e) {
+        RuntimeException startException =
+            new RuntimeException("Unable to start key store scanner", e);
+        try {
+          scanner.stop();
+        } catch (Exception stopException) {
+          startException.addSuppressed(stopException);
+        }
+        throw startException;
+      }
     }
 
     ClientConnector clientConnector = new ClientConnector();
@@ -326,6 +353,14 @@ public class Http2SolrClient extends SolrClient {
       if (closeClient) {
         httpClient.stop();
         httpClient.destroy();
+
+        if (scanner != null) {
+          scanner.stop();
+          if (log.isDebugEnabled()) {
+            log.debug("Key Store Scanner stopped");
+          }
+          scanner = null;
+        }
       }
     } catch (Exception e) {
       throw new RuntimeException("Exception on closing client", e);
@@ -334,7 +369,6 @@ public class Http2SolrClient extends SolrClient {
         ExecutorUtil.shutdownAndAwaitTermination(executor);
       }
     }
-
     assert ObjectReleaseTracker.release(this);
   }
 
@@ -462,9 +496,10 @@ public class Http2SolrClient extends SolrClient {
   private static final Cancellable FAILED_MAKING_REQUEST_CANCELLABLE = () -> {};
 
   public Cancellable asyncRequest(
-      SolrRequest<?> solrReq, String collection, AsyncListener<NamedList<Object>> asyncListener) {
+      SolrRequest<?> solrRequest,
+      String collection,
+      AsyncListener<NamedList<Object>> asyncListener) {
     MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
-    SolrRequest<?> solrRequest = unwrapV2Request(solrReq);
 
     Request req;
     try {
@@ -520,8 +555,8 @@ public class Http2SolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
-
-    solrRequest = unwrapV2Request(solrRequest);
+    if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest))
+      collection = defaultCollection;
     String url = getRequestPath(solrRequest, collection);
     Throwable abortCause = null;
     Request req = null;
@@ -632,17 +667,6 @@ public class Http2SolrClient extends SolrClient {
     URL oldURL = new URL(basePath);
     String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
     return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
-  }
-
-  private SolrRequest<?> unwrapV2Request(SolrRequest<?> solrRequest) {
-    if (solrRequest.getBasePath() == null && serverBaseUrl == null)
-      throw new IllegalArgumentException("Destination node is not provided!");
-
-    if (solrRequest instanceof V2RequestSupport) {
-      return ((V2RequestSupport) solrRequest).getV2Request();
-    } else {
-      return solrRequest;
-    }
   }
 
   private String getRequestPath(SolrRequest<?> solrRequest, String collection)
@@ -1048,12 +1072,14 @@ public class Http2SolrClient extends SolrClient {
     private ExecutorService executor;
     protected RequestWriter requestWriter;
     protected ResponseParser responseParser;
+    protected String defaultCollection;
     private Set<String> urlParamNames;
     private CookieStore cookieStore = getDefaultCookieStore();
     private String proxyHost;
     private int proxyPort;
     private boolean proxyIsSocks4;
     private boolean proxyIsSecure;
+    private Long keyStoreReloadIntervalSecs;
 
     public Builder() {}
 
@@ -1067,6 +1093,17 @@ public class Http2SolrClient extends SolrClient {
       }
       if (connectionTimeoutMillis == null) {
         connectionTimeoutMillis = (long) HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
+      }
+
+      if (keyStoreReloadIntervalSecs != null
+          && keyStoreReloadIntervalSecs > 0
+          && this.httpClient != null) {
+        log.warn("keyStoreReloadIntervalSecs can't be set when using external httpClient");
+        keyStoreReloadIntervalSecs = null;
+      } else if (keyStoreReloadIntervalSecs == null
+          && this.httpClient == null
+          && Boolean.getBoolean("solr.keyStoreReload.enabled")) {
+        keyStoreReloadIntervalSecs = Long.getLong("solr.jetty.sslContext.reload.scanInterval", 30);
       }
 
       Http2SolrClient client = new Http2SolrClient(baseSolrUrl, this);
@@ -1160,6 +1197,12 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
+    /** Sets a default for core or collection based requests. */
+    public Builder withDefaultCollection(String defaultCoreOrCollection) {
+      this.defaultCollection = defaultCoreOrCollection;
+      return this;
+    }
+
     public Builder withFollowRedirects(boolean followRedirects) {
       this.followRedirects = followRedirects;
       return this;
@@ -1217,6 +1260,23 @@ public class Http2SolrClient extends SolrClient {
      */
     public Builder withMaxConnectionsPerHost(int max) {
       this.maxConnectionsPerHost = max;
+      return this;
+    }
+
+    /**
+     * Set the scanning interval to check for updates in the Key Store used by this client. If the
+     * interval is unset, 0 or less, then the Key Store Scanner is not created, and the client will
+     * not attempt to update key stores. The minimum value between checks is 1 second.
+     *
+     * @param interval Interval between checks
+     * @param unit The unit for the interval
+     * @return This builder
+     */
+    public Builder withKeyStoreReloadInterval(long interval, TimeUnit unit) {
+      this.keyStoreReloadIntervalSecs = unit.toSeconds(interval);
+      if (this.keyStoreReloadIntervalSecs == 0 && interval > 0) {
+        this.keyStoreReloadIntervalSecs = 1L;
+      }
       return this;
     }
 

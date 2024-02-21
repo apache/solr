@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -358,7 +359,10 @@ public abstract class LBSolrClient extends SolrClient {
       }
     }
     throw new SolrServerException(
-        "No live SolrServers available to handle this request:" + zombieServers.keySet(), ex);
+        "No live SolrServers available to handle this request. (Tracking "
+            + zombieServers.size()
+            + " not live)",
+        ex);
   }
 
   /**
@@ -571,6 +575,8 @@ public abstract class LBSolrClient extends SolrClient {
     final int maxTries = (numServersToTry == null ? serverList.length : numServersToTry.intValue());
     int numServersTried = 0;
     Map<String, ServerWrapper> justFailed = null;
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
+      collection = defaultCollection;
 
     boolean timeAllowedExceeded = false;
     long timeAllowedNano = getTimeAllowedInNanos(request);

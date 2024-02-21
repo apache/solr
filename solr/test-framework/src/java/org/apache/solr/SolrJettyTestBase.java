@@ -127,7 +127,9 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
    * options.
    */
   public SolrClient createNewSolrClient() {
-    return new HttpSolrClient.Builder(getCoreUrl()).build();
+    return new HttpSolrClient.Builder(getBaseUrl())
+        .withDefaultCollection(DEFAULT_TEST_CORENAME)
+        .build();
   }
 
   protected HttpClient getHttpClient() {

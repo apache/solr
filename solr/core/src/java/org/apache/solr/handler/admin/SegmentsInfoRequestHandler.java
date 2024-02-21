@@ -368,6 +368,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
       Terms terms = reader.terms(fi.name);
       if (terms != null) {
         fieldFlags.add("docCount", terms.getDocCount());
+        fieldFlags.add("termCount", terms.size());
         fieldFlags.add("sumDocFreq", terms.getSumDocFreq());
         fieldFlags.add("sumTotalTermFreq", terms.getSumTotalTermFreq());
       }

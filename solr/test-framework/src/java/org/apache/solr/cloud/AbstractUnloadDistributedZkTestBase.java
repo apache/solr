@@ -84,6 +84,9 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     testUnloadShardAndCollection();
   }
 
+  /**
+   * @param url a Solr node base URL. Should <em>not</em> contain a core or collection name.
+   */
   private SolrClient newSolrClient(String url) {
     return new HttpSolrClient.Builder(url)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
@@ -250,7 +253,8 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
 
     Random random = random();
     if (random.nextBoolean()) {
-      try (SolrClient collectionClient = getHttpSolrClient(leaderProps.getCoreUrl())) {
+      try (SolrClient collectionClient =
+          getHttpSolrClient(leaderProps.getBaseUrl(), leaderProps.getCoreName())) {
         // lets try and use the solrj client to index and retrieve a couple
         // documents
         SolrInputDocument doc1 =
@@ -279,7 +283,8 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     TestInjection.skipIndexWriterCommitOnClose = true;
 
     try (SolrClient addClient =
-        new HttpSolrClient.Builder(jettys.get(2).getBaseUrl() + "/unloadcollection_shard1_replica3")
+        new HttpSolrClient.Builder(jettys.get(2).getBaseUrl().toString())
+            .withDefaultCollection("unloadcollection_shard1_replica3")
             .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
             .build()) {
 
@@ -319,7 +324,8 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
 
     try (SolrClient addClient =
-        new HttpSolrClient.Builder(jettys.get(1).getBaseUrl() + "/unloadcollection_shard1_replica2")
+        new HttpSolrClient.Builder(jettys.get(1).getBaseUrl().toString())
+            .withDefaultCollection("unloadcollection_shard1_replica2")
             .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
             .build()) {
@@ -383,7 +389,8 @@ public abstract class AbstractUnloadDistributedZkTestBase extends AbstractFullDi
     }
 
     try (SolrClient adminClient =
-        new HttpSolrClient.Builder(jettys.get(2).getBaseUrl() + "/unloadcollection_shard1_replica3")
+        new HttpSolrClient.Builder(jettys.get(2).getBaseUrl().toString())
+            .withDefaultCollection("unloadcollection_shard1_replica3")
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
             .build()) {

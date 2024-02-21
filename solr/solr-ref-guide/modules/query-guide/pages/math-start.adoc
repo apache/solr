@@ -96,7 +96,7 @@ The visualizations in this guide were performed with Apache Zeppelin using the Z
 === Zeppelin-Solr Interpreter
 
 An Apache Zeppelin interpreter for Solr allows streaming expressions and math expressions to be executed and results visualized in Zeppelin.
-The instructions for installing and configuring Zeppelin-Solr can be found on the Github repository for the project:
+The instructions for installing and configuring Zeppelin-Solr can be found on the GitHub repository for the project:
 https://github.com/lucidworks/zeppelin-solr
 
 Once installed the Solr Interpreter can be configured to connect to your Solr instance.

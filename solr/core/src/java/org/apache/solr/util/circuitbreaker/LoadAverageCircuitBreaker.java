@@ -29,6 +29,9 @@ import org.slf4j.LoggerFactory;
  * <p>This circuit breaker gets the load average (length of the run queue) over the last minute and
  * uses that data to take a decision. We depend on OperatingSystemMXBean which does not allow a
  * configurable interval of collection of data.
+ *
+ * <p>This Circuit breaker is dependent on the operating system, and may typically not work on
+ * Microsoft Windows.
  */
 public class LoadAverageCircuitBreaker extends CircuitBreaker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -78,11 +81,12 @@ public class LoadAverageCircuitBreaker extends CircuitBreaker {
         + allowedLoadAverage.get();
   }
 
-  public void setThreshold(double thresholdValueUnbounded) {
+  public LoadAverageCircuitBreaker setThreshold(double thresholdValueUnbounded) {
     if (thresholdValueUnbounded <= 0) {
       throw new IllegalStateException("Threshold cannot be less than or equal to zero");
     }
     loadAverageThreshold = thresholdValueUnbounded;
+    return this;
   }
 
   public double getLoadAverageThreshold() {

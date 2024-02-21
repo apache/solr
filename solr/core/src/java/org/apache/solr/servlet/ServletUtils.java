@@ -233,11 +233,17 @@ public abstract class ServletUtils {
     Context context = TraceUtils.extractContext(request);
     Span span = TraceUtils.startHttpRequestSpan(request, context);
 
+    final Thread currentThread = Thread.currentThread();
+    final String oldThreadName = currentThread.getName();
     try (var scope = context.with(span).makeCurrent()) {
       assert scope != null; // prevent javac warning about scope being unused
       TraceUtils.setSpan(request, span);
       TraceUtils.ifValidTraceId(
           span, s -> MDCLoggingContext.setTracerId(s.getSpanContext().getTraceId()));
+      String traceId = MDCLoggingContext.getTraceId();
+      if (traceId != null) {
+        currentThread.setName(oldThreadName + "-" + traceId);
+      }
       tracedExecution.run();
     } catch (ExceptionWhileTracing e) {
       if (e.e instanceof SolrAuthenticationException) {
@@ -256,6 +262,7 @@ public abstract class ServletUtils {
         throw new RuntimeException(e.e);
       }
     } finally {
+      currentThread.setName(oldThreadName);
       TraceUtils.setHttpStatus(span, response.getStatus());
       span.end();
     }
