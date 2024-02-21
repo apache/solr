@@ -26,6 +26,8 @@ public class SolrNamedThreadFactory implements ThreadFactory {
   private final AtomicInteger threadNumber = new AtomicInteger(1);
   private final String prefix;
 
+  @SuppressWarnings({"removal"})
+  @SuppressForbidden(reason = "Using SecurityManager")
   public SolrNamedThreadFactory(String namePrefix) {
     SecurityManager s = System.getSecurityManager();
     group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
