@@ -66,6 +66,19 @@ public class SolrMultiCollectorManager
     return results;
   }
 
+  // TODO: could Lucene's MultiCollector permit reuse of its logic?
+  public static ScoreMode scoreMode(Collector[] collectors) {
+    ScoreMode scoreMode = null;
+    for (Collector collector : collectors) {
+      if (scoreMode == null) {
+        scoreMode = collector.scoreMode();
+      } else if (scoreMode != collector.scoreMode()) {
+        return ScoreMode.COMPLETE;
+      }
+    }
+    return scoreMode;
+  }
+
   /** Wraps multiple collectors for processing */
   class Collectors implements Collector {
 
@@ -85,15 +98,7 @@ public class SolrMultiCollectorManager
 
     @Override
     public final ScoreMode scoreMode() {
-      ScoreMode scoreMode = null;
-      for (Collector collector : collectors) {
-        if (scoreMode == null) {
-          scoreMode = collector.scoreMode();
-        } else if (scoreMode != collector.scoreMode()) {
-          return ScoreMode.COMPLETE;
-        }
-      }
-      return scoreMode;
+      return SolrMultiCollectorManager.scoreMode(collectors);
     }
 
     /**

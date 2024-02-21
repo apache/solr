@@ -1972,7 +1972,25 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       throws IOException {
     Collection<CollectorManager<Collector, Object>> collectors = new ArrayList<>();
 
-    Collector[] firstCollectors = new Collector[3];
+    int firstCollectorsSize = 0;
+
+    final int firstTopDocsCollectorIndex;
+    if (needTopDocs) {
+      firstTopDocsCollectorIndex = firstCollectorsSize;
+      firstCollectorsSize++;
+    } else {
+      firstTopDocsCollectorIndex = -1;
+    }
+
+    final int firstMaxScoreCollectorIndex;
+    if (needMaxScore) {
+      firstMaxScoreCollectorIndex = firstCollectorsSize;
+      firstCollectorsSize++;
+    } else {
+      firstMaxScoreCollectorIndex = -1;
+    }
+
+    Collector[] firstCollectors = new Collector[firstCollectorsSize];
 
     if (needTopDocs) {
 
@@ -1982,8 +2000,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             public Collector newCollector() throws IOException {
               @SuppressWarnings("rawtypes")
               TopDocsCollector collector = buildTopDocsCollector(len, cmd);
-              if (firstCollectors[0] == null) {
-                firstCollectors[0] = collector;
+              if (firstCollectors[firstTopDocsCollectorIndex] == null) {
+                firstCollectors[firstTopDocsCollectorIndex] = collector;
               }
               return collector;
             }
@@ -2029,8 +2047,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             @Override
             public Collector newCollector() throws IOException {
               MaxScoreCollector collector = new MaxScoreCollector();
-              if (firstCollectors[1] == null) {
-                firstCollectors[1] = collector;
+              if (firstCollectors[firstMaxScoreCollectorIndex] == null) {
+                firstCollectors[firstMaxScoreCollectorIndex] = collector;
               }
               return collector;
             }
@@ -2079,6 +2097,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               }
               log.error("new docset collector for {} max={}", numDocs, maxDoc());
 
+              // TODO: add to firstCollectors here? or if not have comment w.r.t. why not adding
               return new ThreadSafeBitSetCollector(bits, maxDoc);
             }
 
@@ -2110,16 +2129,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
     }
 
-    ScoreMode scoreMode = null;
-    for (Collector collector : firstCollectors) {
-      if (collector != null) {
-        if (scoreMode == null) {
-          scoreMode = collector.scoreMode();
-        } else if (scoreMode != collector.scoreMode()) {
-          scoreMode = ScoreMode.COMPLETE;
-        }
-      }
-    }
+    ScoreMode scoreMode = SolrMultiCollectorManager.scoreMode(firstCollectors);
 
     return new SearchResult(scoreMode, ret);
   }
