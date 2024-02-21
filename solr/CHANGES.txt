@@ -29,6 +29,8 @@ Improvements
 * SOLR-17159: bin/solr post now has proper unit testing.  Users can specify a --dry-run option to 
   simulate posting documents without sending them to Solr. (Eric Pugh)
 
+* SOLR-17058: Add 'distrib.statsCache' parameter to disable distributed stats requests at query time. (Wei Wang, Mikhail Khludnev)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)

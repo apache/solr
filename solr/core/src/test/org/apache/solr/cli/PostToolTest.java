@@ -55,10 +55,7 @@ public class PostToolTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2)
-        .addConfig(
-            "conf1", configset("cloud-minimal"))
-        .configure();
+    configureCluster(2).addConfig("conf1", configset("cloud-minimal")).configure();
   }
 
   @Test

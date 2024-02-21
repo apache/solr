@@ -295,6 +295,15 @@ public interface CommonParams {
   @Deprecated(since = "9.4")
   String DISABLE_REQUEST_ID = "disableRequestId";
 
+  /**
+   * Parameter to control the distributed term statistics request for current query when distributed
+   * IDF is enabled in solrconfig
+   *
+   * <p>Defaults to 'true' if not specified. Distributed stats request will be disabled by setting
+   * to 'false'
+   */
+  String DISTRIB_STATS_CACHE = "distrib.statsCache";
+
   /** Request Purpose parameter added to each internal shard request when using debug=track */
   String REQUEST_PURPOSE = "requestPurpose";
 
