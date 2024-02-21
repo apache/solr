@@ -297,7 +297,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     QueryResponse rsp = client.query(COLLECTION, query);
     NamedList<Object> track = (NamedList<Object>) rsp.getDebugMap().get("track");
     assertNotNull(track);
-    assertNotNull("stats cache hit",track.get("PARSE_QUERY"));
+    assertNotNull("stats cache hit", track.get("PARSE_QUERY"));
 
     // distributed stats explicitly disabled
     query.set(CommonParams.DISTRIB_STATS_CACHE, "false");
@@ -306,7 +306,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     track = (NamedList<Object>) rsp.getDebugMap().get("track");
     assertNotNull(track);
     assertNull("NO stats cache hit", track.get("PARSE_QUERY"));
-    assertNotNull("just search",track.get("EXECUTE_QUERY"));
+    assertNotNull("just search", track.get("EXECUTE_QUERY"));
 
     // distributed stats explicitly enabled
     query.set(CommonParams.DISTRIB_STATS_CACHE, "true");
@@ -314,6 +314,6 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     rsp = client.query(COLLECTION, query);
     track = (NamedList<Object>) rsp.getDebugMap().get("track");
     assertNotNull(track);
-    assertNotNull("stats cache hit",track.get("PARSE_QUERY"));
+    assertNotNull("stats cache hit", track.get("PARSE_QUERY"));
   }
 }
