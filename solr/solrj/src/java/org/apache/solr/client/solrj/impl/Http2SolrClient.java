@@ -117,7 +117,6 @@ public class Http2SolrClient extends Http2SolrClientBase {
   private final HttpClient httpClient;
 
   private SSLConfig sslConfig;
-  ;
 
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private final AsyncTracker asyncTracker = new AsyncTracker();

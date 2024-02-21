@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.net.Socket;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -405,6 +407,24 @@ public class HttpSolrJdkClientTest extends Http2SolrClientTestBase {
       assertNull(client.contentTypeToEncoding("application/vnd.apache.solr.javabin"));
       assertNull(client.contentTypeToEncoding("application/octet-stream"));
       assertNull(client.contentTypeToEncoding("multipart/form-data; boundary=something"));
+    }
+  }
+
+  @Test
+  public void testPassedInExecutorNotShutdown() throws Exception {
+    ExecutorService myExecutor = null;
+    try {
+      myExecutor = Executors.newSingleThreadExecutor();
+      try (HttpSolrJdkClient client = builder(getBaseUrl()).withExecutor(myExecutor).build()) {
+        assertEquals(myExecutor, client.executor);
+      }
+      assertFalse(myExecutor.isShutdown());
+    } finally {
+      try {
+        myExecutor.shutdownNow();
+      } catch(Exception e1) {
+        //ignore
+      }
     }
   }
 

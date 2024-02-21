@@ -35,6 +35,8 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -60,6 +62,10 @@ public class HttpSolrJdkClient extends Http2SolrClientBase {
 
   private HttpClient client;
 
+  protected ExecutorService executor;
+
+  private boolean shutdownExecutor;
+
   protected HttpSolrJdkClient(String serverBaseUrl, HttpSolrJdkClient.Builder builder) {
     super(serverBaseUrl, builder);
 
@@ -71,9 +77,16 @@ public class HttpSolrJdkClient extends Http2SolrClientBase {
     if (builder.sslContext != null) {
       b.sslContext(builder.sslContext);
     }
+
     if (builder.executor != null) {
-      b.executor(builder.executor);
+      this.executor = builder.executor;
+      this.shutdownExecutor = false;
+    } else {
+      this.executor = Executors.newCachedThreadPool(Executors.defaultThreadFactory());
+      this.shutdownExecutor = true;
     }
+    b.executor(this.executor);
+
     if (builder.proxyHost != null) {
       if (builder.proxyIsSocks4) {
         log.warn(
@@ -266,8 +279,14 @@ public class HttpSolrJdkClient extends Http2SolrClientBase {
 
   @Override
   public void close() throws IOException {
+    if(shutdownExecutor) {
+      executor.shutdown();
+    }
+    executor = null;
+
     // TODO: Java 21 adds close/autoclosable to HttpClient.  We should use it.
     client = null;
+
     assert ObjectReleaseTracker.release(this);
   }
 
