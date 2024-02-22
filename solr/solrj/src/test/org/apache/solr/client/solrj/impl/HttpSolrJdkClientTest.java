@@ -281,7 +281,7 @@ public class HttpSolrJdkClientTest extends Http2SolrClientTestBase {
 
     // 64k+ post body, just to be sure we are using the [in|out]put streams correctly.
     StringBuilder sb = new StringBuilder();
-    for(int i=0 ; i<65536 ; i++) {
+    for (int i = 0; i < 65536; i++) {
       sb.append("A");
     }
     String value = sb.toString();
@@ -422,8 +422,8 @@ public class HttpSolrJdkClientTest extends Http2SolrClientTestBase {
     } finally {
       try {
         myExecutor.shutdownNow();
-      } catch(Exception e1) {
-        //ignore
+      } catch (Exception e1) {
+        // ignore
       }
     }
   }

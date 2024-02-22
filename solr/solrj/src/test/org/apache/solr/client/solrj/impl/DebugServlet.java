@@ -127,9 +127,9 @@ public class DebugServlet extends HttpServlet {
     setQueryString(req);
     setCookies(req);
     try {
-     requestBody = req.getInputStream().readAllBytes();
-    } catch(Exception e) {
-      //ignore
+      requestBody = req.getInputStream().readAllBytes();
+    } catch (Exception e) {
+      // ignore
     }
     if (responseHeaders != null) {
       for (String[] h : responseHeaders) {

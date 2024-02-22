@@ -261,10 +261,13 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
     }
   }
 
-  protected enum WT { JAVABIN, XML};
+  protected enum WT {
+    JAVABIN,
+    XML
+  };
 
-  protected void testUpdate(Http2SolrClientBase client, WT wt, String contentType, String docIdValue)
-      throws Exception {
+  protected void testUpdate(
+      Http2SolrClientBase client, WT wt, String contentType, String docIdValue) throws Exception {
     DebugServlet.clear();
     UpdateRequest req = new UpdateRequest();
     SolrInputDocument doc = new SolrInputDocument();
@@ -280,7 +283,8 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
     assertEquals("post", DebugServlet.lastMethod);
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-    assertEquals(wt.toString().toLowerCase(Locale.ROOT), DebugServlet.parameters.get(CommonParams.WT)[0]);
+    assertEquals(
+        wt.toString().toLowerCase(Locale.ROOT), DebugServlet.parameters.get(CommonParams.WT)[0]);
     assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     assertEquals(
         client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
@@ -288,10 +292,10 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
 
-    if(wt==WT.XML) {
+    if (wt == WT.XML) {
       String requestBody = new String(DebugServlet.requestBody);
       assertTrue(requestBody, requestBody.contains("<field name=\"id\">" + docIdValue));
-    } else if (wt==WT.JAVABIN) {
+    } else if (wt == WT.JAVABIN) {
       assertNotNull(DebugServlet.requestBody);
     }
   }
