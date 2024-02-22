@@ -46,7 +46,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 
-public abstract class Http2SolrClientBase extends SolrClient {
+public abstract class HttpSolrClientBase extends SolrClient {
 
   protected static final String DEFAULT_PATH = "/select";
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
@@ -70,7 +70,7 @@ public abstract class Http2SolrClientBase extends SolrClient {
 
   protected final String basicAuthAuthorizationStr;
 
-  protected Http2SolrClientBase(String serverBaseUrl, HttpSolrClientBuilderBase<?, ?> builder) {
+  protected HttpSolrClientBase(String serverBaseUrl, HttpSolrClientBuilderBase<?, ?> builder) {
     if (serverBaseUrl != null) {
       if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
         serverBaseUrl = serverBaseUrl.substring(0, serverBaseUrl.length() - 1);

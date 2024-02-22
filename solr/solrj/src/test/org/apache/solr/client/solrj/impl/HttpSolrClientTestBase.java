@@ -44,7 +44,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 
-public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
+public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
 
   protected static final String DEFAULT_CORE = "foo";
   protected static final String SLOW_SERVLET_PATH = "/slow";
@@ -187,7 +187,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
   }
 
-  public void testGetById(Http2SolrClientBase client) throws Exception {
+  public void testGetById(HttpSolrClientBase client) throws Exception {
     DebugServlet.clear();
     Collection<String> ids = Collections.singletonList("a");
     try {
@@ -215,7 +215,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
    * test that SolrExceptions thrown by HttpSolrClient can correctly encapsulate http status codes
    * even when not on the list of ErrorCodes solr may return.
    */
-  public void testSolrExceptionCodeNotFromSolr(Http2SolrClientBase client)
+  public void testSolrExceptionCodeNotFromSolr(HttpSolrClientBase client)
       throws IOException, SolrServerException {
     final int status = 527;
     assertEquals(
@@ -238,7 +238,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
    * test that SolrExceptions thrown by HttpSolrClient can correctly encapsulate http status codes
    * even when not on the list of ErrorCodes solr may return.
    */
-  public void testSolrExceptionWithNullBaseurl(Http2SolrClientBase client)
+  public void testSolrExceptionWithNullBaseurl(HttpSolrClientBase client)
       throws IOException, SolrServerException {
     final int status = 527;
     assertEquals(
@@ -267,7 +267,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
   };
 
   protected void testUpdate(
-      Http2SolrClientBase client, WT wt, String contentType, String docIdValue) throws Exception {
+          HttpSolrClientBase client, WT wt, String contentType, String docIdValue) throws Exception {
     DebugServlet.clear();
     UpdateRequest req = new UpdateRequest();
     SolrInputDocument doc = new SolrInputDocument();
@@ -301,7 +301,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
   }
 
   protected void testCollectionParameters(
-      Http2SolrClientBase baseUrlClient, Http2SolrClientBase collection1UrlClient)
+          HttpSolrClientBase baseUrlClient, HttpSolrClientBase collection1UrlClient)
       throws IOException, SolrServerException {
     try {
       SolrInputDocument doc = new SolrInputDocument();
@@ -332,7 +332,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
     }
   }
 
-  protected void verifyServletState(Http2SolrClientBase client, SolrRequest<?> request) {
+  protected void verifyServletState(HttpSolrClientBase client, SolrRequest<?> request) {
     // check query String
     Iterator<String> paramNames = request.getParams().getParameterNamesIterator();
     while (paramNames.hasNext()) {
@@ -358,7 +358,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
     final String clientUrl = getBaseUrl() + DEBUG_SERVLET_PATH;
     UpdateRequest req = new UpdateRequest();
 
-    try (Http2SolrClientBase client =
+    try (HttpSolrClientBase client =
         builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
             .withDefaultCollection(DEFAULT_CORE)
             .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
@@ -376,7 +376,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
       // test without server query params
       DebugServlet.clear();
     }
-    try (Http2SolrClientBase client =
+    try (HttpSolrClientBase client =
         builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
             .withTheseParamNamesInTheUrl(Set.of())
             .build()) {
@@ -392,7 +392,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
       // test with both request and server query params
       DebugServlet.clear();
     }
-    try (Http2SolrClientBase client =
+    try (HttpSolrClientBase client =
         builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
             .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
             .build()) {
@@ -405,7 +405,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
       }
       verifyServletState(client, req);
     }
-    try (Http2SolrClientBase client =
+    try (HttpSolrClientBase client =
         builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
             .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
             .build()) {
@@ -428,7 +428,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
     }
   }
 
-  protected void testGetRawStream(Http2SolrClientBase client) throws Exception {
+  protected void testGetRawStream(HttpSolrClientBase client) throws Exception {
     DebugServlet.clear();
     final var req = new QueryRequest(params("q", "*:*"));
     req.setResponseParser(new InputStreamResponseParser("xml"));
@@ -441,7 +441,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
     org.apache.solr.common.util.IOUtils.closeQuietly((InputStream) stream);
   }
 
-  protected void testSetCredentialsExplicitly(Http2SolrClientBase client) {
+  protected void testSetCredentialsExplicitly(HttpSolrClientBase client) {
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
     try {
       ignoreException("Error from server");
@@ -461,7 +461,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
         authorizationHeader);
   }
 
-  protected void testPerRequestCredentials(Http2SolrClientBase client) {
+  protected void testPerRequestCredentials(HttpSolrClientBase client) {
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
     r.setBasicAuthCredentials("foo3", "per-request");
     try {
@@ -483,7 +483,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
         authorizationHeader);
   }
 
-  protected void testNoCredentials(Http2SolrClientBase client) {
+  protected void testNoCredentials(HttpSolrClientBase client) {
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
     try {
       ignoreException("Error from server");
@@ -497,7 +497,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
         DebugServlet.headers.containsKey("authorization"));
   }
 
-  protected void testUseOptionalCredentials(Http2SolrClientBase client) {
+  protected void testUseOptionalCredentials(HttpSolrClientBase client) {
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
     try {
       ignoreException("Error from server");
@@ -517,7 +517,7 @@ public abstract class Http2SolrClientTestBase extends SolrJettyTestBase {
         authorizationHeader);
   }
 
-  protected void testUseOptionalCredentialsWithNull(Http2SolrClientBase client) {
+  protected void testUseOptionalCredentialsWithNull(HttpSolrClientBase client) {
     // username foo, password with embedded colon separator is "expli:cit".
     QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
     try {

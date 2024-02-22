@@ -107,7 +107,7 @@ import org.slf4j.MDC;
  *
  * @lucene.experimental
  */
-public class Http2SolrClient extends Http2SolrClientBase {
+public class Http2SolrClient extends HttpSolrClientBase {
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
 
   private static volatile SSLConfig defaultSSLConfig;
@@ -897,7 +897,7 @@ public class Http2SolrClient extends Http2SolrClientBase {
       return null;
     }
 
-    protected <B extends Http2SolrClientBase> B build(Class<B> type) {
+    protected <B extends HttpSolrClientBase> B build(Class<B> type) {
       return type.cast(build());
     }
 

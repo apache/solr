@@ -92,7 +92,7 @@ public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
   }
 
   /** Setup a simple http proxy and verify a request works */
-  public void testProxy(Http2SolrClientBase client) throws Exception {
+  public void testProxy(HttpSolrClientBase client) throws Exception {
     String id = "1234";
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", id);

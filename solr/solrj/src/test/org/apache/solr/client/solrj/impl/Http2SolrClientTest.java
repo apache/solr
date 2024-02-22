@@ -36,7 +36,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Test;
 
-public class Http2SolrClientTest extends Http2SolrClientTestBase {
+public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
   @Override
   protected String expectedUserAgent() {

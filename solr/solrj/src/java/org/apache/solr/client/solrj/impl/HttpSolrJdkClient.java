@@ -58,7 +58,7 @@ import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpSolrJdkClient extends Http2SolrClientBase {
+public class HttpSolrJdkClient extends HttpSolrClientBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String USER_AGENT =

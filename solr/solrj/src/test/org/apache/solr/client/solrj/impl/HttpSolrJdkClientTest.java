@@ -42,7 +42,7 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class HttpSolrJdkClientTest extends Http2SolrClientTestBase {
+public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
 
   private static SSLContext allTrustingSslContext;
 

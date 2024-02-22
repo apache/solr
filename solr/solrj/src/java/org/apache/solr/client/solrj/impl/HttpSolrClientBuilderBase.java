@@ -25,7 +25,7 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
 
 public abstract class HttpSolrClientBuilderBase<
-    B extends HttpSolrClientBuilderBase<?, ?>, C extends Http2SolrClientBase> {
+    B extends HttpSolrClientBuilderBase<?, ?>, C extends HttpSolrClientBase> {
   protected Long idleTimeoutMillis;
   protected Long connectionTimeoutMillis;
   protected Long requestTimeoutMillis;
