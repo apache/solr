@@ -16,11 +16,11 @@
  */
 package org.apache.solr.search;
 
-import org.apache.solr.common.SolrException;
+import org.apache.lucene.index.ExitableDirectoryReader;
 
-public class QueryLimitsExceededException extends SolrException {
+public class QueryLimitsExceededException extends ExitableDirectoryReader.ExitingReaderException {
 
   public QueryLimitsExceededException(String msg) {
-    super(ErrorCode.SERVER_ERROR, msg);
+    super(msg);
   }
 }

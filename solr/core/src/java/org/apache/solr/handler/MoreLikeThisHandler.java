@@ -265,7 +265,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           rsp.add("exception_during_debug", e.getMessage());
         }
       }
-    } catch (ExitableDirectoryReader.ExitingReaderException | QueryLimitsExceededException ex) {
+    } catch (ExitableDirectoryReader.ExitingReaderException ex) {
       log.warn("Query: {}; ", req.getParamString(), ex);
       QueryLimits queryLimits = QueryLimits.getCurrentLimits();
       queryLimits.maybeExitWithPartialResults("MoreLikeThis", req, rsp);
