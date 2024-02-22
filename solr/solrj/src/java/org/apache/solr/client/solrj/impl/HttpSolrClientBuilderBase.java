@@ -47,39 +47,39 @@ public abstract class HttpSolrClientBuilderBase<
   public abstract C build();
 
   /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
-  @SuppressWarnings(value = "unchecked")
+  @SuppressWarnings("unchecked")
   public B withRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
     return (B) this;
   }
 
   /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
-  @SuppressWarnings(value = "unchecked")
+  @SuppressWarnings("unchecked")
   public B withResponseParser(ResponseParser responseParser) {
     this.responseParser = responseParser;
     return (B) this;
   }
 
   /** Sets a default for core or collection based requests. */
-  @SuppressWarnings(value = "unchecked")
+  @SuppressWarnings("unchecked")
   public B withDefaultCollection(String defaultCoreOrCollection) {
     this.defaultCollection = defaultCoreOrCollection;
     return (B) this;
   }
 
-  @SuppressWarnings(value = "unchecked")
+  @SuppressWarnings("unchecked")
   public B withFollowRedirects(boolean followRedirects) {
     this.followRedirects = followRedirects;
     return (B) this;
   }
 
-  @SuppressWarnings(value = "unchecked")
+  @SuppressWarnings("unchecked")
   public B withExecutor(ExecutorService executor) {
     this.executor = executor;
     return (B) this;
   }
 
-  @SuppressWarnings(value = "unchecked")
+  @SuppressWarnings("unchecked")
   public B withBasicAuthCredentials(String user, String pass) {
     if (user != null || pass != null) {
       if (user == null || pass == null) {
@@ -100,7 +100,7 @@ public abstract class HttpSolrClientBuilderBase<
    *     query params.
    * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
    */
-  @SuppressWarnings(value = "unchecked")
+  @SuppressWarnings("unchecked")
   public B withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
     this.urlParamNames = urlParamNames;
     return (B) this;
@@ -110,13 +110,13 @@ public abstract class HttpSolrClientBuilderBase<
    * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited to
    * 4
    */
-  @SuppressWarnings(value = "unchecked")
+  @SuppressWarnings("unchecked")
   public B withMaxConnectionsPerHost(int max) {
     this.maxConnectionsPerHost = max;
     return (B) this;
   }
 
-  @SuppressWarnings(value = "unchecked")
+  @SuppressWarnings("unchecked")
   public B withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
     this.idleTimeoutMillis = TimeUnit.MILLISECONDS.convert(idleConnectionTimeout, unit);
     return (B) this;
@@ -126,7 +126,7 @@ public abstract class HttpSolrClientBuilderBase<
     return idleTimeoutMillis;
   }
 
-  @SuppressWarnings(value = "unchecked")
+  @SuppressWarnings("unchecked")
   public B withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
     this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
     return (B) this;
@@ -142,7 +142,7 @@ public abstract class HttpSolrClientBuilderBase<
    * @param requestTimeout The timeout in milliseconds
    * @return this Builder.
    */
-  @SuppressWarnings(value = "unchecked")
+  @SuppressWarnings("unchecked")
   public B withRequestTimeout(long requestTimeout, TimeUnit unit) {
     this.requestTimeoutMillis = TimeUnit.MILLISECONDS.convert(requestTimeout, unit);
     return (B) this;
@@ -154,7 +154,7 @@ public abstract class HttpSolrClientBuilderBase<
    * @param cookieStore The CookieStore to set. {@code null} will set the default.
    * @return this Builder
    */
-  @SuppressWarnings(value = "unchecked")
+  @SuppressWarnings("unchecked")
   public B withCookieStore(CookieStore cookieStore) {
     this.cookieStore = cookieStore;
     return (B) this;
@@ -169,7 +169,7 @@ public abstract class HttpSolrClientBuilderBase<
    * @param isSecure If true enables the secure flag on the proxy
    * @return this Builder
    */
-  @SuppressWarnings(value = "unchecked")
+  @SuppressWarnings("unchecked")
   public B withProxyConfiguration(String host, int port, boolean isSocks4, boolean isSecure) {
     this.proxyHost = host;
     this.proxyPort = port;
@@ -185,7 +185,7 @@ public abstract class HttpSolrClientBuilderBase<
    * @param credentials The username and password formatted as username:password
    * @return this Builder
    */
-  @SuppressWarnings(value = "unchecked")
+  @SuppressWarnings("unchecked")
   public B withOptionalBasicAuthCredentials(String credentials) {
     if (credentials != null) {
       if (credentials.indexOf(':') == -1) {

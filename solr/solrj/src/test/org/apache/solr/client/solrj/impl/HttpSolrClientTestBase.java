@@ -266,8 +266,8 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     XML
   };
 
-  protected void testUpdate(
-          HttpSolrClientBase client, WT wt, String contentType, String docIdValue) throws Exception {
+  protected void testUpdate(HttpSolrClientBase client, WT wt, String contentType, String docIdValue)
+      throws Exception {
     DebugServlet.clear();
     UpdateRequest req = new UpdateRequest();
     SolrInputDocument doc = new SolrInputDocument();
@@ -301,7 +301,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   }
 
   protected void testCollectionParameters(
-          HttpSolrClientBase baseUrlClient, HttpSolrClientBase collection1UrlClient)
+      HttpSolrClientBase baseUrlClient, HttpSolrClientBase collection1UrlClient)
       throws IOException, SolrServerException {
     try {
       SolrInputDocument doc = new SolrInputDocument();
