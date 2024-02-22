@@ -22,13 +22,14 @@ import java.net.Socket;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
+
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -36,6 +37,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -414,7 +416,7 @@ public class HttpSolrJdkClientTest extends Http2SolrClientTestBase {
   public void testPassedInExecutorNotShutdown() throws Exception {
     ExecutorService myExecutor = null;
     try {
-      myExecutor = Executors.newSingleThreadExecutor();
+      myExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new NamedThreadFactory("tpiens"));
       try (HttpSolrJdkClient client = builder(getBaseUrl()).withExecutor(myExecutor).build()) {
         assertEquals(myExecutor, client.executor);
       }
