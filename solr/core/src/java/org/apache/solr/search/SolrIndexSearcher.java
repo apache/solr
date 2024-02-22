@@ -1898,6 +1898,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         log.info("calling from 2, query: {}", query.getClass());
       }
       final TopDocs topDocs;
+      final ScoreMode scoreModeUsed;
       if (!allowMT(pf.postFilter, cmd, query)) {
         if (log.isInfoEnabled()) {
           log.info("skipping collector manager");
@@ -1909,26 +1910,24 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           maxScoreCollector = new MaxScoreCollector();
           collector = MultiCollector.wrap(topCollector, maxScoreCollector);
         }
-        final ScoreMode scoreModeUsed =
+        scoreModeUsed =
             buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter).scoreMode();
 
         totalHits = topCollector.getTotalHits();
         topDocs = topCollector.topDocs(0, len);
-        hitsRelation = populateScoresIfNeeded(cmd, needScores, topDocs, query, scoreModeUsed);
-        populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
 
         maxScore =
             totalHits > 0
                 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore())
                 : 0.0f;
-        nDocsReturned = topDocs.scoreDocs.length;
-
       } else {
         if (log.isInfoEnabled()) {
           log.info("using CollectorManager");
         }
         final SearchResult searchResult =
             searchCollectorManagers(len, cmd, query, true, needScores, false);
+        scoreModeUsed = searchResult.scoreMode;
+
         final Object[] res = searchResult.result;
         final TopDocsResult result = (TopDocsResult) res[0];
 
@@ -1941,13 +1940,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         } else {
           maxScore = Float.NaN;
         }
-
-        populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
-        hitsRelation =
-            populateScoresIfNeeded(cmd, needScores, topDocs, query, searchResult.scoreMode);
-        nDocsReturned = topDocs.scoreDocs.length;
       }
 
+      hitsRelation = populateScoresIfNeeded(cmd, needScores, topDocs, query, scoreModeUsed);
+      populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
+
+      nDocsReturned = topDocs.scoreDocs.length;
       ids = new int[nDocsReturned];
       scores = needScores ? new float[nDocsReturned] : null;
       for (int i = 0; i < nDocsReturned; i++) {
@@ -2262,8 +2260,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         assert (totalHits == set.size()) || qr.isPartialResults();
 
         topDocs = topCollector.topDocs(0, len);
-        populateScoresIfNeeded(cmd, needScores, topDocs, query, ScoreMode.COMPLETE);
-        populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
         maxScore =
             totalHits > 0
                 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore())
@@ -2294,8 +2290,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           }
         }
 
-        populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
-        populateScoresIfNeeded(cmd, needScores, topDocs, query, ScoreMode.COMPLETE);
         // TODO: Is this correct?
         // hitsRelation = populateScoresIfNeeded(cmd, needScores, topDocs, query,
         // searchResult.scoreMode);
@@ -2309,6 +2303,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       }
 
+      populateScoresIfNeeded(cmd, needScores, topDocs, query, ScoreMode.COMPLETE);
+      populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
       nDocsReturned = topDocs.scoreDocs.length;
 
       ids = new int[nDocsReturned];
