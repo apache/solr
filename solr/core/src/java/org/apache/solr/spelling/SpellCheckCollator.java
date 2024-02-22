@@ -96,7 +96,11 @@ public class SpellCheckCollator {
             maxCollationEvaluations,
             suggestionsMayOverlap);
     while (tryNo < maxTries && collNo < maxCollations && possibilityIter.hasNext()) {
-      queryLimits.maybeExitWithException("SpellCheck collator");
+
+      if (queryLimits.maybeExitWithPartialResults(
+          "SpellCheck collator", ultimateResponse.req, ultimateResponse.rsp)) {
+        return List.of();
+      }
 
       PossibilityIterator.RankedSpellPossibility possibility = possibilityIter.next();
       String collationQueryStr = getCollation(originalQuery, possibility.corrections);

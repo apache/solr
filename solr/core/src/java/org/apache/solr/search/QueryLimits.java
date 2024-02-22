@@ -22,8 +22,10 @@ import static org.apache.solr.search.TimeAllowedLimit.hasTimeLimit;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.index.QueryTimeout;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.SolrQueryResponse;
 
 /**
  * Represents the limitations on the query. These limits might be wall clock time, cpu time, memory,
@@ -63,18 +65,41 @@ public class QueryLimits implements QueryTimeout {
     return false;
   }
 
-  public void maybeExitWithException() throws QueryLimitsExceededException {
-    maybeExitWithException(null);
+  public String formatExceptionMessage(String label) {
+    return "Limits exceeded!"
+        + (label != null ? " (" + label + ")" : "")
+        + ": "
+        + limitStatusMessage();
+  }
+
+  public boolean maybeExitWithPartialResults(
+      String label, SolrQueryRequest req, SolrQueryResponse rsp)
+      throws QueryLimitsExceededException {
+    if (isLimitsEnabled() && shouldExit()) {
+      if (req.getParams().getBool(CommonParams.PARTIAL_RESULTS, true)) {
+        if (rsp.getResponseHeader() != null) {
+          if (rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)
+              == null) {
+            rsp.getResponseHeader()
+                .add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, true);
+          }
+          rsp.getResponseHeader()
+              .add(
+                  SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY,
+                  formatExceptionMessage(label));
+        }
+        return true;
+      } else {
+        throw new QueryLimitsExceededException(formatExceptionMessage(label));
+      }
+    } else {
+      return false;
+    }
   }
 
   public void maybeExitWithException(String label) throws QueryLimitsExceededException {
     if (isLimitsEnabled() && shouldExit()) {
-      String msg =
-          "Limits exceeded!"
-              + (label != null ? " (" + label + ")" : "")
-              + ": "
-              + limitStatusMessage();
-      throw new QueryLimitsExceededException(msg);
+      throw new QueryLimitsExceededException(formatExceptionMessage(label));
     }
   }
 

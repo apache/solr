@@ -292,7 +292,9 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
 
     List<InputDocument> inputs = getDocuments(rb, parameters);
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-    queryLimits.maybeExitWithException("Clustering process");
+    if (queryLimits.maybeExitWithPartialResults("Clustering process", rb.req, rb.rsp)) {
+      return;
+    }
 
     if (rb.req.getParams().getBool(ShardParams.IS_SHARD, false)
         && rb.req.getParams().getBool(REQUEST_PARAM_COLLECT_INPUTS, false)) {
@@ -355,7 +357,9 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     // log.warn("# CLUSTERING: " + inputs.size() + " document(s), contents:\n - "
     //   + inputs.stream().map(Object::toString).collect(Collectors.joining("\n - ")));
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-    queryLimits.maybeExitWithException("Clustering doCluster");
+    if (queryLimits.maybeExitWithPartialResults("Clustering doCluster", rb.req, rb.rsp)) {
+      return;
+    }
     List<Cluster<InputDocument>> clusters = engine.get().cluster(parameters, rb.getQuery(), inputs);
     rb.rsp.add(RESPONSE_SECTION_CLUSTERS, clustersToNamedList(inputs, clusters, parameters));
   }

@@ -193,17 +193,23 @@ public class SuggestComponent extends SearchComponent
     }
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
     if (params.getBool(SUGGEST_BUILD, false) || buildAll) {
+      rb.rsp.add("command", (!buildAll) ? "build" : "buildAll");
       for (SolrSuggester suggester : querysuggesters) {
         suggester.build(rb.req.getCore(), rb.req.getSearcher());
-        queryLimits.maybeExitWithException("Suggest build " + suggester.getName());
+        if (queryLimits.maybeExitWithPartialResults(
+            "Suggester build " + suggester.getName(), rb.req, rb.rsp)) {
+          return;
+        }
       }
-      rb.rsp.add("command", (!buildAll) ? "build" : "buildAll");
     } else if (params.getBool(SUGGEST_RELOAD, false) || reloadAll) {
+      rb.rsp.add("command", (!reloadAll) ? "reload" : "reloadAll");
       for (SolrSuggester suggester : querysuggesters) {
         suggester.reload();
-        queryLimits.maybeExitWithException("Suggest reload " + suggester.getName());
+        if (queryLimits.maybeExitWithPartialResults(
+            "Suggester reload " + suggester.getName(), rb.req, rb.rsp)) {
+          return;
+        }
       }
-      rb.rsp.add("command", (!reloadAll) ? "reload" : "reloadAll");
     }
   }
 
@@ -275,13 +281,16 @@ public class SuggestComponent extends SearchComponent
               new CharsRef(query), count, contextFilter, allTermsRequired, highlight);
       SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> namedListResults =
           new SimpleOrderedMap<>();
+      rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
       QueryLimits queryLimits = QueryLimits.getCurrentLimits();
       for (SolrSuggester suggester : querySuggesters) {
         SuggesterResult suggesterResult = suggester.getSuggestions(options);
         toNamedList(suggesterResult, namedListResults);
-        queryLimits.maybeExitWithException("Suggester process " + suggester.getName());
+        if (queryLimits.maybeExitWithPartialResults(
+            "Suggester process " + suggester.getName(), rb.req, rb.rsp)) {
+          return;
+        }
       }
-      rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
     }
   }
 
@@ -313,7 +322,9 @@ public class SuggestComponent extends SearchComponent
         }
         suggesterResults.add(toSuggesterResult(namedList));
         // may have tripped the mem limits
-        queryLimits.maybeExitWithException("Suggester finish");
+        if (queryLimits.maybeExitWithPartialResults("Suggester finish", rb.req, rb.rsp)) {
+          break;
+        }
       }
     }
     // Merge Shard responses
@@ -321,9 +332,11 @@ public class SuggestComponent extends SearchComponent
     SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> namedListResults =
         new SimpleOrderedMap<>();
     toNamedList(suggesterResult, namedListResults);
-    queryLimits.maybeExitWithException("Suggester finish");
 
     rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
+
+    // either throw or mark
+    queryLimits.maybeExitWithPartialResults("Suggester finish", rb.req, rb.rsp);
   }
 
   /**

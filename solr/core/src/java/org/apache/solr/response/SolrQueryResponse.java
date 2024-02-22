@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.ReturnFields;
@@ -60,7 +61,8 @@ import org.apache.solr.search.SolrReturnFields;
  */
 public class SolrQueryResponse {
   public static final String NAME = "response";
-  public static final String RESPONSE_HEADER_PARTIAL_RESULTS_KEY = "partialResults";
+  public static final String RESPONSE_HEADER_PARTIAL_RESULTS_KEY = CommonParams.PARTIAL_RESULTS;
+  public static final String RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY = "partialResultsDetails";
   public static final String RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY =
       "segmentTerminatedEarly";
   public static final String RESPONSE_HEADER_KEY = "responseHeader";

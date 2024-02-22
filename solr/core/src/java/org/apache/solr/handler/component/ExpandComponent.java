@@ -255,7 +255,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       return;
     }
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-    queryLimits.maybeExitWithException("Expand process");
+    if (queryLimits.maybeExitWithPartialResults("Expand process", rb.req, rb.rsp)) {
+      return;
+    }
 
     boolean nullGroupOnCurrentPage = false;
     int currentContext = 0;
@@ -444,7 +446,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     searcher.search(QueryUtils.combineQueryAndFilter(query, pfilter.filter), collector);
-    queryLimits.maybeExitWithException("Expand expand");
+    if (queryLimits.maybeExitWithPartialResults("Expand expand", rb.req, rb.rsp)) {
+      return;
+    }
 
     rb.rsp.add("expanded", groupExpandCollector.getGroups(searcher, rb.rsp.getReturnFields()));
   }

@@ -127,11 +127,14 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     if (params.getBool(SPELLCHECK_BUILD, false)) {
       spellChecker.build(rb.req.getCore(), rb.req.getSearcher());
       rb.rsp.add("command", "build");
+      queryLimits.maybeExitWithPartialResults(
+          "SpellCheck build " + spellChecker.getDictionaryName(), rb.req, rb.rsp);
     } else if (params.getBool(SPELLCHECK_RELOAD, false)) {
       spellChecker.reload(rb.req.getCore(), rb.req.getSearcher());
       rb.rsp.add("command", "reload");
+      queryLimits.maybeExitWithPartialResults(
+          "SpellCheck reload " + spellChecker.getDictionaryName(), rb.req, rb.rsp);
     }
-    queryLimits.maybeExitWithException("SpellCheck prepare");
   }
 
   @Override
@@ -212,7 +215,9 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           spellingResult = new SpellingResult();
         }
 
-        queryLimits.maybeExitWithException("SpellCheck getSuggestions");
+        if (queryLimits.maybeExitWithPartialResults("SpellCheck getSuggestions", rb.req, rb.rsp)) {
+          return;
+        }
 
         boolean isCorrectlySpelled =
             hits > (maxResultsForSuggest == null ? 0 : maxResultsForSuggest);

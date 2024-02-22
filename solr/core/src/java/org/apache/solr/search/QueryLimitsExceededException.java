@@ -16,9 +16,11 @@
  */
 package org.apache.solr.search;
 
-public class QueryLimitsExceededException extends RuntimeException {
+import org.apache.solr.common.SolrException;
+
+public class QueryLimitsExceededException extends SolrException {
 
   public QueryLimitsExceededException(String msg) {
-    super(msg);
+    super(ErrorCode.SERVER_ERROR, msg);
   }
 }

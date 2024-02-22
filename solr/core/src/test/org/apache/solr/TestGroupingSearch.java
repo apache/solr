@@ -458,7 +458,24 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertU(add(doc("id", "5")));
     assertU(commit());
 
-    // Just checking if no errors occur
+    // should exceed timeAllowed
+    // TODO: this always throws exception now, regardless of partialResults=true
+    // probably needs SOLR-17151 to fix how QueryLimitsExceeded exception is handled
+    assertQEx(
+        "limit exceeded",
+        req(
+            "q",
+            "*:*",
+            "group",
+            "true",
+            "group.query",
+            "id:1",
+            "group.query",
+            "id:2",
+            "timeAllowed",
+            "1"),
+        500);
+    // should succeed
     assertJQ(
         req(
             "q",
@@ -470,7 +487,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             "group.query",
             "id:2",
             "timeAllowed",
-            "1"));
+            "200"));
   }
 
   @Test

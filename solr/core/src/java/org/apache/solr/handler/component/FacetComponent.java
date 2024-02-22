@@ -277,7 +277,10 @@ public class FacetComponent extends SearchComponent {
       }
 
       NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
-      queryLimits.maybeExitWithException("Faceting counts");
+      rb.rsp.add(FACET_COUNTS_KEY, counts);
+      if (queryLimits.maybeExitWithPartialResults("Faceting counts", rb.req, rb.rsp)) {
+        return;
+      }
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
       if (pivots != null && Array.getLength(pivots) != 0) {
         PivotFacetProcessor pivotProcessor =
@@ -286,15 +289,15 @@ public class FacetComponent extends SearchComponent {
         if (v != null) {
           counts.add(PIVOT_KEY, v);
         }
-        queryLimits.maybeExitWithException("Faceting pivots");
+        if (queryLimits.maybeExitWithPartialResults("Faceting pivots", rb.req, rb.rsp)) {
+          return;
+        }
       }
 
       if (fdebug != null) {
         long timeElapsed = (long) timer.getTime();
         fdebug.setElapse(timeElapsed);
       }
-
-      rb.rsp.add(FACET_COUNTS_KEY, counts);
     }
   }
 
@@ -1174,7 +1177,7 @@ public class FacetComponent extends SearchComponent {
 
     rb.rsp.add(FACET_COUNTS_KEY, facet_counts);
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-    queryLimits.maybeExitWithException("Faceting finish");
+    queryLimits.maybeExitWithPartialResults("Faceting finish", rb.req, rb.rsp);
 
     rb._facetInfo = null; // could be big, so release asap
   }
