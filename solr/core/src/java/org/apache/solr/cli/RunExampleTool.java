@@ -288,8 +288,10 @@ public class RunExampleTool extends ToolBase {
           "\nWARNING: The Collection '"
               + collectionName
               + "' already exists, which may make starting this example not work well!");
-      echo ("You may want to run 'bin/solr delete -c " + collectionName + "' before running the example");
-
+      echo(
+          "You may want to run 'bin/solr delete -c "
+              + collectionName
+              + "' before running the example");
     }
 
     if (!alreadyExists) {
@@ -362,8 +364,7 @@ public class RunExampleTool extends ToolBase {
                 + "        }\n"
                 + "      }");
 
-        echo(
-            "Adding name, initial_release_date, and film_vector fields to films schema");
+        echo("Adding name, initial_release_date, and film_vector fields to films schema");
         SolrCLI.postJsonToSolr(
             solrClient,
             "/" + collectionName + "/schema",
