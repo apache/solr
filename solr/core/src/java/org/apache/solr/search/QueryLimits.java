@@ -69,7 +69,11 @@ public class QueryLimits implements QueryTimeout {
 
   public void maybeExitWithException(String label) throws QueryLimitsExceededException {
     if (isLimitsEnabled() && shouldExit()) {
-      String msg = "Limits exceeded!" + (label != null ? " (" + label + ")" : "") + ": " + limitStatusMessage();
+      String msg =
+          "Limits exceeded!"
+              + (label != null ? " (" + label + ")" : "")
+              + ": "
+              + limitStatusMessage();
       throw new QueryLimitsExceededException(msg);
     }
   }
