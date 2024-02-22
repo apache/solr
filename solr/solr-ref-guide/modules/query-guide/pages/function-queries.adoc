@@ -153,7 +153,18 @@ There must be an even number of ValueSource instances passed in and the method a
 * `dist(1,x,y,z,e,f,g)`: Manhattan distance between (x,y,z) and (e,f,g) where each letter is a field name.
 
 === vectorSimilarity Function
-Returns the similarity between two Knn vectors in an n-dimensional space.
+Returns the similarity between two Knn vectors in an n-dimensional space. There are two variants of this function.
+
+==== vectorSimilarity(vector1, vector2)
+This function accepts two vectors as input: The first argument must be a Knn vector, and the second argument can be either a Knn vector or a constant vector. The function automatically deduces the Vector Encoding and Similarity function from the properties of the first Knn vector.
+
+*Syntax Examples*
+
+* `vectorSimilarity(vectorField1, vectorField2)`: calculates the similarity between vector field 'vectorField1' and 'vectorField2'
+* `vectorSimilarity(vectorField1, [1, 2, 3, 4])`: calculates the similarity between vector field 'vectorField1' and [1, 2, 3, 4]
+
+==== vectorSimilarity(ENCODING, SIMILARITY_FUNCTION, vector1, vector2)
+
 Takes in input the vector element encoding, the similarity measure plus two ValueSource instances and calculates the similarity between the two vectors.
 
 * The encodings supported are: `BYTE`, `FLOAT32`.
