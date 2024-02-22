@@ -2180,6 +2180,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         return 0.0f;
       }
     }
+
+    public DocSet getDocSet() {
+      for (Object res : result) {
+        if (res instanceof DocSetResult) {
+          return ((DocSetResult) res).docSet;
+        }
+      }
+      return null;
+    }
   }
 
   // any DocSet returned is for the query only, without any filtering... that way it may
@@ -2194,7 +2203,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     final float maxScore;
     final int[] ids;
     final float[] scores;
-    DocSet set = null;
+    final DocSet set;
 
     final boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
     final int maxDoc = maxDoc();
@@ -2289,17 +2298,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         totalHits = result.totalHits;
         topDocs = result.topDocs;
         maxScore = searchResult.getMaxScore(totalHits);
-        if (needMaxScore) {
-          if (res.length > 2) {
-            DocSetResult result3 = (DocSetResult) res[2];
-            set = result3.docSet;
-          }
-        } else {
-          if (res.length > 1) {
-            DocSetResult result2 = (DocSetResult) res[1];
-            set = result2.docSet;
-          }
-        }
+        set = searchResult.getDocSet();
 
         // TODO: Is this correct?
         // hitsRelation = populateScoresIfNeeded(cmd, needScores, topDocs, query,
