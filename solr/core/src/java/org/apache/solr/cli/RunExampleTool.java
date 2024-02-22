@@ -264,7 +264,8 @@ public class RunExampleTool extends ToolBase {
 
     String solrUrl = (String) nodeStatus.get("baseUrl");
 
-    // If the example already exists then delete it so we can recreate it.
+    // If the example already exists then let the user know they should delete it or
+    // they may get unusual behaviors.
     boolean alreadyExists = false;
     boolean cloudMode = nodeStatus.get("cloud") != null;
     if (cloudMode) {
@@ -282,24 +283,13 @@ public class RunExampleTool extends ToolBase {
       }
     }
 
-    if (cloudMode && alreadyExists) {
-      String[] deleteArgs =
-          new String[] {"-c", collectionName, "-forceDeleteConfig", "-solrUrl", solrUrl};
-      DeleteTool deleteTool = new DeleteTool(stdout);
-      int deleteCode =
-          deleteTool.runTool(
-              SolrCLI.processCommandLineArgs(
-                  deleteTool.getName(), deleteTool.getOptions(), deleteArgs));
-      if (deleteCode != 0)
-        throw new Exception(
-            "Failed to delete " + collectionName + " using command: " + Arrays.asList(deleteArgs));
+    if (alreadyExists) {
       echo(
-          "\nWARNING: Deleted existing Collection '"
+          "\nWARNING: The Collection '"
               + collectionName
-              + "' and it's Config to create a fresh example setup!");
-      Thread.sleep(5000l);
+              + "' already exists, which may make starting this example not work well!");
+      echo ("You may want to run 'bin/solr delete -c " + collectionName + "' before running the example");
 
-      alreadyExists = false;
     }
 
     if (!alreadyExists) {
@@ -358,7 +348,7 @@ public class RunExampleTool extends ToolBase {
       }
     } else if ("films".equals(exampleName) && !alreadyExists) {
       try (SolrClient solrClient = new Http2SolrClient.Builder(solrUrl).build()) {
-        echo("Adding dense vector field type to films schema \"_default\"");
+        echo("Adding dense vector field type to films schema");
         SolrCLI.postJsonToSolr(
             solrClient,
             "/" + collectionName + "/schema",
@@ -373,7 +363,7 @@ public class RunExampleTool extends ToolBase {
                 + "      }");
 
         echo(
-            "Adding name, initial_release_date, and film_vector fields to films schema \"_default\"");
+            "Adding name, initial_release_date, and film_vector fields to films schema");
         SolrCLI.postJsonToSolr(
             solrClient,
             "/" + collectionName + "/schema",
