@@ -720,7 +720,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
     if (useExitableDirectoryReader
         || requestInfo == null
-        || !requestInfo.getLimits().isTimeoutEnabled()) {
+        || !requestInfo.getLimits().isLimitsEnabled()) {
       // no timeout.  Pass through to super class
       super.search(leaves, weight, collector);
     } else {
@@ -979,7 +979,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     DocSet answer;
     SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
-    if (requestInfo != null && requestInfo.getLimits().isTimeoutEnabled()) {
+    if (requestInfo != null && requestInfo.getLimits().isLimitsEnabled()) {
       // If there is a possibility of timeout for this query, then don't reserve a computation slot.
       // Further, we can't naively wait for an in progress computation to finish, because if we time
       // out before it does then we won't even have partial results to provide. We could possibly

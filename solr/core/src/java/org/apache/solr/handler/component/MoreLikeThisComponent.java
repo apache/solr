@@ -47,6 +47,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
@@ -127,6 +128,8 @@ public class MoreLikeThisComponent extends SearchComponent {
             getMoreLikeThese(rb, rb.req.getSearcher(), rb.getResults().docList, flags);
         rb.rsp.add("moreLikeThis", sim);
       }
+      QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+      queryLimits.maybeExitWithException("MoreLikeThis process");
     }
   }
 

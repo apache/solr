@@ -48,6 +48,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.FacetDebugInfo;
@@ -262,6 +263,7 @@ public class FacetComponent extends SearchComponent {
   public void process(ResponseBuilder rb) throws IOException {
 
     if (rb.doFacets) {
+      QueryLimits queryLimits = QueryLimits.getCurrentLimits();
       SolrParams params = rb.req.getParams();
       SimpleFacets f = newSimpleFacets(rb.req, rb.getResults().docSet, params, rb);
 
@@ -275,6 +277,7 @@ public class FacetComponent extends SearchComponent {
       }
 
       NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
+      queryLimits.maybeExitWithException("Faceting counts");
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
       if (pivots != null && Array.getLength(pivots) != 0) {
         PivotFacetProcessor pivotProcessor =
@@ -283,6 +286,7 @@ public class FacetComponent extends SearchComponent {
         if (v != null) {
           counts.add(PIVOT_KEY, v);
         }
+        queryLimits.maybeExitWithException("Faceting pivots");
       }
 
       if (fdebug != null) {
@@ -1169,6 +1173,8 @@ public class FacetComponent extends SearchComponent {
     }
 
     rb.rsp.add(FACET_COUNTS_KEY, facet_counts);
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    queryLimits.maybeExitWithException("Faceting finish");
 
     rb._facetInfo = null; // could be big, so release asap
   }

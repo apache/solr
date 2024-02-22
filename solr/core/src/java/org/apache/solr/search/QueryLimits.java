@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
 
 /**
  * Represents the limitations on the query. These limits might be wall clock time, cpu time, memory,
@@ -67,12 +68,13 @@ public class QueryLimits implements QueryTimeout {
   }
 
   public void maybeExitWithException(String label) throws QueryLimitsExceededException {
-    if (isTimeoutEnabled() && shouldExit()) {
-      String msg = new StringBuilder("Limits exceeded!")
-          .append(label != null ? " (" + label + ")" : "")
-          .append(": ")
-          .append(limitStatusMessage())
-          .toString();
+    if (isLimitsEnabled() && shouldExit()) {
+      String msg =
+          new StringBuilder("Limits exceeded!")
+              .append(label != null ? " (" + label + ")" : "")
+              .append(": ")
+              .append(limitStatusMessage())
+              .toString();
       throw new QueryLimitsExceededException(msg);
     }
   }
@@ -108,7 +110,13 @@ public class QueryLimits implements QueryTimeout {
     }
   }
 
-  public boolean isTimeoutEnabled() {
+  public boolean isLimitsEnabled() {
     return !limits.isEmpty();
+  }
+
+  public static QueryLimits getCurrentLimits() {
+    return SolrRequestInfo.getRequestInfo() != null
+        ? SolrRequestInfo.getRequestInfo().getLimits()
+        : NONE;
   }
 }

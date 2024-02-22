@@ -79,6 +79,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -253,6 +254,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       // When no context is available we can skip the expanding
       return;
     }
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    queryLimits.maybeExitWithException("Expand process");
 
     boolean nullGroupOnCurrentPage = false;
     int currentContext = 0;
@@ -441,6 +444,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     searcher.search(QueryUtils.combineQueryAndFilter(query, pfilter.filter), collector);
+    queryLimits.maybeExitWithException("Expand expand");
 
     rb.rsp.add("expanded", groupExpandCollector.getGroups(searcher, rb.rsp.getReturnFields()));
   }

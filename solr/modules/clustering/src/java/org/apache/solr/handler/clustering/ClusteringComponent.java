@@ -54,6 +54,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.carrot2.clustering.Cluster;
@@ -290,6 +291,8 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
     EngineParameters parameters = engine.defaults.derivedFrom(rb.req.getParams());
 
     List<InputDocument> inputs = getDocuments(rb, parameters);
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    queryLimits.maybeExitWithException("Clustering process");
 
     if (rb.req.getParams().getBool(ShardParams.IS_SHARD, false)
         && rb.req.getParams().getBool(REQUEST_PARAM_COLLECT_INPUTS, false)) {
@@ -337,7 +340,6 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
                   inputs.addAll(documentsFromNamedList(partialInputs));
                 }
               });
-
       EngineEntry engine = getEngine(rb);
       EngineParameters parameters = engine.defaults.derivedFrom(rb.req.getParams());
       doCluster(rb, engine, inputs, parameters);
@@ -352,6 +354,8 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       EngineParameters parameters) {
     // log.warn("# CLUSTERING: " + inputs.size() + " document(s), contents:\n - "
     //   + inputs.stream().map(Object::toString).collect(Collectors.joining("\n - ")));
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    queryLimits.maybeExitWithException("Clustering doCluster");
     List<Cluster<InputDocument>> clusters = engine.get().cluster(parameters, rb.getQuery(), inputs);
     rb.rsp.add(RESPONSE_SECTION_CLUSTERS, clustersToNamedList(inputs, clusters, parameters));
   }
