@@ -2158,8 +2158,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   static class SearchResult {
-    final Object[] result;
     final ScoreMode scoreMode;
+    private final Object[] result;
 
     public SearchResult(ScoreMode scoreMode, Object[] result) {
       this.scoreMode = scoreMode;
