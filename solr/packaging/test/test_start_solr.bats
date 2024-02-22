@@ -60,6 +60,9 @@ teardown() {
   refute collection_exists "films"
   
   solr stop -p ${SOLR_PORT}
+  
+  sleep 10
+  
   solr start -e films -c
   solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
   assert collection_exists "films"
