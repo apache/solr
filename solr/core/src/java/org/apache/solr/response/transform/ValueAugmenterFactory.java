@@ -72,7 +72,7 @@ public class ValueAugmenterFactory extends TransformerFactory {
     return new ValueAugmenter(field, val);
   }
 
-  static class ValueAugmenter extends DocTransformer {
+  public static class ValueAugmenter extends DocTransformer {
     final String name;
     final Object value;
 
