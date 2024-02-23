@@ -299,9 +299,9 @@ chown root "/etc/systemd/system/$SOLR_SERVICE.service"
 # do some basic variable substitution on the service file
 SAFE_SOLR_INSTALL_DIR="$SOLR_EXTRACT_DIR/$SOLR_SERVICE"
 SAFE_SOLR_SERVICE=$(systemd-escape --path "$SOLR_SERVICE")
-sed_expr1="s@SOLR_INSTALL_DIR@$SAFE_SOLR_INSTALL_DIR@g"
-sed_expr2="s/SOLR_SERVICE/$SAFE_SOLR_SERVICE/"
-sed_expr3="s/SOLR_USER/$SOLR_USER/"
+sed_expr1="s@{{SOLR_INSTALL_DIR}}@$SAFE_SOLR_INSTALL_DIR@g"
+sed_expr2="s/{{SOLR_SERVICE}}/$SAFE_SOLR_SERVICE/g"
+sed_expr3="s/{{SOLR_USER}}/$SOLR_USER/g"
 sed -i -e "$sed_expr1" -e "$sed_expr2" -e "$sed_expr3" "/etc/systemd/system/$SOLR_SERVICE.service"
 
 # we need to reload systemd after changing service files
