@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -381,15 +382,20 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       final Stream<SolrStream> streamOfSolrStream;
       if (streamContext != null && streamContext.get("shards") != null) {
         // stream of shard url with core
-        streamOfSolrStream =
-            getShards(this.zkHost, this.collection, this.streamContext, mParams).stream()
-                .map(s -> new SolrStream(s, mParams));
+        final List<String> shards =
+            getShards(this.zkHost, this.collection, this.streamContext, mParams);
+        if (shards.isEmpty())
+          throw new IOException("No shards available from ZooKeeper: " + this.zkHost);
+        streamOfSolrStream = shards.stream().map(s -> new SolrStream(s, mParams));
       } else {
         // stream of replicas to reuse the same SolrHttpClient per baseUrl
         // avoids re-parsing data we already have in the replicas
+        final List<Replica> replicas =
+            getReplicas(this.zkHost, this.collection, this.streamContext, mParams);
+        if (replicas.isEmpty())
+          throw new IOException("No replicas available from ZooKeeper: " + this.zkHost);
         streamOfSolrStream =
-            getReplicas(this.zkHost, this.collection, this.streamContext, mParams).stream()
-                .map(r -> new SolrStream(r.getBaseUrl(), mParams, r.getCoreName()));
+            replicas.stream().map(r -> new SolrStream(r.getBaseUrl(), mParams, r.getCoreName()));
       }
 
       streamOfSolrStream.forEach(
