@@ -83,11 +83,13 @@ Solr uses Gradle for its build system. Here some useful hints to build and run S
 
 - To run the dev distribution as Solr standalone:
 
-    ./solr/packaging/build/dev/bin/solr start
+    cd ./solr/packaging/build/dev
+    bin/solr start
 
 - To run the dev distribution as SolrCloud:
 
-    ./solr/packaging/build/dev/bin/solr start -c
+    cd ./solr/packaging/build/dev
+    bin/solr start -c
 
 - To list all the tasks you can execute:
 
