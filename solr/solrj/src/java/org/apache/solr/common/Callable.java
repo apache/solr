@@ -17,5 +17,5 @@
 package org.apache.solr.common;
 
 public interface Callable<T> {
-  public void call(T data);  // data depends on the context
+  public void call(T data); // data depends on the context
 }

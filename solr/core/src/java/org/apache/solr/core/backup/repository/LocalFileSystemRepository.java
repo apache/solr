@@ -17,44 +17,31 @@
 
 package org.apache.solr.core.backup.repository;
 
-import com.google.common.base.Preconditions;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Objects;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Collection;
-import java.util.Objects;
-
 /**
- * A concrete implementation of {@linkplain BackupRepository} interface supporting backup/restore of Solr indexes to a
- * local file-system. (Note - This can even be used for a shared file-system if it is exposed via a local file-system
- * interface e.g. NFS).
+ * A concrete implementation of {@linkplain BackupRepository} interface supporting backup/restore of
+ * Solr indexes to a local file-system. (Note - This can even be used for a shared file-system if it
+ * is exposed via a local file-system interface e.g. NFS).
  */
-public class LocalFileSystemRepository implements BackupRepository {
-
-  private NamedList<?> config = null;
-
-  @Override
-  public void init(NamedList<?> args) {
-    this.config = args;
-  }
+public class LocalFileSystemRepository extends AbstractBackupRepository {
 
   @SuppressWarnings("unchecked")
   @Override
@@ -70,10 +57,10 @@ public class LocalFileSystemRepository implements BackupRepository {
     try {
       result = new URI(location);
       if (!result.isAbsolute()) {
-        result = Paths.get(location).toUri();
+        result = Path.of(location).toUri();
       }
     } catch (URISyntaxException ex) {
-      result = Paths.get(location).toUri();
+      result = Path.of(location).toUri();
     }
 
     return result;
@@ -81,17 +68,18 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public URI resolve(URI baseUri, String... pathComponents) {
-    Preconditions.checkArgument(pathComponents.length > 0);
+    if (pathComponents.length <= 0) {
+      throw new IllegalArgumentException("pathComponents.length must be greater than 0.");
+    }
 
-    Path result = Paths.get(baseUri);
-    for (int i = 0; i < pathComponents.length; i++) {
+    Path result = Path.of(baseUri);
+    for (String pathComponent : pathComponents) {
       try {
-        result = result.resolve(pathComponents[i]);
+        result = result.resolve(pathComponent);
       } catch (Exception e) {
         // unlikely to happen
         throw new RuntimeException(e);
       }
-
     }
 
     return result.toUri();
@@ -99,44 +87,32 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public void createDirectory(URI path) throws IOException {
-    Path p = Paths.get(path);
+    Path p = Path.of(path);
     if (!Files.exists(p, LinkOption.NOFOLLOW_LINKS)) {
-      Files.createDirectory(p);
+      Files.createDirectories(p);
     }
   }
 
   @Override
   public void deleteDirectory(URI path) throws IOException {
-    Files.walkFileTree(Paths.get(path), new SimpleFileVisitor<Path>() {
-      @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        Files.delete(file);
-        return FileVisitResult.CONTINUE;
-      }
-
-      @Override
-      public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-        Files.delete(dir);
-        return FileVisitResult.CONTINUE;
-      }
-    });
+    PathUtils.deleteDirectory(Path.of(path));
   }
 
   @Override
   public boolean exists(URI path) throws IOException {
-    return Files.exists(Paths.get(path));
+    return Files.exists(Path.of(path));
   }
 
   @Override
   public IndexInput openInput(URI dirPath, String fileName, IOContext ctx) throws IOException {
-    try (FSDirectory dir = new NIOFSDirectory(Paths.get(dirPath), NoLockFactory.INSTANCE)) {
+    try (FSDirectory dir = new NIOFSDirectory(Path.of(dirPath), NoLockFactory.INSTANCE)) {
       return dir.openInput(fileName, ctx);
     }
   }
 
   @Override
   public OutputStream createOutput(URI path) throws IOException {
-    return Files.newOutputStream(Paths.get(path));
+    return Files.newOutputStream(Path.of(path));
   }
 
   @Override
@@ -147,42 +123,44 @@ public class LocalFileSystemRepository implements BackupRepository {
       return new String[0];
     }
 
-    try (FSDirectory dir = new NIOFSDirectory(Paths.get(dirPath), NoLockFactory.INSTANCE)) {
+    try (FSDirectory dir = new NIOFSDirectory(Path.of(dirPath), NoLockFactory.INSTANCE)) {
       return dir.listAll();
     }
   }
 
   @Override
   public PathType getPathType(URI path) throws IOException {
-    return Files.isDirectory(Paths.get(path)) ? PathType.DIRECTORY : PathType.FILE;
+    return Files.isDirectory(Path.of(path)) ? PathType.DIRECTORY : PathType.FILE;
   }
 
   @Override
-  public void copyIndexFileFrom(Directory sourceDir, String sourceFileName, URI destDir, String destFileName) throws IOException {
-    try (FSDirectory dir = new NIOFSDirectory(Paths.get(destDir), NoLockFactory.INSTANCE)) {
+  public void copyIndexFileFrom(
+      Directory sourceDir, String sourceFileName, URI destDir, String destFileName)
+      throws IOException {
+    try (FSDirectory dir = new NIOFSDirectory(Path.of(destDir), NoLockFactory.INSTANCE)) {
       copyIndexFileFrom(sourceDir, sourceFileName, dir, destFileName);
     }
   }
 
   @Override
-  public void copyIndexFileTo(URI sourceDir, String sourceFileName, Directory dest, String destFileName) throws IOException {
-    try (FSDirectory dir = new NIOFSDirectory(Paths.get(sourceDir), NoLockFactory.INSTANCE)) {
+  public void copyIndexFileTo(
+      URI sourceDir, String sourceFileName, Directory dest, String destFileName)
+      throws IOException {
+    try (FSDirectory dir = new NIOFSDirectory(Path.of(sourceDir), NoLockFactory.INSTANCE)) {
       dest.copyFrom(dir, sourceFileName, destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
   }
 
   @Override
-  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException) throws IOException {
-    if (files.isEmpty())
-      return;
+  public void delete(URI path, Collection<String> files) throws IOException {
+    if (files.isEmpty()) return;
 
-    try (FSDirectory dir = new NIOFSDirectory(Paths.get(path), NoLockFactory.INSTANCE)) {
+    try (FSDirectory dir = new NIOFSDirectory(Path.of(path), NoLockFactory.INSTANCE)) {
       for (String file : files) {
         try {
           dir.deleteFile(file);
-        } catch (NoSuchFileException e) {
-          if (!ignoreNoSuchFileException)
-            throw e;
+        } catch (NoSuchFileException ignore) {
+
         }
       }
     }

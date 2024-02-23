@@ -23,9 +23,7 @@ import java.util.ArrayList;
 import java.util.Currency;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.lucene.util.ResourceLoader;
-import org.apache.lucene.util.ResourceLoaderAware;
+import java.util.Objects;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -37,6 +35,8 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;
@@ -48,12 +48,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Field type for support of monetary values.
- * <p>
- * See <a href="http://wiki.apache.org/solr/CurrencyField">http://wiki.apache.org/solr/CurrencyField</a>
+ *
+ * <p>See <a
+ * href="https://solr.apache.org/guide/solr/latest/indexing-guide/currencies-exchange-rates.html">https://solr.apache.org/guide/solr/latest/indexing-guide/currencies-exchange-rates.html</a>
  */
 public class CurrencyFieldType extends FieldType implements SchemaAware, ResourceLoaderAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   protected static final String PARAM_DEFAULT_CURRENCY = "defaultCurrency";
   protected static final String DEFAULT_DEFAULT_CURRENCY = "USD";
   protected static final String PARAM_RATE_PROVIDER_CLASS = "providerClass";
@@ -66,15 +67,14 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   protected FieldType fieldTypeAmountRaw;
   protected String fieldSuffixAmountRaw;
   protected String fieldSuffixCurrency;
-  
+
   private String exchangeRateProviderClass;
   private String defaultCurrency;
   private ExchangeRateProvider provider;
 
   /**
-   * A wrapper around <code>Currency.getInstance</code> that returns null
-   * instead of throwing <code>IllegalArgumentException</code>
-   * if the specified Currency does not exist in this JVM.
+   * A wrapper around <code>Currency.getInstance</code> that returns null instead of throwing <code>
+   * IllegalArgumentException</code> if the specified Currency does not exist in this JVM.
    *
    * @see Currency#getInstance(String)
    */
@@ -92,12 +92,12 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     return defaultCurrency;
   }
 
-
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
     if (this.isMultiValued()) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
           getClass().getSimpleName() + " types can not be multiValued: " + this.typeName);
     }
     this.schema = schema;
@@ -109,7 +109,8 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
       args.remove(PARAM_DEFAULT_CURRENCY);
     }
     if (null == getCurrency(this.defaultCurrency)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
           "Default currency code is not supported by this JVM: " + this.defaultCurrency);
     }
 
@@ -120,28 +121,37 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
       args.remove(PARAM_RATE_PROVIDER_CLASS);
     }
     try {
-      Class<? extends ExchangeRateProvider> c
-          = schema.getResourceLoader().findClass(exchangeRateProviderClass, ExchangeRateProvider.class);
+      Class<? extends ExchangeRateProvider> c =
+          schema
+              .getResourceLoader()
+              .findClass(exchangeRateProviderClass, ExchangeRateProvider.class);
       provider = c.getConstructor().newInstance();
       provider.init(args);
     } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Error instantiating exchange rate provider " + exchangeRateProviderClass + ": " + e.getMessage(), e);
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Error instantiating exchange rate provider "
+              + exchangeRateProviderClass
+              + ": "
+              + e.getMessage(),
+          e);
     }
 
-    if (fieldTypeAmountRaw == null) {      // Don't initialize if subclass already has done so
+    if (fieldTypeAmountRaw == null) { // Don't initialize if subclass already has done so
       fieldSuffixAmountRaw = args.get(PARAM_FIELD_SUFFIX_AMOUNT_RAW);
       if (fieldSuffixAmountRaw == null) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Missing required param " + PARAM_FIELD_SUFFIX_AMOUNT_RAW);
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR, "Missing required param " + PARAM_FIELD_SUFFIX_AMOUNT_RAW);
       } else {
         args.remove(PARAM_FIELD_SUFFIX_AMOUNT_RAW);
       }
     }
-    
-    if (fieldTypeCurrency == null) {       // Don't initialize if subclass already has done so
+
+    if (fieldTypeCurrency == null) { // Don't initialize if subclass already has done so
       fieldSuffixCurrency = args.get(PARAM_FIELD_SUFFIX_CURRENCY);
       if (fieldSuffixCurrency == null) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Missing required param " + PARAM_FIELD_SUFFIX_CURRENCY);
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR, "Missing required param " + PARAM_FIELD_SUFFIX_CURRENCY);
       } else {
         args.remove(PARAM_FIELD_SUFFIX_CURRENCY);
       }
@@ -157,7 +167,8 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   public void checkSchemaField(final SchemaField field) throws SolrException {
     super.checkSchemaField(field);
     if (field.multiValued()) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
           getClass().getSimpleName() + " fields can not be multiValued: " + field.getName());
     }
   }
@@ -174,7 +185,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
     if (field.stored()) {
       String storedValue = externalVal.toString().trim();
-      if (storedValue.indexOf(",") < 0) {
+      if (!storedValue.contains(",")) {
         storedValue += "," + defaultCurrency;
       }
       f.add(createField(field.getName(), storedValue, StoredField.TYPE));
@@ -182,7 +193,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
     return f;
   }
-  
+
   private SchemaField getAmountField(SchemaField field) {
     return schema.getField(field.getName() + POLY_FIELD_SEPARATOR + fieldSuffixAmountRaw);
   }
@@ -192,9 +203,9 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   }
 
   /**
-   * When index schema is informed, get field types for the configured dynamic sub-fields 
+   * When index schema is informed, get field types for the configured dynamic sub-fields
    *
-   * {@inheritDoc}
+   * <p>{@inheritDoc}
    *
    * @param schema {@inheritDoc}
    */
@@ -205,28 +216,54 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
       assert null != fieldSuffixAmountRaw : "How did we get here?";
       SchemaField field = schema.getFieldOrNull(POLY_FIELD_SEPARATOR + fieldSuffixAmountRaw);
       if (field == null) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Field type \"" + this.getTypeName()
-            + "\": Undefined dynamic field for " + PARAM_FIELD_SUFFIX_AMOUNT_RAW + "=\"" + fieldSuffixAmountRaw + "\"");
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Field type \""
+                + this.getTypeName()
+                + "\": Undefined dynamic field for "
+                + PARAM_FIELD_SUFFIX_AMOUNT_RAW
+                + "=\""
+                + fieldSuffixAmountRaw
+                + "\"");
       }
       fieldTypeAmountRaw = field.getType();
       if (!(fieldTypeAmountRaw instanceof LongValueFieldType)) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Field type \"" + this.getTypeName()
-            + "\": Dynamic field for " + PARAM_FIELD_SUFFIX_AMOUNT_RAW + "=\"" + fieldSuffixAmountRaw
-            + "\" must have type class extending LongValueFieldType");
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Field type \""
+                + this.getTypeName()
+                + "\": Dynamic field for "
+                + PARAM_FIELD_SUFFIX_AMOUNT_RAW
+                + "=\""
+                + fieldSuffixAmountRaw
+                + "\" must have type class extending LongValueFieldType");
       }
     }
     if (null == fieldTypeCurrency) {
       assert null != fieldSuffixCurrency : "How did we get here?";
       SchemaField field = schema.getFieldOrNull(POLY_FIELD_SEPARATOR + fieldSuffixCurrency);
       if (field == null) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Field type \"" + this.getTypeName()
-            + "\": Undefined dynamic field for " + PARAM_FIELD_SUFFIX_CURRENCY + "=\"" + fieldSuffixCurrency + "\"");
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Field type \""
+                + this.getTypeName()
+                + "\": Undefined dynamic field for "
+                + PARAM_FIELD_SUFFIX_CURRENCY
+                + "=\""
+                + fieldSuffixCurrency
+                + "\"");
       }
       fieldTypeCurrency = field.getType();
       if (!(fieldTypeCurrency instanceof StrField)) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Field type \"" + this.getTypeName()
-            + "\": Dynamic field for " + PARAM_FIELD_SUFFIX_CURRENCY + "=\"" + fieldSuffixCurrency
-            + "\" must have type class of (or extending) StrField");
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Field type \""
+                + this.getTypeName()
+                + "\": Dynamic field for "
+                + PARAM_FIELD_SUFFIX_CURRENCY
+                + "=\""
+                + fieldSuffixCurrency
+                + "\" must have type class of (or extending) StrField");
       }
     }
   }
@@ -240,7 +277,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   public void inform(ResourceLoader resourceLoader) {
     provider.inform(resourceLoader);
     boolean reloaded = provider.reload();
-    if(!reloaded) {
+    if (!reloaded) {
       log.warn("Failed reloading currencies");
     }
   }
@@ -255,69 +292,58 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   }
 
   /**
-   * <p>
-   * Returns a ValueSource over this field in which the numeric value for 
-   * each document represents the indexed value as converted to the default 
-   * currency for the field, normalized to its most granular form based 
-   * on the default fractional digits.
-   * </p>
-   * <p>
-   * For example: If the default Currency specified for a field is 
-   * <code>USD</code>, then the values returned by this value source would 
-   * represent the equivalent number of "cents" (ie: value in dollars * 100)
-   * after converting each document's native currency to USD -- because the 
-   * default fractional digits for <code>USD</code> is "<code>2</code>".  
-   * So for a document whose indexed value was currently equivalent to
-   * "<code>5.43,USD</code>" using the the exchange provider for this field, 
-   * this ValueSource would return a value of "<code>543</code>"
-   * </p>
+   * Returns a ValueSource over this field in which the numeric value for each document represents
+   * the indexed value as converted to the default currency for the field, normalized to its most
+   * granular form based on the default fractional digits.
+   *
+   * <p>For example: If the default Currency specified for a field is <code>USD</code>, then the
+   * values returned by this value source would represent the equivalent number of "cents" (ie:
+   * value in dollars * 100) after converting each document's native currency to USD -- because the
+   * default fractional digits for <code>USD</code> is "<code>2</code>". So for a document whose
+   * indexed value was currently equivalent to "<code>5.43,USD</code>" using the the exchange
+   * provider for this field, this ValueSource would return a value of "<code>543</code>"
    *
    * @see #PARAM_DEFAULT_CURRENCY
    * @see #DEFAULT_DEFAULT_CURRENCY
    * @see Currency#getDefaultFractionDigits
    * @see #getConvertedValueSource
    */
-  public RawCurrencyValueSource getValueSource(SchemaField field,
-                                               QParser parser) {
+  @Override
+  public RawCurrencyValueSource getValueSource(SchemaField field, QParser parser) {
     getAmountField(field).checkFieldCacheSource();
     getCurrencyField(field).checkFieldCacheSource();
     return new RawCurrencyValueSource(field, defaultCurrency, parser);
   }
 
   /**
-   * <p>
-   * Returns a ValueSource over this field in which the numeric value for 
-   * each document represents the value from the underlying 
-   * <code>RawCurrencyValueSource</code> as converted to the specified target 
-   * Currency.
-   * </p>
-   * <p>
-   * For example: If the <code>targetCurrencyCode</code> param is set to
-   * <code>USD</code>, then the values returned by this value source would 
-   * represent the equivalent number of dollars after converting each
-   * document's raw value to <code>USD</code>.  So for a document whose 
-   * indexed value was currently equivalent to "<code>5.43,USD</code>"
-   * using the the exchange provider for this field, this ValueSource would 
-   * return a value of "<code>5.43</code>"
-   * </p>
+   * Returns a ValueSource over this field in which the numeric value for each document represents
+   * the value from the underlying <code>RawCurrencyValueSource</code> as converted to the specified
+   * target Currency.
    *
-   * @param targetCurrencyCode The target currency for the resulting value source, if null the defaultCurrency for this field type will be used
+   * <p>For example: If the <code>targetCurrencyCode</code> param is set to <code>USD</code>, then
+   * the values returned by this value source would represent the equivalent number of dollars after
+   * converting each document's raw value to <code>USD</code>. So for a document whose indexed value
+   * was currently equivalent to "<code>5.43,USD</code>" using the the exchange provider for this
+   * field, this ValueSource would return a value of "<code>5.43</code>"
+   *
+   * @param targetCurrencyCode The target currency for the resulting value source, if null the
+   *     defaultCurrency for this field type will be used
    * @param source the raw ValueSource to wrap
    * @see #PARAM_DEFAULT_CURRENCY
    * @see #DEFAULT_DEFAULT_CURRENCY
    * @see #getValueSource
    */
-  public ValueSource getConvertedValueSource(String targetCurrencyCode,
-                                             RawCurrencyValueSource source) {
+  public ValueSource getConvertedValueSource(
+      String targetCurrencyCode, RawCurrencyValueSource source) {
     if (null == targetCurrencyCode) {
       targetCurrencyCode = defaultCurrency;
     }
-    return new ConvertedCurrencyValueSource(targetCurrencyCode,
-        source);
+    return new ConvertedCurrencyValueSource(targetCurrencyCode, source);
   }
 
   /**
-   * Override the default existenceQuery implementation to run an existence query on the underlying amountField instead.
+   * Override the default existenceQuery implementation to run an existence query on the underlying
+   * amountField instead.
    */
   @Override
   public Query getExistenceQuery(QParser parser, SchemaField field) {
@@ -327,33 +353,53 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   }
 
   @Override
-  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2, final boolean minInclusive, final boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String part1,
+      String part2,
+      final boolean minInclusive,
+      final boolean maxInclusive) {
     final CurrencyValue p1 = CurrencyValue.parse(part1, defaultCurrency);
     final CurrencyValue p2 = CurrencyValue.parse(part2, defaultCurrency);
 
     if (p1 != null && p2 != null && !p1.getCurrencyCode().equals(p2.getCurrencyCode())) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Cannot parse range query " + part1 + " to " + part2 +
-              ": range queries only supported when upper and lower bound have same currency.");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Cannot parse range query "
+              + part1
+              + " to "
+              + part2
+              + ": range queries only supported when upper and lower bound have same currency.");
     }
 
     return getRangeQueryInternal(parser, field, p1, p2, minInclusive, maxInclusive);
   }
 
-  private Query getRangeQueryInternal(QParser parser, SchemaField field, final CurrencyValue p1, final CurrencyValue p2, final boolean minInclusive, final boolean maxInclusive) {
-    String currencyCode = (p1 != null) ? p1.getCurrencyCode() :
-        (p2 != null) ? p2.getCurrencyCode() : defaultCurrency;
+  private Query getRangeQueryInternal(
+      QParser parser,
+      SchemaField field,
+      final CurrencyValue p1,
+      final CurrencyValue p2,
+      final boolean minInclusive,
+      final boolean maxInclusive) {
+    String currencyCode =
+        (p1 != null) ? p1.getCurrencyCode() : (p2 != null) ? p2.getCurrencyCode() : defaultCurrency;
 
     // ValueSourceRangeFilter doesn't check exists(), so we have to
     final Query docsWithValues = new DocValuesFieldExistsQuery(getAmountField(field).getName());
-    final Query vsRangeFilter = new ValueSourceRangeFilter
-        (new RawCurrencyValueSource(field, currencyCode, parser),
+    final Query vsRangeFilter =
+        new ValueSourceRangeFilter(
+            new RawCurrencyValueSource(field, currencyCode, parser),
             p1 == null ? null : p1.getAmount() + "",
             p2 == null ? null : p2.getAmount() + "",
-            minInclusive, maxInclusive);
-    return new ConstantScoreQuery(new BooleanQuery.Builder()
-        .add(docsWithValues, Occur.FILTER)
-        .add(vsRangeFilter, Occur.FILTER).build());
+            minInclusive,
+            maxInclusive);
+    return new ConstantScoreQuery(
+        new BooleanQuery.Builder()
+            .add(docsWithValues, Occur.FILTER)
+            .add(vsRangeFilter, Occur.FILTER)
+            .build());
   }
 
   @Override
@@ -368,7 +414,8 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField field) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField field)
+      throws IOException {
     writer.writeStr(name, field.stringValue(), true);
   }
 
@@ -377,35 +424,35 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   }
 
   /**
-   * <p>
-   * A value source whose values represent the "normal" values
-   * in the specified target currency.
-   * </p>
+   * A value source whose values represent the "normal" values in the specified target currency.
+   *
    * @see RawCurrencyValueSource
    */
   class ConvertedCurrencyValueSource extends ValueSource {
     private final Currency targetCurrency;
     private final RawCurrencyValueSource source;
     private final double rate;
-    public ConvertedCurrencyValueSource(String targetCurrencyCode,
-                                        RawCurrencyValueSource source) {
+
+    public ConvertedCurrencyValueSource(String targetCurrencyCode, RawCurrencyValueSource source) {
       this.source = source;
       this.targetCurrency = getCurrency(targetCurrencyCode);
       if (null == targetCurrency) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Currency code not supported by this JVM: " + targetCurrencyCode);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Currency code not supported by this JVM: " + targetCurrencyCode);
       }
-      // the target digits & currency of our source, 
+      // the target digits & currency of our source,
       // become the source digits & currency of ourselves
-      this.rate = provider.getExchangeRate
-          (source.getTargetCurrency().getCurrencyCode(),
-              targetCurrency.getCurrencyCode());
+      this.rate =
+          provider.getExchangeRate(
+              source.getTargetCurrency().getCurrencyCode(), targetCurrency.getCurrencyCode());
     }
 
     @Override
     public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext reader)
         throws IOException {
       final FunctionValues amounts = source.getValues(context, reader);
-      // the target digits & currency of our source, 
+      // the target digits & currency of our source,
       // become the source digits & currency of ourselves
       final String sourceCurrencyCode = source.getTargetCurrency().getCurrencyCode();
       final double divisor = Math.pow(10D, targetCurrency.getDefaultFractionDigits());
@@ -414,10 +461,12 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
         public boolean exists(int doc) throws IOException {
           return amounts.exists(doc);
         }
+
         @Override
         public long longVal(int doc) throws IOException {
           return (long) doubleVal(doc);
         }
+
         @Override
         public int intVal(int doc) throws IOException {
           return (int) doubleVal(doc);
@@ -425,12 +474,16 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
         @Override
         public double doubleVal(int doc) throws IOException {
-          return CurrencyValue.convertAmount(rate, sourceCurrencyCode, amounts.longVal(doc), targetCurrency.getCurrencyCode()) / divisor;
+          return CurrencyValue.convertAmount(
+                  rate, sourceCurrencyCode, amounts.longVal(doc), targetCurrency.getCurrencyCode())
+              / divisor;
         }
 
         @Override
         public float floatVal(int doc) throws IOException {
-          return CurrencyValue.convertAmount(rate, sourceCurrencyCode, amounts.longVal(doc), targetCurrency.getCurrencyCode()) / ((float)divisor);
+          return CurrencyValue.convertAmount(
+                  rate, sourceCurrencyCode, amounts.longVal(doc), targetCurrency.getCurrencyCode())
+              / ((float) divisor);
         }
 
         @Override
@@ -444,49 +497,50 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
         }
       };
     }
+
     public String name() {
       return "currency";
     }
 
     @Override
     public String description() {
-      return name() + "(" + source.getField().getName() + "," + targetCurrency.getCurrencyCode()+")";
+      return name()
+          + "("
+          + source.getField().getName()
+          + ","
+          + targetCurrency.getCurrencyCode()
+          + ")";
     }
 
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof ConvertedCurrencyValueSource)) return false;
 
       ConvertedCurrencyValueSource that = (ConvertedCurrencyValueSource) o;
 
-      return !(source != null ? !source.equals(that.source) : that.source != null) &&
-          (rate == that.rate) &&
-          !(targetCurrency != null ? !targetCurrency.equals(that.targetCurrency) : that.targetCurrency != null);
-
+      return Objects.equals(source, that.source)
+          && (rate == that.rate)
+          && Objects.equals(targetCurrency, that.targetCurrency);
     }
 
     @Override
     public int hashCode() {
       int result = targetCurrency != null ? targetCurrency.hashCode() : 0;
       result = 31 * result + (source != null ? source.hashCode() : 0);
-      result = 31 * (int) Double.doubleToLongBits(rate);
+      result = 31 * result + (int) Double.doubleToLongBits(rate);
       return result;
     }
   }
 
   /**
-   * <p>
-   * A value source whose values represent the "raw" (ie: normalized using 
-   * the number of default fractional digits) values in the specified 
-   * target currency).
-   * </p>
-   * <p>
-   * For example: if the specified target currency is "<code>USD</code>" 
-   * then the numeric values are the number of pennies in the value 
-   * (ie: <code>$n * 100</code>) since the number of default fractional 
-   * digits for <code>USD</code> is "<code>2</code>")
-   * </p>
+   * A value source whose values represent the "raw" (ie: normalized using the number of default
+   * fractional digits) values in the specified target currency).
+   *
+   * <p>For example: if the specified target currency is "<code>USD</code>" then the numeric values
+   * are the number of pennies in the value (ie: <code>$n * 100</code>) since the number of default
+   * fractional digits for <code>USD</code> is "<code>2</code>")
+   *
    * @see ConvertedCurrencyValueSource
    */
   class RawCurrencyValueSource extends ValueSource {
@@ -500,7 +554,9 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
       this.sf = sfield;
       this.targetCurrency = getCurrency(targetCurrencyCode);
       if (null == targetCurrency) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Currency code not supported by this JVM: " + targetCurrencyCode);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Currency code not supported by this JVM: " + targetCurrencyCode);
       }
 
       SchemaField amountField = getAmountField(sf);
@@ -510,11 +566,17 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
       amountValues = amountField.getType().getValueSource(amountField, parser);
     }
 
-    public SchemaField getField() { return sf; }
-    public Currency getTargetCurrency() { return targetCurrency; }
+    public SchemaField getField() {
+      return sf;
+    }
+
+    public Currency getTargetCurrency() {
+      return targetCurrency;
+    }
 
     @Override
-    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext reader) throws IOException {
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext reader)
+        throws IOException {
       final FunctionValues amounts = amountValues.getValues(context, reader);
       final FunctionValues currencies = currencyValues.getValues(context, reader);
 
@@ -539,8 +601,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
               currency = defaultCurrency;
             }
 
-            if (targetCurrencyOrd == -1 &&
-                currency.equals(targetCurrency.getCurrencyCode() )) {
+            if (targetCurrencyOrd == -1 && currency.equals(targetCurrency.getCurrencyCode())) {
               targetCurrencyOrd = currencyOrd;
             }
 
@@ -549,14 +610,15 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
             return currencies.strVal(doc);
           }
         }
+
         /** throws a (Server Error) SolrException if the code is not valid */
         private Currency getDocCurrency(int doc, int currencyOrd) throws IOException {
           String code = getDocCurrencyCode(doc, currencyOrd);
           Currency c = getCurrency(code);
           if (null == c) {
-            throw new SolrException
-                (SolrException.ErrorCode.SERVER_ERROR,
-                    "Currency code of document is not supported by this JVM: "+code);
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Currency code of document is not supported by this JVM: " + code);
           }
           return c;
         }
@@ -570,9 +632,9 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
         public long longVal(int doc) throws IOException {
           long amount = amounts.longVal(doc);
           // bail fast using whatever amounts defaults to if no value
-          // (if we don't do this early, currencyOrd may be < 0, 
+          // (if we don't do this early, currencyOrd may be < 0,
           // causing index bounds exception
-          if ( ! exists(doc) ) {
+          if (!exists(doc)) {
             return amount;
           }
 
@@ -602,21 +664,29 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
             if (exchangeRate <= 0.0) {
               String sourceCurrencyCode = getDocCurrencyCode(doc, currencyOrd);
-              exchangeRate = exchangeRateCache[currencyOrd] = provider.getExchangeRate(sourceCurrencyCode, targetCurrency.getCurrencyCode());
+              exchangeRate =
+                  exchangeRateCache[currencyOrd] =
+                      provider.getExchangeRate(
+                          sourceCurrencyCode, targetCurrency.getCurrencyCode());
             }
 
             sourceFractionDigits = fractionDigitCache[currencyOrd];
 
             if (sourceFractionDigits == -1) {
-              sourceFractionDigits = fractionDigitCache[currencyOrd] = getDocCurrency(doc, currencyOrd).getDefaultFractionDigits();
+              sourceFractionDigits =
+                  fractionDigitCache[currencyOrd] =
+                      getDocCurrency(doc, currencyOrd).getDefaultFractionDigits();
             }
           } else {
             Currency source = getDocCurrency(doc, currencyOrd);
-            exchangeRate = provider.getExchangeRate(source.getCurrencyCode(), targetCurrency.getCurrencyCode());
+            exchangeRate =
+                provider.getExchangeRate(
+                    source.getCurrencyCode(), targetCurrency.getCurrencyCode());
             sourceFractionDigits = source.getDefaultFractionDigits();
           }
 
-          return CurrencyValue.convertAmount(exchangeRate, sourceFractionDigits, amount, targetFractionDigits);
+          return CurrencyValue.convertAmount(
+              exchangeRate, sourceFractionDigits, amount, targetFractionDigits);
         }
 
         @Override
@@ -652,21 +722,19 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
     @Override
     public String description() {
-      return name() + "(" + sf.getName() +
-          ",target="+targetCurrency.getCurrencyCode()+")";
+      return name() + "(" + sf.getName() + ",target=" + targetCurrency.getCurrencyCode() + ")";
     }
 
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof RawCurrencyValueSource)) return false;
 
       RawCurrencyValueSource that = (RawCurrencyValueSource) o;
 
-      return !(amountValues != null ? !amountValues.equals(that.amountValues) : that.amountValues != null) &&
-          !(currencyValues != null ? !currencyValues.equals(that.currencyValues) : that.currencyValues != null) &&
-          !(targetCurrency != null ? !targetCurrency.equals(that.targetCurrency) : that.targetCurrency != null);
-
+      return Objects.equals(amountValues, that.amountValues)
+          && Objects.equals(currencyValues, that.currencyValues)
+          && Objects.equals(targetCurrency, that.targetCurrency);
     }
 
     @Override
@@ -677,6 +745,4 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
       return result;
     }
   }
-
 }
-

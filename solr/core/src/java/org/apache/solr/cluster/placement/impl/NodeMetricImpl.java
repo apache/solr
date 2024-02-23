@@ -17,33 +17,40 @@
 
 package org.apache.solr.cluster.placement.impl;
 
-import org.apache.solr.cluster.placement.NodeMetric;
-import org.apache.solr.common.cloud.rule.ImplicitSnitch;
-
 import java.util.Objects;
 import java.util.function.Function;
+import org.apache.solr.client.solrj.impl.NodeValueFetcher;
+import org.apache.solr.cluster.placement.NodeMetric;
 
 /**
- * Node metric identifier, corresponding
- * to a node-level metric registry and the internal metric name.
+ * Node metric identifier, corresponding to a node-level metric registry and the internal metric
+ * name.
  */
 public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
 
   /** Total disk space in GB. */
-  public static final NodeMetricImpl<Double> TOTAL_DISK_GB = new NodeMetricImpl<>("totalDisk",
-      Registry.SOLR_NODE, "CONTAINER.fs.totalSpace", BYTES_TO_GB_CONVERTER);
+  public static final NodeMetricImpl<Double> TOTAL_DISK_GB =
+      new NodeMetricImpl<>(
+          "totalDisk", Registry.SOLR_NODE, "CONTAINER.fs.totalSpace", BYTES_TO_GB_CONVERTER);
 
   /** Free (usable) disk space in GB. */
-  public static final NodeMetricImpl<Double> FREE_DISK_GB = new NodeMetricImpl<>("freeDisk",
-      Registry.SOLR_NODE, "CONTAINER.fs.usableSpace", BYTES_TO_GB_CONVERTER);
+  public static final NodeMetricImpl<Double> FREE_DISK_GB =
+      new NodeMetricImpl<>(
+          "freeDisk", Registry.SOLR_NODE, "CONTAINER.fs.usableSpace", BYTES_TO_GB_CONVERTER);
 
   /** Number of all cores. */
-  public static final NodeMetricImpl<Integer> NUM_CORES = new NodeMetricImpl<>(ImplicitSnitch.CORES);
-  public static final NodeMetricImpl<Double> HEAP_USAGE = new NodeMetricImpl<>(ImplicitSnitch.HEAPUSAGE);
+  public static final NodeMetricImpl<Integer> NUM_CORES =
+      new NodeMetricImpl<>(NodeValueFetcher.CORES);
+
+  public static final NodeMetricImpl<Double> HEAP_USAGE =
+      new NodeMetricImpl<>(NodeValueFetcher.Tags.HEAPUSAGE.tagName);
 
   /** System load average. */
   public static final NodeMetricImpl<Double> SYSLOAD_AVG =
-      new NodeMetricImpl<>("sysLoadAvg", Registry.SOLR_JVM, "os.systemLoadAverage");
+      new NodeMetricImpl<>(
+          NodeValueFetcher.Tags.SYSLOADAVG.tagName,
+          Registry.SOLR_JVM,
+          NodeValueFetcher.Tags.SYSLOADAVG.prefix);
 
   /** Number of available processors. */
   public static final NodeMetricImpl<Integer> AVAILABLE_PROCESSORS =
@@ -55,7 +62,8 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
     this(name, registry, internalName, null);
   }
 
-  public NodeMetricImpl(String name, Registry registry, String internalName, Function<Object, T> converter) {
+  public NodeMetricImpl(
+      String name, Registry registry, String internalName, Function<Object, T> converter) {
     super(name, internalName, converter);
     Objects.requireNonNull(registry);
     this.registry = registry;
@@ -70,6 +78,7 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
     this.registry = Registry.UNSPECIFIED;
   }
 
+  @Override
   public Registry getRegistry() {
     return registry;
   }
@@ -79,7 +88,7 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
     if (this == o) {
       return true;
     }
-    if (o == null || getClass() != o.getClass()) {
+    if (!(o instanceof NodeMetricImpl)) {
       return false;
     }
     if (!super.equals(o)) {
@@ -97,12 +106,18 @@ public class NodeMetricImpl<T> extends MetricImpl<T> implements NodeMetric<T> {
   @Override
   public String toString() {
     if (registry != null) {
-      return "NodeMetricImpl{" +
-          "name='" + name + '\'' +
-          ", internalName='" + internalName + '\'' +
-          ", converter=" + converter +
-          ", registry=" + registry +
-          '}';
+      return "NodeMetricImpl{"
+          + "name='"
+          + name
+          + '\''
+          + ", internalName='"
+          + internalName
+          + '\''
+          + ", converter="
+          + converter
+          + ", registry="
+          + registry
+          + '}';
     } else {
       return "NodeMetricImpl{key=" + internalName + "}";
     }

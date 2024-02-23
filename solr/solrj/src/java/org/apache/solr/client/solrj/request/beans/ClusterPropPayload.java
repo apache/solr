@@ -22,51 +22,32 @@ import org.apache.solr.common.util.ReflectMapWriter;
 
 public class ClusterPropPayload implements ReflectMapWriter {
 
-  @JsonProperty
-  public String urlScheme;
+  @JsonProperty public String urlScheme;
 
-  @JsonProperty
-  public Integer maxCoresPerNode;
-  @JsonProperty
-  public String location;
+  @JsonProperty public Integer maxCoresPerNode;
+  @JsonProperty public String location;
 
-  @JsonProperty
-  public Defaults defaults;
+  @JsonProperty public Defaults defaults;
 
-  @JsonProperty
-  public CollectionDefaults collectionDefaults;
+  @JsonProperty public CollectionDefaults collectionDefaults;
 
   public static class CollectionDefaults implements ReflectMapWriter {
-    @JsonProperty
-    public Integer numShards;
-    @JsonProperty
-    public Integer tlogReplicas;
-    @JsonProperty
-    public Integer pullReplicas;
-    @JsonProperty
-    public Integer nrtReplicas;
-
+    @JsonProperty public Integer numShards;
+    @JsonProperty public Integer tlogReplicas;
+    @JsonProperty public Integer pullReplicas;
+    @JsonProperty public Integer nrtReplicas;
   }
 
   public static class Defaults implements ReflectMapWriter {
 
-    @JsonProperty
-    public CollectionDefaults collection;
+    @JsonProperty public CollectionDefaults collection;
 
-    @JsonProperty
-    public Cluster cluster;
-
+    @JsonProperty public Cluster cluster;
   }
 
   public static class Cluster implements ReflectMapWriter {
-    @JsonProperty
-    public Boolean useLegacyReplicaAssignment;
+    @JsonProperty public Boolean useLegacyReplicaAssignment;
 
-
-    @JsonProperty
-    public CollectionDefaults collection;
-
+    @JsonProperty public CollectionDefaults collection;
   }
-
-
 }

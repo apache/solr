@@ -21,72 +21,75 @@ import org.junit.Test;
 
 public class TestFieldTypeResource extends SolrRestletTestBase {
   @Test
-  public void testXMLGetFieldType() throws Exception {
+  public void testXMLGetFieldType() {
     final String expectedFloatClass = RANDOMIZED_NUMERIC_FIELDTYPES.get(Float.class);
     final boolean expectedDocValues = Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP);
-    assertQ("/schema/fieldtypes/float?wt=xml&showDefaults=true",
-            "count(/response/lst[@name='fieldType']) = 1",
-            "count(/response/lst[@name='fieldType']/*) = 18",
-            "/response/lst[@name='fieldType']/str[@name='name'] = 'float'",
-            "/response/lst[@name='fieldType']/str[@name='class'] = '"+expectedFloatClass+"'",
-            "/response/lst[@name='fieldType']/str[@name='precisionStep'] ='0'",
-            "/response/lst[@name='fieldType']/bool[@name='indexed'] = 'true'",
-            "/response/lst[@name='fieldType']/bool[@name='stored'] = 'true'",
-            "/response/lst[@name='fieldType']/bool[@name='uninvertible'] = 'true'",
-            "/response/lst[@name='fieldType']/bool[@name='docValues'] = '"+expectedDocValues+"'",
-            "/response/lst[@name='fieldType']/bool[@name='termVectors'] = 'false'",
-            "/response/lst[@name='fieldType']/bool[@name='termPositions'] = 'false'",
-            "/response/lst[@name='fieldType']/bool[@name='termOffsets'] = 'false'",
-            "/response/lst[@name='fieldType']/bool[@name='omitNorms'] = 'true'",
-            "/response/lst[@name='fieldType']/bool[@name='omitTermFreqAndPositions'] = 'true'",
-            "/response/lst[@name='fieldType']/bool[@name='omitPositions'] = 'false'",
-            "/response/lst[@name='fieldType']/bool[@name='storeOffsetsWithPositions'] = 'false'",
-            "/response/lst[@name='fieldType']/bool[@name='multiValued'] = 'false'",
-            "/response/lst[@name='fieldType']/bool[@name='large'] = 'false'",
-            "/response/lst[@name='fieldType']/bool[@name='tokenized'] = 'false'");
+    assertQ(
+        "/schema/fieldtypes/float?wt=xml&showDefaults=true",
+        "count(/response/lst[@name='fieldType']) = 1",
+        "count(/response/lst[@name='fieldType']/*) = 18",
+        "/response/lst[@name='fieldType']/str[@name='name'] = 'float'",
+        "/response/lst[@name='fieldType']/str[@name='class'] = '" + expectedFloatClass + "'",
+        "/response/lst[@name='fieldType']/str[@name='precisionStep'] ='0'",
+        "/response/lst[@name='fieldType']/bool[@name='indexed'] = 'true'",
+        "/response/lst[@name='fieldType']/bool[@name='stored'] = 'true'",
+        "/response/lst[@name='fieldType']/bool[@name='uninvertible'] = 'true'",
+        "/response/lst[@name='fieldType']/bool[@name='docValues'] = '" + expectedDocValues + "'",
+        "/response/lst[@name='fieldType']/bool[@name='termVectors'] = 'false'",
+        "/response/lst[@name='fieldType']/bool[@name='termPositions'] = 'false'",
+        "/response/lst[@name='fieldType']/bool[@name='termOffsets'] = 'false'",
+        "/response/lst[@name='fieldType']/bool[@name='omitNorms'] = 'true'",
+        "/response/lst[@name='fieldType']/bool[@name='omitTermFreqAndPositions'] = 'true'",
+        "/response/lst[@name='fieldType']/bool[@name='omitPositions'] = 'false'",
+        "/response/lst[@name='fieldType']/bool[@name='storeOffsetsWithPositions'] = 'false'",
+        "/response/lst[@name='fieldType']/bool[@name='multiValued'] = 'false'",
+        "/response/lst[@name='fieldType']/bool[@name='large'] = 'false'",
+        "/response/lst[@name='fieldType']/bool[@name='tokenized'] = 'false'");
   }
 
   @Test
-  public void testXMLGetNotFoundFieldType() throws Exception {
-    assertQ("/schema/fieldtypes/not_in_there?wt=xml",
-            "count(/response/lst[@name='fieldtypes']) = 0",
-            "/response/lst[@name='responseHeader']/int[@name='status'] = '404'",
-            "/response/lst[@name='error']/int[@name='code'] = '404'");
+  public void testXMLGetNotFoundFieldType() {
+    assertQ(
+        "/schema/fieldtypes/not_in_there?wt=xml",
+        "count(/response/lst[@name='fieldtypes']) = 0",
+        "/response/lst[@name='responseHeader']/int[@name='status'] = '404'",
+        "/response/lst[@name='error']/int[@name='code'] = '404'");
   }
 
   @Test
   public void testJsonGetFieldType() throws Exception {
     final String expectedFloatClass = RANDOMIZED_NUMERIC_FIELDTYPES.get(Float.class);
     final boolean expectedDocValues = Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP);
-    assertJQ("/schema/fieldtypes/float?showDefaults=on",
-             "/fieldType/name=='float'",
-             "/fieldType/class=='"+expectedFloatClass+"'",
-             "/fieldType/precisionStep=='0'",
-             "/fieldType/indexed==true",
-             "/fieldType/stored==true",
-             "/fieldType/uninvertible==true",
-             "/fieldType/docValues=="+expectedDocValues,
-             "/fieldType/termVectors==false",
-             "/fieldType/termPositions==false",
-             "/fieldType/termOffsets==false",
-             "/fieldType/omitNorms==true",
-             "/fieldType/omitTermFreqAndPositions==true",
-             "/fieldType/omitPositions==false",
-             "/fieldType/storeOffsetsWithPositions==false",
-             "/fieldType/multiValued==false",
-             "/fieldType/tokenized==false");
+    assertJQ(
+        "/schema/fieldtypes/float?showDefaults=on",
+        "/fieldType/name=='float'",
+        "/fieldType/class=='" + expectedFloatClass + "'",
+        "/fieldType/precisionStep=='0'",
+        "/fieldType/indexed==true",
+        "/fieldType/stored==true",
+        "/fieldType/uninvertible==true",
+        "/fieldType/docValues==" + expectedDocValues,
+        "/fieldType/termVectors==false",
+        "/fieldType/termPositions==false",
+        "/fieldType/termOffsets==false",
+        "/fieldType/omitNorms==true",
+        "/fieldType/omitTermFreqAndPositions==true",
+        "/fieldType/omitPositions==false",
+        "/fieldType/storeOffsetsWithPositions==false",
+        "/fieldType/multiValued==false",
+        "/fieldType/tokenized==false");
   }
-  
+
   @Test
-  public void testXMLGetFieldTypeDontShowDefaults() throws Exception {
-    assertQ("/schema/fieldtypes/teststop?wt=xml",
-            "count(/response/lst[@name='fieldType']/*) = 3",
-            "/response/lst[@name='fieldType']/str[@name='name'] = 'teststop'",
-            "/response/lst[@name='fieldType']/str[@name='class'] = 'solr.TextField'",
-            "/response/lst[@name='fieldType']/lst[@name='analyzer']/lst[@name='tokenizer']/str[@name='class'] = 'solr.LetterTokenizerFactory'",
-            "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='class'][.='solr.LowerCaseFilterFactory']",
-            "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='class'][.='solr.StopFilterFactory']",
-            "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='words'][.='stopwords.txt']"
-            );
+  public void testXMLGetFieldTypeDontShowDefaults() {
+    assertQ(
+        "/schema/fieldtypes/teststop?wt=xml",
+        "count(/response/lst[@name='fieldType']/*) = 3",
+        "/response/lst[@name='fieldType']/str[@name='name'] = 'teststop'",
+        "/response/lst[@name='fieldType']/str[@name='class'] = 'solr.TextField'",
+        "/response/lst[@name='fieldType']/lst[@name='analyzer']/lst[@name='tokenizer']/str[@name='class'] = 'solr.LetterTokenizerFactory'",
+        "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='class'][.='solr.LowerCaseFilterFactory']",
+        "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='class'][.='solr.StopFilterFactory']",
+        "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='words'][.='stopwords.txt']");
   }
 }

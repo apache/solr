@@ -16,19 +16,17 @@
  */
 package org.apache.solr.util;
 
+import com.carrotsearch.randomizedtesting.rules.StatementAdapter;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import com.carrotsearch.randomizedtesting.rules.StatementAdapter;
-
 public final class RevertDefaultThreadHandlerRule implements TestRule {
-  private final static AtomicBoolean applied = new AtomicBoolean();
-  
+  private static final AtomicBoolean applied = new AtomicBoolean();
+
   @Override
   public Statement apply(Statement s, Description d) {
     return new StatementAdapter(s) {
@@ -43,7 +41,7 @@ public final class RevertDefaultThreadHandlerRule implements TestRule {
             Class.forName(cl.getName(), true, cl.getClassLoader());
           } finally {
             if (p == Thread.getDefaultUncaughtExceptionHandler()) {
-            //  throw new RuntimeException("Zookeeper no longer resets default thread handler.");
+              //  throw new RuntimeException("Zookeeper no longer resets default thread handler.");
             }
             Thread.setDefaultUncaughtExceptionHandler(p);
           }

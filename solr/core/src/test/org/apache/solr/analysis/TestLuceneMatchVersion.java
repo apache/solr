@@ -16,34 +16,32 @@
  */
 package org.apache.solr.analysis;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.FieldType;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.tr.TurkishAnalyzer;
 import org.apache.lucene.util.Version;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
 
-/**
- * Tests for luceneMatchVersion property for analyzers
- */
+/** Tests for luceneMatchVersion property for analyzers */
 public class TestLuceneMatchVersion extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema-luceneMatchVersion.xml");
+    initCore("solrconfig.xml", "schema-luceneMatchVersion.xml");
   }
-  
+
   // this must match the solrconfig.xml version for this test
   public static final Version DEFAULT_VERSION =
-    SolrConfig.parseLuceneVersionString(System.getProperty("tests.luceneMatchVersion", "LATEST"));
+      SolrConfig.parseLuceneVersionString(System.getProperty("tests.luceneMatchVersion", "LATEST"));
 
-  public void testStandardTokenizerVersions() throws Exception {
+  public void testStandardTokenizerVersions() {
     assertEquals(DEFAULT_VERSION, solrConfig.luceneMatchVersion);
-    
+
     final IndexSchema schema = h.getCore().getLatestSchema();
-    
+
     FieldType type = schema.getFieldType("textDefault");
     TokenizerChain ana = (TokenizerChain) type.getIndexAnalyzer();
     assertEquals(DEFAULT_VERSION, (ana.getTokenizerFactory()).getLuceneMatchVersion());

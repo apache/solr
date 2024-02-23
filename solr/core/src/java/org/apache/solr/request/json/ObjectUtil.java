@@ -21,44 +21,53 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.SolrException;
 
 public class ObjectUtil {
 
   public static class ConflictHandler {
-    protected boolean isList(Map<String,Object> container, List<String> path, String key, Object current, Object previous) {
-      return key!=null && ("fields".equals(key) || "filter".equals(key));
+    protected boolean isList(
+        Map<String, Object> container,
+        List<String> path,
+        String key,
+        Object current,
+        Object previous) {
+      return key != null && ("fields".equals(key) || "filter".equals(key));
     }
 
-    public void handleConflict(Map<String,Object> container, List<String> path, String key, Object current, Object previous) {
+    public void handleConflict(
+        Map<String, Object> container,
+        List<String> path,
+        String key,
+        Object current,
+        Object previous) {
       boolean handleAsList = isList(container, path, key, current, previous);
       if (handleAsList) {
-        container.put(key, makeList(current, previous) );
+        container.put(key, makeList(current, previous));
         return;
       }
 
       if (previous instanceof Map && current instanceof Map) {
         @SuppressWarnings({"unchecked"})
-        Map<String,Object> prevMap = (Map<String,Object>)previous;
+        Map<String, Object> prevMap = (Map<String, Object>) previous;
         @SuppressWarnings({"unchecked"})
-        Map<String,Object> currMap = (Map<String,Object>)current;
+        Map<String, Object> currMap = (Map<String, Object>) current;
         if (prevMap.size() == 0) return;
         mergeMap(prevMap, currMap, path);
         container.put(key, prevMap);
         return;
       }
 
-      // if we aren't handling as a list, and we aren't handling as a map, then just overwrite (i.e. nothing else to do)
-      return;
+      // if we aren't handling as a list, and we aren't handling as a map, then just overwrite (i.e.
+      // nothing else to do)
     }
 
-
     // merges srcMap onto targetMap (i.e. changes targetMap but not srcMap)
-    public void mergeMap(Map<String,Object> targetMap, Map<String,Object> srcMap, List<String> path) {
+    public void mergeMap(
+        Map<String, Object> targetMap, Map<String, Object> srcMap, List<String> path) {
       if (srcMap.size() == 0) return;
       // to keep ordering correct, start with prevMap and merge in currMap
-      for (Map.Entry<String,Object> srcEntry : srcMap.entrySet()) {
+      for (Map.Entry<String, Object> srcEntry : srcMap.entrySet()) {
         String subKey = srcEntry.getKey();
         Object subVal = srcEntry.getValue();
         Object subPrev = targetMap.put(subKey, subVal);
@@ -66,41 +75,41 @@ public class ObjectUtil {
           // recurse
           path.add(subKey);
           handleConflict(targetMap, path, subKey, subVal, subPrev);
-          path.remove(path.size()-1);
+          path.remove(path.size() - 1);
         }
       }
     }
 
     protected List<Object> makeList(Object current, Object previous) {
       ArrayList<Object> lst = new ArrayList<>();
-      append(lst, previous);   // make the original value(s) come first
+      append(lst, previous); // make the original value(s) come first
       append(lst, current);
       return lst;
     }
 
     protected void append(List<Object> lst, Object current) {
       if (current instanceof Collection) {
-        lst.addAll((Collection<?>)current);
+        lst.addAll((Collection<?>) current);
       } else {
         lst.add(current);
       }
     }
-
   }
 
-  public static void mergeObjects(Map<String,Object> top, List<String> path, Object val, ConflictHandler handler) {
-    Map<String,Object> outer = top;
-    for (int i=0; i<path.size()-1; i++) {
+  public static void mergeObjects(
+      Map<String, Object> top, List<String> path, Object val, ConflictHandler handler) {
+    Map<String, Object> outer = top;
+    for (int i = 0; i < path.size() - 1; i++) {
       @SuppressWarnings({"unchecked"})
-      Map<String,Object> sub = (Map<String,Object>)outer.get(path.get(i));
+      Map<String, Object> sub = (Map<String, Object>) outer.get(path.get(i));
       if (sub == null) {
-        sub = new LinkedHashMap<String,Object>();
+        sub = new LinkedHashMap<>();
         outer.put(path.get(i), sub);
       }
       outer = sub;
     }
 
-    String key = path.size() > 0 ? path.get(path.size()-1) : null;
+    String key = path.size() > 0 ? path.get(path.size() - 1) : null;
 
     if (key != null) {
       Object existingVal = outer.put(key, val);
@@ -111,13 +120,13 @@ public class ObjectUtil {
     } else if (val instanceof Map) {
       // merging at top level...
       @SuppressWarnings({"unchecked"})
-      Map<String,Object> newMap = (Map<String,Object>)val;
+      Map<String, Object> newMap = (Map<String, Object>) val;
       handler.mergeMap(outer, newMap, path);
     } else {
       // todo: find a way to return query param in error message
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
           "Expected JSON Object but got " + val.getClass().getSimpleName() + "=" + val);
     }
   }
-
 }

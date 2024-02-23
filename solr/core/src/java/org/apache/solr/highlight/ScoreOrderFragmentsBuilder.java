@@ -23,11 +23,12 @@ import org.apache.solr.common.params.SolrParams;
 public class ScoreOrderFragmentsBuilder extends SolrFragmentsBuilder {
 
   @Override
-  protected FragmentsBuilder getFragmentsBuilder( SolrParams params,
-      String[] preTags, String[] postTags, BoundaryScanner bs ) {
+  protected FragmentsBuilder getFragmentsBuilder(
+      SolrParams params, String[] preTags, String[] postTags, BoundaryScanner bs) {
     org.apache.lucene.search.vectorhighlight.ScoreOrderFragmentsBuilder sofb =
-      new org.apache.lucene.search.vectorhighlight.ScoreOrderFragmentsBuilder( preTags, postTags, bs );
-    sofb.setMultiValuedSeparator( getMultiValuedSeparatorChar( params ) );
+        new org.apache.lucene.search.vectorhighlight.ScoreOrderFragmentsBuilder(
+            preTags, postTags, bs);
+    sofb.setMultiValuedSeparator(getMultiValuedSeparatorChar(params));
     return sofb;
   }
 

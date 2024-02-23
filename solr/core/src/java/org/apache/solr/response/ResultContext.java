@@ -18,7 +18,6 @@ package org.apache.solr.response;
 
 import java.util.Iterator;
 import java.util.function.Predicate;
-
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.request.SolrQueryRequest;
@@ -26,11 +25,7 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 
-/**
- * A class to hold the QueryResult and the Query
- * 
- *
- */
+/** A class to hold the QueryResult and the Query */
 public abstract class ResultContext {
 
   public abstract DocList getDocList();
@@ -43,19 +38,22 @@ public abstract class ResultContext {
 
   // TODO: any reason to allow for retrieval of any filters as well?
 
-  /** Note: do not use the request to get the searcher!  A cross-core request may have a different
-   *  searcher (for the other core) than the original request.
+  /**
+   * Note: do not use the request to get the searcher! A cross-core request may have a different
+   * searcher (for the other core) than the original request.
    */
   public abstract SolrQueryRequest getRequest();
 
   public boolean wantsScores() {
-    return getReturnFields() != null && getReturnFields().wantsScore() && getDocList() != null && getDocList().hasScores();
+    return getReturnFields() != null
+        && getReturnFields().wantsScore()
+        && getDocList() != null
+        && getDocList().hasScores();
   }
 
   public Iterator<SolrDocument> getProcessedDocuments() {
     return new DocsStreamer(this);
   }
-  public static final ThreadLocal<Predicate<String>>  READASBYTES = new ThreadLocal<>();
+
+  public static final ThreadLocal<Predicate<String>> READASBYTES = new ThreadLocal<>();
 }
-
-

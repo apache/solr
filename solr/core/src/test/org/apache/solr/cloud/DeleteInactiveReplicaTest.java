@@ -19,9 +19,7 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
@@ -30,8 +28,10 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.TimeOut;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -43,13 +43,17 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
+  }
+
+  @AfterClass
+  public static void reset() {
+    System.setProperty("solr.deleteUnknownCores", "false");
   }
 
   @Test
   public void deleteInactiveReplicaTest() throws Exception {
+    System.setProperty("solr.deleteUnknownCores", "true");
 
     String collectionName = "delDeadColl";
     int replicationFactor = 2;
@@ -57,9 +61,12 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(collectionName, "conf", numShards, replicationFactor)
         .process(cluster.getSolrClient());
-    waitForState("Expected a cluster of 2 shards and 2 replicas", collectionName, (n, c) -> {
-      return DocCollection.isFullyActive(n, c, numShards, replicationFactor);
-    });
+    waitForState(
+        "Expected a cluster of 2 shards and 2 replicas",
+        collectionName,
+        (n, c) -> {
+          return DocCollection.isFullyActive(n, c, numShards, replicationFactor);
+        });
 
     DocCollection collectionState = getCollectionState(collectionName);
 
@@ -72,38 +79,50 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
     }
     cluster.stopJettySolrRunner(jetty);
 
-    waitForState("Expected replica " + replica.getName() + " on down node to be removed from cluster state", collectionName, (n, c) -> {
-      Replica r = c.getReplica(replica.getCoreName());
-      return r == null || r.getState() != Replica.State.ACTIVE;
-    });
+    waitForState(
+        "Expected replica " + replica.getName() + " on down node to be removed from cluster state",
+        collectionName,
+        (n, c) -> {
+          Replica r = c.getReplica(replica.getCoreName());
+          return r == null || r.getState() != Replica.State.ACTIVE;
+        });
 
     if (log.isInfoEnabled()) {
       log.info("Removing replica {}/{} ", shard.getName(), replica.getName());
     }
     CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName())
         .process(cluster.getSolrClient());
-    waitForState("Expected deleted replica " + replica.getName() + " to be removed from cluster state", collectionName, (n, c) -> {
-      return c.getReplica(replica.getCoreName()) == null;
-    });
+    waitForState(
+        "Expected deleted replica " + replica.getName() + " to be removed from cluster state",
+        collectionName,
+        (n, c) -> {
+          return c.getReplica(replica.getCoreName()) == null;
+        });
 
     cluster.startJettySolrRunner(jetty);
     log.info("restarted jetty");
     TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    timeOut.waitFor("Expected data dir and instance dir of " + replica.getName() + " is deleted", ()
-        -> !Files.exists(replicaCd.getInstanceDir()) && !FileUtils.fileExists(replicaCd.getDataDir()));
+    timeOut.waitFor(
+        "Expected data dir and instance dir of " + replica.getName() + " is deleted",
+        () ->
+            !Files.exists(replicaCd.getInstanceDir())
+                && !FileUtils.fileExists(replicaCd.getDataDir()));
 
     // Check that we can't create a core with no coreNodeName
     try (SolrClient queryClient = getHttpSolrClient(jetty.getBaseUrl().toString())) {
-      Exception e = expectThrows(Exception.class, () -> {
-        CoreAdminRequest.Create createRequest = new CoreAdminRequest.Create();
-        createRequest.setCoreName("testcore");
-        createRequest.setCollection(collectionName);
-        createRequest.setShardId("shard2");
-        queryClient.request(createRequest);
-      });
-      assertTrue("Unexpected error message: " + e.getMessage(), e.getMessage().contains("coreNodeName missing"));
-
+      Exception e =
+          expectThrows(
+              Exception.class,
+              () -> {
+                CoreAdminRequest.Create createRequest = new CoreAdminRequest.Create();
+                createRequest.setCoreName("testcore");
+                createRequest.setCollection(collectionName);
+                createRequest.setShardId("shard2");
+                queryClient.request(createRequest);
+              });
+      assertTrue(
+          "Unexpected error message: " + e.getMessage(),
+          e.getMessage().contains("coreNodeName missing"));
     }
   }
-
 }

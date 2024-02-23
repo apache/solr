@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.facet;
 
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -23,25 +25,24 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Objects;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.StrParser;
 import org.apache.solr.search.SyntaxError;
 
-import static org.apache.solr.common.params.CommonParams.SORT;
-
 public class LegacyFacet {
   private SolrParams params;
-  private Map<String,Object> json;
-  private Map<String,Object> currentCommand = null;  // always points to the current facet command
-  private Map<String,Object> currentSubs; // always points to the current facet:{} block
+  private Map<String, Object> json;
+  private Map<String, Object> currentCommand = null; // always points to the current facet command
+  private Map<String, Object> currentSubs; // always points to the current facet:{} block
 
   String facetValue;
   String key;
@@ -49,7 +50,7 @@ public class LegacyFacet {
   SolrParams orig;
   SolrParams required;
 
-  Map<String, List<Subfacet>> subFacets;  // only parsed once
+  Map<String, List<Subfacet>> subFacets; // only parsed once
 
   public LegacyFacet(SolrParams params) {
     this.params = params;
@@ -58,8 +59,7 @@ public class LegacyFacet {
     this.currentSubs = json;
   }
 
-
-  Map<String,Object> getLegacy() {
+  Map<String, Object> getLegacy() {
     subFacets = parseSubFacets(params);
     String[] queries = params.getParams(FacetParams.FACET_QUERY);
     if (queries != null) {
@@ -83,26 +83,26 @@ public class LegacyFacet {
     return json;
   }
 
-
   protected static class Subfacet {
     public String parentKey;
     public String type; // query, range, field
-    public String value;  // the actual field or the query, including possible local params
+    public String value; // the actual field or the query, including possible local params
   }
 
-
   protected static Map<String, List<Subfacet>> parseSubFacets(SolrParams params) {
-    Map<String,List<Subfacet>> map = new HashMap<>();
+    Map<String, List<Subfacet>> map = new HashMap<>();
     Iterator<String> iter = params.getParameterNamesIterator();
 
-    String SUBFACET="subfacet.";
+    String SUBFACET = "subfacet.";
     while (iter.hasNext()) {
       String key = iter.next();
 
       if (key.startsWith(SUBFACET)) {
         List<String> parts = StrUtils.splitSmart(key, '.');
         if (parts.size() != 3) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "expected subfacet parameter name of the form subfacet.mykey.field, got:" + key);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "expected subfacet parameter name of the form subfacet.mykey.field, got:" + key);
         }
         Subfacet sub = new Subfacet();
         sub.parentKey = parts.get(1);
@@ -121,37 +121,36 @@ public class LegacyFacet {
     return map;
   }
 
-
   protected void addQueryFacet(String q) {
     parseParams(FacetParams.FACET_QUERY, q);
-    Map<String,Object> cmd = new HashMap<String,Object>(2);
-    Map<String,Object> type = new HashMap<String,Object>(1);
+    Map<String, Object> cmd = CollectionUtil.newHashMap(2);
+    Map<String, Object> type = CollectionUtil.newHashMap(1);
     type.put("query", cmd);
     cmd.put("q", q);
     addSub(key, type);
     handleSubs(cmd);
   }
 
-  protected void addRangeFacet(String field)  {
+  protected void addRangeFacet(String field) {
     parseParams(FacetParams.FACET_RANGE, field);
-    Map<String,Object> cmd = new HashMap<String,Object>(5);
-    Map<String,Object> type = new HashMap<String,Object>(1);
+    Map<String, Object> cmd = CollectionUtil.newHashMap(5);
+    Map<String, Object> type = CollectionUtil.newHashMap(1);
     type.put("range", cmd);
 
     String f = key;
     cmd.put("field", facetValue);
-    cmd.put("start", required.getFieldParam(f,FacetParams.FACET_RANGE_START));
-    cmd.put("end", required.getFieldParam(f,FacetParams.FACET_RANGE_END));
+    cmd.put("start", required.getFieldParam(f, FacetParams.FACET_RANGE_START));
+    cmd.put("end", required.getFieldParam(f, FacetParams.FACET_RANGE_END));
     cmd.put("gap", required.getFieldParam(f, FacetParams.FACET_RANGE_GAP));
     String[] p = params.getFieldParams(f, FacetParams.FACET_RANGE_OTHER);
-    if (p != null) cmd.put("other", p.length==1 ? p[0] : Arrays.asList(p));
+    if (p != null) cmd.put("other", p.length == 1 ? p[0] : Arrays.asList(p));
     p = params.getFieldParams(f, FacetParams.FACET_RANGE_INCLUDE);
-    if (p != null) cmd.put("include", p.length==1 ? p[0] : Arrays.asList(p));
+    if (p != null) cmd.put("include", p.length == 1 ? p[0] : Arrays.asList(p));
 
-    final int mincount = params.getFieldInt(f,FacetParams.FACET_MINCOUNT, 0);
+    final int mincount = params.getFieldInt(f, FacetParams.FACET_MINCOUNT, 0);
     cmd.put("mincount", mincount);
 
-    boolean hardend = params.getFieldBool(f,FacetParams.FACET_RANGE_HARD_END,false);
+    boolean hardend = params.getFieldBool(f, FacetParams.FACET_RANGE_HARD_END, false);
     if (hardend) cmd.put("hardend", hardend);
 
     addSub(key, type);
@@ -161,7 +160,7 @@ public class LegacyFacet {
   protected void addFieldFacet(String field) {
     parseParams(FacetParams.FACET_FIELD, field);
 
-    String f = key;  // the parameter to use for per-field parameters... f.key.facet.limit=10
+    String f = key; // the parameter to use for per-field parameters... f.key.facet.limit=10
 
     int offset = params.getFieldInt(f, FacetParams.FACET_OFFSET, 0);
     int limit = params.getFieldInt(f, FacetParams.FACET_LIMIT, 10);
@@ -171,10 +170,14 @@ public class LegacyFacet {
     boolean missing = params.getFieldBool(f, FacetParams.FACET_MISSING, false);
 
     // default to sorting if there is a limit.
-    String sort = params.getFieldParam(f, FacetParams.FACET_SORT, limit>0 ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_INDEX);
+    String sort =
+        params.getFieldParam(
+            f,
+            FacetParams.FACET_SORT,
+            limit > 0 ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_INDEX);
     String prefix = params.getFieldParam(f, FacetParams.FACET_PREFIX);
 
-    Map<String,Object> cmd = new HashMap<>();
+    Map<String, Object> cmd = new HashMap<>();
     cmd.put("field", facetValue);
     if (offset != 0) cmd.put("offset", offset);
     if (limit != 10) cmd.put("limit", limit);
@@ -186,51 +189,49 @@ public class LegacyFacet {
     } else if (sort.equals("index")) {
       cmd.put(SORT, "index asc");
     } else {
-      cmd.put(SORT, sort);  // can be sort by one of our stats
+      cmd.put(SORT, sort); // can be sort by one of our stats
     }
 
-    Map<String,Object> type = new HashMap<>(1);
+    Map<String, Object> type = CollectionUtil.newHashMap(1);
     type.put("terms", cmd);
 
     addSub(key, type);
     handleSubs(cmd);
   }
 
-  private void handleSubs(Map<String,Object> cmd) {
-    Map<String,Object> savedCmd = currentCommand;
-    Map<String,Object> savedSubs = currentSubs;
-   try {
-     currentCommand = cmd;
-     currentSubs = null;
+  private void handleSubs(Map<String, Object> cmd) {
+    Map<String, Object> savedCmd = currentCommand;
+    Map<String, Object> savedSubs = currentSubs;
+    try {
+      currentCommand = cmd;
+      currentSubs = null;
 
-     // parse stats for this facet
-     String[] stats = params.getFieldParams(key, "facet.stat");
-     if (stats != null) {
-       for (String stat : stats) {
-         addStat(stat);
-       }
-     }
+      // parse stats for this facet
+      String[] stats = params.getFieldParams(key, "facet.stat");
+      if (stats != null) {
+        for (String stat : stats) {
+          addStat(stat);
+        }
+      }
 
-     List<Subfacet> subs = subFacets.get(key);
-     if (subs != null) {
-       for (Subfacet subfacet : subs) {
-         if ("field".equals(subfacet.type)) {
-           addFieldFacet(subfacet.value);
-         } else if ("query".equals(subfacet.type)) {
-           addQueryFacet(subfacet.value);
-         } else if ("range".equals(subfacet.type)) {
-           addQueryFacet(subfacet.value);
-         }
-       }
-     }
+      List<Subfacet> subs = subFacets.get(key);
+      if (subs != null) {
+        for (Subfacet subfacet : subs) {
+          if ("field".equals(subfacet.type)) {
+            addFieldFacet(subfacet.value);
+          } else if ("query".equals(subfacet.type)) {
+            addQueryFacet(subfacet.value);
+          } else if ("range".equals(subfacet.type)) {
+            addQueryFacet(subfacet.value);
+          }
+        }
+      }
 
-
-   } finally {
-     currentCommand = savedCmd;
-     currentSubs = savedSubs;
-   }
+    } finally {
+      currentCommand = savedCmd;
+      currentSubs = savedSubs;
+    }
   }
-
 
   private void addStat(String val) {
     StrParser sp = new StrParser(val);
@@ -255,22 +256,23 @@ public class LegacyFacet {
     }
 
     if (key == null) {
-      key = funcStr;  // not really ideal
+      key = funcStr; // not really ideal
     }
 
     addStat(key, funcStr);
   }
 
   private void addStat(String key, String val) {
-    if ("count".equals(val) || "count()".equals(val)) return;  // we no longer have a count function, we always return the count
+    if ("count".equals(val) || "count()".equals(val))
+      return; // we no longer have a count function, we always return the count
     getCurrentSubs().put(key, val);
   }
 
-  private void addSub(String key, Map<String,Object> sub) {
+  private void addSub(String key, Map<String, Object> sub) {
     getCurrentSubs().put(key, sub);
   }
 
-  private Map<String,Object> getCurrentSubs() {
+  private Map<String, Object> getCurrentSubs() {
     if (currentSubs == null) {
       currentSubs = new LinkedHashMap<>();
       currentCommand.put("facet", currentSubs);
@@ -278,9 +280,7 @@ public class LegacyFacet {
     return currentSubs;
   }
 
-
-
-  protected void parseParams(String type, String param)  {
+  protected void parseParams(String type, String param) {
     facetValue = param;
     key = param;
 
@@ -298,7 +298,7 @@ public class LegacyFacet {
       required = new RequiredSolrParams(params);
 
       // remove local params unless it's a query
-      if (type != FacetParams.FACET_QUERY) {
+      if (!Objects.equals(type, FacetParams.FACET_QUERY)) {
         facetValue = localParams.get(CommonParams.VALUE);
       }
 
@@ -313,6 +313,4 @@ public class LegacyFacet {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
   }
-
-
 }

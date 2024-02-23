@@ -19,25 +19,28 @@
 
 package org.noggit;
 
-import java.util.*;
-
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
 
 public class JSONWriter {
 
-  /**
-   * Implement this interface on your class to support serialization
-   */
+  /** Implement this interface on your class to support serialization */
   public static interface Writable {
     public void write(JSONWriter writer);
   }
+
+  public static final int DEFAULT_INDENT = 2;
 
   protected int level;
   protected int indent;
   protected final CharArr out;
 
   /**
-   * @param out        the CharArr to write the output to.
-   * @param indentSize The number of space characters to use as an indent (default 2). 0=newlines but no spaces, -1=no indent at all.
+   * @param out the CharArr to write the output to.
+   * @param indentSize The number of space characters to use as an indent (default 2). 0=newlines
+   *     but no spaces, -1=no indent at all.
    */
   public JSONWriter(CharArr out, int indentSize) {
     this.out = out;
@@ -45,7 +48,7 @@ public class JSONWriter {
   }
 
   public JSONWriter(CharArr out) {
-    this(out, 2);
+    this(out, DEFAULT_INDENT);
   }
 
   public void setIndentSize(int indentSize) {
@@ -66,9 +69,12 @@ public class JSONWriter {
   }
 
   public void write(Object o) {
-    // NOTE: an instance-of chain was about 50% faster than hashing on the classes, even with perfect hashing.
+    // NOTE: an instance-of chain was about 50% faster than hashing on the classes, even with
+    // perfect hashing.
     if (o == null) {
       writeNull();
+    } else if (o instanceof Writable) {
+      ((Writable) o).write(this);
     } else if (o instanceof String) {
       writeString((String) o);
     } else if (o instanceof Number) {
@@ -85,12 +91,12 @@ public class JSONWriter {
       write((Map<?, ?>) o);
     } else if (o instanceof Collection) {
       write((Collection<?>) o);
+    } else if (o instanceof Iterator) {
+      write((Iterator<?>) o);
     } else if (o instanceof Boolean) {
       write(((Boolean) o).booleanValue());
     } else if (o instanceof CharSequence) {
       writeString((CharSequence) o);
-    } else if (o instanceof Writable) {
-      ((Writable) o).write(this);
     } else if (o instanceof Object[]) {
       write(Arrays.asList((Object[]) o));
     } else if (o instanceof int[]) {
@@ -115,7 +121,7 @@ public class JSONWriter {
   }
 
   /**
-   * Override this method for custom handling of unknown classes.  Also see the Writable interface.
+   * Override this method for custom handling of unknown classes. Also see the Writable interface.
    */
   public void handleUnknownClass(Object o) {
     writeString(o.toString());
@@ -155,9 +161,23 @@ public class JSONWriter {
     endArray();
   }
 
+  public void write(Iterator<?> val) {
+    startArray();
+    boolean first = true;
+    while (val.hasNext()) {
+      if (first) {
+        first = false;
+      } else {
+        writeValueSeparator();
+      }
+      write(val.next());
+    }
+    endArray();
+  }
+
   /**
-   * A byte[] may be either a single logical value, or a list of small integers.
-   * It's up to the implementation to decide.
+   * A byte[] may be either a single logical value, or a list of small integers. It's up to the
+   * implementation to decide.
    */
   public void write(byte[] val) {
     startArray();
@@ -257,7 +277,6 @@ public class JSONWriter {
     endArray();
   }
 
-
   public void write(short number) {
     write((int) number);
   }
@@ -265,7 +284,6 @@ public class JSONWriter {
   public void write(byte number) {
     write((int) number);
   }
-
 
   public void writeNull() {
     JSONUtil.writeNull(out);
@@ -288,7 +306,8 @@ public class JSONWriter {
   }
 
   public void writeStringChars(CharArr partialStr) {
-    JSONUtil.writeStringPart(partialStr.getArray(), partialStr.getStart(), partialStr.getEnd(), out);
+    JSONUtil.writeStringPart(
+        partialStr.getArray(), partialStr.getStart(), partialStr.getEnd(), out);
   }
 
   public void writeStringEnd() {
@@ -354,5 +373,4 @@ public class JSONWriter {
   public void writeNameSeparator() {
     out.write(':');
   }
-
 }

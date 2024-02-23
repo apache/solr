@@ -34,8 +34,8 @@ class ShardResultTransformerUtils {
     return marshalOrUnmarshalSortValue(originalSortValue, schemaField, false);
   }
 
-  private static Object marshalOrUnmarshalSortValue(Object originalSortValue, SchemaField schemaField,
-      boolean marshal) {
+  private static Object marshalOrUnmarshalSortValue(
+      Object originalSortValue, SchemaField schemaField, boolean marshal) {
     if (originalSortValue != null && schemaField != null) {
       final FieldType fieldType = schemaField.getType();
       if (marshal) {
@@ -47,5 +47,4 @@ class ShardResultTransformerUtils {
       return originalSortValue;
     }
   }
-
 }

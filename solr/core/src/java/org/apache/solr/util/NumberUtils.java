@@ -18,12 +18,9 @@ package org.apache.solr.util;
 
 import java.text.NumberFormat;
 import java.util.Locale;
-
 import org.apache.lucene.util.BytesRef;
 
-/**
- *
- */
+/** */
 public class NumberUtils {
 
   public static String readableSize(long size) {
@@ -42,8 +39,8 @@ public class NumberUtils {
 
   public static String int2sortableStr(int val) {
     char[] arr = new char[3];
-    int2sortableStr(val,arr,0);
-    return new String(arr,0,3);
+    int2sortableStr(val, arr, 0);
+    return new String(arr, 0, 3);
   }
 
   public static String int2sortableStr(String val) {
@@ -51,7 +48,7 @@ public class NumberUtils {
   }
 
   public static String SortableStr2int(String val) {
-    int ival = SortableStr2int(val,0,3);
+    int ival = SortableStr2int(val, 0, 3);
     return Integer.toString(ival);
   }
 
@@ -60,11 +57,10 @@ public class NumberUtils {
     return SortableStr2int(val.utf8ToString());
   }
 
-
   public static String long2sortableStr(long val) {
     char[] arr = new char[5];
-    long2sortableStr(val,arr,0);
-    return new String(arr,0,5);
+    long2sortableStr(val, arr, 0);
+    return new String(arr, 0, 5);
   }
 
   public static String long2sortableStr(String val) {
@@ -72,7 +68,7 @@ public class NumberUtils {
   }
 
   public static String SortableStr2long(String val) {
-    long ival = SortableStr2long(val,0,5);
+    long ival = SortableStr2long(val, 0, 5);
     return Long.toString(ival);
   }
 
@@ -95,7 +91,7 @@ public class NumberUtils {
   //
   public static String float2sortableStr(float val) {
     int f = Float.floatToRawIntBits(val);
-    if (f<0) f ^= 0x7fffffff;
+    if (f < 0) f ^= 0x7fffffff;
     return int2sortableStr(f);
   }
 
@@ -104,8 +100,8 @@ public class NumberUtils {
   }
 
   public static float SortableStr2float(String val) {
-    int f = SortableStr2int(val,0,3);
-    if (f<0) f ^= 0x7fffffff;
+    int f = SortableStr2int(val, 0, 3);
+    if (f < 0) f ^= 0x7fffffff;
     return Float.intBitsToFloat(f);
   }
 
@@ -118,10 +114,9 @@ public class NumberUtils {
     return Float.toString(SortableStr2float(val));
   }
 
-
   public static String double2sortableStr(double val) {
     long f = Double.doubleToRawLongBits(val);
-    if (f<0) f ^= 0x7fffffffffffffffL;
+    if (f < 0) f ^= 0x7fffffffffffffffL;
     return long2sortableStr(f);
   }
 
@@ -130,8 +125,8 @@ public class NumberUtils {
   }
 
   public static double SortableStr2double(String val) {
-    long f = SortableStr2long(val,0,6);
-    if (f<0) f ^= 0x7fffffffffffffffL;
+    long f = SortableStr2long(val, 0, 6);
+    if (f < 0) f ^= 0x7fffffffffffffffL;
     return Double.longBitsToDouble(f);
   }
 
@@ -144,16 +139,14 @@ public class NumberUtils {
     return Double.toString(SortableStr2double(val));
   }
 
-
-
   // uses binary representation of an int to build a string of
   // chars that will sort correctly.  Only char ranges
   // less than 0xd800 will be used to avoid UCS-16 surrogates.
   public static int int2sortableStr(int val, char[] out, int offset) {
     val += Integer.MIN_VALUE;
-    out[offset++] = (char)(val >>> 24);
-    out[offset++] = (char)((val >>> 12) & 0x0fff);
-    out[offset++] = (char)(val & 0x0fff);
+    out[offset++] = (char) (val >>> 24);
+    out[offset++] = (char) ((val >>> 12) & 0x0fff);
+    out[offset++] = (char) (val & 0x0fff);
     return 3;
   }
 
@@ -176,18 +169,18 @@ public class NumberUtils {
   // we can use the lowest 15 bits of a char, (or a mask of 0x7fff)
   public static int long2sortableStr(long val, char[] out, int offset) {
     val += Long.MIN_VALUE;
-    out[offset++] = (char)(val >>>60);
-    out[offset++] = (char)(val >>>45 & 0x7fff);
-    out[offset++] = (char)(val >>>30 & 0x7fff);
-    out[offset++] = (char)(val >>>15 & 0x7fff);
-    out[offset] = (char)(val & 0x7fff);
+    out[offset++] = (char) (val >>> 60);
+    out[offset++] = (char) (val >>> 45 & 0x7fff);
+    out[offset++] = (char) (val >>> 30 & 0x7fff);
+    out[offset++] = (char) (val >>> 15 & 0x7fff);
+    out[offset] = (char) (val & 0x7fff);
     return 5;
   }
 
   public static long SortableStr2long(String sval, int offset, int len) {
-    long val = (long)(sval.charAt(offset++)) << 60;
-    val |= ((long)sval.charAt(offset++)) << 45;
-    val |= ((long)sval.charAt(offset++)) << 30;
+    long val = (long) (sval.charAt(offset++)) << 60;
+    val |= ((long) sval.charAt(offset++)) << 45;
+    val |= ((long) sval.charAt(offset++)) << 30;
     val |= sval.charAt(offset++) << 15;
     val |= sval.charAt(offset);
     val -= Long.MIN_VALUE;
@@ -212,6 +205,6 @@ public class NumberUtils {
   public static int bytesToInt(byte[] bytes) {
     if (bytes == null) return 0;
     assert bytes.length == 4;
-    return bytes[0] << 24 | (bytes[1] & 255) << 16 | (bytes[2] & 255) << 8 | bytes[3] & 255;
+    return bytes[0] << 24 | (bytes[1] & 255) << 16 | (bytes[2] & 255) << 8 | (bytes[3] & 255);
   }
 }

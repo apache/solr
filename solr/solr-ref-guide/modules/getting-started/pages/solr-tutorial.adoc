@@ -1,0 +1,98 @@
+= Solr Tutorials
+:experimental:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This tutorial covers getting Solr up and running, ingesting a variety of data sources into Solr collections,
+and getting a feel for the Solr administrative and search interfaces.
+
+The tutorial is organized into three sections that each build on the one before it.
+The xref:tutorial-techproducts.adoc[first exercise] will ask you to start Solr, create a collection, index some basic documents, and then perform some searches.
+
+The xref:tutorial-films.adoc[second exercise] works with a different set of data, and explores requesting facets with the dataset.
+
+The xref:tutorial-diy.adoc[third exercise] encourages you to begin to work with your own data and start a plan for your implementation.
+
+Finally, we'll introduce <<Spatial Queries,spatial search>> and show you how to get your Solr instance back into a clean state.
+
+== Before You Begin
+
+To follow along with this tutorial, you will need...
+
+// TODO possibly remove this system requirements or only replace the link
+. To meet the {solr-javadocs}/SYSTEM_REQUIREMENTS.html[system requirements]
+. An Apache Solr release http://solr.apache.org/downloads.html[download].
+This tutorial is designed for Apache Solr {solr-docs-version}.
+
+For best results, please run the browser showing this tutorial and the Solr server on the same machine so tutorial links will correctly point to your Solr server.
+
+== Unpack Solr
+
+Begin by unzipping the full Solr release and changing your working directory to the subdirectory where Solr was installed.
+For example, with a shell in UNIX, Cygwin, or MacOS:
+
+[,console]
+----
+$ ls solr*
+solr-{solr-full-version}.tgz
+
+$ tar -xzf solr-{solr-full-version}.tgz
+
+$ cd solr-{solr-full-version}/
+----
+
+If you'd like to know more about Solr's directory layout before moving to the first exercise, see the section xref:deployment-guide:installing-solr.adoc#directory-layout[Directory Layout] for details.
+
+
+== Spatial Queries
+
+Solr has sophisticated geospatial support, including searching within a specified distance range of a given location (or within a bounding box), sorting by distance, or even boosting results by the distance.
+
+Some of the example techproducts documents we indexed in Exercise 1 have locations associated with them to illustrate the spatial capabilities.
+To reindex this data, see xref:tutorial-techproducts.adoc[Exercise 1].
+
+To learn more about Solr's spatial capabilities, see the section xref:query-guide:spatial-search.adoc[].
+
+== Wrapping Up
+
+If you've run the full set of commands in this quick start guide you have done the following:
+
+* Launched Solr into SolrCloud mode, two nodes, two collections including shards and replicas
+* Indexed several types of files
+* Used the Schema API to modify your schema
+* Opened the admin console, used its query interface to get results
+* Opened the /browse interface to explore Solr's features in a more friendly and familiar interface
+
+Nice work!
+
+== Cleanup
+
+As you work through this tutorial, you may want to stop Solr and reset the environment back to the starting point.
+The following command line will stop Solr and remove the directories for each of the two nodes that were created all the way back in Exercise 1:
+
+[,console]
+----
+$ bin/solr stop -all
+$ rm -Rf example/cloud/
+----
+
+== Where to next?
+
+This Guide will be your best resource for learning more about Solr.
+
+Solr also has a robust community made up of people happy to help you get started.
+For more information, check out the Solr website's http://solr.apache.org/resources.html[Resources page].

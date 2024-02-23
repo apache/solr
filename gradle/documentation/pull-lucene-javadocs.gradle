@@ -28,6 +28,8 @@ configure(project(":solr:documentation")) {
       // Not sure why we need this, otherwise regular JARs get sucked in, not just
       // javadoc-classifier JARs
       transitive = false
+      canBeResolved = true
+      canBeConsumed = true
     }
   }
 
@@ -47,7 +49,6 @@ configure(project(":solr:documentation")) {
     javadocs group: 'org.apache.lucene', name: 'lucene-analysis-common', classifier: 'javadoc'
     javadocs group: 'org.apache.lucene', name: 'lucene-analysis-stempel', classifier: 'javadoc'
     javadocs group: 'org.apache.lucene', name: 'lucene-queryparser', classifier: 'javadoc'
-    javadocs group: 'org.apache.lucene', name: 'lucene-sandbox', classifier: 'javadoc'
     javadocs group: 'org.apache.lucene', name: 'lucene-spatial-extras', classifier: 'javadoc'
   }
 
@@ -57,7 +58,7 @@ configure(project(":solr:documentation")) {
 
     dependsOn configurations.javadocs
     inputs.files configurations.javadocs
-    outputs.dir luceneDocsDir
+    outputs.dir project.ext.luceneDocsDir
 
     doFirst {
       def resolved = configurations.javadocs.resolvedConfiguration
@@ -72,7 +73,7 @@ configure(project(":solr:documentation")) {
         def path = id.name.replaceFirst('^lucene-', '').replaceFirst('^analysis-','analysis/')
         project.sync {
           from zipTree(artifact.file)
-          into file("${luceneDocsDir}/${path}/")
+          into file("${project.ext.luceneDocsDir}/${path}/")
         }
       }
     }

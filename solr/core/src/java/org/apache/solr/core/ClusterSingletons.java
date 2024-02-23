@@ -17,11 +17,6 @@
 
 package org.apache.solr.core;
 
-import org.apache.solr.api.ContainerPluginsRegistry;
-import org.apache.solr.cloud.ClusterSingleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,10 +25,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.apache.solr.api.ContainerPluginsRegistry;
+import org.apache.solr.cloud.ClusterSingleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Helper class to manage the initial registration of {@link ClusterSingleton} plugins and
- * to track the changes in loaded plugins in {@link ContainerPluginsRegistry}.
+ * Helper class to manage the initial registration of {@link ClusterSingleton} plugins and to track
+ * the changes in loaded plugins in {@link ContainerPluginsRegistry}.
  */
 public class ClusterSingletons {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -51,85 +50,83 @@ public class ClusterSingletons {
 
   /**
    * Create a helper to manage singletons.
-   * @param runSingletons this function returns true when singletons should be running. It's
-   *                      Used when adding or modifying existing plugins, and when invoking
-   *                      {@link #startClusterSingletons()}.
+   *
+   * @param runSingletons this function returns true when singletons should be running. It's Used
+   *     when adding or modifying existing plugins, and when invoking {@link
+   *     #startClusterSingletons()}.
    * @param asyncRunner async runner that will be used for starting up each singleton.
    */
   public ClusterSingletons(Supplier<Boolean> runSingletons, Consumer<Runnable> asyncRunner) {
     this.runSingletons = runSingletons;
     this.asyncRunner = asyncRunner;
     // create plugin registry listener
-    pluginListener = new ContainerPluginsRegistry.PluginRegistryListener() {
-      @Override
-      public void added(ContainerPluginsRegistry.ApiInfo plugin) {
-        if (plugin == null || plugin.getInstance() == null) {
-          return;
-        }
-        // register new api
-        Object instance = plugin.getInstance();
-        if (instance instanceof ClusterSingleton) {
-          ClusterSingleton singleton = (ClusterSingleton) instance;
-          singletonMap.put(singleton.getName(), singleton);
-          // check to see if we should immediately start this singleton
-          if (isReady() && runSingletons.get()) {
-            try {
-              singleton.start();
-            } catch (Exception exc) {
-              log.warn("Exception starting ClusterSingleton {}: {}", plugin, exc);
+    pluginListener =
+        new ContainerPluginsRegistry.PluginRegistryListener() {
+          @Override
+          public void added(ContainerPluginsRegistry.ApiInfo plugin) {
+            if (plugin == null || plugin.getInstance() == null) {
+              return;
+            }
+            // register new api
+            Object instance = plugin.getInstance();
+            if (instance instanceof ClusterSingleton) {
+              ClusterSingleton singleton = (ClusterSingleton) instance;
+              singletonMap.put(singleton.getName(), singleton);
+              // check to see if we should immediately start this singleton
+              if (isReady() && runSingletons.get()) {
+                try {
+                  singleton.start();
+                } catch (Exception exc) {
+                  log.warn("Exception starting ClusterSingleton {}: {}", plugin, exc);
+                }
+              }
             }
           }
-        }
-      }
 
-      @Override
-      public void deleted(ContainerPluginsRegistry.ApiInfo plugin) {
-        if (plugin == null || plugin.getInstance() == null) {
-          return;
-        }
-        Object instance = plugin.getInstance();
-        if (instance instanceof ClusterSingleton) {
-          ClusterSingleton singleton = (ClusterSingleton) instance;
-          singleton.stop();
-          singletonMap.remove(singleton.getName());
-        }
-      }
+          @Override
+          public void deleted(ContainerPluginsRegistry.ApiInfo plugin) {
+            if (plugin == null || plugin.getInstance() == null) {
+              return;
+            }
+            Object instance = plugin.getInstance();
+            if (instance instanceof ClusterSingleton) {
+              ClusterSingleton singleton = (ClusterSingleton) instance;
+              singleton.stop();
+              singletonMap.remove(singleton.getName());
+            }
+          }
 
-      @Override
-      public void modified(ContainerPluginsRegistry.ApiInfo old, ContainerPluginsRegistry.ApiInfo replacement) {
-        added(replacement);
-        deleted(old);
-      }
-    };
+          @Override
+          public void modified(
+              ContainerPluginsRegistry.ApiInfo old, ContainerPluginsRegistry.ApiInfo replacement) {
+            deleted(old);
+            added(replacement);
+          }
+        };
   }
 
   public ContainerPluginsRegistry.PluginRegistryListener getPluginRegistryListener() {
     return pluginListener;
   }
 
-  /**
-   * Return modifiable registry of name / {@link ClusterSingleton}.
-   */
+  /** Return modifiable registry of name / {@link ClusterSingleton}. */
   public Map<String, ClusterSingleton> getSingletons() {
     return singletonMap;
   }
 
-  /**
-   * Return true when this helper is ready to be used for singleton management.
-   */
+  /** Return true when this helper is ready to be used for singleton management. */
   public boolean isReady() {
     return readyLatch.getCount() == 0;
   }
 
-  /**
-   * Mark this helper as ready to be used for singleton management.
-   */
+  /** Mark this helper as ready to be used for singleton management. */
   public void setReady() {
     readyLatch.countDown();
   }
 
   /**
    * Wait for this helper to become ready.
+   *
    * @param timeout timeout value.
    * @param timeUnit timeout unit.
    * @throws InterruptedException on this thread being interrupted.
@@ -144,36 +141,39 @@ public class ClusterSingletons {
   }
 
   /**
-   * Start singletons when the helper is ready and when it's supposed to start
-   * (as determined by {@link #runSingletons} function). If the helper is not ready this
-   * method will use {@link #asyncRunner} to wait in another thread for
-   * {@link #DEFAULT_WAIT_TIMEOUT_SEC} seconds.
+   * Start singletons when the helper is ready and when it's supposed to start (as determined by
+   * {@link #runSingletons} function). If the helper is not ready this method will use {@link
+   * #asyncRunner} to wait in another thread for {@link #DEFAULT_WAIT_TIMEOUT_SEC} seconds.
    */
   public void startClusterSingletons() {
-    final Runnable initializer = () -> {
-      try {
-        waitUntilReady(DEFAULT_WAIT_TIMEOUT_SEC, TimeUnit.SECONDS);
-      } catch (InterruptedException e) {
-        log.warn("Interrupted initialization of ClusterSingleton-s");
-        return;
-      } catch (TimeoutException te) {
-        log.warn("Timed out during initialization of ClusterSingleton-s (waited {} sec)", DEFAULT_WAIT_TIMEOUT_SEC);
-        return;
-      }
-      if (!runSingletons.get()) {
-        return;
-      }
-      singletonMap.forEach((name, singleton) -> {
-        if (!runSingletons.get()) {
-          return;
-        }
-        try {
-          singleton.start();
-        } catch (Exception e) {
-          log.warn("Exception starting ClusterSingleton {}: {}", singleton, e);
-        }
-      });
-    };
+    final Runnable initializer =
+        () -> {
+          try {
+            waitUntilReady(DEFAULT_WAIT_TIMEOUT_SEC, TimeUnit.SECONDS);
+          } catch (InterruptedException e) {
+            log.warn("Interrupted initialization of ClusterSingleton-s");
+            return;
+          } catch (TimeoutException te) {
+            log.warn(
+                "Timed out during initialization of ClusterSingleton-s (waited {} sec)",
+                DEFAULT_WAIT_TIMEOUT_SEC);
+            return;
+          }
+          if (!runSingletons.get()) {
+            return;
+          }
+          singletonMap.forEach(
+              (name, singleton) -> {
+                if (!runSingletons.get()) {
+                  return;
+                }
+                try {
+                  singleton.start();
+                } catch (Exception e) {
+                  log.warn("Exception starting ClusterSingleton {}: {}", singleton, e);
+                }
+              });
+        };
     if (!isReady()) {
       // wait until all singleton-s are ready for the first startup
       asyncRunner.accept(initializer);
@@ -182,13 +182,12 @@ public class ClusterSingletons {
     }
   }
 
-  /**
-   * Stop all registered singletons.
-   */
+  /** Stop all registered singletons. */
   public void stopClusterSingletons() {
     readyLatch.countDown();
-    singletonMap.forEach((name, singleton) -> {
-      singleton.stop();
-    });
+    singletonMap.forEach(
+        (name, singleton) -> {
+          singleton.stop();
+        });
   }
 }

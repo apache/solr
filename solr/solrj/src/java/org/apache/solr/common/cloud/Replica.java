@@ -19,85 +19,79 @@ package org.apache.solr.common.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiPredicate;
-
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.ConditionalMapWriter.NON_NULL_VAL;
-import static org.apache.solr.common.ConditionalMapWriter.dedupeKeyPredicate;
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-
 public class Replica extends ZkNodeProps implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /**
-   * The replica's state. In general, if the node the replica is hosted on is
-   * not under {@code /live_nodes} in ZK, the replica's state should be
-   * discarded.
+   * The replica's state. In general, if the node the replica is hosted on is not under {@code
+   * /live_nodes} in ZK, the replica's state should be discarded.
    */
   public enum State {
-    
+
     /**
      * The replica is ready to receive updates and queries.
-     * <p>
-     * <b>NOTE</b>: when the node the replica is hosted on crashes, the
-     * replica's state may remain ACTIVE in ZK. To determine if the replica is
-     * truly active, you must also verify that its {@link Replica#getNodeName()
-     * node} is under {@code /live_nodes} in ZK (or use
-     * {@link ClusterState#liveNodesContain(String)}).
-     * </p>
+     *
+     * <p><b>NOTE</b>: when the node the replica is hosted on crashes, the replica's state may
+     * remain ACTIVE in ZK. To determine if the replica is truly active, you must also verify that
+     * its {@link Replica#getNodeName() node} is under {@code /live_nodes} in ZK (or use {@link
+     * ClusterState#liveNodesContain(String)}).
      */
     ACTIVE("A"),
-    
+
     /**
-     * The first state before {@link State#RECOVERING}. A node in this state
-     * should be actively trying to move to {@link State#RECOVERING}.
-     * <p>
-     * <b>NOTE</b>: a replica's state may appear DOWN in ZK also when the node
-     * it's hosted on gracefully shuts down. This is a best effort though, and
-     * should not be relied on.
-     * </p>
+     * The first state before {@link State#RECOVERING}. A node in this state should be actively
+     * trying to move to {@link State#RECOVERING}.
+     *
+     * <p><b>NOTE</b>: a replica's state may appear DOWN in ZK also when the node it's hosted on
+     * gracefully shuts down. This is a best effort though, and should not be relied on.
      */
     DOWN("D"),
-    
+
     /**
-     * The node is recovering from the leader. This might involve peer-sync,
-     * full replication or finding out things are already in sync.
+     * The node is recovering from the leader. This might involve peer-sync, full replication or
+     * finding out things are already in sync.
      */
     RECOVERING("R"),
-    
+
     /**
      * Recovery attempts have not worked, something is not right.
-     * <p>
-     * <b>NOTE</b>: This state doesn't matter if the node is not part of
-     * {@code /live_nodes} in ZK; in that case the node is not part of the
-     * cluster and it's state should be discarded.
-     * </p>
+     *
+     * <p><b>NOTE</b>: This state doesn't matter if the node is not part of {@code /live_nodes} in
+     * ZK; in that case the node is not part of the cluster and it's state should be discarded.
      */
     RECOVERY_FAILED("F");
 
-    /**short name for a state. Used to encode this in the state node see {@link PerReplicaStates.State}
+    /**
+     * short name for a state. Used to encode this in the state node see {@link
+     * PerReplicaStates.State}
      */
     public final String shortName;
 
+    public final String longName;
+
     State(String c) {
       this.shortName = c;
+      this.longName = super.toString().toLowerCase(Locale.ROOT);
     }
 
     @Override
     public String toString() {
-      return super.toString().toLowerCase(Locale.ROOT);
+      return longName;
     }
-    
+
     /** Converts the state string to a State instance. */
     public static State getState(String stateStr) {
       return stateStr == null ? null : State.valueOf(stateStr.toUpperCase(Locale.ROOT));
@@ -106,26 +100,65 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
   public enum Type {
     /**
-     * Writes updates to transaction log and indexes locally. Replicas of type {@link Type#NRT} support NRT (soft commits) and RTG. 
-     * Any {@link Type#NRT} replica can become a leader. A shard leader will forward updates to all active {@link Type#NRT} and
-     * {@link Type#TLOG} replicas. 
+     * Writes updates to transaction log and indexes locally. Replicas of type {@link Type#NRT}
+     * support NRT (soft commits) and RTG. Any {@link Type#NRT} replica can become a leader. A shard
+     * leader will forward updates to all active {@link Type#NRT} and {@link Type#TLOG} replicas.
      */
-    NRT,
+    NRT(true, true, false, CollectionAdminParams.NRT_REPLICAS),
     /**
-     * Writes to transaction log, but not to index, uses replication. Any {@link Type#TLOG} replica can become leader (by first
-     * applying all local transaction log elements). If a replica is of type {@link Type#TLOG} but is also the leader, it will behave 
-     * as a {@link Type#NRT}. A shard leader will forward updates to all active {@link Type#NRT} and {@link Type#TLOG} replicas.
+     * Writes to transaction log, but not to index, uses replication. Any {@link Type#TLOG} replica
+     * can become leader (by first applying all local transaction log elements). If a replica is of
+     * type {@link Type#TLOG} but is also the leader, it will behave as a {@link Type#NRT}. A shard
+     * leader will forward updates to all active {@link Type#NRT} and {@link Type#TLOG} replicas.
      */
-    TLOG,
+    TLOG(true, true, true, CollectionAdminParams.TLOG_REPLICAS),
     /**
-     * Doesn’t index or writes to transaction log. Just replicates from {@link Type#NRT} or {@link Type#TLOG} replicas. {@link Type#PULL}
-     * replicas can’t become shard leaders (i.e., if there are only pull replicas in the collection at some point, updates will fail
-     * same as if there is no leaders, queries continue to work), so they don’t even participate in elections.
+     * Doesn’t index or writes to transaction log. Just replicates from {@link Type#NRT} or {@link
+     * Type#TLOG} replicas. {@link Type#PULL} replicas can’t become shard leaders (i.e., if there
+     * are only pull replicas in the collection at some point, updates will fail same as if there is
+     * no leaders, queries continue to work), so they don’t even participate in elections.
      */
-    PULL;
+    PULL(false, false, true, CollectionAdminParams.PULL_REPLICAS);
+
+    /** Whether replicas of this type join the leader election and can be elected. */
+    public final boolean leaderEligible;
+
+    /**
+     * Whether replicas of this type require a transaction log. A transaction log will be created
+     * only if this is {@code true}.
+     */
+    public final boolean requireTransactionLog;
+
+    /**
+     * Whether replicas of this type continuously replicate from the leader, if they are not
+     * themselves the leader.
+     */
+    public final boolean replicateFromLeader;
+
+    /** Name of the property in messages that contains the number of replicas of this type. */
+    public final String numReplicasPropertyName;
+
+    Type(
+        boolean leaderEligible,
+        boolean requireTransactionLog,
+        boolean replicateFromLeader,
+        String numReplicasPropertyName) {
+      this.leaderEligible = leaderEligible;
+      this.requireTransactionLog = requireTransactionLog;
+      this.replicateFromLeader = replicateFromLeader;
+      this.numReplicasPropertyName = numReplicasPropertyName;
+    }
 
     public static Type get(String name) {
-      return name == null ? Type.NRT : Type.valueOf(name.toUpperCase(Locale.ROOT));
+      return StrUtils.isNullOrEmpty(name) ? NRT : Type.valueOf(name.toUpperCase(Locale.ROOT));
+    }
+
+    /**
+     * Returns a default replica type. It is most notably used by the replica factor, which maps
+     * onto this replica type. This replica type needs to be leader-eligible.
+     */
+    public static Type defaultType() {
+      return NRT;
     }
   }
 
@@ -135,31 +168,41 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public final String core;
   public final Type type;
   public final String shard, collection;
-  private PerReplicaStates.State replicaState;
+  private AtomicReference<PerReplicaStates> perReplicaStatesRef;
 
   // mutable
   private State state;
 
-  public Replica(String name, Map<String,Object> map, String collection, String shard) {
+  void setPerReplicaStatesRef(AtomicReference<PerReplicaStates> perReplicaStatesRef) {
+    this.perReplicaStatesRef = perReplicaStatesRef;
+  }
+
+  public Replica(String name, Map<String, Object> map, String collection, String shard) {
     super(new HashMap<>());
     propMap.putAll(map);
     this.collection = collection;
     this.shard = shard;
     this.name = name;
-    this.node = (String) propMap.get(ZkStateReader.NODE_NAME_PROP);
-    this.core = (String) propMap.get(ZkStateReader.CORE_NAME_PROP);
-    this.type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
-    readPrs();
+    this.node = (String) propMap.get(ReplicaStateProps.NODE_NAME);
+    this.core = (String) propMap.get(ReplicaStateProps.CORE_NAME);
+    this.type = Type.get((String) propMap.get(ReplicaStateProps.TYPE));
     // default to ACTIVE
-    this.state = State.getState(String.valueOf(propMap.getOrDefault(ZkStateReader.STATE_PROP, State.ACTIVE.toString())));
+    this.state =
+        State.getState(
+            String.valueOf(propMap.getOrDefault(ReplicaStateProps.STATE, State.ACTIVE.toString())));
     validate();
-
-    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   // clone constructor
-  public Replica(String name, String node, String collection, String shard, String core,
-                  State state, Type type, Map<String, Object> props) {
+  public Replica(
+      String name,
+      String node,
+      String collection,
+      String shard,
+      String core,
+      State state,
+      Type type,
+      Map<String, Object> props) {
     super(new HashMap<>());
     this.name = name;
     this.node = node;
@@ -171,14 +214,13 @@ public class Replica extends ZkNodeProps implements MapWriter {
     if (props != null) {
       this.propMap.putAll(props);
     }
-    readPrs();
     validate();
-    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
   }
 
   /**
-   * This constructor uses a map with one key (coreNode name) and a value that
-   * is a map containing all replica properties.
+   * This constructor uses a map with one key (coreNode name) and a value that is a map containing
+   * all replica properties.
+   *
    * @param nestedMap nested map containing replica properties
    */
   @SuppressWarnings("unchecked")
@@ -193,22 +235,12 @@ public class Replica extends ZkNodeProps implements MapWriter {
     this.node = String.valueOf(details.get("node_name"));
 
     this.propMap.putAll(details);
-    readPrs();
-    type = Replica.Type.valueOf(String.valueOf(propMap.getOrDefault(ZkStateReader.REPLICA_TYPE, "NRT")));
-    if(state == null) state = State.getState(String.valueOf(propMap.getOrDefault(ZkStateReader.STATE_PROP, "active")));
+    type =
+        Replica.Type.valueOf(String.valueOf(propMap.getOrDefault(ReplicaStateProps.TYPE, "NRT")));
+    if (state == null)
+      state =
+          State.getState(String.valueOf(propMap.getOrDefault(ReplicaStateProps.STATE, "active")));
     validate();
-    propMap.put(BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName(this.node));
-  }
-
-  private void readPrs() {
-    ClusterState.getReplicaStatesProvider().get().ifPresent(it -> {
-      log.debug("A replica  {} state fetched from per-replica state", name);
-      replicaState = it.getStates().get(name);
-      if(replicaState!= null) {
-        propMap.put(ZkStateReader.STATE_PROP, replicaState.state.toString().toLowerCase(Locale.ROOT));
-        if (replicaState.isLeader) propMap.put(Slice.LEADER, "true");
-      }
-    }) ;
   }
 
   private final void validate() {
@@ -219,14 +251,15 @@ public class Replica extends ZkNodeProps implements MapWriter {
     Objects.requireNonNull(this.type, "'type' must not be null");
     Objects.requireNonNull(this.state, "'state' must not be null");
     Objects.requireNonNull(this.node, "'node' must not be null");
+
+    String baseUrl = (String) propMap.get(ReplicaStateProps.BASE_URL);
+    Objects.requireNonNull(baseUrl, "'base_url' must not be null");
+
     // make sure all declared props are in the propMap
-    propMap.put(ZkStateReader.COLLECTION_PROP, collection);
-    propMap.put(ZkStateReader.SHARD_ID_PROP, shard);
-    propMap.put(ZkStateReader.CORE_NODE_NAME_PROP, name);
-    propMap.put(ZkStateReader.NODE_NAME_PROP, node);
-    propMap.put(ZkStateReader.CORE_NAME_PROP, core);
-    propMap.put(ZkStateReader.REPLICA_TYPE, type.toString());
-    propMap.put(ZkStateReader.STATE_PROP, state.toString());
+    propMap.put(ReplicaStateProps.NODE_NAME, node);
+    propMap.put(ReplicaStateProps.CORE_NAME, core);
+    propMap.put(ReplicaStateProps.TYPE, type.toString());
+    propMap.put(ReplicaStateProps.STATE, state.toString());
   }
 
   public String getCollection() {
@@ -245,7 +278,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof Replica)) return false;
     if (!super.equals(o)) return false;
 
     Replica other = (Replica) o;
@@ -268,7 +301,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public String getBaseUrl() {
-    return getStr(BASE_URL_PROP);
+    return getStr(ReplicaStateProps.BASE_URL);
   }
 
   /** SolrCore name. */
@@ -280,27 +313,39 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public String getNodeName() {
     return node;
   }
-  
+
   /** Returns the {@link State} of this replica. */
   public State getState() {
+    if (perReplicaStatesRef != null) {
+      PerReplicaStates.State s = perReplicaStatesRef.get().get(name);
+      if (s != null) {
+        return s.state;
+      } else {
+        return State.DOWN;
+      }
+    }
     return state;
   }
 
   public void setState(State state) {
     this.state = state;
-    propMap.put(ZkStateReader.STATE_PROP, this.state.toString());
+    propMap.put(ReplicaStateProps.STATE, this.state.toString());
   }
 
   public boolean isActive(Set<String> liveNodes) {
-    return this.node != null && liveNodes.contains(this.node) && this.state == State.ACTIVE;
+    return this.node != null && liveNodes.contains(this.node) && getState() == State.ACTIVE;
   }
-  
+
   public Type getType() {
     return this.type;
   }
 
   public boolean isLeader() {
-    return getBool(ZkStateReader.LEADER_PROP, false);
+    if (perReplicaStatesRef != null) {
+      PerReplicaStates.State st = perReplicaStatesRef.get().get(name);
+      return st == null ? false : st.isLeader;
+    }
+    return getBool(ReplicaStateProps.LEADER, false);
   }
 
   public Object get(String key, Object defValue) {
@@ -314,88 +359,102 @@ public class Replica extends ZkNodeProps implements MapWriter {
 
   public String getProperty(String propertyName) {
     final String propertyKey;
-    if (!propertyName.startsWith(ZkStateReader.PROPERTY_PROP_PREFIX)) {
-      propertyKey = ZkStateReader.PROPERTY_PROP_PREFIX + propertyName;
+    if (!propertyName.startsWith(ReplicaStateProps.PROPERTY_PREFIX)) {
+      propertyKey = ReplicaStateProps.PROPERTY_PREFIX + propertyName;
     } else {
       propertyKey = propertyName;
     }
     final String propertyValue = getStr(propertyKey);
     return propertyValue;
   }
+
   public Replica copyWith(PerReplicaStates.State state) {
     log.debug("A replica is updated with new state : {}", state);
     Map<String, Object> props = new LinkedHashMap<>(propMap);
     if (state == null) {
-      props.put(ZkStateReader.STATE_PROP, State.DOWN.toString());
-      props.remove(Slice.LEADER);
+      props.put(ReplicaStateProps.STATE, State.DOWN.toString());
+      props.remove(ReplicaStateProps.LEADER);
     } else {
-      props.put(ZkStateReader.STATE_PROP, state.state.toString());
-      if (state.isLeader) props.put(Slice.LEADER, "true");
+      props.put(ReplicaStateProps.STATE, state.state.toString());
+      if (state.isLeader) props.put(ReplicaStateProps.LEADER, "true");
     }
     Replica r = new Replica(name, props, collection, shard);
-    r.replicaState = state;
     return r;
   }
 
   public PerReplicaStates.State getReplicaState() {
-    return replicaState;
-  }
-
-  public Object clone() {
-    return new Replica(name, node, collection, shard, core, state, type, propMap);
+    if (perReplicaStatesRef != null) {
+      return perReplicaStatesRef.get().get(name);
+    }
+    return null;
   }
 
   @Override
-  public void writeMap(MapWriter.EntryWriter ew) throws IOException {
-    ew.put(name, _allPropsWriter());
+  public Object clone() {
+    return new Replica(name, node, collection, shard, core, getState(), type, propMap);
   }
 
   private static final Map<String, State> STATES = new HashMap<>();
+
   static {
     STATES.put(Replica.State.ACTIVE.shortName, Replica.State.ACTIVE);
     STATES.put(Replica.State.DOWN.shortName, Replica.State.DOWN);
     STATES.put(Replica.State.RECOVERING.shortName, Replica.State.RECOVERING);
     STATES.put(Replica.State.RECOVERY_FAILED.shortName, Replica.State.RECOVERY_FAILED);
   }
-  public static State getState(String  shortName) {
+
+  public static State getState(String shortName) {
     return STATES.get(shortName);
   }
 
-
-  private MapWriter _allPropsWriter() {
-    BiPredicate<CharSequence, Object> p = dedupeKeyPredicate(new HashSet<>())
-        .and(NON_NULL_VAL);
-    return writer -> {
-      // XXX this is why this class should be immutable - it's a mess !!!
-
-      // propMap takes precedence because it's mutable and we can't control its
-      // contents, so a third party may override some declared fields
-      for (Map.Entry<String, Object> e : propMap.entrySet()) {
-        final String key = e.getKey();
-        // don't store the base_url as we can compute it from the node_name
-        if (!BASE_URL_PROP.equals(key)) {
-          writer.put(e.getKey(), e.getValue(), p);
-        }
-      }
-
-      writer.put(ZkStateReader.CORE_NAME_PROP, core, p)
-          .put(ZkStateReader.SHARD_ID_PROP, shard, p)
-          .put(ZkStateReader.COLLECTION_PROP, collection, p)
-          .put(ZkStateReader.NODE_NAME_PROP, node, p)
-          .put(ZkStateReader.REPLICA_TYPE, type.toString(), p)
-          .put(ZkStateReader.STATE_PROP, state.toString(), p);
-    };
-  }
   @Override
-  public void write(JSONWriter jsonWriter) {
-    Map<String, Object> map = new LinkedHashMap<>();
-    // this serializes also our declared properties
-    _allPropsWriter().toMap(map);
-    jsonWriter.write(map);
+  public void writeMap(MapWriter.EntryWriter ew) throws IOException {
+    ew.putIfNotNull(ReplicaStateProps.CORE_NAME, core)
+        .putIfNotNull(ReplicaStateProps.NODE_NAME, node)
+        .putIfNotNull(ReplicaStateProps.TYPE, type.toString())
+        .putIfNotNull(ReplicaStateProps.STATE, getState().toString())
+        .putIfNotNull(ReplicaStateProps.LEADER, () -> isLeader() ? "true" : null)
+        .putIfNotNull(
+            ReplicaStateProps.FORCE_SET_STATE, propMap.get(ReplicaStateProps.FORCE_SET_STATE))
+        .putIfNotNull(ReplicaStateProps.BASE_URL, propMap.get(ReplicaStateProps.BASE_URL));
+    for (Map.Entry<String, Object> e : propMap.entrySet()) {
+      if (!ReplicaStateProps.WELL_KNOWN_PROPS.contains(e.getKey())) {
+        ew.putIfNotNull(e.getKey(), e.getValue());
+      }
+    }
   }
 
   @Override
   public String toString() {
-    return name + ':' + Utils.toJSONString(propMap); // small enough, keep it on one line (i.e. no indent)
+    return name
+        + ':'
+        + Utils.toJSONString(propMap); // small enough, keep it on one line (i.e. no indent)
+  }
+
+  /** JSON properties related to a replica's state. */
+  public interface ReplicaStateProps {
+    String COLLECTION = "collection";
+    String SHARD_ID = "shard";
+    String REPLICA_ID = "replica";
+    String LEADER = "leader";
+    String STATE = "state";
+    String CORE_NAME = "core";
+    String CORE_NODE_NAME = "core_node_name";
+    String TYPE = "type";
+    String NODE_NAME = "node_name";
+    String BASE_URL = "base_url";
+    String PROPERTY_PREFIX = "property.";
+    String FORCE_SET_STATE = "force_set_state";
+    Set<String> WELL_KNOWN_PROPS =
+        Set.of(
+            LEADER, STATE, CORE_NAME, CORE_NODE_NAME, TYPE, NODE_NAME, BASE_URL, FORCE_SET_STATE);
+  }
+
+  public ZkNodeProps toFullProps() {
+    return new ZkNodeProps()
+        .plus(propMap)
+        .plus(ReplicaStateProps.COLLECTION, getCollection())
+        .plus(ReplicaStateProps.SHARD_ID, getShard())
+        .plus(ReplicaStateProps.REPLICA_ID, getName());
   }
 }

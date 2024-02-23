@@ -15,39 +15,41 @@
  * limitations under the License.
  */
 package org.apache.solr.analysis;
-import java.util.Map;
 
+import java.util.Map;
+import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
-import org.apache.lucene.analysis.TokenFilterFactory;
 
 /**
- * Factory for {@link ReversedWildcardFilter}-s. When this factory is
- * added to an analysis chain, it will be used both for filtering the
- * tokens during indexing, and to determine the query processing of
- * this field during search.
+ * Factory for {@link ReversedWildcardFilter}-s. When this factory is added to an analysis chain, it
+ * will be used both for filtering the tokens during indexing, and to determine the query processing
+ * of this field during search.
+ *
  * <p>This class supports the following init arguments:
+ *
  * <ul>
- * <li><code>withOriginal</code> - if true, then produce both original and reversed tokens at
- * the same positions. If false, then produce only reversed tokens.</li>
- * <li><code>maxPosAsterisk</code> - maximum position (1-based) of the asterisk wildcard
- * ('*') that triggers the reversal of query term. Asterisk that occurs at
- * positions higher than this value will not cause the reversal of query term.
- * Defaults to 2, meaning that asterisks on positions 1 and 2 will cause
- * a reversal.</li>
- * <li><code>maxPosQuestion</code> - maximum position (1-based) of the question
- * mark wildcard ('?') that triggers the reversal of query term. Defaults to 1.
- * Set this to 0, and <code>maxPosAsterisk</code> to 1 to reverse only
- * pure suffix queries (i.e. ones with a single leading asterisk).</li>
- * <li><code>maxFractionAsterisk</code> - additional parameter that
- * triggers the reversal if asterisk ('*') position is less than this
- * fraction of the query token length. Defaults to 0.0f (disabled).</li>
- * <li><code>minTrailing</code> - minimum number of trailing characters in query
- * token after the last wildcard character. For good performance this should be
- * set to a value larger than 1. Defaults to 2.
+ *   <li><code>withOriginal</code> - if true, then produce both original and reversed tokens at the
+ *       same positions. If false, then produce only reversed tokens.
+ *   <li><code>maxPosAsterisk</code> - maximum position (1-based) of the asterisk wildcard ('*')
+ *       that triggers the reversal of query term. Asterisk that occurs at positions higher than
+ *       this value will not cause the reversal of query term. Defaults to 2, meaning that asterisks
+ *       on positions 1 and 2 will cause a reversal.
+ *   <li><code>maxPosQuestion</code> - maximum position (1-based) of the question mark wildcard
+ *       ('?') that triggers the reversal of query term. Defaults to 1. Set this to 0, and <code>
+ *       maxPosAsterisk</code> to 1 to reverse only pure suffix queries (i.e. ones with a single
+ *       leading asterisk).
+ *   <li><code>maxFractionAsterisk</code> - additional parameter that triggers the reversal if
+ *       asterisk ('*') position is less than this fraction of the query token length. Defaults to
+ *       0.0f (disabled).
+ *   <li><code>minTrailing</code> - minimum number of trailing characters in query token after the
+ *       last wildcard character. For good performance this should be set to a value larger than 1.
+ *       Defaults to 2.
  * </ul>
- * Note 1: This filter always reverses input tokens during indexing.
- * Note 2: Query tokens without wildcard characters will never be reversed.
+ *
+ * Note 1: This filter always reverses input tokens during indexing. Note 2: Query tokens without
+ * wildcard characters will never be reversed.
+ *
  * <pre class="prettyprint" >
  * &lt;fieldType name="text_rvswc" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer type="index"&gt;
@@ -67,7 +69,7 @@ public class ReversedWildcardFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
   public static final String NAME = "reversedWildcard";
-  
+
   private char markerChar = ReverseStringFilter.START_OF_HEADING_MARKER;
   private boolean withOriginal;
   private int maxPosAsterisk;
@@ -76,7 +78,7 @@ public class ReversedWildcardFilterFactory extends TokenFilterFactory {
   private float maxFractionAsterisk;
 
   /** Creates a new ReversedWildcardFilterFactory */
-  public ReversedWildcardFilterFactory(Map<String,String> args) {
+  public ReversedWildcardFilterFactory(Map<String, String> args) {
     super(args);
     withOriginal = getBoolean(args, "withOriginal", true);
     maxPosAsterisk = getInt(args, "maxPosAsterisk", 2);
@@ -97,11 +99,11 @@ public class ReversedWildcardFilterFactory extends TokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new ReversedWildcardFilter(input, withOriginal, markerChar);
   }
-  
+
   /**
-   * This method encapsulates the logic that determines whether
-   * a query token should be reversed in order to use the
-   * reversed terms in the index.
+   * This method encapsulates the logic that determines whether a query token should be reversed in
+   * order to use the reversed terms in the index.
+   *
    * @param token input token.
    * @return true if input token should be reversed, false otherwise.
    */
@@ -125,22 +127,22 @@ public class ReversedWildcardFilterFactory extends TokenFilterFactory {
     } else {
       pos = posA;
     }
-    if (len - lastPos < minTrailing)  { // too few trailing chars
+    if (len - lastPos < minTrailing) { // too few trailing chars
       return false;
     }
-    if (posQ != -1 && posQ < maxPosQuestion) {  // leading '?'
+    if (posQ != -1 && posQ < maxPosQuestion) { // leading '?'
       return true;
     }
     if (posA != -1 && posA < maxPosAsterisk) { // leading '*'
       return true;
     }
     // '*' in the leading part
-    if (maxFractionAsterisk > 0.0f && pos < (float)token.length() * maxFractionAsterisk) {
+    if (maxFractionAsterisk > 0.0f && pos < (float) token.length() * maxFractionAsterisk) {
       return true;
     }
     return false;
   }
-  
+
   public char getMarkerChar() {
     return markerChar;
   }

@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
-
 import org.apache.lucene.document.Field;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -48,10 +47,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-/**
- * Tests that we can skip serialization of the documents when embedding
- * Solr.
- */
+/** Tests that we can skip serialization of the documents when embedding Solr. */
 public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
 
   static EmbeddedSolrServer solrServer;
@@ -60,14 +56,15 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
   public static void init() throws Exception {
     initCore("solrconfig-tagger.xml", "schema-tagger.xml");
     solrServer = new EmbeddedSolrServer(h.getCoreContainer(), "collection1");
-    //we don't need to close the EmbeddedSolrServer because SolrTestCaseJ4 closes the core
+    // we don't need to close the EmbeddedSolrServer because SolrTestCaseJ4 closes the core
   }
 
   @AfterClass
-  public static void cleanUpAfterClass() throws Exception {
+  public static void cleanUpAfterClass() {
     solrServer = null;
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -79,12 +76,12 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
   @Test
   public void testTag() throws SolrServerException, IOException {
     ModifiableSolrParams params = params();
-    String input = "foo boston bar";//just one tag;
+    String input = "foo boston bar"; // just one tag;
     QueryRequest req = new SolrTaggerRequest(params, input);
     req.setPath("/tag");
 
     QueryResponse rsp = req.process(solrServer);
-    SolrDocumentList results= (SolrDocumentList) rsp.getResponse().get("response");
+    SolrDocumentList results = (SolrDocumentList) rsp.getResponse().get("response");
     assertNotNull(rsp.getResponse().get("tags"));
     assertNotNull(results.get(0));
   }
@@ -128,33 +125,35 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
   @Ignore("As of Solr 7, stream.body is disabled by default for security ") // DWS: dubious, IMO
   // and it can't be enabled with EmbeddedSolrServer until SOLR-12126
   public void testAssertTagStreamingWithStreamBodyParam() throws Exception {
-    doTestAssertTagStreaming((params, input) -> {
-      params.set("stream.body", input);
-      return new QueryRequest(params);
-    });
+    doTestAssertTagStreaming(
+        (params, input) -> {
+          params.set("stream.body", input);
+          return new QueryRequest(params);
+        });
   }
 
-  public void doTestAssertTagStreaming(BiFunction<ModifiableSolrParams,String,QueryRequest> newQueryRequest) throws IOException, SolrServerException {
+  public void doTestAssertTagStreaming(
+      BiFunction<ModifiableSolrParams, String, QueryRequest> newQueryRequest)
+      throws IOException, SolrServerException {
     ModifiableSolrParams params = params();
-    String input = "foo boston bar";//just one tag;
+    String input = "foo boston bar"; // just one tag;
     QueryRequest req = newQueryRequest.apply(params, input);
     req.setPath("/tag");
 
     final AtomicReference<SolrDocument> refDoc = new AtomicReference<>();
-    req.setStreamingResponseCallback(new StreamingResponseCallback() {
-      @Override
-      public void streamSolrDocument(SolrDocument doc) {
-        refDoc.set(doc);
-      }
+    req.setStreamingResponseCallback(
+        new StreamingResponseCallback() {
+          @Override
+          public void streamSolrDocument(SolrDocument doc) {
+            refDoc.set(doc);
+          }
 
-      @Override
-      public void streamDocListInfo(long numFound, long start, Float maxScore) {
-
-      }
-    });
+          @Override
+          public void streamDocListInfo(long numFound, long start, Float maxScore) {}
+        });
     QueryResponse rsp = req.process(solrServer);
     assertNotNull(rsp.getResponse().get("tags"));
     assertNotNull(refDoc.get());
-    assertEquals("Boston", ((Field)refDoc.get().getFieldValue("name")).stringValue());
+    assertEquals("Boston", ((Field) refDoc.get().getFieldValue("name")).stringValue());
   }
 }

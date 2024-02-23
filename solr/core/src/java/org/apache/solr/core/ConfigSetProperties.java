@@ -20,23 +20,19 @@ import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.util.Utils.fromJSON;
-
 /**
- * Utility methods for reading configSet properties.
- * One purpose of this notion is to express immutability.
- * The contents are not used within the config itself; do not confuse this with config user-defined properties.
- * The properties are stored as a JSON file within the configSet that we read into a NamedList.
- * It's optional; there is no file if there are no properties.
- * Note that this logic is also used to load configSet <em>flags</em>; see {@link ConfigSetService}.
+ * Utility methods for reading configSet properties. One purpose of this notion is to express
+ * immutability. The contents are not used within the config itself; do not confuse this with config
+ * user-defined properties. The properties are stored as a JSON file within the configSet that we
+ * read into a NamedList. It's optional; there is no file if there are no properties. Note that this
+ * logic is also used to load configSet <em>flags</em>; see {@link ConfigSetService}.
  */
 public class ConfigSetProperties {
 
@@ -49,43 +45,37 @@ public class ConfigSetProperties {
    * Return the properties associated with the ConfigSet (e.g. immutable)
    *
    * @param loader the resource loader
-   * @param name   the name of the config set properties file
+   * @param name the name of the config set properties file
    * @return the properties in a NamedList
    */
   public static NamedList<Object> readFromResourceLoader(SolrResourceLoader loader, String name) {
-    InputStreamReader reader;
-    try {
-      reader = new InputStreamReader(loader.openResource(name), StandardCharsets.UTF_8);
+    try (InputStreamReader reader =
+        new InputStreamReader(loader.openResource(name), StandardCharsets.UTF_8)) {
+      return readFromInputStream(reader);
     } catch (SolrResourceNotFoundException ex) {
       if (log.isDebugEnabled()) {
         log.debug("Did not find ConfigSet properties, assuming default properties: ", ex);
       }
       return null;
     } catch (Exception ex) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load reader for ConfigSet properties: " + name, ex);
-    }
-
-    try {
-      return readFromInputStream(reader);
-    } finally {
-      IOUtils.closeQuietly(reader);
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR, "Unable to load reader for ConfigSet properties: " + name, ex);
     }
   }
 
   public static NamedList<Object> readFromInputStream(InputStreamReader reader) {
     try {
-      Object object = fromJSON(reader);
+      Object object = Utils.fromJSON(reader);
       if (!(object instanceof Map)) {
         final String objectClass = object == null ? "null" : object.getClass().getName();
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Invalid JSON type " + objectClass + ", expected Map");
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR, "Invalid JSON type " + objectClass + ", expected Map");
       }
       @SuppressWarnings("unchecked")
       Map<String, Object> map = (Map<String, Object>) object;
       return new NamedList<>(map);
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to load ConfigSet properties", ex);
-    } finally {
-      IOUtils.closeQuietly(reader);
     }
   }
 }

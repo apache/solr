@@ -17,35 +17,43 @@
 
 package org.apache.solr.cluster.placement;
 
+import java.util.Set;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.SolrCollection;
 
-import java.util.Set;
-
 /**
- * Allows plugins to create {@link PlacementPlan}s telling the Solr layer where to create replicas following the processing of
- * a {@link PlacementRequest}. The Solr layer can (and will) check that the {@link PlacementPlan} conforms to the {@link PlacementRequest} (and
- * if it does not, the requested operation will fail).
+ * Allows plugins to create {@link PlacementPlan}s telling the Solr layer where to create replicas
+ * following the processing of a {@link PlacementRequest}. The Solr layer can (and will) check that
+ * the {@link PlacementPlan} conforms to the {@link PlacementRequest} (and if it does not, the
+ * requested operation will fail).
  */
 public interface PlacementPlanFactory {
   /**
-   * <p>Creates a {@link PlacementPlan} for adding replicas to a given shard(s) of an existing collection. Note this is also
-   * used for creating new collections since such a creation first creates the collection, then adds the replicas.
+   * Creates a {@link PlacementPlan} for adding replicas to a given shard(s) of an existing
+   * collection. Note this is also used for creating new collections since such a creation first
+   * creates the collection, then adds the replicas.
    *
-   * <p>This is in support (directly or indirectly) of {@link org.apache.solr.cloud.api.collections.AddReplicaCmd},
-   * {@link org.apache.solr.cloud.api.collections.CreateShardCmd}, {@link org.apache.solr.cloud.api.collections.ReplaceNodeCmd},
-   * {@link org.apache.solr.cloud.api.collections.MoveReplicaCmd}, {@link org.apache.solr.cloud.api.collections.SplitShardCmd},
-   * {@link org.apache.solr.cloud.api.collections.RestoreCmd}, {@link org.apache.solr.cloud.api.collections.MigrateCmd}
-   * as well as of {@link org.apache.solr.cloud.api.collections.CreateCollectionCmd}.
+   * <p>This is in support (directly or indirectly) of {@link
+   * org.apache.solr.cloud.api.collections.AddReplicaCmd}, {@link
+   * org.apache.solr.cloud.api.collections.CreateShardCmd}, {@link
+   * org.apache.solr.cloud.api.collections.ReplaceNodeCmd}, {@link
+   * org.apache.solr.cloud.api.collections.MoveReplicaCmd}, {@link
+   * org.apache.solr.cloud.api.collections.MigrateReplicasCmd}, {@link
+   * org.apache.solr.cloud.api.collections.SplitShardCmd}, {@link
+   * org.apache.solr.cloud.api.collections.RestoreCmd}, {@link
+   * org.apache.solr.cloud.api.collections.MigrateCmd} as well as of {@link
+   * org.apache.solr.cloud.api.collections.CreateCollectionCmd}.
    */
-  PlacementPlan createPlacementPlan(PlacementRequest request, Set<ReplicaPlacement> replicaPlacements);
+  PlacementPlan createPlacementPlan(
+      PlacementRequest request, Set<ReplicaPlacement> replicaPlacements);
 
   /**
-   * <p>Creates a {@link ReplicaPlacement} to be passed to {@link PlacementPlan} factory methods.
+   * Creates a {@link ReplicaPlacement} to be passed to {@link PlacementPlan} factory methods.
    *
-   * <p>Note the plugin can also build its own instances implementing {@link ReplicaPlacement} instead of using this call
-   * (but using this method makes it easier).
+   * <p>Note the plugin can also build its own instances implementing {@link ReplicaPlacement}
+   * instead of using this call (but using this method makes it easier).
    */
-  ReplicaPlacement createReplicaPlacement(SolrCollection solrCollection, String shardName, Node node, Replica.ReplicaType replicaType);
+  ReplicaPlacement createReplicaPlacement(
+      SolrCollection solrCollection, String shardName, Node node, Replica.ReplicaType replicaType);
 }

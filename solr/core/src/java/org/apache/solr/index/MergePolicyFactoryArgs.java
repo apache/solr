@@ -19,21 +19,20 @@ package org.apache.solr.index;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.index.MergePolicy;
 import org.apache.solr.util.SolrPluginUtils;
 
 public class MergePolicyFactoryArgs {
 
-  private final Map<String,Object> args;
+  private final Map<String, Object> args;
 
   public MergePolicyFactoryArgs() {
     this.args = new HashMap<>();
   }
 
-  public MergePolicyFactoryArgs(Iterable<? extends Map.Entry<String,?>> args) {
+  public MergePolicyFactoryArgs(Iterable<? extends Map.Entry<String, ?>> args) {
     this.args = new HashMap<>();
-    for (final Map.Entry<String,?> arg : args) {
+    for (final Map.Entry<String, ?> arg : args) {
       this.args.put(arg.getKey(), arg.getValue());
     }
   }
@@ -62,5 +61,4 @@ public class MergePolicyFactoryArgs {
   public String toString() {
     return args.toString();
   }
-
 }

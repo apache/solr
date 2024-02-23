@@ -16,6 +16,10 @@
  */
 package org.apache.solr.util;
 
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -29,14 +33,12 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.hamcrest.internal.ReflectiveTypeFinder;
 
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.is;
-
 // TODO: This can be contributed to Lucene
 public class QueryMatchers {
-  private abstract static class SubTypeDiagnosingMatcher<Q extends Query> extends TypeSafeDiagnosingMatcher<Query> {
-    private static final ReflectiveTypeFinder TYPE_FINDER = new ReflectiveTypeFinder("matchesExactType", 2, 0);
+  private abstract static class SubTypeDiagnosingMatcher<Q extends Query>
+      extends TypeSafeDiagnosingMatcher<Query> {
+    private static final ReflectiveTypeFinder TYPE_FINDER =
+        new ReflectiveTypeFinder("matchesExactType", 2, 0);
 
     public SubTypeDiagnosingMatcher() {
       super(TYPE_FINDER);
@@ -55,14 +57,16 @@ public class QueryMatchers {
   private QueryMatchers() {}
 
   /**
-   * Matches is a Query object's toString result is equal to this query string.
-   * A useful shortcut when constructing complex queries with deterministic string repr
-   *<p>
-   * Note: Do not use this in place of DisjunctionMaxQuery, but safe to use for the disjunct clauses
+   * Matches is a Query object's toString result is equal to this query string. A useful shortcut
+   * when constructing complex queries with deterministic string repr
+   *
+   * <p>Note: Do not use this in place of DisjunctionMaxQuery, but safe to use for the disjunct
+   * clauses
+   *
    * @param query the query string to match against
    */
   public static Matcher<Query> stringQuery(String query) {
-    return new TypeSafeDiagnosingMatcher<Query>() {
+    return new TypeSafeDiagnosingMatcher<>() {
       @Override
       protected boolean matchesSafely(Query item, Description mismatchDescription) {
         return is(query).matches(item.toString());
@@ -110,6 +114,7 @@ public class QueryMatchers {
 
   /**
    * Create a phrase query matcher with a whitespace delimited sequence of terms
+   *
    * @param field the field the phrase query should match against
    * @param terms a whitespace delimited set of terms that should
    */
@@ -126,8 +131,9 @@ public class QueryMatchers {
     return booleanClause(query, BooleanClause.Occur.MUST);
   }
 
-  public static Matcher<BooleanClause> booleanClause(Matcher<? extends Query> query, BooleanClause.Occur occur) {
-    return new TypeSafeDiagnosingMatcher<BooleanClause>() {
+  public static Matcher<BooleanClause> booleanClause(
+      Matcher<? extends Query> query, BooleanClause.Occur occur) {
+    return new TypeSafeDiagnosingMatcher<>() {
       @Override
       protected boolean matchesSafely(BooleanClause item, Description mismatchDescription) {
         boolean match = true;
@@ -146,7 +152,11 @@ public class QueryMatchers {
 
       @Override
       public void describeTo(Description description) {
-        description.appendText(occur.toString()).appendText("(").appendDescriptionOf(query).appendText(")");
+        description
+            .appendText(occur.toString())
+            .appendText("(")
+            .appendDescriptionOf(query)
+            .appendText(")");
       }
     };
   }
@@ -156,7 +166,8 @@ public class QueryMatchers {
     return _booleanQuery(contains(booleanClause(q1, occur)));
   }
 
-  public static Matcher<Query> booleanQuery(Matcher<Query> q1, Matcher<Query> q2, BooleanClause.Occur occur) {
+  public static Matcher<Query> booleanQuery(
+      Matcher<Query> q1, Matcher<Query> q2, BooleanClause.Occur occur) {
     return _booleanQuery(containsInAnyOrder(booleanClause(q1, occur), booleanClause(q2, occur)));
   }
 
@@ -168,12 +179,15 @@ public class QueryMatchers {
     return _booleanQuery(containsInAnyOrder(shouldClause(c1), shouldClause(c2)));
   }
 
-  public static Matcher<Query> booleanQuery(Matcher<Query> c1, Matcher<Query> c2, Matcher<Query> c3) {
+  public static Matcher<Query> booleanQuery(
+      Matcher<Query> c1, Matcher<Query> c2, Matcher<Query> c3) {
     return _booleanQuery(containsInAnyOrder(shouldClause(c1), shouldClause(c2), shouldClause(c3)));
   }
 
-  public static Matcher<Query> booleanQuery(Matcher<Query> c1, Matcher<Query> c2, Matcher<Query> c3, Matcher<Query> c4) {
-    return _booleanQuery(containsInAnyOrder(shouldClause(c1), shouldClause(c2), shouldClause(c3), shouldClause(c4)));
+  public static Matcher<Query> booleanQuery(
+      Matcher<Query> c1, Matcher<Query> c2, Matcher<Query> c3, Matcher<Query> c4) {
+    return _booleanQuery(
+        containsInAnyOrder(shouldClause(c1), shouldClause(c2), shouldClause(c3), shouldClause(c4)));
   }
 
   private static Matcher<Query> _booleanQuery(Matcher<Iterable<? extends BooleanClause>> matcher) {
@@ -189,8 +203,7 @@ public class QueryMatchers {
 
       @Override
       public void describeTo(Description description) {
-        description.appendText("a BooleanQuery with ")
-            .appendDescriptionOf(matcher);
+        description.appendText("a BooleanQuery with ").appendDescriptionOf(matcher);
       }
     };
   }
@@ -203,18 +216,21 @@ public class QueryMatchers {
     return disjunctionQuery(containsInAnyOrder(q1, q2));
   }
 
-  public static Matcher<Query> disjunctionOf(Matcher<Query> q1, Matcher<Query> q2, Matcher<Query> q3) {
+  public static Matcher<Query> disjunctionOf(
+      Matcher<Query> q1, Matcher<Query> q2, Matcher<Query> q3) {
     return disjunctionQuery(containsInAnyOrder(q1, q2, q3));
   }
 
-  public static Matcher<Query> disjunctionOf(Matcher<Query> q1, Matcher<Query> q2, Matcher<Query> q3, Matcher<Query> q4) {
+  public static Matcher<Query> disjunctionOf(
+      Matcher<Query> q1, Matcher<Query> q2, Matcher<Query> q3, Matcher<Query> q4) {
     return disjunctionQuery(containsInAnyOrder(q1, q2, q3, q4));
   }
 
   private static Matcher<Query> disjunctionQuery(Matcher<Iterable<? extends Query>> disjuncts) {
     return new SubTypeDiagnosingMatcher<DisjunctionMaxQuery>() {
       @Override
-      protected boolean matchesExactType(DisjunctionMaxQuery item, Description mismatchDescription) {
+      protected boolean matchesExactType(
+          DisjunctionMaxQuery item, Description mismatchDescription) {
         if (disjuncts.matches(item.getDisjuncts())) return true;
 
         mismatchDescription.appendText("was a DisjunctionMaxQuery with ");
@@ -224,8 +240,7 @@ public class QueryMatchers {
 
       @Override
       public void describeTo(Description description) {
-        description.appendText("a DisjunctionMaxQuery with ")
-            .appendDescriptionOf(disjuncts);
+        description.appendText("a DisjunctionMaxQuery with ").appendDescriptionOf(disjuncts);
       }
     };
   }

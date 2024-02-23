@@ -16,12 +16,13 @@
  */
 package org.apache.solr.request.json;
 
+import static org.apache.solr.common.params.CommonParams.JSON;
+import static org.apache.solr.common.params.CommonParams.SORT;
+
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -32,24 +33,30 @@ import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.macro.MacroExpander;
+import org.apache.solr.search.QueryParsing;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
-import static org.apache.solr.common.params.CommonParams.JSON;
-import static org.apache.solr.common.params.CommonParams.SORT;
-
 public class RequestUtil {
   /**
-   * Set default-ish params on a SolrQueryRequest as well as do standard macro processing and JSON request parsing.
+   * Set default-ish params on a SolrQueryRequest as well as do standard macro processing and JSON
+   * request parsing.
    *
-   * @param handler The search handler this is for (may be null if you don't want this method touching the content streams)
+   * @param handler The search handler this is for (may be null if you don't want this method
+   *     touching the content streams)
    * @param req The request whose params we are interested in
    * @param defaults values to be used if no values are specified in the request params
-   * @param appends values to be appended to those from the request (or defaults) when dealing with multi-val params, or treated as another layer of defaults for singl-val params.
-   * @param invariants values which will be used instead of any request, or default values, regardless of context.
+   * @param appends values to be appended to those from the request (or defaults) when dealing with
+   *     multi-val params, or treated as another layer of defaults for singl-val params.
+   * @param invariants values which will be used instead of any request, or default values,
+   *     regardless of context.
    */
-  public static void processParams(SolrRequestHandler handler, SolrQueryRequest req, SolrParams defaults,
-                                   SolrParams appends, SolrParams invariants) {
+  public static void processParams(
+      SolrRequestHandler handler,
+      SolrQueryRequest req,
+      SolrParams defaults,
+      SolrParams appends,
+      SolrParams invariants) {
 
     boolean searchHandler = handler instanceof SearchHandler;
     SolrParams params = req.getParams();
@@ -57,7 +64,7 @@ public class RequestUtil {
     // Handle JSON stream for search requests
     if (searchHandler && req.getContentStreams() != null) {
 
-      Map<String,String[]> map = MultiMapSolrParams.asMultiMap(params, false);
+      Map<String, String[]> map = MultiMapSolrParams.asMultiMap(params, false);
 
       if (!(params instanceof MultiMapSolrParams || params instanceof ModifiableSolrParams)) {
         // need to set params on request since we weren't able to access the original map
@@ -65,21 +72,30 @@ public class RequestUtil {
         req.setParams(params);
       }
 
-      String[] jsonFromParams = map.remove(JSON);  // params from the query string should come after (and hence override) JSON content streams
+      // params from the query string should come after (and hence override) JSON content streams
+      String[] jsonFromParams = map.remove(JSON);
 
       for (ContentStream cs : req.getContentStreams()) {
+        // if BinaryResponseParser.BINARY_CONTENT_TYPE, let the following fail below - we may have
+        // adjusted the content without updating the content type
+        // problem in this case happens in a few tests, one seems to happen with kerberos and remote
+        // node query (HttpSolrCall's request proxy)
+
         String contentType = cs.getContentType();
-        if (contentType==null || !contentType.contains("/json")) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Bad contentType for search handler :" + contentType + " request="+req);
+        if (contentType == null || !contentType.contains("/json")) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Bad contentType for search handler :" + contentType + " request=" + req);
         }
 
         try {
-          String jsonString = IOUtils.toString( cs.getReader() );
-          if (jsonString != null) {
-            MultiMapSolrParams.addParam(JSON, jsonString, map);
-          }
+          String jsonString = StrUtils.stringFromReader(cs.getReader());
+          MultiMapSolrParams.addParam(JSON, jsonString, map);
         } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Exception reading content stream for request:"+req, e);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Exception reading content stream for request:" + req,
+              e);
         }
       }
 
@@ -93,20 +109,21 @@ public class RequestUtil {
 
     String[] jsonS = params.getParams(JSON);
 
-    boolean hasAdditions = defaults != null || invariants != null || appends != null || jsonS != null;
+    boolean hasAdditions =
+        defaults != null || invariants != null || appends != null || jsonS != null;
 
     // short circuit processing
     if (!hasAdditions && !params.getBool("expandMacros", true)) {
-      return;  // nothing to do...
+      return; // nothing to do...
     }
 
     boolean isShard = params.getBool("isShard", false);
 
     Map<String, String[]> newMap = MultiMapSolrParams.asMultiMap(params, hasAdditions);
 
-
     // see if the json has a "params" section
-    // TODO: we should currently *not* do this if this is a leaf of a distributed search since it could overwrite parameters set by the top-level
+    // TODO: we should currently *not* do this if this is a leaf of a distributed search since it
+    // could overwrite parameters set by the top-level
     // The parameters we extract will be propagated anyway.
     if (jsonS != null && !isShard) {
       for (String json : jsonS) {
@@ -143,9 +160,8 @@ public class RequestUtil {
       }
     }
 
-
     if (invariants != null) {
-      newMap.putAll( MultiMapSolrParams.asMultiMap(invariants) );
+      newMap.putAll(MultiMapSolrParams.asMultiMap(invariants));
     }
 
     if (!isShard) { // Don't expand macros in shard requests
@@ -161,14 +177,14 @@ public class RequestUtil {
     }
     // Set these params as soon as possible so if there is an error processing later, things like
     // "wt=json" will take effect from the defaults.
-    SolrParams newParams = new MultiMapSolrParams(newMap);  // newMap may still change below, but that should be OK
+    SolrParams newParams =
+        new MultiMapSolrParams(newMap); // newMap may still change below, but that should be OK
     req.setParams(newParams);
 
-
-    // Skip the rest of the processing (including json processing for now) if this isn't a search handler.
-    // For example json.command started to be used  in SOLR-6294, and that caused errors here.
+    // Skip the rest of the processing (including json processing for now) if this isn't a search
+    // handler. For example json.command started to be used  in SOLR-6294, and that caused errors
+    // here.
     if (!searchHandler) return;
-
 
     Map<String, Object> json = null;
     // Handle JSON body first, so query params will always overlay on that
@@ -194,7 +210,7 @@ public class RequestUtil {
     JsonQueryConverter jsonQueryConverter = new JsonQueryConverter();
 
     if (json != null && !isShard) {
-      for (Map.Entry<String,Object> entry : json.entrySet()) {
+      for (Map.Entry<String, Object> entry : json.entrySet()) {
         String key = entry.getKey();
         String out = null;
         boolean isQuery = false;
@@ -202,6 +218,11 @@ public class RequestUtil {
         if ("query".equals(key)) {
           out = "q";
           isQuery = true;
+          // if the value is not a String, then it'll get converted to a localParams query String.
+          // Only the "lucene" query parser can parse it.  Ignore anything else that may exist.
+          if (!(entry.getValue() instanceof String)) {
+            newMap.put(QueryParsing.DEFTYPE, new String[] {"lucene"});
+          }
         } else if ("filter".equals(key)) {
           out = "fq";
           arr = true;
@@ -219,23 +240,27 @@ public class RequestUtil {
           Object queriesJsonObj = entry.getValue();
           if (queriesJsonObj instanceof Map && queriesJsonObj != null) {
             @SuppressWarnings("unchecked")
-            final Map<String,Object> queriesAsMap = (Map<String,Object>) queriesJsonObj;
-            for (Map.Entry<String,Object> queryJsonProperty : queriesAsMap.entrySet()) {
+            final Map<String, Object> queriesAsMap = (Map<String, Object>) queriesJsonObj;
+            for (Map.Entry<String, Object> queryJsonProperty : queriesAsMap.entrySet()) {
               out = queryJsonProperty.getKey();
               arr = true;
               isQuery = true;
-              convertJsonPropertyToLocalParams(newMap, jsonQueryConverter, queryJsonProperty, out, isQuery, arr);
+              convertJsonPropertyToLocalParams(
+                  newMap, jsonQueryConverter, queryJsonProperty, out, isQuery, arr);
             }
             continue;
           } else {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
                 "Expected Map for 'queries', received " + queriesJsonObj);
           }
-        } else if ("params".equals(key) || "facet".equals(key) ) {
+        } else if ("params".equals(key) || "facet".equals(key)) {
           // handled elsewhere
           continue;
         } else {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown top-level key in JSON request : " + key);
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Unknown top-level key in JSON request : " + key);
         }
         convertJsonPropertyToLocalParams(newMap, jsonQueryConverter, entry, out, isQuery, arr);
       }
@@ -246,55 +271,68 @@ public class RequestUtil {
     }
   }
 
-  private static void convertJsonPropertyToLocalParams(Map<String, String[]> outMap, JsonQueryConverter jsonQueryConverter, Map.Entry<String, Object> jsonProperty, String outKey, boolean isQuery, boolean arr) {
+  private static void convertJsonPropertyToLocalParams(
+      Map<String, String[]> outMap,
+      JsonQueryConverter jsonQueryConverter,
+      Map.Entry<String, Object> jsonProperty,
+      String outKey,
+      boolean isQuery,
+      boolean arr) {
     Object val = jsonProperty.getValue();
 
     if (arr) {
       String[] existing = outMap.get(outKey);
-      List<?> lst = val instanceof List ? (List<?>)val : null;
-      int existingSize = existing==null ? 0 : existing.length;
-      int jsonSize = lst==null ? 1 : lst.size();
-      String[] newval = new String[ existingSize + jsonSize ];
-      for (int i=0; i<existingSize; i++) {
+      List<?> lst = val instanceof List ? (List<?>) val : null;
+      int existingSize = existing == null ? 0 : existing.length;
+      int jsonSize = lst == null ? 1 : lst.size();
+      String[] newval = new String[existingSize + jsonSize];
+      for (int i = 0; i < existingSize; i++) {
         newval[i] = existing[i];
       }
       if (lst != null) {
         for (int i = 0; i < jsonSize; i++) {
           Object v = lst.get(i);
-          newval[existingSize + i] = isQuery ? jsonQueryConverter.toLocalParams(v, outMap) : v.toString();
+          newval[existingSize + i] =
+              isQuery ? jsonQueryConverter.toLocalParams(v, outMap) : v.toString();
         }
       } else {
-        newval[newval.length-1] = isQuery ? jsonQueryConverter.toLocalParams(val, outMap) : val.toString();
+        newval[newval.length - 1] =
+            isQuery ? jsonQueryConverter.toLocalParams(val, outMap) : val.toString();
       }
       outMap.put(outKey, newval);
     } else {
-      outMap.put(outKey, new String[]{isQuery ? jsonQueryConverter.toLocalParams(val, outMap) : val.toString()});
+      outMap.put(
+          outKey,
+          new String[] {isQuery ? jsonQueryConverter.toLocalParams(val, outMap) : val.toString()});
     }
   }
 
-
   // queryParamName is something like json.facet or json.query, or just json...
-  private static void mergeJSON(Map<String,Object> json, String queryParamName, String[] vals, ObjectUtil.ConflictHandler handler) {
+  private static void mergeJSON(
+      Map<String, Object> json,
+      String queryParamName,
+      String[] vals,
+      ObjectUtil.ConflictHandler handler) {
     try {
       List<String> path = StrUtils.splitSmart(queryParamName, ".", true);
       path = path.subList(1, path.size());
       for (String jsonStr : vals) {
         Object o = ObjectBuilder.fromJSONStrict(jsonStr);
-        // zero-length strings or comments can cause this to be null (and a zero-length string can result from a json content-type w/o a body)
+        // zero-length strings or comments can cause this to be null (and a zero-length string can
+        // result from a json content-type w/o a body)
         if (o != null) {
           ObjectUtil.mergeObjects(json, path, o, handler);
         }
       }
-    } catch (JSONParser.ParseException e ) {
+    } catch (JSONParser.ParseException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     } catch (IOException e) {
       // impossible
     }
   }
 
-
   private static void getParamsFromJSON(Map<String, String[]> params, String json) {
-    if (json.indexOf("params") < 0) {
+    if (!json.contains("params")) {
       return;
     }
 
@@ -306,14 +344,14 @@ public class RequestUtil {
         return;
       }
 
-      parser.nextEvent();  // advance to the value
+      parser.nextEvent(); // advance to the value
 
       Object o = ObjectBuilder.getVal(parser);
       if (!(o instanceof Map)) return;
       @SuppressWarnings("unchecked")
-      Map<String,Object> map = (Map<String,Object>)o;
-      // To make consistent with json.param handling, we should make query params come after json params (i.e. query params should
-      // appear to overwrite json params.
+      Map<String, Object> map = (Map<String, Object>) o;
+      // To make consistent with json.param handling, we should make query params come after json
+      // params (i.e. query params should appear to overwrite json params.
 
       // Solr params are based on String though, so we need to convert
       for (Map.Entry<String, Object> entry : map.entrySet()) {
@@ -333,7 +371,7 @@ public class RequestUtil {
           }
           params.put(key, vals);
         } else {
-          params.put(key, new String[]{val.toString()});
+          params.put(key, new String[] {val.toString()});
         }
       }
 
@@ -341,9 +379,5 @@ public class RequestUtil {
       // ignore parse exceptions at this stage, they may be caused by incomplete macro expansions
       return;
     }
-
   }
-
-
-
 }

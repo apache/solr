@@ -18,7 +18,6 @@
 package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -34,35 +33,9 @@ public class ResponseBuilderTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml");
   }
 
-  //This test is being added to verify responseBuilder.isDistributed() exists and is visible.
-  public void testIsDistrib(){
+  // This test is being added to verify responseBuilder.isDistributed() exists and is visible.
+  public void testIsDistrib() {
     ResponseBuilder responseBuilder = new ResponseBuilder(req, rsp, new ArrayList<>(0));
     assertFalse(responseBuilder.isDistributed());
-  }
-
-  public void testDoAnalyticsAccessors() {
-    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0));
-    assertFalse(rb.isAnalytics());
-    rb.setAnalytics(true);
-    assertTrue(rb.isAnalytics());
-    rb.setAnalytics(false);
-    assertFalse(rb.isAnalytics());
-  }
-
-  public void testIsOlapAnalyticsAccessors() {
-    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0));
-    assertFalse(rb.isOlapAnalytics());
-    rb.setOlapAnalytics(true);
-    assertTrue(rb.isOlapAnalytics());
-    rb.setOlapAnalytics(false);
-    assertFalse(rb.isOlapAnalytics());
-  }
-
-  public void testAnalyticsRequestManagerAccessors() {
-    ResponseBuilder rb = new ResponseBuilder(req, rsp, new ArrayList<>(0));
-    assertNull(rb.getAnalyticsRequestManager());
-    rb.setAnalyticsRequestManager(this);
-    assertNotNull(rb.getAnalyticsRequestManager());
-    assertEquals(rb.getAnalyticsRequestManager(), this);
   }
 }

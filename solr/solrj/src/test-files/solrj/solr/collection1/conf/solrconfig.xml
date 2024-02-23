@@ -17,8 +17,8 @@
 -->
 
 <!--
- This is a stripped down config file used for a simple example...  
- It is *not* a good example to work from. 
+ This is a stripped down config file used for a simple example...
+ It is *not* a good example to work from.
 -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
@@ -36,7 +36,7 @@
   </updateHandler>
 
   <requestDispatcher>
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="-1" />
+    <requestParsers multipartUploadLimitInKB="-1" />
   </requestDispatcher>
 
   <requestHandler name="/select" class="solr.SearchHandler"/>
@@ -51,10 +51,4 @@
     <str name="healthcheckFile">server-enabled.txt</str>
   </requestHandler>
 
-  <!-- config for the admin interface --> 
-  <admin>
-    <defaultQuery>solr</defaultQuery>
-  </admin>
-
 </config>
-

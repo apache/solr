@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -46,9 +45,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Report low-level details of collection.
- */
+/** Report low-level details of collection. */
 public class ColStatus {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -60,9 +57,12 @@ public class ColStatus {
   public static final String FIELD_INFO_PROP = SegmentsInfoRequestHandler.FIELD_INFO_PARAM;
   public static final String SIZE_INFO_PROP = SegmentsInfoRequestHandler.SIZE_INFO_PARAM;
   public static final String RAW_SIZE_PROP = SegmentsInfoRequestHandler.RAW_SIZE_PARAM;
-  public static final String RAW_SIZE_SUMMARY_PROP = SegmentsInfoRequestHandler.RAW_SIZE_SUMMARY_PARAM;
-  public static final String RAW_SIZE_DETAILS_PROP = SegmentsInfoRequestHandler.RAW_SIZE_DETAILS_PARAM;
-  public static final String RAW_SIZE_SAMPLING_PERCENT_PROP = SegmentsInfoRequestHandler.RAW_SIZE_SAMPLING_PERCENT_PARAM;
+  public static final String RAW_SIZE_SUMMARY_PROP =
+      SegmentsInfoRequestHandler.RAW_SIZE_SUMMARY_PARAM;
+  public static final String RAW_SIZE_DETAILS_PROP =
+      SegmentsInfoRequestHandler.RAW_SIZE_DETAILS_PARAM;
+  public static final String RAW_SIZE_SAMPLING_PERCENT_PROP =
+      SegmentsInfoRequestHandler.RAW_SIZE_SAMPLING_PERCENT_PARAM;
   public static final String SEGMENTS_PROP = "segments";
 
   public ColStatus(SolrClientCache solrClientCache, ClusterState clusterState, ZkNodeProps props) {
@@ -88,7 +88,8 @@ public class ColStatus {
     boolean withRawSizeSummary = props.getBool(RAW_SIZE_SUMMARY_PROP, false);
     boolean withRawSizeDetails = props.getBool(RAW_SIZE_DETAILS_PROP, false);
     Object samplingPercentVal = props.get(RAW_SIZE_SAMPLING_PERCENT_PROP);
-    Float samplingPercent = samplingPercentVal != null ? Float.parseFloat(String.valueOf(samplingPercentVal)) : null;
+    Float samplingPercent =
+        samplingPercentVal != null ? Float.parseFloat(String.valueOf(samplingPercentVal)) : null;
     if (withRawSizeSummary || withRawSizeDetails) {
       withRawSizeInfo = true;
     }
@@ -102,6 +103,7 @@ public class ColStatus {
       }
       SimpleOrderedMap<Object> colMap = new SimpleOrderedMap<>();
       colMap.add("znodeVersion", coll.getZNodeVersion());
+      colMap.add("creationTimeMillis", coll.getCreationTime().toEpochMilli());
       Map<String, Object> props = new TreeMap<>(coll.getProperties());
       props.remove("shards");
       colMap.add("properties", props);
@@ -123,7 +125,7 @@ public class ColStatus {
         int recoveryFailedReplicas = 0;
         for (Replica r : s.getReplicas()) {
           // replica may still be marked as ACTIVE even though its node is no longer live
-          if (! r.isActive(clusterState.getLiveNodes())) {
+          if (!r.isActive(clusterState.getLiveNodes())) {
             downReplicas++;
             continue;
           }
@@ -190,20 +192,21 @@ public class ColStatus {
           NamedList<Object> rsp = client.request(req);
           rsp.remove("responseHeader");
           leaderMap.add("segInfos", rsp);
-          NamedList<?> segs = (NamedList<?>)rsp.get("segments");
+          NamedList<?> segs = (NamedList<?>) rsp.get("segments");
           if (segs != null) {
             for (Map.Entry<String, ?> entry : segs) {
-              NamedList<Object> fields = (NamedList<Object>)((NamedList<Object>)entry.getValue()).get("fields");
+              NamedList<Object> fields =
+                  (NamedList<Object>) ((NamedList<Object>) entry.getValue()).get("fields");
               if (fields != null) {
                 for (Map.Entry<String, Object> fEntry : fields) {
-                  Object nc = ((NamedList<Object>)fEntry.getValue()).get("nonCompliant");
+                  Object nc = ((NamedList<Object>) fEntry.getValue()).get("nonCompliant");
                   if (nc != null) {
                     nonCompliant.add(fEntry.getKey());
                   }
                 }
               }
               if (!withFieldInfo) {
-                ((NamedList<Object>)entry.getValue()).remove("fields");
+                ((NamedList<Object>) entry.getValue()).remove("fields");
               }
             }
           }

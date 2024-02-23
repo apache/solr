@@ -16,8 +16,10 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.lucene.index.Term;
-import org.apache.solr.legacy.LegacyNumericRangeQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -32,26 +34,21 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.legacy.LegacyNumericRangeQuery;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-/**
- * Collection of static utilities useful for query parsing.
- *
- *
- */
+/** Collection of static utilities useful for query parsing. */
 public class QueryParsing {
-  public static final String OP = "q.op";  // the SolrParam used to override the QueryParser "default operator"
-  public static final String V = "v";      // value of this parameter
-  public static final String F = "f";      // field that a query or command pertains to
-  public static final String TYPE = "type";// parser for this query or command
+  public static final String OP =
+      "q.op"; // the SolrParam used to override the QueryParser "default operator"
+  public static final String V = "v"; // value of this parameter
+  public static final String F = "f"; // field that a query or command pertains to
+  public static final String TYPE = "type"; // parser for this query or command
   public static final String DEFTYPE = "defType"; // default parser for any direct subqueries
-  public static final String SPLIT_ON_WHITESPACE = "sow"; // Whether to split on whitespace prior to analysis
+  public static final String SPLIT_ON_WHITESPACE =
+      "sow"; // Whether to split on whitespace prior to analysis
   public static final String LOCALPARAM_START = "{!";
   public static final char LOCALPARAM_END = '}';
   // true if the value was specified by the "v" param (i.e. v=myval, or v=$param)
@@ -63,7 +60,8 @@ public class QueryParsing {
    * @param target Object to inject with parsed settings
    * @param params Additional existing parameters
    */
-  public static int parseLocalParams(String txt, int start, ModifiableSolrParams target, SolrParams params) throws SyntaxError {
+  public static int parseLocalParams(
+      String txt, int start, ModifiableSolrParams target, SolrParams params) throws SyntaxError {
     return parseLocalParams(txt, start, target, params, LOCALPARAM_START, LOCALPARAM_END);
   }
 
@@ -75,13 +73,20 @@ public class QueryParsing {
    * @param startString String that indicates the start of a localParams section
    * @param endChar Character that indicates the end of a localParams section
    */
-  public static int parseLocalParams(String txt, int start, ModifiableSolrParams target, SolrParams params, String startString, char endChar) throws SyntaxError {
+  public static int parseLocalParams(
+      String txt,
+      int start,
+      ModifiableSolrParams target,
+      SolrParams params,
+      String startString,
+      char endChar)
+      throws SyntaxError {
     int off = start;
     if (!txt.startsWith(startString, off)) return start;
     StrParser p = new StrParser(txt, start, txt.length());
     p.pos += startString.length(); // skip over "{!"
 
-    for (; ;) {
+    for (; ; ) {
       /*
       if (p.pos>=txt.length()) {
         throw new SyntaxError("Missing '}' parsing local params '" + txt + '"');
@@ -94,8 +99,8 @@ public class QueryParsing {
 
       String id = p.getId();
       if (id.length() == 0) {
-        throw new SyntaxError("Expected ending character '" + endChar + "' parsing local params '" + txt + '"');
-
+        throw new SyntaxError(
+            "Expected ending character '" + endChar + "' parsing local params '" + txt + '"');
       }
       String[] val = new String[1];
 
@@ -112,7 +117,7 @@ public class QueryParsing {
         if (ch == '$') {
           p.pos++;
           ch = p.peek();
-          deref = true;  // dereference whatever value is read by treating it as a variable name
+          deref = true; // dereference whatever value is read by treating it as a variable name
         }
 
         if (ch == '\"' || ch == '\'') {
@@ -121,9 +126,10 @@ public class QueryParsing {
           // read unquoted literal ended by whitespace or endChar (normally '}')
           // there is no escaping.
           int valStart = p.pos;
-          for (; ;) {
+          for (; ; ) {
             if (p.pos >= p.end) {
-              throw new SyntaxError("Missing end to unquoted value starting at " + valStart + " str='" + txt + "'");
+              throw new SyntaxError(
+                  "Missing end to unquoted value starting at " + valStart + " str='" + txt + "'");
             }
             char c = p.val.charAt(p.pos);
             if (c == endChar || Character.isWhitespace(c)) {
@@ -134,7 +140,7 @@ public class QueryParsing {
           }
         }
 
-        if (deref) {  // dereference parameter
+        if (deref) { // dereference parameter
           if (params != null) {
             val = params.getParams(val[0]);
           }
@@ -144,11 +150,9 @@ public class QueryParsing {
     }
   }
 
-
   /**
-   * "foo" returns null
-   * "{!prefix f=myfield}yes" returns type="prefix",f="myfield",v="yes"
-   * "{!prefix f=myfield v=$p}" returns type="prefix",f="myfield",v=params.get("p")
+   * "foo" returns null "{!prefix f=myfield}yes" returns type="prefix",f="myfield",v="yes" "{!prefix
+   * f=myfield v=$p}" returns type="prefix",f="myfield",v=params.get("p")
    */
   public static SolrParams getLocalParams(String txt, SolrParams params) throws SyntaxError {
     if (txt == null || !txt.startsWith(LOCALPARAM_START)) {
@@ -167,13 +171,12 @@ public class QueryParsing {
     return localParams;
   }
 
-
-
   ///////////////////////////
   ///////////////////////////
   ///////////////////////////
 
-  static FieldType writeFieldName(String name, IndexSchema schema, Appendable out, int flags) throws IOException {
+  static FieldType writeFieldName(String name, IndexSchema schema, Appendable out, int flags)
+      throws IOException {
     FieldType ft = null;
     ft = schema.getFieldTypeNoEx(name);
     out.append(name);
@@ -184,7 +187,8 @@ public class QueryParsing {
     return ft;
   }
 
-  static void writeFieldVal(String val, FieldType ft, Appendable out, int flags) throws IOException {
+  static void writeFieldVal(String val, FieldType ft, Appendable out, int flags)
+      throws IOException {
     if (ft != null) {
       try {
         out.append(ft.indexedToReadable(val));
@@ -198,7 +202,8 @@ public class QueryParsing {
     }
   }
 
-  static void writeFieldVal(BytesRef val, FieldType ft, Appendable out, int flags) throws IOException {
+  static void writeFieldVal(BytesRef val, FieldType ft, Appendable out, int flags)
+      throws IOException {
     if (ft != null) {
       try {
         CharsRefBuilder readable = new CharsRefBuilder();
@@ -214,14 +219,16 @@ public class QueryParsing {
     }
   }
 
+  private static int FLAG_BOOSTED = 0x01;
+  private static int FLAG_IS_CLAUSE = 0x02;
 
-  private static int FLAG_BOOSTED=0x01;
-  private static int FLAG_IS_CLAUSE=0x02;
   /**
    * @see #toString(Query,IndexSchema)
    */
-  public static void toString(Query query, IndexSchema schema, Appendable out, int flags) throws IOException {
-    int subflag = flags & ~(FLAG_BOOSTED|FLAG_IS_CLAUSE);  // clear the boosted / is clause flags for recursion
+  public static void toString(Query query, IndexSchema schema, Appendable out, int flags)
+      throws IOException {
+    // clear the boosted / is clause flags for recursion
+    int subflag = flags & ~(FLAG_BOOSTED | FLAG_IS_CLAUSE);
 
     if (query instanceof TermQuery) {
       TermQuery q = (TermQuery) query;
@@ -276,7 +283,7 @@ public class QueryParsing {
       BooleanQuery q = (BooleanQuery) query;
       boolean needParens = false;
 
-      if (q.getMinimumNumberShouldMatch() != 0 || (flags & (FLAG_IS_CLAUSE | FLAG_BOOSTED)) != 0 ) {
+      if (q.getMinimumNumberShouldMatch() != 0 || (flags & (FLAG_IS_CLAUSE | FLAG_BOOSTED)) != 0) {
         needParens = true;
       }
       if (needParens) {
@@ -298,7 +305,6 @@ public class QueryParsing {
         Query subQuery = c.getQuery();
 
         toString(subQuery, schema, out, subflag | FLAG_IS_CLAUSE);
-
       }
 
       if (needParens) {
@@ -322,31 +328,26 @@ public class QueryParsing {
     } else if (query instanceof ConstantScoreQuery) {
       out.append(query.toString());
     } else if (query instanceof WrappedQuery) {
-      WrappedQuery q = (WrappedQuery)query;
+      WrappedQuery q = (WrappedQuery) query;
       out.append(q.getOptions());
       toString(q.getWrappedQuery(), schema, out, subflag);
     } else if (query instanceof BoostQuery) {
-      BoostQuery q = (BoostQuery)query;
+      BoostQuery q = (BoostQuery) query;
       toString(q.getQuery(), schema, out, subflag | FLAG_BOOSTED);
       out.append('^');
       out.append(Float.toString(q.getBoost()));
-    }
-    else {
+    } else {
       out.append(query.getClass().getSimpleName()).append('(').append(query.toString()).append(')');
     }
   }
 
   /**
-   * Formats a Query for debugging, using the IndexSchema to make
-   * complex field types readable.
-   * <p>
-   * The benefit of using this method instead of calling
-   * <code>Query.toString</code> directly is that it knows about the data
-   * types of each field, so any field which is encoded in a particularly
-   * complex way is still readable. The downside is that it only knows
-   * about built in Query types, and will not be able to format custom
-   * Query classes.
-   * </p>
+   * Formats a Query for debugging, using the IndexSchema to make complex field types readable.
+   *
+   * <p>The benefit of using this method instead of calling <code>Query.toString</code> directly is
+   * that it knows about the data types of each field, so any field which is encoded in a
+   * particularly complex way is still readable. The downside is that it only knows about built in
+   * Query types, and will not be able to format custom Query classes.
    */
   public static String toString(Query query, IndexSchema schema) {
     try {
@@ -358,9 +359,7 @@ public class QueryParsing {
     }
   }
 
-  /**
-   * Builds a list of String which are stringified versions of a list of Queries
-   */
+  /** Builds a list of String which are stringified versions of a list of Queries */
   public static List<String> toString(List<Query> queries, IndexSchema schema) {
     List<String> out = new ArrayList<>(queries.size());
     for (Query q : queries) {
@@ -371,6 +370,7 @@ public class QueryParsing {
 
   /**
    * Parses default operator string into Operator object
+   *
    * @param operator the string from request
    * @return Operator.AND if string equals "AND", else return Operator.OR (default)
    */

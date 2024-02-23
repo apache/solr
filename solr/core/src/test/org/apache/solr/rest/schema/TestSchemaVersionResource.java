@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema;
+
 import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
 public class TestSchemaVersionResource extends SolrRestletTestBase {
   @Test
-  public void testGetSchemaVersion() throws Exception {
-    assertQ("/schema/version?indent=on&wt=xml",
-            "count(/response/float[@name='version']) = 1",
-            "/response/float[@name='version'][.='1.6']");
+  public void testGetSchemaVersion() {
+    assertQ(
+        "/schema/version?indent=on&wt=xml",
+        "count(/response/float[@name='version']) = 1",
+        "/response/float[@name='version'][.='1.6']");
   }
 }
-

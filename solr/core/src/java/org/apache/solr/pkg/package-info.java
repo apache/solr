@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Package management implementation
- */
+/** Package management implementation */
 package org.apache.solr.pkg;
-
-

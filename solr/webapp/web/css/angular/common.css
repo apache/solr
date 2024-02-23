@@ -283,9 +283,9 @@ ul
 
 #meta .documentation a { background-image: url( ../../img/ico/document-text.png ); }
 #meta .issues a { background-image: url( ../../img/ico/bug.png ); }
-#meta .irc a { background-image: url( ../../img/ico/users.png ); }
-#meta .mailinglist a { background-image: url( ../../img/ico/mail.png ); }
-#meta .wiki-query-syntax a { background-image: url( ../../img/ico/script-code.png ); }
+#meta .chat a { background-image: url( ../../img/ico/users.png ); }
+#meta .community a { background-image: url( ../../img/ico/mail.png ); }
+#meta .query-syntax a { background-image: url( ../../img/ico/script-code.png ); }
 
 #environment
 {

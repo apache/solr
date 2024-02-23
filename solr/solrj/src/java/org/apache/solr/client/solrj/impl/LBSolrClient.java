@@ -17,6 +17,8 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
+
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
@@ -38,7 +40,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -48,6 +49,7 @@ import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -56,14 +58,13 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.slf4j.MDC;
 
-import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
-
 public abstract class LBSolrClient extends SolrClient {
 
   // defaults
-  protected static final Set<Integer> RETRY_CODES = new HashSet<>(Arrays.asList(404, 403, 503, 500));
-  private static final int CHECK_INTERVAL = 60 * 1000; //1 minute between checks
-  private static final int NONSTANDARD_PING_LIMIT = 5;  // number of times we'll ping dead servers not in the server list
+  protected static final Set<Integer> RETRY_CODES =
+      new HashSet<>(Arrays.asList(404, 403, 503, 500));
+  private static final int NONSTANDARD_PING_LIMIT =
+      5; // number of times we'll ping dead servers not in the server list
 
   // keys to the maps are currently of the form "http://localhost:8983/solr"
   // which should be equivalent to HttpSolrServer.getBaseURL()
@@ -75,29 +76,27 @@ public abstract class LBSolrClient extends SolrClient {
   // changes to aliveServers are reflected in this array, no need to synchronize
   private volatile ServerWrapper[] aliveServerList = new ServerWrapper[0];
 
-
   private volatile ScheduledExecutorService aliveCheckExecutor;
 
-  private int interval = CHECK_INTERVAL;
+  protected long aliveCheckIntervalMillis =
+      TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
   private final AtomicInteger counter = new AtomicInteger(-1);
 
   private static final SolrQuery solrQuery = new SolrQuery("*:*");
   protected volatile ResponseParser parser;
   protected volatile RequestWriter requestWriter;
 
-  protected Set<String> queryParams = new HashSet<>();
-
   static {
     solrQuery.setRows(0);
-    /**
-     * Default sort (if we don't supply a sort) is by score and since
-     * we request 0 rows any sorting and scoring is not necessary.
-     * SolrQuery.DOCID schema-independently specifies a non-scoring sort.
-     * <code>_docid_ asc</code> sort is efficient,
-     * <code>_docid_ desc</code> sort is not, so choose ascending DOCID sort.
+    /*
+     * Default sort (if we don't supply a sort) is by score and since we request 0 rows any sorting
+     * and scoring is not necessary. SolrQuery.DOCID schema-independently specifies a non-scoring
+     * sort. <code>_docid_ asc</code> sort is efficient, <code>_docid_ desc</code> sort is not, so
+     * choose ascending DOCID sort.
      */
     solrQuery.setSort(SolrQuery.DOCID, SolrQuery.ORDER.asc);
-    // not a top-level request, we are interested only in the server being sent to i.e. it need not distribute our request to further servers
+    // not a top-level request, we are interested only in the server being sent to i.e. it need not
+    // distribute our request to further servers
     solrQuery.setDistrib(false);
   }
 
@@ -133,7 +132,7 @@ public abstract class LBSolrClient extends SolrClient {
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (!(obj instanceof ServerWrapper)) return false;
-      return baseUrl.equals(((ServerWrapper)obj).baseUrl);
+      return baseUrl.equals(((ServerWrapper) obj).baseUrl);
     }
   }
 
@@ -215,16 +214,23 @@ public abstract class LBSolrClient extends SolrClient {
       }
       // Skipping check time exceeded for the first request
       if (numServersTried > 0 && isTimeExceeded(timeAllowedNano, timeOutTime)) {
-        throw new SolrServerException("Time allowed to handle this request exceeded"+suffix, previousEx);
+        throw new SolrServerException(
+            "Time allowed to handle this request exceeded" + suffix, previousEx);
       }
       if (serverStr == null) {
-        throw new SolrServerException("No live SolrServers available to handle this request"+suffix, previousEx);
+        throw new SolrServerException(
+            "No live SolrServers available to handle this request" + suffix, previousEx);
       }
       numServersTried++;
       if (req.getNumServersToTry() != null && numServersTried > req.getNumServersToTry()) {
-        throw new SolrServerException("No live SolrServers available to handle this request:"
-            + " numServersTried="+numServersTried
-            + " numServersToTry="+req.getNumServersToTry()+suffix, previousEx);
+        throw new SolrServerException(
+            "No live SolrServers available to handle this request:"
+                + " numServersTried="
+                + numServersTried
+                + " numServersToTry="
+                + req.getNumServersToTry()
+                + suffix,
+            previousEx);
       }
       String rs = serverStr;
       fetchNext();
@@ -253,17 +259,22 @@ public abstract class LBSolrClient extends SolrClient {
     public SolrRequest<?> getRequest() {
       return request;
     }
+
     public List<String> getServers() {
       return servers;
     }
 
-    /** @return the number of dead servers to try if there are no live servers left */
+    /**
+     * @return the number of dead servers to try if there are no live servers left
+     */
     public int getNumDeadServersToTry() {
       return numDeadServersToTry;
     }
 
-    /** @param numDeadServersToTry The number of dead servers to try if there are no live servers left.
-     * Defaults to the number of servers in this request. */
+    /**
+     * @param numDeadServersToTry The number of dead servers to try if there are no live servers
+     *     left. Defaults to the number of servers in this request.
+     */
     public void setNumDeadServersToTry(int numDeadServersToTry) {
       this.numDeadServersToTry = numDeadServersToTry;
     }
@@ -308,49 +319,32 @@ public abstract class LBSolrClient extends SolrClient {
     return new ServerWrapper(baseUrl);
   }
 
-  public Set<String> getQueryParams() {
-    return queryParams;
-  }
-
-  /**
-   * Expert Method.
-   * @param queryParams set of param keys to only send via the query string
-   */
-  public void setQueryParams(Set<String> queryParams) {
-    this.queryParams = queryParams;
-  }
-  public void addQueryParams(String queryOnlyParam) {
-    this.queryParams.add(queryOnlyParam) ;
-  }
-
   public static String normalize(String server) {
-    if (server.endsWith("/"))
-      server = server.substring(0, server.length() - 1);
+    if (server.endsWith("/")) server = server.substring(0, server.length() - 1);
     return server;
   }
 
-
   /**
-   * Tries to query a live server from the list provided in Req. Servers in the dead pool are skipped.
-   * If a request fails due to an IOException, the server is moved to the dead pool for a certain period of
-   * time, or until a test request on that server succeeds.
+   * Tries to query a live server from the list provided in Req. Servers in the dead pool are
+   * skipped. If a request fails due to an IOException, the server is moved to the dead pool for a
+   * certain period of time, or until a test request on that server succeeds.
    *
-   * Servers are queried in the exact order given (except servers currently in the dead pool are skipped).
-   * If no live servers from the provided list remain to be tried, a number of previously skipped dead servers will be tried.
-   * Req.getNumDeadServersToTry() controls how many dead servers will be tried.
+   * <p>Servers are queried in the exact order given (except servers currently in the dead pool are
+   * skipped). If no live servers from the provided list remain to be tried, a number of previously
+   * skipped dead servers will be tried. Req.getNumDeadServersToTry() controls how many dead servers
+   * will be tried.
    *
-   * If no live servers are found a SolrServerException is thrown.
+   * <p>If no live servers are found a SolrServerException is thrown.
    *
    * @param req contains both the request as well as the list of servers to query
-   *
    * @return the result of the request
-   *
    * @throws IOException If there is a low-level I/O error.
    */
   public Rsp request(Req req) throws SolrServerException, IOException {
     Rsp rsp = new Rsp();
     Exception ex = null;
-    boolean isNonRetryable = req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
+    boolean isNonRetryable =
+        req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
     ServerIterator serverIterator = new ServerIterator(req, zombieServers);
     String serverStr;
     while ((serverStr = serverIterator.nextOrError(ex)) != null) {
@@ -364,7 +358,11 @@ public abstract class LBSolrClient extends SolrClient {
         MDC.remove("LBSolrClient.url");
       }
     }
-    throw new SolrServerException("No live SolrServers available to handle this request:" + zombieServers.keySet(), ex);
+    throw new SolrServerException(
+        "No live SolrServers available to handle this request. (Tracking "
+            + zombieServers.size()
+            + " not live)",
+        ex);
   }
 
   /**
@@ -372,16 +370,19 @@ public abstract class LBSolrClient extends SolrClient {
    */
   private static long getTimeAllowedInNanos(final SolrRequest<?> req) {
     SolrParams reqParams = req.getParams();
-    return reqParams == null ? -1 :
-        TimeUnit.NANOSECONDS.convert(reqParams.getInt(CommonParams.TIME_ALLOWED, -1), TimeUnit.MILLISECONDS);
+    return reqParams == null
+        ? -1
+        : TimeUnit.NANOSECONDS.convert(
+            reqParams.getInt(CommonParams.TIME_ALLOWED, -1), TimeUnit.MILLISECONDS);
   }
 
   private static boolean isTimeExceeded(long timeAllowedNano, long timeOutTime) {
     return timeAllowedNano > 0 && System.nanoTime() > timeOutTime;
   }
 
-  protected Exception doRequest(String baseUrl, Req req, Rsp rsp, boolean isNonRetryable,
-                                boolean isZombie) throws SolrServerException, IOException {
+  protected Exception doRequest(
+      String baseUrl, Req req, Rsp rsp, boolean isNonRetryable, boolean isZombie)
+      throws SolrServerException, IOException {
     Exception ex = null;
     try {
       rsp.server = baseUrl;
@@ -390,9 +391,9 @@ public abstract class LBSolrClient extends SolrClient {
       if (isZombie) {
         zombieServers.remove(baseUrl);
       }
-    } catch (BaseHttpSolrClient.RemoteExecutionException e){
+    } catch (BaseHttpSolrClient.RemoteExecutionException e) {
       throw e;
-    } catch(SolrException e) {
+    } catch (SolrException e) {
       // we retry on 404 or 403 or 503 or 500
       // unless it's an update - then we only retry on connect exception
       if (!isNonRetryable && RETRY_CODES.contains(e.code())) {
@@ -442,31 +443,20 @@ public abstract class LBSolrClient extends SolrClient {
     return e;
   }
 
-  /**
-   * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use this to set that
-   * interval
-   *
-   * @param interval time in milliseconds
-   */
-  public void setAliveCheckInterval(int interval) {
-    if (interval <= 0) {
-      throw new IllegalArgumentException("Alive check interval must be " +
-          "positive, specified value = " + interval);
-    }
-    this.interval = interval;
-  }
-
   private void startAliveCheckExecutor() {
     // double-checked locking, but it's OK because we don't *do* anything with aliveCheckExecutor
     // if it's not null.
     if (aliveCheckExecutor == null) {
       synchronized (this) {
         if (aliveCheckExecutor == null) {
-          aliveCheckExecutor = Executors.newSingleThreadScheduledExecutor(
-              new SolrNamedThreadFactory("aliveCheckExecutor"));
+          aliveCheckExecutor =
+              Executors.newSingleThreadScheduledExecutor(
+                  new SolrNamedThreadFactory("aliveCheckExecutor"));
           aliveCheckExecutor.scheduleAtFixedRate(
               getAliveCheckRunner(new WeakReference<>(this)),
-              this.interval, this.interval, TimeUnit.MILLISECONDS);
+              this.aliveCheckIntervalMillis,
+              this.aliveCheckIntervalMillis,
+              TimeUnit.MILLISECONDS);
         }
       }
     }
@@ -477,7 +467,7 @@ public abstract class LBSolrClient extends SolrClient {
       LBSolrClient lb = lbRef.get();
       if (lb != null && lb.zombieServers != null) {
         for (Object zombieServer : lb.zombieServers.values()) {
-          lb.checkAZombieServer((ServerWrapper)zombieServer);
+          lb.checkAZombieServer((ServerWrapper) zombieServer);
         }
       }
     };
@@ -485,28 +475,6 @@ public abstract class LBSolrClient extends SolrClient {
 
   public ResponseParser getParser() {
     return parser;
-  }
-
-  /**
-   * Changes the {@link ResponseParser} that will be used for the internal
-   * SolrServer objects.
-   *
-   * @param parser Default Response Parser chosen to parse the response if the parser
-   *               were not specified as part of the request.
-   * @see org.apache.solr.client.solrj.SolrRequest#getResponseParser()
-   */
-  public void setParser(ResponseParser parser) {
-    this.parser = parser;
-  }
-
-  /**
-   * Changes the {@link RequestWriter} that will be used for the internal
-   * SolrServer objects.
-   *
-   * @param requestWriter Default RequestWriter, used to encode requests sent to the server.
-   */
-  public void setRequestWriter(RequestWriter requestWriter) {
-    this.requestWriter = requestWriter;
   }
 
   public RequestWriter getRequestWriter() {
@@ -534,7 +502,7 @@ public abstract class LBSolrClient extends SolrClient {
         }
       }
     } catch (Exception e) {
-      //Expected. The server is still down.
+      // Expected. The server is still down.
       zombieServer.failedPings++;
 
       // If the server doesn't belong in the standard set belonging to this load balancer
@@ -548,12 +516,10 @@ public abstract class LBSolrClient extends SolrClient {
   private ServerWrapper removeFromAlive(String key) {
     synchronized (aliveServers) {
       ServerWrapper wrapper = aliveServers.remove(key);
-      if (wrapper != null)
-        updateAliveList();
+      if (wrapper != null) updateAliveList();
       return wrapper;
     }
   }
-
 
   private void addToAlive(ServerWrapper wrapper) {
     synchronized (aliveServers) {
@@ -585,15 +551,13 @@ public abstract class LBSolrClient extends SolrClient {
   }
 
   /**
-   * Tries to query a live server. A SolrServerException is thrown if all servers are dead.
-   * If the request failed due to IOException then the live server is moved to dead pool and the request is
-   * retried on another live server.  After live servers are exhausted, any servers previously marked as dead
-   * will be tried before failing the request.
+   * Tries to query a live server. A SolrServerException is thrown if all servers are dead. If the
+   * request failed due to IOException then the live server is moved to dead pool and the request is
+   * retried on another live server. After live servers are exhausted, any servers previously marked
+   * as dead will be tried before failing the request.
    *
    * @param request the SolrRequest.
-   *
    * @return response
-   *
    * @throws IOException If there is a low-level I/O error.
    */
   @Override
@@ -602,20 +566,24 @@ public abstract class LBSolrClient extends SolrClient {
     return request(request, collection, null);
   }
 
-  public NamedList<Object> request(final SolrRequest<?> request, String collection,
-                                   final Integer numServersToTry) throws SolrServerException, IOException {
+  public NamedList<Object> request(
+      final SolrRequest<?> request, String collection, final Integer numServersToTry)
+      throws SolrServerException, IOException {
     Exception ex = null;
     ServerWrapper[] serverList = aliveServerList;
 
     final int maxTries = (numServersToTry == null ? serverList.length : numServersToTry.intValue());
     int numServersTried = 0;
-    Map<String,ServerWrapper> justFailed = null;
+    Map<String, ServerWrapper> justFailed = null;
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
+      collection = defaultCollection;
 
     boolean timeAllowedExceeded = false;
     long timeAllowedNano = getTimeAllowedInNanos(request);
     long timeOutTime = System.nanoTime() + timeAllowedNano;
-    for (int attempts=0; attempts<maxTries; attempts++) {
-      if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
+    for (int attempts = 0; attempts < maxTries; attempts++) {
+      timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime);
+      if (timeAllowedExceeded) {
         break;
       }
 
@@ -643,11 +611,13 @@ public abstract class LBSolrClient extends SolrClient {
 
     // try other standard servers that we didn't try just now
     for (ServerWrapper wrapper : zombieServers.values()) {
-      if (timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime)) {
+      timeAllowedExceeded = isTimeExceeded(timeAllowedNano, timeOutTime);
+      if (timeAllowedExceeded) {
         break;
       }
 
-      if (wrapper.standard==false || justFailed!=null && justFailed.containsKey(wrapper.getBaseUrl())) continue;
+      if (wrapper.standard == false
+          || (justFailed != null && justFailed.containsKey(wrapper.getBaseUrl()))) continue;
       try {
         ++numServersTried;
         request.setBasePath(wrapper.baseUrl);
@@ -671,15 +641,17 @@ public abstract class LBSolrClient extends SolrClient {
       }
     }
 
-
     final String solrServerExceptionMessage;
     if (timeAllowedExceeded) {
       solrServerExceptionMessage = "Time allowed to handle this request exceeded";
     } else {
       if (numServersToTry != null && numServersTried > numServersToTry.intValue()) {
-        solrServerExceptionMessage = "No live SolrServers available to handle this request:"
-            + " numServersTried="+numServersTried
-            + " numServersToTry="+numServersToTry.intValue();
+        solrServerExceptionMessage =
+            "No live SolrServers available to handle this request:"
+                + " numServersTried="
+                + numServersTried
+                + " numServersToTry="
+                + numServersToTry.intValue();
       } else {
         solrServerExceptionMessage = "No live SolrServers available to handle this request";
       }
@@ -692,9 +664,9 @@ public abstract class LBSolrClient extends SolrClient {
   }
 
   /**
-   * Pick a server from list to execute request.
-   * By default servers are picked in round-robin manner,
-   * custom classes can override this method for more advance logic
+   * Pick a server from list to execute request. By default servers are picked in round-robin
+   * manner, custom classes can override this method for more advance logic
+   *
    * @param aliveServerList list of currently alive servers
    * @param request the request will be sent to the picked server
    * @return the picked server
@@ -706,8 +678,7 @@ public abstract class LBSolrClient extends SolrClient {
 
   private void moveAliveToDead(ServerWrapper wrapper) {
     wrapper = removeFromAlive(wrapper.getBaseUrl());
-    if (wrapper == null)
-      return;  // another thread already detected the failure and removed it
+    if (wrapper == null) return; // another thread already detected the failure and removed it
     zombieServers.put(wrapper.getBaseUrl(), wrapper);
     startAliveCheckExecutor();
   }

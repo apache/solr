@@ -16,18 +16,6 @@
  */
 package org.apache.solr.security;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import javax.security.auth.x500.X500Principal;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import java.security.cert.X509Certificate;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -35,45 +23,57 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.security.cert.X509Certificate;
+import javax.security.auth.x500.X500Principal;
+import javax.servlet.FilterChain;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 public class CertAuthPluginTest extends SolrTestCaseJ4 {
-    private CertAuthPlugin plugin;
+  private CertAuthPlugin plugin;
 
-    @BeforeClass
-    public static void setupMockito() {
-        SolrTestCaseJ4.assumeWorkingMockito();
-    }
+  @BeforeClass
+  public static void setupMockito() {
+    SolrTestCaseJ4.assumeWorkingMockito();
+  }
 
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-        plugin = new CertAuthPlugin();
-    }
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    plugin = new CertAuthPlugin();
+  }
 
-    @Test
-    public void testAuthenticateOk() throws Exception {
-        X500Principal principal = new X500Principal("CN=NAME");
-        X509Certificate certificate = mock(X509Certificate.class);
-        HttpServletRequest request = mock(HttpServletRequest.class);
+  @Test
+  public void testAuthenticateOk() throws Exception {
+    X500Principal principal = new X500Principal("CN=NAME");
+    X509Certificate certificate = mock(X509Certificate.class);
+    HttpServletRequest request = mock(HttpServletRequest.class);
 
-        when(certificate.getSubjectX500Principal()).thenReturn(principal);
-        when(request.getAttribute(any())).thenReturn(new X509Certificate[] { certificate });
+    when(certificate.getSubjectX500Principal()).thenReturn(principal);
+    when(request.getAttribute(any())).thenReturn(new X509Certificate[] {certificate});
 
-        FilterChain chain = (req, rsp) -> assertEquals(principal, ((HttpServletRequest) req).getUserPrincipal());
-        assertTrue(plugin.doAuthenticate(request, null, chain));
+    FilterChain chain =
+        (req, rsp) -> assertEquals(principal, ((HttpServletRequest) req).getUserPrincipal());
+    assertTrue(plugin.doAuthenticate(request, null, chain));
 
-        assertEquals(1, plugin.numAuthenticated.getCount());
-    }
+    assertEquals(1, plugin.numAuthenticated.getCount());
+  }
 
-    @Test
-    public void testAuthenticateMissing() throws Exception {
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        when(request.getAttribute(any())).thenReturn(null);
+  @Test
+  public void testAuthenticateMissing() throws Exception {
+    HttpServletRequest request = mock(HttpServletRequest.class);
+    when(request.getAttribute(any())).thenReturn(null);
 
-        HttpServletResponse response = mock(HttpServletResponse.class);
+    HttpServletResponse response = mock(HttpServletResponse.class);
 
-        assertFalse(plugin.doAuthenticate(request, response, null));
-        verify(response).sendError(eq(401), anyString());
+    assertFalse(plugin.doAuthenticate(request, response, null));
+    verify(response).sendError(eq(401), anyString());
 
-        assertEquals(1, plugin.numMissingCredentials.getCount());
-    }
+    assertEquals(1, plugin.numMissingCredentials.getCount());
+  }
 }

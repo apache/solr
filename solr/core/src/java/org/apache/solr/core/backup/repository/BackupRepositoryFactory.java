@@ -17,11 +17,12 @@
 
 package org.apache.solr.core.backup.repository;
 
+import static org.apache.solr.core.backup.repository.DelegatingBackupRepository.PARAM_DELEGATE_REPOSITORY_NAME;
+
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
@@ -33,7 +34,7 @@ import org.slf4j.LoggerFactory;
 public class BackupRepositoryFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<String,PluginInfo> backupRepoPluginByName = new HashMap<>();
+  private final Map<String, PluginInfo> backupRepoPluginByName = new HashMap<>();
   private PluginInfo defaultBackupRepoPlugin = null;
 
   public BackupRepositoryFactory(PluginInfo[] backupRepoPlugins) {
@@ -43,11 +44,13 @@ public class BackupRepositoryFactory {
         boolean isDefault = backupRepoPlugins[i].isDefault();
 
         if (backupRepoPluginByName.containsKey(name)) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Duplicate backup repository with name " + name);
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR, "Duplicate backup repository with name " + name);
         }
         if (isDefault) {
           if (this.defaultBackupRepoPlugin != null) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, "More than one backup repository is configured as default");
+            throw new SolrException(
+                ErrorCode.SERVER_ERROR, "More than one backup repository is configured as default");
           }
           this.defaultBackupRepoPlugin = backupRepoPlugins[i];
         }
@@ -59,8 +62,9 @@ public class BackupRepositoryFactory {
       }
 
       if (this.defaultBackupRepoPlugin != null) {
-        log.info("Default configuration for backup repository is with configuration params {}",
-                defaultBackupRepoPlugin);
+        log.info(
+            "Default configuration for backup repository is with configuration params {}",
+            defaultBackupRepoPlugin);
       }
     }
   }
@@ -68,30 +72,40 @@ public class BackupRepositoryFactory {
   public BackupRepository newInstance(SolrResourceLoader loader, String name) {
     Objects.requireNonNull(loader);
     Objects.requireNonNull(name);
-    PluginInfo repo = Objects.requireNonNull(backupRepoPluginByName.get(name),
-            "Could not find a backup repository with name " + name);
+    PluginInfo repo = getBackupRepoPlugin(name);
+    BackupRepository backupRepository = loader.newInstance(repo.className, BackupRepository.class);
+    backupRepository.init(repo.initArgs);
 
-    BackupRepository result = loader.newInstance(repo.className, BackupRepository.class);
-    if ("trackingBackupRepository".equals(name)) {
-      // newInstance can be called by multiple threads, synchronization prevents simultaneous multi-threaded 'adds' from
-      // corrupting the namedlist
-      synchronized (repo.initArgs) {
-        if (repo.initArgs.get("factory") == null) {
-          repo.initArgs.add("factory", this);
-          repo.initArgs.add("loader", loader);
-        }
+    if (backupRepository instanceof DelegatingBackupRepository) {
+      DelegatingBackupRepository delegatingRepo = (DelegatingBackupRepository) backupRepository;
+      String delegateName = (String) repo.initArgs.get(PARAM_DELEGATE_REPOSITORY_NAME);
+      if (delegateName == null) {
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Missing '"
+                + PARAM_DELEGATE_REPOSITORY_NAME
+                + "' parameter for backup repository with name "
+                + name);
       }
+      PluginInfo delegatePlugin = getBackupRepoPlugin(delegateName);
+      BackupRepository delegate =
+          loader.newInstance(delegatePlugin.className, BackupRepository.class);
+      delegate.init(delegatingRepo.getDelegateInitArgs(delegatePlugin.initArgs));
+      delegatingRepo.setDelegate(delegate);
     }
 
-    result.init(repo.initArgs);
-    return result;
+    return backupRepository;
+  }
+
+  private PluginInfo getBackupRepoPlugin(String name) {
+    return Objects.requireNonNull(
+        backupRepoPluginByName.get(name), "Could not find a backup repository with name " + name);
   }
 
   public BackupRepository newInstance(SolrResourceLoader loader) {
     if (defaultBackupRepoPlugin != null) {
       return newInstance(loader, defaultBackupRepoPlugin.name);
     }
-
     LocalFileSystemRepository repo = new LocalFileSystemRepository();
     repo.init(new NamedList<>());
     return repo;

@@ -16,16 +16,42 @@
 */
 
 solrAdminApp.controller('QueryController',
-  function($scope, $routeParams, $location, Query, Constants){
+  function($scope, $route, $routeParams, $location, Query, Constants, ParamSet){
     $scope.resetMenu("query", Constants.IS_COLLECTION_PAGE);
 
     $scope._models = [];
     $scope.filters = [{fq:""}];
+    $scope.rawParams = [{rawParam:""}];
     $scope.val = {};
     $scope.val['q'] = "*:*";
     $scope.val['q.op'] = "OR";
     $scope.val['defType'] = "";
     $scope.val['indent'] = true;
+    $scope.useParams = [];
+
+    getParamsets();
+
+    function getParamsets() {
+
+      var params = {};
+      params.core = $routeParams.core;
+      params.wt = "json";
+
+      ParamSet.get(params, callback, failure);
+
+      ///////
+
+      function callback(success) {
+        $scope.responseStatus = "success";
+        delete success.$promise;
+        delete success.$resolved;
+        $scope.paramsetList = success.response.params ? Object.keys(success.response.params) : [];
+      }
+
+      function failure (failure) {
+        $scope.responseStatus = failure;
+      }
+    }
 
     // get list of ng-models that have a form element
     function setModels(argTagName){
@@ -43,8 +69,8 @@ solrAdminApp.controller('QueryController',
         if( !urlParams.hasOwnProperty(p) ){
           continue;
         }
+        // filters and rawParams are handled specially because of possible multiple values
         if( p === "fq" ) {
-            // filters are handled specially because of possible multiple values
             addFilters(urlParams[p]);
         } else {
             setParam(p, urlParams[p]);
@@ -67,19 +93,28 @@ solrAdminApp.controller('QueryController',
         $scope.val[argKey] = argValue;
       } else if( $scope._models.map(function(field){return field.modelName}).indexOf(argKey) > -1 ) {
         // parameters that will only be used to generate the admin link
-        $scope[argKey] = argValue;
+        if (argKey === 'useParams'){
+          $scope[argKey] = argValue.split(",")
+        }
+        else {
+          $scope[argKey] = argValue;
+        }
       } else {
         insertToRawParams(argKey, argValue);
       }
     }
     // store not processed values to be displayed in a field
     function insertToRawParams(argKey, argValue){
-      if( $scope.rawParams == null ){
-        $scope.rawParams = "";
-      } else {
-        $scope.rawParams += "&";
+      if( ($scope.rawParams.length === 0) || ($scope.rawParams.length === 1 && $scope.rawParams[0].rawParam === "") ){
+        $scope.rawParams = [];
       }
-      $scope.rawParams += argKey + "=" + argValue;
+      if (argValue instanceof Array) {
+        for (var index in argValue) {
+          $scope.rawParams.push({rawParam: argKey + "=" + argValue[index]});
+        }
+      } else {
+        $scope.rawParams.push({rawParam: argKey + "=" + argValue});
+      }
     }
     function addFilters(argObject){
       if( argObject ){
@@ -94,7 +129,7 @@ solrAdminApp.controller('QueryController',
       }
     }
 
-    $scope.doQuery = function() {
+    $scope.doQuery = function(isPageReload) {
       var params = {};
 
       var set = function(key, value) {
@@ -131,63 +166,100 @@ solrAdminApp.controller('QueryController',
               });
       }
 
-      copy(params, $scope.val);
+      var getHighlighterFieldsToPurge = function(hlMethod){
+          // first, select the fieldsets which ng-show includes val['hl.method'] but not val['hl.method']==${hlMethod}
+          // then, select their descendants that have ng-model
+          const selector = `div.fieldset[ng-show*="val['hl.method']"]:not([ng-show*="val['hl.method']=='${hlMethod}'"])
+                            [ng-model]`;
+          // return the field names
+          return Array.from(document.querySelectorAll(selector), x => x.name);
+      }
 
+      copy(params, $scope.val);
       purgeParams(params, ["q.alt", "qf", "mm", "pf", "ps", "qs", "tie", "bq", "bf"], $scope.val.defType !== "dismax" && $scope.val.defType !== "edismax");
       purgeParams(params, ["uf", "pf2", "pf3", "ps2", "ps3", "boost", "stopwords", "lowercaseOperators"], $scope.val.defType !== "edismax");
       purgeParams(params, getDependentFields("hl"), $scope.val.hl !== true);
+      purgeParams(params, getHighlighterFieldsToPurge($scope.val["hl.method"]), true);
       purgeParams(params, getDependentFields("facet"), $scope.val.facet !== true);
-      purgeParams(params, getDependentFields("spatial"), $scope.val.spatial !== true);
+      purgeParams(params, ["spatial", "pt", "sfield", "d"], $scope.val.spatial !== true);
       purgeParams(params, getDependentFields("spellcheck"), $scope.val.spellcheck !== true);
-
-      if ($scope.rawParams) {
-        var rawParams = $scope.rawParams.split(/[&\n]/);
-        for (var i in rawParams) {
-          var param = rawParams[i];
-          var equalPos = param.indexOf("=");
-          if (equalPos > -1) {
-            set(param.substring(0, equalPos), param.substring(equalPos+1));
-          } else {
-            set(param, ""); // Use empty value for params without "="
-          }
-        }
-      }
-
       var qt = $scope.qt ? $scope.qt : "/select";
 
       for (var filter in $scope.filters) {
         copy(params, $scope.filters[filter]);
       }
 
+      for (var rawIndex in $scope.rawParams) {
+        if ($scope.rawParams[rawIndex].rawParam) {
+          var rawParam = $scope.rawParams[rawIndex].rawParam.split(/[&\n]/);
+          for (var i in rawParam) {
+            var param = rawParam[i];
+            var equalPos = param.indexOf("=");
+            if (equalPos > -1) {
+              set(param.substring(0, equalPos), param.substring(equalPos+1));
+            } else {
+              set(param, ""); // Use empty value for params without "="
+            }
+          }
+        }
+      }
+
       params.core = $routeParams.core;
-      if (qt[0] == '/') {
+      if (qt[0] === '/') {
         params.handler = qt.substring(1);
       } else { // Support legacy style handleSelect=true configs
         params.handler = "select";
         set("qt", qt);
       }
+
+      // convert useParams to array to generate nice URL.
+      if (!Array.isArray($scope.useParams)){
+        params.useParams = $scope.useParams.split(",");
+      }
+      else {
+        params.useParams = $scope.useParams;
+      }
+
       // create rest result url
       var url = Query.url(params);
+
+      // convert useParams back to string
+      if (Array.isArray($scope.useParams)){
+        params.useParams = $scope.useParams.join(",");
+      }
+      else {
+        params.useParams = $scope.useParams;
+      }
 
       // create admin page url
       var adminParams = {...params};
       delete adminParams.handler;
       delete adminParams.core
+      if (!Array.isArray(adminParams.useParams)){
+        adminParams.useParams = adminParams.useParams.split(",");
+      }
       if( $scope.qt != null ) {
         adminParams.qt = [$scope.qt];
       }
-
-      Query.query(params, function(data) {
-        $scope.lang = $scope.val['wt'];
-        if ($scope.lang == undefined || $scope.lang == '') {
-          $scope.lang = "json";
+      if (isPageReload) {
+        if (!Array.isArray(params.useParams)){
+          params.useParams = params.useParams.split(",");
         }
-        $scope.response = data;
-        // Use relative URL to make it also work through proxies that may have a different host/port/context
-        $scope.url = url;
-        $scope.hostPortContext = $location.absUrl().substr(0,$location.absUrl().indexOf("#")); // For display only
+
+        Query.query(params, function (data) {
+          $scope.lang = $scope.val['wt'];
+          if (!$scope.lang || $scope.lang === '') {
+            $scope.lang = "json";
+          }
+          $scope.response = data;
+          // Use relative URL to make it also work through proxies that may have a different host/port/context
+          $scope.url = url;
+          $scope.hostPortContext = $location.absUrl().substr(0, $location.absUrl().indexOf("#")); // For display only
+        });
+      } else {
+        var previousUrl = $location.$$url;
         for( key in $location.search() ){
-            $location.search(key, null);
+          $location.search(key, null);
         }
         for( var key in adminParams ){
           if( Array.isArray(adminParams[key]) && adminParams[key].length === 1 ){
@@ -198,7 +270,11 @@ solrAdminApp.controller('QueryController',
           }
           $location.search(key, adminParams[key]);
         }
-      });
+        var currentUrl = $location.$$url;
+        if (previousUrl === currentUrl) { //if the query send with same parameters the query should be executed
+          $route.reload();
+        }
+      }
     };
     setModels("input");
     setModels("textarea");
@@ -206,7 +282,7 @@ solrAdminApp.controller('QueryController',
     setUrlParams();
 
     if ($location.search().q) {
-      $scope.doQuery();
+      $scope.doQuery(true);
     }
     $scope.removeFilter = function(index) {
       if ($scope.filters.length === 1) {
@@ -217,6 +293,16 @@ solrAdminApp.controller('QueryController',
     };
     $scope.addFilter = function(index) {
       $scope.filters.splice(index+1, 0, {fq:""});
+    };
+    $scope.removeRawParam = function (index) {
+      if ($scope.rawParams.length === 1) {
+        $scope.rawParams = [{rawParam: ""}];
+      } else {
+        $scope.rawParams.splice(index, 1);
+      }
+    };
+    $scope.addRawParam = function (index) {
+      $scope.rawParams.splice(index+1, 0, {rawParam:""});
     };
   }
 );

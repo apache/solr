@@ -20,48 +20,49 @@ import java.io.IOException;
 import java.io.StringWriter;
 import org.apache.solr.SolrTestCase;
 
-/** Test (some of the) character escaping functions of the XML class
- */
-
+/** Test (some of the) character escaping functions of the XML class */
 public class TestXMLEscaping extends SolrTestCase {
-  private void doSimpleTest(String input,String expectedOutput) throws IOException {
+  private void doSimpleTest(String input, String expectedOutput) throws IOException {
     final StringWriter sw = new StringWriter();
     XML.escapeCharData(input, sw);
     final String result = sw.toString();
-    assertEquals("Escaped output does not match expected value",expectedOutput,result);
+    assertEquals("Escaped output does not match expected value", expectedOutput, result);
   }
-  
+
   public void testNoEscape() throws IOException {
-    doSimpleTest("Bonnie","Bonnie");
+    doSimpleTest("Bonnie", "Bonnie");
   }
-  
+
   public void testAmpAscii() throws IOException {
-    doSimpleTest("Bonnie & Clyde","Bonnie &amp; Clyde");
+    doSimpleTest("Bonnie & Clyde", "Bonnie &amp; Clyde");
   }
 
   public void testAmpAndTagAscii() throws IOException {
-    doSimpleTest("Bonnie & Cl<em>y</em>de","Bonnie &amp; Cl&lt;em&gt;y&lt;/em&gt;de");
+    doSimpleTest("Bonnie & Cl<em>y</em>de", "Bonnie &amp; Cl&lt;em&gt;y&lt;/em&gt;de");
   }
 
   public void testAmpWithAccents() throws IOException {
     // 00e9 is unicode eacute
-    doSimpleTest("Les \u00e9v\u00e9nements chez Bonnie & Clyde","Les \u00e9v\u00e9nements chez Bonnie &amp; Clyde");
+    doSimpleTest(
+        "Les \u00e9v\u00e9nements chez Bonnie & Clyde",
+        "Les \u00e9v\u00e9nements chez Bonnie &amp; Clyde");
   }
 
   public void testAmpDotWithAccents() throws IOException {
     // 00e9 is unicode eacute
-    doSimpleTest("Les \u00e9v\u00e9nements chez Bonnie & Clyde.","Les \u00e9v\u00e9nements chez Bonnie &amp; Clyde.");
+    doSimpleTest(
+        "Les \u00e9v\u00e9nements chez Bonnie & Clyde.",
+        "Les \u00e9v\u00e9nements chez Bonnie &amp; Clyde.");
   }
 
   public void testAmpAndTagWithAccents() throws IOException {
     // 00e9 is unicode eacute
-    doSimpleTest("Les \u00e9v\u00e9nements <chez/> Bonnie & Clyde","Les \u00e9v\u00e9nements &lt;chez/&gt; Bonnie &amp; Clyde");
+    doSimpleTest(
+        "Les \u00e9v\u00e9nements <chez/> Bonnie & Clyde",
+        "Les \u00e9v\u00e9nements &lt;chez/&gt; Bonnie &amp; Clyde");
   }
 
   public void testGt() throws IOException {
-    doSimpleTest("a ]]> b","a ]]&gt; b");
+    doSimpleTest("a ]]> b", "a ]]&gt; b");
   }
 }
-
-
-

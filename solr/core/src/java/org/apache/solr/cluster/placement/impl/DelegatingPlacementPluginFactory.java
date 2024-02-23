@@ -17,32 +17,50 @@
 package org.apache.solr.cluster.placement.impl;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.util.concurrent.Phaser;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 
-import java.util.concurrent.Phaser;
-
-/**
- * Helper class to support dynamic reloading of plugin implementations.
- */
-public final class DelegatingPlacementPluginFactory implements PlacementPluginFactory<PlacementPluginFactory.NoConfig> {
+/** Helper class to support dynamic reloading of plugin implementations. */
+public final class DelegatingPlacementPluginFactory
+    implements PlacementPluginFactory<PlacementPluginConfig> {
   private volatile PlacementPluginFactory<? extends PlacementPluginConfig> delegate;
   // support for tests to make sure the update is completed
   private volatile Phaser phaser;
+  private final PlacementPluginFactory<?> defaultPlacementPluginFactory;
+
+  /**
+   * Constructor.
+   *
+   * @param defaultPlacementPluginFactory A {@link PlacementPluginFactory} to use when no delegate
+   *     is defined.
+   */
+  public DelegatingPlacementPluginFactory(PlacementPluginFactory<?> defaultPlacementPluginFactory) {
+    this.defaultPlacementPluginFactory = defaultPlacementPluginFactory;
+  }
 
   @Override
   public PlacementPlugin createPluginInstance() {
     if (delegate != null) {
       return delegate.createPluginInstance();
     } else {
-      return null;
+      return defaultPlacementPluginFactory.createPluginInstance();
+    }
+  }
+
+  @Override
+  public PlacementPluginConfig getConfig() {
+    if (delegate != null) {
+      return delegate.getConfig();
+    } else {
+      return defaultPlacementPluginFactory.getConfig();
     }
   }
 
   /**
-   * A phaser that will advance phases every time {@link #setDelegate(PlacementPluginFactory)} is called.
-   * Useful for allowing tests to know when a new delegate is finished getting set.
+   * A phaser that will advance phases every time {@link #setDelegate(PlacementPluginFactory)} is
+   * called. Useful for allowing tests to know when a new delegate is finished getting set.
    */
   @VisibleForTesting
   public void setDelegationPhaser(Phaser phaser) {
@@ -55,7 +73,8 @@ public final class DelegatingPlacementPluginFactory implements PlacementPluginFa
     Phaser localPhaser = phaser; // volatile read
     if (localPhaser != null) {
       assert localPhaser.getRegisteredParties() == 1;
-      localPhaser.arrive(); // we should be the only ones registered, so this will advance phase each time
+      // we should be the only ones registered, so this will advance phase each time
+      localPhaser.arrive();
     }
   }
 

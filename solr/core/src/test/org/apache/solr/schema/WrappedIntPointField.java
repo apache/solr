@@ -22,9 +22,7 @@ import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.SortField;
 
-/**
- * Custom field wrapping an int, to test sorting via a custom comparator.
- */
+/** Custom field wrapping an int, to test sorting via a custom comparator. */
 public class WrappedIntPointField extends IntPointField {
   /** static helper for re-use in sibling trie class */
   public static SortField getSortField(final SortField superSort, final SchemaField field) {
@@ -46,7 +44,7 @@ public class WrappedIntPointField extends IntPointField {
   }
 
   private static DoubleValuesSource fromSortField(SortField field) {
-    switch(field.getType()) {
+    switch (field.getType()) {
       case INT:
         return DoubleValuesSource.fromIntField(field.getField());
       case LONG:

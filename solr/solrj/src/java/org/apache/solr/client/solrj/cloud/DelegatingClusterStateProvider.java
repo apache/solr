@@ -21,110 +21,115 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 
-/**
- * Base class for overriding some behavior of {@link ClusterStateProvider}
- */
+/** Base class for overriding some behavior of {@link ClusterStateProvider} */
 public class DelegatingClusterStateProvider implements ClusterStateProvider {
-    protected ClusterStateProvider delegate;
+  protected ClusterStateProvider delegate;
 
-    public DelegatingClusterStateProvider(ClusterStateProvider delegate) {
-        this.delegate = delegate;
-    }
+  public DelegatingClusterStateProvider(ClusterStateProvider delegate) {
+    this.delegate = delegate;
+  }
 
-    @Override
-    public ClusterState.CollectionRef getState(String collection) {
-        if (delegate != null) {
-            return delegate.getState(collection);
-        } else {
-            return null;
-        }
+  @Override
+  public ClusterState.CollectionRef getState(String collection) {
+    if (delegate != null) {
+      return delegate.getState(collection);
+    } else {
+      return null;
     }
+  }
 
-    @Override
-    public Set<String> getLiveNodes() {
-        if (delegate != null) {
-            return delegate.getLiveNodes();
-        } else {
-            return Collections.emptySet();
-        }
+  @Override
+  public Set<String> getLiveNodes() {
+    if (delegate != null) {
+      return delegate.getLiveNodes();
+    } else {
+      return Collections.emptySet();
     }
+  }
 
-    @Override
-    public List<String> resolveAlias(String alias) {
-        if (delegate != null) {
-            return delegate.resolveAlias(alias);
-        } else {
-            return Collections.singletonList(alias);
-        }
+  @Override
+  public List<String> resolveAlias(String alias) {
+    if (delegate != null) {
+      return delegate.resolveAlias(alias);
+    } else {
+      return Collections.singletonList(alias);
     }
+  }
 
-    @Override
-    public Map<String, String> getAliasProperties(String alias) {
-        if (delegate != null) {
-            return delegate.getAliasProperties(alias);
-        } else {
-            return Collections.emptyMap();
-        }
+  @Override
+  public Map<String, String> getAliasProperties(String alias) {
+    if (delegate != null) {
+      return delegate.getAliasProperties(alias);
+    } else {
+      return Collections.emptyMap();
     }
+  }
 
-    @Override
-    public String resolveSimpleAlias(String alias) throws IllegalArgumentException {
-        if (delegate != null) {
-            return delegate.resolveSimpleAlias(alias);
-        } else {
-            return alias;
-        }
+  @Override
+  public String resolveSimpleAlias(String alias) throws IllegalArgumentException {
+    if (delegate != null) {
+      return delegate.resolveSimpleAlias(alias);
+    } else {
+      return alias;
     }
+  }
 
-    @Override
-    public ClusterState getClusterState() throws IOException {
-        if (delegate != null) {
-            return delegate.getClusterState();
-        } else {
-            return null;
-        }
+  @Override
+  public ClusterState getClusterState() {
+    if (delegate != null) {
+      return delegate.getClusterState();
+    } else {
+      return null;
     }
+  }
 
-    @Override
-    public Map<String, Object> getClusterProperties() {
-        if (delegate != null) {
-            return delegate.getClusterProperties();
-        } else {
-            return Collections.emptyMap();
-        }
+  @Override
+  public Map<String, Object> getClusterProperties() {
+    if (delegate != null) {
+      return delegate.getClusterProperties();
+    } else {
+      return Collections.emptyMap();
     }
+  }
 
-    @Override
-    public String getPolicyNameByCollection(String coll) {
-        if (delegate != null) {
-            return delegate.getPolicyNameByCollection(coll);
-        } else {
-            return null;
-        }
+  @Override
+  public String getPolicyNameByCollection(String coll) {
+    if (delegate != null) {
+      return delegate.getPolicyNameByCollection(coll);
+    } else {
+      return null;
     }
+  }
 
-    @Override
-    public DocCollection getCollection(String name) throws IOException {
-        ClusterState cs = getClusterState();
-        return cs == null ? null : cs.getCollectionOrNull(name);
-    }
+  @Override
+  public DocCollection getCollection(String name) throws IOException {
+    ClusterState cs = getClusterState();
+    return cs == null ? null : cs.getCollectionOrNull(name);
+  }
 
-    @Override
-    public void connect() {
-        if (delegate != null) {
-            delegate.connect();
-        }
+  @Override
+  public void connect() {
+    if (delegate != null) {
+      delegate.connect();
     }
+  }
 
-    @Override
-    public void close() throws IOException {
-        if (delegate != null) {
-            delegate.close();
-        }
+  @Override
+  public void close() throws IOException {
+    if (delegate != null) {
+      delegate.close();
     }
+  }
+
+  @Override
+  public String getQuorumHosts() {
+    if (delegate != null) {
+      return delegate.getQuorumHosts();
+    }
+    return null;
+  }
 }

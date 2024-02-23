@@ -15,12 +15,14 @@
  * limitations under the License.
  */
 package org.apache.solr.spelling;
+
+import static org.apache.solr.common.params.CommonParams.ID;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
@@ -40,8 +42,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.ID;
-
 public class SpellCheckCollator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private int maxCollations = 1;
@@ -50,9 +50,9 @@ public class SpellCheckCollator {
   private boolean suggestionsMayOverlap = false;
   private int docCollectionLimit = 0;
 
-  public List<SpellCheckCollation> collate(SpellingResult result,
-      String originalQuery, ResponseBuilder ultimateResponse) {
-  List<SpellCheckCollation> collations = new ArrayList<>();
+  public List<SpellCheckCollation> collate(
+      SpellingResult result, String originalQuery, ResponseBuilder ultimateResponse) {
+    List<SpellCheckCollation> collations = new ArrayList<>();
 
     QueryComponent queryComponent = null;
     if (ultimateResponse.components != null) {
@@ -73,7 +73,8 @@ public class SpellCheckCollator {
       verifyCandidateWithQuery = false;
     }
     if (queryComponent == null && verifyCandidateWithQuery) {
-      log.info("Could not find an instance of QueryComponent.  Disabling collation verification against the index.");
+      log.info(
+          "Could not find an instance of QueryComponent.  Disabling collation verification against the index.");
       maxTries = 1;
       verifyCandidateWithQuery = false;
     }
@@ -86,8 +87,12 @@ public class SpellCheckCollator {
 
     int tryNo = 0;
     int collNo = 0;
-    PossibilityIterator possibilityIter = new PossibilityIterator(result.getSuggestions(), 
-        maxNumberToIterate, maxCollationEvaluations, suggestionsMayOverlap);
+    PossibilityIterator possibilityIter =
+        new PossibilityIterator(
+            result.getSuggestions(),
+            maxNumberToIterate,
+            maxCollationEvaluations,
+            suggestionsMayOverlap);
     while (tryNo < maxTries && collNo < maxCollations && possibilityIter.hasNext()) {
 
       PossibilityIterator.RankedSpellPossibility possibility = possibilityIter.next();
@@ -97,13 +102,12 @@ public class SpellCheckCollator {
       if (verifyCandidateWithQuery) {
         tryNo++;
         SolrParams origParams = ultimateResponse.req.getParams();
-        ModifiableSolrParams params = new ModifiableSolrParams(origParams);  
+        ModifiableSolrParams params = new ModifiableSolrParams(origParams);
         Iterator<String> origParamIterator = origParams.getParameterNamesIterator();
         int pl = SpellingParams.SPELLCHECK_COLLATE_PARAM_OVERRIDE.length();
         while (origParamIterator.hasNext()) {
           String origParamName = origParamIterator.next();
-          if (origParamName
-              .startsWith(SpellingParams.SPELLCHECK_COLLATE_PARAM_OVERRIDE)
+          if (origParamName.startsWith(SpellingParams.SPELLCHECK_COLLATE_PARAM_OVERRIDE)
               && origParamName.length() > pl) {
             String[] val = origParams.getParams(origParamName);
             if (val.length == 1 && val[0].length() == 0) {
@@ -131,14 +135,16 @@ public class SpellCheckCollator {
         params.remove(DisMaxParams.BF);
         // Collate testing does not support Grouping (see SOLR-2577)
         params.remove(GroupParams.GROUP);
-        
+
         // Collate testing does not support the Collapse QParser (See SOLR-8807)
         params.remove("expand");
 
         // creating a request here... make sure to close it!
-        ResponseBuilder checkResponse = new ResponseBuilder(
-            new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params),
-            new SolrQueryResponse(), Arrays.asList(queryComponent));
+        ResponseBuilder checkResponse =
+            new ResponseBuilder(
+                new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params),
+                new SolrQueryResponse(),
+                Arrays.asList(queryComponent));
         checkResponse.setQparser(ultimateResponse.getQparser());
         checkResponse.setFilters(ultimateResponse.getFilters());
         checkResponse.setQueryString(collationQueryStr);
@@ -148,7 +154,7 @@ public class SpellCheckCollator {
           queryComponent.prepare(checkResponse);
           if (docCollectionLimit > 0) {
             int f = checkResponse.getFieldFlags();
-            checkResponse.setFieldFlags(f |= SolrIndexSearcher.TERMINATE_EARLY);            
+            checkResponse.setFieldFlags(f |= SolrIndexSearcher.TERMINATE_EARLY);
           }
           queryComponent.process(checkResponse);
           hits = ((Number) checkResponse.rsp.getToLog().get("hits")).longValue();
@@ -160,13 +166,17 @@ public class SpellCheckCollator {
           if (etce.getNumberScanned() == maxDocId) {
             hits = etce.getNumberCollected();
           } else {
-            hits = (long) ( ((float)( maxDocId * etce.getNumberCollected() )) 
-                           / (float)etce.getNumberScanned() );
+            hits =
+                (long)
+                    (((float) (maxDocId * etce.getNumberCollected()))
+                        / (float) etce.getNumberScanned());
           }
         } catch (Exception e) {
-          log.warn("Exception trying to re-query to check if a spell check possibility would return any hits.", e);
+          log.warn(
+              "Exception trying to re-query to check if a spell check possibility would return any hits.",
+              e);
         } finally {
-          checkResponse.req.close();  
+          checkResponse.req.close();
         }
       }
       if (hits > 0 || !verifyCandidateWithQuery) {
@@ -174,7 +184,10 @@ public class SpellCheckCollator {
         SpellCheckCollation collation = new SpellCheckCollation();
         collation.setCollationQuery(collationQueryStr);
         collation.setHits(hits);
-        collation.setInternalRank(suggestionsMayOverlap ? ((possibility.rank * 1000) + possibility.index) : possibility.rank);
+        collation.setInternalRank(
+            suggestionsMayOverlap
+                ? ((possibility.rank * 1000) + possibility.index)
+                : possibility.rank);
 
         NamedList<String> misspellingsAndCorrections = new NamedList<>();
         for (SpellCheckCorrection corr : possibility.corrections) {
@@ -184,86 +197,92 @@ public class SpellCheckCollator {
         collations.add(collation);
       }
       if (log.isDebugEnabled()) {
-        log.debug("Collation: {} {}", collationQueryStr, (verifyCandidateWithQuery ? (" will return " + hits + " hits.") : "")); // nowarn
+        log.debug(
+            "Collation: {} {}",
+            collationQueryStr,
+            (verifyCandidateWithQuery ? (" will return " + hits + " hits.") : "")); // nowarn
       }
     }
     return collations;
   }
 
-  private String getCollation(String origQuery,
-                              List<SpellCheckCorrection> corrections) {
+  private String getCollation(String origQuery, List<SpellCheckCorrection> corrections) {
     StringBuilder collation = new StringBuilder(origQuery);
     int offset = 0;
     String corr = "";
-    for(int i=0 ; i<corrections.size() ; i++) {
-      SpellCheckCorrection correction = corrections.get(i);   
+    for (int i = 0; i < corrections.size(); i++) {
+      SpellCheckCorrection correction = corrections.get(i);
       Token tok = correction.getOriginal();
       // we are replacing the query in order, but injected terms might cause
       // illegal offsets due to previous replacements.
-      if (tok.getPositionIncrement() == 0)
-        continue;
+      if (tok.getPositionIncrement() == 0) continue;
       corr = correction.getCorrection();
       boolean addParenthesis = false;
       Character requiredOrProhibited = null;
       int indexOfSpace = corr.indexOf(' ');
       StringBuilder corrSb = new StringBuilder(corr);
       int bump = 1;
-      
-      //If the correction contains whitespace (because it involved breaking a word in 2+ words),
-      //then be sure all of the new words have the same optional/required/prohibited status in the query.
-      while(indexOfSpace>-1 && indexOfSpace<corr.length()-1) {        
-        char previousChar = tok.startOffset()>0 ? origQuery.charAt(tok.startOffset()-1) : ' ';
-        if(previousChar=='-' || previousChar=='+') {
+
+      // If the correction contains whitespace (because it involved breaking a word in 2+ words),
+      // then be sure all of the new words have the same optional/required/prohibited status in the
+      // query.
+      while (indexOfSpace > -1 && indexOfSpace < corr.length() - 1) {
+        char previousChar = tok.startOffset() > 0 ? origQuery.charAt(tok.startOffset() - 1) : ' ';
+        if (previousChar == '-' || previousChar == '+') {
           corrSb.insert(indexOfSpace + bump, previousChar);
-          if(requiredOrProhibited==null) {
+          if (requiredOrProhibited == null) {
             requiredOrProhibited = previousChar;
           }
           bump++;
-        } else if ((tok.getFlags() & QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG) == QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG) {
+        } else if ((tok.getFlags() & QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG)
+            == QueryConverter.TERM_IN_BOOLEAN_QUERY_FLAG) {
           addParenthesis = true;
           corrSb.insert(indexOfSpace + bump, "AND ");
           bump += 4;
         }
         indexOfSpace = correction.getCorrection().indexOf(' ', indexOfSpace + bump);
       }
-      
+
       int oneForReqOrProhib = 0;
-      if(addParenthesis) { 
-        if(requiredOrProhibited!=null) {
+      if (addParenthesis) {
+        if (requiredOrProhibited != null) {
           corrSb.insert(0, requiredOrProhibited);
           oneForReqOrProhib++;
         }
         corrSb.insert(0, '(');
         corrSb.append(')');
       }
-      corr = corrSb.toString();  
+      corr = corrSb.toString();
       int startIndex = tok.startOffset() + offset - oneForReqOrProhib;
       int endIndex = tok.endOffset() + offset;
       collation.replace(startIndex, endIndex, corr);
-      offset += corr.length() - oneForReqOrProhib - (tok.endOffset() - tok.startOffset());      
+      offset += corr.length() - oneForReqOrProhib - (tok.endOffset() - tok.startOffset());
     }
     return collation.toString();
-  }  
+  }
+
   public SpellCheckCollator setMaxCollations(int maxCollations) {
     this.maxCollations = maxCollations;
     return this;
-  }  
+  }
+
   public SpellCheckCollator setMaxCollationTries(int maxCollationTries) {
     this.maxCollationTries = maxCollationTries;
     return this;
-  }  
-  public SpellCheckCollator setMaxCollationEvaluations(
-      int maxCollationEvaluations) {
+  }
+
+  public SpellCheckCollator setMaxCollationEvaluations(int maxCollationEvaluations) {
     this.maxCollationEvaluations = maxCollationEvaluations;
     return this;
-  }  
-  public SpellCheckCollator setSuggestionsMayOverlap(
-      boolean suggestionsMayOverlap) {
+  }
+
+  public SpellCheckCollator setSuggestionsMayOverlap(boolean suggestionsMayOverlap) {
     this.suggestionsMayOverlap = suggestionsMayOverlap;
     return this;
-  }  
+  }
+
   public SpellCheckCollator setDocCollectionLimit(int docCollectionLimit) {
     this.docCollectionLimit = docCollectionLimit;
     return this;
-  }    
+  }
 }

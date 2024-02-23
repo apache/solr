@@ -18,7 +18,6 @@ package org.apache.solr.search.function;
 
 import java.io.IOException;
 import java.util.function.IntFunction;
-
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ConstValueSource;
 import org.apache.solr.SolrTestCase;
@@ -33,7 +32,8 @@ public class AggValueSourceTest extends SolrTestCase {
 
   @Test
   public void testCustomAgg() {
-    // All we're really interested in testing here is that the custom agg compiles and can be created
+    // All we're really interested in testing here is that the custom agg compiles and can be
+    // created
     final CustomAggregate customAggregate = new CustomAggregate(new ConstValueSource(123.0f));
     final FacetMerger facetMerger = customAggregate.createFacetMerger(0.0D);
   }
@@ -60,7 +60,8 @@ public class AggValueSourceTest extends SolrTestCase {
       }
 
       @Override
-      public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
+      public void collect(int doc, int slot, IntFunction<SlotContext> slotContext)
+          throws IOException {
         result[slot] += values.doubleVal(doc);
       }
 
@@ -80,11 +81,11 @@ public class AggValueSourceTest extends SolrTestCase {
 
         @Override
         public void merge(Object facetResult, Context mcontext) {
-          total += (Double)facetResult;
+          total += (Double) facetResult;
         }
 
         @Override
-        public void finish(Context mcontext) { }
+        public void finish(Context mcontext) {}
 
         @Override
         public Object getMergedResult() {

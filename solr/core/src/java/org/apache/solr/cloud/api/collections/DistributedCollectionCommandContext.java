@@ -18,7 +18,6 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.util.concurrent.ExecutorService;
-
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.common.SolrCloseable;
@@ -34,9 +33,13 @@ public class DistributedCollectionCommandContext implements CollectionCommandCon
   private final SolrCloudManager solrCloudManager;
   private final ZkStateReader zkStateReader;
 
-  public DistributedCollectionCommandContext(CoreContainer coreContainer, ExecutorService executorService) {
+  public DistributedCollectionCommandContext(
+      CoreContainer coreContainer, ExecutorService executorService) {
     this.coreContainer = coreContainer;
-    this.getDistributedClusterStateUpdater = new DistributedClusterStateUpdater(coreContainer.getConfig().getCloudConfig().getDistributedClusterStateUpdates());;
+    this.getDistributedClusterStateUpdater =
+        new DistributedClusterStateUpdater(
+            coreContainer.getConfig().getCloudConfig().getDistributedClusterStateUpdates());
+    ;
     this.executorService = executorService;
 
     solrCloudManager = this.coreContainer.getZkController().getSolrCloudManager();
@@ -50,7 +53,8 @@ public class DistributedCollectionCommandContext implements CollectionCommandCon
 
   @Override
   public ShardHandler newShardHandler() {
-    // This method builds a new shard handler! A given shard handler can't be reused because it can only serve a single thread.
+    // This method builds a new shard handler! A given shard handler can't be reused because it can
+    // only serve a single thread.
     return this.coreContainer.getShardHandlerFactory().getShardHandler();
   }
 
@@ -76,7 +80,8 @@ public class DistributedCollectionCommandContext implements CollectionCommandCon
 
   @Override
   public SolrCloseable getCloseableToLatchOn() {
-    // Debatable: SolrCloudManager instance is tracked for closing to interrupt some command execution. Could very well monitor something else.
+    // Debatable: SolrCloudManager instance is tracked for closing to interrupt some command
+    // execution. Could very well monitor something else.
     return getSolrCloudManager();
   }
 

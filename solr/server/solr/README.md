@@ -43,7 +43,7 @@ a single SolrCore named "collection1" and that the "Instance Directory"
 for collection1 should be the same as the Solr Home Directory.
 
 For more information about solr.xml, please see:
-https://lucene.apache.org/solr/guide/solr-cores-and-solr-xml.html
+https://solr.apache.org/guide/solr-cores-and-solr-xml.html
 
 ### Individual SolrCore Instance Directories
 
@@ -51,7 +51,7 @@ Although solr.xml can be configured to look for SolrCore Instance Directories
 in any path, simple sub-directories of the Solr Home Dir using relative paths
 are common for many installations.
 
-### Core Discovery 
+### Core Discovery
 
 During startup, Solr will scan sub-directories of Solr home looking for
 a specific file named core.properties. If core.properties is found in a
@@ -62,7 +62,7 @@ example/solr/collection1/core.properties
 
 For more information about core discovery, please see:
 
-https://lucene.apache.org/solr/guide/defining-core-properties.html
+https://solr.apache.org/guide/solr/latest/configuration-guide/core-discovery.html
 
 ### A Shared 'lib' Directory
 
@@ -76,4 +76,4 @@ When using SolrCloud using the embedded ZooKeeper option for Solr, it is
 common to have a "zoo.cfg" file and "zoo_data" directories in the Solr Home
 Directory.  Please see the SolrCloud documentation for more details.
 
-https://lucene.apache.org/solr/guide/solrcloud.html
+https://solr.apache.org/guide/solrcloud.html

@@ -19,9 +19,7 @@ package org.apache.solr.cluster.placement;
 
 import java.util.Set;
 
-/**
- * Delete shards request.
- */
+/** Delete shards request. */
 public interface DeleteShardsRequest extends ModificationRequest {
   Set<String> getShardNames();
 }

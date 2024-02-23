@@ -15,8 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * LOG4J2 based implementation of {@link org.apache.solr.logging.LogWatcher}
- */
+/** LOG4J2 based implementation of {@link org.apache.solr.logging.LogWatcher} */
 package org.apache.solr.logging.log4j2;
-

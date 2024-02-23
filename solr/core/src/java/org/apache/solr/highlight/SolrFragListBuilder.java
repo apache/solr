@@ -24,9 +24,9 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 public interface SolrFragListBuilder extends SolrInfoBean, NamedListInitializedPlugin {
   /**
    * Return a FragListBuilder.
-   * 
+   *
    * @param params The params controlling Highlighting
    * @return An appropriate FragListBuilder.
    */
-  public FragListBuilder getFragListBuilder( SolrParams params );
+  public FragListBuilder getFragListBuilder(SolrParams params);
 }

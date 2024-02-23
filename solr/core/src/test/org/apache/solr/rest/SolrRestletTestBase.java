@@ -15,29 +15,27 @@
  * limitations under the License.
  */
 package org.apache.solr.rest;
-import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.junit.BeforeClass;
 
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import org.apache.solr.util.RestTestBase;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.BeforeClass;
 
 /**
- * Base class for Solr Rest-oriented API tests. Creates jetty and test harness
- * with solrconfig.xml and schema-rest.xml.
+ * Base class for Solr Rest-oriented API tests. Creates jetty and test harness with solrconfig.xml
+ * and schema-rest.xml.
  *
- * Use RestTestBase instead if you need to specialize the solrconfig,
- * the schema, or jetty/test harness creation; otherwise you'll get
- * imbalanced SolrIndexSearcher closes/opens and a suite-level failure
- * for a zombie thread.
+ * <p>Use RestTestBase instead if you need to specialize the solrconfig, the schema, or jetty/test
+ * harness creation; otherwise you'll get imbalanced SolrIndexSearcher closes/opens and a
+ * suite-level failure for a zombie thread.
  */
-abstract public class SolrRestletTestBase extends RestTestBase {
+public abstract class SolrRestletTestBase extends RestTestBase {
 
   /**
-   * Creates test harness, including "extra" servlets for all
-   * Solr Restlet Application subclasses.
+   * Creates test harness, including "extra" servlets for all Solr Restlet Application subclasses.
    */
   @BeforeClass
   public static void init() throws Exception {
@@ -48,7 +46,10 @@ abstract public class SolrRestletTestBase extends RestTestBase {
     System.setProperty("coreRootDirectory", coresDir.toString());
     System.setProperty("configSetBaseDir", TEST_HOME());
 
-    final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
+    System.setProperty("solr.test.sys.prop1", "propone");
+    System.setProperty("solr.test.sys.prop2", "proptwo");
+
+    final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     Properties props = new Properties();
     props.setProperty("name", DEFAULT_TEST_CORENAME);
@@ -57,6 +58,7 @@ abstract public class SolrRestletTestBase extends RestTestBase {
     props.setProperty("configSet", "collection1");
 
     writeCoreProperties(coresDir.resolve("core"), props, "SolrRestletTestBase");
-    createJettyAndHarness(TEST_HOME(), "solrconfig.xml", "schema-rest.xml", "/solr", true, extraServlets);
+    createJettyAndHarness(
+        TEST_HOME(), "solrconfig.xml", "schema-rest.xml", "/solr", true, extraServlets);
   }
 }

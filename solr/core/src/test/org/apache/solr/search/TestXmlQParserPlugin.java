@@ -40,28 +40,29 @@ public class TestXmlQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testHelloQuery() throws Exception {
+  public void testHelloQuery() {
     final int numDocs = random().nextInt(10);
     implTestQuery(numDocs, "<HelloQuery/>", numDocs);
   }
 
   @Test
-  public void testGoodbyeQuery() throws Exception {
+  public void testGoodbyeQuery() {
     final int numDocs = random().nextInt(10);
     implTestQuery(numDocs, "<GoodbyeQuery/>", 0);
   }
 
   @Test
-  public void testHandyQuery() throws Exception {
+  public void testHandyQuery() {
     final int numDocs = random().nextInt(10);
-    final String q = "<HandyQuery><Left><HelloQuery/></Left><Right><GoodbyeQuery/></Right></HandyQuery>";
+    final String q =
+        "<HandyQuery><Left><HelloQuery/></Left><Right><GoodbyeQuery/></Right></HandyQuery>";
     implTestQuery(numDocs, q, numDocs);
   }
 
-  public void implTestQuery(int numDocs, String q, int expectedCount) throws Exception {
+  public void implTestQuery(int numDocs, String q, int expectedCount) {
     // add some documents
-    for (int ii=1; ii<=numDocs; ++ii) {
-      String[] doc = {"id",ii+"0"};
+    for (int ii = 1; ii <= numDocs; ++ii) {
+      String[] doc = {"id", ii + "0"};
       assertU(adoc(doc));
       if (random().nextBoolean()) {
         assertU(commit());
@@ -72,7 +73,6 @@ public class TestXmlQParserPlugin extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("defType", "testxmlparser");
     params.add("q", q);
-    assertQ(req(params), "*[count(//doc)="+expectedCount+"]");
+    assertQ(req(params), "*[count(//doc)=" + expectedCount + "]");
   }
-
 }

@@ -16,9 +16,15 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
@@ -26,21 +32,21 @@ import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.ConfigSetParams.ConfigSetAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase.FileStream;
 
 /**
  * This class is experimental and subject to change.
  *
  * @since solr 5.4
  */
-public abstract class ConfigSetAdminRequest
-      <Q extends ConfigSetAdminRequest<Q,R>, R extends ConfigSetAdminResponse>
-      extends SolrRequest<R> {
+public abstract class ConfigSetAdminRequest<
+        Q extends ConfigSetAdminRequest<Q, R>, R extends ConfigSetAdminResponse>
+    extends SolrRequest<R> {
 
   protected ConfigSetAction action = null;
 
-  protected ConfigSetAdminRequest<Q,R> setAction(ConfigSetAction action) {
+  protected ConfigSetAdminRequest<Q, R> setAction(ConfigSetAction action) {
     this.action = action;
     return this;
   }
@@ -50,7 +56,7 @@ public abstract class ConfigSetAdminRequest
   }
 
   public ConfigSetAdminRequest(String path) {
-    super (METHOD.GET, path);
+    super(METHOD.GET, path);
   }
 
   protected abstract Q getThis();
@@ -58,20 +64,19 @@ public abstract class ConfigSetAdminRequest
   @Override
   public SolrParams getParams() {
     if (action == null) {
-      throw new RuntimeException( "no action specified!" );
+      throw new RuntimeException("no action specified!");
     }
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(ConfigSetParams.ACTION, action.toString());
     return params;
   }
 
-
   @Override
   protected abstract R createResponse(SolrClient client);
 
-  protected abstract static class ConfigSetSpecificAdminRequest
-       <T extends ConfigSetAdminRequest<T,ConfigSetAdminResponse>>
-       extends ConfigSetAdminRequest<T,ConfigSetAdminResponse> {
+  protected abstract static class ConfigSetSpecificAdminRequest<
+          T extends ConfigSetAdminRequest<T, ConfigSetAdminResponse>>
+      extends ConfigSetAdminRequest<T, ConfigSetAdminResponse> {
     protected String configSetName = null;
 
     public final T setConfigSetName(String configSetName) {
@@ -87,7 +92,7 @@ public abstract class ConfigSetAdminRequest
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
       if (configSetName == null) {
-        throw new RuntimeException( "no ConfigSet specified!" );
+        throw new RuntimeException("no ConfigSet specified!");
       }
       params.set(NAME, configSetName);
       return params;
@@ -104,7 +109,151 @@ public abstract class ConfigSetAdminRequest
     return SolrRequestType.ADMIN.toString();
   }
 
-  // CREATE request
+  /**
+   * Uploads files to create a new configset, or modify an existing config set.
+   *
+   * <p>When creating a new configset, the file to be uploaded must be a ZIP file containing the
+   * entire configset being uploaded. When modifing an existing configset, the file to be uploaded
+   * should either be a ZIP file containing the entire configset being uploaded, or an individual
+   * file to upload if {@link #setFilePath} is being used.
+   */
+  public static class Upload extends ConfigSetSpecificAdminRequest<Upload> {
+    private static final String NO_STREAM_ERROR = "There must be a ContentStream or File to Upload";
+
+    protected ContentStream stream;
+    protected String filePath;
+
+    protected Boolean overwrite;
+    protected Boolean cleanup;
+
+    public Upload() {
+      action = ConfigSetAction.UPLOAD;
+      setMethod(SolrRequest.METHOD.POST);
+    }
+
+    @Override
+    protected Upload getThis() {
+      return this;
+    }
+
+    /**
+     * Optional {@link ConfigSetParams#FILE_PATH} to indicate a single file is being uploaded into
+     * an existing configset
+     */
+    public final Upload setFilePath(final String filePath) {
+      this.filePath = filePath;
+      return getThis();
+    }
+
+    /**
+     * @see #setFilePath
+     */
+    public final String getFilePath() {
+      return filePath;
+    }
+
+    /**
+     * A convinience method for specifying an existing File to use as the upload data.
+     *
+     * <p>This should either be a ZIP file containing the entire configset being uploaded, or an
+     * individual file to upload into an existing configset if {@link #setFilePath} is being used.
+     *
+     * @see #setUploadStream
+     */
+    public final Upload setUploadFile(final File file, final String contentType) {
+      final FileStream fileStream = new FileStream(file);
+      fileStream.setContentType(contentType);
+      return setUploadStream(fileStream);
+    }
+
+    /**
+     * @see ConfigSetParams#OVERWRITE
+     */
+    public final Upload setOverwrite(final Boolean overwrite) {
+      this.overwrite = overwrite;
+      return getThis();
+    }
+
+    /**
+     * @see #setOverwrite
+     */
+    public final Boolean getOverwrite() {
+      return overwrite;
+    }
+
+    /**
+     * @see ConfigSetParams#CLEANUP
+     */
+    public final Upload setCleanup(final Boolean cleanup) {
+      this.cleanup = cleanup;
+      return getThis();
+    }
+
+    /**
+     * @see #setCleanup
+     */
+    public final Boolean getCleanup() {
+      return cleanup;
+    }
+
+    /**
+     * Specify the ContentStream to upload.
+     *
+     * <p>This should either be a ZIP file containing the entire configset being uploaded, or an
+     * individual file to upload into an existing configset if {@link #setFilePath} is being used.
+     *
+     * @see #setUploadStream
+     */
+    public final Upload setUploadStream(final ContentStream stream) {
+      this.stream = stream;
+      return getThis();
+    }
+
+    @Override
+    public Collection<ContentStream> getContentStreams() throws IOException {
+      return Collections.singletonList(stream);
+    }
+
+    @Override
+    public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+      if (null == stream) {
+        throw new NullPointerException(NO_STREAM_ERROR);
+      }
+      return new RequestWriter.ContentWriter() {
+        @Override
+        public void write(OutputStream os) throws IOException {
+          try (var inStream = stream.getStream()) {
+            inStream.transferTo(os);
+          }
+        }
+
+        @Override
+        public String getContentType() {
+          return stream.getContentType();
+        }
+      };
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+
+      if (null == stream) {
+        throw new NullPointerException(NO_STREAM_ERROR);
+      }
+
+      params.setNonNull(ConfigSetParams.FILE_PATH, filePath);
+      params.setNonNull(ConfigSetParams.CLEANUP, cleanup);
+      params.setNonNull(ConfigSetParams.OVERWRITE, overwrite);
+
+      return params;
+    }
+  }
+
+  /**
+   * Creates a new config set by cloning an existing "base" configset. To create a new configset
+   * from scratch using a ZIP file you wish to upload, use the {@link Upload} command instead
+   */
   public static class Create extends ConfigSetSpecificAdminRequest<Create> {
     protected static String PROPERTY_PREFIX = "configSetProp";
     protected String baseConfigSetName;
@@ -144,9 +293,9 @@ public abstract class ConfigSetAdminRequest
         params.set("baseConfigSet", baseConfigSetName);
       }
       if (properties != null) {
-        for (Map.Entry<?,?> entry : properties.entrySet()) {
-          params.set(PROPERTY_PREFIX + "." + entry.getKey().toString(),
-              entry.getValue().toString());
+        for (Map.Entry<?, ?> entry : properties.entrySet()) {
+          params.set(
+              PROPERTY_PREFIX + "." + entry.getKey().toString(), entry.getValue().toString());
         }
       }
       return params;

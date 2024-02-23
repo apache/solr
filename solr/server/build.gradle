@@ -19,51 +19,48 @@ apply plugin: 'java-library'
 
 description = 'Solr Server'
 
+// No java classes from this module
+jar.enabled(false)
+javadoc.enabled(false)
+compileJava.enabled(false)
+
 configurations {
-  api {
-    exclude group: "org.slf4j"
+  libExt
+  serverLib
+  solrCore
+  runtimeClasspath {
+    extendsFrom serverLib, libExt, solrCore
   }
   startJar
-  libExt
   webapp
   packaging
 }
 
 dependencies {
-  api('org.eclipse.jetty:jetty-alpn-java-server', {
+  serverLib('org.eclipse.jetty:jetty-deploy', {
+    exclude group: "org.awaitility", module: "awaitility"
+  })
+  serverLib 'org.eclipse.jetty:jetty-http'
+  serverLib 'org.eclipse.jetty:jetty-io'
+  serverLib 'org.eclipse.jetty:jetty-jmx'
+  serverLib 'org.eclipse.jetty:jetty-rewrite'
+  serverLib 'org.eclipse.jetty:jetty-security'
+  serverLib 'org.eclipse.jetty:jetty-server'
+  serverLib 'org.eclipse.jetty:jetty-servlet'
+  serverLib 'org.eclipse.jetty:jetty-servlets'
+  serverLib 'org.eclipse.jetty:jetty-util'
+  serverLib 'org.eclipse.jetty:jetty-webapp'
+  serverLib 'org.eclipse.jetty:jetty-xml'
+  serverLib 'org.eclipse.jetty:jetty-alpn-server'
+  serverLib('org.eclipse.jetty:jetty-alpn-java-server', {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })
 
-  api('io.dropwizard.metrics:metrics-core', {
-    exclude group: "com.rabbitmq", module: "amqp-client"
-  })
-  api('io.dropwizard.metrics:metrics-graphite', {
-    exclude group: "com.rabbitmq", module: "amqp-client"
-  })
-  api 'io.dropwizard.metrics:metrics-jetty9'
-  api 'io.dropwizard.metrics:metrics-jvm'
-  api 'io.dropwizard.metrics:metrics-jmx'
+  serverLib 'org.eclipse.jetty.http2:http2-server'
+  serverLib 'org.eclipse.jetty.http2:http2-common'
+  serverLib 'org.eclipse.jetty.http2:http2-hpack'
 
-  api 'org.eclipse.jetty:jetty-continuation'
-  api 'org.eclipse.jetty:jetty-deploy'
-  api 'org.eclipse.jetty:jetty-http'
-  api 'org.eclipse.jetty:jetty-io'
-  api 'org.eclipse.jetty:jetty-jmx'
-  api 'org.eclipse.jetty:jetty-rewrite'
-  api 'org.eclipse.jetty:jetty-security'
-  api 'org.eclipse.jetty:jetty-server'
-  api 'org.eclipse.jetty:jetty-servlet'
-  api 'org.eclipse.jetty:jetty-servlets'
-  api 'org.eclipse.jetty:jetty-util'
-  api 'org.eclipse.jetty:jetty-webapp'
-  api 'org.eclipse.jetty:jetty-xml'
-  api 'org.eclipse.jetty:jetty-alpn-server'
-
-  api 'org.eclipse.jetty.http2:http2-server'
-  api 'org.eclipse.jetty.http2:http2-common'
-  api 'org.eclipse.jetty.http2:http2-hpack'
-
-  api 'javax.servlet:javax.servlet-api'
+  serverLib 'org.eclipse.jetty.toolchain:jetty-servlet-api'
 
   libExt 'com.lmax:disruptor'
   libExt 'org.slf4j:jcl-over-slf4j'
@@ -72,22 +69,38 @@ dependencies {
   libExt 'org.apache.logging.log4j:log4j-1.2-api'
   libExt 'org.apache.logging.log4j:log4j-api'
   libExt 'org.apache.logging.log4j:log4j-core'
+  libExt 'org.apache.logging.log4j:log4j-jul'
   libExt 'org.apache.logging.log4j:log4j-layout-template-json'
-  libExt 'org.apache.logging.log4j:log4j-slf4j-impl'
+  libExt 'org.apache.logging.log4j:log4j-slf4j2-impl'
   libExt 'org.apache.logging.log4j:log4j-web'
+
+  libExt('io.dropwizard.metrics:metrics-core', {
+    exclude group: "com.rabbitmq", module: "amqp-client"
+  })
+  libExt('io.dropwizard.metrics:metrics-graphite', {
+    exclude group: "com.rabbitmq", module: "amqp-client"
+  })
+  libExt('io.dropwizard.metrics:metrics-jetty10', {
+    exclude group: "org.eclipse.jetty", module: "*"
+    exclude group: "org.eclipse.jetty.http2", module: "*"
+    exclude group: "org.eclipse.jetty.toolchain", module: "*"
+  })
+  libExt 'io.dropwizard.metrics:metrics-jvm'
+  libExt 'io.dropwizard.metrics:metrics-jmx'
 
   webapp project(path: ":solr:webapp", configuration: "war")
 
   startJar('org.eclipse.jetty:jetty-start::shaded', {
     transitive false
   })
+
+  solrCore project(":solr:core")
 }
 
 // Add the following non-standard configurations to JAR validation.
 afterEvaluate {
   configurations {
     jarValidation.extendsFrom startJar
-    jarValidation.extendsFrom libExt
   }
 }
 
@@ -106,12 +119,13 @@ task assemblePackaging(type: Sync) {
     include "README.md"
   })
 
-  from(configurations.compileClasspath, {
-    into "lib/"
+  // Add in the intersection of serverLib and solrCore
+  from(configurations.libExt + (configurations.serverLib - (configurations.serverLib - configurations.solrCore)), {
+    into "lib/ext"
   })
 
-  from(configurations.libExt, {
-    into "lib/ext"
+  from(configurations.serverLib - configurations.libExt - configurations.solrCore, {
+    into "lib/"
   })
 
   from { project.configurations.startJar.singleFile } {

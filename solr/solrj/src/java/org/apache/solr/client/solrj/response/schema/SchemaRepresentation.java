@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.response.schema;
 
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 
 public class SchemaRepresentation {
@@ -38,7 +37,6 @@ public class SchemaRepresentation {
   private List<FieldTypeDefinition> fieldTypes;
 
   private List<Map<String, Object>> copyFields;
-
 
   public String getName() {
     return name;
@@ -103,5 +101,4 @@ public class SchemaRepresentation {
   public void setCopyFields(List<Map<String, Object>> copyFields) {
     this.copyFields = copyFields;
   }
-
 }

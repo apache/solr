@@ -18,9 +18,7 @@ package org.apache.solr.search.grouping.distributed.command;
 
 import org.apache.lucene.search.TopDocs;
 
-/**
- * Encapsulates {@link TopDocs} and the number of matches.
- */
+/** Encapsulates {@link TopDocs} and the number of matches. */
 public class QueryCommandResult {
 
   private final TopDocs topDocs;

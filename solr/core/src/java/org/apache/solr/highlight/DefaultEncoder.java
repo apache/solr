@@ -19,12 +19,8 @@ package org.apache.solr.highlight;
 import org.apache.lucene.search.highlight.Encoder;
 import org.apache.solr.common.params.SolrParams;
 
-/**
- * Use the {@link org.apache.lucene.search.highlight.DefaultEncoder}
- *
- */
-public class DefaultEncoder extends HighlightingPluginBase implements
-    SolrEncoder {
+/** Use the {@link org.apache.lucene.search.highlight.DefaultEncoder} */
+public class DefaultEncoder extends HighlightingPluginBase implements SolrEncoder {
 
   @Override
   public Encoder getEncoder(String fieldName, SolrParams params) {

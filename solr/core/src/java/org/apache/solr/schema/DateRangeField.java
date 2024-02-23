@@ -21,7 +21,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.prefix.NumberRangePrefixTreeStrategy;
@@ -39,18 +38,20 @@ import org.apache.solr.util.DateMathParser;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * A field for indexed dates and date ranges. It's mostly compatible with DatePointField.  It has the potential to allow
- * efficient faceting, similar to facet.enum.
+ * A field for indexed dates and date ranges. It's mostly compatible with DatePointField. It has the
+ * potential to allow efficient faceting, similar to facet.enum.
  *
  * @see NumberRangePrefixTreeStrategy
  * @see DateRangePrefixTree
  */
-public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRangePrefixTreeStrategy>
-  implements DateValueFieldType { // used by ParseDateFieldUpdateProcessorFactory
+public class DateRangeField
+    extends AbstractSpatialPrefixTreeFieldType<NumberRangePrefixTreeStrategy>
+    implements DateValueFieldType { // used by ParseDateFieldUpdateProcessorFactory
 
-  private static final String OP_PARAM = "op";//local-param to resolve SpatialOperation
+  private static final String OP_PARAM = "op"; // local-param to resolve SpatialOperation
 
-  private static final DateRangePrefixTree tree = new DateRangePrefixTree(DateRangePrefixTree.JAVA_UTIL_TIME_COMPAT_CAL);
+  private static final DateRangePrefixTree tree =
+      new DateRangePrefixTree(DateRangePrefixTree.JAVA_UTIL_TIME_COMPAT_CAL);
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -64,22 +65,26 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
 
   @Override
   public List<IndexableField> createFields(SchemaField field, Object val) {
-    if (val instanceof Date || val instanceof Calendar)//From URP?
+    if (val instanceof Date || val instanceof Calendar) { // From URP?
       val = tree.toUnitShape(val);
+    }
     return super.createFields(field, val);
   }
 
   @Override
   protected String getStoredValue(Shape shape, String shapeStr) {
-    // even if shapeStr is set, it might have included some dateMath, so see if we can resolve it first:
+    // even if shapeStr is set, it might have included some dateMath, so see if we can resolve it
+    // first:
     if (shape instanceof UnitNRShape) {
       UnitNRShape unitShape = (UnitNRShape) shape;
       if (unitShape.getLevel() == tree.getMaxLevels()) {
-        //fully precise date. We can be fully compatible with DatePointField (incl. 'Z')
+        // fully precise date. We can be fully compatible with DatePointField (incl. 'Z')
         return shape.toString() + 'Z';
       }
     }
-    return (shapeStr == null ? shape.toString() : shapeStr);//we don't normalize ranges here; should we?
+    return (shapeStr == null
+        ? shape.toString()
+        : shapeStr); // we don't normalize ranges here; should we?
   }
 
   // Won't be called because we override getStoredValue? any way; easy to implement in terms of that
@@ -88,16 +93,17 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
     return getStoredValue(shape, null);
   }
 
-
   @Override
   public NRShape parseShape(String str) {
     if (str.contains(" TO ")) {
-      //TODO parsing range syntax doesn't support DateMath on either side or exclusive/inclusive
+      // TODO parsing range syntax doesn't support DateMath on either side or exclusive/inclusive
       try {
         return tree.parseShape(str);
       } catch (ParseException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Couldn't parse date because: "+ e.getMessage(), e);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Couldn't parse date because: " + e.getMessage(),
+            e);
       }
     } else {
       return tree.toShape(parseCalendar(str));
@@ -105,9 +111,11 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
   }
 
   private Calendar parseCalendar(String str) {
-    if (str.startsWith("NOW") || str.lastIndexOf('Z') >= 0) { //  ? but not if Z is last char ?   Ehh, whatever.
-      //use Solr standard date format parsing rules:
-      //TODO add DMP utility to return ZonedDateTime alternative, then set cal fields manually, which is faster?
+    if (str.startsWith("NOW")
+        || str.lastIndexOf('Z') >= 0) { //  ? but not if Z is last char ?   Ehh, whatever.
+      // use Solr standard date format parsing rules:
+      // TODO add DMP utility to return ZonedDateTime alternative, then set cal fields manually,
+      // which is faster?
       Date date = DateMathParser.parseMath(null, str);
       Calendar cal = tree.newCal();
       cal.setTime(date);
@@ -116,10 +124,11 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
       try {
         return tree.parseCalendar(str);
       } catch (ParseException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Couldn't parse date because: "+ e.getMessage(), e);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Couldn't parse date because: " + e.getMessage(),
+            e);
       }
-
     }
   }
 
@@ -130,28 +139,35 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
 
   @Override
   protected SpatialArgs parseSpatialArgs(QParser parser, String externalVal) {
-    //We avoid SpatialArgsParser entirely because it isn't very Solr-friendly
+    // We avoid SpatialArgsParser entirely because it isn't very Solr-friendly
     final Shape shape = parseShape(externalVal);
     final SolrParams localParams = parser.getLocalParams();
     SpatialOperation op = SpatialOperation.Intersects;
     if (localParams != null) {
       String opStr = localParams.get(OP_PARAM);
-      if (opStr != null)
-        op = SpatialOperation.get(opStr);
+      if (opStr != null) op = SpatialOperation.get(opStr);
     }
     return new SpatialArgs(op, shape);
   }
 
   @Override
-  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String startStr, String endStr, boolean minInclusive, boolean maxInclusive) {
-    if (parser == null) {//null when invoked by SimpleFacets.  But getQueryFromSpatialArgs expects to get localParams.
+  protected Query getSpecializedRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String startStr,
+      String endStr,
+      boolean minInclusive,
+      boolean maxInclusive) {
+    // null when invoked by SimpleFacets. But getQueryFromSpatialArgs expects to get localParams.
+    if (parser == null) {
       final SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
-      parser = new QParser("", null, requestInfo.getReq().getParams(), requestInfo.getReq()) {
-        @Override
-        public Query parse() throws SyntaxError {
-          throw new IllegalStateException();
-        }
-      };
+      parser =
+          new QParser("", null, requestInfo.getReq().getParams(), requestInfo.getReq()) {
+            @Override
+            public Query parse() throws SyntaxError {
+              throw new IllegalStateException();
+            }
+          };
     }
 
     Calendar startCal;
@@ -176,5 +192,4 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
     SpatialArgs spatialArgs = new SpatialArgs(SpatialOperation.Intersects, shape);
     return getQueryFromSpatialArgs(parser, field, spatialArgs);
   }
-
 }

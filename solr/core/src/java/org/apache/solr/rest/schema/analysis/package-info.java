@@ -14,11 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Analysis-related functionality for RESTful API access to managed resources related to the schema, such
- * as stopwords, protected words, and synonyms.
+
+/**
+ * Analysis-related functionality for RESTful API access to managed resources related to the schema,
+ * such as stopwords, protected words, and synonyms.
  */
 package org.apache.solr.rest.schema.analysis;
-
-

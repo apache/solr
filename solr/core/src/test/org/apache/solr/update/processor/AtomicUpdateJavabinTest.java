@@ -17,6 +17,11 @@
 
 package org.apache.solr.update.processor;
 
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -30,18 +35,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.time.Instant;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * Tests Solr's atomic-update functionality using requests sent through SolrJ using wt=javabin
  *
- * {@link AtomicUpdatesTest} covers some of the same functionality, but does so by making xml-based requests.  Recent
- * changes to Solr have made it possible for the same data sent with different formats to result in different NamedLists
- * after unmarshalling, so the test duplication is now necessary.  See SOLR-13331 for an example.
+ * <p>{@link AtomicUpdatesTest} covers some of the same functionality, but does so by making
+ * xml-based requests. Recent changes to Solr have made it possible for the same data sent with
+ * different formats to result in different NamedLists after unmarshalling, so the test duplication
+ * is now necessary. See SOLR-13331 for an example.
  */
 public class AtomicUpdateJavabinTest extends SolrCloudTestCase {
   private static final String COMMITTED_DOC_ID = "1";
@@ -58,12 +58,9 @@ public class AtomicUpdateJavabinTest extends SolrCloudTestCase {
   private static final Date DATE_3 = Date.from(Instant.ofEpochSecond(1554243909));
   private static final String DATE_3_STR = "2019-04-02T22:25:09Z";
 
-
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig("conf", configset("cloud-dynamic"))
-        .configure();
+    configureCluster(1).addConfig("conf", configset("cloud-dynamic")).configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());
@@ -71,48 +68,115 @@ public class AtomicUpdateJavabinTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION, 1, 1);
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
 
-    final SolrInputDocument committedDoc = sdoc(
-            "id", COMMITTED_DOC_ID,
-            "title_s", "title_1", "title_s", "title_2",
-            "tv_mv_text", "text_1", "tv_mv_text", "text_2",
-            "count_is", 1, "count_is", 2,
-            "count_md", 1.0, "count_md", 2.0,
-            "timestamps_mdt", DATE_1, "timestamps_mdt", DATE_2);
-    final SolrInputDocument committedStrDoc = sdoc(
-            "id", COMMITTED_DOC_STR_VALUES_ID,
-            "title_s", "title_1", "title_s", "title_2",
-            "tv_mv_text", "text_1", "tv_mv_text", "text_2",
-            "count_is", "1", "count_is", "2",
-            "count_md", "1.0", "count_md", "2.0",
-            "timestamps_mdt", DATE_1_STR, "timestamps_mdt", DATE_2_STR);
-    final UpdateRequest committedRequest = new UpdateRequest()
-            .add(committedDoc)
-            .add(committedStrDoc);
+    final SolrInputDocument committedDoc =
+        sdoc(
+            "id",
+            COMMITTED_DOC_ID,
+            "title_s",
+            "title_1",
+            "title_s",
+            "title_2",
+            "tv_mv_text",
+            "text_1",
+            "tv_mv_text",
+            "text_2",
+            "count_is",
+            1,
+            "count_is",
+            2,
+            "count_md",
+            1.0,
+            "count_md",
+            2.0,
+            "timestamps_mdt",
+            DATE_1,
+            "timestamps_mdt",
+            DATE_2);
+    final SolrInputDocument committedStrDoc =
+        sdoc(
+            "id",
+            COMMITTED_DOC_STR_VALUES_ID,
+            "title_s",
+            "title_1",
+            "title_s",
+            "title_2",
+            "tv_mv_text",
+            "text_1",
+            "tv_mv_text",
+            "text_2",
+            "count_is",
+            "1",
+            "count_is",
+            "2",
+            "count_md",
+            "1.0",
+            "count_md",
+            "2.0",
+            "timestamps_mdt",
+            DATE_1_STR,
+            "timestamps_mdt",
+            DATE_2_STR);
+    final UpdateRequest committedRequest =
+        new UpdateRequest().add(committedDoc).add(committedStrDoc);
     committedRequest.commit(cluster.getSolrClient(), COLLECTION);
 
     // Upload a copy of id:1 that's uncommitted to test how atomic-updates modify values in the tlog
-    // See SOLR-14971 for an example of why this case needs tested separately
-    final SolrInputDocument uncommittedDoc = sdoc(
-            "id", UNCOMMITTED_DOC_ID,
-            "title_s", "title_1", "title_s", "title_2",
-            "tv_mv_text", "text_1", "tv_mv_text", "text_2",
-            "count_is", 1, "count_is", 2,
-            "count_md", 1.0, "count_md", 2.0,
-            "timestamps_mdt", DATE_1, "timestamps_mdt", DATE_2);
-    final SolrInputDocument uncommittedStrDoc = sdoc(
-            "id", UNCOMMITTED_DOC_STR_VALUES_ID,
-            "title_s", "title_1", "title_s", "title_2",
-            "tv_mv_text", "text_1", "tv_mv_text", "text_2",
-            "count_is", "1", "count_is", "2",
-            "count_md", "1.0", "count_md", "2.0",
-            "timestamps_mdt", DATE_1_STR, "timestamps_mdt", DATE_2_STR);
-    final UpdateRequest uncommittedRequest = new UpdateRequest()
-            .add(uncommittedDoc)
-            .add(uncommittedStrDoc);
+    // See SOLR-14971 for an example of why this case needs testing separately
+    final SolrInputDocument uncommittedDoc =
+        sdoc(
+            "id",
+            UNCOMMITTED_DOC_ID,
+            "title_s",
+            "title_1",
+            "title_s",
+            "title_2",
+            "tv_mv_text",
+            "text_1",
+            "tv_mv_text",
+            "text_2",
+            "count_is",
+            1,
+            "count_is",
+            2,
+            "count_md",
+            1.0,
+            "count_md",
+            2.0,
+            "timestamps_mdt",
+            DATE_1,
+            "timestamps_mdt",
+            DATE_2);
+    final SolrInputDocument uncommittedStrDoc =
+        sdoc(
+            "id",
+            UNCOMMITTED_DOC_STR_VALUES_ID,
+            "title_s",
+            "title_1",
+            "title_s",
+            "title_2",
+            "tv_mv_text",
+            "text_1",
+            "tv_mv_text",
+            "text_2",
+            "count_is",
+            "1",
+            "count_is",
+            "2",
+            "count_md",
+            "1.0",
+            "count_md",
+            "2.0",
+            "timestamps_mdt",
+            DATE_1_STR,
+            "timestamps_mdt",
+            DATE_2_STR);
+    final UpdateRequest uncommittedRequest =
+        new UpdateRequest().add(uncommittedDoc).add(uncommittedStrDoc);
     uncommittedRequest.process(cluster.getSolrClient(), COLLECTION);
   }
 
@@ -329,7 +393,8 @@ public class AtomicUpdateJavabinTest extends SolrCloudTestCase {
     ensureFieldHasValues(UNCOMMITTED_DOC_STR_VALUES_ID, "timestamps_mdt", DATE_1, DATE_2);
   }
 
-  private void atomicRemoveValueFromField(String docId, String fieldName, Object value) throws Exception {
+  private void atomicRemoveValueFromField(String docId, String fieldName, Object value)
+      throws Exception {
     final SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", docId);
     Map<String, Object> atomicUpdateRemoval = new HashMap<>(1);
@@ -339,7 +404,8 @@ public class AtomicUpdateJavabinTest extends SolrCloudTestCase {
     cluster.getSolrClient().add(COLLECTION, doc);
   }
 
-  private void atomicAddDistinctValueToField(String docId, String fieldName, Object value) throws Exception {
+  private void atomicAddDistinctValueToField(String docId, String fieldName, Object value)
+      throws Exception {
     final SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", docId);
     Map<String, Object> atomicUpdateRemoval = new HashMap<>(1);
@@ -349,7 +415,8 @@ public class AtomicUpdateJavabinTest extends SolrCloudTestCase {
     cluster.getSolrClient().add(COLLECTION, doc);
   }
 
-  private void ensureFieldHasValues(String identifyingDocId, String fieldName, Object... expectedValues) throws Exception {
+  private void ensureFieldHasValues(
+      String identifyingDocId, String fieldName, Object... expectedValues) throws Exception {
     final ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.set("id", identifyingDocId);
     QueryRequest request = new QueryRequest(solrParams);
@@ -357,14 +424,21 @@ public class AtomicUpdateJavabinTest extends SolrCloudTestCase {
     final QueryResponse response = request.process(cluster.getSolrClient(), COLLECTION);
 
     final NamedList<Object> rawResponse = response.getResponse();
-    assertTrue(rawResponse.get("doc") != null);
+    assertNotNull(rawResponse.get("doc"));
     assertTrue(rawResponse.get("doc") instanceof SolrDocument);
     final SolrDocument doc = (SolrDocument) rawResponse.get("doc");
     final Collection<Object> valuesAfterUpdate = doc.getFieldValues(fieldName);
-    assertEquals("Expected field to have " + expectedValues.length + " values, but found " + valuesAfterUpdate.size(),
-            expectedValues.length, valuesAfterUpdate.size());
-    for (Object expectedValue: expectedValues) {
-      assertTrue("Expected value [" + expectedValue + "] was not found in field", valuesAfterUpdate.contains(expectedValue));
+    assertEquals(
+        "Expected field to have "
+            + expectedValues.length
+            + " values, but found "
+            + valuesAfterUpdate.size(),
+        expectedValues.length,
+        valuesAfterUpdate.size());
+    for (Object expectedValue : expectedValues) {
+      assertTrue(
+          "Expected value [" + expectedValue + "] was not found in field",
+          valuesAfterUpdate.contains(expectedValue));
     }
   }
 }

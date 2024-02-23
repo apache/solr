@@ -22,35 +22,30 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
 public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
   final String collection = getClass().getSimpleName();
-  
+
   Replica leader;
   Replica replica;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();
+    configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
     useFactory("solr.StandardDirectoryFactory");
   }
 
@@ -58,8 +53,8 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
   public void setup() throws SolrServerException, IOException {
     CollectionAdminRequest.createCollection(collection, "conf", 1, 2)
         .process(cluster.getSolrClient());
-    waitForState("Expected a collection with one shard and two replicas", collection, clusterShape(1, 2));
-    cluster.getSolrClient().setDefaultCollection(collection);
+    waitForState(
+        "Expected a collection with one shard and two replicas", collection, clusterShape(1, 2));
 
     List<SolrInputDocument> docs = new ArrayList<>();
     for (int i = 0; i < 10; i++) {
@@ -68,14 +63,14 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
       docs.add(doc);
     }
 
-    cluster.getSolrClient().add(docs);
-    cluster.getSolrClient().commit();
-    
+    cluster.getSolrClient().add(collection, docs);
+    cluster.getSolrClient().commit(collection);
+
     DocCollection state = getCollectionState(collection);
     leader = state.getLeader("shard1");
-    replica = getRandomReplica(state.getSlice("shard1"), (r) -> leader != r);
+    replica = getRandomReplica(state.getSlice("shard1"), (r) -> !leader.equals(r));
   }
-  
+
   @After
   public void teardown() throws Exception {
     if (null == leader) {
@@ -106,21 +101,24 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
     jetty.stop();
     jetty.start();
 
-    waitForState("Expected a collection with one shard and two replicas", collection, clusterShape(1, 2));
-    
+    waitForState(
+        "Expected a collection with one shard and two replicas", collection, clusterShape(1, 2));
+
     QueryResponse resp = cluster.getSolrClient().query(collection, new SolrQuery("*:*"));
     assertEquals(10, resp.getResults().getNumFound());
   }
 
   private File[] getSegmentFiles(Replica replica) {
-    try (SolrCore core = cluster.getReplicaJetty(replica).getCoreContainer().getCore(replica.getCoreName())) {
+    try (SolrCore core =
+        cluster.getReplicaJetty(replica).getCoreContainer().getCore(replica.getCoreName())) {
       File indexDir = new File(core.getDataDir(), "index");
-      return indexDir.listFiles((File dir, String name) -> {
-        return name.startsWith("segments_");
-      });
+      return indexDir.listFiles(
+          (File dir, String name) -> {
+            return name.startsWith("segments_");
+          });
     }
   }
-  
+
   private void truncate(File file) throws IOException {
     Files.write(file.toPath(), new byte[0], StandardOpenOption.TRUNCATE_EXISTING);
   }

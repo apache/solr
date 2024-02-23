@@ -18,15 +18,16 @@
 Solr example
 ------------
 
-This directory contains Solr examples. Each example is contained in a 
+This directory contains Solr examples. Each example is contained in a
 separate directory. To run a specific example, do:
 
 ```
   bin/solr -e <EXAMPLE> where <EXAMPLE> is one of:
-  
+
     cloud        : SolrCloud example
     schemaless   : Schema-less example (schema is inferred from data during indexing)
     techproducts : Kitchen sink example providing comprehensive examples of Solr features
+    films        : Example of starting with _default configset and defining explicit fields dynamically.
 ```
 
 For instance, if you want to run the SolrCloud example, do:
@@ -47,10 +48,10 @@ After starting a Solr example, direct your Web browser to:
   http://localhost:8983/solr/
 ```
 
-To add documents to the index, use bin/post, for example:
+To add documents to the index, use bin/solr post, for example:
 
 ```
-     bin/post -c techproducts example/exampledocs/*.xml
+     bin/solr post -c techproducts example/exampledocs/*.xml
 ```
 
 (where "techproducts" is the Solr core name)
@@ -58,14 +59,14 @@ To add documents to the index, use bin/post, for example:
 For more information about this example please read...
 
  * [solr/example/README.md](./README.md)
- 
+
 For more information about the "Solr Home" and Solr specific configuration
 
-* https://lucene.apache.org/solr/guide/solr-tutorial.html
+* https://solr.apache.org/guide/solr-tutorial.html
 
 For a Solr tutorial
 
- * https://wiki.apache.org/solr/SolrResources 
+ * https://solr.apache.org/resources.html
 
 For a list of other tutorials and introductory articles.
 
@@ -75,13 +76,13 @@ Notes About These Examples
 ### References to Jar Files Outside This Directory
 
 Various example SolrHome dirs contained in this directory may use "<lib>"
-statements in the solrconfig.xml file to reference plugin jars outside of 
-this directory for loading "contrib" plugins via relative paths.  
+statements in the solrconfig.xml file to reference plugin jars outside of
+this directory for loading modules via relative paths.  
 
-If you make a copy of this example server and wish to use the 
-ExtractingRequestHandler (SolrCell), the clustering component, 
-or any other modules in "contrib", you will need to
-copy the required jars or update the paths to those jars in your 
+If you make a copy of this example server and wish to use the
+ExtractingRequestHandler (SolrCell), the clustering component,
+or any other modules, you will need to
+copy the required jars or update the paths to those jars in your
 solrconfig.xml.
 
 ### Logging
@@ -91,4 +92,3 @@ be convenient when first getting started, but eventually you will want to
 log just to a file. To configure logging, edit the log4j2.xml file in
 ".../server/resources".
 It is also possible to setup log4j or other popular logging frameworks.
-

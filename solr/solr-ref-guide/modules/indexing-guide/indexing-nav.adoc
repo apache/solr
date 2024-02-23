@@ -1,0 +1,63 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+.Schema and Indexing Guide
+
+* Solr Schema
+** xref:schema-elements.adoc[]
+** xref:schema-api.adoc[]
+** xref:schemaless-mode.adoc[]
+** xref:schema-designer.adoc[]
+** xref:schema-browser-screen.adoc[]
+
+* Fields & Schema Design
+** xref:fields.adoc[]
+** Field Types
+*** xref:field-type-definitions-and-properties.adoc[]
+*** xref:field-types-included-with-solr.adoc[]
+*** xref:currencies-exchange-rates.adoc[]
+*** xref:date-formatting-math.adoc[]
+*** xref:enum-fields.adoc[]
+*** xref:external-files-processes.adoc[]
+*** xref:field-properties-by-use-case.adoc[]
+** xref:copy-fields.adoc[]
+** xref:dynamic-fields.adoc[]
+** xref:docvalues.adoc[]
+** xref:luke-request-handler.adoc[]
+
+* xref:document-analysis.adoc[]
+** xref:analyzers.adoc[]
+** xref:tokenizers.adoc[]
+** xref:filters.adoc[]
+** xref:charfilters.adoc[]
+** xref:language-analysis.adoc[]
+** xref:phonetic-matching.adoc[]
+** xref:analysis-screen.adoc[]
+
+* Indexing & Data Operations
+** xref:indexing-with-update-handlers.adoc[]
+*** xref:transforming-and-indexing-custom-json.adoc[]
+** xref:indexing-with-cbor.adoc[]
+** xref:indexing-with-tika.adoc[]
+** xref:indexing-nested-documents.adoc[]
+** xref:post-tool.adoc[]
+** xref:documents-screen.adoc[]
+** xref:partial-document-updates.adoc[]
+** xref:reindexing.adoc[]
+** xref:language-detection.adoc[]
+** xref:de-duplication.adoc[]
+** xref:content-streams.adoc[]

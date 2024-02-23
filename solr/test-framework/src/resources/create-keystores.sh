@@ -28,10 +28,10 @@ echo "### remove old keystores"
 rm -f SSLTestConfig.testing.keystore SSLTestConfig.hostname-and-ip-missmatch.keystore
 
 echo "### create 'localhost' keystore and keys"
-keytool -keystore SSLTestConfig.testing.keystore -storepass "secret" -alias solrtest -keypass "secret" -genkey -keyalg RSA -dname "cn=localhost, ou=SolrTest, o=lucene.apache.org, c=US" -ext "san=dns:localhost,ip:127.0.0.1" -validity 999999
+keytool -keystore SSLTestConfig.testing.keystore -storepass "secret" -alias solrtest -keypass "secret" -genkey -keyalg RSA -dname "cn=localhost, ou=SolrTest, o=solr.apache.org, c=US" -ext "san=dns:localhost,ip:127.0.0.1" -validity 999999
 
 # See https://tools.ietf.org/html/rfc5737
 echo "### create 'Bogus Host' keystore and keys"
-keytool -keystore SSLTestConfig.hostname-and-ip-missmatch.keystore -storepass "secret" -alias solrtest -keypass "secret" -genkey -keyalg RSA -dname "cn=bogus.hostname.tld, ou=SolrTest, o=lucene.apache.org, c=US" -ext "san=dns:bogus.hostname.tld,ip:192.0.2.0" -validity 999999
+keytool -keystore SSLTestConfig.hostname-and-ip-missmatch.keystore -storepass "secret" -alias solrtest -keypass "secret" -genkey -keyalg RSA -dname "cn=bogus.hostname.tld, ou=SolrTest, o=solr.apache.org, c=US" -ext "san=dns:bogus.hostname.tld,ip:192.0.2.0" -validity 999999
 
 

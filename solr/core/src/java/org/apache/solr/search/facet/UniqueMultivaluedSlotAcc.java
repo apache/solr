@@ -19,7 +19,6 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import java.util.function.IntFunction;
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.schema.SchemaField;
@@ -29,12 +28,15 @@ class UniqueMultivaluedSlotAcc extends UniqueSlotAcc implements UnInvertedField.
   private UnInvertedField uif;
   private UnInvertedField.DocToTerm docToTerm;
 
-  public UniqueMultivaluedSlotAcc(FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory) throws IOException {
+  public UniqueMultivaluedSlotAcc(
+      FacetContext fcontext, SchemaField field, int numSlots, HLLAgg.HLLFactory factory)
+      throws IOException {
     super(fcontext, field, numSlots, factory);
     SolrIndexSearcher searcher = fcontext.qcontext.searcher();
     uif = UnInvertedField.getUnInvertedField(field.getName(), searcher);
     docToTerm = uif.new DocToTerm();
-    fcontext.qcontext.addCloseHook(this);  // TODO: find way to close accumulators instead of using close hook?
+    // TODO: find way to close accumulators instead of using close hook?
+    fcontext.qcontext.addCloseHook(this);
     nTerms = uif.numTerms();
   }
 
@@ -43,7 +45,7 @@ class UniqueMultivaluedSlotAcc extends UniqueSlotAcc implements UnInvertedField.
     return docToTerm.lookupOrd(ord);
   }
 
-  private FixedBitSet bits;  // bits for the current slot, only set for the callback
+  private FixedBitSet bits; // bits for the current slot, only set for the callback
 
   @Override
   public void call(int termNum) {
@@ -51,13 +53,15 @@ class UniqueMultivaluedSlotAcc extends UniqueSlotAcc implements UnInvertedField.
   }
 
   @Override
-  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
+  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext)
+      throws IOException {
     bits = arr[slotNum];
     if (bits == null) {
       bits = new FixedBitSet(nTerms);
       arr[slotNum] = bits;
     }
-    docToTerm.getBigTerms(doc + currentDocBase, this);  // this will call back to our Callback.call(int termNum)
+    // this will call back to our Callback.call(int termNum)
+    docToTerm.getBigTerms(doc + currentDocBase, this);
     docToTerm.getSmallTerms(doc + currentDocBase, this);
   }
 

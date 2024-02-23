@@ -16,61 +16,61 @@
  */
 package org.apache.solr.request.macro;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.search.StrParser;
-import org.apache.solr.search.SyntaxError;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.search.StrParser;
+import org.apache.solr.search.SyntaxError;
 
 public class MacroExpander {
   public static final String MACRO_START = "${";
   private static final int MAX_LEVELS = 25;
 
-  private Map<String,String[]> orig;
-  private Map<String,String[]> expanded;
+  private Map<String, String[]> orig;
+  private Map<String, String[]> expanded;
   private String macroStart = MACRO_START;
   private char escape = '\\';
   private int level;
   private final boolean failOnMissingParams;
-  
-  public MacroExpander(Map<String,String[]> orig) {
+
+  public MacroExpander(Map<String, String[]> orig) {
     this(orig, false);
   }
 
-  public MacroExpander(Map<String,String[]> orig, boolean failOnMissingParams) {
+  public MacroExpander(Map<String, String[]> orig, boolean failOnMissingParams) {
     this.orig = orig;
     this.failOnMissingParams = failOnMissingParams;
   }
 
-  public static Map<String,String[]> expand(Map<String,String[]> params) {
+  public static Map<String, String[]> expand(Map<String, String[]> params) {
     MacroExpander mc = new MacroExpander(params);
     mc.expand();
     return mc.expanded;
   }
 
   public boolean expand() {
-    this.expanded = new HashMap<>(orig.size());
+    this.expanded = CollectionUtil.newHashMap(orig.size());
 
     boolean changed = false;
-    for (Map.Entry<String,String[]> entry : orig.entrySet()) {
+    for (Map.Entry<String, String[]> entry : orig.entrySet()) {
       String k = entry.getKey();
       String[] values = entry.getValue();
-      if (!isExpandingExpr() && "expr".equals(k) ) {  // SOLR-12891
-        expanded.put(k,values);
+      if (!isExpandingExpr() && "expr".equals(k)) { // SOLR-12891
+        expanded.put(k, values);
         continue;
       }
       String newK = expand(k);
       List<String> newValues = null;
       for (String v : values) {
         String newV = expand(v);
-        if (newV != v) {
+        if (!Objects.equals(newV, v)) {
           if (newValues == null) {
             newValues = new ArrayList<>(values.length);
             for (String vv : values) {
-              if (vv == v)  break;
+              if (Objects.equals(vv, v)) break;
               newValues.add(vv);
             }
           }
@@ -81,15 +81,15 @@ public class MacroExpander {
       }
 
       if (newValues != null) {
-        values = newValues.toArray(new String[newValues.size()]);
+        values = newValues.toArray(new String[0]);
         changed = true;
       }
 
-      if (k != newK) {
+      if (!Objects.equals(k, newK)) {
         changed = true;
       }
 
-      expanded.put( newK, values );
+      expanded.put(newK, values);
     }
 
     return changed;
@@ -103,7 +103,9 @@ public class MacroExpander {
     level++;
     try {
       if (level >= MAX_LEVELS) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Request template exceeded max nesting of " + MAX_LEVELS + " expanding '"+val+"'");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Request template exceeded max nesting of " + MAX_LEVELS + " expanding '" + val + "'");
       }
       return _expand(val);
     } finally {
@@ -116,25 +118,24 @@ public class MacroExpander {
     int idx = val.indexOf(macroStart.charAt(0));
     if (idx < 0) return val;
 
-    int start = 0;  // start of the unprocessed part of the string
+    int start = 0; // start of the unprocessed part of the string
     StringBuilder sb = null;
-    for (;;) {
+    for (; ; ) {
       assert idx >= start;
       idx = val.indexOf(macroStart, idx);
 
       // check if escaped
       if (idx > 0) {
         // check if escaped...
-        // TODO: what if you *want* to actually have a backslash... perhaps that's when we allow changing
-        // of the escape character?
+        // TODO: what if you *want* to actually have a backslash... perhaps that's when we allow
+        // changing of the escape character?
 
-        char ch = val.charAt(idx-1);
+        char ch = val.charAt(idx - 1);
         if (ch == escape) {
           idx += macroStart.length();
           continue;
         }
-      }
-      else if (idx < 0) {
+      } else if (idx < 0) {
         break;
       }
 
@@ -151,7 +152,7 @@ public class MacroExpander {
       }
 
       if (sb == null) {
-        sb = new StringBuilder(val.length()*2);
+        sb = new StringBuilder(val.length() * 2);
       }
 
       if (matchedStart > 0) {
@@ -175,15 +176,14 @@ public class MacroExpander {
         String[] replacementList = orig.get(paramName);
 
         // TODO - handle a list somehow...
-        String replacement = replacementList!=null ? replacementList[0] : defVal;
+        String replacement = replacementList != null ? replacementList[0] : defVal;
         if (replacement != null) {
           String expandedReplacement = expand(replacement);
           if (failOnMissingParams && expandedReplacement == null) {
             return null;
           }
           sb.append(expandedReplacement);
-        }
-        else if (failOnMissingParams) {
+        } else if (failOnMissingParams) {
           return null;
         }
 
@@ -202,8 +202,4 @@ public class MacroExpander {
     sb.append(val, start, val.length());
     return sb.toString();
   }
-
-
-
-
 }

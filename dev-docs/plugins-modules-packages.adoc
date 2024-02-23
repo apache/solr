@@ -1,0 +1,139 @@
+= Plugins, Modules and Packages
+:toc: left
+
+This document discusses how developers can group features into Plugins, Modules and Packages.
+
+== Definitions
+
+=== Plugin
+
+A plugin is a low level class that implements a certain Lucene or Solr interface, such as
+`QParserPlugin`, `AuthPlugin`, `UpdateRequestProcessor`, `QueryResponseWriter` etc.
+See ref guide page https://solr.apache.org/guide/solr/latest/configuration-guide/solr-plugins.html[Solr Plugins] for details.
+
+=== Module
+
+Solr Modules are addon Solr plugins that are not part of solr-core, but officially maintained
+by the Solr project. They provide well-defined features such as the "extracting" module which lets
+users index rich text documents with Apache Tika. Modules were earlier known as "contribs".
+
+Each module produces a separate `.jar` file in the build, and additional dependencies required by each module are packaged with that module's `.jar` file. This helps keep the solr-core small and lean,
+and also reduces risk by including only needed java classes and dependencies on the class-path.
+
+A single module can contain multiple Plugins.
+
+=== Package
+
+A Package is a module or a 3rd party plugin for Solr provisioned with a `manifest.json`
+to enable discovering and loading through https://solr.apache.org/guide/solr/latest/configuration-guide/package-manager.html[Solr's package manager]. Packages are loaded from a "package repository" which is
+simply a json file on a HTTP server.
+
+Packages can be maintained by 3rd party devs and hosted on
+GitHub, like https://github.com/yasa-org/yasa[YASA],
+https://github.com/rohitbemax/dataimporthandler[DataImportHandler],
+https://github.com/erikhatcher/solr-velocity[Velocity],
+https://github.com/cominvent/request-sanitizer-component[RequestSanitizerComponent]
+and https://solr.cool/[several others]. Such packages are not endorsed by the Solr project.
+
+The Solr project is also working on packaging our own (1st party) modules as packages,
+and host them either inside the binary tarball distribution of Solr or later also in the
+ASF download repos.
+
+== Dev guide for creating modules
+
+=== When to create a module
+
+Any functionality added to Solr that is not obviously useful for all Solr users and that
+spans more than a single source file, should be considered for a new module.
+
+Solr functionality that requires risky dependencies can more easily be added as a module, because Solr users will not have to load those dependencies by default.
+
+=== Module layout
+
+Modules consist of a `solr-<moduleName>-X.Y.Z.jar` artifact as often also a set of dependency
+`.jar` files that it needs to work (but not jars that are otherwise default a part of Solr).
+
+Module sources live in the `solr/modules/` folder in the checkout, and have their own gradle
+build file. See "Bootstrapping" paragraph on how to scaffold a new module.
+
+The layout of modules in the binary distribution is produced by the gradle build and is
+as follows:
+```
+<install-dir>/modules/<moduleName>/
+  +-- README.md
+  +-- lib/
+      +-- solr-<moduleName>-X.Y.Z.jar
+      +-- dependency-1.jar
+      +-- other-dependency.jar
+```
+
+=== Bootstrapping a new module
+
+It is not hard to create a new module. You can do it by hand, or you can run the helper tool:
+
+```bash
+dev-tools/scripts/scaffoldNewModule.py <short-name> <full name> <one line description>
+```
+
+Once you have the scaffold, start creating classes, or move out classes from solr-core.
+Solr-core and test-framework are added as dependencies by default, and you can add custom
+dependencies as necessary. Those will automatically end up in `<moduleName>/lib` in the
+binary distro.
+
+=== Module naming
+
+As the number of modules grow, we should strive to keep naming logical. The proposal is to
+structure module name as `<type>-<name>`.
+
+Types can be:
+
+* `analysis-` - for fieldTypes, tokenizers, token filters (lucene level)
+* `update-` - for UpdateRequestHandlers, UpdateRequestProcessors and other indexing related
+* `search-` - for QParser, ResponseWriters, SearchHandler, SearchComponent
+* `auth-` - for Authentication and Autorization
+* `backup-`- for backup repositories
+* ...more here...
+
+Examples:
+
+* `search-clustering`
+* `update-extraction`
+* `backup-gcs`
+
+== Dev guide for turning a module into a package
+
+=== Adding a manifest
+
+Create a file `<my-module>/src/main/resources/manifest.json`. It contents should be at a
+minimum something like below:
+
+```json
+{
+  "version-constraint": "9",
+  "plugins": [
+    {
+      "name": "update-extraction",
+      "setup-command": {
+        "path": "/api/collections/${collection}/config",
+        "payload": {"add-requesthandler": {"name": "${NAME}", "class": "update-extraction:org.apache.solr.handler.extraction.ExtractingRequestHandler"}},
+        "method": "POST"
+      },
+      "uninstall-command": {
+        "path": "/api/collections/${collection}/config",
+        "payload": {"delete-requesthandler": "${NAME}"},
+        "method": "POST"
+      }
+    }
+  ],
+  "parameter-defaults": {
+    "NAME": "/update/extract"
+  }
+}
+```
+
+Version constraint must follow SemVer expression syntax, `9` means it is
+compatible with any 9.x version of Solr. It is dangerous to assume compatibility with future versions, and for 1st party modules, we release them with every minor version, so consider
+using e.g. `9.1`, which will be compatible with all bugfix 9.1 releases.
+
+For details about how the package management internals work, please see
+https://solr.apache.org/guide/solr/latest/configuration-guide/package-manager-internals.html[Package Manager Internals] chapter of the reference guide.

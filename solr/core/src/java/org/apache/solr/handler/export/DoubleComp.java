@@ -22,22 +22,25 @@ interface DoubleComp {
 
   double resetValue();
 
-
   static class DoubleAsc implements DoubleComp {
+    @Override
     public double resetValue() {
       return Double.MAX_VALUE;
     }
 
+    @Override
     public int compare(double a, double b) {
       return Double.compare(b, a);
     }
   }
 
   static class DoubleDesc implements DoubleComp {
+    @Override
     public double resetValue() {
       return -Double.MAX_VALUE;
     }
 
+    @Override
     public int compare(double a, double b) {
       return Double.compare(a, b);
     }

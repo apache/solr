@@ -17,6 +17,10 @@
 
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.util.StrUtils.splitSmart;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,13 +29,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import com.google.common.collect.ImmutableList;
+import java.util.stream.Collectors;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
-import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
+import org.apache.solr.client.solrj.request.ApiMapping.CommandMeta;
+import org.apache.solr.client.solrj.request.ApiMapping.V2EndPoint;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -39,14 +42,10 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
-import static org.apache.solr.common.util.StrUtils.splitSmart;
-
 /**
- * This is a utility class to provide an easy mapping of request handlers which support multiple commands
- * to the V2 API format (core admin api, collections api). This helps in automatically mapping paths
- * to actions and old parameter names to new parameter names
+ * This is a utility class to provide an easy mapping of request handlers which support multiple
+ * commands to the V2 API format (core admin api, collections api). This helps in automatically
+ * mapping paths to actions and old parameter names to new parameter names
  */
 public abstract class BaseHandlerApiSupport implements ApiSupport {
   protected final Map<SolrRequest.METHOD, Map<V2EndPoint, List<ApiCommand>>> commandsMapping;
@@ -64,11 +63,8 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
   @Override
   public synchronized Collection<Api> getApis() {
-    ImmutableList.Builder<Api> l = ImmutableList.builder();
-    for (V2EndPoint op : getEndPoints()) l.add(getApi(op));
-    return l.build();
+    return getEndPoints().stream().map(this::getApi).collect(Collectors.toUnmodifiableList());
   }
-
 
   private Api getApi(final V2EndPoint op) {
     final BaseHandlerApiSupport apiHandler = this;
@@ -112,30 +108,35 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
                 }
               }
             }
-            wrapParams(req, new CommandOperation("", Collections.emptyMap()), commands.get(0), true);
+            wrapParams(
+                req, new CommandOperation("", Collections.emptyMap()), commands.get(0), true);
             commands.get(0).invoke(req, rsp, apiHandler);
           }
 
         } catch (SolrException e) {
           throw e;
         } catch (Exception e) {
-          throw new SolrException(BAD_REQUEST, e); //TODO BAD_REQUEST is a wild guess; should we flip the default?  fail here to investigate how this happens in tests
+          // TODO BAD_REQUEST is a wild guess; should we flip the default?  fail here to investigate
+          // how this happens in tests
+          throw new SolrException(BAD_REQUEST, e);
         } finally {
           req.setParams(params);
         }
-
       }
     };
-
   }
 
-  /**
-   * Wrapper for SolrParams that wraps V2 params and exposes them as V1 params.
-   */
-  private static void wrapParams(final SolrQueryRequest req, final CommandOperation co, final ApiCommand cmd, final boolean useRequestParams) {
+  /** Wrapper for SolrParams that wraps V2 params and exposes them as V1 params. */
+  private static void wrapParams(
+      final SolrQueryRequest req,
+      final CommandOperation co,
+      final ApiCommand cmd,
+      final boolean useRequestParams) {
     final Map<String, String> pathValues = req.getPathTemplateValues();
-    final Map<String, Object> map = co == null || !(co.getCommandData() instanceof Map) ?
-        Collections.singletonMap("", co.getCommandData()) : co.getDataMap();
+    final Map<String, Object> map =
+        co == null || !(co.getCommandData() instanceof Map)
+            ? Collections.singletonMap("", co.getCommandData())
+            : co.getDataMap();
     final SolrParams origParams = req.getParams();
 
     req.setParams(
@@ -146,21 +147,23 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             if (vals == null) return null;
             if (vals instanceof String) return (String) vals;
             if (vals instanceof Boolean || vals instanceof Number) return String.valueOf(vals);
-            if (vals instanceof String[] && ((String[]) vals).length > 0) return ((String[]) vals)[0];
+            if (vals instanceof String[] && ((String[]) vals).length > 0)
+              return ((String[]) vals)[0];
             return null;
           }
 
           private Object getParams0(String param) {
             param = cmd.meta().getParamSubstitute(param); // v1 -> v2, possibly dotted path
-            Object o = param.indexOf('.') > 0 ?
-                Utils.getObjectByPath(map, true, splitSmart(param, '.')) :
-                map.get(param);
+            Object o =
+                param.indexOf('.') > 0
+                    ? Utils.getObjectByPath(map, true, splitSmart(param, '.'))
+                    : map.get(param);
             if (o == null) o = pathValues.get(param);
             if (o == null && useRequestParams) o = origParams.getParams(param);
             if (o instanceof List) {
               @SuppressWarnings("unchecked")
               List<String> l = (List<String>) o;
-              return l.toArray(new String[l.size()]);
+              return l.toArray(new String[0]);
             }
 
             return o;
@@ -169,9 +172,9 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
           @Override
           public String[] getParams(String param) {
             Object vals = getParams0(param);
-            return vals == null || vals instanceof String[] ?
-                (String[]) vals :
-                new String[]{vals.toString()};
+            return vals == null || vals instanceof String[]
+                ? (String[]) vals
+                : new String[] {vals.toString()};
           }
 
           @Override
@@ -181,26 +184,28 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
           @Override
           public Map<String, Object> toMap(Map<String, Object> suppliedMap) {
-            for(Iterator<String> it=getParameterNamesIterator(); it.hasNext(); ) {
+            for (Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
               final String param = it.next();
               String key = cmd.meta().getParamSubstitute(param);
-              Object o = key.indexOf('.') > 0 ?
-                  Utils.getObjectByPath(map, true, splitSmart(key, '.')) :
-                  map.get(key);
+              Object o =
+                  key.indexOf('.') > 0
+                      ? Utils.getObjectByPath(map, true, splitSmart(key, '.'))
+                      : map.get(key);
               if (o == null) o = pathValues.get(key);
               if (o == null && useRequestParams) o = origParams.getParams(key);
               // make strings out of as many things as we can now to minimize differences from
               // the standard impls that pass through a NamedList/SimpleOrderedMap...
               Class<?> oClass = o.getClass();
-              if (oClass.isPrimitive() ||
-                  Number.class.isAssignableFrom(oClass) ||
-                  Character.class.isAssignableFrom(oClass) ||
-                  Boolean.class.isAssignableFrom(oClass)) {
-                suppliedMap.put(param,String.valueOf(o));
-              } else if (List.class.isAssignableFrom(oClass) && ((List)o).get(0) instanceof String ) {
+              if (oClass.isPrimitive()
+                  || Number.class.isAssignableFrom(oClass)
+                  || Character.class.isAssignableFrom(oClass)
+                  || Boolean.class.isAssignableFrom(oClass)) {
+                suppliedMap.put(param, String.valueOf(o));
+              } else if (List.class.isAssignableFrom(oClass)
+                  && ((List) o).get(0) instanceof String) {
                 @SuppressWarnings({"unchecked"})
                 List<String> l = (List<String>) o;
-                suppliedMap.put( param, l.toArray(new String[0]));
+                suppliedMap.put(param, l.toArray(new String[0]));
               } else {
                 // Lists pass through but will require special handling downstream
                 // if they contain non-string elements.
@@ -210,18 +215,16 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
             return suppliedMap;
           }
         });
-
   }
 
   protected abstract Collection<ApiCommand> getCommands();
 
   protected abstract Collection<V2EndPoint> getEndPoints();
 
-
-  public interface ApiCommand  {
+  public interface ApiCommand {
     CommandMeta meta();
 
-    void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception;
+    void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler)
+        throws Exception;
   }
-
 }

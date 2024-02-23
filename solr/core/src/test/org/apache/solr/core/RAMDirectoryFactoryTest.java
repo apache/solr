@@ -17,16 +17,13 @@
 package org.apache.solr.core;
 
 import java.io.IOException;
-
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 
-/**
- * Test-case for RAMDirectoryFactory
- */
+/** Test-case for RAMDirectoryFactory */
 public class RAMDirectoryFactoryTest extends SolrTestCase {
 
   public void test() throws Exception {
@@ -36,17 +33,21 @@ public class RAMDirectoryFactoryTest extends SolrTestCase {
 
   private void dotestOpenReturnsTheSameForSamePath() throws IOException {
     final Directory directory = new ByteBuffersDirectory();
-    RAMDirectoryFactory factory = new RAMDirectoryFactory()  {
-      @Override
-      protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
-        return directory;
-      }
-    };
+    RAMDirectoryFactory factory =
+        new RAMDirectoryFactory() {
+          @Override
+          protected Directory create(String path, LockFactory lockFactory, DirContext dirContext) {
+            return directory;
+          }
+        };
     String path = "/fake/path";
     Directory dir1 = factory.get(path, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
     Directory dir2 = factory.get(path, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
-    assertEquals("RAMDirectoryFactory should not create new instance of RefCntRamDirectory " +
-        "every time open() is called for the same path", dir1, dir2);
+    assertEquals(
+        "RAMDirectoryFactory should not create new instance of RefCntRamDirectory "
+            + "every time open() is called for the same path",
+        dir1,
+        dir2);
 
     factory.release(dir1);
     factory.release(dir2);
@@ -55,9 +56,12 @@ public class RAMDirectoryFactoryTest extends SolrTestCase {
 
   private void dotestOpenSucceedForEmptyDir() throws IOException {
     RAMDirectoryFactory factory = new RAMDirectoryFactory();
-    Directory dir = factory.get("/fake/path", DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
-    assertNotNull("RAMDirectoryFactory should create RefCntRamDirectory even if the path doen't lead " +
-        "to index directory on the file system", dir);
+    Directory dir =
+        factory.get("/fake/path", DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
+    assertNotNull(
+        "RAMDirectoryFactory should create RefCntRamDirectory even if the path doesn't lead "
+            + "to index directory on the file system",
+        dir);
     factory.release(dir);
     factory.close();
   }

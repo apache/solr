@@ -19,42 +19,38 @@ package org.apache.solr.internal.csv;
 import java.io.IOException;
 import java.io.Writer;
 
-/**
- * Print values as a comma separated list.
- */
+/** Print values as a comma separated list. */
 public class CSVPrinter {
 
   /** The place that the values get written. */
   protected final Writer out;
+
   protected final CSVStrategy strategy;
 
   /** True if we just began a new line. */
   protected boolean newLine = true;
 
-  protected char[] buf = new char[0];  // temporary buffer
+  protected char[] buf = new char[0]; // temporary buffer
 
   /**
-   * Create a printer that will print values to the given
-   * stream following the CSVStrategy.
+   * Create a printer that will print values to the given stream following the CSVStrategy.
    *
-   * Currently, only a pure encapsulation strategy or a pure escaping strategy
-   * is supported.  Hybrid strategies (encapsulation and escaping with a different character) are not supported.
+   * <p>Currently, only a pure encapsulation strategy or a pure escaping strategy is supported.
+   * Hybrid strategies (encapsulation and escaping with a different character) are not supported.
    *
    * @param out stream to which to print.
    * @param strategy describes the CSV variation.
    */
   public CSVPrinter(Writer out, CSVStrategy strategy) {
     this.out = out;
-    this.strategy = strategy==null ? CSVStrategy.DEFAULT_STRATEGY : strategy;
+    this.strategy = strategy == null ? CSVStrategy.DEFAULT_STRATEGY : strategy;
   }
-  
+
   // ======================================================
   //  printing implementation
   // ======================================================
 
-  /**
-   * Output a blank line
-   */
+  /** Output a blank line */
   public void println() throws IOException {
     out.write(strategy.getPrinterNewline());
     newLine = true;
@@ -64,10 +60,8 @@ public class CSVPrinter {
     out.flush();
   }
 
-
   /**
-   * Print a single line of comma separated values.
-   * The values will be quoted if needed.  Quotes and
+   * Print a single line of comma separated values. The values will be quoted if needed. Quotes and
    * newLine characters will be escaped.
    *
    * @param values values to be outputted.
@@ -79,20 +73,17 @@ public class CSVPrinter {
     println();
   }
 
-
   /**
-   * Put a comment among the comma separated values.
-   * Comments will always begin on a new line and occupy a
-   * least one full line. The character specified to star
-   * comments and a space will be inserted at the beginning of
-   * each new line in the comment.
+   * Put a comment among the comma separated values. Comments will always begin on a new line and
+   * occupy a least one full line. The character specified to star comments and a space will be
+   * inserted at the beginning of each new line in the comment.
    *
    * @param comment the comment to output
    */
   @SuppressWarnings({"fallthrough"})
   public void printlnComment(String comment) throws IOException {
-    if(this.strategy.isCommentingDisabled()) {
-        return;
+    if (this.strategy.isCommentingDisabled()) {
+      return;
     }
     if (!newLine) {
       println();
@@ -102,24 +93,23 @@ public class CSVPrinter {
     for (int i = 0; i < comment.length(); i++) {
       char c = comment.charAt(i);
       switch (c) {
-        case '\r' :
+        case '\r':
           if (i + 1 < comment.length() && comment.charAt(i + 1) == '\n') {
             i++;
           }
           // break intentionally excluded.
-        case '\n' :
+        case '\n':
           println();
           out.write(this.strategy.getCommentStart());
           out.write(' ');
           break;
-        default :
+        default:
           out.write(c);
           break;
       }
     }
     println();
   }
-
 
   public void print(char[] value, int offset, int len, boolean checkForEscape) throws IOException {
     if (!checkForEscape) {
@@ -158,39 +148,39 @@ public class CSVPrinter {
 
     while (pos < end) {
       char c = value[pos];
-      if (c == '\r' || c=='\n' || c==delim || c==escape) {
+      if (c == '\r' || c == '\n' || c == delim || c == escape) {
         // write out segment up until this char
-        int l = pos-start;
-        if (l>0) {
+        int l = pos - start;
+        if (l > 0) {
           out.write(value, start, l);
         }
-        if (c=='\n') c='n';
-        else if (c=='\r') c='r';
+        if (c == '\n') c = 'n';
+        else if (c == '\r') c = 'r';
 
         out.write(escape);
         out.write(c);
 
-        start = pos+1; // start on the current char after this one
+        start = pos + 1; // start on the current char after this one
       }
 
       pos++;
     }
 
     // write last segment
-    int l = pos-start;
-    if (l>0) {
-      out.write(value, start, l);      
+    int l = pos - start;
+    if (l > 0) {
+      out.write(value, start, l);
     }
   }
 
   void printAndEncapsulate(char[] value, int offset, int len) throws IOException {
-    boolean first = newLine;  // is this the first value on this line?
+    boolean first = newLine; // is this the first value on this line?
     boolean quote = false;
     int start = offset;
     int pos = offset;
     int end = offset + len;
 
-    printSep();    
+    printSep();
 
     char delim = this.strategy.getDelimiter();
     char encapsulator = this.strategy.getEncapsulator();
@@ -207,13 +197,9 @@ public class CSVPrinter {
       char c = value[pos];
 
       // Hmmm, where did this rule come from?
-      if (first
-          && (c < '0'
-          || (c > '9' && c < 'A')
-          || (c > 'Z' && c < 'a')
-          || (c > 'z'))) {
+      if (first && (c < '0' || (c > '9' && c < 'A') || (c > 'Z' && c < 'a') || (c > 'z'))) {
         quote = true;
-      // } else if (c == ' ' || c == '\f' || c == '\t') {
+        // } else if (c == ' ' || c == '\f' || c == '\t') {
       } else if (c <= '#') {
         // Some other chars at the start of a value caused the parser to fail, so for now
         // encapsulate if we start in anything less than '#'.  We are being conservative
@@ -222,7 +208,7 @@ public class CSVPrinter {
       } else {
         while (pos < end) {
           c = value[pos];
-          if (c=='\n' || c=='\r' || c==encapsulator || c==delim) {
+          if (c == '\n' || c == '\r' || c == encapsulator || c == delim) {
             quote = true;
             break;
           }
@@ -230,7 +216,7 @@ public class CSVPrinter {
         }
 
         if (!quote) {
-          pos = end-1;
+          pos = end - 1;
           c = value[pos];
           // if (c == ' ' || c == '\f' || c == '\t') {
           // Some other chars at the end caused the parser to fail, so for now
@@ -253,13 +239,13 @@ public class CSVPrinter {
 
     // Pick up where we left off: pos should be positioned on the first character that caused
     // the need for encapsulation.
-    while (pos<end) {
+    while (pos < end) {
       char c = value[pos];
-      if (c==encapsulator) {
+      if (c == encapsulator) {
         // write out the chunk up until this point
 
         // add 1 to the length to write out the encapsulator also
-        out.write(value, start, pos-start+1);
+        out.write(value, start, pos - start + 1);
         // put the next starting position on the encapsulator so we will
         // write it out again with the next string (effectively doubling it)
         start = pos;
@@ -268,13 +254,13 @@ public class CSVPrinter {
     }
 
     // write the last segment
-    out.write(value, start, pos-start);
-    out.write(encapsulator);    
+    out.write(value, start, pos - start);
+    out.write(encapsulator);
   }
 
   /**
-   * Print the string as the next value on the line. The value
-   * will be escaped or encapsulated as needed if checkForEscape==true
+   * Print the string as the next value on the line. The value will be escaped or encapsulated as
+   * needed if checkForEscape==true
    *
    * @param value value to be outputted.
    */
@@ -295,12 +281,12 @@ public class CSVPrinter {
   }
 
   /**
-   * Print the string as the next value on the line. The value
-   * will be escaped or encapsulated as needed.
+   * Print the string as the next value on the line. The value will be escaped or encapsulated as
+   * needed.
    *
    * @param value value to be outputted.
    */
   public void print(String value) throws IOException {
-    print(value, true);   
+    print(value, true);
   }
 }

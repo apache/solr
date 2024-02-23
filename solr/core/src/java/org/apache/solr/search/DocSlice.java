@@ -18,7 +18,6 @@ package org.apache.solr.search;
 
 import java.util.Collection;
 import java.util.Collections;
-
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -26,17 +25,18 @@ import org.apache.lucene.util.RamUsageEstimator;
 /**
  * <code>DocSlice</code> implements DocList as an array of docids and optional scores.
  *
- *
  * @since solr 0.9
  */
 public class DocSlice implements DocList, Accountable {
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(DocSlice.class) + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(DocSlice.class)
+          + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
 
-  final int offset;    // starting position of the docs (zero based)
-  final int len;       // number of positions used in arrays
-  final int[] docs;    // a slice of documents (docs 0-100 of the query)
+  final int offset; // starting position of the docs (zero based)
+  final int len; // number of positions used in arrays
+  final int[] docs; // a slice of documents (docs 0-100 of the query)
 
-  final float[] scores;  // optional score list
+  final float[] scores; // optional score list
   final long matches;
   final TotalHits.Relation matchesRelation;
   final float maxScore;
@@ -45,41 +45,53 @@ public class DocSlice implements DocList, Accountable {
   /**
    * Primary constructor for a DocSlice instance.
    *
-   * @param offset  starting offset for this range of docs
-   * @param len     length of results
-   * @param docs    array of docids starting at position 0
-   * @param scores  array of scores that corresponds to docs, may be null
+   * @param offset starting offset for this range of docs
+   * @param len length of results
+   * @param docs array of docids starting at position 0
+   * @param scores array of scores that corresponds to docs, may be null
    * @param matches total number of matches for the query
    * @param matchesRelation Indicates if {@code matches} is exact or an approximation
    */
-  public DocSlice(int offset, int len, int[] docs, float[] scores, long matches, float maxScore, TotalHits.Relation matchesRelation) {
-    this.offset=offset;
-    this.len=len;
-    this.docs=docs;
-    this.scores=scores;
-    this.matches=matches;
-    this.maxScore=maxScore;
-    this.ramBytesUsed = BASE_RAM_BYTES_USED + (docs == null ? 0 : ((long)docs.length << 2)) + (scores == null ? 0 : ((long)scores.length<<2)+RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
+  public DocSlice(
+      int offset,
+      int len,
+      int[] docs,
+      float[] scores,
+      long matches,
+      float maxScore,
+      TotalHits.Relation matchesRelation) {
+    this.offset = offset;
+    this.len = len;
+    this.docs = docs;
+    this.scores = scores;
+    this.matches = matches;
+    this.maxScore = maxScore;
+    this.ramBytesUsed =
+        BASE_RAM_BYTES_USED
+            + (docs == null ? 0 : ((long) docs.length << 2))
+            + (scores == null
+                ? 0
+                : ((long) scores.length << 2) + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
     this.matchesRelation = matchesRelation;
   }
 
   @Override
   public DocList subset(int offset, int len) {
-    if (this.offset == offset && this.len==len) return this;
+    if (this.offset == offset && this.len == len) return this;
 
     // if we didn't store enough (and there was more to store)
     // then we can't take a subset.
     int requestedEnd = offset + len;
     if (requestedEnd > docs.length && this.matches > docs.length) return null;
     int realEndDoc = Math.min(requestedEnd, docs.length);
-    int realLen = Math.max(realEndDoc-offset,0);
+    int realLen = Math.max(realEndDoc - offset, 0);
     if (this.offset == offset && this.len == realLen) return this;
     return new DocSlice(offset, realLen, docs, scores, matches, maxScore, matchesRelation);
   }
 
   @Override
   public boolean hasScores() {
-    return scores!=null;
+    return scores != null;
   }
 
   @Override
@@ -87,22 +99,29 @@ public class DocSlice implements DocList, Accountable {
     return maxScore;
   }
 
+  @Override
+  public int offset() {
+    return offset;
+  }
 
   @Override
-  public int offset()  { return offset; }
-  @Override
-  public int size()    { return len; }
-  @Override
-  public long matches() { return matches; }
+  public int size() {
+    return len;
+  }
 
+  @Override
+  public long matches() {
+    return matches;
+  }
 
   // Hmmm, maybe I could have reused the scorer interface here...
   // except that it carries Similarity baggage...
   @Override
   public DocIterator iterator() {
     return new DocIterator() {
-      int pos=offset;
-      final int end=offset+len;
+      int pos = offset;
+      final int end = offset + len;
+
       @Override
       public boolean hasNext() {
         return pos < end;
@@ -113,12 +132,11 @@ public class DocSlice implements DocList, Accountable {
         return nextDoc();
       }
 
-      /**
-       * The remove  operation is not supported by this Iterator.
-       */
+      /** The remove operation is not supported by this Iterator. */
       @Override
       public void remove() {
-        throw new UnsupportedOperationException("The remove  operation is not supported by this Iterator.");
+        throw new UnsupportedOperationException(
+            "The remove  operation is not supported by this Iterator.");
       }
 
       @Override
@@ -128,12 +146,15 @@ public class DocSlice implements DocList, Accountable {
 
       @Override
       public float score() {
-        return scores[pos-1];
+        return scores[pos - 1];
       }
     };
   }
 
-  /** WARNING: this can over-estimate real memory use since backing arrays are shared with other DocSlice instances */
+  /**
+   * WARNING: this can over-estimate real memory use since backing arrays are shared with other
+   * DocSlice instances
+   */
   @Override
   public long ramBytesUsed() {
     return ramBytesUsed;

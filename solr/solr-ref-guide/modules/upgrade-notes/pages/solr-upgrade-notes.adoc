@@ -1,0 +1,76 @@
+= Solr Upgrade Notes
+:page-children: major-changes-in-solr-10, \
+    major-changes-in-solr-9, \
+    major-changes-in-solr-8, \
+    major-changes-in-solr-7, \
+    major-changes-in-solr-6
+:toclevels: 3
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This section provides changes to Solr in recent releases that you should be aware of before upgrading.
+These notes highlight the important changes that may impact the largest number of implementations.
+It is not a comprehensive list of all changes to Solr in any release.
+
+When planning your Solr upgrade, consider the customizations to
+your system and review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`]
+file found in your Solr package.
+That file includes all the changes and updates
+that may affect your existing implementation.
+
+Detailed steps for upgrading a Solr cluster are in the section xref:deployment-guide:upgrading-a-solr-cluster.adoc[].
+
+== How to use the Major Changes pages
+
+The Major Changes pages are grouped in two ways:
+
+* For Solr versions `9.y+`:
+  The `Major Changes in Solr _x_` (e.g. xref:major-changes-in-solr-9.adoc[]) pages include all changes included in any `x.y` release.
+  Therefore xref:major-changes-in-solr-9.adoc[] includes all changes in any Solr `9.x` release.
+* For Solr versions `6.y`-`8.y`:
+  The `Major Changes in Solr _x_` (e.g. xref:major-changes-in-solr-8.adoc[]) pages include all changes from Solr `_(x-1)_.0` to Solr `_x_.0`.
+  Therefore xref:major-changes-in-solr-8.adoc[] includes all changes from Solr `7.0` to Solr `8.0`, starting with Solr `7.1`.
+
+In these pages, the first section describes planning for an upgrade to that major version from the previous major version,
+including system requirements, rolling upgrade concerns and re-indexing recommendations.
+All other sections are version-specific and include relevant changes in each minor version.
+
+It is imperative to carefully review each section for the versions preceding and including the version you are upgrading to.
+(i.e. If you are upgrading from Solr 8.9 to 9.2, you will need to read the upgrade notes for 8.10, 8.11, 9.0, 9.1 and 9.2)
+
+
+== Upgrading to 9.x from 8.x Releases
+
+The upgrade from 8.x to Solr 9.x introduces several *major* changes that you should be aware of before upgrading.
+These changes are described in the xref:major-changes-in-solr-9.adoc[] page.
+It's strongly recommended that you thoroughly review that page before starting your upgrade.
+
+[NOTE]
+If you run in SolrCloud mode and use SolrJ's `CloudSolrClient`, you must first upgrade SolrJ to a version 8.10 or higher before upgrading the cluster to 9.0.
+
+[NOTE]
+Rolling upgrades from Solr 8 to Solr 9 require first upgrading the cluster to version 8.7 or newer.
+
+== Upgrading from Pre-8.x Versions
+
+Users upgrading from versions prior to 8.x are strongly encouraged to consult {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.
+
+The upgrade from 7.x to 8.0 introduced several *major* changes that you should be aware of before upgrading.
+Please do a thorough review of the section xref:major-changes-in-solr-8.adoc[] before starting your upgrade.
+
+A summary of the significant changes between Solr 6.x and Solr 7.0 is in the section xref:major-changes-in-solr-7.adoc[].
+

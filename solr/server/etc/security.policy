@@ -27,6 +27,10 @@ grant {
   // system jar resources
   permission java.io.FilePermission "${java.home}${/}-", "read";
 
+  // tmpdir
+  permission java.io.FilePermission "${java.io.tmpdir}", "read,write";
+  permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read,write,delete";
+
   // Test launchers (randomizedtesting, etc.)
   permission java.io.FilePermission "${junit4.childvm.cwd}", "read";
   permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp", "read,write,delete";
@@ -54,7 +58,7 @@ grant {
   permission java.net.SocketPermission "[::1]:4", "connect,resolve";
   permission java.net.SocketPermission "[::1]:6", "connect,resolve";
   permission java.net.SocketPermission "[::1]:8", "connect,resolve";
-  
+
   // Basic permissions needed for Lucene to work:
   permission java.util.PropertyPermission "*", "read,write";
 
@@ -113,9 +117,6 @@ grant {
   permission java.lang.management.ManagementPermission "control";
   permission java.lang.management.ManagementPermission "monitor";
 
-  // needed by hadoop htrace
-  permission java.net.NetPermission "getNetworkInformation";
-
   // needed by DIH - possibly even after DIH is a package
   permission java.sql.SQLPermission "deregisterDriver";
 
@@ -158,15 +159,15 @@ grant {
 
   // SASL/Kerberos related properties for Solr tests
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KerberosTicket * \"*\"", "read";
-  
+
   // may only be necessary with Java 7?
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KeyTab * \"*\"", "read";
   permission javax.security.auth.PrivateCredentialPermission "sun.security.jgss.krb5.Krb5Util$KeysFromKeyTab * \"*\"", "read";
-  
+
   permission javax.security.auth.kerberos.ServicePermission "*", "initiate";
   permission javax.security.auth.kerberos.ServicePermission "*", "accept";
   permission javax.security.auth.kerberos.DelegationPermission "\"*\" \"krbtgt/EXAMPLE.COM@EXAMPLE.COM\"";
-  
+
   // java 8 accessibility requires this perm - should not after 8 I believe (rrd4j is the root reason we hit an accessibility code path)
   permission java.awt.AWTPermission "*";
 
@@ -184,14 +185,21 @@ grant {
   permission java.io.FilePermission "${hadoop.security.credential.provider.path}", "read,write,delete,readlink";
   permission java.io.FilePermission "${hadoop.security.credential.provider.path}${/}-", "read,write,delete,readlink";
 
-  permission java.io.FilePermission "${solr.jetty.keystore}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${solr.jetty.keystore}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.jetty.keystore}", "read,readlink";
 
-  permission java.io.FilePermission "${solr.jetty.truststore}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${solr.jetty.truststore}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.jetty.truststore}", "read,readlink";
+
+  permission java.io.FilePermission "${javax.net.ssl.keyStore}", "read,readlink";
+
+  permission java.io.FilePermission "${javax.net.ssl.trustStore}", "read,readlink";
+
+  permission java.io.FilePermission "${solr.jetty.keystoreParentPath}", "read,readlink";
+  permission java.io.FilePermission "${javax.net.ssl.keyStoreParentPath}", "read,readlink";
 
   permission java.io.FilePermission "${solr.install.dir}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.install.dir}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.install.symDir}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.install.symDir}${/}-", "read,write,delete,readlink";
 
   permission java.io.FilePermission "${jetty.home}", "read,write,delete,readlink";
   permission java.io.FilePermission "${jetty.home}${/}-", "read,write,delete,readlink";
@@ -207,6 +215,9 @@ grant {
 
   permission java.io.FilePermission "${solr.log.dir}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.log.dir}${/}-", "read,write,delete,readlink";
+
+  permission java.io.FilePermission "${solr.allowPaths}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.allowPaths}${/}-", "read,write,delete,readlink";
 
   permission java.io.FilePermission "${log4j.configurationFile}", "read,write,delete,readlink";
 

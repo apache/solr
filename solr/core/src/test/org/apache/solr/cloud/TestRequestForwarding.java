@@ -17,13 +17,11 @@
 package org.apache.solr.cloud;
 
 import java.net.URL;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
 
 @SuppressSSL
@@ -36,7 +34,7 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
     super.setUp();
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig());
     solrCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");
   }
 
@@ -52,19 +50,19 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
   @Test
   public void testMultiCollectionQuery() throws Exception {
     createCollection("collection1", "conf1");
-    // Test against all nodes (two of them host the collection, one of them will 
+    // Test against all nodes (two of them host the collection, one of them will
     // forward the query)
     for (JettySolrRunner jettySolrRunner : solrCluster.getJettySolrRunners()) {
       String queryStrings[] = {
-          "q=cat%3Afootball%5E2", // URL encoded 
-          "q=cat:football^2" // No URL encoding, contains disallowed character ^
+        "q=cat%3Afootball%5E2", // URL encoded
+        "q=cat:football^2" // No URL encoding, contains disallowed character ^
       };
-      for (String q: queryStrings) {
+      for (String q : queryStrings) {
         try {
-          URL url = new URL(jettySolrRunner.getBaseUrl().toString()+"/collection1/select?"+q);
+          URL url = new URL(jettySolrRunner.getBaseUrl().toString() + "/collection1/select?" + q);
           url.openStream(); // Shouldn't throw any errors
         } catch (Exception ex) {
-          throw new RuntimeException("Query '" + q + "' failed, ",ex);
+          throw new RuntimeException("Query '" + q + "' failed, ", ex);
         }
       }
     }
@@ -72,13 +70,13 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
 
   private void createCollection(String name, String config) throws Exception {
     CollectionAdminResponse response;
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(name,config,2,1);
+    CollectionAdminRequest.Create create =
+        CollectionAdminRequest.createCollection(name, config, 2, 1);
     response = create.process(solrCluster.getSolrClient());
-    
+
     if (response.getStatus() != 0 || response.getErrorMessages() != null) {
-      fail("Could not create collection. Response" + response.toString());
+      fail("Could not create collection. Response" + response);
     }
-    ZkStateReader zkStateReader = solrCluster.getSolrClient().getZkStateReader();
     solrCluster.waitForActiveCollection(name, 2, 2);
   }
 }

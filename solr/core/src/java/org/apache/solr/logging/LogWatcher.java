@@ -16,6 +16,13 @@
  */
 package org.apache.solr.logging;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.SolrResourceLoader;
@@ -23,88 +30,87 @@ import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.logging.log4j2.Log4j2Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.impl.StaticLoggerBinder;
-
-import java.lang.invoke.MethodHandles;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A Class to monitor Logging events and hold N events in memory
- * 
- * This is abstract so we can support both JUL and Log4j2 (and other logging platforms)
+ *
+ * <p>This is abstract so we can support both JUL and Log4j2 (and other logging platforms)
  */
 public abstract class LogWatcher<E> {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
-  protected CircularList<E> history;
+
+  protected CircularList<SolrDocument> history;
   protected long last = -1;
-  
+
   /**
    * @return The implementation name
    */
   public abstract String getName();
-  
+
   /**
    * @return The valid level names for this framework
    */
   public abstract List<String> getAllLevels();
-  
-  /**
-   * Sets the log level within this framework
-   */
+
+  /** Sets the log level within this framework */
   public abstract void setLogLevel(String category, String level);
-  
+
   /**
    * @return all registered loggers
    */
   public abstract Collection<LoggerInfo> getAllLoggers();
-  
+
   public abstract void setThreshold(String level);
+
   public abstract String getThreshold();
 
   public void add(E event, long timstamp) {
-    history.add(event);
+    history.add(unmodifiable(toSolrDocument(event)));
     last = timstamp;
   }
-  
+
+  /**
+   * Since we store the derivative {@link SolrDocument} instances and potentially return the same
+   * instance to multiple callers, we should guard against modification.
+   */
+  private static SolrDocument unmodifiable(SolrDocument doc) {
+    return new SolrDocument(Collections.unmodifiableMap(doc.getFieldValueMap()));
+  }
+
   public long getLastEvent() {
     return last;
   }
-  
+
   public int getHistorySize() {
-    return (history==null) ? -1 : history.getBufferSize();
+    return (history == null) ? -1 : history.getBufferSize();
   }
-  
+
   public SolrDocumentList getHistory(long since, AtomicBoolean found) {
-    if(history==null) {
+    if (history == null) {
       return null;
     }
-    
+
     SolrDocumentList docs = new SolrDocumentList();
-    Iterator<E> iter = history.iterator();
-    while(iter.hasNext()) {
-      E e = iter.next();
-      long ts = getTimestamp(e);
-      if(ts == since) {
-        if(found!=null) {
+    Iterator<SolrDocument> iter = history.iterator();
+    while (iter.hasNext()) {
+      SolrDocument logEventEntry = iter.next();
+      long ts = ((Date) logEventEntry.getFirstValue("time")).getTime();
+      if (ts == since) {
+        if (found != null) {
           found.set(true);
         }
       }
-      if(ts>since) {
-        docs.add(toSolrDocument(e));
+      if (ts > since) {
+        docs.add(logEventEntry);
       }
     }
     docs.setNumFound(docs.size()); // make it not look too funny
     return docs;
   }
-  
-  public abstract long getTimestamp(E event);
+
   public abstract SolrDocument toSolrDocument(E event);
-  
+
   public abstract void registerListener(ListenerConfig cfg);
 
   public void reset() {
@@ -115,16 +121,16 @@ public abstract class LogWatcher<E> {
   /**
    * Create and register a LogWatcher.
    *
-   * JUL and Log4j watchers are supported out-of-the-box.  You can register your own
-   * LogWatcher implementation via the plugins architecture
+   * <p>JUL and Log4j watchers are supported out-of-the-box. You can register your own LogWatcher
+   * implementation via the plugins architecture
    *
    * @param config a LogWatcherConfig object, containing the configuration for this LogWatcher.
-   * @param loader a SolrResourceLoader, to be used to load plugin LogWatcher implementations.
-   *               Can be null if
-   *
+   * @param loader a SolrResourceLoader, to be used to load plugin LogWatcher implementations. Can
+   *     be null if
    * @return a LogWatcher configured for the container's logging framework
    */
-  public static LogWatcher<?> newRegisteredLogWatcher(LogWatcherConfig config, SolrResourceLoader loader) {
+  public static LogWatcher<?> newRegisteredLogWatcher(
+      LogWatcherConfig config, SolrResourceLoader loader) {
 
     if (!config.isEnabled()) {
       log.debug("A LogWatcher is not enabled");
@@ -151,7 +157,7 @@ public abstract class LogWatcher<E> {
     String slf4jImpl;
 
     try {
-      slf4jImpl = StaticLoggerBinder.getSingleton().getLoggerFactoryClassStr();
+      slf4jImpl = LoggerFactory.getILoggerFactory().getClass().getName();
       log.debug("SLF4J impl is {}", slf4jImpl);
       if (fname == null) {
         if ("org.apache.logging.slf4j.Log4jLoggerFactory".equals(slf4jImpl)) {
@@ -160,8 +166,7 @@ public abstract class LogWatcher<E> {
           fname = "JUL";
         }
       }
-    }
-    catch (Throwable e) {
+    } catch (Throwable e) {
       log.warn("Unable to read SLF4J version.  LogWatcher will be disabled: ", e);
       if (e instanceof OutOfMemoryError) {
         throw (OutOfMemoryError) e;
@@ -183,8 +188,7 @@ public abstract class LogWatcher<E> {
 
     try {
       return loader != null ? loader.newInstance(fname, LogWatcher.class) : null;
-    }
-    catch (Throwable e) {
+    } catch (Throwable e) {
       log.warn("Unable to load LogWatcher {}: {}", fname, e);
       if (e instanceof OutOfMemoryError) {
         throw (OutOfMemoryError) e;

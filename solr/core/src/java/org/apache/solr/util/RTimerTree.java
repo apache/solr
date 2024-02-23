@@ -17,14 +17,14 @@
 package org.apache.solr.util;
 
 import java.util.Map;
-
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
-/** A recursive timer.
+/**
+ * A recursive timer.
  *
- * RTimerTree's are started automatically when instantiated; sub-timers are also
- * started automatically when created.
+ * <p>RTimerTree's are started automatically when instantiated; sub-timers are also started
+ * automatically when created.
  */
 public class RTimerTree extends RTimer {
 
@@ -39,10 +39,9 @@ public class RTimerTree extends RTimer {
   public double stop() {
     double time = super.stop();
 
-    for( Map.Entry<String,RTimerTree> entry : children ) {
+    for (Map.Entry<String, RTimerTree> entry : children) {
       RTimer child = entry.getValue();
-      if(child.state == STARTED || child.state == PAUSED)
-        child.stop();
+      if (child.state == STARTED || child.state == PAUSED) child.stop();
     }
     return time;
   }
@@ -52,13 +51,12 @@ public class RTimerTree extends RTimer {
   }
 
   /**
-   * Returns a subtimer given its name.
-   * If the subtimer did not exist a new subtimer will be started and returned,
-   * otherwise an existing subtimer will be returned as-is.
+   * Returns a subtimer given its name. If the subtimer did not exist a new subtimer will be started
+   * and returned, otherwise an existing subtimer will be returned as-is.
    */
   public RTimerTree sub(String desc) {
-    RTimerTree child = children.get( desc );
-    if( child == null ) {
+    RTimerTree child = children.get(desc);
+    if (child == null) {
       child = newTimer();
       children.add(desc, child);
     }
@@ -72,20 +70,17 @@ public class RTimerTree extends RTimer {
 
   public NamedList<Object> asNamedList() {
     NamedList<Object> m = new SimpleOrderedMap<>();
-    m.add( "time", getTime() );
-    if( children.size() > 0 ) {
-      for( Map.Entry<String, RTimerTree> entry : children ) {
-        m.add( entry.getKey(), entry.getValue().asNamedList() );
+    m.add("time", getTime());
+    if (children.size() > 0) {
+      for (Map.Entry<String, RTimerTree> entry : children) {
+        m.add(entry.getKey(), entry.getValue().asNamedList());
       }
     }
     return m;
   }
 
-  /**
-   * Manipulating this map may have undefined results.
-   */
-  public SimpleOrderedMap<RTimerTree> getChildren()
-  {
+  /** Manipulating this map may have undefined results. */
+  public SimpleOrderedMap<RTimerTree> getChildren() {
     return children;
   }
 }

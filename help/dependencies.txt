@@ -13,8 +13,8 @@ https://docs.gradle.org/current/userguide/dependency_management_for_java_project
 https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:java_library_separation
 https://docs.gradle.org/current/userguide/java_plugin.html#sec:java_plugin_and_dependency_management
 
-For the needs of Solr we will typically focus on three
-configurations and attach project dependencies to them:
+Solr typically uses three configurations and attach project
+dependencies to them:
 
 api  - makes a dependency available for main classes, tests and any
   other modules importing the project (exportable dependency),
@@ -102,10 +102,44 @@ If you want to upgrade Lucene to a newer build proceed like the following:
   prefixed by '#')
 - Edit ./versions.props and change Lucene's version to '9.0.0-prereleaseX',
   with 'X' is the jenkins build number
-- Edit ./gradle/defaults.gradle and change jenkins build number, too
+- Edit ./gradle/globals.gradle and change jenkins build number, too
   (this directs the repository to the one created by latest build):
     def lucenePrereleaseBuild = 'X'
 - Run: gradlew --write-locks (as described before)
+
+
+Lucene local dependency substitution
+-------------------------------
+
+Because of the fundamental nature of Solr's dependency on Lucene, Solr
+facilitates dependency substitution to support developing against a local
+Lucene version (e.g., for joint Solr and Lucene development).
+
+A local Lucene dependency substitution is resolved by evaluating the
+following conditions, in priority order:
+
+  1) A "-Plucene.dev.version=[version]" property, resolving Lucene artifacts
+     from a local Maven repository.
+  2) A non-empty property "-Plucene.dev.path=[path]" pointing to a local
+     path. Relative paths are resolved against the Solr root project
+     directory.
+  3) An auto-wired 'lucene' subdirectory, if present. To skip auto-wiring,
+     pass a blank value for condition 2: "-Plucene.dev.path=".
+
+Note: Lucene dependencies substituted via conditions 2 and 3 require the
+local Lucene repository to use the same Gradle version as the Solr root
+project.
+
+Local Maven repository Lucene artifacts (for use with the
+"-Plucene.dev.version" project property) may be created by running the
+following command from within a local Lucene project:
+
+  gradlew mavenToLocal
+
+As is the case with project properties generally, the relevant properties
+can be invoked on the command line, or configured via the gradle.properties
+file (the latter approach is particularly useful for making IDEs aware of
+associated dependency substitutions).
 
 
 Inspecting current dependencies
@@ -148,7 +182,7 @@ Note the brackets - they are important and prevent accidental
 mistakes of applying the exclusion to the wrong scope.
 
 
-Updating dependency checksum and licenses
+Updating dependency checksums and licenses
 -----------------------------------------
 
 The last step is to make sure the licenses, notice files and checksums
@@ -157,6 +191,6 @@ missing and where:
 
 gradlew licenses
 
-To update JAR checksums for licenses use:
+To update JAR checksums (sha1) for licenses use:
 
 gradlew updateLicenses

@@ -16,17 +16,23 @@
  */
 package org.apache.solr.handler;
 
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.params.CommonParams.ID;
+import static org.apache.solr.common.params.CommonParams.JSON;
+import static org.apache.solr.common.params.CommonParams.SORT;
+import static org.apache.solr.common.params.CommonParams.VERSION;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.commons.codec.binary.Hex;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
@@ -36,8 +42,8 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldDocs;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -46,8 +52,11 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.admin.api.GetBlobInfoAPI;
+import org.apache.solr.handler.admin.api.UploadBlobAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -61,25 +70,20 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.util.SimplePostTool;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.params.CommonParams.ID;
-import static org.apache.solr.common.params.CommonParams.JSON;
-import static org.apache.solr.common.params.CommonParams.SORT;
-import static org.apache.solr.common.params.CommonParams.VERSION;
-
-public class BlobHandler extends RequestHandlerBase implements PluginInfoInitialized , PermissionNameProvider {
+public class BlobHandler extends RequestHandlerBase
+    implements PluginInfoInitialized, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long DEFAULT_MAX_SIZE = 5 * 1024 * 1024; // 5MB
   private long maxSize = DEFAULT_MAX_SIZE;
 
   @Override
-  public void handleRequestBody(final SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+  public void handleRequestBody(final SolrQueryRequest req, SolrQueryResponse rsp)
+      throws Exception {
     String httpMethod = req.getHttpMethod();
     String path = (String) req.getContext().get("path");
     RequestHandlerUtils.setWt(req, JSON);
@@ -105,11 +109,10 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         return;
       }
 
-
       for (ContentStream stream : req.getContentStreams()) {
         ByteBuffer payload;
         try (InputStream is = stream.getStream()) {
-          payload = SimplePostTool.inputStreamToByteArray(is, maxSize);
+          payload = Utils.toByteArray(is, maxSize);
         }
         MessageDigest m = MessageDigest.getInstance("MD5");
         m.update(payload.array(), payload.arrayOffset() + payload.position(), payload.limit());
@@ -118,17 +121,22 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         int duplicateCount = req.getSearcher().count(new TermQuery(new Term("md5", md5)));
         if (duplicateCount > 0) {
           rsp.add("error", "duplicate entry");
-          forward(req, null,
-              new MapSolrParams(Map.of(
-                  "q", "md5:" + md5,
-                  "fl", "id,size,version,timestamp,blobName")),
+          forward(
+              req,
+              null,
+              new MapSolrParams(
+                  Map.of("q", "md5:" + md5, "fl", "id,size,version,timestamp,blobName")),
               rsp);
           log.warn("duplicate entry for blob : {}", blobName);
           return;
         }
 
-        TopFieldDocs docs = req.getSearcher().search(new TermQuery(new Term("blobName", blobName)),
-            1, new Sort(new SortField("version", SortField.Type.LONG, true)));
+        TopFieldDocs docs =
+            req.getSearcher()
+                .search(
+                    new TermQuery(new Term("blobName", blobName)),
+                    1,
+                    new Sort(new SortField("version", SortField.Type.LONG, true)));
 
         long version = 0;
         if (docs.totalHits.value > 0) {
@@ -138,22 +146,37 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         }
         version++;
         String id = blobName + "/" + version;
-        Map<String, Object> doc = Map.of(
-            ID, id,
-            CommonParams.TYPE, "blob",
-            "md5", md5,
-            "blobName", blobName,
-            VERSION, version,
-            "timestamp", new Date(),
-            "size", payload.limit(),
-            "blob", payload);
+        Map<String, Object> doc =
+            Map.of(
+                ID,
+                id,
+                CommonParams.TYPE,
+                "blob",
+                "md5",
+                md5,
+                "blobName",
+                blobName,
+                VERSION,
+                version,
+                "timestamp",
+                new Date(),
+                "size",
+                payload.limit(),
+                "blob",
+                payload);
         verifyWithRealtimeGet(blobName, version, req, doc);
         if (log.isInfoEnabled()) {
-          log.info(StrUtils.formatString("inserting new blob {0} ,size {1}, md5 {2}", doc.get(ID), String.valueOf(payload.limit()), md5));
+          log.info(
+              StrUtils.formatString(
+                  "inserting new blob {0} ,size {1}, md5 {2}",
+                  doc.get(ID), String.valueOf(payload.limit()), md5));
         }
         indexMap(req, rsp, doc);
         if (log.isInfoEnabled()) {
-          log.info(" Successfully Added and committed a blob with id {} and size {} ", id, payload.limit());
+          log.info(
+              " Successfully Added and committed a blob with id {} and size {} ",
+              id,
+              payload.limit());
         }
 
         break;
@@ -168,39 +191,50 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
           rsp.add("error", "Invalid version" + pieces.get(3));
           return;
         }
-
       }
       if (ReplicationHandler.FILE_STREAM.equals(req.getParams().get(CommonParams.WT))) {
         if (blobName == null) {
-          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Please send the request in the format /blob/<blobName>/<version>");
+          throw new SolrException(
+              SolrException.ErrorCode.NOT_FOUND,
+              "Please send the request in the format /blob/<blobName>/<version>");
         } else {
           String q = "blobName:{0}";
           if (version != -1) q = "id:{0}/{1}";
           QParser qparser = QParser.getParser(StrUtils.formatString(q, blobName, version), req);
-          final TopDocs docs = req.getSearcher().search(qparser.parse(), 1, new Sort(new SortField("version", SortField.Type.LONG, true)));
+          final TopDocs docs =
+              req.getSearcher()
+                  .search(
+                      qparser.parse(),
+                      1,
+                      new Sort(new SortField("version", SortField.Type.LONG, true)));
           if (docs.totalHits.value > 0) {
-            rsp.add(ReplicationHandler.FILE_STREAM, new SolrCore.RawWriter() {
+            rsp.add(
+                ReplicationHandler.FILE_STREAM,
+                new SolrCore.RawWriter() {
 
-              @Override
-              public void write(OutputStream os) throws IOException {
-                Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
-                IndexableField sf = doc.getField("blob");
-                FieldType fieldType = req.getSchema().getField("blob").getType();
-                ByteBuffer buf = (ByteBuffer) fieldType.toObject(sf);
-                if (buf == null) {
-                  //should never happen unless a user wrote this document directly
-                  throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Invalid document . No field called blob");
-                } else {
-                  os.write(buf.array(), buf.arrayOffset(), buf.limit());
-                }
-              }
-            });
+                  @Override
+                  public void write(OutputStream os) throws IOException {
+                    Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
+                    IndexableField sf = doc.getField("blob");
+                    FieldType fieldType = req.getSchema().getField("blob").getType();
+                    ByteBuffer buf = (ByteBuffer) fieldType.toObject(sf);
+                    if (buf == null) {
+                      // should never happen unless a user wrote this document directly
+                      throw new SolrException(
+                          SolrException.ErrorCode.NOT_FOUND,
+                          "Invalid document . No field called blob");
+                    } else {
+                      os.write(buf.array(), buf.arrayOffset(), buf.limit());
+                    }
+                  }
+                });
 
           } else {
-            throw new SolrException(SolrException.ErrorCode.NOT_FOUND,
-                StrUtils.formatString("Invalid combination of blobName {0} and version {1}", blobName, version));
+            throw new SolrException(
+                SolrException.ErrorCode.NOT_FOUND,
+                StrUtils.formatString(
+                    "Invalid combination of blobName {0} and version {1}", blobName, version));
           }
-
         }
       } else {
         String q = "*:*";
@@ -211,23 +245,30 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
           }
         }
 
-        forward(req, null,
-            new MapSolrParams(Map.of(
-                "q", StrUtils.formatString(q, blobName, version),
-                "fl", "id,size,version,timestamp,blobName,md5",
-                SORT, "version desc"))
-            , rsp);
+        forward(
+            req,
+            null,
+            new MapSolrParams(
+                Map.of(
+                    "q",
+                    StrUtils.formatString(q, blobName, version),
+                    "fl",
+                    "id,size,version,timestamp,blobName,md5",
+                    SORT,
+                    "version desc")),
+            rsp);
       }
     }
   }
 
-  private void verifyWithRealtimeGet(String blobName, long version, SolrQueryRequest req, Map<String, Object> doc) {
+  private void verifyWithRealtimeGet(
+      String blobName, long version, SolrQueryRequest req, Map<String, Object> doc) {
     for (; ; ) {
       SolrQueryResponse response = new SolrQueryResponse();
       String id = blobName + "/" + version;
       forward(req, "/get", new MapSolrParams(singletonMap(ID, id)), response);
       if (response.getValues().get("doc") == null) {
-        //ensure that the version does not exist
+        // ensure that the version does not exist
         return;
       } else {
         log.info("id {} already exists trying next ", id);
@@ -237,13 +278,14 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         doc.put(ID, id);
       }
     }
-
   }
 
-  public static void indexMap(SolrQueryRequest req, SolrQueryResponse rsp, Map<String, Object> doc) throws IOException {
+  public static void indexMap(SolrQueryRequest req, SolrQueryResponse rsp, Map<String, Object> doc)
+      throws IOException {
     SolrInputDocument solrDoc = new SolrInputDocument();
     for (Map.Entry<String, Object> e : doc.entrySet()) solrDoc.addField(e.getKey(), e.getValue());
-    UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessorChain(req.getParams());
+    UpdateRequestProcessorChain processorChain =
+        req.getCore().getUpdateProcessorChain(req.getParams());
     try (UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp)) {
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       cmd.solrDoc = solrDoc;
@@ -261,14 +303,12 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
     return this;
   }
 
-
-//////////////////////// SolrInfoMBeans methods //////////////////////
+  //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
   public String getDescription() {
     return "Load Jars into a system index";
   }
-
 
   @Override
   public void init(PluginInfo info) {
@@ -282,15 +322,15 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
           maxSize = maxSize * 1024 * 1024;
         }
       }
-
     }
   }
 
   // This does not work for the general case of forwarding requests.  It probably currently
   // works OK for real-time get (which is all that BlobHandler uses it for).
-  private static void forward(SolrQueryRequest req, String handler ,SolrParams params, SolrQueryResponse rsp){
+  private static void forward(
+      SolrQueryRequest req, String handler, SolrParams params, SolrQueryResponse rsp) {
     LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), params);
-    SolrRequestInfo.getRequestInfo().addCloseHook( r );  // Close as late as possible...
+    SolrRequestInfo.getRequestInfo().addCloseHook(r); // Close as late as possible...
     req.getCore().getRequestHandler(handler).handleRequest(r, rsp);
   }
 
@@ -301,7 +341,11 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
 
   @Override
   public Collection<Api> getApis() {
-    return ApiBag.wrapRequestHandlers(this, "core.system.blob", "core.system.blob.upload");
+    final List<Api> apis = new ArrayList<>();
+    apis.addAll(AnnotatedApi.getApis(new GetBlobInfoAPI(this)));
+    apis.addAll(AnnotatedApi.getApis(new UploadBlobAPI(this)));
+
+    return apis;
   }
 
   @Override
@@ -314,6 +358,5 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
       default:
         return null;
     }
-
   }
 }

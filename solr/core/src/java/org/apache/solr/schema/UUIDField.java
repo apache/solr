@@ -20,34 +20,28 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.update.processor.UUIDUpdateProcessorFactory; // jdoc
+import org.apache.solr.update.processor.UUIDUpdateProcessorFactory;
+
 /**
- * <p>
- * This FieldType accepts UUID string values, as well as the special value 
- * of "NEW" which triggers generation of a new random UUID.
- * </p>
- * <p>
- * <b>NOTE:</b> Configuring a <code>UUIDField</code> 
- * instance with a default value of "<code>NEW</code>" is not advisable for 
- * most users when using SolrCloud (and not possible if the UUID value is 
- * configured as the unique key field) since the result will be that each 
- * replica of each document will get a unique UUID value.  
- * Using {@link UUIDUpdateProcessorFactory} to generate UUID values when 
- * documents are added is recommended instead.
- * </p>
- * 
+ * This FieldType accepts UUID string values, as well as the special value of "NEW" which triggers
+ * generation of a new random UUID.
+ *
+ * <p><b>NOTE:</b> Configuring a <code>UUIDField</code> instance with a default value of "<code>NEW
+ * </code>" is not advisable for most users when using SolrCloud (and not possible if the UUID value
+ * is configured as the unique key field) since the result will be that each replica of each
+ * document will get a unique UUID value. Using {@link UUIDUpdateProcessorFactory} to generate UUID
+ * values when documents are added is recommended instead.
+ *
  * @see UUID#toString
  * @see UUID#randomUUID
- *
  */
 public class UUIDField extends StrField {
   private static final String NEW = "NEW";
-  private static final char DASH='-';
+  private static final char DASH = '-';
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -63,30 +57,32 @@ public class UUIDField extends StrField {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, IndexableField f)
-      throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, toExternal(f), false);
   }
 
   /**
    * Generates a UUID if val is either null, empty or "NEW".
-   * 
-   * Otherwise it behaves much like a StrField but checks that the value given
-   * is indeed a valid UUID.
-   * 
+   *
+   * <p>Otherwise it behaves much like a StrField but checks that the value given is indeed a valid
+   * UUID.
+   *
    * @param val The value of the field
    * @see org.apache.solr.schema.FieldType#toInternal(java.lang.String)
    */
   @Override
   public String toInternal(String val) {
-    if (val == null || 0==val.length() || NEW.equals(val)) {
+    if (val == null || 0 == val.length() || NEW.equals(val)) {
       return UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
     } else {
       // we do some basic validation if 'val' looks like an UUID
-      if (val.length() != 36 || val.charAt(8) != DASH || val.charAt(13) != DASH
-          || val.charAt(18) != DASH || val.charAt(23) != DASH) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "Invalid UUID String: '" + val + "'");
+      if (val.length() != 36
+          || val.charAt(8) != DASH
+          || val.charAt(13) != DASH
+          || val.charAt(18) != DASH
+          || val.charAt(23) != DASH) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Invalid UUID String: '" + val + "'");
       }
 
       return val.toLowerCase(Locale.ROOT);
@@ -95,18 +91,5 @@ public class UUIDField extends StrField {
 
   public String toInternal(UUID uuid) {
     return uuid.toString().toLowerCase(Locale.ROOT);
-  }
-
-  @Override
-  public UUID toObject(IndexableField f) {
-    return UUID.fromString(toExternal(f));
-  }
-
-  @Override
-  public Object toNativeType(Object val) {
-    if (val instanceof CharSequence) {
-      return UUID.fromString(val.toString());
-    }
-    return val;
   }
 }

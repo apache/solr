@@ -19,17 +19,16 @@ package org.apache.solr.util;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-
 import org.apache.lucene.store.IndexInput;
 
 public class PropertiesInputStream extends InputStream {
-  
+
   private IndexInput is;
-  
+
   public PropertiesInputStream(IndexInput is) {
     this.is = is;
   }
-  
+
   @Override
   public int read() throws IOException {
     byte next;
@@ -40,11 +39,10 @@ public class PropertiesInputStream extends InputStream {
     }
     return next;
   }
-  
+
   @Override
   public void close() throws IOException {
     super.close();
     is.close();
   }
-  
 }

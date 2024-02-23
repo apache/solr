@@ -18,9 +18,14 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Vector;
-
-import org.apache.solr.core.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrEventListener;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -29,9 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <code>UpdateHandler</code> handles requests to change the index
- * (adds, deletes, commits, optimizes, etc).
- *
+ * <code>UpdateHandler</code> handles requests to change the index (adds, deletes, commits,
+ * optimizes, etc).
  *
  * @since solr 0.9
  */
@@ -43,9 +47,12 @@ public abstract class UpdateHandler implements SolrInfoBean {
   protected final SchemaField idField;
   protected final FieldType idFieldType;
 
-  protected Vector<SolrEventListener> commitCallbacks = new Vector<>();
-  protected Vector<SolrEventListener> softCommitCallbacks = new Vector<>();
-  protected Vector<SolrEventListener> optimizeCallbacks = new Vector<>();
+  protected List<SolrEventListener> commitCallbacks =
+      Collections.synchronizedList(new ArrayList<>());
+  protected List<SolrEventListener> softCommitCallbacks =
+      Collections.synchronizedList(new ArrayList<>());
+  protected List<SolrEventListener> optimizeCallbacks =
+      Collections.synchronizedList(new ArrayList<>());
 
   protected final UpdateLog ulog;
 
@@ -66,16 +73,14 @@ public abstract class UpdateHandler implements SolrInfoBean {
     }
   }
 
-  /**
-   * Call the {@link SolrCoreAware#inform(SolrCore)} on all the applicable registered listeners.
-   */
+  /** Call the {@link SolrCoreAware#inform(SolrCore)} on all the applicable registered listeners. */
   public void informEventListeners(SolrCore core) {
-    for (SolrEventListener listener: commitCallbacks) {
+    for (SolrEventListener listener : commitCallbacks) {
       if (listener instanceof SolrCoreAware) {
         ((SolrCoreAware) listener).inform(core);
       }
     }
-    for (SolrEventListener listener: optimizeCallbacks) {
+    for (SolrEventListener listener : optimizeCallbacks) {
       if (listener instanceof SolrCoreAware) {
         ((SolrCoreAware) listener).inform(core);
       }
@@ -100,27 +105,37 @@ public abstract class UpdateHandler implements SolrInfoBean {
     }
   }
 
-  public UpdateHandler(SolrCore core)  {
+  public UpdateHandler(SolrCore core) {
     this(core, null);
   }
 
-  public UpdateHandler(SolrCore core, UpdateLog updateLog)  {
-    this.core=core;
+  public UpdateHandler(SolrCore core, UpdateLog updateLog) {
+    this.core = core;
     idField = core.getLatestSchema().getUniqueKeyField();
-    idFieldType = idField!=null ? idField.getType() : null;
+    idFieldType = idField != null ? idField.getType() : null;
     parseEventListeners();
     PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
 
-    // If this is a replica of type PULL, don't create the update log
-    boolean skipUpdateLog = core.getCoreDescriptor().getCloudDescriptor() != null && !core.getCoreDescriptor().getCloudDescriptor().requiresTransactionLog();
-    if (updateLog == null && ulogPluginInfo != null && ulogPluginInfo.isEnabled() && !skipUpdateLog) {
+    // If this replica doesn't require a transaction log, don't create it
+    boolean skipUpdateLog =
+        core.getCoreDescriptor().getCloudDescriptor() != null
+            && !core.getCoreDescriptor()
+                .getCloudDescriptor()
+                .getReplicaType()
+                .requireTransactionLog;
+    if (updateLog == null
+        && ulogPluginInfo != null
+        && ulogPluginInfo.isEnabled()
+        && !skipUpdateLog) {
       DirectoryFactory dirFactory = core.getDirectoryFactory();
-      if (dirFactory instanceof HdfsDirectoryFactory) {
-        ulog = new HdfsUpdateLog(((HdfsDirectoryFactory)dirFactory).getConfDir());
-      } else {
-        ulog = ulogPluginInfo.className == null ? new UpdateLog():
-                core.getResourceLoader().newInstance(ulogPluginInfo, UpdateLog.class, true);
-      }
+
+      // if the update log class is not defined in the plugin info / solrconfig.xml
+      // (like <updateLog class="${solr.ulog:solr.UpdateLog}"> )
+      // we fall back use the one which is the default for the given directory factory
+      ulog =
+          ulogPluginInfo.className == null
+              ? dirFactory.newDefaultUpdateLog()
+              : core.getResourceLoader().newInstance(ulogPluginInfo, UpdateLog.class, true);
 
       if (!core.isReloaded() && !dirFactory.isPersistent()) {
         ulog.clearLog(core, ulogPluginInfo);
@@ -137,11 +152,10 @@ public abstract class UpdateHandler implements SolrInfoBean {
   }
 
   /**
-   * Called when the Writer should be opened again - eg when replication replaces
-   * all of the index files.
+   * Called when the Writer should be opened again - eg when replication replaces all of the index
+   * files.
    *
    * @param rollback IndexWriter if true else close
-   *
    * @throws IOException If there is a low-level I/O error.
    */
   public abstract void newIndexWriter(boolean rollback) throws IOException;
@@ -149,47 +163,50 @@ public abstract class UpdateHandler implements SolrInfoBean {
   public abstract SolrCoreState getSolrCoreState();
 
   public abstract int addDoc(AddUpdateCommand cmd) throws IOException;
+
   public abstract void delete(DeleteUpdateCommand cmd) throws IOException;
+
   public abstract void deleteByQuery(DeleteUpdateCommand cmd) throws IOException;
+
   public abstract int mergeIndexes(MergeIndexesCommand cmd) throws IOException;
+
   public abstract void commit(CommitUpdateCommand cmd) throws IOException;
+
   public abstract void rollback(RollbackUpdateCommand cmd) throws IOException;
+
   public abstract UpdateLog getUpdateLog();
 
   /**
-   * NOTE: this function is not thread safe.  However, it is safe to call within the
-   * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
-   * Outside <code>inform</code>, this could potentially throw a ConcurrentModificationException
+   * NOTE: this function is not thread safe. However, it is safe to call within the <code>
+   * inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes. Outside <code>
+   * inform</code>, this could potentially throw a ConcurrentModificationException
    *
    * @see SolrCoreAware
    */
-  public void registerCommitCallback( SolrEventListener listener )
-  {
-    commitCallbacks.add( listener );
+  public void registerCommitCallback(SolrEventListener listener) {
+    commitCallbacks.add(listener);
   }
 
   /**
-   * NOTE: this function is not thread safe.  However, it is safe to call within the
-   * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
-   * Outside <code>inform</code>, this could potentially throw a ConcurrentModificationException
+   * NOTE: this function is not thread safe. However, it is safe to call within the <code>
+   * inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes. Outside <code>
+   * inform</code>, this could potentially throw a ConcurrentModificationException
    *
    * @see SolrCoreAware
    */
-  public void registerSoftCommitCallback( SolrEventListener listener )
-  {
-    softCommitCallbacks.add( listener );
+  public void registerSoftCommitCallback(SolrEventListener listener) {
+    softCommitCallbacks.add(listener);
   }
 
   /**
-   * NOTE: this function is not thread safe.  However, it is safe to call within the
-   * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
-   * Outside <code>inform</code>, this could potentially throw a ConcurrentModificationException
+   * NOTE: this function is not thread safe. However, it is safe to call within the <code>
+   * inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes. Outside <code>
+   * inform</code>, this could potentially throw a ConcurrentModificationException
    *
    * @see SolrCoreAware
    */
-  public void registerOptimizeCallback( SolrEventListener listener )
-  {
-    optimizeCallbacks.add( listener );
+  public void registerOptimizeCallback(SolrEventListener listener) {
+    optimizeCallbacks.add(listener);
   }
 
   public abstract void split(SplitIndexCommand cmd) throws IOException;

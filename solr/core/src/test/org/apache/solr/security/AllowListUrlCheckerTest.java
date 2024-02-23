@@ -17,9 +17,9 @@
 
 package org.apache.solr.security;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
-import org.junit.Test;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 
 import java.net.MalformedURLException;
 import java.util.Arrays;
@@ -27,10 +27,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.hamcrest.MatcherAssert;
+import org.junit.Test;
 
 /** Tests {@link AllowListUrlChecker}. */
 public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
@@ -41,28 +41,28 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
     SolrException e =
         expectThrows(
             SolrException.class, () -> checker.checkAllowList(urls("abc-1.com:8983/solr")));
-    assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
+    MatcherAssert.assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
 
     AllowListUrlChecker.ALLOW_ALL.checkAllowList(urls("abc-1.com:8983/solr"));
   }
 
   @Test
   public void testNoInput() throws Exception {
-    assertThat(
+    MatcherAssert.assertThat(
         new AllowListUrlChecker(Collections.emptyList()).getHostAllowList().isEmpty(), is(true));
   }
 
   @Test
   public void testSingleHost() throws Exception {
     AllowListUrlChecker checker = new AllowListUrlChecker(urls("http://abc-1.com:8983/solr"));
-    checker.checkAllowList(urls("http://abc-1.com:8983/solr"));
+    checker.checkAllowList(urls("http://Abc-1.Com:8983/solr"));
   }
 
   @Test
   public void testMultipleHosts() throws Exception {
     AllowListUrlChecker checker =
         new AllowListUrlChecker(
-            urls("http://abc-1.com:8983", "http://abc-2.com:8983", "http://abc-3.com:8983"));
+            urls("http://abc-1.com:8983", "http://abc-2.com:8983", "http://ABC-3.com:8983"));
     checker.checkAllowList(
         urls(
             "http://abc-3.com:8983/solr",
@@ -86,8 +86,8 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
     SolrException e =
         expectThrows(
             SolrException.class, () -> checker.checkAllowList(urls("http://abc-4.com:8983/solr")));
-    assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-    assertThat(e.getMessage(), containsString("http://abc-4.com:8983/solr"));
+    MatcherAssert.assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
+    MatcherAssert.assertThat(e.getMessage(), containsString("http://abc-4.com:8983/solr"));
   }
 
   @Test
@@ -99,8 +99,8 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
         expectThrows(
             SolrException.class,
             () -> checker.checkAllowList(urls("abc-1.com:8983/solr", "abc-4.com:8983/solr")));
-    assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-    assertThat(e.getMessage(), containsString("abc-4.com:8983/solr"));
+    MatcherAssert.assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
+    MatcherAssert.assertThat(e.getMessage(), containsString("abc-4.com:8983/solr"));
   }
 
   @Test
@@ -118,7 +118,7 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
         expectThrows(
             MalformedURLException.class,
             () -> new AllowListUrlChecker(urls("http/abc-1.com:8983")));
-    assertThat(e.getMessage(), containsString("http/abc-1.com:8983"));
+    MatcherAssert.assertThat(e.getMessage(), containsString("http/abc-1.com:8983"));
   }
 
   @Test
@@ -130,12 +130,12 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
         expectThrows(
             MalformedURLException.class,
             () -> checker.checkAllowList(urls("http://abc-1.com:8983", "abc-2")));
-    assertThat(e.getMessage(), containsString("abc-2"));
+    MatcherAssert.assertThat(e.getMessage(), containsString("abc-2"));
   }
 
   @Test
   public void testCoreSpecific() throws Exception {
-    // Cores are removed completely so it doesn't really matter if they were set in config.
+    // Cores are removed completely, so it doesn't really matter if they were set in config.
     AllowListUrlChecker checker =
         new AllowListUrlChecker(
             urls("http://abc-1.com:8983/solr/core1", "http://abc-2.com:8983/solr2/core2"));
@@ -144,19 +144,20 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testHostParsingUnsetEmpty() throws Exception {
-    assertThat(AllowListUrlChecker.parseHostPorts(Collections.emptyList()).isEmpty(), is(true));
+    MatcherAssert.assertThat(
+        AllowListUrlChecker.parseHostPorts(Collections.emptyList()).isEmpty(), is(true));
   }
 
   @Test
   public void testHostParsingSingle() throws Exception {
-    assertThat(
+    MatcherAssert.assertThat(
         AllowListUrlChecker.parseHostPorts(urls("http://abc-1.com:8983/solr/core1")),
         equalTo(hosts("abc-1.com:8983")));
   }
 
   @Test
   public void testHostParsingMulti() throws Exception {
-    assertThat(
+    MatcherAssert.assertThat(
         AllowListUrlChecker.parseHostPorts(
             urls("http://abc-1.com:8983/solr/core1", "http://abc-1.com:8984/solr")),
         equalTo(hosts("abc-1.com:8983", "abc-1.com:8984")));
@@ -164,7 +165,7 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testHostParsingIpv4() throws Exception {
-    assertThat(
+    MatcherAssert.assertThat(
         AllowListUrlChecker.parseHostPorts(
             urls("http://10.0.0.1:8983/solr/core1", "http://127.0.0.1:8984/solr")),
         equalTo(hosts("10.0.0.1:8983", "127.0.0.1:8984")));
@@ -172,7 +173,7 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testHostParsingIpv6() throws Exception {
-    assertThat(
+    MatcherAssert.assertThat(
         AllowListUrlChecker.parseHostPorts(
             urls(
                 "http://[2001:abc:abc:0:0:123:456:1234]:8983/solr/core1",
@@ -182,17 +183,17 @@ public class AllowListUrlCheckerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testHostParsingHttps() throws Exception {
-    assertThat(
+    MatcherAssert.assertThat(
         AllowListUrlChecker.parseHostPorts(urls("https://abc-1.com:8983/solr/core1")),
         equalTo(hosts("abc-1.com:8983")));
   }
 
   @Test
   public void testHostParsingNoProtocol() throws Exception {
-    assertThat(
+    MatcherAssert.assertThat(
         AllowListUrlChecker.parseHostPorts(urls("abc-1.com:8983/solr")),
         equalTo(AllowListUrlChecker.parseHostPorts(urls("http://abc-1.com:8983/solr"))));
-    assertThat(
+    MatcherAssert.assertThat(
         AllowListUrlChecker.parseHostPorts(urls("abc-1.com:8983/solr")),
         equalTo(AllowListUrlChecker.parseHostPorts(urls("https://abc-1.com:8983/solr"))));
   }

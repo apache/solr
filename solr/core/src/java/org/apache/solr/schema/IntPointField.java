@@ -18,7 +18,7 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
-
+import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
@@ -35,6 +35,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /**
  * {@code PointField} implementation for {@code Integer} values.
+ *
  * @see PointField
  * @see IntPoint
  */
@@ -49,7 +50,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
     if (val == null) return null;
     if (val instanceof Number) return ((Number) val).intValue();
     try {
-      if (val instanceof CharSequence) return Integer.parseInt( val.toString());
+      if (val instanceof CharSequence) return Integer.parseInt(val.toString());
     } catch (NumberFormatException e) {
       Float v = Float.parseFloat(val.toString());
       return v.intValue();
@@ -58,7 +59,12 @@ public class IntPointField extends PointField implements IntValueFieldType {
   }
 
   @Override
-  public Query getPointRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive,
+  public Query getPointRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String min,
+      String max,
+      boolean minInclusive,
       boolean maxInclusive) {
     int actualMin, actualMax;
     if (min == null) {
@@ -86,7 +92,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
   public Object toObject(SchemaField sf, BytesRef term) {
     return IntPoint.decodeDimension(term.bytes, term.offset);
   }
-  
+
   @Override
   public Object toObject(IndexableField f) {
     final Number val = f.numericValue();
@@ -101,7 +107,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
   protected Query getExactQuery(SchemaField field, String externalVal) {
     return IntPoint.newExactQuery(field.getName(), parseIntFromUser(field.getName(), externalVal));
   }
-  
+
   @Override
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVal) {
     assert externalVal.size() > 0;
@@ -110,11 +116,15 @@ public class IntPointField extends PointField implements IntValueFieldType {
     }
     int[] values = new int[externalVal.size()];
     int i = 0;
-    for (String val:externalVal) {
+    for (String val : externalVal) {
       values[i] = parseIntFromUser(field.getName(), val);
       i++;
     }
-    return IntPoint.newSetQuery(field.getName(), values);
+    if (field.hasDocValues()) {
+      return IntField.newSetQuery(field.getName(), values);
+    } else {
+      return IntPoint.newSetQuery(field.getName(), values);
+    }
   }
 
   @Override
@@ -132,7 +142,7 @@ public class IntPointField extends PointField implements IntValueFieldType {
   @Override
   public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
-      return null; 
+      return null;
     } else {
       return Type.INTEGER_POINT;
     }
@@ -146,7 +156,10 @@ public class IntPointField extends PointField implements IntValueFieldType {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    int intValue = (value instanceof Number) ? ((Number) value).intValue() : Integer.parseInt(value.toString());
+    int intValue =
+        (value instanceof Number)
+            ? ((Number) value).intValue()
+            : Integer.parseInt(value.toString());
     return new IntPoint(field.getName(), intValue);
   }
 
@@ -154,10 +167,9 @@ public class IntPointField extends PointField implements IntValueFieldType {
   protected StoredField getStoredField(SchemaField sf, Object value) {
     return new StoredField(sf.getName(), (Integer) this.toNativeType(value));
   }
-  
+
   @Override
   protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField f) {
     return new MultiValuedIntFieldSource(f.getName(), choice);
   }
-
 }

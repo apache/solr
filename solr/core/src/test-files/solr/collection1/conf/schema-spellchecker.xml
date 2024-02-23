@@ -16,15 +16,6 @@
  limitations under the License.
 -->
 
-<!-- This is the Solr schema file. This file should be named "schema.xml" and
- should be in the conf directory under the solr home
- (i.e. ./solr/conf/schema.xml by default) 
- or located where the classloader for the Solr webapp can find it.
-
- For more information, on how to customize this file, please see
- http://wiki.apache.org/solr/SchemaXml
--->
-
 <schema name="Solr SpellCheck Test" version="1.1">
   <!-- attribute "name" is the name of this schema and is only used for display purposes.
        Applications should change this to reflect the nature of the search collection.

@@ -1,0 +1,84 @@
+= MBean Request Handler
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The MBean Request Handler offers programmatic access to the information provided on the xref:plugins-stats-screen.adoc[] of the Admin UI.
+
+The MBean Request Handler accepts the following parameters:
+
+`key`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Restricts results by object key.
+
+`cat`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Restricts results by category name.
+
+`stats`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+Specifies whether statistics are returned with results.
+You can override the `stats` parameter on a per-field basis.
+The default is `false`.
+
+`wt`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `json`
+|===
++
+The output format.
+This operates the same as the xref:query-guide:response-writers.adoc[`wt` parameter in a query].
+
+== MBeanRequestHandler Examples
+
+All of the examples in this section assume you are running the xref:getting-started:tutorial-techproducts.adoc["techproducts" example].
+
+To return information about the CACHE category only:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/mbeans?cat=CACHE
+
+To return information and statistics about the CACHE category only, formatted in XML:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/mbeans?stats=true&cat=CACHE&wt=xml
+
+To return information for everything, and statistics for everything except the `fieldCache`:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/mbeans?stats=true&f.fieldCache.stats=false
+
+To return information and statistics for the `fieldCache` only:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/mbeans?key=fieldCache&stats=true

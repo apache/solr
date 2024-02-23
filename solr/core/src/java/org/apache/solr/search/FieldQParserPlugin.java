@@ -22,19 +22,21 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 
-
 /**
- * Create a field query from the input value, applying text analysis and constructing a phrase query if appropriate.
- * <br>Other parameters: <code>f</code>, the field
- * <br>Example: <code>{!field f=myfield}Foo Bar</code> creates a phrase query with "foo" followed by "bar"
- * if the analyzer for myfield is a text field with an analyzer that splits on whitespace and lowercases terms.
- * This is generally equivalent to the Lucene query parser expression <code>myfield:"Foo Bar"</code>
+ * Create a field query from the input value, applying text analysis and constructing a phrase query
+ * if appropriate. <br>
+ * Other parameters: <code>f</code>, the field <br>
+ * Example: <code>{!field f=myfield}Foo Bar</code> creates a phrase query with "foo" followed by
+ * "bar" if the analyzer for myfield is a text field with an analyzer that splits on whitespace and
+ * lowercases terms. This is generally equivalent to the Lucene query parser expression <code>
+ * myfield:"Foo Bar"</code>
  */
 public class FieldQParserPlugin extends QParserPlugin {
   public static final String NAME = "field";
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
       @Override
       public Query parse() {

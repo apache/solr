@@ -24,10 +24,9 @@ public abstract class SolrSpanQueryBuilder extends SolrQueryBuilder implements S
 
   protected final SpanQueryBuilder spanFactory;
 
-  public SolrSpanQueryBuilder(String defaultField, Analyzer analyzer,
-      SolrQueryRequest req, SpanQueryBuilder spanFactory) {
+  public SolrSpanQueryBuilder(
+      String defaultField, Analyzer analyzer, SolrQueryRequest req, SpanQueryBuilder spanFactory) {
     super(defaultField, analyzer, req, spanFactory);
     this.spanFactory = spanFactory;
   }
-
 }

@@ -18,40 +18,44 @@ package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.OutputStream;
-
 import org.noggit.CharArr;
-
 
 public class ByteUtils {
 
   /** Maximum number of UTF8 bytes per UTF16 character. */
   public static final int MAX_UTF8_BYTES_PER_CHAR = 3;
 
-  /** Converts utf8 to utf16 and returns the number of 16 bit Java chars written.
-   * Full characters are read, even if this reads past the length passed (and can result in
-   * an ArrayOutOfBoundsException if invalid UTF8 is passed).  Explicit checks for valid UTF8 are not performed.
-   * The char[] out should probably have enough room to hold the worst case of each byte becoming a Java char.
+  /**
+   * Converts utf8 to utf16 and returns the number of 16 bit Java chars written. Full characters are
+   * read, even if this reads past the length passed (and can result in an ArrayOutOfBoundsException
+   * if invalid UTF8 is passed). Explicit checks for valid UTF8 are not performed. The char[] out
+   * should probably have enough room to hold the worst case of each byte becoming a Java char.
    */
   public static int UTF8toUTF16(byte[] utf8, int offset, int len, char[] out, int out_offset) {
     int out_start = out_offset;
     final int limit = offset + len;
     while (offset < limit) {
-      int b = utf8[offset++]&0xff;
+      int b = utf8[offset++] & 0xff;
 
       if (b < 0xc0) {
         assert b < 0x80;
-        out[out_offset++] = (char)b;
+        out[out_offset++] = (char) b;
       } else if (b < 0xe0) {
-        out[out_offset++] = (char)(((b&0x1f)<<6) + (utf8[offset++]&0x3f));
+        out[out_offset++] = (char) (((b & 0x1f) << 6) + (utf8[offset++] & 0x3f));
       } else if (b < 0xf0) {
-        out[out_offset++] = (char)(((b&0xf)<<12) + ((utf8[offset]&0x3f)<<6) + (utf8[offset+1]&0x3f));
+        out[out_offset++] =
+            (char) (((b & 0xf) << 12) + ((utf8[offset] & 0x3f) << 6) + (utf8[offset + 1] & 0x3f));
         offset += 2;
       } else {
         assert b < 0xf8;
-        int ch = ((b&0x7)<<18) + ((utf8[offset]&0x3f)<<12) + ((utf8[offset+1]&0x3f)<<6) + (utf8[offset+2]&0x3f);
+        int ch =
+            ((b & 0x7) << 18)
+                + ((utf8[offset] & 0x3f) << 12)
+                + ((utf8[offset + 1] & 0x3f) << 6)
+                + (utf8[offset + 2] & 0x3f);
         offset += 3;
         if (ch < 0xffff) {
-          out[out_offset++] = (char)ch;
+          out[out_offset++] = (char) ch;
         } else {
           int chHalf = ch - 0x0010000;
           out[out_offset++] = (char) ((chHalf >> 10) + 0xD800);
@@ -75,44 +79,44 @@ public class ByteUtils {
   public static String UTF8toUTF16(byte[] utf8, int offset, int len) {
     char[] out = new char[len];
     int n = UTF8toUTF16(utf8, offset, len, out, 0);
-    return new String(out,0,n);
+    return new String(out, 0, n);
   }
 
-
-
-  /** Writes UTF8 into the byte array, starting at offset.  The caller should ensure that
-   * there is enough space for the worst-case scenario.
+  /**
+   * Writes UTF8 into the byte array, starting at offset. The caller should ensure that there is
+   * enough space for the worst-case scenario.
+   *
    * @return the number of bytes written
    */
-  public static int UTF16toUTF8(CharSequence s, int offset, int len, byte[] result, int resultOffset) {
+  public static int UTF16toUTF8(
+      CharSequence s, int offset, int len, byte[] result, int resultOffset) {
     final int end = offset + len;
 
     int upto = resultOffset;
-    for(int i=offset;i<end;i++) {
+    for (int i = offset; i < end; i++) {
       final int code = (int) s.charAt(i);
 
-      if (code < 0x80)
-        result[upto++] = (byte) code;
+      if (code < 0x80) result[upto++] = (byte) code;
       else if (code < 0x800) {
         result[upto++] = (byte) (0xC0 | (code >> 6));
-        result[upto++] = (byte)(0x80 | (code & 0x3F));
+        result[upto++] = (byte) (0x80 | (code & 0x3F));
       } else if (code < 0xD800 || code > 0xDFFF) {
-        result[upto++] = (byte)(0xE0 | (code >> 12));
-        result[upto++] = (byte)(0x80 | ((code >> 6) & 0x3F));
-        result[upto++] = (byte)(0x80 | (code & 0x3F));
+        result[upto++] = (byte) (0xE0 | (code >> 12));
+        result[upto++] = (byte) (0x80 | ((code >> 6) & 0x3F));
+        result[upto++] = (byte) (0x80 | (code & 0x3F));
       } else {
         // surrogate pair
         // confirm valid high surrogate
-        if (code < 0xDC00 && (i < end-1)) {
-          int utf32 = (int) s.charAt(i+1);
+        if (code < 0xDC00 && (i < end - 1)) {
+          int utf32 = (int) s.charAt(i + 1);
           // confirm valid low surrogate and write pair
           if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) {
             utf32 = ((code - 0xD7C0) << 10) + (utf32 & 0x3FF);
             i++;
-            result[upto++] = (byte)(0xF0 | (utf32 >> 18));
-            result[upto++] = (byte)(0x80 | ((utf32 >> 12) & 0x3F));
-            result[upto++] = (byte)(0x80 | ((utf32 >> 6) & 0x3F));
-            result[upto++] = (byte)(0x80 | (utf32 & 0x3F));
+            result[upto++] = (byte) (0xF0 | (utf32 >> 18));
+            result[upto++] = (byte) (0x80 | ((utf32 >> 12) & 0x3F));
+            result[upto++] = (byte) (0x80 | ((utf32 >> 6) & 0x3F));
+            result[upto++] = (byte) (0x80 | (utf32 & 0x3F));
             continue;
           }
         }
@@ -127,49 +131,50 @@ public class ByteUtils {
     return upto - resultOffset;
   }
 
-  /** Writes UTF8 into the given OutputStream by first writing to the given scratch array
-   * and then writing the contents of the scratch array to the OutputStream. The given scratch byte array
-   * is used to buffer intermediate data before it is written to the output stream.
+  /**
+   * Writes UTF8 into the given OutputStream by first writing to the given scratch array and then
+   * writing the contents of the scratch array to the OutputStream. The given scratch byte array is
+   * used to buffer intermediate data before it is written to the output stream.
    *
    * @return the number of bytes written
    */
-  public static int writeUTF16toUTF8(CharSequence s, int offset, int len, OutputStream fos, byte[] scratch) throws IOException {
+  public static int writeUTF16toUTF8(
+      CharSequence s, int offset, int len, OutputStream fos, byte[] scratch) throws IOException {
     final int end = offset + len;
 
     int upto = 0, totalBytes = 0;
-    for(int i=offset;i<end;i++) {
+    for (int i = offset; i < end; i++) {
       final int code = (int) s.charAt(i);
 
-      if (upto > scratch.length - 4)  {
+      if (upto > scratch.length - 4) {
         // a code point may take upto 4 bytes and we don't have enough space, so reset
         totalBytes += upto;
-        if(fos == null) throw new IOException("buffer over flow");
+        if (fos == null) throw new IOException("buffer over flow");
         fos.write(scratch, 0, upto);
         upto = 0;
       }
 
-      if (code < 0x80)
-        scratch[upto++] = (byte) code;
+      if (code < 0x80) scratch[upto++] = (byte) code;
       else if (code < 0x800) {
         scratch[upto++] = (byte) (0xC0 | (code >> 6));
-        scratch[upto++] = (byte)(0x80 | (code & 0x3F));
+        scratch[upto++] = (byte) (0x80 | (code & 0x3F));
       } else if (code < 0xD800 || code > 0xDFFF) {
-        scratch[upto++] = (byte)(0xE0 | (code >> 12));
-        scratch[upto++] = (byte)(0x80 | ((code >> 6) & 0x3F));
-        scratch[upto++] = (byte)(0x80 | (code & 0x3F));
+        scratch[upto++] = (byte) (0xE0 | (code >> 12));
+        scratch[upto++] = (byte) (0x80 | ((code >> 6) & 0x3F));
+        scratch[upto++] = (byte) (0x80 | (code & 0x3F));
       } else {
         // surrogate pair
         // confirm valid high surrogate
-        if (code < 0xDC00 && (i < end-1)) {
-          int utf32 = (int) s.charAt(i+1);
+        if (code < 0xDC00 && (i < end - 1)) {
+          int utf32 = (int) s.charAt(i + 1);
           // confirm valid low surrogate and write pair
           if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) {
             utf32 = ((code - 0xD7C0) << 10) + (utf32 & 0x3FF);
             i++;
-            scratch[upto++] = (byte)(0xF0 | (utf32 >> 18));
-            scratch[upto++] = (byte)(0x80 | ((utf32 >> 12) & 0x3F));
-            scratch[upto++] = (byte)(0x80 | ((utf32 >> 6) & 0x3F));
-            scratch[upto++] = (byte)(0x80 | (utf32 & 0x3F));
+            scratch[upto++] = (byte) (0xF0 | (utf32 >> 18));
+            scratch[upto++] = (byte) (0x80 | ((utf32 >> 12) & 0x3F));
+            scratch[upto++] = (byte) (0x80 | ((utf32 >> 6) & 0x3F));
+            scratch[upto++] = (byte) (0x80 | (utf32 & 0x3F));
             continue;
           }
         }
@@ -182,7 +187,7 @@ public class ByteUtils {
     }
 
     totalBytes += upto;
-    if(fos != null) fos.write(scratch, 0, upto);
+    if (fos != null) fos.write(scratch, 0, upto);
 
     return totalBytes;
   }
@@ -199,8 +204,7 @@ public class ByteUtils {
     for (int i = offset; i < end; i++) {
       final int code = (int) s.charAt(i);
 
-      if (code < 0x80)
-        res++;
+      if (code < 0x80) res++;
       else if (code < 0x800) {
         res += 2;
       } else if (code < 0xD800 || code > 0xDFFF) {
@@ -223,5 +227,4 @@ public class ByteUtils {
 
     return res;
   }
-
 }

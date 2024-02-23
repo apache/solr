@@ -17,20 +17,36 @@
 package org.apache.solr.client.solrj.util;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.junit.Test;
 
 /**
- * 
- *
  * @since solr 1.3
  */
 public class ClientUtilsTest extends SolrTestCase {
-  
-  public void testEscapeQuery() 
-  { 
-    assertEquals( "nochange", ClientUtils.escapeQueryChars( "nochange" ) );
-    assertEquals( "12345", ClientUtils.escapeQueryChars( "12345" ) );
-    assertEquals( "with\\ space", ClientUtils.escapeQueryChars( "with space" ) );
-    assertEquals( "h\\:ello\\!", ClientUtils.escapeQueryChars( "h:ello!" ) );
-    assertEquals( "h\\~\\!", ClientUtils.escapeQueryChars( "h~!" ) );
+
+  public void testEscapeQuery() {
+    assertEquals("nochange", ClientUtils.escapeQueryChars("nochange"));
+    assertEquals("12345", ClientUtils.escapeQueryChars("12345"));
+    assertEquals("with\\ space", ClientUtils.escapeQueryChars("with space"));
+    assertEquals("h\\:ello\\!", ClientUtils.escapeQueryChars("h:ello!"));
+    assertEquals("h\\~\\!", ClientUtils.escapeQueryChars("h~!"));
+  }
+
+  @Test
+  public void testDeterminesWhenToUseDefaultCollection() {
+    final var noDefaultNeededRequest = new CollectionAdminRequest.List();
+    final var defaultNeededRequest = new UpdateRequest();
+
+    assertFalse(
+        "Expected default-coll to be skipped for collection-agnostic request",
+        ClientUtils.shouldApplyDefaultCollection(null, noDefaultNeededRequest));
+    assertTrue(
+        "Expected default-coll to be used for collection-based request",
+        ClientUtils.shouldApplyDefaultCollection(null, defaultNeededRequest));
+    assertFalse(
+        "Expected default-coll to be skipped when a collection is explicitly provided",
+        ClientUtils.shouldApplyDefaultCollection("someCollection", defaultNeededRequest));
   }
 }

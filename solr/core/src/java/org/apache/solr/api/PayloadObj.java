@@ -21,32 +21,35 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-/**
- * Holds the deserialized object for each command and also holds request , response objects
- */
+/** Holds the deserialized object for each command and also holds request , response objects */
 public class PayloadObj<T> extends CommandOperation {
 
-    //the deserialized object parameter
-    private T obj;
-    final SolrQueryRequest req;
-    final SolrQueryResponse rsp;
+  // the deserialized object parameter
+  private T obj;
+  final SolrQueryRequest req;
+  final SolrQueryResponse rsp;
 
-    public PayloadObj(String operationName, Object originalMetadata, T obj, SolrQueryRequest req, SolrQueryResponse rsp) {
-        super(operationName, originalMetadata);
-        this.obj = obj;
-        this.req = req;
-        this.rsp = rsp;
-    }
+  public PayloadObj(
+      String operationName,
+      Object originalMetadata,
+      T obj,
+      SolrQueryRequest req,
+      SolrQueryResponse rsp) {
+    super(operationName, originalMetadata);
+    this.obj = obj;
+    this.req = req;
+    this.rsp = rsp;
+  }
 
-    public T get() {
-        return obj;
-    }
+  public T get() {
+    return obj;
+  }
 
-    public SolrQueryRequest getRequest() {
-        return req;
-    }
+  public SolrQueryRequest getRequest() {
+    return req;
+  }
 
-    public SolrQueryResponse getResponse() {
-        return rsp;
-    }
+  public SolrQueryResponse getResponse() {
+    return rsp;
+  }
 }

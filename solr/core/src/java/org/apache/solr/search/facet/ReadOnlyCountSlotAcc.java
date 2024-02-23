@@ -18,9 +18,7 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 
-/**
- * To be implemented by CountSlotAccs that wish to expose a read-only interface
- */
+/** To be implemented by CountSlotAccs that wish to expose a read-only interface */
 interface ReadOnlyCountSlotAcc {
 
   public long getCount(int slot);

@@ -20,24 +20,26 @@ import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.junit.BeforeClass;
 
 /**
- * Tests {@link ClassicSimilarityFactory} when specified on a per-fieldtype basis with various init options.
+ * Tests {@link ClassicSimilarityFactory} when specified on a per-fieldtype basis with various init
+ * options.
+ *
  * @see SchemaSimilarityFactory
  */
 public class TestClassicSimilarityFactory extends BaseSimilarityTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml","schema-tfidf.xml");
+    initCore("solrconfig-basic.xml", "schema-tfidf.xml");
   }
-  
+
   /** Classic w/ default parameters */
-  public void testDefaults() throws Exception {
+  public void testDefaults() {
     ClassicSimilarity sim = getSimilarity("text", ClassicSimilarity.class);
-    assertEquals(true, sim.getDiscountOverlaps());
+    assertTrue(sim.getDiscountOverlaps());
   }
+
   /** Classic w/ explicit params */
-  public void testParams() throws Exception {
+  public void testParams() {
     ClassicSimilarity sim = getSimilarity("text_overlap", ClassicSimilarity.class);
-    assertEquals(false, sim.getDiscountOverlaps());
+    assertFalse(sim.getDiscountOverlaps());
   }
-  
 }

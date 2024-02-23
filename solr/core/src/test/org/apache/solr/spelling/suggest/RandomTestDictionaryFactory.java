@@ -17,15 +17,13 @@
 
 package org.apache.solr.spelling.suggest;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.suggest.InputIterator;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -33,10 +31,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Factory for a dictionary with an iterator over bounded-length random strings (with fixed
- * weight of 1 and null payloads) that only operates when RandomDictionary.enabledSysProp
- * is set; this will be true from the time a RandomDictionary has been constructed until
- * its enabledSysProp has been cleared.
+ * Factory for a dictionary with an iterator over bounded-length random strings (with fixed weight
+ * of 1 and null payloads) that only operates when RandomDictionary.enabledSysProp is set; this will
+ * be true from the time a RandomDictionary has been constructed until its enabledSysProp has been
+ * cleared.
  */
 public class RandomTestDictionaryFactory extends DictionaryFactory {
   public static final String RAND_DICT_MAX_ITEMS = "randDictMaxItems";
@@ -46,11 +44,11 @@ public class RandomTestDictionaryFactory extends DictionaryFactory {
 
   @Override
   public RandomTestDictionary create(SolrCore core, SolrIndexSearcher searcher) {
-    if(params == null) {
+    if (params == null) {
       // should not happen; implies setParams was not called
       throw new IllegalStateException("Value of params not set");
     }
-    String name = (String)params.get(CommonParams.NAME);
+    String name = (String) params.get(CommonParams.NAME);
     if (name == null) { // Shouldn't happen since this is the component name
       throw new IllegalArgumentException(CommonParams.NAME + " is a mandatory parameter");
     }
@@ -63,7 +61,8 @@ public class RandomTestDictionaryFactory extends DictionaryFactory {
   }
 
   public static class RandomTestDictionary implements Dictionary {
-    private static final String SYS_PROP_PREFIX = RandomTestDictionary.class.getName() + ".enabled.";
+    private static final String SYS_PROP_PREFIX =
+        RandomTestDictionary.class.getName() + ".enabled.";
     private final String enabledSysProp; // Clear this property to stop the input iterator
     private final long maxItems;
     private long emittedItems = 0L;
@@ -84,7 +83,7 @@ public class RandomTestDictionaryFactory extends DictionaryFactory {
     }
 
     @Override
-    public InputIterator getEntryIterator() throws IOException {
+    public InputIterator getEntryIterator() {
       return new InputIterator.InputIteratorWrapper(new RandomByteRefIterator());
     }
 
@@ -92,7 +91,7 @@ public class RandomTestDictionaryFactory extends DictionaryFactory {
       private static final int MAX_LENGTH = 100;
 
       @Override
-      public BytesRef next() throws IOException {
+      public BytesRef next() {
         BytesRef next = null;
         if (System.getProperty(enabledSysProp) != null) {
           if (emittedItems < maxItems) {

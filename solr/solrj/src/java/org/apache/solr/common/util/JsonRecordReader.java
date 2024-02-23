@@ -16,19 +16,30 @@
  */
 package org.apache.solr.common.util;
 
+import static org.noggit.JSONParser.ARRAY_END;
+import static org.noggit.JSONParser.ARRAY_START;
+import static org.noggit.JSONParser.BIGNUMBER;
+import static org.noggit.JSONParser.BOOLEAN;
+import static org.noggit.JSONParser.EOF;
+import static org.noggit.JSONParser.LONG;
+import static org.noggit.JSONParser.NULL;
+import static org.noggit.JSONParser.NUMBER;
+import static org.noggit.JSONParser.OBJECT_END;
+import static org.noggit.JSONParser.OBJECT_START;
+import static org.noggit.JSONParser.STRING;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.*;
-
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.noggit.JSONParser;
 
-import static org.noggit.JSONParser.*;
-
-/**
- * A Streaming parser for json to emit one record at a time.
- */
-
+/** A Streaming parser for json to emit one record at a time. */
 public class JsonRecordReader {
   public static final String DELIM = ".";
 
@@ -51,68 +62,58 @@ public class JsonRecordReader {
     return jsonRecordReader;
   }
 
+  private JsonRecordReader() {}
 
-  private JsonRecordReader() {
-  }
   /**
-   * a '|' separated list of path expressions
-   * which define sub sections of the JSON stream that are to be emitted as
-   * separate records.
-   * It is possible to have multiple levels of split one for parent and one for child
-   * each child record (or a list of records) will be emitted as a part of the parent record with
-   * null as the key
+   * a '|' separated list of path expressions which define sub sections of the JSON stream that are
+   * to be emitted as separate records. It is possible to have multiple levels of split one for
+   * parent and one for child each child record (or a list of records) will be emitted as a part of
+   * the parent record with null as the key
    *
-   * @param splitPath The PATH for which a record is emitted.  A record is emitted containing all
-   *                  fields collected since the tag start. Once
-   *                  emitted the collected fields are cleared. Any fields collected in the
-   *                  parent tag or above will also be included in the record, but these are
-   *                  not cleared after emitting the record.
-   *                  <p>
-   *                  It uses the ' | ' syntax of PATH to pass in multiple paths.
+   * @param splitPath The PATH for which a record is emitted. A record is emitted containing all
+   *     fields collected since the tag start. Once emitted the collected fields are cleared. Any
+   *     fields collected in the parent tag or above will also be included in the record, but these
+   *     are not cleared after emitting the record.
+   *     <p>It uses the ' | ' syntax of PATH to pass in multiple paths.
    */
-
   void addSplit(String splitPath) {
     String[] splits = splitPath.split("\\|");
     for (String split : splits) {
       split = split.trim();
       if (split.startsWith("//"))
         throw new RuntimeException("split cannot start with '//': " + split);
-      if (split.length() == 0)
-        continue;
+      if (split.length() == 0) continue;
       // The created Node has a name set to the full split attribute path
       addField(split, split, false, true);
     }
   }
 
   /**
-   * Splits the path into a List of segments and calls build() to
-   * construct a tree of Nodes representing path segments. The resulting
-   * tree structure ends up describing all the paths we are interested in.
+   * Splits the path into a List of segments and calls build() to construct a tree of Nodes
+   * representing path segments. The resulting tree structure ends up describing all the paths we
+   * are interested in.
    *
-   * @param path        The path expression for this field
-   * @param fieldName   The name for this field in the emitted record
-   * @param multiValued If 'true' then the emitted record will have values in
-   *                    a List&lt;String&gt;
-   * @param isRecord    Flags that this PATH is from a forEach statement
+   * @param path The path expression for this field
+   * @param fieldName The name for this field in the emitted record
+   * @param multiValued If 'true' then the emitted record will have values in a List&lt;String&gt;
+   * @param isRecord Flags that this PATH is from a forEach statement
    */
   private void addField(String path, String fieldName, boolean multiValued, boolean isRecord) {
     if (!path.startsWith("/")) throw new RuntimeException("All paths must start with '/' " + path);
     List<String> paths = splitEscapeQuote(path);
     if (paths.size() == 0) {
       if (isRecord) rootNode.setAsRecord();
-      return;//the path is "/"
+      return; // the path is "/"
     }
     // deal with how split behaves when separator starts with an empty string!
-    if ("".equals(paths.get(0).trim()))
-      paths.remove(0);
+    if (paths.get(0).trim().isEmpty()) paths.remove(0);
     rootNode.build(paths, fieldName, multiValued, isRecord, path);
     rootNode.buildOptimize();
   }
 
   /**
-   * Uses {@link #streamRecords streamRecords} to getInst the JSON source but with
-   * a handler that collects all the emitted records into a single List which
-   * is returned upon completion.
+   * Uses {@link #streamRecords streamRecords} to getInst the JSON source but with a handler that
+   * collects all the emitted records into a single List which is returned upon completion.
    *
    * @param r the stream reader
    * @return results a List of emitted records
@@ -126,11 +127,10 @@ public class JsonRecordReader {
   }
 
   /**
-   * Creates an JSONParser on top of whatever reader has been
-   * configured. Then calls getInst() with a handler which is
-   * invoked forEach record emitted.
+   * Creates an JSONParser on top of whatever reader has been configured. Then calls getInst() with
+   * a handler which is invoked forEach record emitted.
    *
-   * @param r       the stream reader
+   * @param r the stream reader
    * @param handler The callback instance
    */
   public void streamRecords(Reader r, Handler handler) throws IOException {
@@ -138,34 +138,30 @@ public class JsonRecordReader {
   }
 
   public void streamRecords(JSONParser parser, Handler handler) throws IOException {
-    rootNode.parse(parser, handler,
-        new LinkedHashMap<>());
+    rootNode.parse(parser, handler, new LinkedHashMap<>());
   }
 
-
   /**
-   * For each node/leaf in the Node tree there is one object of this class.
-   * This tree of objects represents all the Paths we are interested in.
-   * For each path segment of interest we create a node. In most cases the
-   * node (branch) is rather basic , but for the final portion (leaf) of any
-   * path we add more information to the Node. When parsing the JSON document
-   * we step though this tree as we stream records from the reader. If the JSON
-   * document departs from this tree we skip start tags till we are back on
-   * the tree.
+   * For each node/leaf in the Node tree there is one object of this class. This tree of objects
+   * represents all the Paths we are interested in. For each path segment of interest we create a
+   * node. In most cases the node (branch) is rather basic , but for the final portion (leaf) of any
+   * path we add more information to the Node. When parsing the JSON document we step though this
+   * tree as we stream records from the reader. If the JSON document departs from this tree we skip
+   * start tags till we are back on the tree.
    */
   private static class Node {
-    String name;      // generally: segment of the path represented by this Node
+    String name; // generally: segment of the path represented by this Node
     String fieldName; // the fieldname in the emitted record (key of the map)
     String splitPath; // the full path from the forEach entity attribute
-    final LinkedHashMap<String, Node> childNodes = new LinkedHashMap<>(); // List of immediate child Nodes of this node
+    final LinkedHashMap<String, Node> childNodes =
+        new LinkedHashMap<>(); // List of immediate child Nodes of this node
     Node parent; // parent Node in the tree
     boolean isLeaf = false; // flag: store/emit streamed text for this node
-    boolean isRecord = false; //flag: this Node starts a new record
+    boolean isRecord = false; // flag: this Node starts a new record
     boolean isChildRecord = false;
     Node wildCardChild;
     Node recursiveWildCardChild;
     private boolean useFqn = false;
-
 
     public Node(String name, Node p) {
       // Create a basic Node, suitable for the mid portions of any path.
@@ -176,18 +172,19 @@ public class JsonRecordReader {
 
     public Node(String name, String fieldName) {
       // This is only called from build() when describing an attribute.
-      this.name = name;               // a segment from the path
-      this.fieldName = fieldName;     // name to store collected values against
+      this.name = name; // a segment from the path
+      this.fieldName = fieldName; // name to store collected values against
     }
 
     void setAsRecord() {
-      if (isMyChildARecord()) throw new RuntimeException(name + " has a parent node at my level or lower");
+      if (isMyChildARecord())
+        throw new RuntimeException(name + " has a parent node at my level or lower");
       isChildRecord = hasParentRecord();
       isRecord = true;
     }
 
     private boolean hasParentRecord() {
-      return isRecord || parent != null && parent.hasParentRecord();
+      return isRecord || (parent != null && parent.hasParentRecord());
     }
 
     private boolean isMyChildARecord() {
@@ -198,38 +195,37 @@ public class JsonRecordReader {
       return false;
     }
 
-
-    /**
-     * Walk the Node tree propagating any wild Descendant information to
-     * child nodes.
-     */
+    /** Walk the Node tree propagating any wild Descendant information to child nodes. */
     private void buildOptimize() {
-      if (parent != null && parent.recursiveWildCardChild != null && this.recursiveWildCardChild == null) {
+      if (parent != null
+          && parent.recursiveWildCardChild != null
+          && this.recursiveWildCardChild == null) {
         this.recursiveWildCardChild = parent.recursiveWildCardChild;
       }
       for (Node n : childNodes.values()) n.buildOptimize();
     }
+
     static final String WILDCARD_PATH = "*";
     static final String RECURSIVE_WILDCARD_PATH = "**";
 
     /**
-     * Build a Node tree structure representing all paths of interest to us.
-     * This must be done before parsing of the JSON stream starts. Each node
-     * holds one portion of an path. Taking each path segment in turn this
-     * method walks the Node tree  and finds where the new segment should be
-     * inserted. It creates a Node representing a field's name, PATH and
-     * some flags and inserts the Node into the Node tree.
+     * Build a Node tree structure representing all paths of interest to us. This must be done
+     * before parsing of the JSON stream starts. Each node holds one portion of an path. Taking each
+     * path segment in turn this method walks the Node tree and finds where the new segment should
+     * be inserted. It creates a Node representing a field's name, PATH and some flags and inserts
+     * the Node into the Node tree.
      */
     private void build(
-        List<String> paths,   // a List of segments from the split paths
-        String fieldName,     // the fieldName assoc with this path
-        boolean multiValued,  // flag if this fieldName is multiValued or not
-        boolean record,       // is this path a record or a field
+        List<String> paths, // a List of segments from the split paths
+        String fieldName, // the fieldName assoc with this path
+        boolean multiValued, // flag if this fieldName is multiValued or not
+        boolean record, // is this path a record or a field
         String path) {
       // recursively walk the paths Lists adding new Nodes as required
       String segment = paths.remove(0); // shift out next path segment
 
-      if (segment.length() < 1) throw new RuntimeException("all pieces in path must be non empty " + path);
+      if (segment.length() < 1)
+        throw new RuntimeException("all pieces in path must be non empty " + path);
 
       // does this "name" already exist as a child node.
       Node n = getOrAddNode(segment, childNodes);
@@ -240,7 +236,7 @@ public class JsonRecordReader {
         // have created and returned a new minimal Node with name and
         // pathName already populated. We need to add more information.
         if (record) {
-          //wild cards cannot be used in split
+          // wild cards cannot be used in split
           assert !WILDCARD_PATH.equals(n.name);
           assert !RECURSIVE_WILDCARD_PATH.equals(n.name);
           // split attribute
@@ -255,7 +251,7 @@ public class JsonRecordReader {
           }
 
           // path with content we want to store and return
-          n.isLeaf = true;        // we have to store text found here
+          n.isLeaf = true; // we have to store text found here
           n.fieldName = fieldName; // name to store collected text against
           if ("$FQN".equals(n.fieldName)) {
             n.fieldName = null;
@@ -263,7 +259,7 @@ public class JsonRecordReader {
           }
         }
       } else {
-        //wildcards must only come at the end
+        // wildcards must only come at the end
         if (WILDCARD_PATH.equals(name) || RECURSIVE_WILDCARD_PATH.equals(name))
           throw new RuntimeException("wild cards are allowed only in the end " + path);
         // recurse to handle next paths segment
@@ -279,9 +275,8 @@ public class JsonRecordReader {
       return n;
     }
 
-    private void parse(JSONParser parser,
-                       Handler handler,
-                       Map<String, Object> values) throws IOException {
+    private void parse(JSONParser parser, Handler handler, Map<String, Object> values)
+        throws IOException {
 
       int event = -1;
       boolean recordStarted = false;
@@ -289,36 +284,38 @@ public class JsonRecordReader {
         event = parser.nextEvent();
         if (event == EOF) break;
         if (event == OBJECT_START) {
-          handleObjectStart(parser, handler, new LinkedHashMap<>(), new Stack<>(), recordStarted, null);
+          handleObjectStart(
+              parser, handler, new LinkedHashMap<>(), new ArrayDeque<>(), recordStarted, null);
         } else if (event == ARRAY_START) {
           for (; ; ) {
             event = parser.nextEvent();
             if (event == ARRAY_END) break;
             if (event == OBJECT_START) {
-              handleObjectStart(parser, handler, new LinkedHashMap<>(), new Stack<>(), recordStarted, null);
+              handleObjectStart(
+                  parser, handler, new LinkedHashMap<>(), new ArrayDeque<>(), recordStarted, null);
             }
           }
         }
       }
-
     }
 
     /**
-     * If a new tag is encountered, check if it is of interest or not by seeing
-     * if it matches against our node tree. If we have departed from the node
-     * tree then walk back though the tree's ancestor nodes checking to see if
-     * any // expressions exist for the node and compare them against the new
-     * tag. If matched then "jump" to that node, otherwise ignore the tag.
-     * <p>
-     * Note, the list of // expressions found while walking back up the tree
-     * is cached in the HashMap descendants. Then if the new tag is to be skipped,
-     * any inner child tags are compared against the cache and jumped to if
-     * matched.
+     * If a new tag is encountered, check if it is of interest or not by seeing if it matches
+     * against our node tree. If we have departed from the node tree then walk back though the
+     * tree's ancestor nodes checking to see if any // expressions exist for the node and compare
+     * them against the new tag. If matched then "jump" to that node, otherwise ignore the tag.
+     *
+     * <p>Note, the list of // expressions found while walking back up the tree is cached in the
+     * HashMap descendants. Then if the new tag is to be skipped, any inner child tags are compared
+     * against the cache and jumped to if matched.
      */
-    private void handleObjectStart(final JSONParser parser,
-                                   final Handler handler, final Map<String, Object> values,
-                                   final Stack<Set<String>> stack, boolean recordStarted,
-                                   MethodFrameWrapper frameWrapper)
+    private void handleObjectStart(
+        final JSONParser parser,
+        final Handler handler,
+        final Map<String, Object> values,
+        final ArrayDeque<Set<String>> stack,
+        boolean recordStarted,
+        MethodFrameWrapper frameWrapper)
         throws IOException {
 
       final boolean isRecordStarted = recordStarted || isRecord;
@@ -368,13 +365,13 @@ public class JsonRecordReader {
 
         void walkObject() throws IOException {
           if (node.isChildRecord) {
-            node.handleObjectStart(parser,
+            node.handleObjectStart(
+                parser,
                 (record, path) -> addChildDoc2ParentDoc(record, values, getPathSuffix(path)),
                 new LinkedHashMap<>(),
-                new Stack<>(),
+                new ArrayDeque<>(),
                 true,
-                this
-            );
+                this);
           } else {
             node.handleObjectStart(parser, handler, values, stack, isRecordStarted, this);
           }
@@ -399,12 +396,16 @@ public class JsonRecordReader {
           if (node == null) node = recursiveWildCardChild;
 
           if (node != null) {
-            if (node.isLeaf) {//this is a leaf. Collect data here
+            if (node.isLeaf) { // this is a leaf. Collect data here
               event = parser.nextEvent();
-              String nameInRecord = node.fieldName == null ? getNameInRecord(name, frameWrapper, node) : node.fieldName;
+              String nameInRecord =
+                  node.fieldName == null
+                      ? getNameInRecord(name, frameWrapper, node)
+                      : node.fieldName;
               MethodFrameWrapper runnable = null;
               if (event == OBJECT_START || event == ARRAY_START) {
-                if (node.recursiveWildCardChild != null) runnable = new Wrapper(node, frameWrapper, name);
+                if (node.recursiveWildCardChild != null)
+                  runnable = new Wrapper(node, frameWrapper, name);
               }
               Object val = parseSingleFieldValue(event, parser, runnable);
               if (val != null) {
@@ -417,14 +418,14 @@ public class JsonRecordReader {
               new Wrapper(node, frameWrapper, name).walk(event);
             }
           } else {
-            //this is not something we are interested in. Skip it
+            // this is not something we are interested in. Skip it
             event = parser.nextEvent();
-            if (event == STRING ||
-                event == LONG ||
-                event == NUMBER ||
-                event == BIGNUMBER ||
-                event == BOOLEAN ||
-                event == NULL) {
+            if (event == STRING
+                || event == LONG
+                || event == NUMBER
+                || event == BIGNUMBER
+                || event == BOOLEAN
+                || event == NULL) {
               continue;
             }
             if (event == ARRAY_START) {
@@ -435,7 +436,6 @@ public class JsonRecordReader {
               consumeTillMatchingEnd(parser, 1, 0);
               continue;
             } else throw new RuntimeException("unexpected token " + event);
-
           }
         }
       } finally {
@@ -448,8 +448,9 @@ public class JsonRecordReader {
     }
 
     @SuppressWarnings({"unchecked"})
-    private void addChildDoc2ParentDoc(Map<String, Object> record, Map<String, Object> values, String key) {
-      record =  Utils.getDeepCopy(record, 2);
+    private void addChildDoc2ParentDoc(
+        Map<String, Object> record, Map<String, Object> values, String key) {
+      record = Utils.getDeepCopy(record, 2);
       Object oldVal = values.get(key);
       if (oldVal == null) {
         values.put(key, record);
@@ -463,9 +464,7 @@ public class JsonRecordReader {
       }
     }
 
-    /**
-     * Construct the name as it would appear in the final record
-     */
+    /** Construct the name as it would appear in the final record */
     private String getNameInRecord(String name, MethodFrameWrapper frameWrapper, Node n) {
       if (frameWrapper == null || !n.useFqn || frameWrapper.node.isChildRecord) return name;
       StringBuilder sb = new StringBuilder();
@@ -476,7 +475,6 @@ public class JsonRecordReader {
     private boolean isRecord() {
       return isRecord;
     }
-
 
     private void putValue(Map<String, Object> values, String fieldName, Object o) {
       if (o == null) return;
@@ -499,7 +497,7 @@ public class JsonRecordReader {
 
     // returns the last key of the path
     private String getPathSuffix(String path) {
-      int indexOf = path.lastIndexOf("/");
+      int indexOf = path.lastIndexOf('/');
       if (indexOf == -1) return path;
       return path.substring(indexOf + 1);
     }
@@ -510,27 +508,25 @@ public class JsonRecordReader {
     }
   } // end of class Node
 
-
   /**
-   * The path is split into segments using the '/' as a separator. However
-   * this method deals with special cases where there is a slash '/' character
-   * inside the attribute value e.g. x/@html='text/html'. We split by '/' but
-   * then reassemble things were the '/' appears within a quoted sub-string.
-   * <p>
-   * We have already enforced that the string must begin with a separator. This
-   * method depends heavily on how split behaves if the string starts with the
-   * separator or if a sequence of multiple separators appear.
+   * The path is split into segments using the '/' as a separator. However this method deals with
+   * special cases where there is a slash '/' character inside the attribute value e.g.
+   * x/@html='text/html'. We split by '/' but then reassemble things were the '/' appears within a
+   * quoted sub-string.
+   *
+   * <p>We have already enforced that the string must begin with a separator. This method depends
+   * heavily on how split behaves if the string starts with the separator or if a sequence of
+   * multiple separators appear.
    */
   private static List<String> splitEscapeQuote(String str) {
-    List<String> result = new LinkedList<>();
+    List<String> result = new ArrayList<>();
     String[] ss = str.split("/");
     for (int i = 0; i < ss.length; i++) { // i=1: skip separator at start of string
       StringBuilder sb = new StringBuilder();
       int quoteCount = 0;
       while (true) {
         sb.append(ss[i]);
-        for (int j = 0; j < ss[i].length(); j++)
-          if (ss[i].charAt(j) == '\'') quoteCount++;
+        for (int j = 0; j < ss[i].length(); j++) if (ss[i].charAt(j) == '\'') quoteCount++;
         // have we got a split inside quoted sub-string?
         if ((quoteCount % 2) == 0) break;
         // yes!; replace the '/' and loop to concat next token
@@ -542,25 +538,21 @@ public class JsonRecordReader {
     return result;
   }
 
-
-  /**
-   * Implement this interface to stream records as and when one is found.
-   */
+  /** Implement this interface to stream records as and when one is found. */
   public interface Handler {
     /**
-     * @param record The record map. The key is the field name as provided in
-     *               the addField() methods. The value can be a single String (for single
-     *               valued fields) or a List&lt;String&gt; (for multiValued).
-     *               This map is mutable. DO NOT alter the map or store it for later use.
-     *               If it must be stored, make a deep copy before doing so
-     * @param path   The forEach path for which this record is being emitted
-     *               If there is any change all parsing will be aborted and the Exception
-     *               is propagated up
+     * @param record The record map. The key is the field name as provided in the addField()
+     *     methods. The value can be a single String (for single valued fields) or a
+     *     List&lt;String&gt; (for multiValued). This map is mutable. DO NOT alter the map or store
+     *     it for later use. If it must be stored, make a deep copy before doing so
+     * @param path The forEach path for which this record is being emitted If there is any change
+     *     all parsing will be aborted and the Exception is propagated up
      */
     void handle(Map<String, Object> record, String path);
   }
 
-  public static Object parseSingleFieldValue(int ev, JSONParser parser, MethodFrameWrapper runnable) throws IOException {
+  public static Object parseSingleFieldValue(int ev, JSONParser parser, MethodFrameWrapper runnable)
+      throws IOException {
     switch (ev) {
       case STRING:
         return parser.getString();
@@ -585,11 +577,12 @@ public class JsonRecordReader {
         consumeTillMatchingEnd(parser, 1, 0);
         return null;
       default:
-        throw new RuntimeException("Error parsing JSON field value. Unexpected " + JSONParser.getEventString(ev));
+        throw new RuntimeException(
+            "Error parsing JSON field value. Unexpected " + JSONParser.getEventString(ev));
     }
   }
 
-  static abstract class MethodFrameWrapper {
+  abstract static class MethodFrameWrapper {
     Node node;
     MethodFrameWrapper parent;
     String name;
@@ -605,7 +598,8 @@ public class JsonRecordReader {
     public abstract void walk(int event) throws IOException;
   }
 
-  public static List<Object> parseArrayFieldValue(int ev, JSONParser parser, MethodFrameWrapper runnable) throws IOException {
+  public static List<Object> parseArrayFieldValue(
+      int ev, JSONParser parser, MethodFrameWrapper runnable) throws IOException {
     assert ev == ARRAY_START;
 
     ArrayList<Object> lst = new ArrayList<>(2);
@@ -620,7 +614,8 @@ public class JsonRecordReader {
     }
   }
 
-  public static void consumeTillMatchingEnd(JSONParser parser, int obj, int arr) throws IOException {
+  public static void consumeTillMatchingEnd(JSONParser parser, int obj, int arr)
+      throws IOException {
     for (; ; ) {
       int event = parser.nextEvent();
       if (event == OBJECT_START) obj++;
@@ -632,5 +627,4 @@ public class JsonRecordReader {
       if (obj == 0 && arr == 0) break;
     }
   }
-
 }

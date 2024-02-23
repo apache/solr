@@ -16,30 +16,32 @@
  */
 package org.apache.solr.common.params;
 
+import static java.util.stream.Collectors.toMap;
+
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toMap;
-
 public interface CollectionParams {
-  /**
-   * What action
-   **/
+  /** What action */
   String ACTION = "action";
+
   String NAME = "name";
 
   /**
    * @deprecated use {@link #SOURCE_NODE} instead
    */
-  @Deprecated
-  String FROM_NODE = "fromNode";
+  @Deprecated String FROM_NODE = "fromNode";
 
   String SOURCE_NODE = "sourceNode";
   String TARGET_NODE = "targetNode";
+  String SOURCE_NODES = "sourceNodes";
+  String TARGET_NODES = "targetNodes";
 
+  String NODES = "nodes";
+  String MAX_BALANCE_SKEW = "maxBalanceSkew";
 
   enum LockLevel {
     NONE(10, null),
@@ -70,13 +72,14 @@ public interface CollectionParams {
   }
 
   /**
-   * <p>(Mostly) Collection API actions that can be sent by nodes to the Overseer over the <code>/overseer/collection-queue-work</code>
-   * ZooKeeper queue.</p>
+   * (Mostly) Collection API actions that can be sent by nodes to the Overseer over the <code>
+   * /overseer/collection-queue-work</code> ZooKeeper queue.
    *
-   * <p>Some of these actions are also used over the cluster state update queue at <code>/overseer/queue</code> and have a
-   * different (though related) meaning there. These actions are:
-   * {@link #CREATE}, {@link #DELETE}, {@link #CREATESHARD}, {@link #DELETESHARD}, {@link #ADDREPLICA}, {@link #ADDREPLICAPROP},
-   * {@link #DELETEREPLICAPROP}, {@link #BALANCESHARDUNIQUE} and {@link #MODIFYCOLLECTION}.</p>
+   * <p>Some of these actions are also used over the cluster state update queue at <code>
+   * /overseer/queue</code> and have a different (though related) meaning there. These actions are:
+   * {@link #CREATE}, {@link #DELETE}, {@link #CREATESHARD}, {@link #DELETESHARD}, {@link
+   * #ADDREPLICA}, {@link #ADDREPLICAPROP}, {@link #DELETEREPLICAPROP}, {@link #BALANCESHARDUNIQUE}
+   * and {@link #MODIFYCOLLECTION}.
    */
   enum CollectionAction {
     CREATE(true, LockLevel.COLLECTION),
@@ -115,18 +118,23 @@ public interface CollectionParams {
     MODIFYCOLLECTION(true, LockLevel.COLLECTION),
     BACKUP(true, LockLevel.COLLECTION),
     RESTORE(true, LockLevel.COLLECTION),
+    INSTALLSHARDDATA(true, LockLevel.SHARD),
     LISTBACKUP(false, LockLevel.NONE),
     DELETEBACKUP(true, LockLevel.COLLECTION),
     CREATESNAPSHOT(true, LockLevel.COLLECTION),
     DELETESNAPSHOT(true, LockLevel.COLLECTION),
     LISTSNAPSHOTS(false, LockLevel.NONE),
-    //only for testing. it just waits for specified time
+    // only for testing. it just waits for specified time
     // these are not exposed via collection API commands
     // but the overseer is aware of these tasks
     MOCK_COLL_TASK(false, LockLevel.COLLECTION),
     MOCK_SHARD_TASK(false, LockLevel.SHARD),
-    //TODO when we have a node level lock use it here
+    // TODO when we have a node level lock use it here
     REPLACENODE(true, LockLevel.NONE),
+    // TODO when we have a node level lock use it here
+    MIGRATE_REPLICAS(true, LockLevel.NONE),
+    // TODO when we have a node level lock use it here
+    BALANCE_REPLICAS(true, LockLevel.NONE),
     DELETENODE(true, LockLevel.NONE),
     MOCK_REPLICA_TASK(false, LockLevel.REPLICA),
     NONE(false, LockLevel.NONE),
@@ -135,8 +143,7 @@ public interface CollectionParams {
     COLSTATUS(true, LockLevel.NONE),
     // this command implements its own locking
     REINDEXCOLLECTION(true, LockLevel.NONE),
-    RENAME(true, LockLevel.COLLECTION)
-    ;
+    RENAME(true, LockLevel.COLLECTION);
     public final boolean isWrite;
 
     public final String lowerName;
@@ -161,9 +168,8 @@ public interface CollectionParams {
     }
   }
 
-  Map<String, CollectionAction> actions = Collections.unmodifiableMap(
-      Stream.of(
-          CollectionAction.values())
-          .collect(toMap(CollectionAction::toLower, Function.<CollectionAction>identity())));
-
+  Map<String, CollectionAction> actions =
+      Collections.unmodifiableMap(
+          Stream.of(CollectionAction.values())
+              .collect(toMap(CollectionAction::toLower, Function.<CollectionAction>identity())));
 }

@@ -17,9 +17,10 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -28,32 +29,27 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-
 /**
- * A lock to be used across cluster nodes based on Zookeeper. Used for the distributed Collection API and distributed
- * Config Set API implementations.
- * @see <a href="https://zookeeper.apache.org/doc/current/recipes.html#sc_recipes_Locks">Zookeeper lock recipe</a>
+ * A lock to be used across cluster nodes based on Zookeeper. Used for the distributed Collection
+ * API and distributed Config Set API implementations.
+ *
+ * @see <a href="https://zookeeper.apache.org/doc/current/recipes.html#sc_recipes_Locks">Zookeeper
+ *     lock recipe</a>
  */
 abstract class ZkDistributedLock implements DistributedLock {
-  /**
-   * End of the lock node name prefix before the sequential part
-   */
+  /** End of the lock node name prefix before the sequential part */
   static final char LOCK_PREFIX_SUFFIX = '_';
-  /**
-   * Prefix of EPHEMERAL read lock node names
-   */
+
+  /** Prefix of EPHEMERAL read lock node names */
   static final String READ_LOCK_PREFIX = "R" + LOCK_PREFIX_SUFFIX;
-  /**
-   * Prefix of EPHEMERAL write lock node names
-   */
+
+  /** Prefix of EPHEMERAL write lock node names */
   static final String WRITE_LOCK_PREFIX = "W" + LOCK_PREFIX_SUFFIX;
 
-  /**
-   * Read lock.
-   */
+  /** Read lock. */
   static class Read extends ZkDistributedLock {
-    protected Read(SolrZkClient zkClient, String lockPath) throws KeeperException, InterruptedException {
+    protected Read(SolrZkClient zkClient, String lockPath)
+        throws KeeperException, InterruptedException {
       super(zkClient, lockPath, READ_LOCK_PREFIX);
     }
 
@@ -65,11 +61,10 @@ abstract class ZkDistributedLock implements DistributedLock {
     }
   }
 
-  /**
-   * Write lock.
-   */
+  /** Write lock. */
   static class Write extends ZkDistributedLock {
-    protected Write(SolrZkClient zkClient, String lockPath) throws KeeperException, InterruptedException {
+    protected Write(SolrZkClient zkClient, String lockPath)
+        throws KeeperException, InterruptedException {
       super(zkClient, lockPath, WRITE_LOCK_PREFIX);
     }
 
@@ -86,13 +81,21 @@ abstract class ZkDistributedLock implements DistributedLock {
   protected final long sequence;
   protected volatile boolean released = false;
 
-  protected ZkDistributedLock(SolrZkClient zkClient, String lockDir, String lockNodePrefix) throws KeeperException, InterruptedException {
+  protected ZkDistributedLock(SolrZkClient zkClient, String lockDir, String lockNodePrefix)
+      throws KeeperException, InterruptedException {
     this.zkClient = zkClient;
     this.lockDir = lockDir;
 
-    // Create the SEQUENTIAL EPHEMERAL node. We enter the locking rat race here. We MUST eventually call release() or we block others.
-    lockNode = zkClient.create(lockDir + DistributedCollectionConfigSetCommandRunner.ZK_PATH_SEPARATOR + lockNodePrefix, null,
-        CreateMode.EPHEMERAL_SEQUENTIAL, false);
+    // Create the SEQUENTIAL EPHEMERAL node. We enter the locking rat race here. We MUST eventually
+    // call release() or we block others.
+    lockNode =
+        zkClient.create(
+            lockDir
+                + DistributedCollectionConfigSetCommandRunner.ZK_PATH_SEPARATOR
+                + lockNodePrefix,
+            null,
+            CreateMode.EPHEMERAL_SEQUENTIAL,
+            false);
 
     sequence = getSequenceFromNodename(lockNode);
   }
@@ -113,7 +116,8 @@ abstract class ZkDistributedLock implements DistributedLock {
         return;
       } else if (event.getType() != Event.EventType.NodeDeleted) {
         synchronized (this) {
-          errorMessage = "Received unexpected watch event " + event.getType() + " on " + nodeBeingWatched;
+          errorMessage =
+              "Received unexpected watch event " + event.getType() + " on " + nodeBeingWatched;
         }
       }
       latch.countDown();
@@ -133,7 +137,8 @@ abstract class ZkDistributedLock implements DistributedLock {
   public void waitUntilAcquired() {
     try {
       if (released) {
-        throw new IllegalStateException("Bug. waitUntilAcquired() should not be called after release(). " + lockNode);
+        throw new IllegalStateException(
+            "Bug. waitUntilAcquired() should not be called after release(). " + lockNode);
       }
       String nodeToWatch = nodeToWatch();
       while (nodeToWatch != null) {
@@ -168,7 +173,8 @@ abstract class ZkDistributedLock implements DistributedLock {
   public boolean isAcquired() {
     try {
       if (released) {
-        throw new IllegalStateException("Bug. isAcquired() should not be called after release(). " + lockNode);
+        throw new IllegalStateException(
+            "Bug. isAcquired() should not be called after release(). " + lockNode);
       }
       return nodeToWatch() == null;
     } catch (KeeperException e) {
@@ -180,16 +186,19 @@ abstract class ZkDistributedLock implements DistributedLock {
   }
 
   /**
-   * @return Another lock node (complete path) that must go away for us to acquire the lock, or {@code null} if the lock is ours.
+   * @return Another lock node (complete path) that must go away for us to acquire the lock, or
+   *     {@code null} if the lock is ours.
    */
   String nodeToWatch() throws KeeperException, InterruptedException {
     List<String> locks = zkClient.getChildren(lockDir, null, true);
     boolean foundSelf = false; // For finding bugs or ZK bad behavior
-    // We deviate from the ZK recipe here: we do not sort the list of nodes, and we stop waiting on the first one we find
-    // that blocks us. This is done in O(n), whereas sorting is more expensive. And we iterate only once over the set of children.
-    // Might cause more wakeups than needed though (multiple locks watching the same one rather than one another) but lock
-    // contention expected low (how many concurrent and conflicting Collection API requests a reasonable user can issue?)
-    // and the code below is simpler. Changing to a sorted "optimal" approach implies only changes in this method.
+    // We deviate from the ZK recipe here: we do not sort the list of nodes, and we stop waiting on
+    // the first one we find that blocks us. This is done in O(n), whereas sorting is more
+    // expensive. And we iterate only once over the set of children. Might cause more wakeups than
+    // needed though (multiple locks watching the same one rather than one another) but lock
+    // contention expected low (how many concurrent and conflicting Collection API requests a
+    // reasonable user can issue?) and the code below is simpler. Changing to a sorted "optimal"
+    // approach implies only changes in this method.
     for (String lock : locks) {
       long seq = getSequenceFromNodename(lock);
       if (seq == sequence) {
@@ -198,10 +207,12 @@ abstract class ZkDistributedLock implements DistributedLock {
         // Return the full path to the node to watch
         return lockDir + DistributedCollectionConfigSetCommandRunner.ZK_PATH_SEPARATOR + lock;
       }
-      // seq is bigger than sequence, can't block us. If the iteration was sorted we could avoid iterating over those.
+      // seq is bigger than sequence, can't block us. If the iteration was sorted we could avoid
+      // iterating over those.
     }
     if (!foundSelf) {
-      // If this basic assumption doesn't hold with Zookeeper, we're in deep trouble. And not only here.
+      // If this basic assumption doesn't hold with Zookeeper, we're in deep trouble. And not only
+      // here.
       throw new SolrException(SERVER_ERROR, "Missing lock node " + lockNode);
     }
 
@@ -210,13 +221,16 @@ abstract class ZkDistributedLock implements DistributedLock {
   }
 
   /**
-   * @param otherLockName name of a competing lock node. Used to find out the type of the lock (read or write)
-   * @return {@code true} if a lock node of the given type with a lower sequence number blocks us from acquiring the lock.
+   * @param otherLockName name of a competing lock node. Used to find out the type of the lock (read
+   *     or write)
+   * @return {@code true} if a lock node of the given type with a lower sequence number blocks us
+   *     from acquiring the lock.
    */
   abstract boolean isBlockedByNodeType(String otherLockName);
 
   static long getSequenceFromNodename(String lockNode) {
-    // Javadoc of ZooKeeper.create() specifies "The sequence number is always fixed length of 10 digits, 0 padded"
+    // Javadoc of ZooKeeper.create() specifies "The sequence number is always fixed length of 10
+    // digits, 0 padded"
     // for sequential nodes
     final int SEQUENCE_LENGTH = 10;
     // Before the sequence we have our specific char

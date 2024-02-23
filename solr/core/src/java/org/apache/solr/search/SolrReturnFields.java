@@ -16,17 +16,18 @@
  */
 package org.apache.solr.search;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-
-import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
@@ -35,7 +36,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.GlobPatternUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.DocTransformers;
@@ -45,9 +46,7 @@ import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.response.transform.ValueSourceAugmenter;
 import org.apache.solr.search.SolrDocumentFetcher.RetrieveFieldsOptimizer;
 
-/**
- * The default implementation of return fields parsing for Solr.
- */
+/** The default implementation of return fields parsing for Solr. */
 public class SolrReturnFields extends ReturnFields {
   // Special Field Keys
   public static final String SCORE = "score";
@@ -65,16 +64,19 @@ public class SolrReturnFields extends ReturnFields {
   // The list of explicitly requested fields
   // Order is important for CSVResponseWriter
   private Set<String> reqFieldNames = null;
-  
+
   protected DocTransformer transformer;
   protected boolean _wantsScore = false;
   protected boolean _wantsAllFields = false;
-  protected Map<String,String> renameFields = Collections.emptyMap();
+  protected Map<String, String> renameFields = Collections.emptyMap();
 
   // Only set currently with the SolrDocumentFetcher.solrDoc method. Primarily used
   // at this time for testing to ensure we get fields from the expected places.
   public enum FIELD_SOURCES {
-      NOT_SET, ALL_FROM_DV, ALL_FROM_STORED, MIXED_SOURCES
+    NOT_SET,
+    ALL_FROM_DV,
+    ALL_FROM_STORED,
+    MIXED_SOURCES
   }
 
   public FIELD_SOURCES getFieldSources() {
@@ -97,25 +99,23 @@ public class SolrReturnFields extends ReturnFields {
   }
 
   public SolrReturnFields(SolrQueryRequest req) {
-    this( req.getParams().getParams(CommonParams.FL), req );
+    this(req.getParams().getParams(CommonParams.FL), req);
   }
 
   public SolrReturnFields(String fl, SolrQueryRequest req) {
-//    this( (fl==null)?null:SolrPluginUtils.split(fl), req );
-    if( fl == null ) {
-      parseFieldList((String[])null, req);
-    }
-    else {
-      if( fl.trim().length() == 0 ) {
+    //    this( (fl==null)?null:SolrPluginUtils.split(fl), req );
+    if (fl == null) {
+      parseFieldList((String[]) null, req);
+    } else {
+      if (fl.trim().length() == 0) {
         // legacy thing to support fl='  ' => fl=*,score!
         // maybe time to drop support for this?
         // See ConvertedLegacyTest
         _wantsScore = true;
         _wantsAllFields = true;
         transformer = new ScoreAugmenter(SCORE);
-      }
-      else {
-        parseFieldList( new String[]{fl}, req);
+      } else {
+        parseFieldList(new String[] {fl}, req);
       }
     }
   }
@@ -125,9 +125,8 @@ public class SolrReturnFields extends ReturnFields {
   }
 
   /**
-   * For pre-parsed simple field list with optional transformer.
-   * Does not support globs or the score.
-   * This constructor is more for internal use; not for parsing user input.
+   * For pre-parsed simple field list with optional transformer. Does not support globs or the
+   * score. This constructor is more for internal use; not for parsing user input.
    *
    * @param plainFields simple field list; nothing special. If null, equivalent to all-fields.
    * @param docTransformer optional transformer.
@@ -159,43 +158,41 @@ public class SolrReturnFields extends ReturnFields {
     return fetchOptimizer;
   }
 
-
+  /**
+   * Parsing is done in two passes (see javadocs for {@link
+   * org.apache.solr.response.transform.TransformerFactory.FieldRenamer} for an explanation of the
+   * logic behind deferring creation of "rename field" transformers).
+   */
   private void parseFieldList(String[] fl, SolrQueryRequest req) {
     _wantsScore = false;
     _wantsAllFields = false;
-    if (fl == null || fl.length == 0 || fl.length == 1 && fl[0].length()==0) {
+    if (fl == null || fl.length == 0 || (fl.length == 1 && fl[0].length() == 0)) {
       _wantsAllFields = true;
       return;
     }
 
-    NamedList<String> rename = new NamedList<>();
+    Deque<DeferredRenameEntry> deferredRenameAugmenters = new ArrayDeque<>();
     DocTransformers augmenters = new DocTransformers();
     for (String fieldList : fl) {
-      add(fieldList,rename,augmenters,req);
+      add(fieldList, deferredRenameAugmenters, augmenters, req);
     }
-    for( int i=0; i<rename.size(); i++ ) {
-      String from = rename.getName(i);
-      String to = rename.getVal(i);
-      okFieldNames.add( to );
-      boolean copy = (reqFieldNames!=null && reqFieldNames.contains(from));
-      if(!copy) {
-        // Check that subsequent copy/rename requests have the field they need to copy
-        for(int j=i+1; j<rename.size(); j++) {
-          if(from.equals(rename.getName(j))) {
-            rename.setName(j, to); // copy from the current target
-            if(reqFieldNames==null) {
-              reqFieldNames = new LinkedHashSet<>();
-            }
-            reqFieldNames.add(to); // don't rename our current target
+    Map<String, String> renamedNotCopied = new HashMap<>();
+    for (DeferredRenameEntry e : deferredRenameAugmenters) {
+      DocTransformer t = e.create(renamedNotCopied, reqFieldNames);
+      augmenters.addTransformer(t);
+      if (!_wantsAllFields) {
+        final String[] extraRequestFields = t.getExtraRequestFields();
+        if (extraRequestFields != null) {
+          for (String f : extraRequestFields) {
+            fields.add(f);
           }
         }
       }
-      augmenters.addTransformer( new RenameFieldTransformer( from, to, copy ) );
     }
-    if (rename.size() > 0 ) {
-      renameFields = rename.asShallowMap();
+    if (!renamedNotCopied.isEmpty()) {
+      renameFields = renamedNotCopied;
     }
-    if( !_wantsAllFields && !globs.isEmpty() ) {
+    if (!_wantsAllFields && !globs.isEmpty()) {
       // TODO??? need to fill up the fields with matching field names in the index
       // and add them to okFieldNames?
       // maybe just get all fields?
@@ -203,16 +200,15 @@ public class SolrReturnFields extends ReturnFields {
       fields.clear(); // this will get all fields, and use wantsField to limit
     }
 
-    if( augmenters.size() == 1 ) {
+    if (augmenters.size() == 1) {
       transformer = augmenters.getTransformer(0);
-    }
-    else if( augmenters.size() > 1 ) {
+    } else if (augmenters.size() > 1) {
       transformer = augmenters;
     }
   }
 
   @Override
-  public Map<String,String> getFieldRenames() {
+  public Map<String, String> getFieldRenames() {
     return renameFields;
   }
 
@@ -221,7 +217,9 @@ public class SolrReturnFields extends ReturnFields {
     sp.eatws();
     int id_start = sp.pos;
     char ch;
-    if (sp.pos < sp.end && (ch = sp.val.charAt(sp.pos)) != '$' && Character.isJavaIdentifierStart(ch)) {
+    if (sp.pos < sp.end
+        && (ch = sp.val.charAt(sp.pos)) != '$'
+        && Character.isJavaIdentifierStart(ch)) {
       sp.pos++;
       while (sp.pos < sp.end) {
         ch = sp.val.charAt(sp.pos);
@@ -236,14 +234,18 @@ public class SolrReturnFields extends ReturnFields {
     return null;
   }
 
-  private void add(String fl, NamedList<String> rename, DocTransformers augmenters, SolrQueryRequest req) {
-    if( fl == null ) {
+  private void add(
+      String fl,
+      Deque<DeferredRenameEntry> deferred,
+      DocTransformers augmenters,
+      SolrQueryRequest req) {
+    if (fl == null) {
       return;
     }
     try {
       StrParser sp = new StrParser(fl);
 
-      for(;;) {
+      for (; ; ) {
         sp.opt(',');
         sp.eatws();
         if (sp.pos >= sp.end) break;
@@ -263,7 +265,7 @@ public class SolrReturnFields extends ReturnFields {
             sp.eatws();
             start = sp.pos;
           } else {
-            if (Character.isWhitespace(ch) || ch == ',' || ch==0) {
+            if (Character.isWhitespace(ch) || ch == ',' || ch == 0) {
               addField(field, key, augmenters, false);
               continue;
             }
@@ -277,9 +279,16 @@ public class SolrReturnFields extends ReturnFields {
           // we read "key : "
           field = sp.getId(null);
           ch = sp.ch();
-          if (field != null && (Character.isWhitespace(ch) || ch == ',' || ch==0)) {
-            rename.add(field, key);
-            addField(field, key, augmenters, false);
+          if (field != null && (Character.isWhitespace(ch) || ch == ',' || ch == 0)) {
+            deferred.addFirst(
+                new DeferredRenameEntry(
+                    key,
+                    new ModifiableSolrParams().set(SOURCE_FIELD_ARGNAME, field),
+                    req,
+                    RENAME_FIELD_TRANSFORMER_FACTORY));
+            // NOTE: treat as pseudoField below because `fields` will be modified on deferred
+            // invocation
+            addField(field, key, augmenters, true);
             continue;
           }
           // an invalid field name... reset the position pointer to retry
@@ -289,11 +298,12 @@ public class SolrReturnFields extends ReturnFields {
 
         if (field == null) {
           // We didn't find a simple name, so let's see if it's a globbed field name.
-          // Globbing only works with field names of the recommended form (roughly like java identifiers)
+          // Globbing only works with field names of the recommended form (roughly like java
+          // identifiers)
 
           field = sp.getGlobbedId(null);
           ch = sp.ch();
-          if (field != null && (Character.isWhitespace(ch) || ch == ',' || ch==0)) {
+          if (field != null && (Character.isWhitespace(ch) || ch == ',' || ch == 0)) {
             // "*" looks and acts like a glob, but we give it special treatment
             if ("*".equals(field)) {
               _wantsAllFields = true;
@@ -314,39 +324,56 @@ public class SolrReturnFields extends ReturnFields {
 
         if (funcStr.startsWith("[")) {
           ModifiableSolrParams augmenterParams = new ModifiableSolrParams();
-          int end = QueryParsing.parseLocalParams(funcStr, 0, augmenterParams, req.getParams(), "[", ']');
+          int end =
+              QueryParsing.parseLocalParams(funcStr, 0, augmenterParams, req.getParams(), "[", ']');
           sp.pos += end;
 
           // [foo] is short for [type=foo] in localParams syntax
           String augmenterName = augmenterParams.get("type");
           augmenterParams.remove("type");
           String disp = key;
-          if( disp == null ) {
-            disp = '['+augmenterName+']';
+          if (disp == null) {
+            disp = '[' + augmenterName + ']';
           }
 
-          TransformerFactory factory = req.getCore().getTransformerFactory( augmenterName );
-          if( factory != null ) {
+          TransformerFactory factory = req.getCore().getTransformerFactory(augmenterName);
+          if (factory instanceof TransformerFactory.FieldRenamer) {
+            // NOTE: `deferred` is a Deque because some TransformerFactories (e.g.,
+            // `GeoTransformerFactory`) can subtly modify the representation of the associated value
+            // (i.e., it's not just a straight rename). This subverts the "update source field"
+            // phase of `FieldRenamer.create(...)`. We _know_ however that "simple" field renames
+            // don't do any value modification whatsoever, so those are added to the beginning of
+            // the `deferred` Deque so that they will be processed first, and all other
+            // `FieldRenamers` are added (here) to the front or back of the Deque, depending on the
+            // return value of `mayModifyValue()`.
+            final DeferredRenameEntry deferredEntry =
+                new DeferredRenameEntry(
+                    disp, augmenterParams, req, (TransformerFactory.FieldRenamer) factory);
+            if (((TransformerFactory.FieldRenamer) factory).mayModifyValue()) {
+              deferred.addLast(deferredEntry);
+            } else {
+              deferred.addFirst(deferredEntry);
+            }
+          } else if (factory != null) {
             DocTransformer t = factory.create(disp, augmenterParams, req);
-            if(t!=null) {
-              if(!_wantsAllFields) {
+            if (t != null) {
+              if (!_wantsAllFields) {
                 String[] extra = t.getExtraRequestFields();
-                if(extra!=null) {
-                  for(String f : extra) {
+                if (extra != null) {
+                  for (String f : extra) {
                     fields.add(f); // also request this field from IndexSearcher
                   }
                 }
               }
-              augmenters.addTransformer( t );
+              augmenters.addTransformer(t);
             }
-          }
-          else {
-            //throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown DocTransformer: "+augmenterName);
+          } else {
+            // throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown DocTransformer:
+            // "+augmenterName);
           }
           addField(field, disp, augmenters, true);
           continue;
         }
-
 
         // let's try it as a function instead
         QParser parser = QParser.getParser(funcStr, FunctionQParserPlugin.NAME, req);
@@ -355,7 +382,7 @@ public class SolrReturnFields extends ReturnFields {
 
         try {
           if (parser instanceof FunctionQParser) {
-            FunctionQParser fparser = (FunctionQParser)parser;
+            FunctionQParser fparser = (FunctionQParser) parser;
             fparser.setParseMultipleSources(false);
             fparser.setParseToEnd(false);
 
@@ -365,7 +392,7 @@ public class SolrReturnFields extends ReturnFields {
               if (fparser.valFollowedParams) {
                 // need to find the end of the function query via the string parser
                 int leftOver = fparser.sp.end - fparser.sp.pos;
-                sp.pos = sp.end - leftOver;   // reset our parser to the same amount of leftover
+                sp.pos = sp.end - leftOver; // reset our parser to the same amount of leftover
               } else {
                 // the value was via the "v" param in localParams, so we need to find
                 // the end of the local params themselves to pick up where we left off
@@ -374,7 +401,7 @@ public class SolrReturnFields extends ReturnFields {
             } else {
               // need to find the end of the function query via the string parser
               int leftOver = fparser.sp.end - fparser.sp.pos;
-              sp.pos = sp.end - leftOver;   // reset our parser to the same amount of leftover
+              sp.pos = sp.end - leftOver; // reset our parser to the same amount of leftover
             }
           } else {
             // A QParser that's not for function queries.
@@ -386,27 +413,25 @@ public class SolrReturnFields extends ReturnFields {
           }
           funcStr = sp.val.substring(start, sp.pos);
 
-
           if (q instanceof FunctionQuery) {
-            vs = ((FunctionQuery)q).getValueSource();
+            vs = ((FunctionQuery) q).getValueSource();
           } else {
             vs = new QueryValueSource(q, 0.0f);
           }
 
-          if (key==null) {
+          if (key == null) {
             SolrParams localParams = parser.getLocalParams();
             if (localParams != null) {
               key = localParams.get("key");
             }
           }
 
-          if (key==null) {
+          if (key == null) {
             key = funcStr;
           }
           addField(funcStr, key, augmenters, true);
-          augmenters.addTransformer( new ValueSourceAugmenter( key, parser, vs ) );
-        }
-        catch (SyntaxError e) {
+          augmenters.addTransformer(new ValueSourceAugmenter(key, parser, vs));
+        } catch (SyntaxError e) {
           // try again, simple rules for a field name with no whitespace
           sp.pos = start;
           field = sp.getSimpleString();
@@ -414,11 +439,19 @@ public class SolrReturnFields extends ReturnFields {
           if (req.getSchema().getFieldOrNull(field) != null) {
             // OK, it was an oddly named field
             addField(field, key, augmenters, false);
-            if( key != null ) {
-              rename.add(field, key);
+            if (key != null) {
+              deferred.addFirst(
+                  new DeferredRenameEntry(
+                      key,
+                      new ModifiableSolrParams().set(SOURCE_FIELD_ARGNAME, field),
+                      req,
+                      RENAME_FIELD_TRANSFORMER_FACTORY));
             }
           } else {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing fieldname: " + e.getMessage(), e);
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Error parsing fieldname: " + e.getMessage(),
+                e);
           }
         }
 
@@ -430,54 +463,96 @@ public class SolrReturnFields extends ReturnFields {
     }
   }
 
-  private void addField(String field, String key, DocTransformers augmenters, boolean isPseudoField)
-  {
-    if(reqFieldNames==null) {
+  private static final String SOURCE_FIELD_ARGNAME = "sourceField";
+  private static final TransformerFactory.FieldRenamer RENAME_FIELD_TRANSFORMER_FACTORY =
+      new TransformerFactory.FieldRenamer() {
+        @Override
+        public DocTransformer create(
+            String to,
+            SolrParams params,
+            SolrQueryRequest req,
+            Map<String, String> renamedFields,
+            Set<String> reqFieldNames) {
+          String from = params.get(SOURCE_FIELD_ARGNAME);
+          from = renamedFields.getOrDefault(from, from);
+          final boolean copy = reqFieldNames != null && reqFieldNames.contains(from);
+          if (!copy) {
+            renamedFields.put(from, to);
+          }
+          return new RenameFieldTransformer(from, to, copy);
+        }
+
+        @Override
+        public boolean mayModifyValue() {
+          return false;
+        }
+      };
+
+  private static final class DeferredRenameEntry {
+    private final String field;
+    private final SolrParams params;
+    private final SolrQueryRequest req;
+    private final TransformerFactory.FieldRenamer factory;
+
+    private DeferredRenameEntry(
+        String field,
+        SolrParams params,
+        SolrQueryRequest req,
+        TransformerFactory.FieldRenamer factory) {
+      this.field = field;
+      this.params = params;
+      this.req = req;
+      this.factory = factory;
+    }
+
+    private DocTransformer create(Map<String, String> renamedFields, Set<String> reqFieldNames) {
+      return factory.create(field, params, req, renamedFields, reqFieldNames);
+    }
+  }
+
+  private void addField(
+      String field, String key, DocTransformers augmenters, boolean isPseudoField) {
+    if (reqFieldNames == null) {
       reqFieldNames = new LinkedHashSet<>();
     }
-    
-    if(key==null) {
+
+    if (key == null) {
       reqFieldNames.add(field);
-    }
-    else {
+    } else {
       reqFieldNames.add(key);
     }
 
-    if ( ! isPseudoField) {
+    if (!isPseudoField) {
       // fields is returned by getLuceneFieldNames(), to be used to select which real fields
       // to return, so pseudo-fields should not be added
       fields.add(field);
     }
 
-    okFieldNames.add( field );
-    okFieldNames.add( key );
+    okFieldNames.add(field);
+    okFieldNames.add(key);
     // a valid field name
-    if(SCORE.equals(field)) {
+    if (SCORE.equals(field)) {
       _wantsScore = true;
 
-      String disp = (key==null) ? field : key;
-      augmenters.addTransformer( new ScoreAugmenter( disp ) );
+      String disp = (key == null) ? field : key;
+      augmenters.addTransformer(new ScoreAugmenter(disp));
     }
   }
 
   @Override
-  public Set<String> getLuceneFieldNames()
-  {
+  public Set<String> getLuceneFieldNames() {
     return getLuceneFieldNames(false);
   }
 
   @Override
-  public Set<String> getLuceneFieldNames(boolean ignoreWantsAll)
-  {
-    if (ignoreWantsAll)
-      return fields;
-    else
-      return (_wantsAllFields || fields.isEmpty()) ? null : fields;
+  public Set<String> getLuceneFieldNames(boolean ignoreWantsAll) {
+    if (ignoreWantsAll) return fields;
+    else return (_wantsAllFields || fields.isEmpty()) ? null : fields;
   }
 
   @Override
   public Set<String> getRequestedFieldNames() {
-    if(_wantsAllFields || reqFieldNames == null || reqFieldNames.isEmpty()) {
+    if (_wantsAllFields || reqFieldNames == null || reqFieldNames.isEmpty()) {
       return null;
     }
     return reqFieldNames;
@@ -490,56 +565,58 @@ public class SolrReturnFields extends ReturnFields {
     }
     return reqFieldNames;
   }
-  
+
   @Override
   public boolean hasPatternMatching() {
     return !globs.isEmpty();
   }
 
   @Override
-  public boolean wantsField(String name)
-  {
-    if( _wantsAllFields || okFieldNames.contains( name ) ){
+  public boolean wantsField(String name) {
+    if (_wantsAllFields || okFieldNames.contains(name)) {
       return true;
     }
-    for( String s : globs ) {
-      // TODO something better?
-      if( FilenameUtils.wildcardMatch(name, s) ) {
+    for (String s : globs) {
+      if (GlobPatternUtil.matches(s, name)) {
         okFieldNames.add(name); // Don't calculate it again
         return true;
       }
     }
     return false;
   }
-  
+
   @Override
-  public boolean wantsAllFields()
-  {
+  public boolean wantsAllFields() {
     return _wantsAllFields;
   }
 
   @Override
-  public boolean wantsScore()
-  {
+  public boolean wantsScore() {
     return _wantsScore;
   }
 
   @Override
-  public DocTransformer getTransformer()
-  {
+  public DocTransformer getTransformer() {
     return transformer;
   }
 
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder("SolrReturnFields=(");
-    sb.append("globs="); sb.append(globs);
-    sb.append(",fields="); sb.append(fields);
-    sb.append(",okFieldNames="); sb.append(okFieldNames);
-    sb.append(",reqFieldNames="); sb.append(reqFieldNames);
-    sb.append(",transformer="); sb.append(transformer);
-    sb.append(",wantsScore="); sb.append(_wantsScore);
-    sb.append(",wantsAllFields="); sb.append(_wantsAllFields);
+    sb.append("globs=");
+    sb.append(globs);
+    sb.append(",fields=");
+    sb.append(fields);
+    sb.append(",okFieldNames=");
+    sb.append(okFieldNames);
+    sb.append(",reqFieldNames=");
+    sb.append(reqFieldNames);
+    sb.append(",transformer=");
+    sb.append(transformer);
+    sb.append(",wantsScore=");
+    sb.append(_wantsScore);
+    sb.append(",wantsAllFields=");
+    sb.append(_wantsAllFields);
     sb.append(')');
     return sb.toString();
   }

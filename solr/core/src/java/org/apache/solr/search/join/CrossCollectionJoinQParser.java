@@ -17,6 +17,10 @@
 
 package org.apache.solr.search.join;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -24,11 +28,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
 
 @SuppressWarnings("WeakerAccess")
 public class CrossCollectionJoinQParser extends QParser {
@@ -43,14 +42,29 @@ public class CrossCollectionJoinQParser extends QParser {
 
   public static final int TTL_DEFAULT = 60 * 60; // in seconds
 
-  private static final Set<String> OWN_PARAMS = new HashSet<>(Arrays.asList(
-          QueryParsing.TYPE, QueryParsing.V, ZK_HOST, SOLR_URL, FROM_INDEX, FROM, TO, ROUTED_BY_JOIN_KEY, TTL));
+  private static final Set<String> OWN_PARAMS =
+      new HashSet<>(
+          Arrays.asList(
+              QueryParsing.TYPE,
+              QueryParsing.V,
+              ZK_HOST,
+              SOLR_URL,
+              FROM_INDEX,
+              FROM,
+              TO,
+              ROUTED_BY_JOIN_KEY,
+              TTL));
 
   private final String routerField;
   private final Set<String> allowSolrUrls;
 
-  public CrossCollectionJoinQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req,
-                                    String routerField, Set<String> allowSolrUrls) {
+  public CrossCollectionJoinQParser(
+      String qstr,
+      SolrParams localParams,
+      SolrParams params,
+      SolrQueryRequest req,
+      String routerField,
+      Set<String> allowSolrUrls) {
     super(qstr, localParams, params, req);
     this.routerField = routerField;
     // If specified in the config, this will limit which solr url's the parser can connect to.
@@ -68,7 +82,8 @@ public class CrossCollectionJoinQParser extends QParser {
         throw new SyntaxError("allowSolrUrls list must be configured to use solrUrl parameter.");
       }
       if (!allowSolrUrls.contains(solrUrl)) {
-        throw new SyntaxError("Solr URL was not in allowSolrUrls list.  Please check your configuration.");
+        throw new SyntaxError(
+            "Solr URL was not in allowSolrUrls list.  Please check your configuration.");
       }
     }
 
@@ -87,6 +102,7 @@ public class CrossCollectionJoinQParser extends QParser {
       }
     }
 
-    return new CrossCollectionJoinQuery(query, zkHost, solrUrl, collection, fromField, toField, routedByJoinKey, ttl, otherParams);
+    return new CrossCollectionJoinQuery(
+        query, zkHost, solrUrl, collection, fromField, toField, routedByJoinKey, ttl, otherParams);
   }
 }

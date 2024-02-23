@@ -16,7 +16,7 @@
  */
 package org.apache.solr.spelling;
 
-
+import java.util.Objects;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.PackedTokenAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -25,31 +25,33 @@ import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 
 /**
- A Token is an occurrence of a term from the text of a field.  It consists of
- a term's text, the start and end offset of the term in the text of the field,
- and a type string.
- <p>
- The start and end offsets permit applications to re-associate a token with
- its source text, e.g., to display highlighted query terms in a document
- browser, or to show matching text fragments in a <a href="http://en.wikipedia.org/wiki/Key_Word_in_Context">KWIC</a>
- display, etc.
- <p>
- The type is a string, assigned by a lexical analyzer
- (a.k.a. tokenizer), naming the lexical or syntactic class that the token
- belongs to.  For example an end of sentence marker token might be implemented
- with type "eos".  The default token type is "word".
- <p>
- A Token can optionally have metadata (a.k.a. payload) in the form of a variable
- length byte array. Use {@link org.apache.lucene.index.PostingsEnum#getPayload()} to retrieve the
- payloads from the index.
-
- A few things to note:
- <ul>
- <li>clear() initializes all of the fields to default values. This was changed in contrast to Lucene 2.4, but should affect no one.</li>
- <li>Because <code>TokenStreams</code> can be chained, one cannot assume that the <code>Token's</code> current type is correct.</li>
- <li>The startOffset and endOffset represent the start and offset in the source text, so be careful in adjusting them.</li>
- <li>When caching a reusable token, clone it. When injecting a cached token into a stream that can be reset, clone it again.</li>
- </ul>
+ * A Token is an occurrence of a term from the text of a field. It consists of a term's text, the
+ * start and end offset of the term in the text of the field, and a type string.
+ *
+ * <p>The start and end offsets permit applications to re-associate a token with its source text,
+ * e.g., to display highlighted query terms in a document browser, or to show matching text
+ * fragments in a <a href="http://en.wikipedia.org/wiki/Key_Word_in_Context">KWIC</a> display, etc.
+ *
+ * <p>The type is a string, assigned by a lexical analyzer (a.k.a. tokenizer), naming the lexical or
+ * syntactic class that the token belongs to. For example an end of sentence marker token might be
+ * implemented with type "eos". The default token type is "word".
+ *
+ * <p>A Token can optionally have metadata (a.k.a. payload) in the form of a variable length byte
+ * array. Use {@link org.apache.lucene.index.PostingsEnum#getPayload()} to retrieve the payloads
+ * from the index.
+ *
+ * <p>A few things to note:
+ *
+ * <ul>
+ *   <li>clear() initializes all of the fields to default values. This was changed in contrast to
+ *       Lucene 2.4, but should affect no one.
+ *   <li>Because <code>TokenStreams</code> can be chained, one cannot assume that the <code>Token's
+ *       </code> current type is correct.
+ *   <li>The startOffset and endOffset represent the start and offset in the source text, so be
+ *       careful in adjusting them.
+ *   <li>When caching a reusable token, clone it. When injecting a cached token into a stream that
+ *       can be reset, clone it again.
+ * </ul>
  */
 @Deprecated
 public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, PayloadAttribute {
@@ -60,17 +62,16 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
   private BytesRef payload;
 
   /** Constructs a Token will null text. */
-  public Token() {
-  }
+  public Token() {}
 
-  /** Constructs a Token with the given term text, start
-   *  and end offsets.  The type defaults to "word."
-   *  <b>NOTE:</b> for better indexing speed you should
-   *  instead use the char[] termBuffer methods to set the
-   *  term text.
-   *  @param text term text
-   *  @param start start offset in the source text
-   *  @param end end offset in the source text
+  /**
+   * Constructs a Token with the given term text, start and end offsets. The type defaults to
+   * "word." <b>NOTE:</b> for better indexing speed you should instead use the char[] termBuffer
+   * methods to set the term text.
+   *
+   * @param text term text
+   * @param start start offset in the source text
+   * @param end end offset in the source text
    */
   public Token(CharSequence text, int start, int end) {
     append(text);
@@ -79,6 +80,7 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
 
   /**
    * {@inheritDoc}
+   *
    * @see FlagsAttribute
    */
   @Override
@@ -88,6 +90,7 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
 
   /**
    * {@inheritDoc}
+   *
    * @see FlagsAttribute
    */
   @Override
@@ -97,6 +100,7 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
 
   /**
    * {@inheritDoc}
+   *
    * @see PayloadAttribute
    */
   @Override
@@ -106,6 +110,7 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
 
   /**
    * {@inheritDoc}
+   *
    * @see PayloadAttribute
    */
   @Override
@@ -113,8 +118,9 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
     this.payload = payload;
   }
 
-  /** Resets the term text, payload, flags, positionIncrement, positionLength,
-   * startOffset, endOffset and token type to default.
+  /**
+   * Resets the term text, payload, flags, positionIncrement, positionLength, startOffset, endOffset
+   * and token type to default.
    */
   @Override
   public void clear() {
@@ -125,18 +131,11 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
 
   @Override
   public boolean equals(Object obj) {
-    if (obj == this)
-      return true;
+    if (obj == this) return true;
+    if (!(obj instanceof Token)) return false;
 
-    if (obj instanceof Token) {
-      final Token other = (Token) obj;
-      return (
-          flags == other.flags &&
-              (payload == null ? other.payload == null : payload.equals(other.payload)) &&
-              super.equals(obj)
-      );
-    } else
-      return false;
+    final Token other = (Token) obj;
+    return (flags == other.flags && (Objects.equals(payload, other.payload)) && super.equals(obj));
   }
 
   @Override
@@ -171,5 +170,4 @@ public class Token extends PackedTokenAttributeImpl implements FlagsAttribute, P
     reflector.reflect(FlagsAttribute.class, "flags", flags);
     reflector.reflect(PayloadAttribute.class, "payload", payload);
   }
-
 }

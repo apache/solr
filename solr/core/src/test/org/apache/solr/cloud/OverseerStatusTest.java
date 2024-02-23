@@ -28,9 +28,7 @@ public class OverseerStatusTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
-        .configure();;
+    configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   @Test
@@ -41,56 +39,84 @@ public class OverseerStatusTest extends SolrCloudTestCase {
     int numCollectionCreates = 0, numOverseerCreates = 0;
 
     String collectionName = "overseer_status_test";
-    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
+        .process(cluster.getSolrClient());
 
-    NamedList<Object> resp = new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient()).getResponse();
-    // When running with Distributed Collection API, no real data in Overseer status, but the Collection API call shouldn't fail
-    if (new CollectionAdminRequest.RequestApiDistributedProcessing().process(cluster.getSolrClient()).getIsCollectionApiDistributed()) {
+    NamedList<Object> resp =
+        new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient()).getResponse();
+    // When running with Distributed Collection API, no real data in Overseer status, but the
+    // Collection API call shouldn't fail
+    if (new CollectionAdminRequest.RequestApiDistributedProcessing()
+        .process(cluster.getSolrClient())
+        .getIsCollectionApiDistributed()) {
       return;
     }
     NamedList<Object> collection_operations = (NamedList<Object>) resp.get("collection_operations");
     NamedList<Object> overseer_operations = (NamedList<Object>) resp.get("overseer_operations");
-    SimpleOrderedMap<Object> createcollection
-        = (SimpleOrderedMap<Object>) collection_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
-    assertEquals("No stats for create in OverseerCollectionProcessor", numCollectionCreates + 1, createcollection.get("requests"));
-    // When cluster state updates are distributed, Overseer doesn't see them and doesn't report stats on them.
-    if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-      // Note the "create" key here is in a different map from the "create" key above. Above it's Collection creation in the
-      // Collection API, here it's the collection creation from the cluster state updater perspective.
-      createcollection = (SimpleOrderedMap<Object>) overseer_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
-      assertEquals("No stats for create in Overseer", numOverseerCreates + 1, createcollection.get("requests"));
+    SimpleOrderedMap<Object> createcollection =
+        (SimpleOrderedMap<Object>)
+            collection_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
+    assertEquals(
+        "No stats for create in OverseerCollectionProcessor",
+        numCollectionCreates + 1,
+        createcollection.get("requests"));
+    // When cluster state updates are distributed, Overseer doesn't see them and doesn't report
+    // stats on them.
+    // PRS collection creates do not go through overseer Queue
+    if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()
+        && !SolrCloudTestCase.isPRS()) {
+      // Note the "create" key here is in a different map from the "create" key above. Above it's
+      // from the
+      // Collection creation in the Collection API, here it's the collection creation from the
+      // cluster state updater perspective.
+      createcollection =
+          (SimpleOrderedMap<Object>)
+              overseer_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
+      assertEquals(
+          "No stats for create in Overseer",
+          numOverseerCreates + 1,
+          createcollection.get("requests"));
     }
 
     // Reload the collection
     CollectionAdminRequest.reloadCollection(collectionName).process(cluster.getSolrClient());
 
-    resp = new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient()).getResponse();
+    resp =
+        new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient()).getResponse();
     collection_operations = (NamedList<Object>) resp.get("collection_operations");
-    SimpleOrderedMap<Object> reload = (SimpleOrderedMap<Object>) collection_operations.get(CollectionParams.CollectionAction.RELOAD.toLower());
+    SimpleOrderedMap<Object> reload =
+        (SimpleOrderedMap<Object>)
+            collection_operations.get(CollectionParams.CollectionAction.RELOAD.toLower());
     assertEquals("No stats for reload in OverseerCollectionProcessor", 1, reload.get("requests"));
 
-    BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
-        "Split shard for non existent collection should have failed",
-        () -> CollectionAdminRequest
-            .splitShard("non_existent_collection")
-            .setShardName("non_existent_shard")
-            .process(cluster.getSolrClient())
-    );
+    BaseHttpSolrClient.RemoteSolrException e =
+        expectThrows(
+            BaseHttpSolrClient.RemoteSolrException.class,
+            "Split shard for non existent collection should have failed",
+            () ->
+                CollectionAdminRequest.splitShard("non_existent_collection")
+                    .setShardName("non_existent_shard")
+                    .process(cluster.getSolrClient()));
 
-    resp = new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient()).getResponse();
+    resp =
+        new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient()).getResponse();
     collection_operations = (NamedList<Object>) resp.get("collection_operations");
-    SimpleOrderedMap<Object> split = (SimpleOrderedMap<Object>) collection_operations.get(CollectionParams.CollectionAction.SPLITSHARD.toLower());
+    SimpleOrderedMap<Object> split =
+        (SimpleOrderedMap<Object>)
+            collection_operations.get(CollectionParams.CollectionAction.SPLITSHARD.toLower());
     assertEquals("No stats for split in OverseerCollectionProcessor", 1, split.get("errors"));
     assertNotNull(split.get("recent_failures"));
 
-    SimpleOrderedMap<Object> amIleader = (SimpleOrderedMap<Object>) collection_operations.get("am_i_leader");
+    SimpleOrderedMap<Object> amIleader =
+        (SimpleOrderedMap<Object>) collection_operations.get("am_i_leader");
     assertNotNull("OverseerCollectionProcessor amILeader stats should not be null", amIleader);
     assertNotNull(amIleader.get("requests"));
     assertTrue(Integer.parseInt(amIleader.get("requests").toString()) > 0);
     assertNotNull(amIleader.get("errors"));
     assertNotNull(amIleader.get("avgTimePerRequest"));
 
-    // When cluster state updates are distributed, Overseer doesn't see the updates and doesn't report stats on them.
+    // When cluster state updates are distributed, Overseer doesn't see the updates and doesn't
+    // report stats on them.
     if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
       amIleader = (SimpleOrderedMap<Object>) overseer_operations.get("am_i_leader");
       assertNotNull("Overseer amILeader stats should not be null", amIleader);
@@ -99,7 +125,8 @@ public class OverseerStatusTest extends SolrCloudTestCase {
       assertNotNull(amIleader.get("errors"));
       assertNotNull(amIleader.get("avgTimePerRequest"));
 
-      SimpleOrderedMap<Object> updateState = (SimpleOrderedMap<Object>) overseer_operations.get("update_state");
+      SimpleOrderedMap<Object> updateState =
+          (SimpleOrderedMap<Object>) overseer_operations.get("update_state");
       assertNotNull("Overseer update_state stats should not be null", updateState);
       assertNotNull(updateState.get("requests"));
       assertTrue(Integer.parseInt(updateState.get("requests").toString()) > 0);

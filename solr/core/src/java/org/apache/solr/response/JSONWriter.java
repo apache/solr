@@ -20,44 +20,49 @@ package org.apache.solr.response;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
-
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.JsonTextWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.ReturnFields;
 
 public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
-  static final int    JSON_NL_STYLE_COUNT = 5; // for use by JSONWriterTest
-  static final String JSON_WRAPPER_FUNCTION="json.wrf";
+  static final int JSON_NL_STYLE_COUNT = 5; // for use by JSONWriterTest
+  static final String JSON_WRAPPER_FUNCTION = "json.wrf";
 
-  final protected String namedListStyle;
+  protected final String namedListStyle;
   protected String wrapperFunction;
 
   public JSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
-    this(writer, req, rsp,
+    this(
+        writer,
+        req,
+        rsp,
         req.getParams().get(JSON_WRAPPER_FUNCTION),
         req.getParams().get(JSON_NL_STYLE, JSON_NL_FLAT).intern());
   }
 
-  public JSONWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp,
-                    String wrapperFunction, String namedListStyle) {
+  public JSONWriter(
+      Writer writer,
+      SolrQueryRequest req,
+      SolrQueryResponse rsp,
+      String wrapperFunction,
+      String namedListStyle) {
     super(writer, req, rsp);
     this.wrapperFunction = wrapperFunction;
     this.namedListStyle = namedListStyle;
   }
+
   private JSONWriter(Writer writer, boolean indent, String namedListStyle) throws IOException {
     super(writer, indent);
     this.namedListStyle = namedListStyle;
-
   }
 
-  /**Strictly for testing only
-   */
-  public static void write(Writer writer, boolean indent,  String namedListStyle, Object val) throws IOException {
+  /** Strictly for testing only */
+  public static void write(Writer writer, boolean indent, String namedListStyle, Object val)
+      throws IOException {
     JSONWriter jw = new JSONWriter(writer, indent, namedListStyle);
     jw.writeVal(null, val);
     jw.close();
-
   }
 
   @Override
@@ -65,21 +70,21 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
     return namedListStyle;
   }
 
-
   public void writeResponse() throws IOException {
-    if(wrapperFunction!=null) {
+    if (wrapperFunction != null) {
       _writeStr(wrapperFunction + "(");
     }
     writeNamedList(null, rsp.getValues());
-    if(wrapperFunction!=null) {
+    if (wrapperFunction != null) {
       _writeChar(')');
     }
-    _writeChar('\n');  // ending with a newline looks much better from the command line
+    _writeChar('\n'); // ending with a newline looks much better from the command line
   }
 
   @Override
-  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx) throws IOException {
-    if( idx > 0 ) {
+  public void writeSolrDocument(String name, SolrDocument doc, ReturnFields returnFields, int idx)
+      throws IOException {
+    if (idx > 0) {
       writeArraySeparator();
     }
 
@@ -87,34 +92,33 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
     writeMapOpener(doc.size());
     incLevel();
 
-    boolean first=true;
+    boolean first = true;
     for (String fname : doc.getFieldNames()) {
-      if (returnFields!= null && !returnFields.wantsField(fname)) {
+      if (returnFields != null && !returnFields.wantsField(fname)) {
         continue;
       }
 
       if (first) {
-        first=false;
-      }
-      else {
+        first = false;
+      } else {
         writeMapSeparator();
       }
 
       indent();
       writeKey(fname, true);
       Object val = doc.getFieldValue(fname);
-      writeVal(fname, val);
+      writeVal(fname, val, shouldWriteRaw(fname, returnFields));
     }
 
-    if(doc.hasChildDocuments()) {
-      if(first == false) {
+    if (doc.hasChildDocuments()) {
+      if (first == false) {
         writeMapSeparator();
         indent();
       }
       writeKey("_childDocuments_", true);
       writeArrayOpener(doc.getChildDocumentCount());
       List<SolrDocument> childDocs = doc.getChildDocuments();
-      for(int i=0; i<childDocs.size(); i++) {
+      for (int i = 0; i < childDocs.size(); i++) {
         writeSolrDocument(null, childDocs.get(i), null, i);
       }
       writeArrayCloser();
@@ -124,42 +128,42 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
     writeMapCloser();
   }
 
-
   //
   // Data structure tokens
   // NOTE: a positive size paramater indicates the number of elements
   //       contained in an array or map, a negative value indicates
   //       that the size could not be reliably determined.
   //
-  
+
   @Override
-  public void writeStartDocumentList(String name,
-      long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException {
+  public void writeStartDocumentList(
+      String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact)
+      throws IOException {
     writeMapOpener(headerSize(maxScore, numFoundExact));
     incLevel();
-    writeKey("numFound",false);
-    writeLong(null,numFound);
+    writeKey("numFound", false);
+    writeLong(null, numFound);
     writeMapSeparator();
-    writeKey("start",false);
-    writeLong(null,start);
+    writeKey("start", false);
+    writeLong(null, start);
 
     if (maxScore != null) {
       writeMapSeparator();
-      writeKey("maxScore",false);
-      writeFloat(null,maxScore);
+      writeKey("maxScore", false);
+      writeFloat(null, maxScore);
     }
-    
+
     if (numFoundExact != null) {
       writeMapSeparator();
-      writeKey("numFoundExact",false);
+      writeKey("numFoundExact", false);
       writeBool(null, numFoundExact);
     }
     writeMapSeparator();
-    writeKey("docs",false);
+    writeKey("docs", false);
     writeArrayOpener(size);
 
     incLevel();
-  } 
+  }
 
   protected int headerSize(Float maxScore, Boolean numFoundExact) {
     int headerSize = 3;
@@ -169,8 +173,7 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
   }
 
   @Override
-  public void writeEndDocumentList() throws IOException
-  {
+  public void writeEndDocumentList() throws IOException {
     decLevel();
     writeArrayCloser();
 
@@ -188,5 +191,4 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
   public void _writeStr(String s) throws IOException {
     writer.write(s);
   }
-
 }

@@ -18,9 +18,7 @@ package org.apache.solr.cluster.events;
 
 import java.util.Iterator;
 
-/**
- * Event generated when some nodes went down.
- */
+/** Event generated when some nodes went down. */
 public interface NodesDownEvent extends ClusterEvent {
 
   @Override

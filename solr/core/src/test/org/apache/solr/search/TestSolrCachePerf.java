@@ -25,9 +25,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -35,16 +33,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runners.model.MultipleFailureException;
 
-/**
- *
- */
-@LuceneTestCase.Slow
+/** */
 public class TestSolrCachePerf extends SolrTestCaseJ4 {
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private static final Class<? extends SolrCache>[] IMPLS = new Class[] {
-      CaffeineCache.class
-  };
+  private static final Class<? extends SolrCache>[] IMPLS = new Class[] {CaffeineCache.class};
 
   private final int NUM_KEYS = 5000;
   private final String[] keys = new String[NUM_KEYS];
@@ -72,13 +65,19 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       doTestGetPutCompute(getPutRatio, getPutTime, threads, false);
       doTestGetPutCompute(computeRatio, computeTime, threads, true);
     }
-    computeRatio.forEach((type, computeStats) -> {
-      SummaryStatistics getPutStats = getPutRatio.get(type);
-      assertGreaterThanOrEqual( "Compute ratio should be higher or equal to get/put ratio", computeStats.getMean(), getPutStats.getMean(), 0.0001);
-    });
+    computeRatio.forEach(
+        (type, computeStats) -> {
+          SummaryStatistics getPutStats = getPutRatio.get(type);
+          assertGreaterThanOrEqual(
+              "Compute ratio should be higher or equal to get/put ratio",
+              computeStats.getMean(),
+              getPutStats.getMean(),
+              0.0001);
+        });
   }
 
-  private void assertGreaterThanOrEqual(String message, double greater, double smaller, double delta) {
+  private void assertGreaterThanOrEqual(
+      String message, double greater, double smaller, double delta) {
     if (greater > smaller) {
       return;
     } else {
@@ -91,7 +90,12 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
   static final String VALUE = "foo";
 
   @SuppressWarnings({"rawtypes"})
-  private void doTestGetPutCompute(Map<String, SummaryStatistics> ratioStats, Map<String, SummaryStatistics> timeStats, int numThreads, boolean useCompute) throws Exception {
+  private void doTestGetPutCompute(
+      Map<String, SummaryStatistics> ratioStats,
+      Map<String, SummaryStatistics> timeStats,
+      int numThreads,
+      boolean useCompute)
+      throws Exception {
     for (Class<? extends SolrCache> clazz : IMPLS) {
       SolrMetricManager metricManager = new SolrMetricManager();
       @SuppressWarnings({"unchecked"})
@@ -103,38 +107,42 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       cache.setState(SolrCache.State.LIVE);
       cache.initializeMetrics(new SolrMetricsContext(metricManager, "foo", "bar"), "foo");
       AtomicBoolean stop = new AtomicBoolean();
-      SummaryStatistics perImplRatio = ratioStats.computeIfAbsent(clazz.getSimpleName(), c -> new SummaryStatistics());
-      SummaryStatistics perImplTime = timeStats.computeIfAbsent(clazz.getSimpleName(), c -> new SummaryStatistics());
+      SummaryStatistics perImplRatio =
+          ratioStats.computeIfAbsent(clazz.getSimpleName(), c -> new SummaryStatistics());
+      SummaryStatistics perImplTime =
+          timeStats.computeIfAbsent(clazz.getSimpleName(), c -> new SummaryStatistics());
       CountDownLatch startLatch = new CountDownLatch(1);
       CountDownLatch stopLatch = new CountDownLatch(numThreads * NUM_KEYS);
       List<Thread> runners = new ArrayList<>();
       Set<Exception> exceptions = ConcurrentHashMap.newKeySet();
       for (int i = 0; i < numThreads; i++) {
-        Thread t = new Thread(() -> {
-          try {
-            startLatch.await();
-            int ik = 0;
-            while (!stop.get()) {
-              String key = keys[ik % NUM_KEYS];
-              ik++;
-              if (useCompute) {
-                String value = cache.computeIfAbsent(key, k -> VALUE);
-                assertNotNull(value);
-              } else {
-                String value = cache.get(key);
-                if (value == null) {
-                  // increase a likelihood of context switch
-                  Thread.yield();
-                  cache.put(key, VALUE);
-                }
-              }
-              Thread.yield();
-              stopLatch.countDown(); // Does this need to be in a finally block?
-            }
-          } catch (InterruptedException | IOException e) {
-            exceptions.add(e);
-          }
-        });
+        Thread t =
+            new Thread(
+                () -> {
+                  try {
+                    startLatch.await();
+                    int ik = 0;
+                    while (!stop.get()) {
+                      String key = keys[ik % NUM_KEYS];
+                      ik++;
+                      if (useCompute) {
+                        String value = cache.computeIfAbsent(key, k -> VALUE);
+                        assertNotNull(value);
+                      } else {
+                        String value = cache.get(key);
+                        if (value == null) {
+                          // increase a likelihood of context switch
+                          Thread.yield();
+                          cache.put(key, VALUE);
+                        }
+                      }
+                      Thread.yield();
+                      stopLatch.countDown(); // Does this need to be in a finally block?
+                    }
+                  } catch (InterruptedException | IOException e) {
+                    exceptions.add(e);
+                  }
+                });
         t.start();
         runners.add(t);
       }
@@ -146,14 +154,13 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       for (Thread t : runners) {
         t.join();
       }
-      if (! exceptions.isEmpty()) {
+      if (!exceptions.isEmpty()) {
         throw new MultipleFailureException(new ArrayList<>(exceptions));
       }
       long stopTime = System.nanoTime();
       Map<String, Object> metrics = cache.getSolrMetricsContext().getMetricsSnapshot();
-      perImplRatio.addValue(
-          Double.parseDouble(String.valueOf(metrics.get("CACHE.foo.hitratio"))));
-      perImplTime.addValue((double)(stopTime - startTime));
+      perImplRatio.addValue(Double.parseDouble(String.valueOf(metrics.get("CACHE.foo.hitratio"))));
+      perImplTime.addValue((double) (stopTime - startTime));
       cache.close();
     }
   }

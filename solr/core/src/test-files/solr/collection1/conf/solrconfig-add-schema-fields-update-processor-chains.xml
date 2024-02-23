@@ -18,7 +18,7 @@
 -->
 
 <!--
-   Test Config that enumerates many different parsing update processor chain 
+   Test Config that enumerates many different parsing update processor chain
    configurations.
   -->
 <config>
@@ -28,7 +28,7 @@
 
   <schemaFactory class="ManagedIndexSchemaFactory">
     <bool name="mutable">true</bool>
-    <str name="managedSchemaResourceName">managed-schema</str>
+    <str name="managedSchemaResourceName">managed-schema.xml</str>
   </schemaFactory>
 
   <updateRequestProcessorChain name="add-fields-no-run-processor">
@@ -128,7 +128,7 @@
     <processor class="solr.DistributedUpdateProcessorFactory" />
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
-  
+
   <!-- This chain has one of the typeMappings set as default=true, instead of falling back to the defaultFieldType -->
   <updateRequestProcessorChain name="add-fields-default-mapping">
     <processor class="solr.AddSchemaFieldsUpdateProcessorFactory">

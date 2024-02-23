@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Default implementation of {@link org.apache.solr.cluster.events.ClusterEventProducer}.
- */
+/** Default implementation of {@link org.apache.solr.cluster.events.ClusterEventProducer}. */
 package org.apache.solr.cluster.events.impl;
-
-

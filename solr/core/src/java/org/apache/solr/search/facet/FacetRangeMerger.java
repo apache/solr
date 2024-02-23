@@ -1,4 +1,3 @@
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,11 +19,10 @@ package org.apache.solr.search.facet;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
@@ -40,55 +38,81 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
   @Override
   public void merge(Object facetResult, Context mcontext) {
     super.merge(facetResult, mcontext);
-    merge((SimpleOrderedMap<?>) facetResult , mcontext);
+    merge((SimpleOrderedMap<?>) facetResult, mcontext);
   }
 
   @Override
   public void sortBuckets(final FacetRequest.FacetSort sort) {
-    // regardless of sort or mincount, every shard returns a consistent set of buckets which are already in the correct order
-    sortedBuckets = new ArrayList<>( buckets.values() );
+    // regardless of sort or mincount, every shard returns a consistent set of buckets which are
+    // already in the correct order
+    sortedBuckets = new ArrayList<>(buckets.values());
   }
 
   @Override
   public void finish(Context mcontext) {
     // nothing to do
   }
-  
-  @Override
-  Map<String, Object> getRefinementSpecial(Context mcontext, Map<String, Object> refinement, Collection<String> tagsWithPartial) {
-    if (!tagsWithPartial.isEmpty()) {
-      // Since 'other' buckets will always be included, we only need to worry about subfacets being partial.
 
-      refinement = getRefinementSpecial(mcontext, refinement, tagsWithPartial, beforeBucket, FacetParams.FacetRangeOther.BEFORE.toString());
-      refinement = getRefinementSpecial(mcontext, refinement, tagsWithPartial, afterBucket, FacetParams.FacetRangeOther.AFTER.toString());
-      refinement = getRefinementSpecial(mcontext, refinement, tagsWithPartial, betweenBucket, FacetParams.FacetRangeOther.BETWEEN.toString());
+  @Override
+  Map<String, Object> getRefinementSpecial(
+      Context mcontext, Map<String, Object> refinement, Collection<String> tagsWithPartial) {
+    if (!tagsWithPartial.isEmpty()) {
+      // Since 'other' buckets will always be included, we only need to worry about subfacets being
+      // partial.
+
+      refinement =
+          getRefinementSpecial(
+              mcontext,
+              refinement,
+              tagsWithPartial,
+              beforeBucket,
+              FacetParams.FacetRangeOther.BEFORE.toString());
+      refinement =
+          getRefinementSpecial(
+              mcontext,
+              refinement,
+              tagsWithPartial,
+              afterBucket,
+              FacetParams.FacetRangeOther.AFTER.toString());
+      refinement =
+          getRefinementSpecial(
+              mcontext,
+              refinement,
+              tagsWithPartial,
+              betweenBucket,
+              FacetParams.FacetRangeOther.BETWEEN.toString());
 
       // if we need an actual end to compute either of these buckets,
       // and it's been returned to us by at least one shard
       // send it back as part of the refinement request
-      if ( (!freq.hardend) &&
-           actual_end != null &&
-           refinement != null &&
-           (refinement.containsKey(FacetParams.FacetRangeOther.AFTER.toString()) ||
-            refinement.containsKey(FacetParams.FacetRangeOther.BETWEEN.toString())) ) {
+      if ((!freq.hardend)
+          && actual_end != null
+          && refinement != null
+          && (refinement.containsKey(FacetParams.FacetRangeOther.AFTER.toString())
+              || refinement.containsKey(FacetParams.FacetRangeOther.BETWEEN.toString()))) {
         refinement.put("_actual_end", actual_end);
       }
     }
     return refinement;
   }
-  
-  private Map<String, Object> getRefinementSpecial(Context mcontext, Map<String, Object> refinement, Collection<String> tagsWithPartial, FacetBucket bucket, String label) {
+
+  private Map<String, Object> getRefinementSpecial(
+      Context mcontext,
+      Map<String, Object> refinement,
+      Collection<String> tagsWithPartial,
+      FacetBucket bucket,
+      String label) {
     if (null == bucket) {
       return refinement;
     }
     Map<String, Object> bucketRefinement = bucket.getRefinement(mcontext, tagsWithPartial);
     if (bucketRefinement != null) {
-      refinement = refinement == null ? new HashMap<>(2) : refinement;
+      refinement = refinement == null ? CollectionUtil.newHashMap(2) : refinement;
       refinement.put(label, bucketRefinement);
     }
     return refinement;
   }
-  
+
   public void merge(SimpleOrderedMap<?> facetResult, Context mcontext) {
     boolean all = freq.others.contains(FacetParams.FacetRangeOther.ALL);
 
@@ -98,7 +122,7 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
         if (beforeBucket == null) {
           beforeBucket = newBucket(null, mcontext);
         }
-        beforeBucket.mergeBucket((SimpleOrderedMap<?>)o, mcontext);
+        beforeBucket.mergeBucket((SimpleOrderedMap<?>) o, mcontext);
       }
     }
 
@@ -108,7 +132,7 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
         if (afterBucket == null) {
           afterBucket = newBucket(null, mcontext);
         }
-        afterBucket.mergeBucket((SimpleOrderedMap<?>)o , mcontext);
+        afterBucket.mergeBucket((SimpleOrderedMap<?>) o, mcontext);
       }
     }
 
@@ -118,7 +142,7 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
         if (betweenBucket == null) {
           betweenBucket = newBucket(null, mcontext);
         }
-        betweenBucket.mergeBucket((SimpleOrderedMap<?>)o , mcontext);
+        betweenBucket.mergeBucket((SimpleOrderedMap<?>) o, mcontext);
       }
     }
 
@@ -133,9 +157,8 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
 
     @SuppressWarnings("unchecked")
     List<SimpleOrderedMap<?>> bucketList = (List<SimpleOrderedMap<?>>) facetResult.get("buckets");
-    mergeBucketList(bucketList , mcontext);
+    mergeBucketList(bucketList, mcontext);
   }
-
 
   @Override
   public Object getMergedResult() {
@@ -145,10 +168,10 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
     List<SimpleOrderedMap<?>> resultBuckets = new ArrayList<>(buckets.size());
 
     for (FacetBucket bucket : buckets.values()) {
-       if (bucket.getCount() < freq.mincount) {
-         continue;
-       }
-      resultBuckets.add( bucket.getMergedBucket() );
+      if (bucket.getCount() < freq.mincount) {
+        continue;
+      }
+      resultBuckets.add(bucket.getMergedBucket());
     }
 
     result.add("buckets", resultBuckets);
@@ -163,6 +186,5 @@ public class FacetRangeMerger extends FacetRequestSortedMerger<FacetRange> {
       result.add(FacetParams.FacetRangeOther.BETWEEN.toString(), betweenBucket.getMergedBucket());
     }
     return result;
-
   }
 }

@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Common classes reused on both clients &amp; server for dealing with {@link org.apache.solr.common.SolrInputDocument documents to be indexed} and {@link org.apache.solr.common.SolrDocumentList result documents}.
+
+/**
+ * Common classes reused on both clients &amp; server for dealing with {@link
+ * org.apache.solr.common.SolrInputDocument documents to be indexed} and {@link
+ * org.apache.solr.common.SolrDocumentList result documents}.
  */
 package org.apache.solr.common;
-
-

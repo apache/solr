@@ -21,8 +21,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.Writer;
-
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -30,79 +28,98 @@ import org.apache.solr.request.SolrQueryRequest;
 /**
  * Writes a ContentStream directly to the output.
  *
- * <p>
- * This writer is a special case that extends and alters the
- * QueryResponseWriter contract.  If SolrQueryResponse contains a
- * ContentStream added with the key {@link #CONTENT}
- * then this writer will output that stream exactly as is (with its
- * Content-Type).  if no such ContentStream has been added, then a
- * "base" QueryResponseWriter will be used to write the response
- * according to the usual contract.  The name of the "base" writer can
- * be specified as an initialization param for this writer, or it
- * defaults to the "standard" writer.
- * </p>
- * 
+ * <p>This writer is a special case that extends and alters the QueryResponseWriter contract. If
+ * SolrQueryResponse contains a ContentStream added with the key {@link #CONTENT} then this writer
+ * will output that stream exactly as is (with its Content-Type). if no such ContentStream has been
+ * added, then a "base" QueryResponseWriter will be used to write the response according to the
+ * usual contract. The name of the "base" writer can be specified as an initialization param for
+ * this writer, or it defaults to the "standard" writer.
  *
  * @since solr 1.3
  */
 public class RawResponseWriter implements BinaryQueryResponseWriter {
-  /** 
-   * The key that should be used to add a ContentStream to the 
-   * SolrQueryResponse if you intend to use this Writer.
+
+  public static final String CONTENT_TYPE = "application/vnd.apache.solr.raw";
+
+  /**
+   * The key that should be used to add a ContentStream to the SolrQueryResponse if you intend to
+   * use this Writer.
    */
   public static final String CONTENT = "content";
+
   private String _baseWriter = null;
-  
+
+  /**
+   * A fallback writer used for requests that don't return raw content and that aren't associated
+   * with a particular SolrCore
+   *
+   * <p>Populated upon first use.
+   */
+  private QueryResponseWriter defaultWriter;
+
   @Override
   public void init(NamedList<?> n) {
-    if( n != null ) {
-      Object base = n.get( "base" );
-      if( base != null ) {
+    if (n != null) {
+      Object base = n.get("base");
+      if (base != null) {
         _baseWriter = base.toString();
       }
     }
   }
 
-  // Even if this is null, it should be ok
-  protected QueryResponseWriter getBaseWriter( SolrQueryRequest request ) {
-    return request.getCore().getQueryResponseWriter( _baseWriter );
+  protected QueryResponseWriter getBaseWriter(SolrQueryRequest request) {
+    if (request.getCore() != null) {
+      return request.getCore().getQueryResponseWriter(_baseWriter);
+    }
+
+    // Requests to a specific core already have writers, but we still need a 'default writer' for
+    // non-core
+    // (i.e. container-level) APIs
+    synchronized (this) {
+      if (defaultWriter == null) {
+        defaultWriter = new JSONResponseWriter();
+      }
+    }
+    return defaultWriter;
   }
-  
+
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    Object obj = response.getValues().get( CONTENT );
-    if( obj != null && (obj instanceof ContentStream ) ) {
-      return ((ContentStream)obj).getContentType();
+    Object obj = response.getValues().get(CONTENT);
+    if (obj != null && (obj instanceof ContentStream)) {
+      return ((ContentStream) obj).getContentType();
     }
-    return getBaseWriter( request ).getContentType( request, response );
+    return getBaseWriter(request).getContentType(request, response);
   }
 
   @Override
-  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
-    Object obj = response.getValues().get( CONTENT );
-    if( obj != null && (obj instanceof ContentStream ) ) {
+  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
+      throws IOException {
+    Object obj = response.getValues().get(CONTENT);
+    if (obj != null && (obj instanceof ContentStream)) {
       // copy the contents to the writer...
-      ContentStream content = (ContentStream)obj;
-      try(Reader reader = content.getReader()) {
-        IOUtils.copy( reader, writer );
+      ContentStream content = (ContentStream) obj;
+      try (Reader reader = content.getReader()) {
+        reader.transferTo(writer);
       }
     } else {
-      getBaseWriter( request ).write( writer, request, response );
+      getBaseWriter(request).write(writer, request, response);
     }
   }
 
   @Override
-  public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
-    Object obj = response.getValues().get( CONTENT );
-    if( obj != null && (obj instanceof ContentStream ) ) {
+  public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
+      throws IOException {
+    Object obj = response.getValues().get(CONTENT);
+    if (obj != null && (obj instanceof ContentStream)) {
       // copy the contents to the writer...
-      ContentStream content = (ContentStream)obj;
-      try(InputStream in = content.getStream()) {
-        IOUtils.copy( in, out );
+      ContentStream content = (ContentStream) obj;
+      try (InputStream in = content.getStream()) {
+        in.transferTo(out);
       }
     } else {
-      QueryResponseWriterUtil.writeQueryResponse(out, 
-          getBaseWriter(request), request, response, getContentType(request, response));
+      QueryResponseWriterUtil.writeQueryResponse(
+          out, getBaseWriter(request), request, response, getContentType(request, response));
     }
   }
 }

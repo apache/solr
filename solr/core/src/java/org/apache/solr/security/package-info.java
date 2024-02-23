@@ -15,8 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Commonly used classes for Solr security framework.
- */
+/** Commonly used classes for Solr security framework. */
 package org.apache.solr.security;
-

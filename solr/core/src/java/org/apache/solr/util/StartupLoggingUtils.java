@@ -19,7 +19,6 @@ package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
@@ -28,39 +27,39 @@ import org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender;
 import org.apache.logging.log4j.core.appender.ConsoleAppender;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.slf4j.ILoggerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.impl.StaticLoggerBinder;
 
 /**
  * Handles programmatic modification of logging during startup
- * <p>
- *   WARNING: This class should only be used during startup. For modifying log levels etc
- *   during runtime, SLF4J and LogWatcher must be used.
- * </p>
+ *
+ * <p>WARNING: This class should only be used during startup. For modifying log levels etc during
+ * runtime, SLF4J and LogWatcher must be used.
  */
 public final class StartupLoggingUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final static StaticLoggerBinder binder = StaticLoggerBinder.getSingleton();
+  private static final ILoggerFactory loggerFactory = LoggerFactory.getILoggerFactory();
 
-  /**
-   * Checks whether mandatory log dir is given
-   */
+  /** Checks whether mandatory log dir is given */
   public static void checkLogDir() {
-    if (System.getProperty("solr.log.dir") == null) {
+    if (EnvUtils.getProperty("solr.log.dir") == null) {
       log.error("Missing Java Option solr.log.dir. Logging may be missing or incomplete.");
     }
   }
 
-  public static String getLoggerImplStr() { //nowarn
-    return binder.getLoggerFactoryClassStr();
+  public static String getLoggerImplStr() { // nowarn
+    return loggerFactory.getClass().getName();
   }
 
   /**
-   * Disables all log4j2 ConsoleAppender's by modifying log4j configuration dynamically.
-   * Must only be used during early startup
-   * @return true if ok or else false if something happened, e.g. log4j2 classes were not in classpath
+   * Disables all log4j2 ConsoleAppender's by modifying log4j configuration dynamically. Must only
+   * be used during early startup
+   *
+   * @return true if ok or else false if something happened, e.g. log4j2 classes were not in
+   *     classpath
    */
   @SuppressForbidden(reason = "Legitimate log4j2 access")
   public static boolean muteConsole() {
@@ -73,12 +72,13 @@ public final class StartupLoggingUtils {
       Configuration config = ctx.getConfiguration();
       LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
       Map<String, Appender> appenders = loggerConfig.getAppenders();
-      appenders.forEach((name, appender) -> {
-        if (appender instanceof ConsoleAppender) {
-          loggerConfig.removeAppender(name);
-          ctx.updateLoggers();
-        }
-      });
+      appenders.forEach(
+          (name, appender) -> {
+            if (appender instanceof ConsoleAppender) {
+              loggerConfig.removeAppender(name);
+              ctx.updateLoggers();
+            }
+          });
       return true;
     } catch (Exception e) {
       logNotSupported("Could not mute logging to console.");
@@ -88,8 +88,11 @@ public final class StartupLoggingUtils {
 
   /**
    * Dynamically change log4j log level through property solr.log.level
-   * @param logLevel String with level, should be one of the supported, e.g. TRACE, DEBUG, INFO, WARN, ERROR...
-   * @return true if ok or else false if something happened, e.g. log4j classes were not in classpath
+   *
+   * @param logLevel String with level, should be one of the supported, e.g. TRACE, DEBUG, INFO,
+   *     WARN, ERROR...
+   * @return true if ok or else false if something happened, e.g. log4j classes were not in
+   *     classpath
    */
   @SuppressForbidden(reason = "Legitimate log4j2 access")
   public static boolean changeLogLevel(String logLevel) {
@@ -115,26 +118,30 @@ public final class StartupLoggingUtils {
     try {
       // Make sure we have log4j LogManager in classpath
       Class.forName("org.apache.logging.log4j.LogManager");
-      // Make sure that log4j is really selected as logger in slf4j - we could have LogManager in the bridge class :)
-      return binder.getLoggerFactoryClassStr().contains("Log4jLoggerFactory");
+      // Make sure that log4j is really selected as logger in slf4j - we could have LogManager in
+      // the bridge class :)
+      return getLoggerImplStr().contains("Log4jLoggerFactory");
     } catch (Exception e) {
       return false;
     }
   }
 
   private static void logNotSupported(String msg) {
-    log.warn("{} Dynamic log manipulation currently only supported for Log4j. Please consult your logging framework of choice on how to configure the appropriate logging.", msg);
+    log.warn(
+        "{} Dynamic log manipulation currently only supported for Log4j. Please consult your logging framework of choice on how to configure the appropriate logging.",
+        msg);
   }
 
   /**
-   * Perhaps odd to put in startup utils, but this is where the logging-init code is so it seems logical to put the
-   * shutdown here too.
+   * Perhaps odd to put in startup utils, but this is where the logging-init code is so it seems
+   * logical to put the shutdown here too.
    *
-   * Tests are particularly sensitive to this call or the object release tracker will report "lmax.disruptor" not
-   * terminating when asynch logging (new default as of 8.1) is enabled.
+   * <p>Tests are particularly sensitive to this call or the object release tracker will report
+   * "lmax.disruptor" not terminating when asynch logging (new default as of 8.1) is enabled.
    *
-   * Expert, there are rarely good reasons for this to be called outside of the test framework. If you are tempted to
-   * call this for running Solr, you should probably be using synchronous logging.
+   * <p>Expert, there are rarely good reasons for this to be called outside of the test framework.
+   * If you are tempted to call this for running Solr, you should probably be using synchronous
+   * logging.
    */
   @SuppressForbidden(reason = "Legitimate log4j2 access")
   public static void shutdown() {
@@ -147,15 +154,16 @@ public final class StartupLoggingUtils {
   }
 
   /**
-   * This is primarily for tests to insure that log messages don't bleed from one test case to another, see:
-   * SOLR-13268.
+   * This is primarily for tests to insure that log messages don't bleed from one test case to
+   * another, see: SOLR-13268.
    *
-   * However, if there are situations where we want to insure that all log messages for all loggers are flushed,
-   * this method can be called by anyone. It should _not_ affect Solr in any way except, perhaps, a slight delay
-   * while messages are being flushed.
+   * <p>However, if there are situations where we want to insure that all log messages for all
+   * loggers are flushed, this method can be called by anyone. It should _not_ affect Solr in any
+   * way except, perhaps, a slight delay while messages are being flushed.
    *
-   * Expert, there are rarely good reasons for this to be called outside of the test framework. If you are tempted to
-   * call this for running Solr, you should probably be using synchronous logging.
+   * <p>Expert, there are rarely good reasons for this to be called outside of the test framework.
+   * If you are tempted to call this for running Solr, you should probably be using synchronous
+   * logging.
    */
   @SuppressForbidden(reason = "Legitimate log4j2 access")
   public static void flushAllLoggers() {
@@ -176,7 +184,9 @@ public final class StartupLoggingUtils {
 
   /**
    * Return a string representing the current static ROOT logging level
-   * @return a string TRACE, DEBUG, WARN, ERROR or INFO representing current log level. Default is INFO
+   *
+   * @return a string TRACE, DEBUG, WARN, ERROR or INFO representing current log level. Default is
+   *     INFO
    */
   public static String getLogLevelString() {
     final Logger rootLogger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
@@ -186,5 +196,22 @@ public final class StartupLoggingUtils {
     else if (rootLogger.isWarnEnabled()) return "WARN";
     else if (rootLogger.isErrorEnabled()) return "ERROR";
     else return "INFO";
+  }
+
+  /**
+   * Check whether Jetty request logging is enabled and log info about it. The property
+   * "solr.log.requestlog.enabled is set in solr/server/etc/jetty-requestlog.xml
+   */
+  public static void checkRequestLogging() {
+    boolean requestLogEnabled = Boolean.getBoolean("solr.log.requestlog.enabled");
+    String retainDays = System.getProperty("solr.log.requestlog.retaindays");
+    if (requestLogEnabled) {
+      if (retainDays == null) {
+        log.warn(
+            "Jetty request logging enabled. Will retain logs for last 3 days. See chapter \"Configuring Logging\" in reference guide for how to configure.");
+      } else {
+        log.info("Jetty request logging enabled. Will retain logs for last {} days.", retainDays);
+      }
+    }
   }
 }

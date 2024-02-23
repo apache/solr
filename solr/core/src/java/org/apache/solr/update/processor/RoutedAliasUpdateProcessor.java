@@ -17,14 +17,15 @@
 
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRIB_FROM;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
@@ -39,6 +40,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -52,17 +54,15 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRIB_FROM;
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
 /**
- * Distributes update requests to a series of collections partitioned by a "routing" field.  Issues
+ * Distributes update requests to a series of collections partitioned by a "routing" field. Issues
  * requests to create new collections on-demand.
  *
- * Depends on this core having a special core property that points to the alias name that this collection is a part of.
- * And further requires certain properties on the Alias. Collections pointed to by the alias must be named for the alias
- * plus underscored ('_') and a routing specifier specific to the type of routed alias. These collections should not be
- * created by the user, but are created automatically by the routed alias.
+ * <p>Depends on this core having a special core property that points to the alias name that this
+ * collection is a part of. And further requires certain properties on the Alias. Collections
+ * pointed to by the alias must be named for the alias plus underscored ('_') and a routing
+ * specifier specific to the type of routed alias. These collections should not be created by the
+ * user, but are created automatically by the routed alias.
  *
  * @since 7.2.0 (formerly known as TimeRoutedAliasUpdateProcessor)
  */
@@ -72,8 +72,9 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // make sure we don't request collection properties any more frequently than once a minute during
-  // slow continuous indexing, and even less frequently during bulk indexing. (cache is updated by zk
-  // watch instead of re-requested until indexing has been stopped for the duration specified here)
+  // slow continuous indexing, and even less frequently during bulk indexing. (cache is updated by
+  // zk watch instead of re-requested until indexing has been stopped for the duration specified
+  // here)
   public static final int CACHE_FOR_MILLIS = 60000;
 
   // refs to std infrastructure
@@ -86,11 +87,11 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   private final RoutedAlias routedAlias;
   private final SolrParams outParamsToLeader;
 
-
   public static UpdateRequestProcessor wrap(SolrQueryRequest req, UpdateRequestProcessor next) {
     String aliasName = null;
     // Demeter please don't arrest us... hide your eyes :(
-    // todo: a core should have a more direct way of finding a collection name, and the collection properties
+    // todo: a core should have a more direct way of finding a collection name, and the collection
+    // properties
     SolrCore core = req.getCore();
     CoreDescriptor coreDescriptor = core.getCoreDescriptor();
     CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
@@ -99,19 +100,23 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       CoreContainer coreContainer = core.getCoreContainer();
       ZkController zkController = coreContainer.getZkController();
       ZkStateReader zkStateReader = zkController.getZkStateReader();
-      Map<String, String> collectionProperties = zkStateReader.getCollectionProperties(collectionName, CACHE_FOR_MILLIS);
+      Map<String, String> collectionProperties =
+          zkStateReader.getCollectionProperties(collectionName, CACHE_FOR_MILLIS);
       aliasName = collectionProperties.get(RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP);
     }
     // fall back on core properties (legacy)
-    if (StringUtils.isBlank(aliasName)) {
+    if (StrUtils.isBlank(aliasName)) {
       aliasName = coreDescriptor.getCoreProperty(RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP, null);
     }
     final DistribPhase shardDistribPhase =
         DistribPhase.parseParam(req.getParams().get(DISTRIB_UPDATE_PARAM));
     final DistribPhase aliasDistribPhase =
         DistribPhase.parseParam(req.getParams().get(ALIAS_DISTRIB_UPDATE_PARAM));
-    if (aliasName == null || aliasDistribPhase != DistribPhase.NONE || shardDistribPhase != DistribPhase.NONE) {
-      // if aliasDistribPhase is not NONE, then there is no further collection routing to be done here.
+    if (aliasName == null
+        || aliasDistribPhase != DistribPhase.NONE
+        || shardDistribPhase != DistribPhase.NONE) {
+      // if aliasDistribPhase is not NONE, then there is no further collection routing to be done
+      // here.
       //    TODO this may eventually not be true but at the moment it is
       // if shardDistribPhase is not NONE, then the phase is after the scope of this URP
       return next;
@@ -120,23 +125,28 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
         RoutedAlias alias = RoutedAlias.fromProps(aliasName, getAliasProps(req, aliasName));
         return new RoutedAliasUpdateProcessor(req, next, aliasDistribPhase, alias);
       } catch (Exception e) { // ensure we throw SERVER_ERROR not BAD_REQUEST at this stage
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Routed alias has invalid properties: " + e, e);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Routed alias has invalid properties: " + e, e);
       }
-
     }
   }
 
   private static Map<String, String> getAliasProps(SolrQueryRequest req, String aliasName) {
-    ZkController zkController = req.getCore().getCoreContainer().getZkController();
-    final Map<String, String> aliasProperties = zkController.getZkStateReader().getAliases().getCollectionAliasProperties(aliasName);
+    ZkController zkController = req.getCoreContainer().getZkController();
+    final Map<String, String> aliasProperties =
+        zkController.getZkStateReader().getAliases().getCollectionAliasProperties(aliasName);
     if (aliasProperties.isEmpty()) {
-      throw RoutedAlias.newAliasMustExistException(aliasName); // if it did exist, we'd have a non-null map
+      throw RoutedAlias.newAliasMustExistException(
+          aliasName); // if it did exist, we'd have a non-null map
     }
     return aliasProperties;
   }
 
-  private RoutedAliasUpdateProcessor(SolrQueryRequest req, UpdateRequestProcessor next,
-                                     DistribPhase aliasDistribPhase, RoutedAlias routedAlias) {
+  private RoutedAliasUpdateProcessor(
+      SolrQueryRequest req,
+      UpdateRequestProcessor next,
+      DistribPhase aliasDistribPhase,
+      RoutedAlias routedAlias) {
     super(next);
     this.routedAlias = routedAlias;
     assert aliasDistribPhase == DistribPhase.NONE;
@@ -147,10 +157,9 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     this.zkController = cc.getZkController();
     this.cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
 
-
-
     ModifiableSolrParams outParams = new ModifiableSolrParams(req.getParams());
-    // Don't distribute these params; they will be distributed from the local processCommit separately.
+    // Don't distribute these params; they will be distributed from the local processCommit
+    // separately.
     //   (See RequestHandlerUtils.handleCommit from which this list was retrieved from)
     outParams.remove(UpdateParams.OPTIMIZE);
     outParams.remove(UpdateParams.COMMIT);
@@ -162,7 +171,8 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     outParams.set(DISTRIB_UPDATE_PARAM, DistribPhase.NONE.toString());
     //  Signal this is a distributed search from this URP (see #wrap())
     outParams.set(ALIAS_DISTRIB_UPDATE_PARAM, DistribPhase.TOLEADER.toString());
-    outParams.set(DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), core.getName()));
+    outParams.set(
+        DISTRIB_FROM, ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), core.getName()));
     outParamsToLeader = outParams;
   }
 
@@ -185,8 +195,12 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
       super.processAdd(cmd);
     } else {
       // send to the right collection
-      SolrCmdDistributor.Node targetLeaderNode = routeDocToSlice(targetCollection, cmd.getSolrInputDocument());
-      cmdDistrib.distribAdd(cmd, Collections.singletonList(targetLeaderNode), new ModifiableSolrParams(outParamsToLeader));
+      SolrCmdDistributor.Node targetLeaderNode =
+          routeDocToSlice(targetCollection, cmd.getSolrInputDocument());
+      cmdDistrib.distribAdd(
+          cmd,
+          Collections.singletonList(targetLeaderNode),
+          new ModifiableSolrParams(outParamsToLeader));
     }
   }
 
@@ -200,19 +214,19 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
     final List<SolrCmdDistributor.Node> nodes = lookupShardLeadersOfCollections();
     cmdDistrib.distribCommit(cmd, nodes, new ModifiableSolrParams(outParamsToLeader));
-    cmdDistrib.blockAndDoRetries(); //TODO shouldn't distribCommit do this implicitly?  It doesn't.
+    cmdDistrib.blockAndDoRetries(); // TODO shouldn't distribCommit do this implicitly?  It doesn't.
   }
 
-// Not supported by SolrCmdDistributor and is sketchy any way
-//  @Override
-//  public void processRollback(RollbackUpdateCommand cmd) throws IOException {
-//  }
+  // Not supported by SolrCmdDistributor and is sketchy any way
+  //  @Override
+  //  public void processRollback(RollbackUpdateCommand cmd) throws IOException {
+  //  }
 
   @Override
   public void finish() throws IOException {
     try {
       cmdDistrib.finish();
-      final List<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
+      final List<SolrCmdDistributor.SolrError> errors = cmdDistrib.getErrors();
       if (!errors.isEmpty()) {
         throw new DistributedUpdateProcessor.DistributedUpdatesAsyncException(errors);
       }
@@ -246,27 +260,38 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
     if (collections == null) {
       throw RoutedAlias.newAliasMustExistException(getAliasName());
     }
-    return collections.stream().map(this::lookupShardLeaderOfCollection).collect(Collectors.toList());
+    return collections.stream()
+        .map(this::lookupShardLeaderOfCollection)
+        .collect(Collectors.toList());
   }
 
   private SolrCmdDistributor.Node lookupShardLeaderOfCollection(String collection) {
-    final Slice[] activeSlices = zkController.getClusterState().getCollection(collection).getActiveSlicesArr();
+    final Slice[] activeSlices =
+        zkController.getClusterState().getCollection(collection).getActiveSlicesArr();
     if (activeSlices.length == 0) {
-      throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Cannot route to collection " + collection);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Cannot route to collection " + collection);
     }
     final Slice slice = activeSlices[0];
     return getLeaderNode(collection, slice);
   }
 
   private SolrCmdDistributor.Node getLeaderNode(String collection, Slice slice) {
-    //TODO when should we do StdNode vs RetryNode?
+    // TODO when should we do StdNode vs RetryNode?
     final Replica leader = slice.getLeader();
     if (leader == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-          "No 'leader' replica available for shard " + slice.getName() + " of collection " + collection);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+          "No 'leader' replica available for shard "
+              + slice.getName()
+              + " of collection "
+              + collection);
     }
-    return new SolrCmdDistributor.ForwardNode(new ZkCoreNodeProps(leader), zkController.getZkStateReader(),
-        collection, slice.getName(), DistributedUpdateProcessor.MAX_RETRIES_ON_FORWARD_DEAULT);
+    return new SolrCmdDistributor.ForwardNode(
+        new ZkCoreNodeProps(leader),
+        zkController.getZkStateReader(),
+        collection,
+        slice.getName(),
+        DistributedUpdateProcessor.MAX_RETRIES_ON_FORWARD_DEAULT);
   }
-
 }

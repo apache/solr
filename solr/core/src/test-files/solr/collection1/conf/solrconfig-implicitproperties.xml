@@ -31,7 +31,6 @@
 
   <xi:include href="./solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-  <jmx/>
   <updateHandler class="solr.DirectUpdateHandler2">
     <!--updateLog>
       <str name="dir">${solr.ulog.dir:}</str>

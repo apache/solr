@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -29,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,16 +38,12 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.Lists;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Persists CoreDescriptors as properties files
- */
+/** Persists CoreDescriptors as properties files */
 public class CorePropertiesLocator implements CoresLocator {
 
   public static final String PROPERTIES_FILENAME = "core.properties";
@@ -54,6 +52,11 @@ public class CorePropertiesLocator implements CoresLocator {
 
   private final Path rootDirectory;
 
+  public CorePropertiesLocator(NodeConfig nodeConfig) {
+    this(nodeConfig.getCoreRootDirectory());
+  }
+
+  @VisibleForTesting
   public CorePropertiesLocator(Path coreDiscoveryRoot) {
     this.rootDirectory = coreDiscoveryRoot;
     log.debug("Config-defined core root directory: {}", this.rootDirectory);
@@ -64,9 +67,11 @@ public class CorePropertiesLocator implements CoresLocator {
     for (CoreDescriptor cd : coreDescriptors) {
       Path propertiesFile = cd.getInstanceDir().resolve(PROPERTIES_FILENAME);
       if (Files.exists(propertiesFile))
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                "Could not create a new core in " + cd.getInstanceDir()
-                              + " as another core is already defined there");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Could not create a new core in "
+                + cd.getInstanceDir()
+                + " as another core is already defined there");
       writePropertiesFile(cd, propertiesFile);
     }
   }
@@ -83,18 +88,22 @@ public class CorePropertiesLocator implements CoresLocator {
     }
   }
 
-  private void writePropertiesFile(CoreDescriptor cd, Path propfile)  {
+  private void writePropertiesFile(CoreDescriptor cd, Path propfile) {
     Properties p = buildCoreProperties(cd);
     try {
       FileUtils.createDirectories(propfile.getParent()); // Handling for symlinks.
-      try (Writer os = new OutputStreamWriter(Files.newOutputStream(propfile), StandardCharsets.UTF_8)) {
+      try (Writer os =
+          new OutputStreamWriter(Files.newOutputStream(propfile), StandardCharsets.UTF_8)) {
         p.store(os, "Written by CorePropertiesLocator");
       }
-    }
-    catch (IOException e) {
+    } catch (IOException e) {
       log.error("Couldn't persist core properties to {}: ", propfile, e);
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Couldn't persist core properties to " + propfile.toAbsolutePath().toString() + " : " + e.getMessage());
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Couldn't persist core properties to "
+              + propfile.toAbsolutePath().toString()
+              + " : "
+              + e.getMessage());
     }
   }
 
@@ -118,8 +127,7 @@ public class CorePropertiesLocator implements CoresLocator {
   public void rename(CoreContainer cc, CoreDescriptor oldCD, CoreDescriptor newCD) {
     String oldName = newCD.getPersistableStandardProperties().getProperty(CoreDescriptor.CORE_NAME);
     String newName = newCD.coreProperties.getProperty(CoreDescriptor.CORE_NAME);
-    if (oldName == null ||
-        (newName != null && oldName.equals(newName) == false)) {
+    if (oldName == null || (newName != null && oldName.equals(newName) == false)) {
       newCD.getPersistableStandardProperties().put(CoreDescriptor.CORE_NAME, newName);
     }
     persist(cc, newCD);
@@ -133,73 +141,93 @@ public class CorePropertiesLocator implements CoresLocator {
   @Override
   public List<CoreDescriptor> discover(final CoreContainer cc) {
     log.debug("Looking for core definitions underneath {}", rootDirectory);
-    final List<CoreDescriptor> cds = Lists.newArrayList();
+    final List<CoreDescriptor> cds = new ArrayList<>();
     try {
       Set<FileVisitOption> options = new HashSet<>();
       options.add(FileVisitOption.FOLLOW_LINKS);
       final int maxDepth = 256;
-      Files.walkFileTree(this.rootDirectory, options, maxDepth, new SimpleFileVisitor<Path>() {
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-          if (file.getFileName().toString().equals(PROPERTIES_FILENAME)) {
-            CoreDescriptor cd = buildCoreDescriptor(file, cc);
-            if (cd != null) {
-              if (log.isDebugEnabled()) {
-                log.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
+      Files.walkFileTree(
+          this.rootDirectory,
+          options,
+          maxDepth,
+          new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                throws IOException {
+              if (file.getFileName().toString().equals(PROPERTIES_FILENAME)) {
+                CoreDescriptor cd = buildCoreDescriptor(file, cc);
+                if (cd != null) {
+                  if (log.isDebugEnabled()) {
+                    log.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
+                  }
+                  cds.add(cd);
+                }
+                return FileVisitResult.SKIP_SIBLINGS;
               }
-              cds.add(cd);
+              return FileVisitResult.CONTINUE;
             }
-            return FileVisitResult.SKIP_SIBLINGS;
-          }
-          return FileVisitResult.CONTINUE;
-        }
 
-        @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-          // if we get an error on the root, then fail the whole thing
-          // otherwise, log a warning and continue to try and load other cores
-          if (file.equals(rootDirectory)) {
-            log.error("Error reading core root directory {}: {}", file, exc);
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading core root directory");
-          }
-          log.warn("Error visiting {}: {}", file, exc);
-          return FileVisitResult.CONTINUE;
-        }
-      });
+            @Override
+            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+              // if we get an error on the root, then fail the whole thing
+              // otherwise, log a warning and continue to try and load other cores
+              if (file.equals(rootDirectory)) {
+                log.error("Error reading core root directory {}: {}", file, exc);
+                throw new SolrException(
+                    SolrException.ErrorCode.SERVER_ERROR, "Error reading core root directory");
+              }
+              log.warn("Error visiting {}: {}", file, exc);
+              return FileVisitResult.CONTINUE;
+            }
+          });
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Couldn't walk file tree under " + this.rootDirectory, e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Couldn't walk file tree under " + this.rootDirectory,
+          e);
     }
     if (log.isInfoEnabled()) {
       log.info("Found {} core definitions underneath {}", cds.size(), rootDirectory);
     }
     if (cds.size() > 0) {
       if (log.isInfoEnabled()) {
-        log.info("Cores are: {}", cds.stream().map(CoreDescriptor::getName).collect(Collectors.toList()));
+        log.info(
+            "Cores are: {}",
+            cds.stream().map(CoreDescriptor::getName).collect(Collectors.toList()));
       }
     }
     return cds;
   }
 
-  protected CoreDescriptor buildCoreDescriptor(Path propertiesFile, CoreContainer cc) {
+  @Override
+  public CoreDescriptor reload(CoreDescriptor cd, CoreContainer cc) {
+    return buildCoreDescriptor(cd.getInstanceDir().resolve(PROPERTIES_FILENAME), cc);
+  }
 
-    Path instanceDir = propertiesFile.getParent();
-    Properties coreProperties = new Properties();
+  protected CoreDescriptor buildCoreDescriptor(Path propertiesFile, CoreContainer cc) {
+    if (Files.notExists(propertiesFile)) {
+      // This can happen in tests, see CoreContainer#reloadCoreDescriptor
+      log.info("Could not load core descriptor from {} because it does not exist", propertiesFile);
+      return null;
+    }
     try (InputStream fis = Files.newInputStream(propertiesFile)) {
+      Path instanceDir = propertiesFile.getParent();
+      Properties coreProperties = new Properties();
       coreProperties.load(new InputStreamReader(fis, StandardCharsets.UTF_8));
       String name = createName(coreProperties, instanceDir);
       Map<String, String> propMap = new HashMap<>();
       for (String key : coreProperties.stringPropertyNames()) {
         propMap.put(key, coreProperties.getProperty(key));
       }
-      CoreDescriptor ret = new CoreDescriptor(name, instanceDir, propMap, cc.getContainerProperties(), cc.getZkController());
+      CoreDescriptor ret =
+          new CoreDescriptor(
+              name, instanceDir, propMap, cc.getContainerProperties(), cc.getZkController());
       ret.loadExtraProperties();
       return ret;
-    }
-    catch (IOException e) {
+    } catch (IOException e) {
       log.error("Couldn't load core descriptor from {}:", propertiesFile, e);
       return null;
     }
-
   }
 
   protected static String createName(Properties p, Path instanceDir) {
@@ -212,5 +240,4 @@ public class CorePropertiesLocator implements CoresLocator {
     p.putAll(cd.getPersistableUserProperties());
     return p;
   }
-
 }

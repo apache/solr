@@ -15,276 +15,534 @@
  * limitations under the License.
  */
 
-buildscript {
-    repositories {
-        mavenCentral()
-        jcenter()
-    }
+import org.apache.tools.ant.util.TeeOutputStream
 
-    dependencies {
-        classpath "org.asciidoctor:asciidoctorj:2.5.1"
-    }
+apply plugin: 'java'
+
+description = 'Solr Reference Guide'
+
+/*
+ Antora Logic - Building the ref-guide
+ */
+
+def officialSiteIncludePrerelease = propertyOrEnvOrDefault("refguide.official.includePrereleaseVersions", "SOLR_REF_GUIDE_OFFICIAL_INCLUDE_PRERELEASE", "false").toBoolean()
+
+def buildLocalUI = propertyOrEnvOrDefault("refguide.buildLocalUI", "SOLR_REF_GUIDE_BUILD_LOCAL_UI", "false").toBoolean()
+def isBranchReleased = propertyOrEnvOrDefault("refguide.isBranchReleased", "SOLR_REF_GUIDE_IS_BRANCH_RELEASED", "false").toBoolean()
+
+// This escapes strings inside YAML templates
+// WARNING: Strings in YAML must use single quotes for this to work correctly!
+// Double quotes in YAML can't be used as this requires more complicated
+// escaping, see spec: https://yaml.org/spec/1.2.2/#732-single-quoted-style
+def escapeYamlSingleQuotesString(props) {
+  return props.collectEntries{k, v -> [k, v.toString().replace("'","''")]}
 }
-
-plugins {
-    id 'java'
-    id 'com.github.jruby-gradle.base' version '2.0.1'
-}
-
-// This project does not contribute anything to main dependencies.
-versionsLock {
-    testProject()
-}
-
-description = 'Solr reference guide'
-
-// Use an internal proxy to ruby gems.
-repositories {
-    ruby.gems()
-}
-
-configurations {
-    depVer
-    refGuide
-}
-
-dependencies {
-    // Dependencies to compile internal tools.
-    implementation('org.asciidoctor:asciidoctorj')
-    implementation('com.vaadin.external.google:android-json')
-    implementation('org.jsoup:jsoup')
-    implementation('org.slf4j:jcl-over-slf4j')
-    implementation('org.slf4j:slf4j-simple')
-    implementation('org.apache.logging.log4j:log4j-core')
-    implementation('com.google.guava:guava')
-    implementation('commons-codec:commons-codec')
-
-    // Dependencies referenced in the guide.
-    depVer('commons-codec:commons-codec')
-    depVer('io.dropwizard.metrics:metrics-core')
-    depVer('org.apache.logging.log4j:log4j-core')
-    depVer('org.apache.opennlp:opennlp-tools')
-    depVer('org.apache.tika:tika-core')
-    depVer('org.apache.zookeeper:zookeeper')
-
-    // jekyll dependencies: we cannot use jekyll >=4, as this version uses native lib
-    // ("sassc" instead of deprecated "sass") which fails to compile on some platforms.
-    // See https://issues.apache.org/jira/browse/SOLR-15520 for more details.
-    gems 'rubygems:jekyll:3.9.1'
-    gems 'rubygems:jekyll-asciidoc:3.0.0'
-
-    // don't know why we have to explicitly add these deps but it doesn't resolve them
-    // automatically.
-    gems 'rubygems:tilt:2.0.10'
-    gems 'rubygems:slim:4.1.0'
-    gems 'rubygems:concurrent-ruby:1.1.9'
-}
-
-sourceSets {
-    refGuide {
-        java {
-            srcDirs = []
-        }
-        resources {
-            srcDirs = ['src']
-        }
-    }
-
-    main {
-        java {
-            srcDirs = ['tools']
-        }
-    }
-
-    test {
-        java {
-            srcDirs = []
-        }
-    }
-}
-
-ext {
-    mainPage = "index"
-
-    // the "MAJOR.MINOR" version of solr this guide is about (guides aren't specific to BUGFIX releases)
-    // So on 'branch_9_9' where 'version' may be 9.9.0, 9.9.1, 9.9.9, etc..;  solrDocsVersion = 9.9
-    solrDocsVersion = "${version}".replaceAll(/^(\d+\.\d+)(|\..*)$/, "\$1")
-
-    // the "MAJOR_MINOR" version as a path for publishing the guide
-    // So on 'branch_9_9' where solrDocsVersion = 9.9; solrGuideVersionPath => 9_9
-    solrGuideVersionPath = "${solrDocsVersion}".replaceAll(/^(\d+)\.(\d+)$/, "\$1_\$2")
-
-    // these will be used to dynamically build up (nearly) identical tasks with consistent names
-    // for building & link checking the ref guide.  One using absolute URLs to javadocs, the
-    // other using local paths that can be validated by the link checker.
-    htmlSiteDetails =
-        [name: 'Site',
-         path: 'html-site',
-         desc: 'HTML Site for publishing to the Solr website',
-         props: [
-            htmlSolrJavadocs: "https://solr.apache.org/docs/${solrGuideVersionPath}_0/",
-            htmlLuceneJavadocs: project(':solr:documentation').luceneDocUrl
-        ]
-    ]
-    linkCheckSiteDetails =
-        [name: 'LocalJavadocLinksSite',
-         path: 'local-jdoc-links-site',
-         desc: 'Local Site for checking javadoc links',
-
-         // NOTE: extra '../' because we'll in a sub-dir of buildDir that will be built later...
-         props: [
-            htmlSolrJavadocs : 'link:../' + buildDir.toPath().relativize(project(':solr:documentation').docroot.toPath()).toString().replace(File.separator, '/'),
-            htmlLuceneJavadocs :  'link:../' + buildDir.toPath().relativize(project(':solr:documentation').luceneDocsDir.toPath()).toString().replace(File.separator, '/'),
-         ]
-
-         // TODO: (see full discussion in SOLR-15265)
-         // Ref guide build should really depend on those javadocs it links to - then there would be no awkwardness and, ideally,
-         // you could just sync the resources you need into the final structure (that's why I declared javadocs as an artifact).
-         // This does entail some duplication (syncing between folders) but if it's reused in different places then it's fine.
-    ]
-}
-
-// dynamically define the 2 variations of each target that we need...
-[ htmlSiteDetails, linkCheckSiteDetails ].each{ details ->
-    final def contentDir = file("${buildDir}/${details.path}-content")
-    final def htmlDir = file("${buildDir}/${details.path}")
-
-    tasks.create("prepare${details.name}Sources", PrepareSources) {
-        // configure task properties.
-        srcDir.set(project.sourceSets.refGuide.resources.srcDirs.first())
-        outDir.set(contentDir)
-
-        // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
-        def dependencyProps = [
-            ["ivyCommonsCodec", "commons-codec", "commons-codec"],
-            ["ivyDropwizardMetrics", "io.dropwizard.metrics", "metrics-core"],
-            ["ivyHadoop", "org.apache.hadoop", "hadoop-auth"],
-            ["ivyLog4j", "org.apache.logging.log4j", "log4j-core"],
-            ["ivyOpennlpTools", "org.apache.opennlp", "opennlp-tools"],
-            ["ivyTika", "org.apache.tika", "tika-core"],
-            ["ivyZookeeper", "org.apache.zookeeper", "zookeeper"],
-        ].collectEntries { propKey, depGroup, depId -> [propKey, "${ -> project.getVersion(depGroup, depId) }"] }
-
-        props.putAll([
-            htmlOutDir: "../${details.path}",
-            javadocLink : "https://docs.oracle.com/en/java/javase/11/docs/api/java.base/",
-            solrGuideDraftStatus : propertyOrDefault('solrGuideDraft', "true").toBoolean() ? "DRAFT" : "",
-            solrRootPath : project(':solr').projectDir.toString() + File.separator,
-            solrDocsVersion : project.ext['solrDocsVersion'],
-            solrGuideVersionPath : project.ext['solrGuideVersionPath'],
-            buildDate : rootProject.ext['buildDate'],
-            buildYear : rootProject.ext['buildYear'],
-            * : details.props,
-            * : dependencyProps
-        ])
-    }
-
-    task "build${details.name}"(type: com.github.jrubygradle.JRubyExec) {
-        dependsOn "prepare${details.name}Sources"
-        group "Documentation"
-        description "Builds the ${details.desc}"
-
-        outputs.cacheIf { true }
-        inputs.dir contentDir
-        outputs.dir htmlDir
-
-        script 'jekyll'
-        scriptArgs 'build' //, '--verbose'
-        workingDir contentDir
-    }
-
-    task "check${details.name}"(type: JavaExec) {
-        dependsOn "build${details.name}"
-
-        classpath = sourceSets.main.runtimeClasspath
-        main = 'CheckLinksAndAnchors'
-        workingDir = contentDir
-
-        // NOTE: even for the 'real' site, we check all relative links
-        // (there will just be less of them, and this way any stray hardcoded
-        // '../../' paths can be caught more easily)
-        args([ htmlDir, "-check-all-relative-links" ])
-    }
-}
-
-// Hook in our dependency on all top level documentation in order to check local javadoc links
-checkLocalJavadocLinksSite.dependsOn ':documentation'
 
 // Attach building the ref guide to standard convention tasks. This
 // can be optionally turned off (see SOLR-15670).
-if (propertyOrEnvOrDefault('refguide.include', 'SOLR_REF_GUIDE_INCLUDE', "true").toBoolean()) {
-  check.dependsOn checkLocalJavadocLinksSite, checkSite
-  assemble.dependsOn buildSite
+var defaultRefGuideInclude = file("${rootDir}/.git").exists()
+if (propertyOrEnvOrDefault('refguide.include', 'SOLR_REF_GUIDE_INCLUDE', "${defaultRefGuideInclude}").toBoolean()) {
+    check.dependsOn 'checkSiteLinks'
+    assemble.dependsOn 'buildLocalSite'
 }
 
-@CacheableTask
-abstract class PrepareSources extends DefaultTask {
-    // Original Source files we'll be syncing <b>FROM</b>
-    @InputDirectory
-    @PathSensitive(PathSensitivity.RELATIVE)
-    abstract DirectoryProperty getSrcDir()
+configurations {
+    refGuide
+    officialPlaybook
+    localPlaybook
+    localJavadocs
+}
 
-    // Destination folder.
-    @OutputDirectory
-    abstract DirectoryProperty getOutDir()
+dependencies {
+    localJavadocs project(path: ":solr:documentation", configuration: 'javadocs')
+    localJavadocs project(path: ":solr:documentation", configuration: 'site')
+}
 
-    /**
-     * Task specific props (lazy provider)
-     */
-    @Input
-    abstract MapProperty<String, String> getProps()
+ext {
+    antoraVersion = "3.1.4"
+    antoraLunrExtensionVersion = "1.0.0-alpha.8"
+    asciidoctorMathjaxVersion = "0.0.9"
+    linkCheckerVersion = "1.4.2"
+    gulpCliVersion = "2.3.0"
+    // Most recent commit as of 2022-06-24, this repo does not have tags
+    antoraDefaultUIVersion = "51ad811622394027afb4e182c2fdabc235ae04dd"
 
-    public PrepareSources() {
-        // setup 'dependsOn classes, configurations.depVer' here
-        // so that it's not necessary for every task impl to declare redundantly
-        final Project p = getProject()
-        dependsOn(p.getConfigurations().getByName('depVer'))
-        dependsOn(p.getTasksByName('classes', false))
+    siteDir = "${buildDir}/site"
+    antoraConfigBuildDir = "${buildDir}/antora-config"
+    playbooksDir = "${project.ext.antoraConfigBuildDir}/playbooks"
+    localAntoraYaml = "${project.ext.antoraConfigBuildDir}/antora.yml"
+    siteStagingDir = "${buildDir}/site-staging"
+    uiBuildDir = "${buildDir}/ui"
+    playbookTemplate = "playbook.template.yml"
+    localPlaybook = "local-playbook.yml"
+    officialPlaybook = "official-playbook.yml"
+}
+
+/*
+    Generating the Antora and Playbook YAML files
+ */
+task buildLocalAntoraYaml {
+    group = 'Site - Local'
+    description "Creates a local antora.yml with all variables populated."
+
+    def templateYaml = "antora.template.yml"
+
+    inputs.file(templateYaml)
+    outputs.file(project.ext.localAntoraYaml)
+
+    def splitVersion = version.toString().split("\\p{Punct}")
+    def displayVersion = "${splitVersion[0]}.${splitVersion[1]}"
+    def prerelease = false
+    if (!isBranchReleased) {
+        if (splitVersion[1] == "0") {
+            prerelease = "-alpha"
+        }
+        else {
+            prerelease = "-beta"
+        }
+        displayVersion += prerelease
     }
+    def props = [
+        solr_version       : "${splitVersion[0]}.${splitVersion[1]}.${splitVersion[2]}",
+        solr_version_major : splitVersion[0],
+        solr_version_minor : splitVersion[1],
+        solr_version_patch : splitVersion[2],
+        displayVersion     : displayVersion,
+        prerelease         : prerelease,
+    ]
+    props.putAll([
+        solr_javadocs_link : "https://solr.apache.org/docs/${props.solr_version.replace(".", "_")}",
+        lucene_javadocs_link :  project(':solr:documentation').luceneDocUrl,
+    ])
 
-    @TaskAction
-    public void doCopy() {
-        final Project p = getProject();
+    doLast {
+        // Set these dependency versions as lazy gstrings so that they're resolved after evaluation.
+        // These variable names must use underscores, not dashes or periods
+        props.putAll([
+            ["dep_version_commons_codec", "commons-codec", "commons-codec"],
+            ["dep_version_dropwizard", "io.dropwizard.metrics", "metrics-core"],
+            ["dep_version_hadoop", "org.apache.hadoop", "hadoop-auth"],
+            ["dep_version_log4j", "org.apache.logging.log4j", "log4j-core"],
+            ["dep_version_opennlp", "org.apache.opennlp", "opennlp-tools"],
+            ["dep_version_tika", "org.apache.tika", "tika-core"],
+            ["dep_version_zookeeper", "org.apache.zookeeper", "zookeeper"],
+            ["dep_version_lucene", "org.apache.lucene", "lucene-core"],
+            ["dep_version_opentelemetry", "io.opentelemetry", "opentelemetry-sdk"],
+        ].collectEntries { propKey, depGroup, depId ->
+            [propKey, "${-> depGroup == 'org.apache.lucene' ? luceneBaseVersionProvider.get() : project.getVersion(depGroup, depId)}"] })
 
-        // Make a local copy we'll be modifying.
-        final def props = this.props.get()
 
-        final File intoDir = this.outDir.asFile.get();
+        copy {
+            from(templateYaml) {
+                rename {
+                    "antora.yml"
+                }
+            }
+            into project.ext.antoraConfigBuildDir
 
-        // Emit info about properties for clarity.
-        logger.lifecycle('Syncing source files to {} using props:\n{}',
-                         intoDir, props.collect({ k, v -> "  ${k} -> ${v}" }).join('\n'))
-
-        // Escape all the properties, so they can be inserted into YAML templates.
-        final def escapedProps = props.collectEntries{k, v -> [k, v.replace("'","''")]}
-
-        def sourceDir = srcDir.get()
-
-        final WorkResult syncResult = p.sync({ copySpec ->
-            copySpec.setFilteringCharset('UTF-8');
-            copySpec.from(sourceDir, { raw ->
-                raw.exclude('**/*.template')
-            })
-
-            copySpec.from(sourceDir, { templated ->
-                templated.include('**/*.template')
-                templated.rename('(.+)\\.template', '$1')
-                templated.expand(escapedProps)
-            })
-            copySpec.into(intoDir);
-        })
-
-        setDidWork(syncResult.getDidWork());
-        if (syncResult.getDidWork()) {
-            // if sync did work, that means we need to rebuild the nav data files...
-            p.javaexec({ execSpec ->
-                execSpec.setClasspath( getProject().getConvention()
-                                      .getPlugin(JavaPluginConvention.class)
-                                      .getSourceSets().getByName("main").getRuntimeClasspath() )
-                execSpec.setWorkingDir( intoDir )
-                execSpec.setMain( 'BuildNavDataFiles' )
-                execSpec.args([ intoDir, p.property('mainPage') ])
-            })
+            expand(escapeYamlSingleQuotesString(props))
         }
     }
+    inputs.properties(props)
+}
+
+task buildLocalAntoraPlaybookYaml(type: Copy) {
+    group = 'Site - Local'
+    description "Creates ${project.ext.localPlaybook} to build and test the site locally"
+
+    from(project.ext.playbookTemplate) {
+        rename {
+            project.ext.localPlaybook
+        }
+    }
+    into project.ext.playbooksDir
+
+    def props = [
+        'site_url'           : "",
+        'redirect_facility'  : "static",
+        'source_url'         : project.rootDir,
+        'source_branches'    : "HEAD",
+        'start_path'         : project.rootDir.relativePath(file(project.ext.siteStagingDir)),
+        'site_dir'           : "./" + file(project.ext.siteStagingDir).relativePath(file(project.ext.siteDir)),
+    ]
+
+    expand(escapeYamlSingleQuotesString(props))
+    inputs.properties(props)
+}
+
+task buildOfficialAntoraPlaybookYaml(type: Copy) {
+    group = 'Site - Official'
+    description "Creates ${project.ext.officialPlaybook} to build the official Solr ref-guide"
+
+    from(project.ext.playbookTemplate) {
+        rename {
+            project.ext.officialPlaybook
+        }
+    }
+    into project.ext.playbooksDir
+
+    def branches = ["branch_*"]
+    if (officialSiteIncludePrerelease) {
+        branches.add("main")
+    } else {
+        branches.add("\"!branch_*x\"")
+    }
+
+    def props = [
+        'site_url'           : "https://solr.apache.org/guide",
+        'redirect_facility'  : "httpd",
+        'source_url'         : "https://github.com/apache/solr.git",
+        'source_branches'    : branches,
+        'start_path'         : 'solr/solr-ref-guide',
+        'site_dir'           : "./" + file(project.ext.playbooksDir).relativePath(file(project.ext.siteDir)),
+    ]
+
+    expand(escapeYamlSingleQuotesString(props))
+    inputs.properties(props)
+}
+
+dependencies {
+    localPlaybook files("${project.ext.playbooksDir}/${project.ext.localPlaybook}") {
+        builtBy tasks.buildLocalAntoraPlaybookYaml
+    }
+    officialPlaybook files("${project.ext.playbooksDir}/${project.ext.officialPlaybook}") {
+        builtBy tasks.buildOfficialAntoraPlaybookYaml
+    }
+}
+
+/*
+    Downloading Build Tools
+ */
+
+task downloadAntoraCli(type: NpmTask) {
+    group = 'Build Dependency Download'
+    args = ["install", "@antora/cli@${project.ext.antoraVersion}"]
+
+    inputs.property("Antora version", project.ext.antoraVersion)
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/cli")
+}
+
+task downloadAntoraSiteGenerator(type: NpmTask) {
+    group = 'Build Dependency Download'
+    args = ["install", "@antora/site-generator-default@${project.ext.antoraVersion}"]
+
+    inputs.property("Antora version", project.ext.antoraVersion)
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/site-generator-default")
+}
+
+task downloadAntoraLunrExtension(type: NpmTask) {
+    group = 'Build Dependency Download'
+    args = ["install", "@antora/lunr-extension@${project.ext.antoraLunrExtensionVersion}"]
+
+    inputs.property("Antora lunr-extension version", project.ext.antoraLunrExtensionVersion)
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension")
+}
+
+task downloadAsciidoctorMathjaxExtension(type: NpmTask) {
+    group = 'Build Dependency Download'
+    args = ["install", "@djencks/asciidoctor-mathjax@${project.ext.asciidoctorMathjaxVersion}"]
+
+    inputs.property("asciidoctor-mathjax version", project.ext.asciidoctorMathjaxVersion)
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@djencks/asciidoctor-mathjax")
+}
+
+task downloadAntora {
+    group = 'Build Dependency Download'
+    description "Download all Antora build dependencies for site generation."
+
+    dependsOn tasks.downloadAntoraCli
+    dependsOn tasks.downloadAntoraSiteGenerator
+    dependsOn tasks.downloadAntoraLunrExtension
+    dependsOn tasks.downloadAsciidoctorMathjaxExtension
+}
+
+task downloadLinkValidator(type: NpmTask) {
+    group = 'Build Dependency Download'
+    args = ["install", "link-checker@${project.ext.linkCheckerVersion}"]
+
+    inputs.property("link-checker version", project.ext.linkCheckerVersion)
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/link-checker")
+}
+
+task downloadDefaultUITemplate(type: NpmTask) {
+    group = 'Build Dependency Download'
+    args = ["install", "gitlab:antora/antora-ui-default#${project.ext.antoraDefaultUIVersion}", "--include=dev"]
+
+    inputs.property("Antora default-ui version", project.ext.antoraDefaultUIVersion)
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/ui-default")
+}
+
+task startUIBuildDir(type: Copy) {
+    group = 'Site - UI'
+    dependsOn tasks.downloadDefaultUITemplate
+
+    // Copy the antora latest default ui into the root folder, to mimick a new checkout of the default ui
+    with {
+        from "${project.ext.nodeProjectDir}/node_modules/@antora/ui-default"
+        duplicatesStrategy = 'EXCLUDE'
+    }
+
+    // Overwrite the parts of the UI that we have changed.
+    from("${projectDir}/ui-src") {
+        into "src"
+    }
+    duplicatesStrategy = 'INCLUDE'
+
+    into project.ext.uiBuildDir
+}
+
+task setupUIBuildDir(type: NpmTask) {
+    group = 'Site - UI'
+    dependsOn tasks.startUIBuildDir
+    workingDir = file(project.ext.uiBuildDir)
+    args = ["install"]
+
+    inputs.files("${project.ext.uiBuildDir}/package.json")
+    outputs.dir("${project.ext.uiBuildDir}/node_modules/")
+}
+
+// Note that Gulp must be installed in the UI Build Directory, not our project node_modules
+task downloadGulp(type: NpmTask) {
+    group = 'Build Dependency Download'
+    dependsOn tasks.startUIBuildDir
+
+    args = ["install", "gulp-cli@${project.ext.gulpCliVersion}", "--legacy-peer-deps"]
+    execOverrides {
+        // The it variable contains the `ExecSpec`
+        workingDir = project.ext.uiBuildDir
+    }
+
+    inputs.property("Antora version", project.ext.antoraVersion)
+    inputs.property("Gulp CLI version", project.ext.gulpCliVersion)
+    outputs.dir("${project.ext.uiBuildDir}/node_modules/")
+}
+
+/*
+    Build and/or validate the Site
+ */
+
+task buildUIBundle(type: NpxTask) {
+    group = 'Site - UI'
+    description "Creates a local UI bundle using the 'ui-src' directory. This can be used to preview UI changes with a local or official ref-guide build."
+
+    dependsOn tasks.setupUIBuildDir
+    dependsOn tasks.downloadGulp
+
+    command = "gulp"
+
+    args = [
+        "bundle",
+    ]
+    execOverrides {
+        // The it variable contains the `ExecSpec`
+        workingDir = project.ext.uiBuildDir
+    }
+
+    doLast {
+        copy {
+            from "${project.ext.uiBuildDir}/build/ui-bundle.zip"
+            into "${buildDir}/dist"
+        }
+    }
+
+    inputs.files(fileTree("${project.ext.uiBuildDir}/src"))
+    outputs.file("${buildDir}/dist/ui-bundle.zip")
+
+    doLast {
+        project.logger.lifecycle("The generated ui-bundle.zip can be found at:")
+        project.logger.lifecycle("\t${buildDir}/dist/ui-bundle.zip")
+    }
+}
+
+task setupLocalSiteStagingDir(type: Sync) {
+    group = 'Site - Local'
+    description "Creates a staging directory to build the local ref-guide."
+
+    dependsOn tasks.buildLocalAntoraYaml
+    dependsOn configurations.localPlaybook
+
+    from(projectDir) {
+        include "modules/**"
+    }
+    from project.ext.localAntoraYaml
+    from(project.ext.playbooksDir) {
+        include project.ext.localPlaybook
+        rename {
+            "playbook.yml"
+        }
+    }
+
+    into project.ext.siteStagingDir
+}
+
+task buildLocalAntoraSite(type: NpxTask) {
+    group = 'Site - Local'
+    description "Creates a local build of the ref-guide."
+
+    dependsOn tasks.downloadAntora
+    dependsOn tasks.setupLocalSiteStagingDir
+
+    command = "antora"
+
+    // Use a local build of the Lucene and Solr javadocs for a local refGuide
+    def extraArgs = [
+        // This attribute should not include ":link", the other 2 should
+        // This attribute should also not be relative, because it is used in multiple path directories in the site
+        "--attribute", "page-solr-javadocs=${project(':solr:documentation').docroot.toURI().toASCIIString()}",
+        "--attribute", "solr-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').docroot)}",
+        "--attribute", "lucene-javadocs=link:../../../${file(project.ext.siteDir).relativePath(project(':solr:documentation').luceneDocsDir)}"
+    ]
+
+    if (buildLocalUI) {
+        dependsOn tasks.buildUIBundle
+        extraArgs.addAll([
+            "--ui-bundle-url", "${buildDir}/dist/ui-bundle.zip"
+        ])
+        inputs.files("${buildDir}/dist/ui-bundle.zip")
+    }
+
+    args = [
+        "${project.ext.siteStagingDir}/playbook.yml",
+        "--fetch"
+    ] + extraArgs
+
+    environment = ["SITE_SEARCH_ENABLED": "true"]
+
+    inputs.files(fileTree(project.ext.siteStagingDir))
+    inputs.property("Antora version", project.ext.antoraVersion)
+    outputs.dir(project.ext.siteDir)
+}
+
+task buildLocalSite {
+    group = 'Site - Local'
+    description "Creates a local build of the ref-guide, with local javadocs to link to."
+
+    dependsOn tasks.buildLocalAntoraSite
+    dependsOn configurations.localJavadocs
+
+    doLast {
+        project.logger.lifecycle("The generated local ref-guide can be found at:")
+        project.logger.lifecycle("\t${project.ext.siteDir}/index.html")
+    }
+}
+
+task checkSiteLinks(type: NpxTask) {
+    group = 'Verification'
+    description "Check that all links in the ref-guide, both internal and java-docs, are correct."
+
+    dependsOn tasks.downloadLinkValidator
+    dependsOn tasks.buildLocalSite
+
+    command = "link-checker"
+    args = [
+        "${buildDir}/site",
+        "--url-ignore", "file:/",
+        "--mkdocs",
+        "--allow-hash-href",
+        "--disable-external",
+        "--debug",
+        // Ignore the java docs url in the header, since it is an absolute path
+        "--url-ignore", "${project(':solr:documentation').docroot.toPath()}/index\\.html",
+        "--json",
+        "-v",
+    ]
+
+    def outputFile = "${buildDir}/validation/link-check.json"
+    execOverrides {
+        // The it variable contains the `ExecSpec`
+        it.standardOutput = new TeeOutputStream(it.standardOutput, new FileOutputStream(outputFile))
+    }
+
+    inputs.files(fileTree(siteDir))
+    outputs.file(outputFile)
+}
+
+/*
+    Build and setup the official Site
+ */
+task setOfficialAntoraYaml {
+    group = 'Site - Official'
+    description "Setups the local antora.yml as the official antora.yml for this branch. Note: This will change the antora.yml in the repo, not a build folder."
+
+    dependsOn tasks.buildLocalAntoraYaml
+
+    inputs.file(project.ext.localAntoraYaml)
+    outputs.file("antora.yml")
+
+    doLast {
+        copy {
+            from project.ext.localAntoraYaml
+            into projectDir
+        }
+    }
+}
+
+task buildOfficialSite(type: NpxTask) {
+    group = 'Site - Official'
+    description "Creates a build of the official ref-guide. This will not include local changes."
+
+    dependsOn tasks.downloadAntora
+    dependsOn configurations.officialPlaybook
+
+    command = "antora"
+
+    def officialPlaybook = "${project.ext.playbooksDir}/${project.ext.officialPlaybook}"
+    def extraArgs = []
+
+    if (buildLocalUI) {
+        dependsOn tasks.buildUIBundle
+        extraArgs.addAll([
+            "--ui-bundle-url", "${buildDir}/dist/ui-bundle.zip"
+        ])
+        inputs.files("${buildDir}/dist/ui-bundle.zip")
+    }
+
+    args = [
+        officialPlaybook,
+    ] + extraArgs
+
+    environment = ["SITE_SEARCH_ENABLED": "true"]
+
+    inputs.files(officialPlaybook)
+    inputs.property("Antora version", project.ext.antoraVersion)
+    outputs.dir(project.ext.siteDir)
+
+    doLast {
+        project.logger.lifecycle("The generated official ref-guide can be found at:")
+        project.logger.lifecycle("\t${project.ext.siteDir}")
+    }
+}
+
+/*
+ Compiling, Testing and Validation for the java examples in the Solr Ref Guide
+ */
+
+sourceSets {
+    test {
+        java {
+            srcDirs = ['modules/configuration-guide/examples', 'modules/deployment-guide/examples', 'modules/getting-started/examples', 'modules/indexing-guide/examples', 'modules/query-guide/examples']
+        }
+    }
+}
+
+dependencies {
+    // For the SolrJ examples
+    testImplementation project(":solr:core")
+    testImplementation project(":solr:solrj")
+    testImplementation project(":solr:test-framework")
+    testImplementation 'junit:junit'
+}
+
+// Copy all the test resource files from SolrJ to the build/resources/test directory
+// of the examples so we can avoid duplication of the test resource files like
+// schemas and SolrConfigs.
+tasks.register('copySolrjTestResources', Copy) {
+    from(project(':solr:solrj').sourceSets.test.resources.srcDirs) {
+        exclude '**/*.java'
+    }
+    into sourceSets.test.output.resourcesDir
+}
+
+tasks.named('processTestResources').configure {
+    dependsOn copySolrjTestResources
 }

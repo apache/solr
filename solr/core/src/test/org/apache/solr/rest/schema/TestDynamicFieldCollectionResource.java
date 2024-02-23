@@ -15,49 +15,52 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema;
+
 import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
-import java.io.IOException;
-
 public class TestDynamicFieldCollectionResource extends SolrRestletTestBase {
   @Test
-  public void testGetAllDynamicFields() throws Exception {
-    assertQ("/schema/dynamicfields?indent=on&wt=xml",
-            "(/response/arr[@name='dynamicFields']/lst/str[@name='name'])[1] = '*_coordinate'",
-            "(/response/arr[@name='dynamicFields']/lst/str[@name='name'])[2] = 'ignored_*'",
-            "(/response/arr[@name='dynamicFields']/lst/str[@name='name'])[3] = '*_mfacet'");
+  public void testGetAllDynamicFields() {
+    assertQ(
+        "/schema/dynamicfields?indent=on&wt=xml",
+        "(/response/arr[@name='dynamicFields']/lst/str[@name='name'])[1] = '*_coordinate'",
+        "(/response/arr[@name='dynamicFields']/lst/str[@name='name'])[2] = 'ignored_*'",
+        "(/response/arr[@name='dynamicFields']/lst/str[@name='name'])[3] = '*_mfacet'");
   }
 
   @Test
-  public void testGetTwoDynamicFields() throws IOException {
-    assertQ("/schema/dynamicfields?indent=on&wt=xml&fl=*_i,*_s",
-            "count(/response/arr[@name='dynamicFields']/lst/str[@name='name']) = 2",
-            "(/response/arr[@name='dynamicFields']/lst/str[@name='name'])[1] = '*_i'",
-            "(/response/arr[@name='dynamicFields']/lst/str[@name='name'])[2] = '*_s'");
+  public void testGetTwoDynamicFields() {
+    assertQ(
+        "/schema/dynamicfields?indent=on&wt=xml&fl=*_i,*_s",
+        "count(/response/arr[@name='dynamicFields']/lst/str[@name='name']) = 2",
+        "(/response/arr[@name='dynamicFields']/lst/str[@name='name'])[1] = '*_i'",
+        "(/response/arr[@name='dynamicFields']/lst/str[@name='name'])[2] = '*_s'");
   }
 
   @Test
-  public void testNotFoundDynamicFields() throws IOException {
-    assertQ("/schema/dynamicfields?indent=on&wt=xml&fl=*_not_in_there,this_one_isnt_either_*",
-            "count(/response/arr[@name='dynamicFields']) = 1",
-            "count(/response/arr[@name='dynamicfields']/lst/str[@name='name']) = 0");
+  public void testNotFoundDynamicFields() {
+    assertQ(
+        "/schema/dynamicfields?indent=on&wt=xml&fl=*_not_in_there,this_one_isnt_either_*",
+        "count(/response/arr[@name='dynamicFields']) = 1",
+        "count(/response/arr[@name='dynamicfields']/lst/str[@name='name']) = 0");
   }
 
   @Test
   public void testJsonGetAllDynamicFields() throws Exception {
-    assertJQ("/schema/dynamicfields?indent=on",
-             "/dynamicFields/[0]/name=='*_coordinate'",
-             "/dynamicFields/[1]/name=='ignored_*'",
-             "/dynamicFields/[2]/name=='*_mfacet'");
+    assertJQ(
+        "/schema/dynamicfields?indent=on",
+        "/dynamicFields/[0]/name=='*_coordinate'",
+        "/dynamicFields/[1]/name=='ignored_*'",
+        "/dynamicFields/[2]/name=='*_mfacet'");
   }
 
   @Test
   public void testJsonGetTwoDynamicFields() throws Exception {
-    assertJQ("/schema/dynamicfields?indent=on&fl=*_i,*_s&wt=xml", // assertJQ will fix the wt param to be json
-             "/dynamicFields/[0]/name=='*_i'",
-             "/dynamicFields/[1]/name=='*_s'");
+    // assertJQ will fix the wt param to be json
+    assertJQ(
+        "/schema/dynamicfields?indent=on&fl=*_i,*_s&wt=xml",
+        "/dynamicFields/[0]/name=='*_i'",
+        "/dynamicFields/[1]/name=='*_s'");
   }
-
-
 }

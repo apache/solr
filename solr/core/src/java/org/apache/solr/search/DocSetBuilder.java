@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -41,19 +40,14 @@ public final class DocSetBuilder {
 
   private FixedBitSet bitSet;
 
-
   public DocSetBuilder(int maxDoc, long costEst) {
     this.maxDoc = maxDoc;
-    // For ridiculously small sets, we'll just use a sorted int[]
-    // maxDoc >>> 7 is a good value if you want to save memory, lower values
-    // such as maxDoc >>> 11 should provide faster building but at the expense
-    // of using a full bitset even for quite sparse data
-    this.threshold = (maxDoc >>> 7) + 4; // the +4 is for better testing on small indexes
+    this.threshold = DocSetUtil.smallSetSize(maxDoc);
 
     if (costEst > threshold) {
       bitSet = new FixedBitSet(maxDoc);
     } else {
-      this.buffer = new int[Math.max((int)costEst,1)];
+      this.buffer = new int[Math.max((int) costEst, 1)];
     }
   }
 
@@ -94,7 +88,7 @@ public final class DocSetBuilder {
             pos = i; // update pos
             return;
           }
-          buffer[i] = doc + base;  // using the loop counter may help with removal of bounds checking
+          buffer[i] = doc + base; // using the loop counter may help with removal of bounds checking
         }
 
         pos = buffer.length; // update pos
@@ -110,7 +104,6 @@ public final class DocSetBuilder {
     }
   }
 
-
   public static void add(FixedBitSet bitSet, DocIdSetIterator iter, int base) throws IOException {
     for (int doc = iter.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = iter.nextDoc()) {
       bitSet.set(doc + base);
@@ -122,7 +115,7 @@ public final class DocSetBuilder {
     PostingsEnum postings = null;
 
     int termCount = 0;
-    for(;;) {
+    for (; ; ) {
       BytesRef term = te.next();
       if (term == null) break;
       termCount++;
@@ -133,10 +126,9 @@ public final class DocSetBuilder {
     return termCount;
   }
 
-
   public void grow(int numDocs) {
     if (bitSet == null) {
-      final long newLength = pos + numDocs;
+      final long newLength = (long) pos + numDocs;
       if (newLength < threshold) {
         growBuffer((int) newLength);
       } else {
@@ -144,7 +136,6 @@ public final class DocSetBuilder {
       }
     }
   }
-
 
   public void add(int doc) {
     if (bitSet != null) {
@@ -176,21 +167,21 @@ public final class DocSetBuilder {
     return pos;
   }
 
-
-
   public DocSet build(FixedBitSet filter) {
     if (bitSet != null) {
       if (filter != null) {
         bitSet.and(filter);
       }
       return new BitDocSet(bitSet);
-      // TODO - if this set will be cached, should we make it smaller if it's below DocSetUtil.smallSetSize?
+      // TODO - if this set will be cached, should we make it smaller if it's below
+      // DocSetUtil.smallSetSize?
     } else {
       LSBRadixSorter sorter = new LSBRadixSorter();
       sorter.sort(PackedInts.bitsRequired(maxDoc - 1), buffer, pos);
       final int l = dedup(buffer, pos, filter);
       assert l <= pos;
-      return new SortedIntDocSet(buffer, l);  // TODO: have option to not shrink in the future if it will be a temporary set
+      // TODO: have option to not shrink in the future if it will be a temporary set
+      return new SortedIntDocSet(buffer, l);
     }
   }
 
@@ -207,9 +198,8 @@ public final class DocSetBuilder {
       if (filter != null) {
         l = dedup(buffer, pos, filter);
       }
-      return new SortedIntDocSet(buffer, l);  // TODO: have option to not shrink in the future if it will be a temporary set
+      // TODO: have option to not shrink in the future if it will be a temporary set
+      return new SortedIntDocSet(buffer, l);
     }
   }
-
 }
-

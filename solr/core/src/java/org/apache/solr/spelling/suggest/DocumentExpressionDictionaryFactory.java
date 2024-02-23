@@ -16,10 +16,10 @@
  */
 package org.apache.solr.spelling.suggest;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
@@ -31,54 +31,54 @@ import org.apache.lucene.search.suggest.DocumentValueSourceDictionary;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 
-/**
- * Factory for {@link org.apache.lucene.search.suggest.DocumentValueSourceDictionary}
- */
+/** Factory for {@link org.apache.lucene.search.suggest.DocumentValueSourceDictionary} */
 public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
 
   /** Label for defining field to use for terms */
   public static final String FIELD = "field";
-  
+
   /** Label for defining payloadField to use for terms (optional) */
   public static final String PAYLOAD_FIELD = "payloadField";
-  
+
   /** Label for defining expression to evaluate the weight for the terms */
   public static final String WEIGHT_EXPRESSION = "weightExpression";
-  
-  /** Label used to define the name of the
-   * sortField used in the {@link #WEIGHT_EXPRESSION} */
+
+  /** Label used to define the name of the sortField used in the {@link #WEIGHT_EXPRESSION} */
   public static final String SORT_FIELD = "sortField";
-  
+
   @Override
-  public Dictionary create(SolrCore core, SolrIndexSearcher searcher) {
-    if(params == null) {
+  public Dictionary create(SolrCore core, SolrIndexSearcher searcher) throws IOException {
+    if (params == null) {
       // should not happen; implies setParams was not called
       throw new IllegalStateException("Value of params not set");
     }
-    
+
     String field = (String) params.get(FIELD);
     String payloadField = (String) params.get(PAYLOAD_FIELD);
     String weightExpression = (String) params.get(WEIGHT_EXPRESSION);
     Set<SortField> sortFields = new HashSet<>();
-    
+
     if (field == null) {
       throw new IllegalArgumentException(FIELD + " is a mandatory parameter");
     }
-    
+
     if (weightExpression == null) {
       throw new IllegalArgumentException(WEIGHT_EXPRESSION + " is a mandatory parameter");
     }
-    
-    for(int i = 0; i < params.size(); i++) {
+
+    for (int i = 0; i < params.size(); i++) {
       if (params.getName(i).equals(SORT_FIELD)) {
         String sortFieldName = (String) params.getVal(i);
 
         sortFields.add(getSortField(core, sortFieldName));
       }
     }
-   
-    return new DocumentValueSourceDictionary(searcher.getIndexReader(), field, fromExpression(weightExpression,
-        sortFields), payloadField);
+
+    return new DocumentValueSourceDictionary(
+        searcher.getIndexReader(),
+        field,
+        fromExpression(weightExpression, sortFields),
+        payloadField);
   }
 
   public LongValuesSource fromExpression(String weightExpression, Set<SortField> sortFields) {
@@ -96,7 +96,7 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
   }
 
   private DoubleValuesSource fromSortField(SortField field) {
-    switch(field.getType()) {
+    switch (field.getType()) {
       case INT:
         return DoubleValuesSource.fromIntField(field.getField());
       case LONG:
@@ -111,9 +111,8 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
         throw new UnsupportedOperationException();
     }
   }
-  
+
   private SortField getSortField(SolrCore core, String sortFieldName) {
     return core.getLatestSchema().getField(sortFieldName).getSortField(true);
   }
-  
 }

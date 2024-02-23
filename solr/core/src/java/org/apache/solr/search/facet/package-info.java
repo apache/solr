@@ -15,8 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * APIs and classes for the JSON Facet API.
- * This is currently experimental!
- */
+/** APIs and classes for the JSON Facet API. This is currently experimental! */
 package org.apache.solr.search.facet;

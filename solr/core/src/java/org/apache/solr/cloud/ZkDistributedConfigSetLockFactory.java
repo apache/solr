@@ -17,42 +17,49 @@
 
 package org.apache.solr.cloud;
 
-import com.google.common.base.Preconditions;
+import java.util.Objects;
 import org.apache.solr.common.cloud.SolrZkClient;
 
 /**
- * A distributed lock implementation using Zookeeper "directory" nodes created within a collection znode hierarchy, for
- * use with the distributed Collection API implementation.
- * The locks are implemented using ephemeral nodes placed below the "directory" nodes.
+ * A distributed lock implementation using Zookeeper "directory" nodes created within a collection
+ * znode hierarchy, for use with the distributed Collection API implementation. The locks are
+ * implemented using ephemeral nodes placed below the "directory" nodes.
  *
- * @see <a href="https://zookeeper.apache.org/doc/current/recipes.html#sc_recipes_Locks">Zookeeper lock recipe</a>
+ * @see <a href="https://zookeeper.apache.org/doc/current/recipes.html#sc_recipes_Locks">Zookeeper
+ *     lock recipe</a>
  */
-public class ZkDistributedConfigSetLockFactory extends ZkDistributedLockFactory implements DistributedConfigSetLockFactory {
+public class ZkDistributedConfigSetLockFactory extends ZkDistributedLockFactory
+    implements DistributedConfigSetLockFactory {
 
   public ZkDistributedConfigSetLockFactory(SolrZkClient zkClient, String rootPath) {
     super(zkClient, rootPath);
   }
 
+  @Override
   public DistributedLock createLock(boolean isWriteLock, String configSetName) {
-    Preconditions.checkArgument(configSetName != null, "configSetName can't be null");
+    Objects.requireNonNull(configSetName, "configSetName can't be null");
 
     String lockPath = getLockPath(configSetName);
     return doCreateLock(isWriteLock, lockPath);
   }
 
   /**
-   * Returns the Zookeeper path to the lock, creating missing nodes if needed.
-   * Note that the complete lock hierarchy (/rootPath and below) can be deleted if SolrCloud is stopped.
+   * Returns the Zookeeper path to the lock, creating missing nodes if needed. Note that the
+   * complete lock hierarchy (/rootPath and below) can be deleted if SolrCloud is stopped.
    *
-   * The tree of lock directories is very flat, given there's no real structure to what's being locked in a config set:
-   * <pre>
-   *   rootPath/
-   *      configSet1/ <-- EPHEMERAL config set locks go here
-   *      configSet2/ <-- EPHEMERAL config set locks go here
-   *      etc...
-   * </pre>
-   * This method will create the path where the {@code EPHEMERAL} lock nodes should go.<p>
-   * The returned path does not contain the separator ({@code "/"}) at the end.
+   * <p>The tree of lock directories is very flat, given there's no real structure to what's being
+   * locked in a config set:
+   *
+   * <pre>{@code
+   * rootPath/
+   *    configSet1/ <-- EPHEMERAL config set locks go here
+   *    configSet2/ <-- EPHEMERAL config set locks go here
+   *    etc...
+   * }</pre>
+   *
+   * This method will create the path where the {@code EPHEMERAL} lock nodes should go.
+   *
+   * <p>The returned path does not contain the separator ({@code "/"}) at the end.
    */
   private String getLockPath(String configSetName) {
     return getPathPrefix().append(configSetName).toString();

@@ -15,140 +15,73 @@
     limitations under the License.
  -->
 
-# Apache Solr
+# Welcome to the Apache Solr project!
+-----------------------------------
 
-Apache Solr is an enterprise search platform written in Java and using [Apache Lucene](https://lucene.apache.org/).
-Major features include full-text search, index replication and sharding, and
-result faceting and highlighting.
+Solr is the popular, blazing fast open source search platform for all your
+enterprise, e-commerce, and analytics needs, built on [Apache Lucene](https://lucene.apache.org/).
 
+For a complete description of the Solr project, team composition, source
+code repositories, and other details, please see the Solr web site at
+https://solr.apache.org/
 
-[![Build Status](https://ci-builds.apache.org/job/Solr/job/Solr-Artifacts-main/badge/icon?subject=Solr)](https://ci-builds.apache.org/job/Solr/job/Solr-Artifacts-main/)
+## Download
 
-
-## Online Documentation
-
-This README file only contains basic setup instructions.  For more
-comprehensive documentation, visit <https://solr.apache.org/guide/>
-
-## Building with Gradle
-
-Firstly, you need to set up your development environment (OpenJDK 11 or greater).
-
-We'll assume that you know how to get and set up the JDK - if you
-don't, then we suggest starting at https://jdk.java.net/ and learning
-more about Java, before returning to this README. Solr runs with
-Java 11 and later.
-
-As of 9.0, Solr uses [Gradle](https://gradle.org/) as the build
-system. Ant build support has been removed.
-
-To build Solr, run (`./` can be omitted on Windows):
-
-`./gradlew assemble`
-
-NOTE: DO NOT use `gradle` command that is already installed on your machine (unless you know what you'll do).
-The "gradle wrapper" (gradlew) does the job - downloads the correct version of it, setups necessary configurations.
-
-The first time you run Gradle, it will create a file "gradle.properties" that
-contains machine-specific settings. Normally you can use this file as-is, but it
-can be modified if necessary.
-
-The command above packages a full distribution of Solr server; the 
-package can be located at:
-
-`solr/packaging/build/solr-*`
-
-Note that the gradle build does not create or copy binaries throughout the
-source repository so you need to switch to the packaging output folder above;
-the rest of the instructions below remain identical. The packaging directory 
-is rewritten on each build. 
-
-For development, especially when you have created test indexes etc, use
-the `./gradlew dev` task which will copy binaries to `./solr/packaging/build/dev`
-but _only_ overwrite the binaries which will preserve your test setup.
-
-If you want to build the documentation, type `./gradlew -p solr documentation`.
+Downloads for Apache Solr distributions are available at https://solr.apache.org/downloads.html.
 
 ## Running Solr
 
-After building Solr, the server can be started using
-the `bin/solr` control scripts.  Solr can be run in either standalone or
-distributed (SolrCloud mode).
+### Installing Solr
 
-To run Solr in standalone mode, run the following command from the `solr/`
-directory:
-
-`bin/solr start`
-
-To run Solr in SolrCloud mode, run the following command from the `solr/`
-directory:
-
-`bin/solr start -c`
-
-The `bin/solr` control script allows heavy modification of the started Solr.
-Common options are described in some detail in solr/README.txt.  For an
-exhaustive treatment of options, run `bin/solr start -h` from the `solr/`
-directory.
+The Reference Guide contains an entire [Deployment Guide](https://solr.apache.org/guide/solr/latest/deployment-guide/system-requirements.html) to walk you through installing Solr.
 
 ### Running Solr in Docker
 
 You can run Solr in Docker via the [official image](https://hub.docker.com/_/solr).
-
-To run Solr in a container and expose the Solr port, run:
-
-`docker run -p 8983:8983 solr`
-
-In order to start Solr in cloud mode, run the following.
-
-`docker run -p 8983:8983 solr solr-fg -c`
-
-For documentation on using the official docker builds, please refer to the [DockerHub page](https://hub.docker.com/_/solr).  
-Up to date documentation for running locally built images of this branch can be found in the [local reference guide](solr/solr-ref-guide/src/running-solr-in-docker.adoc).
-
-There is also a gradle task for building custom Solr images from your local checkout.
-These local images are built identically to the official image except for retrieving the Solr artifacts locally instead of from the official release.
-This can be useful for testing out local changes as well as creating custom images for yourself or your organization.
-The task will output the image name to use at the end of the build.
-
-`./gradlew docker`
-
-For more info on building an image, run:
-
-`./gradlew helpDocker`
+Learn more about [Solr in Docker](https://solr.apache.org/guide/solr/latest/deployment-guide/solr-in-docker.html)
 
 ### Running Solr on Kubernetes
 
 Solr has official support for running on Kubernetes, in the official Docker image.
 Please refer to the [Solr Operator](https://solr.apache.org/operator) home for details, tutorials and instructions.
 
-### Gradle build and IDE support
+## How to Use
 
-- *IntelliJ* - IntelliJ idea can import the project out of the box. 
-               Code formatting conventions should be manually adjusted. 
-- *Eclipse*  - Not tested.
-- *Netbeans* - Not tested.
+Solr includes a few examples to help you get started. To run a specific example, enter:
+
+```
+  bin/solr start -e <EXAMPLE> where <EXAMPLE> is one of:
+    cloud:         SolrCloud example
+    techproducts:  Comprehensive example illustrating many of Solr's core capabilities
+    schemaless:    Schema-less example (schema is inferred from data during indexing)
+    films:         Example of starting with _default configset and adding explicit fields dynamically    
+```
+
+For instance, if you want to run the techproducts example, enter:
+
+```
+  bin/solr start -e techproducts
+```
+
+For a more in-depth introduction, please check out the [tutorials in the Solr Reference
+Guide](https://solr.apache.org/guide/solr/latest/getting-started/solr-tutorial.html).
 
 
-### Gradle build and tests
+## Support
 
-`./gradlew assemble` will build a runnable Solr as noted above.
+- [Users Mailing List](https://solr.apache.org/community.html#mailing-lists-chat)
+- Slack: Solr Community Channel.  Sign up at https://s.apache.org/solr-slack
+- IRC: `#solr` on [libera.chat](https://web.libera.chat/?channels=#solr)
 
-`./gradlew check` will assemble Solr and run all validation
-  tasks unit tests.
 
-`./gradlew help` will print a list of help commands for high-level tasks. One
-  of these is `helpAnt` that shows the gradle tasks corresponding to ant
-  targets you may be familiar with.
+## Get Involved
+Please review [CONTRIBUTING.md](CONTRIBUTING.md) for information on contributing to the project.
 
-## Contributing
-
-Please review the [Contributing to Solr
-Guide](https://cwiki.apache.org/confluence/display/solr/HowToContribute) for information on
-contributing.
-
-## Discussion and Support
+To get involved in the developer community:
 
 - [Mailing Lists](https://solr.apache.org/community.html#mailing-lists-chat)
+- Slack: `#solr-dev` in the `the-asf` organization.  Sign up at https://the-asf.slack.com/messages/CE70MDPMF
 - [Issue Tracker (JIRA)](https://issues.apache.org/jira/browse/SOLR)
-- IRC: `#solr` and `#solr-dev` on freenode.net
-- [Slack](https://solr.apache.org/community.html#slack) 
+- IRC: `#solr-dev` on [libera.chat](https://web.libera.chat/?channels=#solr-dev)
+
+Learn more about developing Solr by reading through the developer docs in [./dev-docs](./dev-docs) source tree.

@@ -19,7 +19,7 @@ package org.apache.solr.update;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -27,21 +27,25 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 
 public class MockStreamingSolrClients extends StreamingSolrClients {
-  
-  public enum Exp {CONNECT_EXCEPTION, SOCKET_EXCEPTION, BAD_REQUEST};
-  
+
+  public enum Exp {
+    CONNECT_EXCEPTION,
+    SOCKET_EXCEPTION,
+    BAD_REQUEST
+  }
+
   private volatile Exp exp = null;
-  
+
   public MockStreamingSolrClients(UpdateShardHandler updateShardHandler) {
     super(updateShardHandler);
   }
-  
+
   @Override
   public synchronized SolrClient getSolrClient(final SolrCmdDistributor.Req req) {
     SolrClient client = super.getSolrClient(req);
     return new MockSolrClient(client);
   }
-  
+
   public void setExp(Exp exp) {
     this.exp = exp;
   }
@@ -67,30 +71,30 @@ public class MockStreamingSolrClients extends StreamingSolrClients {
     public MockSolrClient(SolrClient solrClient) {
       this.solrClient = solrClient;
     }
-    
+
     @Override
-    public NamedList<Object> request(@SuppressWarnings({"rawtypes"})SolrRequest request, String collection)
+    public NamedList<Object> request(
+        @SuppressWarnings({"rawtypes"}) SolrRequest request, String collection)
         throws SolrServerException, IOException {
       if (exp != null) {
         Exception e = exception();
         if (e instanceof IOException) {
           if (LuceneTestCase.random().nextBoolean()) {
-            throw (IOException)e;
+            throw (IOException) e;
           } else {
             throw new SolrServerException(e);
           }
         } else if (e instanceof SolrServerException) {
-          throw (SolrServerException)e;
+          throw (SolrServerException) e;
         } else {
           throw new SolrServerException(e);
         }
       }
-      
+
       return solrClient.request(request);
     }
 
     @Override
     public void close() {}
-    
   }
 }

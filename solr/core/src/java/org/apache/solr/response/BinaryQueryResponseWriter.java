@@ -15,23 +15,34 @@
  * limitations under the License.
  */
 package org.apache.solr.response;
-import java.io.OutputStream;
-import java.io.IOException;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
- * Implementations of <code>BinaryQueryResponseWriter</code> are used to
- * write response in binary format.
- * <p>
- * Functionality is exactly same as its parent class <code>QueryResponseWriter</code>
- * But it may not implement the <code>write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)</code>
- * method  
+ * Implementations of <code>BinaryQueryResponseWriter</code> are used to write response in binary
+ * format.
  *
+ * <p>Functionality is exactly same as its parent class <code>QueryResponseWriter</code> But it may
+ * not implement the <code>
+ * write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)</code> method
  */
-public interface BinaryQueryResponseWriter extends QueryResponseWriter{
+public interface BinaryQueryResponseWriter extends QueryResponseWriter {
 
-    /**Use it to write the response in a binary format
-     */
-    public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response) throws IOException;
+  /** Use it to write the response in a binary format */
+  void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
+      throws IOException;
+
+  default String serializeResponse(SolrQueryRequest req, SolrQueryResponse rsp) {
+    java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+    try {
+      write(baos, req, rsp);
+      return baos.toString(StandardCharsets.UTF_8);
+    } catch (IOException e) {
+      // unlikely
+      throw new RuntimeException(e);
+    }
+  }
 }

@@ -1,0 +1,20 @@
+footer.footer {
+  background-color: var(--footer-background);
+  color: var(--footer-font-color);
+  font-size: calc(15 / var(--rem-base) * 1rem);
+  line-height: var(--footer-line-height);
+  /* Solr Changes - Start */
+  padding: 10px;
+  border-style: solid hidden;
+  border-color: var(--color-solr-primary-orange);
+  border-width: 1.5px;
+  /* Solr Changes - End */
+}
+
+.footer p {
+  margin: 0.5rem 0;
+}
+
+.footer a {
+  color: var(--footer-link-font-color);
+}

@@ -49,10 +49,11 @@ fi
 # test that Java exists and is executable on this server
 "$JAVA" -version >/dev/null 2>&1 || { echo >&2 "Java is required to run this tool! Please install Java 8 or greater before running this script."; exit 1; }
 
+echo "The bin/post script is deprecated in favour of the bin/solr post command. Please update your scripts."
 
 # ===== post specific code
 
-TOOL_JAR=("$SOLR_TIP/dist"/solr-core-*.jar)
+TOOL_JAR=("$SOLR_TIP/server/solr-webapp/webapp/WEB-INF/lib"/solr-core-*.jar)
 
 function print_usage() {
   echo ""
@@ -165,7 +166,7 @@ while [ $# -gt 0 ]; do
           if [[ "${1:2:4}" == "url=" ]]; then
             SOLR_URL=${1:6}
           fi
-        else          
+        else
           key="${1:1}"
           shift
   #       echo "$1: PROP"
@@ -231,8 +232,8 @@ if [[ -n "$RECURSIVE" ]]; then
   PROPS+=('-Drecursive=yes')
 fi
 
-echo "$JAVA" -classpath "${TOOL_JAR[0]}" "${PROPS[@]}" org.apache.solr.util.SimplePostTool "${PARAMS[@]}"
-"$JAVA" -classpath "${TOOL_JAR[0]}" "${PROPS[@]}" org.apache.solr.util.SimplePostTool "${PARAMS[@]}"
+echo "$JAVA" -classpath "${TOOL_JAR[0]}" "${PROPS[@]}" org.apache.solr.cli.SimplePostTool "${PARAMS[@]}"
+"$JAVA" -classpath "${TOOL_JAR[0]}" "${PROPS[@]}" org.apache.solr.cli.SimplePostTool "${PARAMS[@]}"
 
 # post smoker:
 # bin/post -c signals -out yes -type application/json -d '[{"id": 2, "val": 0.47}]'

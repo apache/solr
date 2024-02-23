@@ -16,11 +16,14 @@
  */
 package org.apache.solr.search.function.distance;
 
+import static org.apache.solr.search.FunctionQParser.FLAG_CONSUME_DELIMITER;
+import static org.apache.solr.search.FunctionQParser.FLAG_DEFAULT;
+import static org.apache.solr.search.FunctionQParser.FLAG_USE_FIELDNAME_SOURCE;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ConstNumberSource;
 import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
@@ -41,13 +44,9 @@ import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Point;
 
-import static org.apache.solr.search.FunctionQParser.FLAG_CONSUME_DELIMITER;
-import static org.apache.solr.search.FunctionQParser.FLAG_DEFAULT;
-import static org.apache.solr.search.FunctionQParser.FLAG_USE_FIELDNAME_SOURCE;
-
 /**
- * Parses "geodist" creating {@link HaversineConstFunction} or {@link HaversineFunction}
- * or calling {@link SpatialStrategy#makeDistanceValueSource(org.locationtech.spatial4j.shape.Point,double)}.
+ * Parses "geodist" creating {@link HaversineConstFunction} or {@link HaversineFunction} or calling
+ * {@link SpatialStrategy#makeDistanceValueSource(org.locationtech.spatial4j.shape.Point,double)}.
  */
 public class GeoDistValueSourceParser extends ValueSourceParser {
 
@@ -55,8 +54,13 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
   public ValueSource parse(FunctionQParser fp) throws SyntaxError {
     // TODO: dispatch through SpatialQueryable in the future?
 
-    //note: return fields as FieldNameValueSource from parser to support AbstractSpatialFieldType as geodist argument
-    List<ValueSource> sources = transformFieldSources(fp, fp.parseValueSourceList(FLAG_DEFAULT | FLAG_CONSUME_DELIMITER | FLAG_USE_FIELDNAME_SOURCE));
+    // note: return fields as FieldNameValueSource from parser to support AbstractSpatialFieldType
+    // as geodist argument
+    List<ValueSource> sources =
+        transformFieldSources(
+            fp,
+            fp.parseValueSourceList(
+                FLAG_DEFAULT | FLAG_CONSUME_DELIMITER | FLAG_USE_FIELDNAME_SOURCE));
 
     // "m" is a multi-value source, "x" is a single-value source
     // allow (m,m) (m,x,x) (x,x,m) (x,x,x,x)
@@ -72,31 +76,31 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
       if (!(vs instanceof MultiValueSource)) {
         throw new SyntaxError("geodist - invalid parameters:" + sources);
       }
-      mv1 = (MultiValueSource)vs;
+      mv1 = (MultiValueSource) vs;
     } else if (sources.size() == 2) {
       ValueSource vs1 = sources.get(0);
       ValueSource vs2 = sources.get(1);
 
       if (vs1 instanceof MultiValueSource && vs2 instanceof MultiValueSource) {
-        mv1 = (MultiValueSource)vs1;
-        mv2 = (MultiValueSource)vs2;
+        mv1 = (MultiValueSource) vs1;
+        mv2 = (MultiValueSource) vs2;
       } else {
         mv1 = makeMV(sources, sources);
       }
-    } else if (sources.size()==3) {
+    } else if (sources.size() == 3) {
       ValueSource vs1 = sources.get(0);
-      if (vs1 instanceof MultiValueSource) {     // (m,x,x)
-        mv1 = (MultiValueSource)vs1;
+      if (vs1 instanceof MultiValueSource) { // (m,x,x)
+        mv1 = (MultiValueSource) vs1;
         mv2 = makeMV(sources.subList(1, 3), sources);
-      } else {                                   // (x,x,m)
+      } else { // (x,x,m)
         mv1 = makeMV(sources.subList(0, 2), sources);
         vs1 = sources.get(2);
         if (!(vs1 instanceof MultiValueSource)) {
           throw new SyntaxError("geodist - invalid parameters:" + sources);
         }
-        mv2 = (MultiValueSource)vs1;
+        mv2 = (MultiValueSource) vs1;
       }
-    } else if (sources.size()==4) {
+    } else if (sources.size() == 4) {
       mv1 = makeMV(sources.subList(0, 2), sources);
       mv2 = makeMV(sources.subList(2, 4), sources);
     } else {
@@ -108,8 +112,7 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
       mv2 = parseSfield(fp);
     } else if (mv2 == null) {
       mv2 = parsePoint(fp);
-      if (mv2 == null)
-        mv2 = parseSfield(fp);
+      if (mv2 == null) mv2 = parseSfield(fp);
     }
 
     if (mv1 == null || mv2 == null) {
@@ -117,7 +120,7 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
     }
 
     // We have all the parameters at this point, now check if one of the points is constant
-    double[] constants;//latLon
+    double[] constants; // latLon
     constants = getConstants(mv1);
     MultiValueSource other = mv2;
     if (constants == null) {
@@ -130,26 +133,31 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
     // * HaversineConstFunction
     // * HaversineFunction
 
-    SpatialStrategyMultiValueSource spatialStrategyMultiValueSource = findSpatialStrategyMultiValueSource(mv1, mv2);
+    SpatialStrategyMultiValueSource spatialStrategyMultiValueSource =
+        findSpatialStrategyMultiValueSource(mv1, mv2);
     if (spatialStrategyMultiValueSource != null) {
       if (constants == null)
-        throw new SyntaxError("When using AbstractSpatialFieldType (e.g. RPT not LatLonType)," +
-            " the point must be supplied as constants");
+        throw new SyntaxError(
+            "When using AbstractSpatialFieldType (e.g. RPT),"
+                + " the point must be supplied as constants");
       // note: uses Haversine by default but can be changed via distCalc=...
       SpatialStrategy strategy = spatialStrategyMultiValueSource.strategy;
       DistanceUnits distanceUnits = spatialStrategyMultiValueSource.distanceUnits;
       Point queryPoint = strategy.getSpatialContext().makePoint(constants[1], constants[0]);
-      return ValueSource.fromDoubleValuesSource(strategy.makeDistanceValueSource(queryPoint, distanceUnits.multiplierFromDegreesToThisUnit()));
+      return ValueSource.fromDoubleValuesSource(
+          strategy.makeDistanceValueSource(
+              queryPoint, distanceUnits.multiplierFromDegreesToThisUnit()));
     }
 
     if (constants != null && other instanceof VectorValueSource) {
-      return new HaversineConstFunction(constants[0], constants[1], (VectorValueSource)other);
+      return new HaversineConstFunction(constants[0], constants[1], (VectorValueSource) other);
     }
 
     return new HaversineFunction(mv1, mv2, DistanceUtils.EARTH_MEAN_RADIUS_KM, true);
   }
 
-  private List<ValueSource> transformFieldSources(FunctionQParser fp, List<ValueSource> sources) throws SyntaxError {
+  private List<ValueSource> transformFieldSources(FunctionQParser fp, List<ValueSource> sources)
+      throws SyntaxError {
     List<ValueSource> result = new ArrayList<>(sources.size());
     for (ValueSource valueSource : sources) {
       if (valueSource instanceof FieldNameValueSource) {
@@ -162,7 +170,8 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
     return result;
   }
 
-  private SpatialStrategyMultiValueSource findSpatialStrategyMultiValueSource(MultiValueSource mv1, MultiValueSource mv2) {
+  private SpatialStrategyMultiValueSource findSpatialStrategyMultiValueSource(
+      MultiValueSource mv1, MultiValueSource mv2) {
     if (mv1 instanceof SpatialStrategyMultiValueSource) {
       return (SpatialStrategyMultiValueSource) mv1;
     } else if (mv2 instanceof SpatialStrategyMultiValueSource) {
@@ -173,30 +182,37 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
   }
 
   /** make a MultiValueSource from two non MultiValueSources */
-  private VectorValueSource makeMV(List<ValueSource> sources, List<ValueSource> orig) throws SyntaxError {
+  private VectorValueSource makeMV(List<ValueSource> sources, List<ValueSource> orig)
+      throws SyntaxError {
     ValueSource vs1 = sources.get(0);
     ValueSource vs2 = sources.get(1);
 
     if (vs1 instanceof MultiValueSource || vs2 instanceof MultiValueSource) {
       throw new SyntaxError("geodist - invalid parameters:" + orig);
     }
-    return  new VectorValueSource(sources);
+    return new VectorValueSource(sources);
   }
 
   private MultiValueSource parsePoint(FunctionQParser fp) {
     String ptStr = fp.getParam(SpatialParams.POINT);
     if (ptStr == null) return null;
     Point point = SpatialUtils.parsePointSolrException(ptStr, SpatialContext.GEO);
-    //assume Lat Lon order
+    // assume Lat Lon order
     return new VectorValueSource(
-        Arrays.asList(new DoubleConstValueSource(point.getY()), new DoubleConstValueSource(point.getX())));
+        Arrays.asList(
+            new DoubleConstValueSource(point.getY()), new DoubleConstValueSource(point.getX())));
   }
 
   private double[] getConstants(MultiValueSource vs) {
-    if (vs instanceof SpatialStrategyMultiValueSource || !(vs instanceof VectorValueSource)) return null;
-    List<ValueSource> sources = ((VectorValueSource)vs).getSources();
-    if (sources.get(0) instanceof ConstNumberSource && sources.get(1) instanceof ConstNumberSource) {
-      return new double[] { ((ConstNumberSource) sources.get(0)).getDouble(), ((ConstNumberSource) sources.get(1)).getDouble()};
+    if (vs instanceof SpatialStrategyMultiValueSource || !(vs instanceof VectorValueSource))
+      return null;
+    List<ValueSource> sources = ((VectorValueSource) vs).getSources();
+    if (sources.get(0) instanceof ConstNumberSource
+        && sources.get(1) instanceof ConstNumberSource) {
+      return new double[] {
+        ((ConstNumberSource) sources.get(0)).getDouble(),
+        ((ConstNumberSource) sources.get(1)).getDouble()
+      };
     }
     return null;
   }
@@ -207,7 +223,8 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
     return getMultiValueSource(fp, sfield);
   }
 
-  private MultiValueSource getMultiValueSource(FunctionQParser fp, String sfield) throws SyntaxError {
+  private MultiValueSource getMultiValueSource(FunctionQParser fp, String sfield)
+      throws SyntaxError {
     SchemaField sf = fp.getReq().getSchema().getField(sfield);
     FieldType type = sf.getType();
     if (type instanceof AbstractSpatialFieldType) {
@@ -216,17 +233,18 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
     }
     ValueSource vs = type.getValueSource(sf, fp);
     if (vs instanceof MultiValueSource) {
-      return (MultiValueSource)vs;
+      return (MultiValueSource) vs;
     }
-    throw new SyntaxError("Spatial field must implement MultiValueSource or extend AbstractSpatialFieldType:" + sf);
+    throw new SyntaxError(
+        "Spatial field must implement MultiValueSource or extend AbstractSpatialFieldType:" + sf);
   }
 
-  /** An unfortunate hack to use a {@link SpatialStrategy} instead of
-   * a ValueSource. */
+  /** An unfortunate hack to use a {@link SpatialStrategy} instead of a ValueSource. */
   private static class SpatialStrategyMultiValueSource extends VectorValueSource {
 
     final SpatialStrategy strategy;
     final DistanceUnits distanceUnits;
+
     public SpatialStrategyMultiValueSource(SpatialStrategy strategy, DistanceUnits distanceUnits) {
       super(Collections.emptyList());
       this.strategy = strategy;
@@ -238,5 +256,4 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
       throw new IllegalStateException();
     }
   }
-
 }

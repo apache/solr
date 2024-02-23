@@ -17,11 +17,10 @@
 package org.apache.solr.metrics;
 
 import com.codahale.metrics.MetricRegistry;
+import java.util.Objects;
 import org.apache.solr.core.SolrInfoBean;
 
-/**
- * Wraps meta-data for a metric.
- */
+/** Wraps meta-data for a metric. */
 public final class SolrMetricInfo {
   public final String name;
   public final String scope;
@@ -31,8 +30,8 @@ public final class SolrMetricInfo {
    * Creates a new instance of {@link SolrMetricInfo}.
    *
    * @param category the category of the metric (e.g. `QUERY`)
-   * @param scope    the scope of the metric (e.g. `/admin/ping`)
-   * @param name     the name of the metric (e.g. `Requests`)
+   * @param scope the scope of the metric (e.g. `/admin/ping`)
+   * @param name the name of the metric (e.g. `Requests`)
    */
   public SolrMetricInfo(SolrInfoBean.Category category, String scope, String name) {
     this.name = name;
@@ -68,9 +67,8 @@ public final class SolrMetricInfo {
   }
 
   /**
-   * Returns the metric name defined by this object.
-   * For example, if the name is `Requests`, scope is `/admin/ping`,
-   * and category is `QUERY`, then the metric name is
+   * Returns the metric name defined by this object. For example, if the name is `Requests`, scope
+   * is `/admin/ping`, and category is `QUERY`, then the metric name is
    * `QUERY./admin/ping.Requests`.
    *
    * @return the metric name defined by this object
@@ -81,24 +79,27 @@ public final class SolrMetricInfo {
 
   @Override
   public String toString() {
-    return "SolrMetricInfo{" +
-        "name='" + name + '\'' +
-        ", scope='" + scope + '\'' +
-        ", category=" + category +
-        '}';
+    return "SolrMetricInfo{"
+        + "name='"
+        + name
+        + '\''
+        + ", scope='"
+        + scope
+        + '\''
+        + ", category="
+        + category
+        + '}';
   }
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (!(o instanceof SolrMetricInfo)) return false;
 
     SolrMetricInfo that = (SolrMetricInfo) o;
-
-    if (name != null ? !name.equals(that.name) : that.name != null) return false;
-    if (scope != null ? !scope.equals(that.scope) : that.scope != null) return false;
-    return category == that.category;
-
+    return Objects.equals(name, that.name)
+        && Objects.equals(scope, that.scope)
+        && category == that.category;
   }
 
   @Override

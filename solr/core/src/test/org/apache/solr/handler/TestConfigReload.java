@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler;
 
+import static java.util.Arrays.asList;
+
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -23,10 +25,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -46,8 +48,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Arrays.asList;
-
 public class TestConfigReload extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -63,71 +63,78 @@ public class TestConfigReload extends AbstractFullDistribZkTestBase {
   }
 
   private void reloadTest() throws Exception {
-    SolrZkClient client = cloudClient.getZkStateReader().getZkClient();
+    SolrZkClient client = ZkStateReader.from(cloudClient).getZkClient();
     if (log.isInfoEnabled()) {
-      log.info("live_nodes_count :  {}", cloudClient.getZkStateReader().getClusterState().getLiveNodes());
+      log.info("live_nodes_count :  {}", cloudClient.getClusterState().getLiveNodes());
     }
-    String confPath = ZkConfigSetService.CONFIGS_ZKNODE+"/conf1/";
-//    checkConfReload(client, confPath + ConfigOverlay.RESOURCE_NAME, "overlay");
-    checkConfReload(client, confPath + SolrConfig.DEFAULT_CONF_FILE,"config", "/config");
-
+    String confPath = ZkConfigSetService.CONFIGS_ZKNODE + "/conf1/";
+    //    checkConfReload(client, confPath + ConfigOverlay.RESOURCE_NAME, "overlay");
+    checkConfReload(client, confPath + SolrConfig.DEFAULT_CONF_FILE, "config", "/config");
   }
 
-  private void checkConfReload(SolrZkClient client, String resPath, String name, String uri) throws Exception {
-    Stat stat =  new Stat();
+  private void checkConfReload(SolrZkClient client, String resPath, String name, String uri)
+      throws Exception {
+    Stat stat = new Stat();
     byte[] data = null;
     try {
       data = client.getData(resPath, null, stat, true);
     } catch (KeeperException.NoNodeException e) {
       data = "{}".getBytes(StandardCharsets.UTF_8);
-      log.info("creating_node {}",resPath);
-      client.create(resPath,data, CreateMode.PERSISTENT,true);
+      log.info("creating_node {}", resPath);
+      client.create(resPath, data, CreateMode.PERSISTENT, true);
     }
     long startTime = System.nanoTime();
     Stat newStat = client.setData(resPath, data, true);
-    client.setData("/configs/conf1", new byte[]{1}, true);
+    client.setData("/configs/conf1", new byte[] {1}, true);
     assertTrue(newStat.getVersion() > stat.getVersion());
     if (log.isInfoEnabled()) {
       log.info("new_version {}", newStat.getVersion());
     }
     Integer newVersion = newStat.getVersion();
     long maxTimeoutSeconds = 60;
-    DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection("collection1");
+    DocCollection coll = cloudClient.getClusterState().getCollection("collection1");
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
-        urls.add(""+replica.getBaseUrl() + "/" + replica.get(ZkStateReader.CORE_NAME_PROP));
+        urls.add("" + replica.getBaseUrl() + "/" + replica.get(ZkStateReader.CORE_NAME_PROP));
     }
     HashSet<String> succeeded = new HashSet<>();
 
-    while ( TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds){
+    while (TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS)
+        < maxTimeoutSeconds) {
       Thread.sleep(50);
       for (String url : urls) {
         MapWriter respMap = getAsMap(url + uri);
-        if (String.valueOf(newVersion).equals(respMap._getStr(asList(name, "znodeVersion"), null))) {
+        if (String.valueOf(newVersion)
+            .equals(respMap._getStr(asList(name, "znodeVersion"), null))) {
           succeeded.add(url);
         }
       }
-      if(succeeded.size() == urls.size()) break;
+      if (succeeded.size() == urls.size()) break;
       succeeded.clear();
     }
-    assertEquals(StrUtils.formatString("tried these servers {0} succeeded only in {1} ", urls, succeeded) , urls.size(), succeeded.size());
+    assertEquals(
+        StrUtils.formatString("tried these servers {0} succeeded only in {1} ", urls, succeeded),
+        urls.size(),
+        succeeded.size());
   }
 
   @SuppressWarnings({"rawtypes"})
   private LinkedHashMapWriter getAsMap(String uri) throws Exception {
-    HttpGet get = new HttpGet(uri) ;
+    HttpGet get = new HttpGet(uri);
     HttpEntity entity = null;
     try {
-      entity = cloudClient.getLbClient().getHttpClient().execute(get).getEntity();
+      entity =
+          ((CloudLegacySolrClient) cloudClient)
+              .getLbClient()
+              .getHttpClient()
+              .execute(get)
+              .getEntity();
       String response = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-      return (LinkedHashMapWriter) Utils.MAPWRITEROBJBUILDER.apply(Utils.getJSONParser(new StringReader(response))).getVal();
+      return (LinkedHashMapWriter)
+          Utils.MAPWRITEROBJBUILDER.apply(Utils.getJSONParser(new StringReader(response))).getVal();
     } finally {
       EntityUtils.consumeQuietly(entity);
     }
   }
-
-
-
-
 }

@@ -1,0 +1,872 @@
+= Alias Management
+:toclevels: 1
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+A collection alias is a virtual collection which Solr treats the same as a normal collection.
+The alias collection may point to one or more real collections.
+
+Some use cases for collection aliasing:
+
+* Time series data
+* Reindexing content behind the scenes
+
+For an overview of aliases in Solr, see the section xref:aliases.adoc[].
+
+[[createalias]]
+== CREATEALIAS: Create or Modify an Alias for a Collection
+
+The `CREATEALIAS` action will create a new alias pointing to one or more collections.
+Aliases come in 2 flavors: standard and routed.
+
+*Standard aliases* are simple: `CREATEALIAS` registers the alias name with the names of one or more collections provided by the command.
+If an existing alias exists, it is replaced/updated.
+
+A standard alias can serve as a means to rename a collection, and can be used to atomically swap which backing/underlying collection is "live" for various purposes.
+
+When Solr searches an alias pointing to multiple collections, Solr will search all shards of all the collections as an aggregated whole.
+While it is possible to send updates to an alias spanning multiple collections, standard aliases have no logic for distributing documents among the referenced collections so all updates will go to the first collection in the list.
+
+`/admin/collections?action=CREATEALIAS&name=_name_&collections=_collectionlist_`
+
+*Routed aliases* are aliases with additional capabilities to act as a kind of super-collection that route updates to the correct collection.
+
+Routing is data driven and may be based on a temporal field or on categories specified in a field (normally string based).
+See xref:aliases.adoc#routed-aliases[Routed Aliases] for some important high-level information before getting started.
+
+[source,text]
+----
+$ http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=timedata&router.start=NOW/DAY&router.field=evt_dt&router.name=time&router.interval=%2B1DAY&router.maxFutureMs=3600000&create-collection.collection.configName=myConfig&create-collection.numShards=2
+----
+
+If run on Jan 15, 2018, the above will create an time routed alias named timedata, that contains collections with names prefixed with `timedata` and an initial collection named `timedata_2018_01_15` will be created immediately.
+Updates sent to this alias with a (required) value in `evt_dt` that is before or after 2018-01-15 will be rejected, until the last 60 minutes of 2018-01-15.
+After 2018-01-15T23:00:00 documents for either 2018-01-15 or 2018-01-16 will be accepted.
+As soon as the system receives a document for an allowable time window for which there is no collection it will automatically create the next required collection (and potentially any intervening collections if `router.interval` is
+smaller than `router.maxFutureMs`).
+Both the initial collection and any subsequent collections will be created using
+the specified configset.
+All collection creation parameters other than `name` are allowed, prefixed
+by `create-collection.`
+
+This means that one could, for example, partition their collections by day, and within each daily collection route the data to shards based on customer id.
+Such shards can be of any type (NRT, PULL or TLOG), and rule-based replica
+placement strategies may also be used.
+
+The values supplied in this command for collection creation will be retained
+in alias properties, and can be verified by inspecting `aliases.json` in ZooKeeper.
+
+NOTE: Only updates are routed and queries are distributed to all collections in the alias.
+
+=== CREATEALIAS Parameters
+
+`name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The alias name to be created.
+If the alias is to be routed it also functions as a prefix for the names of the dependent collections that will be created.
+It must therefore adhere to normal requirements for collection naming.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
+
+==== Standard Alias Parameters
+
+`collections`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A comma-separated list of collections to be aliased.
+The collections must already exist in the cluster.
+This parameter signals the creation of a standard alias.
+If it is present all routing parameters are prohibited.
+If routing parameters are present this parameter is prohibited.
+
+==== Routed Alias Parameters
+
+Most routed alias parameters become _alias properties_ that can subsequently be inspected and modified either by issuing a new CREATEALIAS for the same name or via <<aliasprop,ALIASPROP>>.
+CREATEALIAS will validate against many (but not all) bad values, whereas ALIASPROP blindly accepts any key or value you give it.
+Some "valid" modifications allowed by CREATEALIAS may still be unwise, see notes below. "Expert only" modifications are technically possible, but require good understanding of how the code works and may require several precursor operations.
+
+Routed aliases currently support up to two "dimensions" of routing, with each dimension being either a "time" or "category"-based.
+Each dimension takes a number of parameters, which vary based on its type.
+
+On v1 requests, routing-dimension parameters are grouped together by query-parameter prefix.
+A routed alias with only one dimension uses the `router.` prefix for its parameters (e.g. `router.field`).
+Two-dimensional routed aliases add a number to this query-parameter prefix to distinguish which routing-dimension the parameter belongs to (e.g. `router.0.name`, `router.1.field`).
+
+On v2 requests, routing-dimensions are specified as individual objects within a list (e.g. `[{"type": "category", "field": "manu_id_s"}]`).
+
+`router.name` (v1), `type` (v2)::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none |Modify: Do not change after creation
+|===
++
+The type of routing to use.
+Presently only `time` and `category` and `Dimensional[]` are valid.
+v2 requests only allow `time` or `category` since dimensionality information lives in the `routers` list unique to v2 requests (though the caveats below about dimension ordering still apply).
++
+In the case of a xref:aliases.adoc#dimensional-routed-aliases[multi-dimensional routed alias] (aka "DRA"), it is required to express all the dimensions in the same order that they will appear in the dimension
+array.
+The format for a DRA `router.name` is `Dimensional[dim1,dim2]` where `dim1` and `dim2` are valid `router.name` values for each sub-dimension.
+Note that DRA's are experimental, and only 2D DRA's are presently supported.
+Higher numbers of dimensions may be supported in the future.
+Careful design of dimensional routing is required to avoid an explosion in the number of collections in the cluster.
+Solr Cloud may have difficulty managing more than a thousand collections.
+See examples below for further clarification on how to configure individual dimensions.
+
+`router.field` (v1), `field` (v2)::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none |Modify: Do not change after creation
+|===
++
+The field to inspect to determine which underlying collection an incoming document should be routed to.
+This field is required on all incoming documents.
+
+`create-collection.*`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none | Modify: Yes, only new collections affected, use with care
+|===
++
+The `*` wildcard can be replaced with any parameter from the xref:collection-management.adoc#create[CREATE] command except `name`.
+All other fields are identical in requirements and naming except that we insist that the configset be explicitly specified.
+The configset must be created beforehand, either uploaded or copied and modified.
+It's probably a bad idea to use "data driven" mode as schema mutations might happen concurrently leading to errors.
+
+On v2 requests, `create-collection` takes a JSON object containing all provided collection-creation parameters (e.g. `"create-collection": { "numShards": 3, "config": "_default"}`).
+
+==== Time Routed Alias Parameters
+
+`router.start` (v2), `start` (v2)::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none | Modify: Expert only
+|===
++
+The start date/time of data for this time routed alias in Solr's standard date/time format (i.e., ISO-8601 or "NOW" optionally with xref:indexing-guide:date-formatting-math.adoc#date-math[date math]).
++
+The first collection created for the alias will be internally named after this value.
+If a document is submitted with an earlier value for `router.field` then the earliest collection the alias points to then it will yield an error since it can't be routed.
+This date/time MUST NOT have a milliseconds component other than 0.
+Particularly, this means `NOW` will fail 999 times out of 1000, though `NOW/SECOND`, `NOW/MINUTE`, etc., will work just fine.
+
+`TZ` (v1), `tz` (v2)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `UTC` | Modify: Expert only
+|===
++
+The timezone to be used when evaluating any date math in `router.start` or `router.interval`.
+This is equivalent to the same parameter supplied to search queries, but understand in this case it's persisted with most of the other parameters
+as an alias property.
++
+If GMT-4 is supplied for this value then a document dated 2018-01-14T21:00:00:01.2345Z would be stored in the myAlias_2018-01-15_01 collection (assuming an interval of +1HOUR).
+
+
+`router.interval` (v1), `interval` (v2)::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none | Modify: Yes
+|===
++
+A date math expression that will be appended to a timestamp to determine the next collection in the series.
+Any date math expression that can be evaluated if appended to a timestamp of the form 2018-01-15T16:17:18 will work here.
+
+`router.maxFutureMs` (v1), `maxFutureMs` (v2)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `600000` milliseconds | Modify: Yes
+|===
++
+The maximum milliseconds into the future that a document is allowed to have in `router.field` for it to be accepted without error.
+If there was no limit, then an erroneous value could trigger many collections to be created.
+
+`router.preemptiveCreateMath` (v1), `preemptiveCreateMath` (v2)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none | Modify: Yes
+|===
++
+A date math expression that results in early creation of new collections.
++
+If a document arrives with a timestamp that is after the end time of the most recent collection minus this interval, then the next (and only the next) collection will be created asynchronously.
++
+Without this setting, collections are created synchronously when required by the document time stamp and thus block the flow of documents until the collection is created (possibly several seconds).
+Preemptive creation reduces these hiccups.
+If set to enough time (perhaps an hour or more) then if there are problems creating a collection, this window of time might be enough to take
+corrective action.
+However, after a successful preemptive creation the collection is consuming resources without being used, and new documents will tend to be routed through it only to be routed elsewhere.
++
+Also, note that `router.autoDeleteAge` is currently evaluated relative to the date of a newly created collection, so you may want to increase the delete age by the preemptive window amount so that the oldest collection isn't deleted too
+soon.
++
+It must be possible to subtract the interval specified from a date, so if prepending a minus sign creates invalid date math, this will cause an error.
+Also note that a document that is itself destined for a collection that does not exist will still trigger synchronous creation up to that destination collection but will not trigger additional async preemptive creation.
+Only one type of collection creation can happen per document.
+Example: `90MINUTES`.
++
+This property is empty by default indicating just-in-time, synchronous creation of new collections.
+
+`router.autoDeleteAge` (v1), `autoDeleteAge` (v2)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none | Modify: Yes, Possible data loss, use with care!
+|===
++
+A date math expression that results in the oldest collections getting deleted automatically.
++
+The date math is relative to the timestamp of a newly created collection (typically close to the current time), and thus this must produce an earlier time via rounding and/or subtracting.
+Collections to be deleted must have a time range that is entirely before the computed age.
+Collections are considered for deletion immediately prior to new collections getting created.
+Example: `/DAY-90DAYS`.
++
+The default is not to delete.
+
+==== Category Routed Alias Parameters
+
+`router.maxCardinality` (v1), `maxCardinality` (v2)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none | Modify: Yes
+|===
++
+The maximum number of categories allowed for this alias.
+This setting safeguards against the inadvertent creation of an infinite number of collections in the event of bad data.
+
+`router.mustMatch` (v1), `mustMatch` (v2)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none | Modify: Yes
+|===
++
+A regular expression that the value of the field specified by `router.field` must match before a corresponding collection will be created.
+Changing this setting after data has been added will not alter the data already indexed.
++
+Any valid Java regular expression pattern may be specified.
+This expression is pre-compiled at the start of each request so batching of updates is strongly recommended.
+Overly complex patterns will produce CPU or garbage collection overhead during indexing as determined by the JVM's implementation of regular expressions.
+
+==== Dimensional Routed Alias Parameters
+
+`router.#.` (v1)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none | Modify: As per above
+|===
++
+A prefix used on v1 request parameters to associate the parameter with a particular dimensional, in multi-dimensional aliases.
++
+For example in a `Dimensional[time,category]` alias, `router.0.start` would be used to set the start time for the time dimension.
+
+
+=== CREATEALIAS Response
+
+The output will simply be a responseHeader with details of the time it took to process the request.
+To confirm the creation of the alias, you can look in the Solr Admin UI, under the Cloud section and find the `aliases.json` file.
+The initial collection for routed aliases should also be visible in various parts of the admin UI.
+
+=== Examples using CREATEALIAS
+Create an alias named "testalias" and link it to the collections named "foo" and "bar".
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1createAlias]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS&name=testalias&collections=foo,bar&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">122</int>
+  </lst>
+</response>
+----
+====
+
+[example.tab-pane#v2createAlias]
+====
+[.tab-label]*V2 API*
+*Input*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
+  {
+    "name":"testalias",
+    "collections":["foo","bar"]
+  }
+'
+----
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 125
+  }
+}
+----
+====
+--
+
+A somewhat contrived example demonstrating creating a TRA with many additional collection creation options.
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1createTRA]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS
+    &name=somethingTemporalThisWayComes
+    &router.name=time
+    &router.start=NOW/MINUTE
+    &router.field=evt_dt
+    &router.interval=%2B2HOUR
+    &router.maxFutureMs=14400000
+    &create-collection.collection.configName=_default
+    &create-collection.router.name=implicit
+    &create-collection.router.field=foo_s
+    &create-collection.numShards=3
+    &create-collection.shards=foo,bar,baz
+    &create-collection.tlogReplicas=1
+    &create-collection.pullReplicas=1
+    &create-collection.property.foobar=bazbam
+    &wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">1234</int>
+  </lst>
+</response>
+----
+====
+
+[example.tab-pane#v2createTRA]
+====
+[.tab-label]*V2 API*
+
+*Input*
+
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
+  {
+      "name": "somethingTemporalThisWayComes",
+      "routers" : [
+        {
+          "type": "time",
+          "field": "evt_dt",
+          "start":"NOW/MINUTE",
+          "interval":"+2HOUR",
+          "maxFutureMs":"14400000"
+        }
+      ]
+      "create-collection" : {
+        "config":"_default",
+        "router": {
+          "name":"implicit",
+          "field":"foo_s"
+        },
+        "shardNames": ["foo", "bar", "baz"],
+        "numShards": 3,
+        "tlogReplicas":1,
+        "pullReplicas":1,
+        "properties" : {
+          "foobar":"bazbam"
+        }
+     }  
+  }
+'
+----
+
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 1234
+    }
+}
+----
+====
+
+--
+
+Another example, this time of a Dimensional Routed Alias demonstrating how to specify parameters for the
+individual dimensions
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1createDRA]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATEALIAS
+    &name=dra_test1
+    &router.name=Dimensional[time,category]
+    &router.0.start=2019-01-01T00:00:00Z
+    &router.0.field=myDate_tdt
+    &router.0.interval=%2B1MONTH
+    &router.0.maxFutureMs=600000
+    &create-collection.collection.configName=_default
+    &create-collection.numShards=2
+    &router.1.maxCardinality=20
+    &router.1.field=myCategory_s
+    &wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">1234</int>
+  </lst>
+</response>
+----
+====
+
+[example.tab-pane#v2createDRA]
+====
+[.tab-label]*V2 API*
+
+*Input*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/aliases -H 'Content-Type: application/json' -d '
+  {
+    "name":"dra_test1",
+    "routers": [
+      {
+        "type": "time",
+        "field":"myDate_tdt",
+        "start":"2019-01-01T00:00:00Z",
+        "interval":"+1MONTH",
+        "maxFutureMs":600000
+      },
+      {
+        "type": "category",
+        "field":"myCategory_s",
+        "maxCardinality":20
+      }
+    ]
+    "create-collection": {
+      "config":"_default",
+      "numShards":2
+    }
+  }
+'
+----
+*Output*
+
+[source,json]
+----
+{
+    "responseHeader": {
+        "status": 0,
+        "QTime": 1234
+    }
+}
+----
+====
+
+--
+
+[[listaliases]]
+== LISTALIASES: List of all aliases in the cluster
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1listaliases]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+curl -X GET 'http://localhost:8983/solr/admin/collections?action=LISTALIASES'
+----
+====
+
+[example.tab-pane#v2listaliases]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/aliases
+----
+====
+--
+
+=== LISTALIASES Getting details for a single alias
+[example.tab-pane#v2listsinglealias]
+====
+[.tab-label]*V2 API only*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/aliases/testalias2
+----
+====
+
+=== LISTALIASES Response
+
+The output will contain a list of aliases with the corresponding collection names.
+
+=== Examples using LISTALIASES
+
+==== List the existing aliases
+
+*Input*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/aliases
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "aliases": {
+    "testalias1": "collection1",
+    "testalias2": "collection2,collection1"
+  },
+  "properties": {
+    "testalias2": {
+      "someKey": "someValue"
+    }
+  }
+}
+----
+
+==== Getting details for a single alias
+
+*Input*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/aliases/testalias2
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "name": "testalias2",
+  "collections": [
+    "collection2",
+    "collection1"
+  ],
+  "properties": {
+    "someKey": "someValue"
+  }
+}
+----
+
+[[aliasprop]]
+== ALIASPROP: Modify Alias Properties
+
+The `ALIASPROP` action modifies the properties (metadata) on an alias.
+If a key is set with a value that is empty it will be removed.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1aliasprop]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+curl -X POST 'http://localhost:8983/admin/collections?action=ALIASPROP&name=techproducts_alias&property.foo=bar'
+----
+====
+
+[example.tab-pane#v2aliasprop]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X PUT http://localhost:8983/api/aliases/techproducts_alias/properties -H 'Content-Type: application/json' -d '
+{
+  "properties": {"foo":"bar"}
+}'
+----
+
+====
+
+[example.tab-pane#v2aliasplevelprop]
+====
+[.tab-label]*V2 API* Update via property level api
+
+[source,bash]
+----
+curl -X PUT http://localhost:8983/api/aliases/techproducts_alias/properties/foo -H 'Content-Type: application/json' -d '
+{
+  "value": "baz"
+}'
+----
+
+====
+
+[example.tab-pane#v2deleteplevelprop]
+====
+[.tab-label]*V2 API* Delete via property level api
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/aliases/techproducts_alias/properties/foo -H 'Content-Type: application/json'
+----
+
+====
+
+--
+
+
+WARNING: This command allows you to revise any property.
+No alias specific validation is performed.
+Routed aliases may cease to function, function incorrectly, or cause errors if property values are set carelessly.
+
+=== ALIASPROP Parameters
+
+`name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The alias name on which to set properties.
+
+`property._name_=_value_` (v1)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Set property _name_ to _value_.
+
+`"properties":{"name":"value"}` (v2)::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A dictionary of name/value pairs of properties to be set.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
+
+=== ALIASPROP Response
+
+The output will simply be a responseHeader with details of the time it took to process the request.
+Alias property creation can be confirmed using the "List Alias Properties" APIs described below, or by inspecting the `aliases.json` in the "Cloud" section of the Solr Admin UI.
+
+[[aliaspropread]]
+== Listing Alias Properties
+
+Retrieves the metadata properties associated with a specified alias.
+Solr's v2 API supports either listing out these properties in bulk or accessing them individually by name, as necessary.
+
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v2listallprops]
+====
+[.tab-label]*V2 API* Get all properties on an alias
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/aliases/techproducts_alias/properties
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "properties": {
+    "foo": "bar"
+  }
+}
+----
+====
+
+[example.tab-pane#v2listsingleprop]
+====
+[.tab-label]*V2 API* Get single property value on an alias
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/aliases/techproducts_alias/properties/foo
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 1
+  },
+  "value": "bar"
+}
+----
+====
+--
+
+
+[[deletealias]]
+== DELETEALIAS: Delete a Collection Alias
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletealias]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEALIAS&name=testalias
+----
+====
+
+[example.tab-pane#v2deletealias]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/aliases/testalias
+----
+====
+--
+
+
+=== DELETEALIAS Parameters
+
+`name`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the alias to delete.  Specified in the path of v2 requests, and as an explicit request parameter for v1 requests.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
+
+=== DELETEALIAS Response
+
+The output will simply be a responseHeader with details of the time it took to process the request.
+To confirm the removal of the alias, you can look in the Solr Admin UI, under the Cloud section, and find the `aliases.json` file.

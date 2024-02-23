@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
+
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -35,18 +35,15 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
-/**
- * Facilitates testing Solr's REST API via a provided embedded Jetty
- */
+/** Facilitates testing Solr's REST API via a provided embedded Jetty */
 public class RestTestHarness extends BaseTestHarness implements Closeable {
   private RESTfulServerProvider serverProvider;
-  private CloseableHttpClient httpClient = HttpClientUtil.createClient(new
-      ModifiableSolrParams());
-  
+  private CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams());
+
   public RestTestHarness(RESTfulServerProvider serverProvider) {
     this.serverProvider = serverProvider;
   }
-  
+
   public String getBaseURL() {
     return serverProvider.getBaseURL();
   }
@@ -62,7 +59,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String getAdminURL() {
     return getBaseURL().replace("/collection1", "");
   }
-  
+
   /**
    * Validates an XML "query" response against an array of XPath test strings
    *
@@ -76,7 +73,6 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     String res = query(request);
     return validateXPath(res, tests);
   }
-
 
   /**
    * Validates an XML PUT response against an array of XPath test strings
@@ -94,36 +90,49 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
     return validateXPath(res, tests);
   }
 
-
   /**
-   * Processes a "query" using a URL path (with no context path) + optional query params,
-   * e.g. "/schema/fields?indent=off"
+   * Processes a "query" using a URL path (with no context path) + optional query params, e.g.
+   * "/schema/fields?indent=off"
    *
    * @param request the URL path and optional query params
    * @return The response to the query
-   * @exception Exception any exception in the response.
+   * @exception IOException any exception in the response.
    */
-  public String query(String request) throws Exception {
+  public String query(String request) throws IOException {
     return getResponse(new HttpGet(getBaseURL() + request));
   }
 
-  public String adminQuery(String request) throws Exception {
+  public String adminQuery(String request) throws IOException {
     return getResponse(new HttpGet(getAdminURL() + request));
   }
 
   /**
-   * Processes a PUT request using a URL path (with no context path) + optional query params,
-   * e.g. "/schema/fields/newfield", PUTs the given content, and returns the response content.
-   * 
+   * Processes a HEAD request using a URL path (with no context path) + optional query params and
+   * returns the response content.
+   *
+   * @param request The URL path and optional query params
+   * @return The response to the HEAD request
+   */
+  public String head(String request) throws IOException {
+    HttpHead httpHead = new HttpHead(getBaseURL() + request);
+    return httpClient
+        .execute(httpHead, HttpClientUtil.createNewHttpClientRequestContext())
+        .toString();
+  }
+
+  /**
+   * Processes a PUT request using a URL path (with no context path) + optional query params, e.g.
+   * "/schema/fields/newfield", PUTs the given content, and returns the response content.
+   *
    * @param request The URL path and optional query params
    * @param content The content to include with the PUT request
    * @return The response to the PUT request
    */
   public String put(String request, String content) throws IOException {
     HttpPut httpPut = new HttpPut(getBaseURL() + request);
-    httpPut.setEntity(new StringEntity(content, ContentType.create(
-        "application/json", StandardCharsets.UTF_8)));
-    
+    httpPut.setEntity(
+        new StringEntity(content, ContentType.create("application/json", StandardCharsets.UTF_8)));
+
     return getResponse(httpPut);
   }
 
@@ -140,8 +149,8 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   }
 
   /**
-   * Processes a POST request using a URL path (with no context path) + optional query params,
-   * e.g. "/schema/fields/newfield", PUTs the given content, and returns the response content.
+   * Processes a POST request using a URL path (with no context path) + optional query params, e.g.
+   * "/schema/fields/newfield", PUTs the given content, and returns the response content.
    *
    * @param request The URL path and optional query params
    * @param content The content to include with the POST request
@@ -149,17 +158,16 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
    */
   public String post(String request, String content) throws IOException {
     HttpPost httpPost = new HttpPost(getBaseURL() + request);
-    httpPost.setEntity(new StringEntity(content, ContentType.create(
-        "application/json", StandardCharsets.UTF_8)));
-    
+    httpPost.setEntity(
+        new StringEntity(content, ContentType.create("application/json", StandardCharsets.UTF_8)));
+
     return getResponse(httpPost);
   }
-
 
   public String checkResponseStatus(String xml, String code) throws Exception {
     try {
       String response = query(xml);
-      String valid = validateXPath(response, "//int[@name='status']="+code );
+      String valid = validateXPath(response, "//int[@name='status']=" + code);
       return (null == valid) ? null : response;
     } catch (XPathExpressionException e) {
       throw new RuntimeException("?!? static xpath has bug?", e);
@@ -169,30 +177,31 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   public String checkAdminResponseStatus(String xml, String code) throws Exception {
     try {
       String response = adminQuery(xml);
-      String valid = validateXPath(response, "//int[@name='status']="+code );
+      String valid = validateXPath(response, "//int[@name='status']=" + code);
       return (null == valid) ? null : response;
     } catch (XPathExpressionException e) {
       throw new RuntimeException("?!? static xpath has bug?", e);
     }
   }
-  /**
-   * Reloads the first core listed in the response to the core admin handler STATUS command
-   */
+
+  /** Reloads the first core listed in the response to the core admin handler STATUS command */
   @Override
   public void reload() throws Exception {
-    String coreName = (String)evaluateXPath
-        (adminQuery("/admin/cores?wt=xml&action=STATUS"),
-         "//lst[@name='status']/lst[1]/str[@name='name']",
-         XPathConstants.STRING);
-    String xml = checkAdminResponseStatus("/admin/cores?wt=xml&action=RELOAD&core=" + coreName, "0");
+    String coreName =
+        (String)
+            evaluateXPath(
+                adminQuery("/admin/cores?wt=xml&action=STATUS"),
+                "//lst[@name='status']/lst[1]/str[@name='name']",
+                XPathConstants.STRING);
+    String xml =
+        checkAdminResponseStatus("/admin/cores?wt=xml&action=RELOAD&core=" + coreName, "0");
     if (null != xml) {
       throw new RuntimeException("RELOAD failed:\n" + xml);
     }
   }
 
   /**
-   * Processes an "update" (add, commit or optimize) and
-   * returns the response as a String.
+   * Processes an "update" (add, commit or optimize) and returns the response as a String.
    *
    * @param xml The XML of the update
    * @return The XML response to the update
@@ -200,19 +209,23 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   @Override
   public String update(String xml) {
     try {
-      return query("/update?stream.body=" + URLEncoder.encode(xml, "UTF-8"));
+      HttpPost httpPost = new HttpPost(getBaseURL() + "/update");
+      httpPost.setEntity(
+          new StringEntity(xml, ContentType.create("application/xml", StandardCharsets.UTF_8)));
+      return getResponse(httpPost);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  /**
-   * Executes the given request and returns the response.
-   */
+  /** Executes the given request and returns the response. */
   private String getResponse(HttpUriRequest request) throws IOException {
     HttpEntity entity = null;
     try {
-      entity = httpClient.execute(request, HttpClientUtil.createNewHttpClientRequestContext()).getEntity();
+      entity =
+          httpClient
+              .execute(request, HttpClientUtil.createNewHttpClientRequestContext())
+              .getEntity();
       return EntityUtils.toString(entity, StandardCharsets.UTF_8);
     } finally {
       EntityUtils.consumeQuietly(entity);

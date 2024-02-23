@@ -185,7 +185,7 @@ public class ProfileResults {
               stack.append(frameToString(trace.getFrames().get(i), lineNumbers));
             }
             String line = stack.toString();
-            SimpleEntry<String,Long> entry = histogram.computeIfAbsent(line, u -> new SimpleEntry<String, Long>(line, 0L));
+            SimpleEntry<String,Long> entry = histogram.computeIfAbsent(line, u -> new SimpleEntry<>(line, 0L));
             long value = getValue(event);
             entry.setValue(entry.getValue() + value);
             totalEvents++;

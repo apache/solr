@@ -25,7 +25,6 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
@@ -35,9 +34,8 @@ import org.apache.solr.common.util.SuppressForbidden;
 /**
  * Annotation specifying the log level for a particular test case or method
  *
- * Log levels are set for different classes by passing a configuration string
- * to the annotation, like this:
- * <code>
+ * <p>Log levels are set for different classes by passing a configuration string to the annotation,
+ * like this: <code>
  *   {@literal @}LogLevel("org.apache.solr=DEBUG;org.apache.solr.core=INFO")
  * </code>
  */
@@ -47,12 +45,10 @@ import org.apache.solr.common.util.SuppressForbidden;
 @Target({ElementType.TYPE, ElementType.METHOD})
 public @interface LogLevel {
 
-  /**
-   * A log-level definition string
-   */
+  /** A log-level definition string */
   public String value();
 
-  @SuppressForbidden(reason="Specific to Log4J2")
+  @SuppressForbidden(reason = "Specific to Log4J2")
   public static class Configurer {
 
     private static Map<String, Level> parseFrom(String input) {
@@ -81,33 +77,33 @@ public @interface LogLevel {
       final Configuration config = ctx.getConfiguration();
 
       final Map<String, Level> oldLevels = new HashMap<>();
-      logLevels.forEach((loggerName, newLevel) -> {
-        final LoggerConfig logConfig = config.getLoggerConfig(loggerName);
-        if (loggerName.equals(logConfig.getName())) {
-          // we have an existing LoggerConfig for this specific loggerName
-          // record the existing 'old' level...
-          oldLevels.put(loggerName, logConfig.getLevel());
-          // ...and set the new one (or remove if null) ...
-          if (null == newLevel) {
-            config.removeLogger(loggerName);
-          } else {
-            logConfig.setLevel(newLevel);
-          }
-        } else {
-          // there is no existing configuration for the exact loggerName, logConfig is some ancestor
-          // record an 'old' level of 'null' to track the lack of any configured level...
-          oldLevels.put(loggerName, null);
-          // ...and now create a new logger config wih our new level
-          final LoggerConfig newLoggerConfig = new LoggerConfig(loggerName, newLevel, true);
-          config.addLogger(loggerName, newLoggerConfig);
-        }
+      logLevels.forEach(
+          (loggerName, newLevel) -> {
+            final LoggerConfig logConfig = config.getLoggerConfig(loggerName);
+            if (loggerName.equals(logConfig.getName())) {
+              // we have an existing LoggerConfig for this specific loggerName
+              // record the existing 'old' level...
+              oldLevels.put(loggerName, logConfig.getLevel());
+              // ...and set the new one (or remove if null) ...
+              if (null == newLevel) {
+                config.removeLogger(loggerName);
+              } else {
+                logConfig.setLevel(newLevel);
+              }
+            } else {
+              // there is no existing configuration for the exact loggerName, logConfig is some
+              // ancestor record an 'old' level of 'null' to track the lack of any configured
+              // level...
+              oldLevels.put(loggerName, null);
+              // ...and now create a new logger config wih our new level
+              final LoggerConfig newLoggerConfig = new LoggerConfig(loggerName, newLevel, true);
+              config.addLogger(loggerName, newLoggerConfig);
+            }
 
-        assert oldLevels.containsKey(loggerName);
-      });
+            assert oldLevels.containsKey(loggerName);
+          });
       ctx.updateLoggers();
       return oldLevels;
     }
-
   }
-
 }

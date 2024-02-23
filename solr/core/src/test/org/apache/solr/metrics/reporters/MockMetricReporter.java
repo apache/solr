@@ -16,12 +16,10 @@
  */
 package org.apache.solr.metrics.reporters;
 
-import java.io.IOException;
-import java.util.Locale;
-import java.util.NoSuchElementException;
-
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricRegistry;
+import java.util.Locale;
+import java.util.NoSuchElementException;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
 
@@ -43,7 +41,7 @@ public class MockMetricReporter extends SolrMetricReporter {
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() {
     didClose = true;
   }
 
@@ -54,7 +52,8 @@ public class MockMetricReporter extends SolrMetricReporter {
       throw new IllegalStateException("MockMetricReporter::configurable not defined.");
     }
     if (period < 1) {
-      throw new IllegalStateException("Init argument 'period' is in time unit 'seconds' and must be at least 1.");
+      throw new IllegalStateException(
+          "Init argument 'period' is in time unit 'seconds' and must be at least 1.");
     }
   }
 
@@ -74,8 +73,14 @@ public class MockMetricReporter extends SolrMetricReporter {
 
   @Override
   public String toString() {
-    return String.format(Locale.ENGLISH, "[%s@%s: configurable = %s, didInit = %b, didValidate = %b, didClose = %b]",
-        getClass().getName(), Integer.toHexString(hashCode()), configurable, didInit, didValidate, didClose);
-
+    return String.format(
+        Locale.ENGLISH,
+        "[%s@%s: configurable = %s, didInit = %b, didValidate = %b, didClose = %b]",
+        getClass().getName(),
+        Integer.toHexString(hashCode()),
+        configurable,
+        didInit,
+        didValidate,
+        didClose);
   }
 }

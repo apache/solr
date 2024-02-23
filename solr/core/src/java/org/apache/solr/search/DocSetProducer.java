@@ -18,7 +18,9 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 
-/** @lucene.experimental */
+/**
+ * @lucene.experimental
+ */
 public interface DocSetProducer {
   public DocSet createDocSet(SolrIndexSearcher searcher) throws IOException;
 }

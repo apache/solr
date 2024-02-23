@@ -16,6 +16,9 @@
  */
 package org.apache.solr.core;
 
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
+
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.math.BigInteger;
@@ -33,7 +36,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -47,28 +49,25 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
-
 /**
- * The purpose of this class is to store the Jars loaded in memory and to keep only one copy of the Jar in a single node.
+ * The purpose of this class is to store the Jars loaded in memory and to keep only one copy of the
+ * Jar in a single node.
  */
 public class BlobRepository {
 
-  private static final long MAX_JAR_SIZE = Long.parseLong(
-      System.getProperty("runtime.lib.size", String.valueOf(5 * 1024 * 1024)));
+  private static final long MAX_JAR_SIZE =
+      Long.parseLong(System.getProperty("runtime.lib.size", String.valueOf(5 * 1024 * 1024)));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final Random RANDOM;
   static final Pattern BLOB_KEY_PATTERN_CHECKER = Pattern.compile(".*/\\d+");
 
   static {
-    // We try to make things reproducible in the context of our tests by initializing the random instance
-    // based on the current seed
+    // We try to make things reproducible in the context of our tests by initializing the random
+    // instance based on the current seed
     String seed = System.getProperty("tests.seed");
     if (seed == null) {
       RANDOM = new Random();
@@ -78,6 +77,7 @@ public class BlobRepository {
   }
 
   private final CoreContainer coreContainer;
+
   @SuppressWarnings({"rawtypes"})
   private Map<String, BlobContent> blobs = createMap();
 
@@ -91,12 +91,14 @@ public class BlobRepository {
     this.coreContainer = coreContainer;
   }
 
-  // I wanted to {@link SolrCore#loadDecodeAndCacheBlob(String, Decoder)} below but precommit complains
+  // I wanted to {@link SolrCore#loadDecodeAndCacheBlob(String, Decoder)} below but precommit
+  // complains
 
   /**
-   * Returns the contents of a blob containing a ByteBuffer and increments a reference count. Please return the
-   * same object to decrease the refcount. This is normally used for storing jar files, and binary raw data.
-   * If you are caching Java Objects you want to use {@code SolrCore#loadDecodeAndCacheBlob(String, Decoder)}
+   * Returns the contents of a blob containing a ByteBuffer and increments a reference count. Please
+   * return the same object to decrease the refcount. This is normally used for storing jar files,
+   * and binary raw data. If you are caching Java Objects you want to use {@code
+   * SolrCore#loadDecodeAndCacheBlob(String, Decoder)}
    *
    * @param key it is a combination of blobname and version like blobName/version
    * @return The reference of a blob
@@ -106,12 +108,13 @@ public class BlobRepository {
   }
 
   /**
-   * Internal method that returns the contents of a blob and increments a reference count. Please return the same
-   * object to decrease the refcount. Only the decoded content will be cached when this method is used. Component
-   * authors attempting to share objects across cores should use
-   * {@code SolrCore#loadDecodeAndCacheBlob(String, Decoder)} which ensures that a proper close hook is also created.
+   * Internal method that returns the contents of a blob and increments a reference count. Please
+   * return the same object to decrease the refcount. Only the decoded content will be cached when
+   * this method is used. Component authors attempting to share objects across cores should use
+   * {@code SolrCore#loadDecodeAndCacheBlob(String, Decoder)} which ensures that a proper close hook
+   * is also created.
    *
-   * @param key     it is a combination of blob name and version like blobName/version
+   * @param key it is a combination of blob name and version like blobName/version
    * @param decoder a decoder that knows how to interpret the bytes from the blob
    * @return The reference of a blob
    */
@@ -124,7 +127,9 @@ public class BlobRepository {
     if (decoder != null) keyBuilder.append(decoder.getName());
     keyBuilder.append("/").append(sha512);
 
-    return getBlobIncRef(keyBuilder.toString(), () -> new BlobContent<>(key, fetchBlobAndVerify(key, url, sha512), decoder));
+    return getBlobIncRef(
+        keyBuilder.toString(),
+        () -> new BlobContent<>(key, fetchBlobAndVerify(key, url, sha512), decoder));
   }
 
   // do the actual work returning the appropriate type...
@@ -138,12 +143,14 @@ public class BlobRepository {
           try {
             aBlob = blobCreator.call();
           } catch (Exception e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Blob loading failed: " + e.getMessage(), e);
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR, "Blob loading failed: " + e.getMessage(), e);
           }
         }
       }
     } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Blob loading is not supported in non-cloud mode");
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Blob loading is not supported in non-cloud mode");
       // todo
     }
     BlobContentRef<T> ref = new BlobContentRef<>(aBlob);
@@ -170,14 +177,15 @@ public class BlobRepository {
     return aBlob;
   }
 
-  static String INVALID_JAR_MSG = "Invalid jar from {0} , expected sha512 hash : {1} , actual : {2}";
+  static String INVALID_JAR_MSG =
+      "Invalid jar from {0} , expected sha512 hash : {1} , actual : {2}";
 
   private ByteBuffer fetchBlobAndVerify(String key, String url, String sha512) {
     ByteBuffer byteBuffer = fetchFromUrl(key, url);
     String computedDigest = sha512Digest(byteBuffer);
     if (!computedDigest.equals(sha512)) {
-      throw new SolrException(SERVER_ERROR, StrUtils.formatString(INVALID_JAR_MSG, url, sha512, computedDigest));
-
+      throw new SolrException(
+          SERVER_ERROR, StrUtils.formatString(INVALID_JAR_MSG, url, sha512, computedDigest));
     }
     return byteBuffer;
   }
@@ -187,23 +195,23 @@ public class BlobRepository {
     try {
       digest = MessageDigest.getInstance("SHA-512");
     } catch (NoSuchAlgorithmException e) {
-      //unlikely
+      // unlikely
       throw new SolrException(SERVER_ERROR, e);
     }
     digest.update(byteBuffer);
-    return String.format(
-        Locale.ROOT,
-        "%0128x",
-        new BigInteger(1, digest.digest()));
+    return String.format(Locale.ROOT, "%0128x", new BigInteger(1, digest.digest()));
   }
 
-
-  /**
-   * Package local for unit tests only please do not use elsewhere
-   */
+  /** Package local for unit tests only please do not use elsewhere */
   ByteBuffer fetchBlob(String key) {
     Replica replica = getSystemCollReplica();
-    String url = replica.getBaseUrl() + "/" + CollectionAdminParams.SYSTEM_COLL + "/blob/" + key + "?wt=filestream";
+    String url =
+        replica.getBaseUrl()
+            + "/"
+            + CollectionAdminParams.SYSTEM_COLL
+            + "/blob/"
+            + key
+            + "?wt=filestream";
     return fetchFromUrl(key, url);
   }
 
@@ -218,11 +226,12 @@ public class BlobRepository {
       entity = response.getEntity();
       int statusCode = response.getStatusLine().getStatusCode();
       if (statusCode != 200) {
-        throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no such blob or version available: " + key);
+        throw new SolrException(
+            SolrException.ErrorCode.NOT_FOUND, "no such blob or version available: " + key);
       }
 
       try (InputStream is = entity.getContent()) {
-        b = SimplePostTool.inputStreamToByteArray(is, MAX_JAR_SIZE);
+        b = Utils.toByteArray(is, MAX_JAR_SIZE);
       }
     } catch (Exception e) {
       if (e instanceof SolrException) {
@@ -241,11 +250,14 @@ public class BlobRepository {
     ClusterState cs = zkStateReader.getClusterState();
     DocCollection coll = cs.getCollectionOrNull(CollectionAdminParams.SYSTEM_COLL);
     if (coll == null)
-      throw new SolrException(SERVICE_UNAVAILABLE, CollectionAdminParams.SYSTEM_COLL + " collection not available");
+      throw new SolrException(
+          SERVICE_UNAVAILABLE, CollectionAdminParams.SYSTEM_COLL + " collection not available");
     ArrayList<Slice> slices = new ArrayList<>(coll.getActiveSlices());
     if (slices.isEmpty())
-      throw new SolrException(SERVICE_UNAVAILABLE, "No active slices for " + CollectionAdminParams.SYSTEM_COLL + " collection");
-    Collections.shuffle(slices, RANDOM); //do load balancing
+      throw new SolrException(
+          SERVICE_UNAVAILABLE,
+          "No active slices for " + CollectionAdminParams.SYSTEM_COLL + " collection");
+    Collections.shuffle(slices, RANDOM); // do load balancing
 
     Replica replica = null;
     for (Slice slice : slices) {
@@ -253,19 +265,26 @@ public class BlobRepository {
       Collections.shuffle(replicas, RANDOM);
       for (Replica r : replicas) {
         if (r.getState() == Replica.State.ACTIVE) {
-          if (zkStateReader.getClusterState().getLiveNodes().contains(r.get(ZkStateReader.NODE_NAME_PROP))) {
+          if (zkStateReader
+              .getClusterState()
+              .getLiveNodes()
+              .contains(r.get(ZkStateReader.NODE_NAME_PROP))) {
             replica = r;
             break;
           } else {
             if (log.isInfoEnabled()) {
-              log.info("replica {} says it is active but not a member of live nodes", r.get(ZkStateReader.NODE_NAME_PROP));
+              log.info(
+                  "replica {} says it is active but not a member of live nodes",
+                  r.get(ZkStateReader.NODE_NAME_PROP));
             }
           }
         }
       }
     }
     if (replica == null) {
-      throw new SolrException(SERVICE_UNAVAILABLE, "No active replica available for " + CollectionAdminParams.SYSTEM_COLL + " collection");
+      throw new SolrException(
+          SERVICE_UNAVAILABLE,
+          "No active replica available for " + CollectionAdminParams.SYSTEM_COLL + " collection");
     }
     return replica;
   }
@@ -273,7 +292,8 @@ public class BlobRepository {
   /**
    * This is to decrement a ref count
    *
-   * @param ref The reference that is already there. Doing multiple calls with same ref will not matter
+   * @param ref The reference that is already there. Doing multiple calls with same ref will not
+   *     matter
    */
   public void decrementBlobRefCount(BlobContentRef<?> ref) {
     if (ref == null) return;
@@ -289,14 +309,15 @@ public class BlobRepository {
 
   public static class BlobContent<T> {
     public final String key;
-    private final T content; // holds byte buffer or cached object, holding both is a waste of memory
-    // ref counting mechanism
+    // holds byte buffer or cached object, holding both is a waste of memory ref counting mechanism
+    private final T content;
     private final Set<BlobContentRef<T>> references = new HashSet<>();
 
     @SuppressWarnings("unchecked")
     public BlobContent(String key, ByteBuffer buffer, Decoder<T> decoder) {
       this.key = key;
-      this.content = decoder == null ? (T) buffer : decoder.decode(new ByteBufferInputStream(buffer));
+      this.content =
+          decoder == null ? (T) buffer : decoder.decode(new ByteBufferInputStream(buffer));
     }
 
     @SuppressWarnings("unchecked")
@@ -313,14 +334,13 @@ public class BlobRepository {
     public T get() {
       return this.content;
     }
-
   }
 
   public interface Decoder<T> {
 
     /**
-     * A name by which to distinguish this decoding. This only needs to be implemented if you want to support
-     * decoding the same blob content with more than one decoder.
+     * A name by which to distinguish this decoding. This only needs to be implemented if you want
+     * to support decoding the same blob content with more than one decoder.
      *
      * @return The name of the decoding, defaults to empty string.
      */
@@ -336,7 +356,6 @@ public class BlobRepository {
      */
     T decode(InputStream inputStream);
   }
-
 
   public static class BlobContentRef<T> {
     public final BlobContent<T> blob;

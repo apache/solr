@@ -17,6 +17,10 @@
 
 package org.apache.solr.common.util;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableSet;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -29,45 +33,44 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Objects;
-
+import java.util.Set;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrException;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.unmodifiableList;
-import static java.util.Collections.unmodifiableSet;
-
 public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
 
   private static final String INCLUDE = "#include";
   private static final String RESOURCE_EXTENSION = ".json";
-  public static final PredicateWithErrMsg<Object> NOT_NULL = o -> {
-    if (o == null) return " Must not be NULL";
-    return null;
-  };
-  @SuppressWarnings({"rawtypes"})
-  public static final PredicateWithErrMsg<Pair> ENUM_OF = pair -> {
-    if (pair.second() instanceof Set) {
-      Set<?> set = (Set<?>) pair.second();
-      if (pair.first() instanceof Collection) {
-        for (Object o : (Collection<?>) pair.first()) {
-          if (!set.contains(o)) {
-            return " Must be one of " + pair.second();
-          }
-        }
-      } else {
-        if (!set.contains(pair.first())) return " Must be one of " + pair.second() + ", got " + pair.first();
-      }
-      return null;
-    } else {
-      return " Unknown type";
-    }
+  public static final PredicateWithErrMsg<Object> NOT_NULL =
+      o -> {
+        if (o == null) return " Must not be NULL";
+        return null;
+      };
 
-  };
+  @SuppressWarnings({"rawtypes"})
+  public static final PredicateWithErrMsg<Pair> ENUM_OF =
+      pair -> {
+        if (pair.second() instanceof Set) {
+          Set<?> set = (Set<?>) pair.second();
+          if (pair.first() instanceof Collection) {
+            for (Object o : (Collection<?>) pair.first()) {
+              if (!set.contains(o)) {
+                return " Must be one of " + pair.second();
+              }
+            }
+          } else {
+            if (!set.contains(pair.first()))
+              return " Must be one of " + pair.second() + ", got " + pair.first();
+          }
+          return null;
+        } else {
+          return " Unknown type";
+        }
+      };
+
   private final Map<String, Object> delegate;
 
   public ValidatingJsonMap(Map<String, Object> delegate) {
@@ -75,7 +78,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   }
 
   public ValidatingJsonMap(int i) {
-    delegate = new LinkedHashMap<>(i);
+    delegate = CollectionUtil.newLinkedHashMap(i);
   }
 
   public ValidatingJsonMap() {
@@ -125,7 +128,6 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   @Override
   public void clear() {
     delegate.clear();
-
   }
 
   @Override
@@ -144,7 +146,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   }
 
   @SuppressWarnings({"unchecked"})
-  public Object get(String key, @SuppressWarnings({"rawtypes"})PredicateWithErrMsg predicate) {
+  public Object get(String key, @SuppressWarnings({"rawtypes"}) PredicateWithErrMsg predicate) {
     Object v = get(key);
     if (predicate != null) {
       String msg = predicate.test(v);
@@ -181,9 +183,9 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
     return getMap(key, null, null);
   }
 
-  public ValidatingJsonMap getMap(String key, @SuppressWarnings({"rawtypes"})PredicateWithErrMsg predicate) {
+  public ValidatingJsonMap getMap(
+      String key, @SuppressWarnings({"rawtypes"}) PredicateWithErrMsg predicate) {
     return getMap(key, predicate, null);
-
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -248,7 +250,6 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
     } else {
       return new ValidatingJsonMap(map);
     }
-
   }
 
   public static ValidatingJsonMap fromJSON(InputStream is, String includeLocation) {
@@ -270,11 +271,14 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
    * parsed from the resource at {location}/{resource-name}.json
    */
   private static void handleIncludes(ValidatingJsonMap map, String location, int maxDepth) {
-    final String loc = location == null ? "" // trim trailing slash
-        : (location.endsWith("/") ? location.substring(0, location.length() - 1) : location);
+    final String loc =
+        location == null
+            ? "" // trim trailing slash
+            : (location.endsWith("/") ? location.substring(0, location.length() - 1) : location);
     String resourceToInclude = (String) map.get(INCLUDE);
     if (resourceToInclude != null) {
-      ValidatingJsonMap includedMap = parse(loc + "/" + resourceToInclude + RESOURCE_EXTENSION, loc);
+      ValidatingJsonMap includedMap =
+          parse(loc + "/" + resourceToInclude + RESOURCE_EXTENSION, loc);
       map.remove(INCLUDE);
       map.putAll(includedMap);
     }
@@ -310,7 +314,9 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
       }
       result.add(o);
     }
-    return mutable ? result : result instanceof Set ? unmodifiableSet((Set) result) : unmodifiableList((List) result);
+    return mutable
+        ? result
+        : result instanceof Set ? unmodifiableSet((Set) result) : unmodifiableList((List) result);
   }
 
   private static ObjectBuilder getObjectBuilder(final JSONParser jp) throws IOException {
@@ -332,13 +338,16 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
       try {
         map = fromJSON(is, includeLocation);
       } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in JSON : " + resourceName, e);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, "Error in JSON : " + resourceName, e);
       }
     } catch (IOException ioe) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                              "Unable to read resource: " + resourceName, ioe);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Unable to read resource: " + resourceName, ioe);
     }
-    if (map == null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Empty value for " + resourceName);
+    if (map == null)
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Empty value for " + resourceName);
     return getDeepCopy(map, 5, false);
   }
 
@@ -357,13 +366,11 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   public interface PredicateWithErrMsg<T> {
 
     /**
-     * Test the object and return null if the predicate is true
-     * or return a string with a message;
+     * Test the object and return null if the predicate is true or return a string with a message;
      *
      * @param t test value
      * @return null if test succeeds or an error description if test fails
      */
     String test(T t);
-
   }
 }

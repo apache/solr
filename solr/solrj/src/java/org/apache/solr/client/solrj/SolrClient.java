@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
 import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
@@ -37,7 +36,6 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -54,35 +52,33 @@ public abstract class SolrClient implements Serializable, Closeable {
   private static final long serialVersionUID = 1L;
 
   private DocumentObjectBinder binder;
+  protected String defaultCollection;
 
   /**
    * Adds a collection of documents
    *
    * @param collection the Solr collection to add documents to
-   * @param docs  the collection of documents
-   *
+   * @param docs the collection of documents
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
-   *
    * @since Solr 5.1
    */
-  public UpdateResponse add(String collection, Collection<SolrInputDocument> docs) throws SolrServerException, IOException {
+  public UpdateResponse add(String collection, Collection<SolrInputDocument> docs)
+      throws SolrServerException, IOException {
     return add(collection, docs, -1);
   }
 
   /**
    * Adds a collection of documents
    *
-   * @param docs  the collection of documents
-   *
+   * @param docs the collection of documents
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse add(Collection<SolrInputDocument> docs) throws SolrServerException, IOException {
+  public UpdateResponse add(Collection<SolrInputDocument> docs)
+      throws SolrServerException, IOException {
     return add(null, docs);
   }
 
@@ -90,17 +86,16 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Adds a collection of documents, specifying max time before they become committed
    *
    * @param collection the Solr collection to add documents to
-   * @param docs  the collection of documents
-   * @param commitWithinMs  max time (in ms) before a commit will happen
-   *
+   * @param docs the collection of documents
+   * @param commitWithinMs max time (in ms) before a commit will happen
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
-   *
    * @since Solr 5.1
    */
-  public UpdateResponse add(String collection, Collection<SolrInputDocument> docs, int commitWithinMs) throws SolrServerException, IOException {
+  public UpdateResponse add(
+      String collection, Collection<SolrInputDocument> docs, int commitWithinMs)
+      throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     req.add(docs);
     req.setCommitWithin(commitWithinMs);
@@ -110,17 +105,15 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Adds a collection of documents, specifying max time before they become committed
    *
-   * @param docs  the collection of documents
-   * @param commitWithinMs  max time (in ms) before a commit will happen
-   *
+   * @param docs the collection of documents
+   * @param commitWithinMs max time (in ms) before a commit will happen
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
-   *
    * @since Solr 3.5
    */
-  public UpdateResponse add(Collection<SolrInputDocument> docs, int commitWithinMs) throws SolrServerException, IOException {
+  public UpdateResponse add(Collection<SolrInputDocument> docs, int commitWithinMs)
+      throws SolrServerException, IOException {
     return add(null, docs, commitWithinMs);
   }
 
@@ -128,29 +121,26 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Adds a single document
    *
    * @param collection the Solr collection to add the document to
-   * @param doc  the input document
-   *
+   * @param doc the input document
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse add(String collection, SolrInputDocument doc) throws SolrServerException, IOException {
+  public UpdateResponse add(String collection, SolrInputDocument doc)
+      throws SolrServerException, IOException {
     return add(collection, doc, -1);
   }
 
   /**
    * Adds a single document
    *
-   * Many {@link SolrClient} implementations have drastically slower indexing performance when documents are added
-   * individually.  Document batching generally leads to better indexing performance and should be used whenever
-   * possible.
+   * <p>Many {@link SolrClient} implementations have drastically slower indexing performance when
+   * documents are added individually. Document batching generally leads to better indexing
+   * performance and should be used whenever possible.
    *
-   * @param doc  the input document
-   *
+   * @param doc the input document
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
    */
   public UpdateResponse add(SolrInputDocument doc) throws SolrServerException, IOException {
@@ -161,17 +151,15 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Adds a single document specifying max time before it becomes committed
    *
    * @param collection the Solr collection to add the document to
-   * @param doc  the input document
-   * @param commitWithinMs  max time (in ms) before a commit will happen
-   *
+   * @param doc the input document
+   * @param commitWithinMs max time (in ms) before a commit will happen
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
-   *
    * @since solr 5.1
    */
-  public UpdateResponse add(String collection, SolrInputDocument doc, int commitWithinMs) throws SolrServerException, IOException {
+  public UpdateResponse add(String collection, SolrInputDocument doc, int commitWithinMs)
+      throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     req.add(doc);
     req.setCommitWithin(commitWithinMs);
@@ -181,17 +169,15 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Adds a single document specifying max time before it becomes committed
    *
-   * @param doc  the input document
-   * @param commitWithinMs  max time (in ms) before a commit will happen
-   *
+   * @param doc the input document
+   * @param commitWithinMs max time (in ms) before a commit will happen
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
-   *
    * @since solr 3.5
    */
-  public UpdateResponse add(SolrInputDocument doc, int commitWithinMs) throws SolrServerException, IOException {
+  public UpdateResponse add(SolrInputDocument doc, int commitWithinMs)
+      throws SolrServerException, IOException {
     return add(null, doc, commitWithinMs);
   }
 
@@ -199,12 +185,9 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Adds the documents supplied by the given iterator.
    *
    * @param collection the Solr collection to add the documents to
-   * @param docIterator
-   *          the iterator which returns SolrInputDocument instances
-   *
+   * @param docIterator the iterator which returns SolrInputDocument instances
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
    */
   public UpdateResponse add(String collection, Iterator<SolrInputDocument> docIterator)
@@ -217,51 +200,46 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Adds the documents supplied by the given iterator.
    *
-   * @param docIterator
-   *          the iterator which returns SolrInputDocument instances
-   *
+   * @param docIterator the iterator which returns SolrInputDocument instances
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse add(Iterator<SolrInputDocument> docIterator) throws SolrServerException, IOException {
+  public UpdateResponse add(Iterator<SolrInputDocument> docIterator)
+      throws SolrServerException, IOException {
     return add(null, docIterator);
   }
 
   /**
    * Adds a single bean
    *
-   * The bean is converted to a {@link SolrInputDocument} by the client's
-   * {@link org.apache.solr.client.solrj.beans.DocumentObjectBinder}
-   * <p>
-   * Many {@link SolrClient} implementations have drastically slower indexing performance when documents are added
-   * individually.  Document batching generally leads to better indexing performance and should be used whenever
-   * possible.
+   * <p>The bean is converted to a {@link SolrInputDocument} by the client's {@link
+   * org.apache.solr.client.solrj.beans.DocumentObjectBinder}
+   *
+   * <p>Many {@link SolrClient} implementations have drastically slower indexing performance when
+   * documents are added individually. Document batching generally leads to better indexing
+   * performance and should be used whenever possible.
    *
    * @param collection to Solr collection to add documents to
-   * @param obj  the input bean
-   *
+   * @param obj the input bean
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse addBean(String collection, Object obj) throws IOException, SolrServerException {
+  public UpdateResponse addBean(String collection, Object obj)
+      throws IOException, SolrServerException {
     return addBean(collection, obj, -1);
   }
 
   /**
    * Adds a single bean
    *
-   * The bean is converted to a {@link SolrInputDocument} by the client's
-   * {@link org.apache.solr.client.solrj.beans.DocumentObjectBinder}
+   * <p>The bean is converted to a {@link SolrInputDocument} by the client's {@link
+   * org.apache.solr.client.solrj.beans.DocumentObjectBinder}
    *
-   * @param obj  the input bean
-   *
+   * @param obj the input bean
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
    */
   public UpdateResponse addBean(Object obj) throws IOException, SolrServerException {
@@ -271,67 +249,62 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Adds a single bean specifying max time before it becomes committed
    *
-   * The bean is converted to a {@link SolrInputDocument} by the client's
-   * {@link org.apache.solr.client.solrj.beans.DocumentObjectBinder}
+   * <p>The bean is converted to a {@link SolrInputDocument} by the client's {@link
+   * org.apache.solr.client.solrj.beans.DocumentObjectBinder}
    *
    * @param collection to Solr collection to add documents to
-   * @param obj  the input bean
-   *
+   * @param obj the input bean
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse addBean(String collection, Object obj, int commitWithinMs) throws IOException, SolrServerException {
+  public UpdateResponse addBean(String collection, Object obj, int commitWithinMs)
+      throws IOException, SolrServerException {
     return add(collection, getBinder().toSolrInputDocument(obj), commitWithinMs);
   }
 
   /**
    * Adds a single bean specifying max time before it becomes committed
    *
-   * The bean is converted to a {@link SolrInputDocument} by the client's
-   * {@link org.apache.solr.client.solrj.beans.DocumentObjectBinder}
+   * <p>The bean is converted to a {@link SolrInputDocument} by the client's {@link
+   * org.apache.solr.client.solrj.beans.DocumentObjectBinder}
    *
-   * @param obj  the input bean
-   *
+   * @param obj the input bean
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse addBean(Object obj, int commitWithinMs) throws IOException, SolrServerException {
+  public UpdateResponse addBean(Object obj, int commitWithinMs)
+      throws IOException, SolrServerException {
     return add(null, getBinder().toSolrInputDocument(obj), commitWithinMs);
   }
 
   /**
    * Adds a collection of beans
    *
-   * The beans are converted to {@link SolrInputDocument}s by the client's
-   * {@link org.apache.solr.client.solrj.beans.DocumentObjectBinder}
+   * <p>The beans are converted to {@link SolrInputDocument}s by the client's {@link
+   * org.apache.solr.client.solrj.beans.DocumentObjectBinder}
    *
    * @param collection the Solr collection to add documents to
-   * @param beans  the collection of beans
-   *
+   * @param beans the collection of beans
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse addBeans(String collection, Collection<?> beans) throws SolrServerException, IOException {
+  public UpdateResponse addBeans(String collection, Collection<?> beans)
+      throws SolrServerException, IOException {
     return addBeans(collection, beans, -1);
   }
 
   /**
    * Adds a collection of beans
    *
-   * The beans are converted to {@link SolrInputDocument}s by the client's
-   * {@link org.apache.solr.client.solrj.beans.DocumentObjectBinder}
+   * <p>The beans are converted to {@link SolrInputDocument}s by the client's {@link
+   * org.apache.solr.client.solrj.beans.DocumentObjectBinder}
    *
-   * @param beans  the collection of beans
-   *
+   * @param beans the collection of beans
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
    */
   public UpdateResponse addBeans(Collection<?> beans) throws SolrServerException, IOException {
@@ -341,25 +314,22 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Adds a collection of beans specifying max time before they become committed
    *
-   * The beans are converted to {@link SolrInputDocument}s by the client's
-   * {@link org.apache.solr.client.solrj.beans.DocumentObjectBinder}
+   * <p>The beans are converted to {@link SolrInputDocument}s by the client's {@link
+   * org.apache.solr.client.solrj.beans.DocumentObjectBinder}
    *
    * @param collection the Solr collection to add documents to
-   * @param beans  the collection of beans
-   * @param commitWithinMs  max time (in ms) before a commit will happen
-   *
+   * @param beans the collection of beans
+   * @param commitWithinMs max time (in ms) before a commit will happen
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
-   *
    * @see SolrClient#getBinder()
-   *
    * @since solr 5.1
    */
-  public UpdateResponse addBeans(String collection, Collection<?> beans, int commitWithinMs) throws SolrServerException, IOException {
+  public UpdateResponse addBeans(String collection, Collection<?> beans, int commitWithinMs)
+      throws SolrServerException, IOException {
     DocumentObjectBinder binder = this.getBinder();
-    ArrayList<SolrInputDocument> docs =  new ArrayList<>(beans.size());
+    ArrayList<SolrInputDocument> docs = new ArrayList<>(beans.size());
     for (Object bean : beans) {
       docs.add(binder.toSolrInputDocument(bean));
     }
@@ -369,22 +339,19 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Adds a collection of beans specifying max time before they become committed
    *
-   * The beans are converted to {@link SolrInputDocument}s by the client's
-   * {@link org.apache.solr.client.solrj.beans.DocumentObjectBinder}
+   * <p>The beans are converted to {@link SolrInputDocument}s by the client's {@link
+   * org.apache.solr.client.solrj.beans.DocumentObjectBinder}
    *
-   * @param beans  the collection of beans
-   * @param commitWithinMs  max time (in ms) before a commit will happen
-   *
+   * @param beans the collection of beans
+   * @param commitWithinMs max time (in ms) before a commit will happen
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
-   *
    * @see SolrClient#getBinder()
-   *
    * @since solr 3.5
    */
-  public UpdateResponse addBeans(Collection<?> beans, int commitWithinMs) throws SolrServerException, IOException {
+  public UpdateResponse addBeans(Collection<?> beans, int commitWithinMs)
+      throws SolrServerException, IOException {
     return addBeans(null, beans, commitWithinMs);
   }
 
@@ -392,68 +359,63 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Adds the beans supplied by the given iterator.
    *
    * @param collection the Solr collection to add the documents to
-   * @param beanIterator
-   *          the iterator which returns Beans
-   *
+   * @param beanIterator the iterator which returns Beans
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
    */
   public UpdateResponse addBeans(String collection, final Iterator<?> beanIterator)
       throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
-    req.setDocIterator(new Iterator<SolrInputDocument>() {
+    req.setDocIterator(
+        new Iterator<SolrInputDocument>() {
 
-      @Override
-      public boolean hasNext() {
-        return beanIterator.hasNext();
-      }
+          @Override
+          public boolean hasNext() {
+            return beanIterator.hasNext();
+          }
 
-      @Override
-      public SolrInputDocument next() {
-        Object o = beanIterator.next();
-        if (o == null) return null;
-        return getBinder().toSolrInputDocument(o);
-      }
+          @Override
+          public SolrInputDocument next() {
+            Object o = beanIterator.next();
+            if (o == null) return null;
+            return getBinder().toSolrInputDocument(o);
+          }
 
-      @Override
-      public void remove() {
-        beanIterator.remove();
-      }
-    });
+          @Override
+          public void remove() {
+            beanIterator.remove();
+          }
+        });
     return req.process(this, collection);
   }
 
   /**
    * Adds the beans supplied by the given iterator.
    *
-   * @param beanIterator
-   *          the iterator which returns Beans
-   *
+   * @param beanIterator the iterator which returns Beans
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} from the server
-   *
-   * @throws IOException         if there is a communication error with the server
+   * @throws IOException if there is a communication error with the server
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse addBeans(final Iterator<?> beanIterator) throws SolrServerException, IOException {
+  public UpdateResponse addBeans(final Iterator<?> beanIterator)
+      throws SolrServerException, IOException {
     return addBeans(null, beanIterator);
   }
 
   /**
    * Performs an explicit commit, causing pending documents to be committed for indexing
    *
-   * waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
-   * <p>
-   * Be very careful when triggering commits from the client side.  Commits are heavy operations and WILL impact Solr
-   * performance when executed too often or too close together.  Instead, consider using 'commitWithin' when adding documents
-   * or rely on your core's/collection's 'autoCommit' settings.
+   * <p>waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+   *
+   * <p>Be very careful when triggering commits from the client side. Commits are heavy operations
+   * and WILL impact Solr performance when executed too often or too close together. Instead,
+   * consider using 'commitWithin' when adding documents or rely on your core's/collection's
+   * 'autoCommit' settings.
    *
    * @param collection the Solr collection to send the commit to
-   *
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -464,15 +426,15 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Performs an explicit commit, causing pending documents to be committed for indexing
    *
-   * waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
-   * <p>
-   * Be very careful when triggering commits from the client side.  Commits are heavy operations and WILL impact Solr
-   * performance when executed too often or too close together.  Instead, consider using 'commitWithin' when adding documents
-   * or rely on your core's/collection's 'autoCommit' settings.
+   * <p>waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+   *
+   * <p>Be very careful when triggering commits from the client side. Commits are heavy operations
+   * and WILL impact Solr performance when executed too often or too close together. Instead,
+   * consider using 'commitWithin' when adding documents or rely on your core's/collection's
+   * 'autoCommit' settings.
    *
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -483,18 +445,17 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Performs an explicit commit, causing pending documents to be committed for indexing
    *
-   * Be very careful when triggering commits from the client side.  Commits are heavy operations and WILL impact Solr
-   * performance when executed too often or too close together.  Instead, consider using 'commitWithin' when adding documents
-   * or rely on your core's/collection's 'autoCommit' settings.
+   * <p>Be very careful when triggering commits from the client side. Commits are heavy operations
+   * and WILL impact Solr performance when executed too often or too close together. Instead,
+   * consider using 'commitWithin' when adding documents or rely on your core's/collection's
+   * 'autoCommit' settings.
    *
    * @param collection the Solr collection to send the commit to
-   * @param waitFlush  block until index changes are flushed to disk
-   * @param waitSearcher  block until a new searcher is opened and registered as the
-   *                      main query searcher, making the changes visible
-   *
+   * @param waitFlush block until index changes are flushed to disk
+   * @param waitSearcher block until a new searcher is opened and registered as the main query
+   *     searcher, making the changes visible
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -508,45 +469,45 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Performs an explicit commit, causing pending documents to be committed for indexing
    *
-   * Be very careful when triggering commits from the client side.  Commits are heavy operations and WILL impact Solr
-   * performance when executed too often or too close together.  Instead, consider using 'commitWithin' when adding documents
-   * or rely on your core's/collection's 'autoCommit' settings.
+   * <p>Be very careful when triggering commits from the client side. Commits are heavy operations
+   * and WILL impact Solr performance when executed too often or too close together. Instead,
+   * consider using 'commitWithin' when adding documents or rely on your core's/collection's
+   * 'autoCommit' settings.
    *
-   * @param waitFlush  block until index changes are flushed to disk
-   * @param waitSearcher  block until a new searcher is opened and registered as the
-   *                      main query searcher, making the changes visible
-   *
+   * @param waitFlush block until index changes are flushed to disk
+   * @param waitSearcher block until a new searcher is opened and registered as the main query
+   *     searcher, making the changes visible
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse commit(boolean waitFlush, boolean waitSearcher) throws SolrServerException, IOException {
+  public UpdateResponse commit(boolean waitFlush, boolean waitSearcher)
+      throws SolrServerException, IOException {
     return commit(null, waitFlush, waitSearcher);
   }
 
   /**
    * Performs an explicit commit, causing pending documents to be committed for indexing
    *
-   * Be very careful when triggering commits from the client side.  Commits are heavy operations and WILL impact Solr
-   * performance when executed too often or too close together.  Instead, consider using 'commitWithin' when adding documents
-   * or rely on your core's/collection's 'autoCommit' settings.
+   * <p>Be very careful when triggering commits from the client side. Commits are heavy operations
+   * and WILL impact Solr performance when executed too often or too close together. Instead,
+   * consider using 'commitWithin' when adding documents or rely on your core's/collection's
+   * 'autoCommit' settings.
    *
    * @param collection the Solr collection to send the commit to
-   * @param waitFlush  block until index changes are flushed to disk
-   * @param waitSearcher  block until a new searcher is opened and registered as the
-   *                      main query searcher, making the changes visible
-   * @param softCommit makes index changes visible while neither fsync-ing index files
-   *                   nor writing a new index descriptor
-   *
+   * @param waitFlush block until index changes are flushed to disk
+   * @param waitSearcher block until a new searcher is opened and registered as the main query
+   *     searcher, making the changes visible
+   * @param softCommit makes index changes visible while neither fsync-ing index files nor writing a
+   *     new index descriptor
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse commit(String collection, boolean waitFlush, boolean waitSearcher, boolean softCommit)
+  public UpdateResponse commit(
+      String collection, boolean waitFlush, boolean waitSearcher, boolean softCommit)
       throws SolrServerException, IOException {
     return new UpdateRequest()
         .setAction(UpdateRequest.ACTION.COMMIT, waitFlush, waitSearcher, softCommit)
@@ -556,19 +517,18 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Performs an explicit commit, causing pending documents to be committed for indexing
    *
-   * Be very careful when triggering commits from the client side.  Commits are heavy operations and WILL impact Solr
-   * performance when executed too often or too close together.  Instead, consider using 'commitWithin' when adding documents
-   * or rely on your core's/collection's 'autoCommit' settings.
+   * <p>Be very careful when triggering commits from the client side. Commits are heavy operations
+   * and WILL impact Solr performance when executed too often or too close together. Instead,
+   * consider using 'commitWithin' when adding documents or rely on your core's/collection's
+   * 'autoCommit' settings.
    *
-   * @param waitFlush  block until index changes are flushed to disk
-   * @param waitSearcher  block until a new searcher is opened and registered as the
-   *                      main query searcher, making the changes visible
-   * @param softCommit makes index changes visible while neither fsync-ing index files
-   *                   nor writing a new index descriptor
-   *
+   * @param waitFlush block until index changes are flushed to disk
+   * @param waitSearcher block until a new searcher is opened and registered as the main query
+   *     searcher, making the changes visible
+   * @param softCommit makes index changes visible while neither fsync-ing index files nor writing a
+   *     new index descriptor
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -580,15 +540,13 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Performs an explicit optimize, causing a merge of all segments to one.
    *
-   * waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+   * <p>waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
    *
-   * Note: In most cases it is not required to do explicit optimize
+   * <p>Note: In most cases it is not required to do explicit optimize
    *
    * @param collection the Solr collection to send the optimize to
-   *
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -599,13 +557,12 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Performs an explicit optimize, causing a merge of all segments to one.
    *
-   * waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+   * <p>waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
    *
-   * Note: In most cases it is not required to do explicit optimize
+   * <p>Note: In most cases it is not required to do explicit optimize
    *
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -615,61 +572,58 @@ public abstract class SolrClient implements Serializable, Closeable {
 
   /**
    * Performs an explicit optimize, causing a merge of all segments to one.
-   * <p>
-   * Note: In most cases it is not required to do explicit optimize
+   *
+   * <p>Note: In most cases it is not required to do explicit optimize
    *
    * @param collection the Solr collection to send the optimize to
-   * @param waitFlush  block until index changes are flushed to disk
-   * @param waitSearcher  block until a new searcher is opened and registered as
-   *                      the main query searcher, making the changes visible
-   *
+   * @param waitFlush block until index changes are flushed to disk
+   * @param waitSearcher block until a new searcher is opened and registered as the main query
+   *     searcher, making the changes visible
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse optimize(String collection, boolean waitFlush, boolean waitSearcher) throws SolrServerException, IOException {
+  public UpdateResponse optimize(String collection, boolean waitFlush, boolean waitSearcher)
+      throws SolrServerException, IOException {
     return optimize(collection, waitFlush, waitSearcher, 1);
   }
 
   /**
    * Performs an explicit optimize, causing a merge of all segments to one.
-   * <p>
-   * Note: In most cases it is not required to do explicit optimize
    *
-   * @param waitFlush  block until index changes are flushed to disk
-   * @param waitSearcher  block until a new searcher is opened and registered as
-   *                      the main query searcher, making the changes visible
+   * <p>Note: In most cases it is not required to do explicit optimize
    *
+   * @param waitFlush block until index changes are flushed to disk
+   * @param waitSearcher block until a new searcher is opened and registered as the main query
+   *     searcher, making the changes visible
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse optimize(boolean waitFlush, boolean waitSearcher) throws SolrServerException, IOException {
+  public UpdateResponse optimize(boolean waitFlush, boolean waitSearcher)
+      throws SolrServerException, IOException {
     return optimize(null, waitFlush, waitSearcher);
   }
 
   /**
    * Performs an explicit optimize, causing a merge of all segments to one.
    *
-   * Note: In most cases it is not required to do explicit optimize
+   * <p>Note: In most cases it is not required to do explicit optimize
    *
    * @param collection the Solr collection to send the optimize to
-   * @param waitFlush  block until index changes are flushed to disk
-   * @param waitSearcher  block until a new searcher is opened and registered as
-   *                      the main query searcher, making the changes visible
-   * @param maxSegments  optimizes down to at most this number of segments
-   *
+   * @param waitFlush block until index changes are flushed to disk
+   * @param waitSearcher block until a new searcher is opened and registered as the main query
+   *     searcher, making the changes visible
+   * @param maxSegments optimizes down to at most this number of segments
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse optimize(String collection, boolean waitFlush, boolean waitSearcher, int maxSegments)
+  public UpdateResponse optimize(
+      String collection, boolean waitFlush, boolean waitSearcher, int maxSegments)
       throws SolrServerException, IOException {
     return new UpdateRequest()
         .setAction(UpdateRequest.ACTION.OPTIMIZE, waitFlush, waitSearcher, maxSegments)
@@ -679,16 +633,14 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Performs an explicit optimize, causing a merge of all segments to one.
    *
-   * Note: In most cases it is not required to do explicit optimize
+   * <p>Note: In most cases it is not required to do explicit optimize
    *
-   * @param waitFlush  block until index changes are flushed to disk
-   * @param waitSearcher  block until a new searcher is opened and registered as
-   *                      the main query searcher, making the changes visible
-   * @param maxSegments  optimizes down to at most this number of segments
-   *
+   * @param waitFlush block until index changes are flushed to disk
+   * @param waitSearcher block until a new searcher is opened and registered as the main query
+   *     searcher, making the changes visible
+   * @param maxSegments optimizes down to at most this number of segments
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -700,18 +652,15 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Performs a rollback of all non-committed documents pending.
    *
-   * Note that this is not a true rollback as in databases. Content you have previously
-   * added may have been committed due to autoCommit, buffer full, other client performing
-   * a commit etc.
-   * <p>
-   * Also note that rollbacks reset changes made by <i>all</i> clients.  Use this method carefully when multiple clients,
-   * or multithreaded clients are in use.
+   * <p>Note that this is not a true rollback as in databases. Content you have previously added may
+   * have been committed due to autoCommit, buffer full, other client performing a commit etc.
+   *
+   * <p>Also note that rollbacks reset changes made by <i>all</i> clients. Use this method carefully
+   * when multiple clients, or multithreaded clients are in use.
    *
    * @param collection the Solr collection to send the rollback to
-   *
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -722,16 +671,14 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Performs a rollback of all non-committed documents pending.
    *
-   * Note that this is not a true rollback as in databases. Content you have previously
-   * added may have been committed due to autoCommit, buffer full, other client performing
-   * a commit etc.
-   * <p>
-   * Also note that rollbacks reset changes made by <i>all</i> clients.  Use this method carefully when multiple clients,
-   * or multithreaded clients are in use.
+   * <p>Note that this is not a true rollback as in databases. Content you have previously added may
+   * have been committed due to autoCommit, buffer full, other client performing a commit etc.
+   *
+   * <p>Also note that rollbacks reset changes made by <i>all</i> clients. Use this method carefully
+   * when multiple clients, or multithreaded clients are in use.
    *
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -740,29 +687,26 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Deletes a single document by unique ID.  Doesn't work for child/nested docs.
+   * Deletes a single document by unique ID. Doesn't work for child/nested docs.
    *
    * @param collection the Solr collection to delete the document from
-   * @param id  the ID of the document to delete
-   *
+   * @param id the ID of the document to delete
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse deleteById(String collection, String id) throws SolrServerException, IOException {
+  public UpdateResponse deleteById(String collection, String id)
+      throws SolrServerException, IOException {
     return deleteById(collection, id, -1);
   }
 
   /**
-   * Deletes a single document by unique ID.  Doesn't work for child/nested docs.
+   * Deletes a single document by unique ID. Doesn't work for child/nested docs.
    *
-   * @param id  the ID of the document to delete
-   *
+   * @param id the ID of the document to delete
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -771,22 +715,20 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Deletes a single document by unique ID, specifying max time before commit.
-   * Doesn't work for child/nested docs.
+   * Deletes a single document by unique ID, specifying max time before commit. Doesn't work for
+   * child/nested docs.
    *
    * @param collection the Solr collection to delete the document from
-   * @param id  the ID of the document to delete
-   * @param commitWithinMs  max time (in ms) before a commit will happen
-   *
+   * @param id the ID of the document to delete
+   * @param commitWithinMs max time (in ms) before a commit will happen
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
-   *
    * @since 5.1
    */
-  public UpdateResponse deleteById(String collection, String id, int commitWithinMs) throws SolrServerException, IOException {
+  public UpdateResponse deleteById(String collection, String id, int commitWithinMs)
+      throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     req.deleteById(id);
     req.setCommitWithin(commitWithinMs);
@@ -794,48 +736,43 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Deletes a single document by unique ID, specifying max time before commit.
-   * Doesn't work for child/nested docs.
+   * Deletes a single document by unique ID, specifying max time before commit. Doesn't work for
+   * child/nested docs.
    *
-   * @param id  the ID of the document to delete
-   * @param commitWithinMs  max time (in ms) before a commit will happen
-   *
+   * @param id the ID of the document to delete
+   * @param commitWithinMs max time (in ms) before a commit will happen
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
-   *
    * @since 3.6
    */
-  public UpdateResponse deleteById(String id, int commitWithinMs) throws SolrServerException, IOException {
+  public UpdateResponse deleteById(String id, int commitWithinMs)
+      throws SolrServerException, IOException {
     return deleteById(null, id, commitWithinMs);
   }
 
   /**
-   * Deletes a list of documents by unique ID.  Doesn't work for child/nested docs.
+   * Deletes a list of documents by unique ID. Doesn't work for child/nested docs.
    *
    * @param collection the Solr collection to delete the documents from
-   * @param ids  the list of document IDs to delete; must be non-null and contain elements
-   *
+   * @param ids the list of document IDs to delete; must be non-null and contain elements
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse deleteById(String collection, List<String> ids) throws SolrServerException, IOException {
+  public UpdateResponse deleteById(String collection, List<String> ids)
+      throws SolrServerException, IOException {
     return deleteById(collection, ids, -1);
   }
 
   /**
-   * Deletes a list of documents by unique ID.  Doesn't work for child/nested docs.
+   * Deletes a list of documents by unique ID. Doesn't work for child/nested docs.
    *
-   * @param ids  the list of document IDs to delete; must be non-null and contain elements
-   *
+   * @param ids the list of document IDs to delete; must be non-null and contain elements
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -844,24 +781,24 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Deletes a list of documents by unique ID, specifying max time before commit.
-   * Doesn't work for child/nested docs.
+   * Deletes a list of documents by unique ID, specifying max time before commit. Doesn't work for
+   * child/nested docs.
    *
    * @param collection the Solr collection to delete the documents from
-   * @param ids  the list of document IDs to delete; must be non-null and contain elements
-   * @param commitWithinMs  max time (in ms) before a commit will happen
-   *
+   * @param ids the list of document IDs to delete; must be non-null and contain elements
+   * @param commitWithinMs max time (in ms) before a commit will happen
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
-   *
    * @since 5.1
    */
-  public UpdateResponse deleteById(String collection, List<String> ids, int commitWithinMs) throws SolrServerException, IOException {
+  public UpdateResponse deleteById(String collection, List<String> ids, int commitWithinMs)
+      throws SolrServerException, IOException {
     if (ids == null) throw new IllegalArgumentException("'ids' parameter must be non-null");
-    if (ids.isEmpty()) throw new IllegalArgumentException("'ids' parameter must not be empty; should contain IDs to delete");
+    if (ids.isEmpty())
+      throw new IllegalArgumentException(
+          "'ids' parameter must not be empty; should contain IDs to delete");
 
     UpdateRequest req = new UpdateRequest();
     req.deleteById(ids);
@@ -870,21 +807,19 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Deletes a list of documents by unique ID, specifying max time before commit.
-   * Doesn't work for child/nested docs.
+   * Deletes a list of documents by unique ID, specifying max time before commit. Doesn't work for
+   * child/nested docs.
    *
-   * @param ids  the list of document IDs to delete
-   * @param commitWithinMs  max time (in ms) before a commit will happen
-   *
+   * @param ids the list of document IDs to delete
+   * @param commitWithinMs max time (in ms) before a commit will happen
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
-   *
    * @since 3.6
    */
-  public UpdateResponse deleteById(List<String> ids, int commitWithinMs) throws SolrServerException, IOException {
+  public UpdateResponse deleteById(List<String> ids, int commitWithinMs)
+      throws SolrServerException, IOException {
     return deleteById(null, ids, commitWithinMs);
   }
 
@@ -892,26 +827,23 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Deletes documents from the index based on a query
    *
    * @param collection the Solr collection to delete the documents from
-   * @param query  the query expressing what documents to delete
-   *
+   * @param query the query expressing what documents to delete
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse deleteByQuery(String collection, String query) throws SolrServerException, IOException {
+  public UpdateResponse deleteByQuery(String collection, String query)
+      throws SolrServerException, IOException {
     return deleteByQuery(collection, query, -1);
   }
 
   /**
    * Deletes documents from the index based on a query
    *
-   * @param query  the query expressing what documents to delete
-   *
+   * @param query the query expressing what documents to delete
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -923,18 +855,16 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Deletes documents from the index based on a query, specifying max time before commit
    *
    * @param collection the Solr collection to delete the documents from
-   * @param query  the query expressing what documents to delete
-   * @param commitWithinMs  max time (in ms) before a commit will happen
-   *
+   * @param query the query expressing what documents to delete
+   * @param commitWithinMs max time (in ms) before a commit will happen
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
-   *
    * @since 5.1
    */
-  public UpdateResponse deleteByQuery(String collection, String query, int commitWithinMs) throws SolrServerException, IOException {
+  public UpdateResponse deleteByQuery(String collection, String query, int commitWithinMs)
+      throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     req.deleteByQuery(query);
     req.setCommitWithin(commitWithinMs);
@@ -944,18 +874,16 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Deletes documents from the index based on a query, specifying max time before commit
    *
-   * @param query  the query expressing what documents to delete
-   * @param commitWithinMs  max time (in ms) before a commit will happen
-   *
+   * @param query the query expressing what documents to delete
+   * @param commitWithinMs max time (in ms) before a commit will happen
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
-   *
    * @since 3.6
    */
-  public UpdateResponse deleteByQuery(String query, int commitWithinMs) throws SolrServerException, IOException {
+  public UpdateResponse deleteByQuery(String query, int commitWithinMs)
+      throws SolrServerException, IOException {
     return deleteByQuery(null, query, commitWithinMs);
   }
 
@@ -963,10 +891,8 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Issues a ping request to check if the collection's replicas are alive
    *
    * @param collection collection to ping
-   *
-   * @return a {@link org.apache.solr.client.solrj.response.SolrPingResponse} containing the response
-   *         from the server
-   *
+   * @return a {@link org.apache.solr.client.solrj.response.SolrPingResponse} containing the
+   *     response from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -977,9 +903,8 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Issues a ping request to check if the server is alive
    *
-   * @return a {@link org.apache.solr.client.solrj.response.SolrPingResponse} containing the response
-   *         from the server
-   *
+   * @return a {@link org.apache.solr.client.solrj.response.SolrPingResponse} containing the
+   *     response from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -987,31 +912,27 @@ public abstract class SolrClient implements Serializable, Closeable {
     return new SolrPing().process(this, null);
   }
 
-
   /**
    * Performs a query to the Solr server
    *
    * @param collection the Solr collection to query
-   * @param params  an object holding all key/value parameters to send along the request
-   *
+   * @param params an object holding all key/value parameters to send along the request
    * @return a {@link org.apache.solr.client.solrj.response.QueryResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public QueryResponse query(String collection, SolrParams params) throws SolrServerException, IOException {
+  public QueryResponse query(String collection, SolrParams params)
+      throws SolrServerException, IOException {
     return new QueryRequest(params).process(this, collection);
   }
 
   /**
    * Performs a query to the Solr server
    *
-   * @param params  an object holding all key/value parameters to send along the request
-   *
+   * @param params an object holding all key/value parameters to send along the request
    * @return a {@link org.apache.solr.client.solrj.response.QueryResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -1023,67 +944,65 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Performs a query to the Solr server
    *
    * @param collection the Solr collection to query
-   * @param params  an object holding all key/value parameters to send along the request
-   * @param method  specifies the HTTP method to use for the request, such as GET or POST
-   *
+   * @param params an object holding all key/value parameters to send along the request
+   * @param method specifies the HTTP method to use for the request, such as GET or POST
    * @return a {@link org.apache.solr.client.solrj.response.QueryResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public QueryResponse query(String collection, SolrParams params, METHOD method) throws SolrServerException, IOException {
+  public QueryResponse query(String collection, SolrParams params, METHOD method)
+      throws SolrServerException, IOException {
     return new QueryRequest(params, method).process(this, collection);
   }
 
   /**
    * Performs a query to the Solr server
    *
-   * @param params  an object holding all key/value parameters to send along the request
-   * @param method  specifies the HTTP method to use for the request, such as GET or POST
-   *
+   * @param params an object holding all key/value parameters to send along the request
+   * @param method specifies the HTTP method to use for the request, such as GET or POST
    * @return a {@link org.apache.solr.client.solrj.response.QueryResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public QueryResponse query(SolrParams params, METHOD method) throws SolrServerException, IOException {
+  public QueryResponse query(SolrParams params, METHOD method)
+      throws SolrServerException, IOException {
     return query(null, params, method);
   }
 
   /**
-   * Query solr, and stream the results.  Unlike the standard query, this will 
-   * send events for each Document rather then add them to the QueryResponse.
+   * Query solr, and stream the results. Unlike the standard query, this will send events for each
+   * Document rather then add them to the QueryResponse.
    *
-   * Although this function returns a 'QueryResponse' it should be used with care
-   * since it excludes anything that was passed to callback.  Also note that
-   * future version may pass even more info to the callback and may not return 
-   * the results in the QueryResponse.
+   * <p>Although this function returns a 'QueryResponse' it should be used with care since it
+   * excludes anything that was passed to callback. Also note that future version may pass even more
+   * info to the callback and may not return the results in the QueryResponse.
    *
    * @param collection the Solr collection to query
-   * @param params  an object holding all key/value parameters to send along the request
+   * @param params an object holding all key/value parameters to send along the request
    * @param callback the callback to stream results to
-   *
    * @return a {@link org.apache.solr.client.solrj.response.QueryResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
-   *
    * @since solr 5.1
    */
-  public QueryResponse queryAndStreamResponse(String collection, SolrParams params, StreamingResponseCallback callback)
-      throws SolrServerException, IOException {
-    return getQueryResponse(collection, params,  new StreamingBinaryResponseParser(callback));
-  }
-
-  public QueryResponse queryAndStreamResponse(String collection, SolrParams params, FastStreamingDocsCallback callback)
+  public QueryResponse queryAndStreamResponse(
+      String collection, SolrParams params, StreamingResponseCallback callback)
       throws SolrServerException, IOException {
     return getQueryResponse(collection, params, new StreamingBinaryResponseParser(callback));
   }
 
-  private QueryResponse getQueryResponse(String collection, SolrParams params, ResponseParser parser) throws SolrServerException, IOException {
+  public QueryResponse queryAndStreamResponse(
+      String collection, SolrParams params, FastStreamingDocsCallback callback)
+      throws SolrServerException, IOException {
+    return getQueryResponse(collection, params, new StreamingBinaryResponseParser(callback));
+  }
+
+  private QueryResponse getQueryResponse(
+      String collection, SolrParams params, ResponseParser parser)
+      throws SolrServerException, IOException {
     QueryRequest req = new QueryRequest(params);
     if (parser instanceof StreamingBinaryResponseParser) {
       req.setStreamingResponseCallback(((StreamingBinaryResponseParser) parser).callback);
@@ -1093,23 +1012,19 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Query solr, and stream the results.  Unlike the standard query, this will
-   * send events for each Document rather then add them to the QueryResponse.
+   * Query solr, and stream the results. Unlike the standard query, this will send events for each
+   * Document rather then add them to the QueryResponse.
    *
-   * Although this function returns a 'QueryResponse' it should be used with care
-   * since it excludes anything that was passed to callback.  Also note that
-   * future version may pass even more info to the callback and may not return
-   * the results in the QueryResponse.
+   * <p>Although this function returns a 'QueryResponse' it should be used with care since it
+   * excludes anything that was passed to callback. Also note that future version may pass even more
+   * info to the callback and may not return the results in the QueryResponse.
    *
-   * @param params  an object holding all key/value parameters to send along the request
+   * @param params an object holding all key/value parameters to send along the request
    * @param callback the callback to stream results to
-   *
    * @return a {@link org.apache.solr.client.solrj.response.QueryResponse} containing the response
-   *         from the server
-   *
+   *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
-   *
    * @since solr 4.0
    */
   public QueryResponse queryAndStreamResponse(SolrParams params, StreamingResponseCallback callback)
@@ -1122,22 +1037,20 @@ public abstract class SolrClient implements Serializable, Closeable {
    *
    * @param collection the Solr collection to query
    * @param id the id
-   *
    * @return retrieved SolrDocument, or null if no document is found.
-   *
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public SolrDocument getById(String collection, String id) throws SolrServerException, IOException {
+  public SolrDocument getById(String collection, String id)
+      throws SolrServerException, IOException {
     return getById(collection, id, null);
   }
+
   /**
    * Retrieves the SolrDocument associated with the given identifier.
    *
    * @param id the id
-   *
    * @return retrieved SolrDocument, or null if no document is found.
-   *
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -1146,19 +1059,18 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Retrieves the SolrDocument associated with the given identifier and uses
-   * the SolrParams to execute the request.
+   * Retrieves the SolrDocument associated with the given identifier and uses the SolrParams to
+   * execute the request.
    *
    * @param collection the Solr collection to query
    * @param id the id
    * @param params additional parameters to add to the query
-   *
    * @return retrieved SolrDocument, or null if no document is found.
-   *
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public SolrDocument getById(String collection, String id, SolrParams params) throws SolrServerException, IOException {
+  public SolrDocument getById(String collection, String id, SolrParams params)
+      throws SolrServerException, IOException {
     SolrDocumentList docs = getById(collection, Collections.singletonList(id), params);
     if (!docs.isEmpty()) {
       return docs.get(0);
@@ -1167,48 +1079,44 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Retrieves the SolrDocument associated with the given identifier and uses
-   * the SolrParams to execute the request.
+   * Retrieves the SolrDocument associated with the given identifier and uses the SolrParams to
+   * execute the request.
    *
    * @param id the id
    * @param params additional parameters to add to the query
-   *
    * @return retrieved SolrDocument, or null if no document is found.
-   *
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public SolrDocument getById(String id, SolrParams params) throws SolrServerException, IOException {
+  public SolrDocument getById(String id, SolrParams params)
+      throws SolrServerException, IOException {
     return getById(null, id, params);
   }
 
   /**
    * Retrieves the SolrDocuments associated with the given identifiers.
    *
-   * If a document was not found, it will not be added to the SolrDocumentList.
+   * <p>If a document was not found, it will not be added to the SolrDocumentList.
    *
    * @param collection the Solr collection to query
    * @param ids the ids
-   *
    * @return a SolrDocumentList, or null if no documents were found
-   *
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public SolrDocumentList getById(String collection, Collection<String> ids) throws SolrServerException, IOException {
+  public SolrDocumentList getById(String collection, Collection<String> ids)
+      throws SolrServerException, IOException {
     return getById(collection, ids, null);
   }
 
   /**
    * Retrieves the SolrDocuments associated with the given identifiers.
    *
-   * If a document was not found, it will not be added to the SolrDocumentList.
+   * <p>If a document was not found, it will not be added to the SolrDocumentList.
    *
    * @param ids the ids
-   *
    * @return a SolrDocumentList, or null if no documents were found
-   *
-   *  @throws IOException If there is a low-level I/O error.
+   * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
   public SolrDocumentList getById(Collection<String> ids) throws SolrServerException, IOException {
@@ -1216,17 +1124,15 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Retrieves the SolrDocuments associated with the given identifiers and uses
-   * the SolrParams to execute the request.
+   * Retrieves the SolrDocuments associated with the given identifiers and uses the SolrParams to
+   * execute the request.
    *
-   * If a document was not found, it will not be added to the SolrDocumentList.
+   * <p>If a document was not found, it will not be added to the SolrDocumentList.
    *
    * @param collection the Solr collection to query
    * @param ids the ids
    * @param params additional parameters to add to the query
-   *
    * @return a SolrDocumentList, or null if no documents were found
-   *
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -1237,28 +1143,29 @@ public abstract class SolrClient implements Serializable, Closeable {
     }
 
     ModifiableSolrParams reqParams = new ModifiableSolrParams(params);
-    if (StringUtils.isEmpty(reqParams.get(CommonParams.QT))) {
+    if (StrUtils.isNullOrEmpty(reqParams.get(CommonParams.QT))) {
       reqParams.set(CommonParams.QT, "/get");
     }
-    reqParams.set("ids", ids.stream().map(id -> StrUtils.escapeTextWithSeparator(id, ',')).toArray(String[]::new));
+    reqParams.set(
+        "ids",
+        ids.stream().map(id -> StrUtils.escapeTextWithSeparator(id, ',')).toArray(String[]::new));
     return query(collection, reqParams).getResults();
   }
 
   /**
-   * Retrieves the SolrDocuments associated with the given identifiers and uses
-   * the SolrParams to execute the request.
+   * Retrieves the SolrDocuments associated with the given identifiers and uses the SolrParams to
+   * execute the request.
    *
-   * If a document was not found, it will not be added to the SolrDocumentList.
+   * <p>If a document was not found, it will not be added to the SolrDocumentList.
    *
    * @param ids the ids
    * @param params additional parameters to add to the query
-   *
    * @return a SolrDocumentList, or null if no documents were found
-   *
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public SolrDocumentList getById(Collection<String> ids, SolrParams params) throws SolrServerException, IOException {
+  public SolrDocumentList getById(Collection<String> ids, SolrParams params)
+      throws SolrServerException, IOException {
     return getById(null, ids, params);
   }
 
@@ -1267,9 +1174,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    *
    * @param request the request to execute
    * @param collection the collection to execute the request against
-   *
    * @return a {@link NamedList} containing the response from the server
-   *
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
@@ -1280,13 +1185,12 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Execute a request against a Solr server
    *
    * @param request the request to execute
-   *
    * @return a {@link NamedList} containing the response from the server
-   *
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public final NamedList<Object> request(final SolrRequest<?> request) throws SolrServerException, IOException {
+  public final NamedList<Object> request(final SolrRequest<?> request)
+      throws SolrServerException, IOException {
     return request(request, null);
   }
 
@@ -1294,23 +1198,31 @@ public abstract class SolrClient implements Serializable, Closeable {
    * Get the {@link org.apache.solr.client.solrj.beans.DocumentObjectBinder} for this client.
    *
    * @return a DocumentObjectBinder
-   *
    * @see SolrClient#addBean
    * @see SolrClient#addBeans
    */
   public DocumentObjectBinder getBinder() {
-    if(binder == null){
+    if (binder == null) {
       binder = new DocumentObjectBinder();
     }
     return binder;
   }
 
   /**
-   * This method defines the context in which this Solr client
-   * is being used (e.g. for internal communication between Solr
-   * nodes or as an external client). The default value is {@code SolrClientContext#Client}
+   * This method defines the context in which this Solr client is being used (e.g. for internal
+   * communication between Solr nodes or as an external client). The default value is {@code
+   * SolrClientContext#Client}
    */
   public SolrRequest.SolrClientContext getContext() {
     return SolrRequest.SolrClientContext.CLIENT;
+  }
+
+  /**
+   * Gets the collection used by default for collection or core-based requests
+   *
+   * <p>If no value is specified at client-creation time, this method will return null.
+   */
+  public String getDefaultCollection() {
+    return defaultCollection;
   }
 }

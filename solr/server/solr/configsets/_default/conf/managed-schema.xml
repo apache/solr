@@ -23,7 +23,7 @@
 
 
  For more information, on how to customize this file, please see
- http://lucene.apache.org/solr/guide/documents-fields-and-schema-design.html
+ https://solr.apache.org/guide/solr/latest/indexing-guide/schema-elements.html
 
  PERFORMANCE NOTE: this schema includes many optional features and should not
  be used for benchmarking.  To improve performance one could
@@ -129,30 +129,32 @@
     <!-- Dynamic field definitions allow using convention over configuration
        for fields via the specification of patterns to match field names.
        EXAMPLE:  name="*_i" will match any field ending in _i (like myid_i, z_i)
-       RESTRICTION: the glob-like pattern in the name attribute must have a "*" only at the start or the end.  -->
+       RESTRICTION: the glob-like pattern in the name attribute must have a "*"
+       only at the start or the end.  -->
 
-    <dynamicField name="*_i"  type="pint"    indexed="true"  stored="true"/>
-    <dynamicField name="*_is" type="pints"    indexed="true"  stored="true"/>
-    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true" />
-    <dynamicField name="*_ss" type="strings"  indexed="true"  stored="true"/>
-    <dynamicField name="*_l"  type="plong"   indexed="true"  stored="true"/>
-    <dynamicField name="*_ls" type="plongs"   indexed="true"  stored="true"/>
-    <dynamicField name="*_t" type="text_general" indexed="true" stored="true" multiValued="false"/>
+    <dynamicField name="*_i"   type="pint"     indexed="true"  stored="true"/>
+    <dynamicField name="*_is"  type="pints"    indexed="true"  stored="true"/>
+    <dynamicField name="*_s"   type="string"   indexed="true"  stored="true" />
+    <dynamicField name="*_ss"  type="strings"  indexed="true"  stored="true"/>
+    <dynamicField name="*_l"   type="plong"    indexed="true"  stored="true"/>
+    <dynamicField name="*_ls"  type="plongs"   indexed="true"  stored="true"/>
+    <dynamicField name="*_b"   type="boolean"  indexed="true"  stored="true"/>
+    <dynamicField name="*_bs"  type="booleans" indexed="true"  stored="true"/>
+    <dynamicField name="*_f"   type="pfloat"   indexed="true"  stored="true"/>
+    <dynamicField name="*_fs"  type="pfloats"  indexed="true"  stored="true"/>
+    <dynamicField name="*_d"   type="pdouble"  indexed="true"  stored="true"/>
+    <dynamicField name="*_ds"  type="pdoubles" indexed="true"  stored="true"/>
+    <dynamicField name="*_dt"  type="pdate"    indexed="true"  stored="true"/>
+    <dynamicField name="*_dts" type="pdates"   indexed="true"  stored="true"/>
+    <dynamicField name="*_t"   type="text_general" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="*_txt" type="text_general" indexed="true" stored="true"/>
-    <dynamicField name="*_b"  type="boolean" indexed="true" stored="true"/>
-    <dynamicField name="*_bs" type="booleans" indexed="true" stored="true"/>
-    <dynamicField name="*_f"  type="pfloat"  indexed="true"  stored="true"/>
-    <dynamicField name="*_fs" type="pfloats"  indexed="true"  stored="true"/>
-    <dynamicField name="*_d"  type="pdouble" indexed="true"  stored="true"/>
-    <dynamicField name="*_ds" type="pdoubles" indexed="true"  stored="true"/>
+
     <dynamicField name="random_*" type="random"/>
     <dynamicField name="ignored_*" type="ignored"/>
 
     <!-- Type used for data-driven schema, to add a string copy for each text field -->
     <dynamicField name="*_str" type="strings" stored="false" docValues="true" indexed="false" useDocValuesAsStored="false"/>
 
-    <dynamicField name="*_dt"  type="pdate"    indexed="true"  stored="true"/>
-    <dynamicField name="*_dts" type="pdate"    indexed="true"  stored="true" multiValued="true"/>
     <dynamicField name="*_p"  type="location" indexed="true" stored="true"/>
     <dynamicField name="*_srpt"  type="location_rpt" indexed="true" stored="true"/>
 
@@ -267,7 +269,7 @@
          matching across fields.
 
          For more info on customizing your analyzer chain, please see
-         http://lucene.apache.org/solr/guide/understanding-analyzers-tokenizers-and-filters.html#understanding-analyzers-tokenizers-and-filters
+         https://solr.apache.org/guide/solr/latest/indexing-guide/document-analysis.html#using-analyzers-tokenizers-and-filters
      -->
 
     <!-- One can also specify an existing Analyzer class that has a
@@ -534,7 +536,7 @@
 
     <!-- A geospatial field type that supports multiValued and polygon shapes.
       For more information about this and other spatial fields see:
-      http://lucene.apache.org/solr/guide/spatial-search.html
+      https://solr.apache.org/guide/solr/latest/query-guide/spatial-search.html
     -->
     <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
                geo="true" distErrPct="0.025" maxDistErr="0.001" distanceUnits="kilometers" />
@@ -1020,7 +1022,7 @@
     <!-- Similarity is the scoring routine for each document vs. a query.
        A custom Similarity or SimilarityFactory may be specified here, but
        the default is fine for most applications.
-       For more info: http://lucene.apache.org/solr/guide/other-schema-elements.html#OtherSchemaElements-Similarity
+       For more info: https://solr.apache.org/guide/solr/latest/indexing-guide/schema-elements.html#similarity
     -->
     <!--
      <similarity class="com.example.solr.CustomSimilarityFactory">

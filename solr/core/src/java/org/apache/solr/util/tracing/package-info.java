@@ -15,9 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Tracing related utilities
- */
+/** Tracing related utilities */
 package org.apache.solr.util.tracing;
-
-

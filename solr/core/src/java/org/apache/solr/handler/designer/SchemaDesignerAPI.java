@@ -17,6 +17,15 @@
 
 package org.apache.solr.handler.designer;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
+import static org.apache.solr.common.params.CommonParams.JSON_MIME;
+import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
+import static org.apache.solr.schema.ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
+import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +40,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,7 +49,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -61,9 +68,11 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.handler.configsets.ConfigSetAPIBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -76,22 +85,11 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
-import static org.apache.solr.common.StringUtils.isEmpty;
-import static org.apache.solr.common.params.CommonParams.JSON_MIME;
-import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
-import static org.apache.solr.schema.ManagedIndexSchemaFactory.DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME;
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_PERM;
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
-
-/**
- * All V2 APIs that have a prefix of /api/schema-designer/
- */
+/** All V2 APIs that have a prefix of /api/schema-designer/ */
 public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
-  private static final Set<String> excludeConfigSetNames = new HashSet<>(Arrays.asList(DEFAULT_CONFIGSET_NAME, BLOB_STORE_ID));
+  private static final Set<String> excludeConfigSetNames =
+      new HashSet<>(Arrays.asList(DEFAULT_CONFIGSET_NAME, BLOB_STORE_ID));
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -103,15 +101,22 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   private final Map<String, Integer> indexedVersion = new ConcurrentHashMap<>();
 
   public SchemaDesignerAPI(CoreContainer coreContainer) {
-    this(coreContainer, SchemaDesignerAPI.newSchemaSuggester(coreContainer), SchemaDesignerAPI.newSampleDocumentsLoader(coreContainer));
+    this(
+        coreContainer,
+        SchemaDesignerAPI.newSchemaSuggester(coreContainer),
+        SchemaDesignerAPI.newSampleDocumentsLoader(coreContainer));
   }
 
-  SchemaDesignerAPI(CoreContainer coreContainer, SchemaSuggester schemaSuggester, SampleDocumentsLoader sampleDocLoader) {
+  SchemaDesignerAPI(
+      CoreContainer coreContainer,
+      SchemaSuggester schemaSuggester,
+      SampleDocumentsLoader sampleDocLoader) {
     this.coreContainer = coreContainer;
     this.schemaSuggester = schemaSuggester;
     this.sampleDocLoader = sampleDocLoader;
-    this.settingsDAO = new SchemaDesignerSettingsDAO(coreContainer);
-    this.configSetHelper = new SchemaDesignerConfigSetHelper(this.coreContainer, this.schemaSuggester);
+    this.configSetHelper =
+        new SchemaDesignerConfigSetHelper(this.coreContainer, this.schemaSuggester);
+    this.settingsDAO = new SchemaDesignerSettingsDAO(coreContainer, configSetHelper);
   }
 
   public static SchemaSuggester newSchemaSuggester(CoreContainer coreContainer) {
@@ -143,7 +148,6 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = GET, path = "/schema-designer/info", permission = CONFIG_READ_PERM)
-  @SuppressWarnings("unchecked")
   public void getInfo(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
 
@@ -152,16 +156,21 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     boolean exists = configExists(configSet);
     responseMap.put("published", exists);
 
-    // mutable config may not exist yet as this is just an info check to gather some basic info the UI needs
+    // mutable config may not exist yet as this is just an info check to gather some basic info the
+    // UI needs
     String mutableId = getMutableId(configSet);
 
-    // tricky: if there's a mutable config, prefer the settings from that first but fallback to the original if not found
+    // tricky: if there's a mutable config, prefer the settings from that first but fallback to the
+    // original if not found
     SolrConfig srcConfig = exists ? configSetHelper.loadSolrConfig(configSet) : null;
-    SolrConfig solrConfig = configExists(mutableId) ? configSetHelper.loadSolrConfig(mutableId) : srcConfig;
+    SolrConfig solrConfig =
+        configExists(mutableId) ? configSetHelper.loadSolrConfig(mutableId) : srcConfig;
     addSettingsToResponse(settingsDAO.getSettings(solrConfig), responseMap);
 
     responseMap.put(SCHEMA_VERSION_PARAM, configSetHelper.getCurrentSchemaVersion(mutableId));
-    responseMap.put("collections", exists ? configSetHelper.listCollectionsForConfig(configSet) : Collections.emptyList());
+    responseMap.put(
+        "collections",
+        exists ? configSetHelper.listCollectionsForConfig(configSet) : Collections.emptyList());
 
     // don't fail if loading sample docs fails
     try {
@@ -174,8 +183,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = POST, path = "/schema-designer/prep", permission = CONFIG_EDIT_PERM)
-  @SuppressWarnings("unchecked")
-  public void prepNewSchema(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, SolrServerException {
+  public void prepNewSchema(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws IOException, SolrServerException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     validateNewConfigSetName(configSet);
 
@@ -197,12 +206,12 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = PUT, path = "/schema-designer/cleanup", permission = CONFIG_EDIT_PERM)
-  public void cleanupTemp(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, SolrServerException {
+  public void cleanupTemp(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws IOException, SolrServerException {
     cleanupTemp(getRequiredParam(CONFIG_SET_PARAM, req));
   }
 
   @EndPoint(method = GET, path = "/schema-designer/file", permission = CONFIG_READ_PERM)
-  @SuppressWarnings("unchecked")
   public void getFileContents(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     final String file = getRequiredParam("file", req);
@@ -213,36 +222,46 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error reading file: " + filePath, SolrZkClient.checkInterrupted(e));
     }
-    String stringData = data != null && data.length > 0 ? new String(data, StandardCharsets.UTF_8) : "";
+    String stringData =
+        data != null && data.length > 0 ? new String(data, StandardCharsets.UTF_8) : "";
     rsp.getValues().addAll(Collections.singletonMap(file, stringData));
   }
 
   @EndPoint(method = POST, path = "/schema-designer/file", permission = CONFIG_EDIT_PERM)
-  @SuppressWarnings("unchecked")
-  public void updateFileContents(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, SolrServerException {
+  public void updateFileContents(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws IOException, SolrServerException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     final String file = getRequiredParam("file", req);
 
     String mutableId = getMutableId(configSet);
     String zkPath = getConfigSetZkPath(mutableId, file);
     if (!pathExistsInZk(zkPath)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "File '" + file + "' not found in configSet: " + configSet);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "File '" + file + "' not found in configSet: " + configSet);
     }
 
-    byte[] data = DefaultSampleDocumentsLoader.streamAsBytes(extractSingleContentStream(req, true).getStream());
+    byte[] data =
+        DefaultSampleDocumentsLoader.streamAsBytes(
+            extractSingleContentStream(req, true).getStream());
     Exception updateFileError = null;
+    boolean requestIsTrusted =
+        ConfigSetAPIBase.isTrusted(req.getUserPrincipal(), coreContainer.getAuthenticationPlugin());
     if (SOLR_CONFIG_XML.equals(file)) {
-      // verify the updated solrconfig.xml is valid before saving to ZK (to avoid things blowing up later)
+      // verify the updated solrconfig.xml is valid before saving to ZK (to avoid things blowing up
+      // later)
       try {
-        InMemoryResourceLoader loader = new InMemoryResourceLoader(coreContainer, mutableId, SOLR_CONFIG_XML, data);
-        SolrConfig.readFromResourceLoader(loader, SOLR_CONFIG_XML, true, null);
+        InMemoryResourceLoader loader =
+            new InMemoryResourceLoader(coreContainer, mutableId, SOLR_CONFIG_XML, data);
+        SolrConfig.readFromResourceLoader(loader, SOLR_CONFIG_XML, requestIsTrusted, null);
       } catch (Exception exc) {
         updateFileError = exc;
       }
     }
 
     if (updateFileError != null) {
-      // solrconfig.xml update failed, but haven't impacted the configSet yet, so just return the error directly
+      // solrconfig.xml update failed, but haven't impacted the configSet yet, so just return the
+      // error directly
       Throwable causedBy = SolrException.getRootCause(updateFileError);
       Map<String, Object> response = new HashMap<>();
       response.put("updateFileError", causedBy.getMessage());
@@ -256,7 +275,13 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     try {
       zkClient.setData(zkPath, data, true);
     } catch (KeeperException | InterruptedException e) {
-      throw new IOException("Failed to save data in ZK at path: " + zkPath, SolrZkClient.checkInterrupted(e));
+      throw new IOException(
+          "Failed to save data in ZK at path: " + zkPath, SolrZkClient.checkInterrupted(e));
+    }
+    // If the request is untrusted, and the configSet is trusted, remove the trusted flag on the
+    // configSet.
+    if (configSetHelper.isConfigSetTrusted(mutableId) && !requestIsTrusted) {
+      configSetHelper.removeConfigSetTrust(mutableId);
     }
 
     configSetHelper.reloadTempCollection(mutableId, false);
@@ -270,7 +295,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       String idField = schema.getUniqueKeyField().getName();
       try {
         errorsDuringIndexing =
-            indexSampleDocsWithRebuildOnAnalysisError(idField, docs, mutableId, true, analysisErrorHolder);
+            indexSampleDocsWithRebuildOnAnalysisError(
+                idField, docs, mutableId, true, analysisErrorHolder);
       } catch (SolrException exc) {
         solrExc = exc;
       }
@@ -282,14 +308,17 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       response.put(ANALYSIS_ERROR, analysisErrorHolder[0]);
     }
 
-    addErrorToResponse(mutableId, solrExc, errorsDuringIndexing, response,
+    addErrorToResponse(
+        mutableId,
+        solrExc,
+        errorsDuringIndexing,
+        response,
         "Failed to re-index sample documents after update to the " + file + " file");
 
     rsp.getValues().addAll(response);
   }
 
   @EndPoint(method = GET, path = "/schema-designer/sample", permission = CONFIG_READ_PERM)
-  @SuppressWarnings("unchecked")
   public void getSampleValue(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     final String fieldName = getRequiredParam(FIELD_PARAM, req);
@@ -298,21 +327,28 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
     final List<SolrInputDocument> docs = configSetHelper.getStoredSampleDocs(configSet);
     String textValue = null;
-    if (isEmpty(docId)) {
+    if (StrUtils.isNullOrEmpty(docId)) {
       // no doc ID from client ... find the first doc with a non-empty string value for fieldName
-      Optional<SolrInputDocument> doc = docs.stream()
-          .filter(d -> d.getField(fieldName) != null && d.getField(fieldName).getFirstValue() != null && !d.getField(fieldName).getFirstValue().toString().isEmpty())
-          .findFirst();
+      Optional<SolrInputDocument> doc =
+          docs.stream()
+              .filter(
+                  d ->
+                      d.getField(fieldName) != null
+                          && d.getField(fieldName).getFirstValue() != null
+                          && !d.getField(fieldName).getFirstValue().toString().isEmpty())
+              .findFirst();
       if (doc.isPresent()) {
         docId = doc.get().getFieldValue(idField).toString();
         textValue = doc.get().getField(fieldName).getFirstValue().toString();
       }
     } else {
       final String idFilter = docId;
-      Optional<SolrInputDocument> doc = docs.stream().filter(d -> idFilter.equals(d.getFieldValue(idField))).findFirst();
+      Optional<SolrInputDocument> doc =
+          docs.stream().filter(d -> idFilter.equals(d.getFieldValue(idField))).findFirst();
       if (doc.isPresent()) {
         SolrInputField field = doc.get().getField(fieldName);
-        textValue = field != null && field.getFirstValue() != null ? field.getFirstValue().toString() : "";
+        textValue =
+            field != null && field.getFirstValue() != null ? field.getFirstValue().toString() : "";
       }
     }
 
@@ -322,28 +358,35 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     }
   }
 
-  @EndPoint(method = GET, path = "/schema-designer/collectionsForConfig", permission = CONFIG_READ_PERM)
-  @SuppressWarnings("unchecked")
+  @EndPoint(
+      method = GET,
+      path = "/schema-designer/collectionsForConfig",
+      permission = CONFIG_READ_PERM)
   public void listCollectionsForConfig(SolrQueryRequest req, SolrQueryResponse rsp) {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
-    rsp.getValues().addAll(Collections.singletonMap("collections", configSetHelper.listCollectionsForConfig(configSet)));
+    rsp.getValues()
+        .addAll(
+            Collections.singletonMap(
+                "collections", configSetHelper.listCollectionsForConfig(configSet)));
   }
 
-  // CONFIG_EDIT_PERM is required here since this endpoint is used by the UI to determine if the user has access to the Schema Designer UI
+  // CONFIG_EDIT_PERM is required here since this endpoint is used by the UI to determine if the
+  // user has access to the Schema Designer UI
   @EndPoint(method = GET, path = "/schema-designer/configs", permission = CONFIG_EDIT_PERM)
-  @SuppressWarnings("unchecked")
   public void listConfigs(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     rsp.getValues().addAll(Collections.singletonMap("configSets", listEnabledConfigs()));
   }
 
   protected Map<String, Integer> listEnabledConfigs() throws IOException {
     List<String> configsInZk = configSetHelper.listConfigsInZk();
-    final Map<String, Integer> configs = configsInZk.stream()
-        .filter(c -> !excludeConfigSetNames.contains(c) && !c.startsWith(DESIGNER_PREFIX))
-        .collect(Collectors.toMap(c -> c, c -> settingsDAO.isDesignerDisabled(c) ? 1 : 2));
+    final Map<String, Integer> configs =
+        configsInZk.stream()
+            .filter(c -> !excludeConfigSetNames.contains(c) && !c.startsWith(DESIGNER_PREFIX))
+            .collect(Collectors.toMap(c -> c, c -> settingsDAO.isDesignerDisabled(c) ? 1 : 2));
 
     // add the in-progress but drop the _designer prefix
-    configsInZk.stream().filter(c -> c.startsWith(DESIGNER_PREFIX))
+    configsInZk.stream()
+        .filter(c -> c.startsWith(DESIGNER_PREFIX))
         .map(c -> c.substring(DESIGNER_PREFIX.length()))
         .forEach(c -> configs.putIfAbsent(c, 0));
 
@@ -363,7 +406,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
         if (zkClient.exists(getConfigSetZkPath(configSet, null), true)) {
           configId = configSet;
         } else {
-          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "ConfigSet " + configSet + " not found!");
+          throw new SolrException(
+              SolrException.ErrorCode.NOT_FOUND, "ConfigSet " + configSet + " not found!");
         }
       }
     } catch (KeeperException | InterruptedException e) {
@@ -372,13 +416,15 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
     ContentStreamBase content =
         new ContentStreamBase.ByteArrayStream(
-            configSetHelper.downloadAndZipConfigSet(configId), configSet + ".zip", "application/zip");
+            configSetHelper.downloadAndZipConfigSet(configId),
+            configSet + ".zip",
+            "application/zip");
     rsp.add(RawResponseWriter.CONTENT, content);
   }
 
   @EndPoint(method = POST, path = "/schema-designer/add", permission = CONFIG_EDIT_PERM)
-  @SuppressWarnings("unchecked")
-  public void addSchemaObject(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, SolrServerException {
+  public void addSchemaObject(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws IOException, SolrServerException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     final String mutableId = checkMutable(configSet, req);
 
@@ -389,30 +435,39 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     String action = addJson.keySet().iterator().next();
 
     ManagedIndexSchema schema = loadLatestSchema(mutableId);
-    Map<String, Object> response = buildResponse(configSet, schema, null, configSetHelper.getStoredSampleDocs(configSet));
+    Map<String, Object> response =
+        buildResponse(configSet, schema, null, configSetHelper.getStoredSampleDocs(configSet));
     response.put(action, objectName);
     rsp.getValues().addAll(response);
   }
 
   @EndPoint(method = PUT, path = "/schema-designer/update", permission = CONFIG_EDIT_PERM)
-  @SuppressWarnings("unchecked")
-  public void updateSchemaObject(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, SolrServerException {
+  public void updateSchemaObject(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws IOException, SolrServerException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     final String mutableId = checkMutable(configSet, req);
 
     // Updated field definition is in the request body as JSON
     Map<String, Object> updateField = readJsonFromRequest(req);
     String name = (String) updateField.get("name");
-    if (isEmpty(name)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Invalid update request! JSON payload is missing the required name property: " + updateField);
+    if (StrUtils.isNullOrEmpty(name)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Invalid update request! JSON payload is missing the required name property: "
+              + updateField);
     }
-    log.info("Updating schema object: configSet={}, mutableId={}, name={}, JSON={}", configSet, mutableId, name, updateField);
+    log.info(
+        "Updating schema object: configSet={}, mutableId={}, name={}, JSON={}",
+        configSet,
+        mutableId,
+        name,
+        updateField);
 
     SchemaDesignerSettings settings = getMutableSchemaForConfigSet(configSet, -1, null);
     ManagedIndexSchema schemaBeforeUpdate = settings.getSchema();
 
-    Map<String, Object> updateResult = configSetHelper.updateSchemaObject(configSet, updateField, schemaBeforeUpdate);
+    Map<String, Object> updateResult =
+        configSetHelper.updateSchemaObject(configSet, updateField, schemaBeforeUpdate);
     SolrException solrExc = (SolrException) updateResult.get("solrExc");
     String updateError = (String) updateResult.get(UPDATE_ERROR);
     String updateType = (String) updateResult.get("updateType");
@@ -426,10 +481,17 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     if (solrExc == null && !docs.isEmpty()) {
       try {
         errorsDuringIndexing =
-            indexSampleDocsWithRebuildOnAnalysisError(schema.getUniqueKeyField().getName(), docs, mutableId, false, analysisErrorHolder);
+            indexSampleDocsWithRebuildOnAnalysisError(
+                schema.getUniqueKeyField().getName(), docs, mutableId, false, analysisErrorHolder);
       } catch (SolrException exc) {
         solrExc = exc;
-        updateError = "Failed to re-index sample documents after update to the " + name + " " + updateType + " due to: " + solrExc.getMessage();
+        updateError =
+            "Failed to re-index sample documents after update to the "
+                + name
+                + " "
+                + updateType
+                + " due to: "
+                + solrExc.getMessage();
       }
     }
 
@@ -452,35 +514,47 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = PUT, path = "/schema-designer/publish", permission = CONFIG_EDIT_PERM)
-  @SuppressWarnings("unchecked")
-  public void publish(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, SolrServerException {
+  public void publish(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws IOException, SolrServerException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     final String mutableId = checkMutable(configSet, req);
 
-    // verify the configSet we're going to apply changes to has not changed since being loaded for editing by the schema designer
+    // verify the configSet we're going to apply changes to has not changed since being loaded for
+    // editing by the schema designer
     SchemaDesignerSettings settings = settingsDAO.getSettings(mutableId);
     final Optional<Integer> publishedVersion = settings.getPublishedVersion();
     if (publishedVersion.isPresent()) {
       int currentVersionOfSrc = configSetHelper.getCurrentSchemaVersion(configSet);
       if (publishedVersion.get() != currentVersionOfSrc) {
-        throw new SolrException(SolrException.ErrorCode.CONFLICT,
-            "Version mismatch for " + configSet + "! Expected version " + publishedVersion.get() + " but current is " + currentVersionOfSrc +
-                "; another user may have changed the published schema while you were making edits. " +
-                "Publishing your changes would result in losing the edits from the other user.");
+        throw new SolrException(
+            SolrException.ErrorCode.CONFLICT,
+            "Version mismatch for "
+                + configSet
+                + "! Expected version "
+                + publishedVersion.get()
+                + " but current is "
+                + currentVersionOfSrc
+                + "; another user may have changed the published schema while you were making edits. "
+                + "Publishing your changes would result in losing the edits from the other user.");
       }
     }
 
     String newCollection = req.getParams().get(NEW_COLLECTION_PARAM);
-    if (!isEmpty(newCollection) && zkStateReader().getClusterState().hasCollection(newCollection)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection '" + newCollection + "' already exists!");
+    if (StrUtils.isNotNullOrEmpty(newCollection)
+        && zkStateReader().getClusterState().hasCollection(newCollection)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Collection '" + newCollection + "' already exists!");
     }
 
     if (configExists(configSet)) {
       SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
       try {
-        zkClient.zkTransfer(getConfigSetZkPath(mutableId), true, getConfigSetZkPath(configSet), true, true);
+        zkClient.zkTransfer(
+            getConfigSetZkPath(mutableId), true, getConfigSetZkPath(configSet), true, true);
       } catch (KeeperException | InterruptedException e) {
-        throw new IOException("Failed to copy config set: " + mutableId, SolrZkClient.checkInterrupted(e));
+        throw new IOException(
+            "Failed to copy config set: " + mutableId, SolrZkClient.checkInterrupted(e));
       }
     } else {
       copyConfig(mutableId, configSet);
@@ -498,7 +572,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
     // create new collection
     Map<Object, Throwable> errorsDuringIndexing = null;
-    if (!isEmpty(newCollection)) {
+    if (StrUtils.isNotNullOrEmpty(newCollection)) {
       int numShards = req.getParams().getInt("numShards", 1);
       int rf = req.getParams().getInt("replicationFactor", 1);
       configSetHelper.createCollection(newCollection, configSet, numShards, rf);
@@ -506,13 +580,19 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
         List<SolrInputDocument> docs = configSetHelper.getStoredSampleDocs(configSet);
         if (!docs.isEmpty()) {
           ManagedIndexSchema schema = loadLatestSchema(mutableId);
-          errorsDuringIndexing = indexSampleDocs(schema.getUniqueKeyField().getName(), docs, newCollection, true);
+          errorsDuringIndexing =
+              indexSampleDocs(schema.getUniqueKeyField().getName(), docs, newCollection, true);
         }
       }
     }
 
     if (req.getParams().getBool(CLEANUP_TEMP_PARAM, true)) {
-      cleanupTemp(configSet);
+      try {
+        cleanupTemp(configSet);
+      } catch (IOException | SolrServerException | SolrException exc) {
+        final String excStr = exc.toString();
+        log.warn("Failed to clean-up temp collection {} due to: {}", mutableId, excStr);
+      }
     }
 
     settings.setDisabled(req.getParams().getBool(DISABLE_DESIGNER_PARAM, false));
@@ -521,7 +601,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     Map<String, Object> response = new HashMap<>();
     response.put(CONFIG_SET_PARAM, configSet);
     response.put(SCHEMA_VERSION_PARAM, configSetHelper.getCurrentSchemaVersion(configSet));
-    if (!isEmpty(newCollection)) {
+    if (StrUtils.isNotNullOrEmpty(newCollection)) {
       response.put(NEW_COLLECTION_PARAM, newCollection);
     }
 
@@ -531,37 +611,48 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = POST, path = "/schema-designer/analyze", permission = CONFIG_EDIT_PERM)
-  @SuppressWarnings("unchecked")
-  public void analyze(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, SolrServerException {
+  public void analyze(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws IOException, SolrServerException {
     final int schemaVersion = req.getParams().getInt(SCHEMA_VERSION_PARAM, -1);
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
 
     // don't let the user edit the _default configSet with the designer (for now)
     if (DEFAULT_CONFIGSET_NAME.equals(configSet)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "'" + DEFAULT_CONFIGSET_NAME + "' is a reserved configSet name! Please choose a different name.");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "'"
+              + DEFAULT_CONFIGSET_NAME
+              + "' is a reserved configSet name! Please choose a different name.");
     }
     validateNewConfigSetName(configSet);
 
-    // Get the sample documents to analyze, preferring those in the request but falling back to previously stored
+    // Get the sample documents to analyze, preferring those in the request but falling back to
+    // previously stored
     SampleDocuments sampleDocuments = loadSampleDocuments(req, configSet);
 
-    // Get a mutable "temp" schema either from the specified copy source or configSet if it already exists.
-    String copyFrom = configExists(configSet) ? configSet
-        : req.getParams().get(COPY_FROM_PARAM, DEFAULT_CONFIGSET_NAME);
+    // Get a mutable "temp" schema either from the specified copy source or configSet if it already
+    // exists.
+    String copyFrom =
+        configExists(configSet)
+            ? configSet
+            : req.getParams().get(COPY_FROM_PARAM, DEFAULT_CONFIGSET_NAME);
 
     String mutableId = getMutableId(configSet);
 
     // holds additional settings needed by the designer to maintain state
-    SchemaDesignerSettings settings = getMutableSchemaForConfigSet(configSet, schemaVersion, copyFrom);
+    SchemaDesignerSettings settings =
+        getMutableSchemaForConfigSet(configSet, schemaVersion, copyFrom);
     ManagedIndexSchema schema = settings.getSchema();
 
     String uniqueKeyFieldParam = req.getParams().get(UNIQUE_KEY_FIELD_PARAM);
-    if (!isEmpty(uniqueKeyFieldParam)) {
-      String uniqueKeyField = schema.getUniqueKeyField() != null ? schema.getUniqueKeyField().getName() : null;
+    if (StrUtils.isNotNullOrEmpty(uniqueKeyFieldParam)) {
+      String uniqueKeyField =
+          schema.getUniqueKeyField() != null ? schema.getUniqueKeyField().getName() : null;
       if (!uniqueKeyFieldParam.equals(uniqueKeyField)) {
         // The Schema API doesn't support changing the ID field so would have to use XML directly
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Changing the unique key field not supported yet!");
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Changing the unique key field not supported yet!");
       }
     }
 
@@ -569,7 +660,10 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     String[] languages = req.getParams().getParams(LANGUAGES_PARAM);
     List<String> langs;
     if (languages != null) {
-      langs = languages.length == 0 || (languages.length == 1 && "*".equals(languages[0])) ? Collections.emptyList() : Arrays.asList(languages);
+      langs =
+          languages.length == 0 || (languages.length == 1 && "*".equals(languages[0]))
+              ? Collections.emptyList()
+              : Arrays.asList(languages);
       if (!langs.equals(settings.getLanguages())) {
         settings.setLanguages(langs);
         langsUpdated = true;
@@ -587,7 +681,9 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     }
 
     if (langsUpdated) {
-      schema = configSetHelper.syncLanguageSpecificObjectsAndFiles(mutableId, schema, langs, settings.dynamicFieldsEnabled(), copyFrom);
+      schema =
+          configSetHelper.syncLanguageSpecificObjectsAndFiles(
+              mutableId, schema, langs, settings.dynamicFieldsEnabled(), copyFrom);
     }
 
     if (dynamicUpdated) {
@@ -636,14 +732,16 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     if (!docs.isEmpty()) {
       String idField = schema.getUniqueKeyField().getName();
       errorsDuringIndexing =
-          indexSampleDocsWithRebuildOnAnalysisError(idField, docs, mutableId, false, analysisErrorHolder);
+          indexSampleDocsWithRebuildOnAnalysisError(
+              idField, docs, mutableId, false, analysisErrorHolder);
     }
 
     if (settingsDAO.persistIfChanged(mutableId, settings)) {
       CollectionAdminRequest.reloadCollection(mutableId).process(cloudClient());
     }
 
-    Map<String, Object> response = buildResponse(configSet, loadLatestSchema(mutableId), settings, docs);
+    Map<String, Object> response =
+        buildResponse(configSet, loadLatestSchema(mutableId), settings, docs);
     response.put("sampleSource", sampleDocuments.getSource());
     if (analysisErrorHolder[0] != null) {
       response.put(ANALYSIS_ERROR, analysisErrorHolder[0]);
@@ -653,13 +751,17 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   @EndPoint(method = GET, path = "/schema-designer/query", permission = CONFIG_READ_PERM)
-  @SuppressWarnings("unchecked")
-  public void query(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException, SolrServerException {
+  public void query(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws IOException, SolrServerException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
     String mutableId = getMutableId(configSet);
     if (!configExists(mutableId)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          mutableId + " configSet not found! Are you sure " + configSet + " was being edited by the schema designer?");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          mutableId
+              + " configSet not found! Are you sure "
+              + configSet
+              + " was being edited by the schema designer?");
     }
 
     if (!zkStateReader().getClusterState().hasCollection(mutableId)) {
@@ -672,11 +774,16 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     Integer version = indexedVersion.get(mutableId);
     Map<Object, Throwable> errorsDuringIndexing = null;
     if (version == null || version != currentVersion) {
-      log.debug("Schema for collection {} is stale ({} != {}), need to re-index sample docs", mutableId, version, currentVersion);
+      log.debug(
+          "Schema for collection {} is stale ({} != {}), need to re-index sample docs",
+          mutableId,
+          version,
+          currentVersion);
       List<SolrInputDocument> docs = configSetHelper.getStoredSampleDocs(configSet);
       ManagedIndexSchema schema = loadLatestSchema(mutableId);
       errorsDuringIndexing =
-          indexSampleDocsWithRebuildOnAnalysisError(schema.getUniqueKeyField().getName(), docs, mutableId, true, null);
+          indexSampleDocsWithRebuildOnAnalysisError(
+              schema.getUniqueKeyField().getName(), docs, mutableId, true, null);
       // the version changes when you index (due to field guessing URP)
       currentVersion = configSetHelper.getCurrentSchemaVersion(mutableId);
       indexedVersion.put(mutableId, currentVersion);
@@ -684,7 +791,10 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
     if (errorsDuringIndexing != null) {
       Map<String, Object> response = new HashMap<>();
-      rsp.setException(new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Failed to re-index sample documents after schema updated."));
+      rsp.setException(
+          new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Failed to re-index sample documents after schema updated."));
       response.put(ERROR_DETAILS, errorsDuringIndexing);
       rsp.getValues().addAll(response);
       return;
@@ -696,12 +806,10 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   }
 
   /**
-   * Return the diff of designer schema with the source schema (either previously published or the copyFrom).
+   * Return the diff of designer schema with the source schema (either previously published or the
+   * copyFrom).
    */
-  @EndPoint(method = GET,
-      path = "/schema-designer/diff",
-      permission = CONFIG_READ_PERM)
-  @SuppressWarnings("unchecked")
+  @EndPoint(method = GET, path = "/schema-designer/diff", permission = CONFIG_READ_PERM)
   public void getSchemaDiff(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     final String configSet = getRequiredParam(CONFIG_SET_PARAM, req);
 
@@ -709,13 +817,15 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     // diff the published if found, else use the original source schema
     String sourceSchema = configExists(configSet) ? configSet : settings.getCopyFrom();
     Map<String, Object> response = new HashMap<>();
-    response.put("diff", ManagedSchemaDiff.diff(loadLatestSchema(sourceSchema), settings.getSchema()));
+    response.put(
+        "diff", ManagedSchemaDiff.diff(loadLatestSchema(sourceSchema), settings.getSchema()));
     response.put("diff-source", sourceSchema);
     addSettingsToResponse(settings, response);
     rsp.getValues().addAll(response);
   }
 
-  protected SampleDocuments loadSampleDocuments(SolrQueryRequest req, String configSet) throws IOException {
+  protected SampleDocuments loadSampleDocuments(SolrQueryRequest req, String configSet)
+      throws IOException {
     List<SolrInputDocument> docs = null;
     ContentStream stream = extractSingleContentStream(req, false);
     SampleDocuments sampleDocs = null;
@@ -723,12 +833,15 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       sampleDocs = sampleDocLoader.parseDocsFromStream(req.getParams(), stream, MAX_SAMPLE_DOCS);
       docs = sampleDocs.parsed;
       if (!docs.isEmpty()) {
-        // user posted in some docs, if there are already docs stored in the blob store, then add these to the existing set
+        // user posted in some docs, if there are already docs stored in the blob store, then add
+        // these to the existing set
         List<SolrInputDocument> stored = configSetHelper.getStoredSampleDocs(configSet);
         if (!stored.isEmpty()) {
           // keep the docs in the request as newest
           ManagedIndexSchema latestSchema = loadLatestSchema(getMutableId(configSet));
-          docs = sampleDocs.appendDocs(latestSchema.getUniqueKeyField().getName(), stored, MAX_SAMPLE_DOCS);
+          docs =
+              sampleDocs.appendDocs(
+                  latestSchema.getUniqueKeyField().getName(), stored, MAX_SAMPLE_DOCS);
         }
 
         // store in the blob store so we always have access to these docs
@@ -742,7 +855,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
       // no docs? but if this schema has already been published, it's OK, we can skip the docs part
       if (docs.isEmpty() && !configExists(configSet)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
             "No sample documents provided for analyzing schema! Only CSV/TSV, XML, JSON, and JSON lines supported.");
       }
 
@@ -752,9 +866,10 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     return sampleDocs;
   }
 
-  protected ManagedIndexSchema analyzeInputDocs(final Map<String, List<Object>> docs, ManagedIndexSchema schema, List<String> langs) {
+  protected ManagedIndexSchema analyzeInputDocs(
+      final Map<String, List<Object>> docs, ManagedIndexSchema schema, List<String> langs) {
     // collect the fields to add ... adding all fields at once is faster than one-at-a-time
-    List<SchemaField> fieldsToAdd = new LinkedList<>();
+    List<SchemaField> fieldsToAdd = new ArrayList<>();
     for (String field : docs.keySet()) {
       List<Object> sampleValues = docs.getOrDefault(field, Collections.emptyList());
 
@@ -766,14 +881,13 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
         continue;
       }
 
-      Optional<SchemaField> maybeSchemaField = schemaSuggester.suggestField(normalizedField, sampleValues, schema, langs);
+      Optional<SchemaField> maybeSchemaField =
+          schemaSuggester.suggestField(normalizedField, sampleValues, schema, langs);
       maybeSchemaField.ifPresent(fieldsToAdd::add);
     }
-
     if (!fieldsToAdd.isEmpty()) {
       schema = (ManagedIndexSchema) schema.addFields(fieldsToAdd);
     }
-    
     return schema;
   }
 
@@ -781,8 +895,10 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     return getConfigSetZkPath(configSet, DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME);
   }
 
-  protected SchemaDesignerSettings getMutableSchemaForConfigSet(final String configSet, final int schemaVersion, String copyFrom) throws IOException {
-    // The designer works with mutable config sets stored in a "temp" znode in ZK instead of the "live" configSet
+  protected SchemaDesignerSettings getMutableSchemaForConfigSet(
+      final String configSet, final int schemaVersion, String copyFrom) throws IOException {
+    // The designer works with mutable config sets stored in a "temp" znode in ZK instead of the
+    // "live" configSet
     final String mutableId = getMutableId(configSet);
 
     ManagedIndexSchema schema;
@@ -795,10 +911,16 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       // are they opening a temp of an existing?
       if (configExists(configSet)) {
         if (settingsDAO.isDesignerDisabled(configSet)) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
               "Schema '" + configSet + "' is locked for edits by the schema designer!");
         }
         publishedVersion = configSetHelper.getCurrentSchemaVersion(configSet);
+        log.info(
+            "Opening temp copy of {} as {} with publishedVersion {}",
+            configSet,
+            mutableId,
+            publishedVersion);
         // ignore the copyFrom as we're making a mutable temp copy of an already published configSet
         copyConfig(configSet, mutableId);
         copyFrom = null;
@@ -811,7 +933,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     SolrConfig solrConfig = configSetHelper.loadSolrConfig(mutableId);
     schema = configSetHelper.loadLatestSchema(solrConfig);
     if (!isNew) {
-      // schema is not new, so the provided version must match, otherwise, we're trying to edit dirty data
+      // schema is not new, so the provided version must match, otherwise, we're trying to edit
+      // dirty data
       configSetHelper.checkSchemaVersion(mutableId, schemaVersion, schema.getSchemaZkVersion());
     }
 
@@ -827,8 +950,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       }
 
       if (publishedVersion != -1) {
-        // keep track of the version of the configSet the mutable is derived from in case another user
-        // changes the derived from schema before we publish the mutable on top of it
+        // keep track of the version of the configSet the mutable is derived from in case another
+        // user changes the derived from schema before we publish the mutable on top of it
         settings.setPublishedVersion(publishedVersion);
       }
 
@@ -857,24 +980,29 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     Iterator<ContentStream> iter = streams != null ? streams.iterator() : null;
     ContentStream stream = iter != null && iter.hasNext() ? iter.next() : null;
     if (required && stream == null)
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No JSON content found in the request body!");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "No JSON content found in the request body!");
 
     return stream;
   }
 
   protected CloudSolrClient cloudClient() {
-    return coreContainer.getSolrClientCache().getCloudSolrClient(coreContainer.getZkController().getZkServerAddress());
+    return coreContainer
+        .getSolrClientCache()
+        .getCloudSolrClient(coreContainer.getZkController().getZkServerAddress());
   }
 
   protected ZkStateReader zkStateReader() {
     return coreContainer.getZkController().getZkStateReader();
   }
 
-  protected Map<Object, Throwable> indexSampleDocsWithRebuildOnAnalysisError(String idField,
-                                                                             List<SolrInputDocument> docs,
-                                                                             final String collectionName,
-                                                                             boolean asBatch,
-                                                                             String[] analysisErrorHolder) throws IOException, SolrServerException {
+  protected Map<Object, Throwable> indexSampleDocsWithRebuildOnAnalysisError(
+      String idField,
+      List<SolrInputDocument> docs,
+      final String collectionName,
+      boolean asBatch,
+      String[] analysisErrorHolder)
+      throws IOException, SolrServerException {
     Map<Object, Throwable> results;
     try {
       results = indexSampleDocs(idField, docs, collectionName, asBatch);
@@ -883,18 +1011,24 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       if (analysisErrorHolder != null) {
         analysisErrorHolder[0] = errMsg;
       }
-      log.warn("Rebuilding temp collection {} after low-level Lucene indexing issue: {}", collectionName, errMsg);
+      log.warn(
+          "Rebuilding temp collection {} after low-level Lucene indexing issue: {}",
+          collectionName,
+          errMsg);
       configSetHelper.reloadTempCollection(collectionName, true);
       results = indexSampleDocs(idField, docs, collectionName, asBatch);
-      log.info("Re-index sample docs into {} after rebuild due to {} succeeded; results: {}", collectionName, errMsg, results);
+      log.info(
+          "Re-index sample docs into {} after rebuild due to {} succeeded; results: {}",
+          collectionName,
+          errMsg,
+          results);
     }
     return results;
   }
 
-  protected Map<Object, Throwable> indexSampleDocs(String idField,
-                                                   List<SolrInputDocument> docs,
-                                                   final String collectionName,
-                                                   boolean asBatch) throws IOException, SolrServerException {
+  protected Map<Object, Throwable> indexSampleDocs(
+      String idField, List<SolrInputDocument> docs, final String collectionName, boolean asBatch)
+      throws IOException, SolrServerException {
 
     Map<Object, Throwable> errorsDuringIndexing = new LinkedHashMap<>();
 
@@ -950,7 +1084,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     return !errorsDuringIndexing.isEmpty() ? errorsDuringIndexing : null;
   }
 
-  protected long waitToSeeSampleDocs(String collectionName, long numAdded) throws IOException, SolrServerException {
+  protected long waitToSeeSampleDocs(String collectionName, long numAdded)
+      throws IOException, SolrServerException {
     CloudSolrClient cloudSolrClient = cloudClient();
     SolrQuery query = new SolrQuery("*:*");
     query.setRows(0);
@@ -975,17 +1110,20 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       } while (System.nanoTime() < deadline);
 
       if (numFound < numAdded) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
             "Failed to index " + numAdded + " sample docs into temp collection: " + collectionName);
       }
     }
     return numFound;
   }
 
-  protected Map<String, Object> buildResponse(String configSet,
-                                              final ManagedIndexSchema schema,
-                                              SchemaDesignerSettings settings,
-                                              List<SolrInputDocument> docs) throws IOException {
+  protected Map<String, Object> buildResponse(
+      String configSet,
+      final ManagedIndexSchema schema,
+      SchemaDesignerSettings settings,
+      List<SolrInputDocument> docs)
+      throws IOException {
     String mutableId = getMutableId(configSet);
     int currentVersion = configSetHelper.getCurrentSchemaVersion(mutableId);
     indexedVersion.put(mutableId, currentVersion);
@@ -1008,40 +1146,51 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     response.put("collectionsForConfig", configSetHelper.listCollectionsForConfig(configSet));
     // Guess at a schema for each field found in the sample docs
     // Collect all fields across all docs with mapping to values
-    response.put("fields", schema.getFields().values().stream()
-        .map(f -> fieldToMap(f, schema))
-        .sorted(Comparator.comparing(map -> ((String) map.get("name"))))
-        .collect(Collectors.toList()));
+    response.put(
+        "fields",
+        schema.getFields().values().stream()
+            .map(f -> fieldToMap(f, schema))
+            .sorted(Comparator.comparing(map -> ((String) map.get("name"))))
+            .collect(Collectors.toList()));
 
     if (settings == null) {
       settings = settingsDAO.getSettings(mutableId);
     }
     addSettingsToResponse(settings, response);
 
-    response.put("dynamicFields", Arrays.stream(schema.getDynamicFieldPrototypes())
-        .map(e -> e.getNamedPropertyValues(true))
-        .sorted(Comparator.comparing(map -> ((String) map.get("name"))))
-        .collect(Collectors.toList()));
+    response.put(
+        "dynamicFields",
+        Arrays.stream(schema.getDynamicFieldPrototypes())
+            .map(e -> e.getNamedPropertyValues(true))
+            .sorted(Comparator.comparing(map -> ((String) map.get("name"))))
+            .collect(Collectors.toList()));
 
-    response.put("fieldTypes", schema.getFieldTypes().values().stream()
-        .map(fieldType -> fieldType.getNamedPropertyValues(true))
-        .sorted(Comparator.comparing(map -> ((String) map.get("name"))))
-        .collect(Collectors.toList()));
+    response.put(
+        "fieldTypes",
+        schema.getFieldTypes().values().stream()
+            .map(fieldType -> fieldType.getNamedPropertyValues(true))
+            .sorted(Comparator.comparing(map -> ((String) map.get("name"))))
+            .collect(Collectors.toList()));
 
     // files
     SolrZkClient zkClient = zkStateReader().getZkClient();
     String configPathInZk = getConfigSetZkPath(mutableId);
     final Set<String> files = new HashSet<>();
     try {
-      ZkMaintenanceUtils.traverseZkTree(zkClient, configPathInZk, ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST, files::add);
+      ZkMaintenanceUtils.traverseZkTree(
+          zkClient, configPathInZk, ZkMaintenanceUtils.VISIT_ORDER.VISIT_POST, files::add);
     } catch (KeeperException | InterruptedException e) {
-      throw new IOException("Failed to traverse files under: " + configPathInZk, SolrZkClient.checkInterrupted(e));
+      throw new IOException(
+          "Failed to traverse files under: " + configPathInZk, SolrZkClient.checkInterrupted(e));
     }
     files.remove(configPathInZk);
 
     final String prefix = configPathInZk + "/";
     final int prefixLen = prefix.length();
-    Set<String> stripPrefix = files.stream().map(f -> f.startsWith(prefix) ? f.substring(prefixLen) : f).collect(Collectors.toSet());
+    Set<String> stripPrefix =
+        files.stream()
+            .map(f -> f.startsWith(prefix) ? f.substring(prefixLen) : f)
+            .collect(Collectors.toSet());
     stripPrefix.remove(schema.getResourceName());
     stripPrefix.remove("lang");
     stripPrefix.remove(CONFIGOVERLAY_JSON); // treat this file as private
@@ -1053,11 +1202,13 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     // info about the sample docs
     if (docs != null) {
       final String uniqueKeyField = schema.getUniqueKeyField().getName();
-      response.put("docIds", docs.stream()
-          .map(d -> (String) d.getFieldValue(uniqueKeyField))
-          .filter(Objects::nonNull)
-          .limit(100)
-          .collect(Collectors.toList()));
+      response.put(
+          "docIds",
+          docs.stream()
+              .map(d -> (String) d.getFieldValue(uniqueKeyField))
+              .filter(Objects::nonNull)
+              .limit(100)
+              .collect(Collectors.toList()));
     }
 
     response.put("numDocs", docs != null ? docs.size() : -1);
@@ -1065,11 +1216,12 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     return response;
   }
 
-  protected void addErrorToResponse(String collection,
-                                    SolrException solrExc,
-                                    Map<Object, Throwable> errorsDuringIndexing,
-                                    Map<String, Object> response,
-                                    String updateError) {
+  protected void addErrorToResponse(
+      String collection,
+      SolrException solrExc,
+      Map<Object, Throwable> errorsDuringIndexing,
+      Map<String, Object> response,
+      String updateError) {
 
     if (solrExc == null && (errorsDuringIndexing == null || errorsDuringIndexing.isEmpty())) {
       return; // no errors
@@ -1096,7 +1248,9 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
     // add the copy field destination field names
     List<String> copyFieldNames =
-        schema.getCopyFieldsList((String) map.get("name")).stream().map(c -> c.getDestination().getName()).collect(Collectors.toList());
+        schema.getCopyFieldsList((String) map.get("name")).stream()
+            .map(c -> c.getDestination().getName())
+            .collect(Collectors.toList());
     map.add("copyDest", String.join(",", copyFieldNames));
 
     return map;
@@ -1106,7 +1260,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   protected Map<String, Object> readJsonFromRequest(SolrQueryRequest req) throws IOException {
     ContentStream stream = extractSingleContentStream(req, true);
     String contentType = stream.getContentType();
-    if (isEmpty(contentType) || !contentType.toLowerCase(Locale.ROOT).contains(JSON_MIME)) {
+    if (StrUtils.isNullOrEmpty(contentType)
+        || !contentType.toLowerCase(Locale.ROOT).contains(JSON_MIME)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Expected JSON in request!");
     }
     final Object json;
@@ -1116,7 +1271,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     return (Map<String, Object>) json;
   }
 
-  protected void addSettingsToResponse(SchemaDesignerSettings settings, final Map<String, Object> response) {
+  protected void addSettingsToResponse(
+      SchemaDesignerSettings settings, final Map<String, Object> response) {
     response.put(LANGUAGES_PARAM, settings.getLanguages());
     response.put(ENABLE_FIELD_GUESSING_PARAM, settings.fieldGuessingEnabled());
     response.put(ENABLE_DYNAMIC_FIELDS_PARAM, settings.dynamicFieldsEnabled());
@@ -1134,12 +1290,20 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     // an apply just copies over the temp config to the "live" location
     String mutableId = getMutableId(configSet);
     if (!configExists(mutableId)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          mutableId + " configSet not found! Are you sure " + configSet + " was being edited by the schema designer?");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          mutableId
+              + " configSet not found! Are you sure "
+              + configSet
+              + " was being edited by the schema designer?");
     }
 
-    // check the versions agree
-    configSetHelper.checkSchemaVersion(mutableId, requireSchemaVersionFromClient(req), -1);
+    final int schemaVersionInZk = configSetHelper.getCurrentSchemaVersion(mutableId);
+    if (schemaVersionInZk != -1) {
+      // check the versions agree
+      configSetHelper.checkSchemaVersion(
+          mutableId, requireSchemaVersionFromClient(req), schemaVersionInZk);
+    } // else the stored is -1, can't really enforce here
 
     return mutableId;
   }
@@ -1147,7 +1311,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   protected int requireSchemaVersionFromClient(SolrQueryRequest req) {
     final int schemaVersion = req.getParams().getInt(SCHEMA_VERSION_PARAM, -1);
     if (schemaVersion == -1) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
           SCHEMA_VERSION_PARAM + " is a required parameter for the " + req.getPath() + " endpoint");
     }
     return schemaVersion;
@@ -1155,8 +1320,9 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
   protected String getRequiredParam(final String param, final SolrQueryRequest req) {
     final String paramValue = req.getParams().get(param);
-    if (isEmpty(paramValue)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+    if (StrUtils.isNullOrEmpty(paramValue)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
           param + " is a required parameter for the " + req.getPath() + " endpoint!");
     }
     return paramValue;
@@ -1184,10 +1350,13 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
   private void validateNewConfigSetName(String configSet) {
     if (configSet.length() > 50) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Schema name should be 50 characters or less");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Schema name should be 50 characters or less");
     }
     if (configSet.contains(" ") || configSet.contains("/")) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Schema name should not contain spaces or forward slash");
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Schema name should not contain spaces or forward slash");
     }
   }
 
@@ -1196,7 +1365,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     try {
       return zkClient.exists(zkPath, true);
     } catch (KeeperException | InterruptedException e) {
-      throw new IOException("Failed to check if path exists: " + zkPath, SolrZkClient.checkInterrupted(e));
+      throw new IOException(
+          "Failed to check if path exists: " + zkPath, SolrZkClient.checkInterrupted(e));
     }
   }
 
@@ -1205,18 +1375,26 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     byte[] data;
     ZkSolrResourceLoader delegate;
 
-    public InMemoryResourceLoader(CoreContainer cc, String configSet, String resource, byte[] data) {
+    public InMemoryResourceLoader(
+        CoreContainer cc, String configSet, String resource, byte[] data) {
       super(cc.getResourceLoader().getInstancePath(), cc.getResourceLoader().getClassLoader());
 
       final SolrResourceLoader resourceLoader = cc.getResourceLoader();
-      this.delegate = new ZkSolrResourceLoader(resourceLoader.getInstancePath(), configSet, resourceLoader.getClassLoader(), cc.getZkController());
+      this.delegate =
+          new ZkSolrResourceLoader(
+              resourceLoader.getInstancePath(),
+              configSet,
+              resourceLoader.getClassLoader(),
+              cc.getZkController());
       this.resource = resource;
       this.data = data;
     }
 
     @Override
     public InputStream openResource(String res) throws IOException {
-      return (this.resource.equals(res)) ? new ByteArrayInputStream(data) : delegate.openResource(res);
+      return (this.resource.equals(res))
+          ? new ByteArrayInputStream(data)
+          : delegate.openResource(res);
     }
   }
 }

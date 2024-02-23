@@ -1,0 +1,338 @@
+= Commits and Transaction Logs
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+In Solr, documents are not available for searching until a "commit" updates the Lucene index files.
+Your commit strategy will determine when document additions, deletes, or changes are available for searching.
+A transaction log records document updates that have been received since the last "hard" commit point.
+
+== <updateHandler> in solrconfig.xml
+
+The settings in this section are configured in the `<updateHandler>` element in `solrconfig.xml` and may affect the performance of index updates.
+These settings affect how updates are done internally.
+
+The `<updateHandler>` element takes a class parameter, which must be `solr.DirectUpdateHandler2`.
+The `_default` configset included with Solr has this section defined already, but the values for many parameters discussed below likely need to be customized for your application.
+
+[source,xml]
+----
+<config>
+  <updateHandler class="solr.DirectUpdateHandler2">
+    ...
+  </updateHandler>
+</config>
+----
+
+Note that `<updateHandler>` configurations do not affect the higher level configuration of xref:requesthandlers-searchcomponents.adoc[request handlers] that process client update requests.
+
+== Commits
+
+Data sent to Solr is not searchable until it has been _committed_ to the index.
+The reason for this is that in some cases commits can be slow and they should be done in isolation from other possible commit requests to avoid overwriting data.
+
+=== Hard Commits vs. Soft Commits
+
+Solr supports two types of commits: hard commits and soft commits.
+
+A *hard commit* calls `fsync` on the index files to ensure they have been flushed to stable storage.
+The current transaction log is closed and a new one is opened.
+See the section <<Transaction Log>> below for how data is recovered in the absence of a hard commit.
+Optionally a hard commit can also make documents visible for search, but this may not be ideal in some use cases as it is more expensive than a soft commit.
+By default commit actions result in a hard commit of all the Lucene index files to stable storage (disk).
+
+A *soft commit* is faster since it only makes index changes visible and does not `fsync` index files, start a new segment, nor start a new transaction log.
+Search collections that have NRT requirements will want to soft commit often enough to satisfy the visibility requirements of the application.
+A softCommit may be "less expensive" than a hard commit (`openSearcher=true`), but it is not free.
+It is recommended that this be set for as long as is reasonable given the application requirements.
+
+A hard commit means that, if a server crashes, Solr will know exactly where your data was stored; a soft commit means that the data is stored, but the location information isn't yet stored.
+The tradeoff is that a soft commit gives you faster visibility because it's not waiting for background merges to finish.
+
+=== Explicit Commits
+
+When a client includes a `commit=true` parameter with an update request, this ensures that all index segments affected by the adds and deletes on an update are written to disk as soon as index updates are completed.
+
+If an additional parameter `softCommit=true` is specified, then Solr performs a soft commit.
+This is an implementation of Near Real Time storage, a feature that boosts document visibility, since you don't have to wait for background merges and storage (to ZooKeeper, if using SolrCloud) to finish before moving on to something else.
+
+Details about using explicit commit requests during indexing are in the section xref:indexing-guide:indexing-with-update-handlers.adoc[Indexing with Update Handlers].
+
+For more information about Near Real Time operations, see xref:deployment-guide:solrcloud-distributed-requests.adoc#near-real-time-nrt-use-cases[Near Real Time Use Cases].
+
+=== Automatic Commits
+
+To avoid sending explicit commit commands during indexing and to provide control over when commits happen, it's possible to configure `autoCommit` parameters in `solrconfig.xml`.
+
+This is preferable to sending explicit commits from the indexing client as it offers much more control over your commit strategy.
+Note that defaults are provided in `solrconfig.xml`, but they are very likely not tuned to your needs and may introduce performance problems if not tuned effectively.
+
+These settings control how often pending updates will be automatically pushed to the index.
+
+`maxDocs`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The number of updates that have occurred since the last commit.
+
+`maxTime`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The number of milliseconds since the oldest uncommitted update.
+When sending a large batch of documents, this parameter is preferred over `maxDocs`.
+
+`maxSize`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The maximum size of the transaction log (tlog) on disk, after which a hard commit is triggered.
+This is useful when the size of documents is unknown and the intention is to restrict the size of the transaction log to reasonable size.
++
+Valid values can be bytes (default with no suffix), kilobytes (if defined with a `k` suffix, as in `25k`), megabytes (`m`) or gigabytes (`g`).
+
+`openSearcher`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Whether to open a new searcher when performing a commit.
+If this is `false`, the commit will flush recent index changes to stable storage, but does not cause a new searcher to be opened to make those changes visible.
+
+If any of the `maxDocs`, `maxTime`, or `maxSize` limits are reached, Solr automatically performs a commit operation.
+The first of these thresholds to be reached will trigger the commit.
+
+If the `autoCommit` tag is missing from `solrconfig.xml`, then only explicit commits will update the index.
+The decision whether to use autoCommit or not depends on the needs of your application.
+
+[source,xml]
+----
+<autoCommit>
+  <maxDocs>10000</maxDocs>
+  <maxTime>30000</maxTime>
+  <maxSize>512m</maxSize>
+  <openSearcher>false</openSearcher>
+</autoCommit>
+----
+
+You can also specify 'soft' autoCommits with the `autoSoftCommit` tag.
+
+[source,xml]
+----
+<autoSoftCommit>
+  <maxTime>5000</maxTime>
+</autoSoftCommit>
+----
+
+=== AutoCommit Best Practices
+
+Determining the best `autoCommit` settings is a tradeoff between performance and accuracy.
+Settings that cause frequent updates will improve the accuracy of searches because new content will be searchable more quickly, but performance may suffer because of the frequent updates.
+Less frequent updates may improve performance but it will take longer for updates to show up in queries.
+
+Here is an example NRT configuration for the two flavors of commit, a hard commit every 60 seconds and a soft commit every 10 seconds.
+Note that these are _not_ the values in the examples shipped with Solr!
+
+[source,xml]
+----
+<autoCommit>
+  <maxTime>${solr.autoCommit.maxTime:60000}</maxTime>
+  <openSearcher>false</openSearcher>
+</autoCommit>
+
+<autoSoftCommit>
+   <maxTime>${solr.autoSoftCommit.maxTime:10000}</maxTime>
+ </autoSoftCommit>
+----
+
+TIP: These parameters can be overridden at run time by defining Java "system variables", for example specifying ``-Dsolr.autoCommit.maxTime=15000` would override the hard commit interval with a value of 15 seconds.
+
+The choices for `autoCommit` (with `openSearcher=false`) and `autoSoftCommit` have different consequences.
+In the event of un-graceful shutdown, it can take up to the time specified in `autoCommit` for Solr to replay the uncommitted documents from the transaction log.
+
+The time chosen for `autoSoftCommit` determines the maximum time after a document is sent to Solr before it becomes searchable and does not affect the transaction log.
+
+Choose as long an interval as your application can tolerate for this value, often 15-60 seconds is reasonable, or even longer depending on the requirements.
+In situations where the time is set to a very short interval (say 1 second), consider disabling your caches (queryResultCache and filterCache especially) as they will have little utility.
+
+TIP: For extremely high bulk indexing, especially for the initial load if there is no searching, consider turning off `autoSoftCommit` by specifying a value of `-1` for the maxTime parameter.
+
+=== Commit Within a Time Period
+
+An alternative to `autoCommit` is to use `commitWithin`, which can be defined when making the update request to Solr (i.e., when pushing documents), or in an update request handler.
+
+The `commitWithin` settings allow forcing document commits to happen in a defined time period.
+This is used most frequently with xref:deployment-guide:solrcloud-distributed-requests.adoc#near-real-time-nrt-use-cases[Near Real Time use cases], and for that reason the default is to perform a soft commit.
+This does not, however, replicate new documents to follower servers in a user-managed cluster.
+If that's a requirement for your implementation, you can force a hard commit by adding a parameter, as in this example:
+
+[source,xml]
+----
+<commitWithin>
+  <softCommit>false</softCommit>
+</commitWithin>
+----
+
+With this configuration, when you call `commitWithin` as part of your update message, it will automatically perform a hard commit every time.
+
+
+== Transaction Log
+
+Transaction logs (tlogs) are a "rolling window" of updates since the last hard commit.
+The current transaction log is closed and a new one opened each time any variety of hard commit occurs.
+Soft commits have no effect on the transaction log.
+
+When tlogs are enabled, documents being added to the index are written to the tlog before the indexing call returns to the client.
+In the event of an un-graceful shutdown (power loss, JVM crash, `kill -9`, etc.) any documents written to the tlog but not yet committed with a hard commit when Solr was stopped are replayed on startup.
+Therefore the data is not lost.
+
+When Solr is shut down gracefully (using the `bin/solr stop` command) Solr will close the tlog file and index segments so no replay will be necessary on startup.
+
+One point of confusion is how much data is contained in a transaction log.
+A tlog does not contain all documents, only the ones since the last hard commit.
+Older transaction log files are deleted when no longer needed.
+
+WARNING: Implicit in the above is that transaction logs will grow forever if hard commits are disabled.
+Therefore it is important that hard commits be enabled when indexing.
+
+=== Transaction Log Configuration
+
+Transaction logs are required for all SolrCloud clusters, as well as the xref:realtime-get.adoc[] feature.
+It is configured in the `updateHandler` section of `solrconfig.xml`.
+
+Transaction logs are configured in `solrconfig.xml`, in a section like the following:
+
+[source,xml]
+----
+<updateLog>
+  <str name="dir">${solr.ulog.dir:}</str>
+</updateLog>
+----
+
+The only required parameter is:
+
+`dir`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The location of the transaction log.
+In Solr's default `solrconfig.xml` files, this is defined as `${solr.ulog.dir:}`.
++
+As shown in the default value, the location of the transaction log can be anywhere as long as it is defined in `solrconfig.xml` and write- and read-able by Solr.
+
+There are three additional expert-level configuration settings which affect indexing performance and how far a replica can fall behind on updates before it must enter into full recovery.
+These settings would primarily impact SolrCloud cluster configurations:
+
+`numRecordsToKeep`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `100`
+|===
++
+The minimum number of update records to keep across all the transaction log files.
+
+`maxNumLogsToKeep`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `10`
+|===
++
+The maximum number of transaction log files to keep.
+
+`numVersionBuckets`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `65336`
+|===
++
+The number of buckets used to keep track of maximum version values when checking for re-ordered updates.
+Increase this value to reduce the cost of synchronizing access to version buckets during high-volume indexing.
+This requires `(8 bytes (long) * numVersionBuckets)` of heap space per Solr core.
+
+`syncLevel`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `FLUSH`
+|===
++
+The sync level of the transaction log files. Can be NONE, FLUSH or FSYNC, if nothing is set FLUSH is the default.
+
+These configuration options work in the following way:
+
+* FSYNC: Solr internal buffer is explicitly flushed to the underlying, file system specific buffer which is also flushed to the transaction log file. This is a more expensive operation but safer since the content is written to the transaction log file.
+* FLUSH: We only flush explicitly the Solr internal buffer to the underlying, file system specific buffer, but this buffer is not explicitly flushed to the transaction log file. This is less expensive but also less safe since if we have a crash before the file system specific buffer is also flushed, data from it is lost.
+* NONE: There is no explicit flush of the buffers. This configuration option is the least expensive, but the least safe as well.
+
+An example, to be included under `<updateHandler>` in `solrconfig.xml`, employing the above advanced settings:
+
+[source,xml]
+----
+<updateLog>
+  <str name="dir">${solr.ulog.dir:}</str>
+  <int name="numRecordsToKeep">500</int>
+  <int name="maxNumLogsToKeep">20</int>
+  <int name="numVersionBuckets">65536</int>
+  <str name="syncLevel">FSYNC</str>
+</updateLog>
+----
+
+== Event Listeners
+
+The UpdateHandler section is also where update-related event listeners can be configured.
+These can be triggered to occur after any commit (`event="postCommit"`) or only after optimize commands (`event="postOptimize"`).
+
+Users can write custom update event listener classes in Solr plugins.
+As of Solr 7.1, `RunExecutableListener` was removed for security reasons.
+
+== Other <updateHandler> Options
+
+In some cases complex updates (such as spatial/shape) may take very long time to complete.
+In the default configuration other updates that fall into the same internal version bucket will wait indefinitely.
+Eventually these outstanding requests may pile up and lead to thread exhaustion and possibly to OutOfMemory errors.
+
+The parameter `versionBucketLockTimeoutMs` helps to prevent that by specifying a timeout for long-running update requests.
+If this limit is reached the update will fail but it won't block forever all other updates.
+
+There is a memory cost associated with this setting.
+Values greater than the default of `0` (unlimited timeout) cause Solr to use a different internal implementation of the version bucket, which increases memory consumption from ~1.5MB to ~6.8MB per Solr core.
+
+An example of specifying this option under `<config>` section of `solrconfig.xml`:
+
+[source,xml]
+----
+<updateHandler class="solr.DirectUpdateHandler2">
+  ...
+  <int name="versionBucketLockTimeoutMs">10000</int>
+</updateHandler>
+----

@@ -1,0 +1,759 @@
+= Shard Management Commands
+:toclevels: 1
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+In SolrCloud, a shard is a logical partition of a collection.
+This partition stores part of the entire index for a collection.
+
+The number of shards you have helps to determine how many documents a single collection can contain in total, and also impacts search performance.
+
+All of the examples in this section assume you are running the "techproducts" Solr example:
+
+[source,bash]
+----
+bin/solr -c -e techproducts
+----
+
+[[splitshard]]
+== SPLITSHARD: Split a Shard
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1splitshard]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=techproducts&shard=shard1
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 137
+  }
+}
+----
+====
+
+[example.tab-pane#v2splitshard]
+====
+[.tab-label]*V2 API*
+*Input*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
+  {
+    "split":{
+      "shard":"shard1"
+    }
+  }
+'
+----
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 125
+  }
+}
+----
+====
+--
+
+Splitting a shard will take an existing shard and break it into two pieces which are written to disk as two (new) shards.
+The original shard will continue to contain the same data as-is but it will start re-routing requests to the new shards.
+The new shards will have as many replicas as the original shard.
+A soft commit is automatically issued after splitting a shard so that documents are made visible on sub-shards.
+An explicit commit (hard or soft) is not necessary after a split operation because the index is automatically persisted to disk during the split operation.
+
+This command allows for seamless splitting and requires no downtime.
+A shard being split will continue to accept query and indexing requests and will automatically start routing requests to the new shards once this operation is complete.
+This command can only be used for SolrCloud collections created with `numShards` parameter, meaning collections which rely on Solr's hash-based routing mechanism.
+
+The split is performed by dividing the original shard's hash range into two equal partitions and dividing up the documents in the original shard according to the new sub-ranges.
+Two parameters discussed below, `ranges` and `split.key` provide further control over how the split occurs.
+
+The newly created shards will have as many replicas as the parent shard, of the same replica types.
+
+When using `splitMethod=rewrite` (default) you must ensure that the node running the leader of the parent shard has enough free disk space i.e., more than twice the index size, for the split to succeed.
+
+Also, the first replicas of resulting sub-shards will always be placed on the shard leader node.
+
+Shard splitting can be a long running process.
+In order to avoid timeouts, you should run this as an xref:configuration-guide:collections-api.adoc#asynchronous-calls[asynchronous call].
+
+=== SPLITSHARD Parameters
+
+`collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the collection that includes the shard to be split.
+This parameter is required.
+
+`shard`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The name of the shard to be split.
+This parameter is required when `split.key` is not specified.
+
+`ranges`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A comma-separated list of hash ranges in hexadecimal, such as `ranges=0-1f4,1f5-3e8,3e9-5dc`.
++
+This parameter can be used to divide the original shard's hash range into arbitrary hash range intervals specified in hexadecimal.
+For example, if the original hash range is `0-1500` then adding the parameter: `ranges=0-1f4,1f5-3e8,3e9-5dc` will divide the original shard into three shards with hash range `0-500`, `501-1000`, and `1001-1500` respectively.
+
+`split.key`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The key to use for splitting the index.
++
+This parameter can be used to split a shard using a route key such that all documents of the specified route key end up in a single dedicated sub-shard.
+Providing the `shard` parameter is not required in this case because the route key is enough to figure out the right shard.
+A route key which spans more than one shard is not supported.
++
+For example, suppose `split.key=A!` hashes to the range `12-15` and belongs to shard 'shard1' with range `0-20`.
+Splitting by this route key would yield three sub-shards with ranges `0-11`, `12-15` and `16-20`.
+Note that the sub-shard with the hash range of the route key may also contain documents for other route keys whose hash ranges overlap.
+
+`numSubShards`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `2`
+|===
++
+The number of sub-shards to split the parent shard into.
+Allowed values for this are in the range of `2`-`8`.
++
+This parameter can only be used when `ranges` or `split.key` are not specified.
+
+`splitMethod`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `rewrite`
+|===
++
+Currently two methods of shard splitting are supported:
+* `rewrite`: After selecting documents to retain in each partition this method creates sub-indexes from scratch, which is a lengthy CPU- and I/O-intensive process but results in optimally-sized sub-indexes that don't contain any data from documents not belonging to each partition.
+* `link`: Uses filesystem-level hard links for creating copies of the original index files and then only modifies the file that contains the list of deleted documents in each partition.
+This method is many times quicker and lighter on resources than the `rewrite` method but the resulting sub-indexes are still as large as the original index because they still contain data from documents not belonging to the partition.
+This slows down the replication process and consumes more disk space on replica nodes (the multiple hard-linked copies don't occupy additional disk space on the leader node, unless hard-linking is not supported).
+
+`splitFuzz`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0.0`
+|===
++
+A float value which must be smaller than `0.5` that allows to vary the sub-shard ranges by this percentage of total shard range, odd shards being larger and even shards being smaller.
+
+`property._name_=_value_`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Set core property _name_ to _value_.
+See the section xref:configuration-guide:core-discovery.adoc[] for details on supported properties and values.
+
+`waitForFinalState`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, the request will complete only when all affected replicas become active.
+If `false`, the API will return the status of the single action, which may be before the new replica is online and active.
+
+`timing`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true` then each stage of processing will be timed and a `timing` section will be included in response.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
+
+`splitByPrefix`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, the split point will be selected by taking into account the distribution of compositeId values in the shard.
+A compositeId has the form `<prefix>!<suffix>`, where all documents with the same prefix are colocated on in the hash space.
+If there are multiple prefixes in the shard being split, then the split point will be selected to divide up the prefixes into as equal sized shards as possible without splitting any prefix.
+If there is only a single prefix in a shard, the range of the prefix will be divided in half.
++
+The id field is usually scanned to determine the number of documents with each prefix.
+As an optimization, if an optional field called `id_prefix` exists and has the document prefix indexed (including the !) for each document,
+then that will be used to generate the counts.
++
+One simple way to populate `id_prefix` is a copyField in the schema:
+[source,xml]
+----
+  <!-- OPTIONAL, for optimization used by splitByPrefix if it exists -->
+  <field name="id_prefix" type="composite_id_prefix" indexed="true" stored="false"/>
+  <copyField source="id" dest="id_prefix"/>
+  <fieldtype name="composite_id_prefix" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.PatternTokenizerFactory" pattern=".*!" group="0"/>
+    </analyzer>
+  </fieldtype>
+----
+
+Current implementation details and limitations:
+
+* Prefix size is calculated using number of documents with the prefix.
+* Only two level compositeIds are supported.
+* The shard can only be split into two.
+
+=== SPLITSHARD Response
+
+The output will include the status of the request and the new shard names, which will use the original shard as their basis, adding an underscore and a number.
+For example, "shard1" will become "shard1_0" and "shard1_1".
+If the status is anything other than "success", an error message will explain why the request failed.
+
+=== Miscellaneous Configuration
+
+When splitting a shard, a free disk space check is performed on the local file system of the leader shard.
+This can be disabled through the `solr.shardSplit.checkDiskSpace.enabled` system property (i.e. `-Dsolr.shardSplit.checkDiskSpace.enabled=false`).
+It is already disabled by default for xref:solr-on-hdfs.adoc[HDFS].
+
+[[createshard]]
+== CREATESHARD: Create a Shard
+
+Shards can only created with this API for collections that use the 'implicit' router (i.e., when the collection was created, `router.name=implicit`).
+A new shard with a name can be created for an existing 'implicit' collection.
+
+Use SPLITSHARD for collections created with the 'compositeId' router (`router.key=compositeId`).
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1createshard]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATESHARD&shard=newShardName&collection=techproducts
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 120
+  }
+}
+----
+====
+
+[example.tab-pane#v2createshard]
+====
+[.tab-label]*V2 API*
+*Input*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts/shards -H 'Content-Type: application/json' -d '
+  {
+    "shard":"newShardName"
+  }
+'
+----
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 125
+  }
+}
+----
+====
+--
+
+The default values for `replicationFactor` or `nrtReplicas`, `tlogReplicas`, `pullReplicas` from the collection is used to determine the number of replicas to be created for the new shard.
+This can be customized by explicitly passing the corresponding parameters to the request.
+
+=== CREATESHARD Parameters
+
+`collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+
+The name of the collection that includes the shard to be split.
+Provided as a query parameter in v1 requests, and as a path parameter for v2 requests.
+
+
+`shard`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+
+The name of the shard to be created.
+
+`createNodeSet`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Allows defining the nodes to spread the new collection across.
+If not provided, the CREATESHARD operation will create shard-replica spread across all live Solr nodes.
++
+The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
+
+`nrtReplicas`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+The number of `nrt` replicas that should be created for the new shard.
+The defaults for the collection are used if omitted.
+
+`tlogReplicas`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+The number of `tlog` replicas that should be created for the new shard.
+The defaults for the collection are used if omitted.
+
+`pullReplicas`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+The number of `pull` replicas that should be created for the new shard.
+The defaults for the collection are used if omitted.
+
+`property._name_=_value_`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Set core property _name_ to _value_.
+See the section xref:configuration-guide:core-discovery.adoc[] for details on supported properties and values.
+
+`waitForFinalState`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, the request will complete only when all affected replicas become active.
+If `false`, the API will return the status of the single action, which may be before the new replica is online and active.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
+
+=== CREATESHARD Response
+
+The output will include the status of the request.
+If the status is anything other than "success", an error message will explain why the request failed.
+
+[[deleteshard]]
+== DELETESHARD: Delete a Shard
+
+Deleting a shard will unload all replicas of the shard, remove them from the collection's `state.json`, and (by default) delete the instanceDir and dataDir for each replica.
+It will only remove shards that are inactive, or which have no range given for custom sharding.
+
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deleteshard]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETESHARD&shard=shard1&collection=techproducts
+----
+====
+
+[example.tab-pane#v2deleteshard]
+====
+[.tab-label]*V2 API*
+
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/collections/techproducts/shards/shard1
+----
+====
+--
+
+=== DELETESHARD Parameters
+
+`collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the collection that includes the shard to be deleted.
+Provided as a query parameter or a path parameter in v1 and v2 requests, respectively.
+
+`shard`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the shard to be deleted.
+Provided as a query parameter or a path parameter in v1 and v2 requests, respectively.
+
+
+`deleteInstanceDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+By default Solr will delete the entire instanceDir of each replica that is deleted.
+Set this to `false` to prevent the instance directory from being deleted.
+
+`deleteDataDir`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+By default Solr will delete the dataDir of each replica that is deleted.
+Set this to `false` to prevent the data directory from being deleted.
+
+`deleteIndex`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+By default Solr will delete the index of each replica that is deleted.
+Set this to `false` to prevent the index directory from being deleted.
+
+`followAliases`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+A flag that allows treating the collection parameter as an alias for the actual collection name to be resolved.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
+
+=== DELETESHARD Response
+
+The output will include the status of the request.
+If the status is anything other than "success", an error message will explain why the request failed.
+
+[[forceleader]]
+== FORCELEADER: Force Shard Leader
+
+In the unlikely event of a shard losing its leader, this command can be invoked to force the election of a new leader.
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1forceleader]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=FORCELEADER&collection=techproducts&shard=shard1
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 78
+  }
+}
+----
+====
+
+[example.tab-pane#v2forceleader]
+====
+[.tab-label]*V2 API*
+*Input*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1/force-leader
+----
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 125
+  }
+}
+----
+====
+--
+
+=== FORCELEADER Parameters
+
+`collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the collection.
+This parameter is required.
+
+`shard`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the shard where leader election should occur.
+This parameter is required.
+
+WARNING: This is an expert level command, and should be invoked only when regular leader election is not working.
+This may potentially lead to loss of data in the event that the new leader doesn't have certain updates, possibly recent ones, which were acknowledged by the old leader before going down.
+
+[[installsharddata]]
+== INSTALLSHARDDATA: Install/Import Data to Shard
+
+Under normal circumstances, data is added to Solr collections (and the shards that make them up) by xref:indexing-guide:indexing-with-update-handlers.adoc[indexing] documents.
+However some use-cases require constructing per-shard indices offline.
+Often this is done as a means of insulating query traffic from indexing load, or because the ETL pipeline in use is particularly complex.
+The INSTALLSHARDDATA API allows installation of these pre-constructed indices into individual shards within a collection.
+Installation copies the index files into all replicas within the shard, overwriting any preexisting data held by that shard.
+
+To install data into a shard, the collection owning that shard must first be put into "readOnly" mode, using the xref:deployment-guide:collection-management.adoc#modifycollection[MODIFYCOLLECTION API].
+Once in read-only mode, shard installation may be done either serially or in parallel.
+Data can be imported from any `repository` and `location` supported by Solr's pluggable xref:deployment-guide:backup-restore.adoc#backuprestore-storage-repositories[Backup Repository] abstraction.
+
+The specified `location` must contain all files that make up a core's `data/index` directory.
+Users are responsible for ensuring that the index installed to a shard is compatible with the schema and configuration for the collection hosting that shard.
+
+
+[.dynamic-tabs]
+--
+
+[example.tab-pane#v1installshard]
+====
+[.tab-label]*V1 API*
+
+*Input*
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=INSTALLSHARDDATA&collection=techproducts&shard=shard1&repository=localfs&location=/mounts/myNFSDrive/tech/shard1/data/index
+----
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 78
+  }
+}
+----
+====
+
+[example.tab-pane#v2installshard]
+====
+[.tab-label]*V2 API*
+*Input*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts/shards/shard1/install -H 'Content-Type: application/json' -d '
+  {
+    "repository": "localfs",
+    "location": "/mounts/myNFSDrive/tech/shard1/data/index"
+  }
+'
+----
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 125
+  }
+}
+----
+====
+--
+
+=== INSTALLSHARDDATA Parameters
+
+`collection`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the collection.
+This parameter is required.
+Specified as a query parameter for v1 requests, and as a path segment for v2 requests.
+
+`shard`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the shard to install data to.
+This parameter is required.
+Specified as a query parameter for v1 requests, and as a path segment for v2 requests.
+
+`location`::
++
+[%autowidth,frame=none]
+|===
+s|Required|Default: none
+|===
++
+The location within the specified backup repository to find the index files to install.
+Specified as a query parameter for v1 requests, and in the request body of v2 requests.
+
+`repository`::
++
+[%autowidth,frame=none]
+|===
+|Optional|Default: none
+|===
++
+The name of the backup repository to look for index files within
+Specified as a query parameter for v1 requests, and in the request body of v2 requests.
+Solr's default Backup Repository (if one is defined in solr.xml) will be used as a fallback if no repository parameter is provided.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].

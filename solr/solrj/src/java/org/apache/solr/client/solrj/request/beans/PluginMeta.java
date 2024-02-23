@@ -19,14 +19,11 @@ package org.apache.solr.client.solrj.request.beans;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-/**
- * POJO for a plugin metadata used in container plugins
- */
+/** POJO for a plugin metadata used in container plugins */
 public class PluginMeta implements ReflectMapWriter {
   /** Unique plugin name, required. */
   @JsonProperty(required = true)
@@ -37,8 +34,7 @@ public class PluginMeta implements ReflectMapWriter {
   public String klass;
 
   /** Plugin version. */
-  @JsonProperty
-  public String version;
+  @JsonProperty public String version;
 
   /** Plugin API path prefix, optional. */
   @JsonProperty("path-prefix")
@@ -46,8 +42,6 @@ public class PluginMeta implements ReflectMapWriter {
 
   /** Plugin configuration object, optional. */
   public MapWriter config;
-
-
 
   public PluginMeta copy() {
     PluginMeta result = new PluginMeta();
@@ -68,14 +62,14 @@ public class PluginMeta implements ReflectMapWriter {
   public boolean equals(Object obj) {
     if (obj instanceof PluginMeta) {
       PluginMeta that = (PluginMeta) obj;
-      return Objects.equals(this.name, that.name) &&
-          Objects.equals(this.klass, that.klass) &&
-          Objects.equals(this.version, that.version) &&
-
-          Objects.equals(this.config, that.config);
+      return Objects.equals(this.name, that.name)
+          && Objects.equals(this.klass, that.klass)
+          && Objects.equals(this.version, that.version)
+          && Objects.equals(this.config, that.config);
     }
     return false;
   }
+
   @Override
   public int hashCode() {
     return Objects.hash(name, version, klass);

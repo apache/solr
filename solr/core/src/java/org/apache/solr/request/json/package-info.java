@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * JSON related classes
- */
+/** JSON related classes */
 package org.apache.solr.request.json;

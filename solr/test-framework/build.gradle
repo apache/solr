@@ -20,16 +20,59 @@ apply plugin: 'java-library'
 description = 'Solr Test Framework'
 
 dependencies {
+  // Spotbugs Annotations are only needed for old findbugs
+  // annotation usage like in Zookeeper during compilation time.
+  // It is not included in the release so exclude from checks.
+  compileOnly 'com.github.spotbugs:spotbugs-annotations'
+  permitUnusedDeclared 'com.github.spotbugs:spotbugs-annotations'
+  // Exclude these from jar validation and license checks.
+  configurations.jarValidation {
+    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+  }
+
   api project(':solr:core')
   api project(':solr:solrj')
+  implementation project(':solr:solrj-zookeeper')
 
-  api "org.apache.lucene:lucene-test-framework"
-  api "org.apache.lucene:lucene-analysis-common"
+  api 'org.apache.lucene:lucene-test-framework'
+  implementation 'org.apache.lucene:lucene-core'
+  implementation 'org.apache.lucene:lucene-queries'
+  implementation 'org.apache.lucene:lucene-suggest'
 
-  api 'org.apache.logging.log4j:log4j-core'
-  api 'io.opentracing:opentracing-mock'
 
-  implementation 'io.dropwizard.metrics:metrics-jetty9'
-  implementation 'com.lmax:disruptor'
+  var zkExcludes = {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+  }
+
+  implementation('org.apache.zookeeper:zookeeper', zkExcludes)
+  implementation('org.apache.zookeeper:zookeeper-jute', zkExcludes)
+  implementation('org.apache.zookeeper:zookeeper::tests', zkExcludes)
+
+  implementation 'commons-io:commons-io'
+  implementation 'org.slf4j:slf4j-api'
+  implementation 'org.apache.logging.log4j:log4j-api'
+  implementation 'org.apache.logging.log4j:log4j-core'
+  implementation 'io.dropwizard.metrics:metrics-core'
+  implementation 'io.dropwizard.metrics:metrics-jetty10'
+  implementation 'commons-cli:commons-cli'
+  permitUnusedDeclared 'commons-cli:commons-cli'
+  implementation 'org.apache.httpcomponents:httpclient'
+  implementation 'org.apache.httpcomponents:httpcore'
+  implementation 'io.opentelemetry:opentelemetry-api'
+
+  implementation 'org.eclipse.jetty.toolchain:jetty-servlet-api'
+  implementation 'org.eclipse.jetty:jetty-server'
+  api 'org.eclipse.jetty:jetty-servlet'
+  implementation 'org.eclipse.jetty:jetty-util'
+  implementation 'org.eclipse.jetty:jetty-alpn-server'
+  runtimeOnly('org.eclipse.jetty:jetty-alpn-java-server', {
+    exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
+  })
+  implementation 'org.eclipse.jetty:jetty-rewrite'
+  implementation 'org.eclipse.jetty.http2:http2-server'
+  implementation 'org.eclipse.jetty.http2:http2-common'
+
+  implementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
+  implementation 'junit:junit'
+  implementation 'org.hamcrest:hamcrest'
 }
-

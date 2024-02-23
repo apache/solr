@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.CodecReader;
@@ -30,10 +29,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -44,6 +42,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TimeOut;
@@ -53,9 +52,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- *
- */
+/** */
 public class IndexSizeEstimatorTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -70,12 +67,9 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
     System.setProperty("solr.tests.numeric.dv", "true");
     System.setProperty("solr.tests.numeric.points", "true");
     System.setProperty("solr.tests.numeric.points.dv", "true");
-    configureCluster(2)
-        .addConfig("conf", configset("cloud-dynamic"))
-        .configure();
+    configureCluster(2).addConfig("conf", configset("cloud-dynamic")).configure();
     solrClient = cluster.getSolrClient();
-    CollectionAdminRequest.createCollection(collection, "conf", 2, 2)
-        .process(solrClient);
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 2).process(solrClient);
     cluster.waitForActiveCollection(collection, 2, 4);
     SolrInputDocument lastDoc = addDocs(collection, NUM_DOCS);
     HashSet<String> docFields = new HashSet<>(lastDoc.keySet());
@@ -87,7 +81,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void releaseClient() throws Exception {
+  public static void releaseClient() {
     solrClient = null;
   }
 
@@ -100,7 +94,8 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
     try {
       SolrIndexSearcher searcher = searcherRef.get();
       // limit the max length
-      IndexSizeEstimator estimator = new IndexSizeEstimator(searcher.getRawReader(), 20, 50, true, true);
+      IndexSizeEstimator estimator =
+          new IndexSizeEstimator(searcher.getRawReader(), 20, 50, true, true);
       IndexSizeEstimator.Estimate estimate = estimator.estimate();
       Map<String, Long> fieldsBySize = estimate.getFieldsBySize();
       assertFalse("empty fieldsBySize", fieldsBySize.isEmpty());
@@ -108,7 +103,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
       fieldsBySize.forEach((k, v) -> assertTrue("unexpected size of " + k + ": " + v, v > 0));
       Map<String, Long> typesBySize = estimate.getTypesBySize();
       assertFalse("empty typesBySize", typesBySize.isEmpty());
-      assertTrue("expected at least 8 types: " + typesBySize.toString(), typesBySize.size() >= 8);
+      assertTrue("expected at least 8 types: " + typesBySize, typesBySize.size() >= 8);
       typesBySize.forEach((k, v) -> assertTrue("unexpected size of " + k + ": " + v, v > 0));
       Map<String, Object> summary = estimate.getSummary();
       assertNotNull("summary", summary);
@@ -126,17 +121,25 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
       Map<String, Long> sampledFieldsBySize = sampledEstimate.getFieldsBySize();
       assertFalse("empty fieldsBySize", sampledFieldsBySize.isEmpty());
       // verify that the sampled values are within 50% of the original values
-      fieldsBySize.forEach((field, size) -> {
-        Long sampledSize = sampledFieldsBySize.get(field);
-        assertNotNull("sampled size for " + field + " is missing in " + sampledFieldsBySize, sampledSize);
-        double delta = (double) size * 0.5;
-        assertEquals("sampled size of " + field + " is wildly off", (double)size, (double)sampledSize, delta);
-      });
+      fieldsBySize.forEach(
+          (field, size) -> {
+            Long sampledSize = sampledFieldsBySize.get(field);
+            assertNotNull(
+                "sampled size for " + field + " is missing in " + sampledFieldsBySize, sampledSize);
+            double delta = (double) size * 0.5;
+            assertEquals(
+                "sampled size of " + field + " is wildly off",
+                (double) size,
+                (double) sampledSize,
+                delta);
+          });
       // verify the reader is still usable - SOLR-13694
       IndexReader reader = searcher.getRawReader();
       for (LeafReaderContext context : reader.leaves()) {
         LeafReader leafReader = context.reader();
-        assertTrue("unexpected LeafReader class: " + leafReader.getClass().getName(), leafReader instanceof CodecReader);
+        assertTrue(
+            "unexpected LeafReader class: " + leafReader.getClass().getName(),
+            leafReader instanceof CodecReader);
         Bits liveDocs = leafReader.getLiveDocs();
         CodecReader codecReader = (CodecReader) leafReader;
         StoredFieldsReader storedFieldsReader = codecReader.getFieldsReader();
@@ -146,7 +149,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
           if (liveDocs != null && !liveDocs.get(docId)) {
             continue;
           }
-          storedFieldsReader.visitDocument(docId, visitor);
+          storedFieldsReader.document(docId, visitor);
         }
       }
     } finally {
@@ -157,64 +160,79 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
 
   @Test
   public void testIntegration() throws Exception {
-    CollectionAdminResponse rsp = CollectionAdminRequest.collectionStatus(collection)
-        .setWithRawSizeInfo(true)
-        .setWithRawSizeSummary(true)
-        .setWithRawSizeDetails(true)
-        .process(solrClient);
-    CollectionAdminResponse sampledRsp = CollectionAdminRequest.collectionStatus(collection)
-        .setWithRawSizeInfo(true)
-        .setWithRawSizeSummary(true)
-        .setWithRawSizeDetails(true)
-        .setRawSizeSamplingPercent(5)
-        .process(solrClient);
+    CollectionAdminResponse rsp =
+        CollectionAdminRequest.collectionStatus(collection)
+            .setWithRawSizeInfo(true)
+            .setWithRawSizeSummary(true)
+            .setWithRawSizeDetails(true)
+            .process(solrClient);
+    CollectionAdminResponse sampledRsp =
+        CollectionAdminRequest.collectionStatus(collection)
+            .setWithRawSizeInfo(true)
+            .setWithRawSizeSummary(true)
+            .setWithRawSizeDetails(true)
+            .setRawSizeSamplingPercent(5)
+            .process(solrClient);
     assertEquals(0, rsp.getStatus());
     assertEquals(0, sampledRsp.getStatus());
     for (int i : Arrays.asList(1, 2)) {
       @SuppressWarnings({"unchecked"})
-      NamedList<Object> segInfos = (NamedList<Object>) rsp.getResponse().findRecursive(collection, "shards", "shard" + i, "leader", "segInfos");
+      NamedList<Object> segInfos =
+          (NamedList<Object>)
+              rsp.getResponse()
+                  .findRecursive(collection, "shards", "shard" + i, "leader", "segInfos");
       @SuppressWarnings({"unchecked"})
-      NamedList<Object> rawSize = (NamedList<Object>)segInfos.get("rawSize");
+      NamedList<Object> rawSize = (NamedList<Object>) segInfos.get("rawSize");
       assertNotNull("rawSize missing", rawSize);
       @SuppressWarnings({"unchecked"})
       Map<String, Object> rawSizeMap = rawSize.asMap(10);
       @SuppressWarnings({"unchecked"})
-      Map<String, Object> fieldsBySize = (Map<String, Object>)rawSizeMap.get(IndexSizeEstimator.FIELDS_BY_SIZE);
+      Map<String, Object> fieldsBySize =
+          (Map<String, Object>) rawSizeMap.get(IndexSizeEstimator.FIELDS_BY_SIZE);
       assertNotNull("fieldsBySize missing", fieldsBySize);
       assertEquals(fieldsBySize.toString(), fields.size(), fieldsBySize.size());
       fields.forEach(field -> assertNotNull("missing field " + field, fieldsBySize.get(field)));
       @SuppressWarnings({"unchecked"})
-      Map<String, Object> typesBySize = (Map<String, Object>)rawSizeMap.get(IndexSizeEstimator.TYPES_BY_SIZE);
+      Map<String, Object> typesBySize =
+          (Map<String, Object>) rawSizeMap.get(IndexSizeEstimator.TYPES_BY_SIZE);
       assertNotNull("typesBySize missing", typesBySize);
-      assertTrue("expected at least 8 types: " + typesBySize.toString(), typesBySize.size() >= 8);
+      assertTrue("expected at least 8 types: " + typesBySize, typesBySize.size() >= 8);
       @SuppressWarnings({"unchecked"})
-      Map<String, Object> summary = (Map<String, Object>)rawSizeMap.get(IndexSizeEstimator.SUMMARY);
+      Map<String, Object> summary =
+          (Map<String, Object>) rawSizeMap.get(IndexSizeEstimator.SUMMARY);
       assertNotNull("summary missing", summary);
       assertEquals(summary.toString(), fields.size(), summary.size());
       fields.forEach(field -> assertNotNull("missing field " + field, summary.get(field)));
       @SuppressWarnings({"unchecked"})
-      Map<String, Object> details = (Map<String, Object>)rawSizeMap.get(IndexSizeEstimator.DETAILS);
+      Map<String, Object> details =
+          (Map<String, Object>) rawSizeMap.get(IndexSizeEstimator.DETAILS);
       assertNotNull("details missing", summary);
       assertEquals(details.keySet().toString(), 6, details.size());
 
       // compare with sampled
       @SuppressWarnings({"unchecked"})
-      NamedList<Object> sampledRawSize = (NamedList<Object>) rsp.getResponse().findRecursive(collection, "shards", "shard" + i, "leader", "segInfos", "rawSize");
+      NamedList<Object> sampledRawSize =
+          (NamedList<Object>)
+              rsp.getResponse()
+                  .findRecursive(
+                      collection, "shards", "shard" + i, "leader", "segInfos", "rawSize");
       assertNotNull("sampled rawSize missing", sampledRawSize);
       @SuppressWarnings({"unchecked"})
       Map<String, Object> sampledRawSizeMap = rawSize.asMap(10);
       @SuppressWarnings({"unchecked"})
-      Map<String, Object> sampledFieldsBySize = (Map<String, Object>)sampledRawSizeMap.get(IndexSizeEstimator.FIELDS_BY_SIZE);
+      Map<String, Object> sampledFieldsBySize =
+          (Map<String, Object>) sampledRawSizeMap.get(IndexSizeEstimator.FIELDS_BY_SIZE);
       assertNotNull("sampled fieldsBySize missing", sampledFieldsBySize);
-      fieldsBySize.forEach((k, v) -> {
-        double size = fromHumanReadableUnits((String)v);
-        double sampledSize = fromHumanReadableUnits((String)sampledFieldsBySize.get(k));
-        assertNotNull("sampled size missing for field " + k + " in " + sampledFieldsBySize, sampledSize);
-        double delta = size * 0.5;
-        assertEquals("sampled size of " + k + " is wildly off", size, sampledSize, delta);
-      });
+      fieldsBySize.forEach(
+          (k, v) -> {
+            double size = fromHumanReadableUnits((String) v);
+            double sampledSize = fromHumanReadableUnits((String) sampledFieldsBySize.get(k));
+            assertNotNull(
+                "sampled size missing for field " + k + " in " + sampledFieldsBySize, sampledSize);
+            double delta = size * 0.5;
+            assertEquals("sampled size of " + k + " is wildly off", size, sampledSize, delta);
+          });
     }
-
   }
 
   private static double fromHumanReadableUnits(String value) {
@@ -252,7 +270,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
       // multival, stored, indexed, tv, pos, offsets
       doc.addField("tv_mv_string", TestUtil.randomAnalysisString(random(), 100, true));
       doc.addField("tv_mv_string", TestUtil.randomAnalysisString(random(), 100, true));
-      //binary
+      // binary
       doc.addField("payload", TestUtil.randomBinaryTerm(random()).bytes);
       // points
       doc.addField("point", random().nextInt(100) + "," + random().nextInt(100));
@@ -272,5 +290,4 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
     assertFalse("timed out waiting for documents to be added", timeOut.hasTimedOut());
     return doc;
   }
-
 }

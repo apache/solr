@@ -14,10 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * Common Util APIs related to Solr configuration.
- */
+
+/** Common Util APIs related to Solr configuration. */
 package org.apache.solr.util.configuration;
-
-
