@@ -73,6 +73,29 @@ Guide](https://solr.apache.org/guide/solr/latest/getting-started/solr-tutorial.h
 - Slack: Solr Community Channel.  Sign up at https://s.apache.org/solr-slack
 - IRC: `#solr` on [libera.chat](https://web.libera.chat/?channels=#solr)
 
+## Developer Documentation
+
+Solr uses Gradle for its build system. Here some useful hints to build and run Solr locally:
+
+- To build a Solr dev distribution for your local OS run:
+
+    ./gradlew dev
+
+- To run the dev distribution as Solr standalone:
+
+    ./solr/packaging/build/dev/bin/solr start
+
+- To run the dev distribution as SolrCloud:
+
+    ./solr/packaging/build/dev/bin/solr start -c
+
+- To list all the tasks you can execute:
+
+    ./gradlew tasks
+
+- Open a web browser and go to http://localhost:8983/solr/ to access the Solr Admin interface. You can also use the ./solr/packaging/build/dev/bin/solr script to create and manage Solr collections, or use the bin/post tool to index some sample data.
+
+Learn more about developing Solr by reading through the developer docs in [./dev-docs](./dev-docs) source tree.
 
 ## Get Involved
 Please review [CONTRIBUTING.md](CONTRIBUTING.md) for information on contributing to the project.
@@ -84,4 +107,3 @@ To get involved in the developer community:
 - [Issue Tracker (JIRA)](https://issues.apache.org/jira/browse/SOLR)
 - IRC: `#solr-dev` on [libera.chat](https://web.libera.chat/?channels=#solr-dev)
 
-Learn more about developing Solr by reading through the developer docs in [./dev-docs](./dev-docs) source tree.
