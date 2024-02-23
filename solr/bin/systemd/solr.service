@@ -16,6 +16,8 @@
 [Unit]
 Description=Apache Solr
 After=network.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 Type=forking
@@ -23,7 +25,8 @@ User=SOLR_USER
 Environment=SOLR_INCLUDE=/etc/default/SOLR_SERVICE.in.sh
 ExecStart=SOLR_INSTALL_DIR/bin/solr start
 ExecStop=SOLR_INSTALL_DIR/bin/solr stop
-Restart=always
+Restart=on-failure
+RestartSec=3s
 TimeoutSec=180s
 PrivateTmp=true
 LimitNOFILE=65000
