@@ -95,7 +95,7 @@ Solr uses Gradle for its build system. Here some useful hints to build and run S
 
     ./gradlew tasks
 
-- Open a web browser and go to http://localhost:8983/solr/ to access the Solr Admin interface. You can also use the ./solr/packaging/build/dev/bin/solr script to create and manage Solr collections, or use the bin/post tool to index some sample data.
+- Open a web browser and go to http://localhost:8983/solr/ to access the Solr Admin interface. You can also use the `bin/solr` script to create and manage Solr collections, or use the `bin/post` tool to index some sample data.
 
 Learn more about developing Solr by reading through the developer docs in [./dev-docs](./dev-docs) source tree.
 
