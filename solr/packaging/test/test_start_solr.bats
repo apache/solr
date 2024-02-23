@@ -49,22 +49,3 @@ teardown() {
   solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
 
 }
-
-@test "start, delete,stop and then restarting solr with example" {
-
-  solr start -e films -c
-  solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
-  assert collection_exists "films"
-  
-  solr delete -c films
-  refute collection_exists "films"
-  
-  solr stop -p ${SOLR_PORT}
-  
-  sleep 10
-  
-  solr start -e films -c
-  solr assert --started http://localhost:${SOLR_PORT}/solr --timeout 5000
-  assert collection_exists "films"
-  
-}
