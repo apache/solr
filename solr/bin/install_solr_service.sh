@@ -304,7 +304,7 @@ sed_expr2="s/SOLR_SERVICE/$SAFE_SOLR_SERVICE/"
 sed_expr3="s/SOLR_USER/$SOLR_USER/"
 sed -i -e "$sed_expr1" -e "$sed_expr2" -e "$sed_expr3" "/etc/systemd/system/$SOLR_SERVICE.service"
 
-# we need to reload systemd after chaning service files
+# we need to reload systemd after changing service files
 systemctl daemon-reload
 
 # install/move configuration
