@@ -264,8 +264,7 @@ public class RunExampleTool extends ToolBase {
     boolean alreadyExists = false;
     boolean cloudMode = nodeStatus.get("cloud") != null;
     if (cloudMode) {
-      if (SolrCLI.safeCheckCollectionExists(
-          solrUrl, collectionName))) {
+      if (SolrCLI.safeCheckCollectionExists(solrUrl, collectionName)) {
         alreadyExists = true;
         echo(
             "\nWARNING: Collection '"
