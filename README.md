@@ -79,21 +79,29 @@ Solr uses Gradle for its build system. Here some useful hints to build and run S
 
 - To build a Solr dev distribution for your local OS run:
 
+```
     ./gradlew dev
+```
 
 - To run the dev distribution as Solr standalone:
 
+```
     cd ./solr/packaging/build/dev
     bin/solr start
+```
 
 - To run the dev distribution as SolrCloud:
 
+```
     cd ./solr/packaging/build/dev
     bin/solr start -c
+```
 
 - To list all the tasks you can execute:
 
+```
     ./gradlew tasks
+```
 
 - Open a web browser and go to http://localhost:8983/solr/ to access the Solr Admin interface. You can also use the `bin/solr` script to create and manage Solr collections, or use the `bin/post` tool to index some sample data.
 
