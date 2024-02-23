@@ -25,10 +25,10 @@ import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFI
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.BalanceShardUniqueApi;
 import org.apache.solr.client.api.model.BalanceShardUniqueRequestBody;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;

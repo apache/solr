@@ -325,7 +325,6 @@ public class RunExampleTool extends ToolBase {
         String[] args =
             new String[] {
               "post",
-              "-commit",
               "-url",
               updateUrl,
               "-type",
@@ -409,7 +408,6 @@ public class RunExampleTool extends ToolBase {
         String[] args =
             new String[] {
               "post",
-              "-commit",
               "-url",
               updateUrl,
               "-type",

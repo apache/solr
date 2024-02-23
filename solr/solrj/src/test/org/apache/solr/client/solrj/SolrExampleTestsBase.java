@@ -64,7 +64,7 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
    */
   @Override
   public SolrClient createNewSolrClient() {
-    return getHttpSolrClient(getCoreUrl());
+    return getHttpSolrClient(getBaseUrl(), DEFAULT_TEST_CORENAME);
   }
 
   /** query the example */

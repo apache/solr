@@ -955,7 +955,7 @@ See the section xref:fields.adoc[] for more information about each parameter.
 [tab-label]*V1 API*
 [source,bash]
 ----
-http://localhost:8983/techproducts/schema/fields
+http://localhost:8983/solr/techproducts/schema/fields
 ----
 ====
 

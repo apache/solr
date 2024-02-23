@@ -24,6 +24,7 @@ import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
@@ -42,12 +43,14 @@ import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.ThreadCpuTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +76,8 @@ public abstract class RequestHandlerBase
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private PluginInfo pluginInfo;
+
+  protected boolean publishCpuTime = Boolean.getBoolean(ThreadCpuTimer.ENABLE_CPU_TIME);
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
   public RequestHandlerBase() {
@@ -212,6 +217,13 @@ public abstract class RequestHandlerBase
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
+    ThreadCpuTimer threadCpuTimer = null;
+    if (publishCpuTime) {
+      threadCpuTimer =
+          SolrRequestInfo.getRequestInfo() == null
+              ? new ThreadCpuTimer()
+              : SolrRequestInfo.getRequestInfo().getThreadCpuTimer();
+    }
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
 
@@ -240,6 +252,20 @@ public abstract class RequestHandlerBase
     } finally {
       long elapsed = timer.stop();
       metrics.totalTime.inc(elapsed);
+
+      if (publishCpuTime) {
+        Optional<Long> cpuTime = threadCpuTimer.getCpuTimeMs();
+        if (cpuTime.isPresent()) {
+          // add CPU_TIME if not already added by SearchHandler
+          NamedList<Object> header = rsp.getResponseHeader();
+          if (header != null) {
+            if (header.get(ThreadCpuTimer.CPU_TIME) == null) {
+              header.add(ThreadCpuTimer.CPU_TIME, cpuTime.get());
+            }
+          }
+          rsp.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, cpuTime.get());
+        }
+      }
     }
   }
 

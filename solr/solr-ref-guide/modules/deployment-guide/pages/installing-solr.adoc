@@ -146,8 +146,8 @@ If you ran through the xref:getting-started:solr-tutorial.adoc[], you have alrea
 Here are the examples included with Solr:
 
 exampledocs::
-This is a small set of simple CSV, XML, and JSON files that can be used with `bin/post` when first getting started with Solr.
-For more information about using `bin/post` with these files, see xref:indexing-guide:post-tool.adoc[].
+This is a small set of simple CSV, XML, and JSON files that can be used with `bin/solr post` when first getting started with Solr.
+For more information about using `bin/solr post` with these files, see xref:indexing-guide:post-tool.adoc[].
 
 files::
 The `files` directory provides a basic search UI for documents such as Word or PDF that you may have stored locally.

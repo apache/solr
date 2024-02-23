@@ -281,9 +281,9 @@ public class LBHttp2SolrClient extends LBSolrClient {
       return this;
     }
 
-    /** Sets a default collection for collection-based requests. */
-    public LBHttp2SolrClient.Builder withDefaultCollection(String defaultCollection) {
-      this.defaultCollection = defaultCollection;
+    /** Sets a default for core or collection based requests. */
+    public LBHttp2SolrClient.Builder withDefaultCollection(String defaultCoreOrCollection) {
+      this.defaultCollection = defaultCoreOrCollection;
       return this;
     }
 
