@@ -29,7 +29,7 @@ print_usage() {
   echo ""
   echo "Usage: install_solr_service.sh <path_to_solr_distribution_archive> [OPTIONS]"
   echo ""
-  echo "  The first argument to the script must be a path to a Solr distribution archive, such as solr-5.0.0.tgz"
+  echo "  The first argument to the script must be a path to a Solr distribution archive, such as solr-10.0.0.tgz"
   echo "    (only .tgz is supported format for the archive)"
   echo ""
   echo "  Supported OPTIONS include:"
@@ -100,6 +100,10 @@ SOLR_ARCHIVE=$1
 if [ ! -f "$SOLR_ARCHIVE" ]; then
   print_usage "Specified Solr installation archive $SOLR_ARCHIVE not found!"
   exit 1
+fi
+
+if [ -f "/etc/init.d/${SOLR_SERVICE}" ]; then
+  echo "WARNING: Found pre-existing /etc/init.d/${SOLR_SERVICE}, please remove!"
 fi
 
 # strip off path info
