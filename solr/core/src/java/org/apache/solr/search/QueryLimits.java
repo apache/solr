@@ -65,6 +65,9 @@ public class QueryLimits implements QueryTimeout {
     return false;
   }
 
+  /**
+   * Format an exception message with optional label and details from {@link #limitStatusMessage()}.
+   */
   public String formatExceptionMessage(String label) {
     return "Limits exceeded!"
         + (label != null ? " (" + label + ")" : "")
@@ -72,17 +75,31 @@ public class QueryLimits implements QueryTimeout {
         + limitStatusMessage();
   }
 
+  /**
+   * If limit is reached then depending on the request param {@link CommonParams#PARTIAL_RESULTS}
+   * either mark it as partial result in the response and signal the caller to return, or throw an
+   * exception.
+   *
+   * @param label optional label to indicate the caller.
+   * @param req current {@link SolrQueryRequest}
+   * @param rsp current {@link SolrQueryResponse}
+   * @return true if the caller should stop processing and return partial results, false otherwise.
+   * @throws QueryLimitsExceededException if {@link CommonParams#PARTIAL_RESULTS} request parameter
+   *     is false and limits have been reached.
+   */
   public boolean maybeExitWithPartialResults(
       String label, SolrQueryRequest req, SolrQueryResponse rsp)
       throws QueryLimitsExceededException {
     if (isLimitsEnabled() && shouldExit()) {
       if (req.getParams().getBool(CommonParams.PARTIAL_RESULTS, true)) {
         if (rsp.getResponseHeader() != null) {
+          // add only one flag
           if (rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)
               == null) {
             rsp.getResponseHeader()
                 .add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, true);
           }
+          // add first or next reason why we're returning partial results
           rsp.getResponseHeader()
               .add(
                   SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY,
@@ -94,12 +111,6 @@ public class QueryLimits implements QueryTimeout {
       }
     } else {
       return false;
-    }
-  }
-
-  public void maybeExitWithException(String label) throws QueryLimitsExceededException {
-    if (isLimitsEnabled() && shouldExit()) {
-      throw new QueryLimitsExceededException(formatExceptionMessage(label));
     }
   }
 
@@ -134,10 +145,15 @@ public class QueryLimits implements QueryTimeout {
     }
   }
 
+  /** Return true if there are any limits enabled for the current request. */
   public boolean isLimitsEnabled() {
     return !limits.isEmpty();
   }
 
+  /**
+   * Helper method to retrieve the current QueryLimits from {@link SolrRequestInfo#getRequestInfo()}
+   * if it exists, otherwise it returns {@link #NONE}.
+   */
   public static QueryLimits getCurrentLimits() {
     return SolrRequestInfo.getRequestInfo() != null
         ? SolrRequestInfo.getRequestInfo().getLimits()

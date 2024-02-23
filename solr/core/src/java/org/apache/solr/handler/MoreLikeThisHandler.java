@@ -62,7 +62,6 @@ import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryLimits;
-import org.apache.solr.search.QueryLimitsExceededException;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.ReturnFields;
