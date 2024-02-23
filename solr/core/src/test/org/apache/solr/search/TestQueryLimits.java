@@ -196,7 +196,8 @@ public class TestQueryLimits extends SolrCloudTestCase {
                 "process"));
     assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
 
-    // delay exceeds invariants, override provided, but it should be ignored and still return partial results
+    // delay exceeds invariants, override provided, but it should be ignored and still return
+    // partial results
     rsp =
         solrClient.query(
             COLLECTION,
