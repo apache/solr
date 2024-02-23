@@ -75,6 +75,8 @@ Other Changes
 
 * SOLR-16995: Add a ReplicaCount class to keep track of replicas per type (Vincent Primault)
 
+* SOLR-14410: Switch from SysV init script to systemd service definition (Marius Ghita via janhoy)
+
 ==================  9.6.0 ==================
 New Features
 ---------------------
