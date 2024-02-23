@@ -293,7 +293,7 @@ public class RunExampleTool extends ToolBase {
       echo(
           "You may want to run 'bin/solr delete -c "
               + collectionName
-              + "' before running the example");
+              + "' first before running the example to ensure a fresh state.");
     }
 
     if (!alreadyExists) {
