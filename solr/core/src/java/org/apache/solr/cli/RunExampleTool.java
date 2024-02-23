@@ -272,22 +272,24 @@ public class RunExampleTool extends ToolBase {
       if (SolrCLI.safeCheckCollectionExists(
           solrUrl, collectionName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
         alreadyExists = true;
-        echo("\nWARNING: Collection '" + collectionName + "' already exists!");
+        echo(
+            "\nWARNING: Collection '"
+                + collectionName
+                + "' already exists, which may make starting this example not work well!");
       }
     } else {
       String coreName = collectionName;
       if (SolrCLI.safeCheckCoreExists(
           solrUrl, coreName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
         alreadyExists = true;
-        echo("\nWARNING: Core '" + coreName + "' already exists!");
+        echo(
+            "\nWARNING: Core '"
+                + coreName
+                + "' already exists, which may make starting this example not work well!");
       }
     }
 
     if (alreadyExists) {
-      echo(
-          "\nWARNING: The Collection '"
-              + collectionName
-              + "' already exists, which may make starting this example not work well!");
       echo(
           "You may want to run 'bin/solr delete -c "
               + collectionName
