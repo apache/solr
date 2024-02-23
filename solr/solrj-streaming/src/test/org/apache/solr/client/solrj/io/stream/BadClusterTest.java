@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -36,26 +35,29 @@ import org.apache.solr.common.params.MultiMapSolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
-*  Tests behaviors of CloudSolrStream when the cluster is behaving badly.
-**/
-
+/** Tests behaviors of CloudSolrStream when the cluster is behaving badly. */
 @SolrTestCaseJ4.SuppressSSL
-@LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
 public class BadClusterTest extends SolrCloudTestCase {
 
   private static final String collection = "streams";
   private static final String id = "id";
 
-  private static final StreamFactory streamFactory = new StreamFactory()
-      .withFunctionName("search", CloudSolrStream.class);
+  private static final StreamFactory streamFactory =
+      new StreamFactory().withFunctionName("search", CloudSolrStream.class);
 
   private static String zkHost;
 
   @BeforeClass
   public static void configureCluster() throws Exception {
     configureCluster(1)
-        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .addConfig(
+            "conf",
+            getFile("solrj")
+                .toPath()
+                .resolve("solr")
+                .resolve("configsets")
+                .resolve("streaming")
+                .resolve("conf"))
         .configure();
 
     CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
@@ -66,8 +68,10 @@ public class BadClusterTest extends SolrCloudTestCase {
     streamFactory.withCollectionZkHost(collection, zkHost);
   }
 
-  // test order is important because the cluster progressively gets worse, but it is only created once in BeforeClass as in other tests
-  // ordering can not be strictly enforced with JUnit annotations because of parallel executions, so we have this aggregated test instead
+  // test order is important because the cluster progressively gets worse, but it is only created
+  // once in BeforeClass as in other tests
+  // ordering can not be strictly enforced with JUnit annotations because of parallel executions, so
+  // we have this aggregated test instead
   @Test
   public void testBadCluster() throws Exception {
     testEmptyCollection();
@@ -123,9 +127,9 @@ public class BadClusterTest extends SolrCloudTestCase {
   private List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
     List<Tuple> tuples = new ArrayList<>();
-    for(;;) {
+    for (; ; ) {
       Tuple t = tupleStream.read();
-      if(t.EOF) {
+      if (t.EOF) {
         break;
       } else {
         tuples.add(t);
