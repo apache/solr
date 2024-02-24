@@ -81,13 +81,13 @@ Guide](https://solr.apache.org/guide/solr/latest/getting-started/solr-tutorial.h
 
 Solr uses [Gradle](https://gradle.org/) for its build system. Here are some useful hints to build and run Solr locally:
 
-- To build a Solr dev distribution for your local run:
+- To build a Solr dev distribution:
 
 ```
 ./gradlew dev
 ```
 
-- To run the dev distribution as Solr standalone:
+- To run the Solr dev distribution locally:
 
 ```
 cd ./solr/packaging/build/dev
