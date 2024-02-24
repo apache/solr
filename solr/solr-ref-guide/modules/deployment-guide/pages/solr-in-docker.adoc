@@ -202,7 +202,7 @@ docker run -p 8983:8983 -v $PWD/mysetup.sh:/mysetup.sh --name my_solr solr bash 
 
 In a "SolrCloud" cluster you create "collections" to store data; and again you have several options for creating a core.
 
-These examples assume you're running a <<docker-compose,docker compose cluster>>.
+These examples assume you're running a xref:docker-compose[docker compose cluster].
 
 The first way to create a collection is to go to the http://localhost:8983/[Solr Admin UI], select "Collections" from the left-hand side navigation menu, then press the "Add Collection" button, give it a name, select the `_default` config set, then press the "Add Collection" button.
 
@@ -248,7 +248,7 @@ wget -O mydata/books.csv https://raw.githubusercontent.com/apache/solr/main/solr
 docker run --rm -v "$PWD/mydata:/mydata" --network=host solr post -c books /mydata/books.csv
 ----
 
-The same works if you use the <<docker-compose,example docker compose cluster>>, or you can just start your loading container in the same network:
+The same works if you use the xref:docker-compose[example docker compose cluster], or you can just start your loading container in the same network:
 
 [source,bash]
 ----
