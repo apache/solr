@@ -48,7 +48,7 @@ Start all your nodes with the system property `-Denable.packages=true` to use th
 [source,bash]
 ----
 
-bin/solr -c -Denable.packages=true
+bin/solr start -c -Denable.packages=true
 ----
 
 === Upload Your Keys
