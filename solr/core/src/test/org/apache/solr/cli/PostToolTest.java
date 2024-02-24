@@ -85,7 +85,7 @@ public class PostToolTest extends SolrCloudTestCase {
     int expectedDocCount = 1;
 
     for (int idx = 0; idx < 100; ++idx) {
-      QueryRequest req = withBasicAuth(new QueryRequest(params("q", "*:*")));
+      QueryRequest req = new QueryRequest(params("q", "*:*"));
       QueryResponse rsp = req.process(cluster.getSolrClient(), collection);
 
       numFound = (int) rsp.getResults().getNumFound();
@@ -120,7 +120,7 @@ public class PostToolTest extends SolrCloudTestCase {
     int expectedDocCount = 1;
 
     for (int idx = 0; idx < 100; ++idx) {
-      QueryRequest req = withBasicAuth(new QueryRequest(params("q", "*:*")));
+      QueryRequest req = new QueryRequest(params("q", "*:*"));
       QueryResponse rsp = req.process(cluster.getSolrClient(), collection);
 
       numFound = (int) rsp.getResults().getNumFound();
