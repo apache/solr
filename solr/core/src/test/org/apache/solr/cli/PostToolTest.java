@@ -39,6 +39,8 @@ import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
@@ -68,7 +70,8 @@ public class PostToolTest extends SolrCloudTestCase {
     File jsonDoc = File.createTempFile("temp", ".json");
 
     FileWriter fw = new FileWriter(jsonDoc, StandardCharsets.UTF_8);
-    Utils.writeJson(Utils.toJSONString(Map.of("id", "1", "title", "mytitle")), fw, true);
+    Utils.writeJson(Map.of("id", "1", "title_s", "mytitle"), fw, true);
+    fw.flush();
 
     String[] args = {
       "post",
@@ -77,6 +80,21 @@ public class PostToolTest extends SolrCloudTestCase {
       jsonDoc.getAbsolutePath()
     };
     assertEquals(0, runTool(args));
+
+    int numFound = 0;
+    int expectedDocCount = 1;
+
+    for (int idx = 0; idx < 100; ++idx) {
+      QueryRequest req = withBasicAuth(new QueryRequest(params("q", "*:*")));
+      QueryResponse rsp = req.process(cluster.getSolrClient(), collection);
+
+      numFound = (int) rsp.getResults().getNumFound();
+      if (numFound == expectedDocCount) {
+        break;
+      }
+      Thread.sleep(100);
+    }
+    assertEquals("*:* found unexpected number of documents", expectedDocCount, numFound);
   }
 
   @Test
@@ -89,13 +107,29 @@ public class PostToolTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0)
         .processAndWait(cluster.getSolrClient(), 10);
 
-    File jsonDoc = File.createTempFile("temp", "json");
+    File jsonDoc = File.createTempFile("temp", ".json");
 
     FileWriter fw = new FileWriter(jsonDoc, StandardCharsets.UTF_8);
-    Utils.writeJson(Utils.toJSONString(Map.of("id", "1", "title", "mytitle")), fw, true);
+    Utils.writeJson(Map.of("id", "1", "title_s", "mytitle"), fw, true);
+    fw.flush();
 
     String[] args = {"post", "-c", collection, jsonDoc.getAbsolutePath()};
     assertEquals(0, runTool(args));
+
+    int numFound = 0;
+    int expectedDocCount = 1;
+
+    for (int idx = 0; idx < 100; ++idx) {
+      QueryRequest req = withBasicAuth(new QueryRequest(params("q", "*:*")));
+      QueryResponse rsp = req.process(cluster.getSolrClient(), collection);
+
+      numFound = (int) rsp.getResults().getNumFound();
+      if (numFound == expectedDocCount) {
+        break;
+      }
+      Thread.sleep(100);
+    }
+    assertEquals("*:* found unexpected number of documents", expectedDocCount, numFound);
   }
 
   private int runTool(String[] args) throws Exception {
@@ -181,6 +215,28 @@ public class PostToolTest extends SolrCloudTestCase {
   public void testDoFilesMode() throws MalformedURLException {
     PostTool postTool = new PostTool();
     postTool.recursive = 0;
+    postTool.dryRun = true;
+    postTool.solrUpdateUrl = new URL("http://localhost:8983/solr/fake/update");
+    File dir = getFile("exampledocs");
+    int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
+    assertEquals(2, num);
+  }
+
+  @Test
+  public void testDetectingIfRecursionPossibleInFilesMode() throws IOException {
+    PostTool postTool = new PostTool();
+    postTool.recursive = 1; // This is the default
+    File dir = getFile("exampledocs");
+    File doc = File.createTempFile("temp", ".json");
+    assertTrue(postTool.recursionPossible(new String[] {dir.toString()}));
+    assertFalse(postTool.recursionPossible(new String[] {doc.toString()}));
+    assertTrue(postTool.recursionPossible(new String[] {doc.toString(), dir.toString()}));
+  }
+
+  @Test
+  public void testRecursionAppliesToFilesMode() throws MalformedURLException {
+    PostTool postTool = new PostTool();
+    postTool.recursive = 1; // This is the default
     postTool.dryRun = true;
     postTool.solrUpdateUrl = new URL("http://localhost:8983/solr/fake/update");
     File dir = getFile("exampledocs");
