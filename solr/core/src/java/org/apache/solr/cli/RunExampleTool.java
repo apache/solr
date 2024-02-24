@@ -420,9 +420,7 @@ public class RunExampleTool extends ToolBase {
               updateUrl,
               "-type",
               "application/json",
-              "-filetypes",
-              "json",
-              exampleDir.toString()
+              filmsJsonFile.getAbsolutePath()
             };
         PostTool postTool = new PostTool();
         CommandLine postToolCli =
