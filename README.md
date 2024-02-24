@@ -79,7 +79,7 @@ Guide](https://solr.apache.org/guide/solr/latest/getting-started/solr-tutorial.h
 
 ### Quickstart
 
-Solr uses [Gradle](https://gradle.org/) for its build system. Here some useful hints to build and run Solr locally:
+Solr uses [Gradle](https://gradle.org/) for its build system. Here are some useful hints to build and run Solr locally:
 
 - To build a Solr dev distribution for your local run:
 
