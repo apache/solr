@@ -16,7 +16,9 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.http.impl.client.CloseableHttpClient;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -31,37 +33,31 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-
+/** TODO: Test case to reproduce SOLR-15829 */
 public class IllegalStateExceptionManagedSynonymGraphFilterTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "collection1";
   private static final String CONFIG_NAME = "myconf";
 
-  private CloseableHttpClient httpClient;
   private CloudSolrClient solrClient;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig(CONFIG_NAME, configset("cloud-managed-resource"))
-        .configure();
+    configureCluster(1).addConfig(CONFIG_NAME, configset("cloud-managed-resource")).configure();
   }
 
   @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    solrClient = getCloudSolrClient(cluster);
-    httpClient = (CloseableHttpClient) solrClient.getHttpClient();
+    solrClient = cluster.getSolrClient();
   }
 
   @After
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    IOUtils.close(solrClient, httpClient);
+    IOUtils.close(solrClient);
 
     cluster.deleteAllCollections();
   }
@@ -72,7 +68,10 @@ public class IllegalStateExceptionManagedSynonymGraphFilterTest extends SolrClou
 
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
-    waitForState("Expected collection1 to be created with 2 shards and 1 replica", COLLECTION, clusterShape(2, 2));
+    waitForState(
+        "Expected collection1 to be created with 2 shards and 1 replica",
+        COLLECTION,
+        clusterShape(2, 2));
 
     // index time exception
     try {
@@ -81,20 +80,26 @@ public class IllegalStateExceptionManagedSynonymGraphFilterTest extends SolrClou
           .add("id", "7", "text_syn", "humpty dumpy3 sat on a walls")
           .add("id", "8", "text_syn", "humpty dumpy2 sat on a walled")
           .commit(solrClient, COLLECTION);
-      MatcherAssert.assertThat("Exception should be raised - so should not raise AssertionError", 0, is(1));
+      MatcherAssert.assertThat(
+          "Exception should be raised - so should not raise AssertionError", 0, is(1));
     } catch (SolrException e) {
       MatcherAssert.assertThat(e.getRootThrowable(), is("java.lang.IllegalStateException"));
       MatcherAssert.assertThat(e.toString(), containsString("Exception writing document id"));
-      MatcherAssert.assertThat(e.toString(), containsString("to the index; possible analysis error."));
+      MatcherAssert.assertThat(
+          e.toString(), containsString("to the index; possible analysis error."));
     }
 
     // query time exception
     final SolrQuery solrQuery = new SolrQuery("q", "text_syn:dumpy2", "rows", "0");
     try {
       solrClient.query(COLLECTION, solrQuery);
-      MatcherAssert.assertThat("Exception should be raised - so should not raise AssertionError", 0, is(1));
+      MatcherAssert.assertThat(
+          "Exception should be raised - so should not raise AssertionError", 0, is(1));
     } catch (Exception e) {
-      MatcherAssert.assertThat((((SolrServerException) e).getRootCause()).getMessage(), containsString("org.apache.solr.rest.schema.analysis.ManagedSynonymGraphFilterFactory not initialized correctly! The SynonymFilterFactory delegate was not initialized."));
+      MatcherAssert.assertThat(
+          (((SolrServerException) e).getRootCause()).getMessage(),
+          containsString(
+              "org.apache.solr.rest.schema.analysis.ManagedSynonymGraphFilterFactory not initialized correctly! The SynonymFilterFactory delegate was not initialized."));
     }
 
     // no exception after reloading
@@ -108,5 +113,4 @@ public class IllegalStateExceptionManagedSynonymGraphFilterTest extends SolrClou
     QueryResponse response = solrClient.query(COLLECTION, solrQuery2);
     MatcherAssert.assertThat(response.getResults().getNumFound(), is(1L));
   }
-
 }
