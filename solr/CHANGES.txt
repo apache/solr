@@ -50,6 +50,8 @@ Deprecation Removals
 
 * SOLR-17042: Remove deprecated `V2RequestSupport` and associated `SolrRequest` methods `setUseV2` and `setUseBinaryV2`. (Jason Gerlowski)
 
+* SOLR-17159: Remove deprecated bin/post and bin/postlogs scripts in favour of bin/solr equivalents. (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -78,7 +80,7 @@ Other Changes
 ==================  9.6.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-17141: Implement 'cpuAllowed' query parameter to limit the maximum CPU usage by a running query. (Andrzej Bialecki, Gus Heck, David Smiley)
 
 Improvements
 ---------------------
@@ -96,6 +98,13 @@ Improvements
 * SOLR-16858: KnnQParser's "Pre-Filtering" behavior is now controlable via local params (hossman)
 
 * SOLR-17145: The INSTALLSHARDDATA API now includes a 'requestid' field when run asynchronously (Jason Gerlowski)
+
+* SOLR-17159: bin/solr post now has proper unit testing.  Users can specify a --dry-run option to 
+  simulate posting documents without sending them to Solr. (Eric Pugh)
+
+* SOLR-17058: Add 'distrib.statsCache' parameter to disable distributed stats requests at query time. (Wei Wang, Mikhail Khludnev)
+
+* SOLR-16138: Throw a exception when issuing a streaming expression and all cores are down instead of returning 0 documents. (Antoine Bursaux via Eric Pugh)
 
 Optimizations
 ---------------------

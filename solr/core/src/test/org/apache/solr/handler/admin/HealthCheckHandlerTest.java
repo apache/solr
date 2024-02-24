@@ -80,7 +80,6 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       CollectionAdminResponse collectionAdminResponse =
           CollectionAdminRequest.createCollection("test", "_default", 1, 1)
               .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
-              .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
               .process(solrClient);
       assertEquals(0, collectionAdminResponse.getStatus());
       SolrResponse response = req.process(solrClient);

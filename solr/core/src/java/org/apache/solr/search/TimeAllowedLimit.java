@@ -28,9 +28,9 @@ import org.apache.solr.request.SolrQueryRequest;
  * the {@code timeAllowed} query parameter. Note that timeAllowed will be ignored for
  * <strong><em>local</em></strong> processing of sub-queries in cases where the parent query already
  * has {@code timeAllowed} set. Essentially only one timeAllowed can be specified for any thread
- * executing a query. This is to ensure that subqueies don't escape from the intended limit
+ * executing a query. This is to ensure that subqueries don't escape from the intended limit
  */
-public class SolrQueryTimeLimit implements QueryTimeout {
+public class TimeAllowedLimit implements QueryTimeout {
 
   private final long timeoutAt;
 
@@ -42,23 +42,25 @@ public class SolrQueryTimeLimit implements QueryTimeout {
    *     should be validated with {@link #hasTimeLimit(SolrQueryRequest)} prior to constructing this
    *     object
    */
-  public SolrQueryTimeLimit(SolrQueryRequest req) {
+  public TimeAllowedLimit(SolrQueryRequest req) {
     // reduce by time already spent
     long reqTimeAllowed = req.getParams().getLong(CommonParams.TIME_ALLOWED, -1L);
 
     if (reqTimeAllowed == -1L) {
       throw new IllegalArgumentException(
-          "Check for limit with hasTimeLimit(req) before creating a SolrQueryTimeLimit");
+          "Check for limit with hasTimeLimit(req) before creating a TimeAllowedLimit");
     }
     long timeAllowed = reqTimeAllowed - (long) req.getRequestTimer().getTime();
     long nanosAllowed = TimeUnit.NANOSECONDS.convert(timeAllowed, TimeUnit.MILLISECONDS);
     timeoutAt = nanoTime() + nanosAllowed;
   }
 
+  /** Return true if the current request has a parameter with a valid value of the limit. */
   static boolean hasTimeLimit(SolrQueryRequest req) {
     return req.getParams().getLong(CommonParams.TIME_ALLOWED, -1L) >= 0L;
   }
 
+  /** Return true if a max limit value is set and the current usage has exceeded the limit. */
   @Override
   public boolean shouldExit() {
     return timeoutAt - nanoTime() < 0L;
