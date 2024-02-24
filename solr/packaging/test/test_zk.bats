@@ -50,7 +50,6 @@ teardown() {
 @test "copying files around" {
   touch myfile.txt
 
-  #run solr zk cp -src myfile.txt -dst zk:/myfile.txt -z localhost:${ZK_PORT}
   run solr zk cp myfile.txt zk:/myfile.txt -z localhost:${ZK_PORT}
   assert_output --partial "Copying from 'myfile.txt' to 'zk:/myfile.txt'. ZooKeeper at localhost:${ZK_PORT}"
   sleep 1
