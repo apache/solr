@@ -75,9 +75,13 @@ Guide](https://solr.apache.org/guide/solr/latest/getting-started/solr-tutorial.h
 
 ## Developer Documentation
 
-Solr uses Gradle for its build system. Here some useful hints to build and run Solr locally:
+ Learn more about developing Solr by reading through the developer docs in [./dev-docs](./dev-docs) source tree or to building Solr from source [./dev-docs/solr-source-code.adoc](./dev-docs/solr-source-code.adoc)
 
-- To build a Solr dev distribution for your local OS run:
+### Quickstart
+
+Solr uses [Gradle](https://gradle.org/) for its build system. Here some useful hints to build and run Solr locally:
+
+- To build a Solr dev distribution for your local run:
 
 ```
 ./gradlew dev
@@ -90,22 +94,7 @@ cd ./solr/packaging/build/dev
 bin/solr start
 ```
 
-- To run the dev distribution as SolrCloud:
-
-```
-cd ./solr/packaging/build/dev
-bin/solr start -c
-```
-
-- To list all the tasks you can execute:
-
-```
-./gradlew tasks
-```
-
-- Open a web browser and go to http://localhost:8983/solr/ to access the Solr Admin interface. You can also use the `bin/solr` script to create and manage Solr collections, or use the `bin/post` tool to index some sample data.
-
-Learn more about developing Solr by reading through the developer docs in [./dev-docs](./dev-docs) source tree.
+- Open a web browser and go to http://localhost:8983/solr/ to access the Solr Admin interface. You can also use the `bin/solr` script to create and manage Solr collections. For example use the ` bin/solr post` tool to index some sample data.
 
 ## Get Involved
 Please review [CONTRIBUTING.md](CONTRIBUTING.md) for information on contributing to the project.
