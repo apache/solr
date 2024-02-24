@@ -50,7 +50,7 @@ docker run --rm -p 8983:8983 -v solrData:/mysolrhome solr:9-slim
 == Can I run ZooKeeper and Solr clusters under Docker?
 
 Yes. You can simply start your Solr containers in "Cloud mode", pointing
-them to a xref:zookeeper-ensemble.adoc#zookeeper-ensemble-configuration[Zookeeper Ensemble].
+them to a xref:zookeeper-ensemble.adoc[Zookeeper Ensemble].
 
 For local development, using a single zookeeper container is enough.
 Please consult the https://hub.docker.com/_/zookeeper[Zookeeper docker image] for details.
