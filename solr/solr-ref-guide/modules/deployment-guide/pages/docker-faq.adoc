@@ -295,7 +295,7 @@ For example:
 
 [source,bash]
 ----
-docker run -it solr bin/solr -f -h myhostname
+docker run -it solr bin/solr start -f -h myhostname
 ----
 
 Finally, the Solr docker image offers several commands that do some work before then invoking the Solr server, like "solr-precreate" and "solr-demo".
