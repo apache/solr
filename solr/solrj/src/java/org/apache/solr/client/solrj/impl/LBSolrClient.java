@@ -22,6 +22,7 @@ import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
+import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -626,6 +627,10 @@ public abstract class LBSolrClient extends SolrClient {
       // TODO: warn if there was a previous entry?
       updateAliveList();
     }
+  }
+
+  public void addSolrServer(Endpoint endpoint) throws MalformedURLException {
+    addToAlive(createServerWrapper(endpoint));
   }
 
   public String removeSolrServer(Endpoint endpoint) {
