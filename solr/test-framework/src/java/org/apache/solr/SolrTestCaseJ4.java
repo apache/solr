@@ -2803,6 +2803,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         algorithm.equals("NativePRNG") || algorithm.equals("NativePRNGBlocking"));
   }
 
+  protected static void systemSetPropertySolrTestsMergePolicyFactory(String value) {
+    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, value);
+  }
+
+  protected static void systemClearPropertySolrTestsMergePolicyFactory() {
+    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY);
+  }
+
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
   protected static void systemSetPropertySolrDisableUrlAllowList(String value) {
     System.setProperty(AllowListUrlChecker.DISABLE_URL_ALLOW_LIST, value);

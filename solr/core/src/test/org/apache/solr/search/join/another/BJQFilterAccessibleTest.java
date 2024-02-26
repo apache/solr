@@ -30,21 +30,19 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.join.BlockJoinParentQParser;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.rules.TestRule;
 
 public class BJQFilterAccessibleTest extends SolrTestCaseJ4 {
 
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     initCore("solrconfig.xml", "schema15.xml");
     createIndex();
-  }
-
-  @AfterClass
-  public static void afterTests() {
-    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   public void testAbilityToCreateBJQfromAnotherPackage() throws IOException {

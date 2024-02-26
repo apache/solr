@@ -30,24 +30,22 @@ import org.apache.solr.response.BasicResultContext;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
   private static String ID_FIELD = "id";
   private String[] titleVals = new String[2];
 
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     initCore("solrconfig.xml", "schema-root.xml"); // *not* the "nest" schema
-  }
-
-  @AfterClass
-  public static void afterTests() {
-    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @After

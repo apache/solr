@@ -73,7 +73,9 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -97,6 +99,9 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   private RefCounted<SolrIndexSearcher> searcherRef;
   private SolrIndexSearcher _searcher;
 
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     String oldCacheNamePropValue = System.getProperty("blockJoinParentFilterCache");
@@ -116,7 +121,6 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
                 new SolrNamedThreadFactory("AddBlockUpdateTest"));
 
     counter.set(0);
-    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     initCore("solrconfig.xml", "schema15.xml");
   }
 
@@ -157,7 +161,6 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       exe = null;
     }
     inputFactory = null;
-    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Test

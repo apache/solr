@@ -36,21 +36,19 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class JsonLoaderTest extends SolrTestCaseJ4 {
 
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
+
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     initCore("solrconfig.xml", "schema.xml");
-  }
-
-  @AfterClass
-  public static void afterTests() {
-    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   static String input =

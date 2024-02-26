@@ -16,12 +16,30 @@
  */
 package org.apache.solr.util;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.index.MergePolicy;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.index.MergePolicyFactory;
 import org.apache.solr.index.MergePolicyFactoryArgs;
+import org.junit.rules.TestRule;
 
-/** A {@link MergePolicyFactory} for {@link RandomMergePolicy}. */
+/**
+ * A {@link MergePolicyFactory} for {@link RandomMergePolicy} preventing random segment reversing.
+ * It's absolutely necessary for all block join dependent tests. Without it, they may unexpectedly
+ * fail from time to time.
+ */
 public final class RandomNoReverseMergePolicyFactory extends MergePolicyFactory {
+
+  /**
+   * This rule works because all solrconfig*.xml files include
+   * solrconfig.snippet.randomindexconfig.xml where this property is used. If one refuse to include
+   * it, test may unexpectedly fail from time to time.
+   */
+  public static TestRule createRule() {
+    return new SystemPropertiesRestoreRule(
+        SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY,
+        RandomNoReverseMergePolicyFactory.class.getName());
+  }
 
   public RandomNoReverseMergePolicyFactory() {
     super(null, new MergePolicyFactoryArgs(), null);
@@ -29,6 +47,7 @@ public final class RandomNoReverseMergePolicyFactory extends MergePolicyFactory 
 
   @Override
   public MergePolicy getMergePolicy() {
-    return new RandomMergePolicy(false);
+    final boolean allowReverse = false;
+    return new RandomMergePolicy(allowReverse);
   }
 }

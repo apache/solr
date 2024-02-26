@@ -40,7 +40,9 @@ import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class BJQParserTest extends SolrTestCaseJ4 {
 
@@ -48,9 +50,11 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   private static final List<String> xyz = Arrays.asList("x", "y", "z");
   private static final String[] abcdef = new String[] {"a", "b", "c", "d", "e", "f"};
 
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     initCore("solrconfig.xml", "schema15.xml");
     createIndex();
   }

@@ -38,19 +38,23 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class TestCloudNestedDocsSort extends SolrCloudTestCase {
 
-  private static ArrayList<String> vals = new ArrayList<>();
+  private static final ArrayList<String> vals = new ArrayList<>();
   private static CloudSolrClient client;
   private static int maxDocs;
   private static String matchingParent;
   private static String matchingChild;
 
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
+
   @BeforeClass
   public static void setupCluster() throws Exception {
-    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     final int numVals = atLeast(10);
     for (int i = 0; i < numVals; i++) {
       vals.add("" + Integer.toString(random().nextInt(1000000), Character.MAX_RADIX));
@@ -134,8 +138,6 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
   @AfterClass
   public static void cleanUpAfterClass() {
     IOUtils.closeQuietly(client);
-
-    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Test

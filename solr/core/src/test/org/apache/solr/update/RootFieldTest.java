@@ -31,9 +31,10 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.hamcrest.MatcherAssert;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class RootFieldTest extends EmbeddedSolrServerTestBase {
   private static boolean useRootSchema;
@@ -45,10 +46,12 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     return useRootSchema;
   }
 
+  // not necessary right now but will be once block logic is asserted
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
+
   @BeforeClass
   public static void beforeTest() throws Exception {
-    // not necessary right now but will be once block logic is asserted
-    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     solrClientTestRule.startSolr(Path.of(SolrTestCaseJ4.TEST_HOME()));
 
     useRootSchema = random().nextBoolean();
@@ -63,11 +66,6 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
         .withConfigSet("../collection1")
         .withSchemaFile(schema)
         .create();
-  }
-
-  @AfterClass
-  public static void afterTests() {
-    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Test

@@ -31,10 +31,11 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BasicResultContext;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
 
@@ -51,9 +52,11 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   // multiple segments.
   private static final String fqToExcludeNonTestedDocs = "{!frange l=0}id_i";
 
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    systemSetPropertySolrTestsMergePolicyFactory(RandomNoReverseMergePolicyFactory.class.getName());
     initCore("solrconfig-minimal.xml", "schema-nest.xml"); // use "nest" schema
 
     if (random().nextBoolean()) {
@@ -69,11 +72,6 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
       }
       assertU(commit());
     }
-  }
-
-  @AfterClass
-  public static void afterTests() {
-    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Before
