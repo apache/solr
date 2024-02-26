@@ -52,6 +52,11 @@ Deprecation Removals
 
 * SOLR-17159: Remove deprecated bin/post and bin/postlogs scripts in favour of bin/solr equivalents. (Eric Pugh)
 
+* SOLR-17066: `SolrClient` implementations that rely on "base URL" strings now only accept "root" URL paths (i.e. URLs that
+  end in "/solr").  Users may still specify a default collection through use of the `withDefaultCollection` method available
+  on most SolrClient builders. (Jason Gerlowski, David Smiley, Eric Pugh)
+
+
 Dependency Upgrades
 ---------------------
 (No changes)
