@@ -28,10 +28,9 @@ public class GlobPatternUtil {
    * PathMatcher to match glob patterns in the same way to how glob patterns are matches for file
    * paths, rather than implementing our own glob pattern matching.
    *
-   * <p>This uses code from Apache Commons IO
-   *
-   * @link
-   *     https://commons.apache.org/proper/commons-io/apidocs/org/apache/commons/io/FilenameUtils.html#wildcardMatch(java.lang.String,java.lang.String)
+   * @see <a
+   *     href="https://commons.apache.org/proper/commons-io/apidocs/org/apache/commons/io/FilenameUtils.html#wildcardMatch(java.lang.String,java.lang.String)">This
+   *     uses code from Apache Commons IO</a>
    * @param pattern the glob pattern to match against
    * @param input the input string to match against a glob pattern
    * @return true if the input string matches the glob pattern, false otherwise
@@ -117,10 +116,9 @@ public class GlobPatternUtil {
    * Splits a string into a number of tokens. The text is split by '?' and '*'. Where multiple '*'
    * occur consecutively they are collapsed into a single '*'.
    *
-   * <p>This is code from Apache Commons IO
-   *
-   * @link
-   *     https://commons.apache.org/proper/commons-io/apidocs/org/apache/commons/io/FilenameUtils.html
+   * @see <a
+   *     href="https://commons.apache.org/proper/commons-io/apidocs/org/apache/commons/io/FilenameUtils.html">This
+   *     uses code from Apache Commons IO</a>
    * @param text the text to split
    * @return the array of tokens, never null
    */
@@ -164,10 +162,11 @@ public class GlobPatternUtil {
    * rule.
    *
    * <p>This method mimics parts of {@link String#indexOf(String, int)} but takes case-sensitivity
-   * into account. This is code from Apache Commons IO.
+   * into account.
    *
-   * @link
-   *     https://commons.apache.org/proper/commons-io/apidocs/org/apache/commons/io/FilenameUtils.html
+   * @see <a
+   *     href="https://commons.apache.org/proper/commons-io/apidocs/org/apache/commons/io/FilenameUtils.html">This
+   *     uses code from Apache Commons IO</a>
    * @param str the string to check, not null
    * @param strStartIndex the index to start at in str
    * @param search the start to search for, not null
