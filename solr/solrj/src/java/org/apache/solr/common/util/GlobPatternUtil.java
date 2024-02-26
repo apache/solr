@@ -24,9 +24,9 @@ import java.util.Deque;
 public class GlobPatternUtil {
 
   /**
-   * Matches an input string against a provided glob patterns. This uses Java NIO FileSystems
-   * PathMatcher to match glob patterns in the same way to how glob patterns are matches for file
-   * paths, rather than implementing our own glob pattern matching.
+   * Matches an input string against a provided glob patterns. This uses the implementation from
+   * Apache Commons IO FilenameUtils. We are just redoing the implementation here instead of
+   * bringing in commons-io as a dependency.
    *
    * @see <a
    *     href="https://commons.apache.org/proper/commons-io/apidocs/org/apache/commons/io/FilenameUtils.html#wildcardMatch(java.lang.String,java.lang.String)">This
