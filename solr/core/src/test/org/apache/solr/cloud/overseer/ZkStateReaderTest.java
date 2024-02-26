@@ -697,11 +697,19 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Simulates race condition that might arise when state updates triggered by watch notification
-   * contend with removal of collection watches.
+   * Simulates race condition that can arise from the normal way in which the removal of collection
+   * StateWatchers is deferred.
    *
-   * <p>Such race condition should no longer exist with the new code that uses a single map for both
-   * "collection watches" and "latest state of watched collection"
+   * <p>StateWatchers are registered at the level of Zk code, so when StateWatchers are removed in
+   * Solr code, the actual removal is deferred until the next callback for the associated collection
+   * fires, at which point the removed watcher should allow itself to expire. If a watcher is
+   * re-added for the associated collection in the intervening time, only the most recently added
+   * watcher should re-register; the removed watcher should simply expire.
+   *
+   * <p>Duplicate/redundant StateWatchers should no longer be registered with the new code that
+   * tracks the currently registered singleton-per-collection watcher in Solr code, and only
+   * re-registers the currently active watcher, with all other watchers allowing themselves to
+   * expire.
    */
   public void testStateWatcherRaceCondition() throws Exception {
     ZkStateWriter writer = fixture.writer;
@@ -746,6 +754,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
               Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
               DocRouter.DEFAULT,
               dataVersion,
+              Instant.now(),
               PerReplicaStatesOps.getZkClientPrsSupplier(
                   fixture.zkClient, DocCollection.getCollectionPath("c1")));
       ZkWriteCommand wc = new ZkWriteCommand("c1", state);
