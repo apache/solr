@@ -27,6 +27,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -335,13 +337,13 @@ public abstract class LBSolrClient extends SolrClient {
     protected int numDeadServersToTry;
     private final Integer numServersToTry;
 
-    public Req(SolrRequest<?> request, List<Endpoint> endpoints) {
+    public Req(SolrRequest<?> request, Collection<Endpoint> endpoints) {
       this(request, endpoints, null);
     }
 
-    public Req(SolrRequest<?> request, List<Endpoint> endpoints, Integer numServersToTry) {
+    public Req(SolrRequest<?> request, Collection<Endpoint> endpoints, Integer numServersToTry) {
       this.request = request;
-      this.endpoints = endpoints;
+      this.endpoints = endpoints.stream().collect(Collectors.toList());
       this.numDeadServersToTry = endpoints.size();
       this.numServersToTry = numServersToTry;
     }
