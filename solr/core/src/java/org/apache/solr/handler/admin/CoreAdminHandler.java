@@ -21,20 +21,23 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STAT
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
+import com.github.benmanes.caffeine.cache.Ticker;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
@@ -427,11 +430,11 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   public static class CoreAdminAsyncTracker {
-    private static final int MAX_TRACKED_REQUESTS = 100;
     public static final String RUNNING = "running";
     public static final String COMPLETED = "completed";
     public static final String FAILED = "failed";
-    public final Map<String, Map<String, TaskObject>> requestStatusMap;
+
+    private final Cache<String, TaskObject> requestStatusCache;
 
     // Executor for all standard tasks (the ones that are not flagged as expensive)
     // We always keep 50 live threads
@@ -448,11 +451,23 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
             new SolrNamedThreadFactory("parallelCoreAdminAPIExpensiveExecutor"));
 
     public CoreAdminAsyncTracker() {
-      HashMap<String, Map<String, TaskObject>> map = new HashMap<>(3, 1.0f);
-      map.put(RUNNING, Collections.synchronizedMap(new LinkedHashMap<>()));
-      map.put(COMPLETED, Collections.synchronizedMap(new LinkedHashMap<>()));
-      map.put(FAILED, Collections.synchronizedMap(new LinkedHashMap<>()));
-      requestStatusMap = Collections.unmodifiableMap(map);
+      this(
+          Ticker.systemTicker(),
+          TimeUnit.MINUTES.toNanos(
+              Long.getLong("solr.admin.requests.running.timeout.minutes", 60L)),
+          TimeUnit.MINUTES.toNanos(
+              Long.getLong("solr.admin.requests.completed.timeout.minutes", 5L)));
+    }
+
+    /**
+     * @param runningTimeoutNanos The time-to-keep for tasks in the RUNNING state.
+     * @param completedTimeoutNanos The time-to-keep for tasks in the COMPLETED or FAILED state
+     *     after the status was polled.
+     */
+    CoreAdminAsyncTracker(Ticker ticker, long runningTimeoutNanos, long completedTimeoutNanos) {
+
+      TaskExpiry expiry = new TaskExpiry(runningTimeoutNanos, completedTimeoutNanos);
+      requestStatusCache = Caffeine.newBuilder().ticker(ticker).expireAfter(expiry).build();
     }
 
     public void shutdown() {
@@ -460,13 +475,22 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       ExecutorUtil.shutdownAndAwaitTermination(expensiveExecutor);
     }
 
-    public Map<String, TaskObject> getRequestStatusMap(String key) {
-      return requestStatusMap.get(key);
+    public TaskObject getAsyncRequestForStatus(String key) {
+      TaskObject task = requestStatusCache.getIfPresent(key);
+
+      if (task != null && !RUNNING.equals(task.status) && !task.polled) {
+        task.polled = true;
+        // At the first time we retrieve the status of a completed request, do a second lookup in
+        // the cache. This is necessary to update the TTL of this request in the cache.
+        // Unfortunately, we can't force the expiration time to be refreshed without a lookup.
+        requestStatusCache.getIfPresent(key);
+      }
+
+      return task;
     }
 
     public void submitAsyncTask(TaskObject taskObject) throws SolrException {
-      ensureTaskIdNotInUse(taskObject.taskId);
-      addTask(RUNNING, taskObject);
+      addTask(taskObject);
 
       Runnable command =
           () -> {
@@ -497,42 +521,19 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       }
     }
 
-    /** Helper method to add a task to a tracking type. */
-    private void addTask(String type, TaskObject o, boolean limit) {
-      synchronized (getRequestStatusMap(type)) {
-        if (limit && getRequestStatusMap(type).size() == MAX_TRACKED_REQUESTS) {
-          String key = getRequestStatusMap(type).entrySet().iterator().next().getKey();
-          getRequestStatusMap(type).remove(key);
-        }
-        addTask(type, o);
-      }
-    }
-
-    private void addTask(String type, TaskObject o) {
-      synchronized (getRequestStatusMap(type)) {
-        getRequestStatusMap(type).put(o.taskId, o);
-      }
-    }
-
-    /** Helper method to remove a task from a tracking map. */
-    private void removeTask(String map, String taskId) {
-      synchronized (getRequestStatusMap(map)) {
-        getRequestStatusMap(map).remove(taskId);
-      }
-    }
-
-    private void ensureTaskIdNotInUse(String taskId) throws SolrException {
-      if (getRequestStatusMap(RUNNING).containsKey(taskId)
-          || getRequestStatusMap(COMPLETED).containsKey(taskId)
-          || getRequestStatusMap(FAILED).containsKey(taskId)) {
+    private void addTask(TaskObject taskObject) {
+      // Ensure task ID is not already in use
+      if (requestStatusCache.asMap().containsKey(taskObject.taskId)) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST, "Duplicate request with the same requestid found.");
       }
+
+      taskObject.status = RUNNING;
+      requestStatusCache.put(taskObject.taskId, taskObject);
     }
 
     private void finishTask(TaskObject taskObject, boolean successful) {
-      removeTask(RUNNING, taskObject.taskId);
-      addTask(successful ? COMPLETED : FAILED, taskObject, true);
+      taskObject.status = successful ? COMPLETED : FAILED;
     }
 
     /**
@@ -546,6 +547,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       final Callable<SolrQueryResponse> task;
       public String rspInfo;
       public Object operationRspInfo;
+      private volatile String status;
+      private volatile boolean polled;
 
       public TaskObject(
           String taskId, String action, boolean expensive, Callable<SolrQueryResponse> task) {
@@ -573,6 +576,42 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
       public void setOperationRspObject(SolrQueryResponse rspObject) {
         this.operationRspInfo = rspObject.getResponse();
+      }
+
+      public String getStatus() {
+        return status;
+      }
+    }
+
+    /**
+     * Expiration policy for Caffeine cache. Depending on whether the status of a completed task was
+     * already retrieved, we return {@link #runningTimeoutNanos} or {@link #completedTimeoutNanos}.
+     */
+    private static class TaskExpiry implements Expiry<String, TaskObject> {
+
+      private final long runningTimeoutNanos;
+      private final long completedTimeoutNanos;
+
+      private TaskExpiry(long runningTimeoutNanos, long completedTimeoutNanos) {
+        this.runningTimeoutNanos = runningTimeoutNanos;
+        this.completedTimeoutNanos = completedTimeoutNanos;
+      }
+
+      @Override
+      public long expireAfterCreate(String key, TaskObject task, long currentTime) {
+        return runningTimeoutNanos;
+      }
+
+      @Override
+      public long expireAfterUpdate(
+          String key, TaskObject task, long currentTime, long currentDuration) {
+        return task.polled ? completedTimeoutNanos : runningTimeoutNanos;
+      }
+
+      @Override
+      public long expireAfterRead(
+          String key, TaskObject task, long currentTime, long currentDuration) {
+        return task.polled ? completedTimeoutNanos : runningTimeoutNanos;
       }
     }
   }
