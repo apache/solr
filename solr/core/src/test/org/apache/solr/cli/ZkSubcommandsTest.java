@@ -16,32 +16,7 @@
  */
 package org.apache.solr.cli;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.RegexFileFilter;
-import org.apache.commons.io.filefilter.TrueFileFilter;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
-import org.apache.solr.cloud.AbstractZkTestCase;
-import org.apache.solr.cloud.ZkCLI;
-import org.apache.solr.cloud.ZkConfigSetService;
-import org.apache.solr.cloud.ZkTestServer;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterProperties;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.ZLibCompressor;
-import org.apache.solr.core.ConfigSetService;
-import org.apache.solr.util.ExternalPaths;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -52,12 +27,26 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import static org.apache.solr.cli.SolrCLI.findTool;
-import static org.apache.solr.cli.SolrCLI.parseCmdLine;
+import org.apache.commons.cli.CommandLine;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractZkTestCase;
+import org.apache.solr.cloud.ZkCLI;
+import org.apache.solr.cloud.ZkConfigSetService;
+import org.apache.solr.cloud.ZkTestServer;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
+import org.apache.solr.common.util.ZLibCompressor;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // TODO: This test would be a lot faster if it used a solrhome with fewer config
 // files - there are a lot of them to upload
@@ -125,13 +114,13 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     }
   }
 
-//  @Test
-//  public void testCmdConstants() {
-//    assertEquals("upconfig", ZkCLI.UPCONFIG);
-//    assertEquals("x", ZkCLI.EXCLUDE_REGEX_SHORT);
-//    assertEquals("excluderegex", ZkCLI.EXCLUDE_REGEX);
-//    assertEquals(ConfigSetService.UPLOAD_FILENAME_EXCLUDE_REGEX, ZkCLI.EXCLUDE_REGEX_DEFAULT);
-//  }
+  //  @Test
+  //  public void testCmdConstants() {
+  //    assertEquals("upconfig", ZkCLI.UPCONFIG);
+  //    assertEquals("x", ZkCLI.EXCLUDE_REGEX_SHORT);
+  //    assertEquals("excluderegex", ZkCLI.EXCLUDE_REGEX);
+  //    assertEquals(ConfigSetService.UPLOAD_FILENAME_EXCLUDE_REGEX, ZkCLI.EXCLUDE_REGEX_DEFAULT);
+  //  }
 
   @Test
   public void testBootstrapWithChroot() throws Exception {
@@ -279,194 +268,204 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   @Test
   public void testLs() throws Exception {
     zkClient.makePath("/test/path", true);
-//    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "ls", "/test"};
-//
-//    ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-//    final PrintStream myOut = new PrintStream(byteStream, false, StandardCharsets.UTF_8);
-//    ZkCLI.setStdout(myOut);
-//
-//    ZkCLI.main(args);
-//
-//    final String standardOutput = byteStream.toString(StandardCharsets.UTF_8);
-//    String separator = System.lineSeparator();
-//    assertEquals(
-//        "/test (1)" + separator + " /test/path (0)" + separator + separator, standardOutput);
+    //    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "ls", "/test"};
+    //
+    //    ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+    //    final PrintStream myOut = new PrintStream(byteStream, false, StandardCharsets.UTF_8);
+    //    ZkCLI.setStdout(myOut);
+    //
+    //    ZkCLI.main(args);
+    //
+    //    final String standardOutput = byteStream.toString(StandardCharsets.UTF_8);
+    //    String separator = System.lineSeparator();
+    //    assertEquals(
+    //        "/test (1)" + separator + " /test/path (0)" + separator + separator, standardOutput);
 
-    String[] args2 = new String[] {"ls","-path","/","-r", "true", "-z", zkServer.getZkAddress()};
+    String[] args2 = new String[] {"ls", "-path", "/", "-r", "true", "-z", zkServer.getZkAddress()};
 
     ByteArrayOutputStream byteStream2 = new ByteArrayOutputStream();
     final PrintStream myOut2 = new PrintStream(byteStream2, false, StandardCharsets.UTF_8);
 
     ZkLsTool tool = new ZkLsTool(myOut2);
-    assertEquals(0, runTool(args2,tool));
+    assertEquals(0, runTool(args2, tool));
 
     final String standardOutput2 = byteStream2.toString(StandardCharsets.UTF_8);
     String separator2 = System.lineSeparator();
     assertEquals(
-            "/" + separator2 + "/test" + separator2 + "     path" + separator2, standardOutput2);
+        "/" + separator2 + "/test" + separator2 + "     path" + separator2, standardOutput2);
   }
 
-
-
-//  @Test
-//  public void testUpConfigLinkConfigClearZk() throws Exception {
-//    File tmpDir = createTempDir().toFile();
-//
-//    // test upconfig
-//    String confsetname = "confsetone";
-//    final String[] upconfigArgs;
-//    if (random().nextBoolean()) {
-//      upconfigArgs =
-//          new String[] {
-//            "-zkhost",
-//            zkServer.getZkAddress(),
-//            "-cmd",
-//            ZkCLI.UPCONFIG,
-//            "-confdir",
-//            ExternalPaths.TECHPRODUCTS_CONFIGSET,
-//            "-confname",
-//            confsetname
-//          };
-//    } else {
-//      final String excluderegexOption =
-//          (random().nextBoolean() ? "--" + ZkCLI.EXCLUDE_REGEX : "-" + ZkCLI.EXCLUDE_REGEX_SHORT);
-//      upconfigArgs =
-//          new String[] {
-//            "-zkhost",
-//            zkServer.getZkAddress(),
-//            "-cmd",
-//            ZkCLI.UPCONFIG,
-//            excluderegexOption,
-//            ZkCLI.EXCLUDE_REGEX_DEFAULT,
-//            "-confdir",
-//            ExternalPaths.TECHPRODUCTS_CONFIGSET,
-//            "-confname",
-//            confsetname
-//          };
-//    }
-//    ZkCLI.main(upconfigArgs);
-//
-//    assertTrue(zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, true));
-//
-//    // print help
-//    // ZkCLI.main(new String[0]);
-//
-//    // test linkconfig
-//    String[] args =
-//        new String[] {
-//          "-zkhost",
-//          zkServer.getZkAddress(),
-//          "-cmd",
-//          "linkconfig",
-//          "-collection",
-//          "collection1",
-//          "-confname",
-//          confsetname
-//        };
-//    ZkCLI.main(args);
-//
-//    ZkNodeProps collectionProps =
-//        ZkNodeProps.load(
-//            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/collection1", null, null, true));
-//    assertTrue(collectionProps.containsKey("configName"));
-//    assertEquals(confsetname, collectionProps.getStr("configName"));
-//
-//    // test down config
-//    File confDir =
-//        new File(
-//            tmpDir, "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.nanoTime());
-//    assertFalse(confDir.exists());
-//
-//    args =
-//        new String[] {
-//          "-zkhost",
-//          zkServer.getZkAddress(),
-//          "-cmd",
-//          "downconfig",
-//          "-confdir",
-//          confDir.getAbsolutePath(),
-//          "-confname",
-//          confsetname
-//        };
-//    ZkCLI.main(args);
-//
-//    File[] files = confDir.listFiles();
-//    List<String> zkFiles =
-//        zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null, true);
-//    assertEquals(files.length, zkFiles.size());
-//
-//    File sourceConfDir = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET);
-//    // filter out all directories starting with . (e.g. .svn)
-//    Collection<File> sourceFiles =
-//        FileUtils.listFiles(
-//            sourceConfDir, TrueFileFilter.INSTANCE, new RegexFileFilter("[^\\.].*"));
-//    for (File sourceFile : sourceFiles) {
-//      int indexOfRelativePath =
-//          sourceFile
-//              .getAbsolutePath()
-//              .lastIndexOf("sample_techproducts_configs" + File.separator + "conf");
-//      String relativePathofFile =
-//          sourceFile
-//              .getAbsolutePath()
-//              .substring(indexOfRelativePath + 33, sourceFile.getAbsolutePath().length());
-//      File downloadedFile = new File(confDir, relativePathofFile);
-//      if (ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN.matcher(relativePathofFile).matches()) {
-//        assertFalse(
-//            sourceFile.getAbsolutePath()
-//                + " exists in ZK, downloaded:"
-//                + downloadedFile.getAbsolutePath(),
-//            downloadedFile.exists());
-//      } else {
-//        assertTrue(
-//            downloadedFile.getAbsolutePath()
-//                + " does not exist source:"
-//                + sourceFile.getAbsolutePath(),
-//            downloadedFile.exists());
-//        assertTrue(
-//            relativePathofFile + " content changed",
-//            FileUtils.contentEquals(sourceFile, downloadedFile));
-//      }
-//    }
-//
-//    // test reset zk
-//    args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "clear", "/"};
-//    ZkCLI.main(args);
-//
-//    assertEquals(0, zkClient.getChildren("/", null, true).size());
-//  }
+  //  @Test
+  //  public void testUpConfigLinkConfigClearZk() throws Exception {
+  //    File tmpDir = createTempDir().toFile();
+  //
+  //    // test upconfig
+  //    String confsetname = "confsetone";
+  //    final String[] upconfigArgs;
+  //    if (random().nextBoolean()) {
+  //      upconfigArgs =
+  //          new String[] {
+  //            "-zkhost",
+  //            zkServer.getZkAddress(),
+  //            "-cmd",
+  //            ZkCLI.UPCONFIG,
+  //            "-confdir",
+  //            ExternalPaths.TECHPRODUCTS_CONFIGSET,
+  //            "-confname",
+  //            confsetname
+  //          };
+  //    } else {
+  //      final String excluderegexOption =
+  //          (random().nextBoolean() ? "--" + ZkCLI.EXCLUDE_REGEX : "-" +
+  // ZkCLI.EXCLUDE_REGEX_SHORT);
+  //      upconfigArgs =
+  //          new String[] {
+  //            "-zkhost",
+  //            zkServer.getZkAddress(),
+  //            "-cmd",
+  //            ZkCLI.UPCONFIG,
+  //            excluderegexOption,
+  //            ZkCLI.EXCLUDE_REGEX_DEFAULT,
+  //            "-confdir",
+  //            ExternalPaths.TECHPRODUCTS_CONFIGSET,
+  //            "-confname",
+  //            confsetname
+  //          };
+  //    }
+  //    ZkCLI.main(upconfigArgs);
+  //
+  //    assertTrue(zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, true));
+  //
+  //    // print help
+  //    // ZkCLI.main(new String[0]);
+  //
+  //    // test linkconfig
+  //    String[] args =
+  //        new String[] {
+  //          "-zkhost",
+  //          zkServer.getZkAddress(),
+  //          "-cmd",
+  //          "linkconfig",
+  //          "-collection",
+  //          "collection1",
+  //          "-confname",
+  //          confsetname
+  //        };
+  //    ZkCLI.main(args);
+  //
+  //    ZkNodeProps collectionProps =
+  //        ZkNodeProps.load(
+  //            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/collection1", null, null,
+  // true));
+  //    assertTrue(collectionProps.containsKey("configName"));
+  //    assertEquals(confsetname, collectionProps.getStr("configName"));
+  //
+  //    // test down config
+  //    File confDir =
+  //        new File(
+  //            tmpDir, "solrtest-confdropspot-" + this.getClass().getName() + "-" +
+  // System.nanoTime());
+  //    assertFalse(confDir.exists());
+  //
+  //    args =
+  //        new String[] {
+  //          "-zkhost",
+  //          zkServer.getZkAddress(),
+  //          "-cmd",
+  //          "downconfig",
+  //          "-confdir",
+  //          confDir.getAbsolutePath(),
+  //          "-confname",
+  //          confsetname
+  //        };
+  //    ZkCLI.main(args);
+  //
+  //    File[] files = confDir.listFiles();
+  //    List<String> zkFiles =
+  //        zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null, true);
+  //    assertEquals(files.length, zkFiles.size());
+  //
+  //    File sourceConfDir = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET);
+  //    // filter out all directories starting with . (e.g. .svn)
+  //    Collection<File> sourceFiles =
+  //        FileUtils.listFiles(
+  //            sourceConfDir, TrueFileFilter.INSTANCE, new RegexFileFilter("[^\\.].*"));
+  //    for (File sourceFile : sourceFiles) {
+  //      int indexOfRelativePath =
+  //          sourceFile
+  //              .getAbsolutePath()
+  //              .lastIndexOf("sample_techproducts_configs" + File.separator + "conf");
+  //      String relativePathofFile =
+  //          sourceFile
+  //              .getAbsolutePath()
+  //              .substring(indexOfRelativePath + 33, sourceFile.getAbsolutePath().length());
+  //      File downloadedFile = new File(confDir, relativePathofFile);
+  //      if
+  // (ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN.matcher(relativePathofFile).matches()) {
+  //        assertFalse(
+  //            sourceFile.getAbsolutePath()
+  //                + " exists in ZK, downloaded:"
+  //                + downloadedFile.getAbsolutePath(),
+  //            downloadedFile.exists());
+  //      } else {
+  //        assertTrue(
+  //            downloadedFile.getAbsolutePath()
+  //                + " does not exist source:"
+  //                + sourceFile.getAbsolutePath(),
+  //            downloadedFile.exists());
+  //        assertTrue(
+  //            relativePathofFile + " content changed",
+  //            FileUtils.contentEquals(sourceFile, downloadedFile));
+  //      }
+  //    }
+  //
+  //    // test reset zk
+  //    args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "clear", "/"};
+  //    ZkCLI.main(args);
+  //
+  //    assertEquals(0, zkClient.getChildren("/", null, true).size());
+  //  }
 
   @Test
   public void testGet() throws Exception {
     String getNode = "/getNode";
     byte[] data = "getNode-data".getBytes(StandardCharsets.UTF_8);
-//    ByteArrayOutputStream systemOut = new ByteArrayOutputStream();
-//    this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
-//    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "get", getNode};
-//    ZkCLI.setStdout(new PrintStream(systemOut, true, StandardCharsets.UTF_8));
-//    ZkCLI.main(args);
-//    assertArrayEquals(
-//        data,
-//        systemOut
-//            .toString(StandardCharsets.UTF_8)
-//            .replace(System.lineSeparator(), "")
-//            .getBytes(StandardCharsets.UTF_8));
+    //    ByteArrayOutputStream systemOut = new ByteArrayOutputStream();
+    //    this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
+    //    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "get", getNode};
+    //    ZkCLI.setStdout(new PrintStream(systemOut, true, StandardCharsets.UTF_8));
+    //    ZkCLI.main(args);
+    //    assertArrayEquals(
+    //        data,
+    //        systemOut
+    //            .toString(StandardCharsets.UTF_8)
+    //            .replace(System.lineSeparator(), "")
+    //            .getBytes(StandardCharsets.UTF_8));
 
     File localFile = File.createTempFile("temp", ".data");
 
-    String[] args2 = new String[] {"cp","-src","zk:" + getNode,"-dst", localFile.getAbsolutePath(), "-z", zkServer.getZkAddress()};
+    String[] args2 =
+        new String[] {
+          "cp",
+          "-src",
+          "zk:" + getNode,
+          "-dst",
+          localFile.getAbsolutePath(),
+          "-z",
+          zkServer.getZkAddress()
+        };
 
     ByteArrayOutputStream byteStream2 = new ByteArrayOutputStream();
     final PrintStream myOut2 = new PrintStream(byteStream2, false, StandardCharsets.UTF_8);
 
     ZkCpTool tool = new ZkCpTool(myOut2);
-    assertEquals(0, runTool(args2,tool));
+    assertEquals(0, runTool(args2, tool));
 
     final String standardOutput2 = byteStream2.toString(StandardCharsets.UTF_8);
     String separator2 = System.lineSeparator();
     assertTrue(standardOutput2.startsWith("Copying from 'zk:/getNode'"));
     byte[] fileBytes = Files.readAllBytes(Paths.get(localFile.getAbsolutePath()));
-    assertArrayEquals(
-            data,fileBytes);
+    assertArrayEquals(data, fileBytes);
   }
 
   @Test
@@ -483,25 +482,33 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
             ? zLibCompressor.compressBytes(data)
             : zLibCompressor.compressBytes(data, data.length / 10);
     this.zkClient.create(getNode, compressedData, CreateMode.PERSISTENT, true);
-//    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "get", getNode};
-//    ZkCLI.setStdout(new PrintStream(systemOut, true, StandardCharsets.UTF_8));
-//    ZkCLI.main(args);
-//    assertArrayEquals(
-//        data,
-//        systemOut
-//            .toString(StandardCharsets.UTF_8)
-//            .replace(System.lineSeparator(), "")
-//            .getBytes(StandardCharsets.UTF_8));
+    //    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "get", getNode};
+    //    ZkCLI.setStdout(new PrintStream(systemOut, true, StandardCharsets.UTF_8));
+    //    ZkCLI.main(args);
+    //    assertArrayEquals(
+    //        data,
+    //        systemOut
+    //            .toString(StandardCharsets.UTF_8)
+    //            .replace(System.lineSeparator(), "")
+    //            .getBytes(StandardCharsets.UTF_8));
 
     File localFile = File.createTempFile("temp", ".data");
 
-    String[] args2 = new String[] {"cp","-src","zk:" + getNode,"-dst", localFile.getAbsolutePath(), "-z", zkServer.getZkAddress()};
+    String[] args2 =
+        new String[] {
+          "cp",
+          "-src",
+          "zk:" + getNode,
+          "-dst",
+          localFile.getAbsolutePath(),
+          "-z",
+          zkServer.getZkAddress()
+        };
 
     ZkCpTool tool = new ZkCpTool();
-    assertEquals(0, runTool(args2,tool));
+    assertEquals(0, runTool(args2, tool));
 
     assertArrayEquals(data, Files.readAllBytes(Path.of(localFile.getAbsolutePath())));
-
   }
 
   @Test
@@ -514,27 +521,33 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     Path file =
         tmpDir.resolve("solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
-//    String[] args =
-//        new String[] {
-//          "-zkhost",
-//          zkServer.getZkAddress(),
-//          "-cmd",
-//          "getfile",
-//          getNode,
-//          file.toAbsolutePath().toString()
-//        };
-//    ZkCLI.main(args);
-//
-//    assertArrayEquals(data, Files.readAllBytes(file));
+    //    String[] args =
+    //        new String[] {
+    //          "-zkhost",
+    //          zkServer.getZkAddress(),
+    //          "-cmd",
+    //          "getfile",
+    //          getNode,
+    //          file.toAbsolutePath().toString()
+    //        };
+    //    ZkCLI.main(args);
+    //
+    //    assertArrayEquals(data, Files.readAllBytes(file));
 
-
-    String[] args2 = new String[] {"cp","-src","zk:" + getNode,"-dst", file.toAbsolutePath().toString(), "-z", zkServer.getZkAddress()};
-
+    String[] args2 =
+        new String[] {
+          "cp",
+          "-src",
+          "zk:" + getNode,
+          "-dst",
+          file.toAbsolutePath().toString(),
+          "-z",
+          zkServer.getZkAddress()
+        };
 
     ZkCpTool tool = new ZkCpTool();
-    assertEquals(0, runTool(args2,tool));
+    assertEquals(0, runTool(args2, tool));
     assertArrayEquals(data, Files.readAllBytes(file));
-
   }
 
   @Test
@@ -552,22 +565,30 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     Path file =
         tmpDir.resolve("solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
-//    String[] args =
-//        new String[] {
-//          "-zkhost",
-//          zkServer.getZkAddress(),
-//          "-cmd",
-//          "getfile",
-//          getNode,
-//          file.toAbsolutePath().toString()
-//        };
-//    ZkCLI.main(args);
+    //    String[] args =
+    //        new String[] {
+    //          "-zkhost",
+    //          zkServer.getZkAddress(),
+    //          "-cmd",
+    //          "getfile",
+    //          getNode,
+    //          file.toAbsolutePath().toString()
+    //        };
+    //    ZkCLI.main(args);
 
-    String[] args2 = new String[] {"cp","-src","zk:" + getNode,"-dst", file.toAbsolutePath().toString(), "-z", zkServer.getZkAddress()};
-
+    String[] args2 =
+        new String[] {
+          "cp",
+          "-src",
+          "zk:" + getNode,
+          "-dst",
+          file.toAbsolutePath().toString(),
+          "-z",
+          zkServer.getZkAddress()
+        };
 
     ZkCpTool tool = new ZkCpTool();
-    assertEquals(0, runTool(args2,tool));
+    assertEquals(0, runTool(args2, tool));
 
     assertArrayEquals(data, Files.readAllBytes(file));
   }
@@ -577,12 +598,29 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String getNode = "/getFileNotExistsNode";
 
     File file = createTempFile("newfile", null).toFile();
-    String[] args =
+    //    String[] args =
+    //        new String[] {
+    //          "-zkhost", zkServer.getZkAddress(), "-cmd", "getfile", getNode,
+    // file.getAbsolutePath()
+    //        };
+    //    KeeperException e = expectThrows(KeeperException.class, () -> ZkCLI.main(args));
+    //    assertEquals(e.code(), KeeperException.Code.NONODE);
+
+    File localFile = File.createTempFile("temp", ".data");
+
+    String[] args2 =
         new String[] {
-          "-zkhost", zkServer.getZkAddress(), "-cmd", "getfile", getNode, file.getAbsolutePath()
+          "cp",
+          "-src",
+          "zk:" + getNode,
+          "-dst",
+          localFile.getAbsolutePath(),
+          "-z",
+          zkServer.getZkAddress()
         };
-    KeeperException e = expectThrows(KeeperException.class, () -> ZkCLI.main(args));
-    assertEquals(e.code(), KeeperException.Code.NONODE);
+
+    ZkCpTool tool = new ZkCpTool();
+    assertEquals(1, runTool(args2, tool));
   }
 
   public void testInvalidZKAddress() throws SolrException {
