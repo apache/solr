@@ -36,7 +36,7 @@ configure(project(":solr").subprojects) { prj ->
         // it.licenseHeaderFile(file("${resources}/asl-header.txt"), '^(\\s*package)')
         it.setLineEndings(Enum.valueOf(rootProject.buildscript.classLoader.loadClass("com.diffplug.spotless.LineEnding"), "UNIX"))
         it.endWithNewline()
-        it.googleJavaFormat('1.15.0')
+        it.googleJavaFormat('1.18.1')
 
         it.custom('Refuse wildcard imports', { line ->
           // Wildcard imports can't be resolved by spotless itself.

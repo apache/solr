@@ -53,7 +53,7 @@ curl http://localhost:8983/solr/techproducts/query -d 'json={"query":"memory"}'
 === JSON Parameter Merging
 If multiple `json` parameters are provided in a single request, Solr attempts to merge the parameter values together before processing the request.
 
-The JSON Request API has several properties (`filter`, `fields`, etc) which accept multiple values.  During the merging process, all values for these "multivalued" properties are retained.  Many properties though (`query`, `limit`, etc.) can have only a single value.  When multiple parameter values conflict with one another a single value is chosen based on the following precedence rules:
+The JSON Request API has several properties (`filter`, `fields`, etc.) which accept multiple values.  During the merging process, all values for these "multivalued" properties are retained.  Many properties though (`query`, `limit`, etc.) can have only a single value.  When multiple parameter values conflict with one another a single value is chosen based on the following precedence rules:
 
 * Traditional query parameters (`q`, `rows`, etc.) take first precedence and are used over any other specified values.
 * `json`-prefixed query parameters are considered next.

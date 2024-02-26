@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.core.ConfigSetService;
+import org.apache.solr.util.FileTypeMagicUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +102,7 @@ public class ConfigSetUploadTool extends ToolBase {
               + cli.getOptionValue("confname")
               + " to ZooKeeper at "
               + zkHost);
+      FileTypeMagicUtil.assertConfigSetFolderLegal(confPath);
       ZkMaintenanceUtils.uploadToZK(
           zkClient,
           confPath,

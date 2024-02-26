@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.search;
+
 /** A class to hold "phrase slop" and "boost" parameters for pf, pf2, pf3 parameters */
 public class FieldParams {
   private final int wordGrams; // make bigrams if 2, trigrams if 3, or all if 0

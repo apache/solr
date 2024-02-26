@@ -26,7 +26,7 @@ To start another Solr node and have it join the cluster alongside the first node
 
 [,console]
 ----
-$ bin/solr -c -z localhost:9983 -p 8984
+$ bin/solr start -c -z localhost:9983 -p 8984
 ----
 
 

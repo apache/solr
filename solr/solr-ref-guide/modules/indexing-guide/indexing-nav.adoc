@@ -43,7 +43,7 @@
 ** xref:analyzers.adoc[]
 ** xref:tokenizers.adoc[]
 ** xref:filters.adoc[]
-** xref:charfilterfactories.adoc[]
+** xref:charfilters.adoc[]
 ** xref:language-analysis.adoc[]
 ** xref:phonetic-matching.adoc[]
 ** xref:analysis-screen.adoc[]

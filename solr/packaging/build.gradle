@@ -121,8 +121,6 @@ distributions {
       // Manually correct posix permissions (matters when packaging on Windows).
       filesMatching([
           "**/*.sh",
-          "**/bin/post",
-          "**/bin/postlogs",
           "**/bin/solr",
           "**/bin/init.d/solr",
       ]) { copy ->

@@ -61,7 +61,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -104,7 +103,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrIndexWriter;
-import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
@@ -165,6 +163,7 @@ public class ReplicationHandler extends RequestHandlerBase
       generation = g;
       version = v;
     }
+
     /**
      * builds a CommitVersionInfo data for the specified IndexCommit. Will never be null, ut version
      * and generation may be zero if there are problems extracting them from the commit data
@@ -730,18 +729,6 @@ public class ReplicationHandler extends RequestHandlerBase
   }
 
   /**
-   * Retrieves the maximum version number from an index commit. NOTE: The commit <b>MUST</b> be
-   * reserved before calling this method
-   */
-  private long getMaxVersion(IndexCommit commit) throws IOException {
-    try (DirectoryReader reader = DirectoryReader.open(commit)) {
-      IndexSearcher searcher = new IndexSearcher(reader);
-      VersionInfo vinfo = core.getUpdateHandler().getUpdateLog().getVersionInfo();
-      return Math.abs(vinfo.getMaxVersionFromIndex(searcher));
-    }
-  }
-
-  /**
    * For configuration files, checksum of the file is included because, unlike index files, they may
    * have same content but different timestamps.
    *
@@ -918,7 +905,7 @@ public class ReplicationHandler extends RequestHandlerBase
             map -> {
               IndexFetcher fetcher = currentIndexFetcher;
               if (fetcher != null) {
-                map.put(LEADER_URL, fetcher.getLeaderUrl());
+                map.put(LEADER_URL, fetcher.getLeaderCoreUrl());
                 if (getPollInterval() != null) {
                   map.put(POLL_INTERVAL, getPollInterval());
                 }
@@ -1000,7 +987,7 @@ public class ReplicationHandler extends RequestHandlerBase
           follower.add(ERR_STATUS, "invalid_leader");
         }
       }
-      follower.add(LEADER_URL, fetcher.getLeaderUrl());
+      follower.add(LEADER_URL, fetcher.getLeaderCoreUrl());
       if (getPollInterval() != null) {
         follower.add(POLL_INTERVAL, getPollInterval());
       }
@@ -1804,24 +1791,25 @@ public class ReplicationHandler extends RequestHandlerBase
 
   public static final String LEADER_URL = "leaderUrl";
 
-  @Deprecated
   /**
-   * @deprecated: Only used for backwards compatibility. Use {@link #LEADER_URL}
+   * @deprecated Only used for backwards compatibility. Use {@link #LEADER_URL}
    */
-  public static final String LEGACY_LEADER_URL = "masterUrl";
+  @Deprecated public static final String LEGACY_LEADER_URL = "masterUrl";
 
   public static final String FETCH_FROM_LEADER = "fetchFromLeader";
 
   // in case of TLOG replica, if leaderVersion = zero, don't do commit
   // otherwise updates from current tlog won't copied over properly to the new tlog, leading to data
   // loss
+  // don't commit on leader version zero for PULL replicas as PULL should only get its index
+  // state from leader
   public static final String SKIP_COMMIT_ON_LEADER_VERSION_ZERO = "skipCommitOnLeaderVersionZero";
 
-  @Deprecated
   /**
-   * @deprecated: Only used for backwards compatibility. Use {@link
+   * @deprecated Only used for backwards compatibility. Use {@link
    *     #SKIP_COMMIT_ON_LEADER_VERSION_ZERO}
    */
+  @Deprecated
   public static final String LEGACY_SKIP_COMMIT_ON_LEADER_VERSION_ZERO =
       "skipCommitOnMasterVersionZero";
 

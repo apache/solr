@@ -93,7 +93,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
       final QueryRequest queryRequest = null;
       final List<String> urls = new ArrayList<>();
       for (int ii = 0; ii < 10; ++ii) {
-        urls.add(null);
+        urls.add("http://localhost" + ii + ":8983/solr");
       }
 
       // create LBHttpSolrClient request

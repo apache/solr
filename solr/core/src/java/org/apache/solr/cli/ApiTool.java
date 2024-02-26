@@ -57,7 +57,8 @@ public class ApiTool extends ToolBase {
             .hasArg()
             .required(true)
             .desc("Send a GET request to a Solr API endpoint.")
-            .build());
+            .build(),
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
@@ -65,7 +66,7 @@ public class ApiTool extends ToolBase {
     String response = null;
     String getUrl = cli.getOptionValue("get");
     if (getUrl != null) {
-      response = callGet(getUrl);
+      response = callGet(getUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     }
     if (response != null) {
       // pretty-print the response to stdout
@@ -73,11 +74,11 @@ public class ApiTool extends ToolBase {
     }
   }
 
-  protected String callGet(String url) throws Exception {
+  protected String callGet(String url, String credentials) throws Exception {
     URI uri = new URI(url.replace("+", "%20"));
     String solrUrl = getSolrUrlFromUri(uri);
     String path = uri.getPath();
-    try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
+    try (var solrClient = SolrCLI.getSolrClient(solrUrl, credentials)) {
       // For path parameter we need the path without the root so from the second / char
       // (because root can be configured)
       // E.g URL is http://localhost:8983/solr/admin/info/system path is

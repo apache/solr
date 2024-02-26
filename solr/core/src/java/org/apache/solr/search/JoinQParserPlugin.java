@@ -36,6 +36,7 @@ import org.apache.solr.util.RefCounted;
 public class JoinQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "join";
+
   /** Choose the internal algorithm */
   private static final String METHOD = "method";
 
@@ -233,6 +234,7 @@ public class JoinQParserPlugin extends QParserPlugin {
 
   private static final EnumSet<Method> JOIN_METHOD_ALLOWLIST =
       EnumSet.of(Method.index, Method.topLevelDV, Method.dvWithScore);
+
   /**
    * A helper method for other plugins to create (non-scoring) JoinQueries wrapped around arbitrary
    * queries against the same core.

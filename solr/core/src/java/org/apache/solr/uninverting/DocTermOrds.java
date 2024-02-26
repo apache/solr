@@ -539,7 +539,7 @@ public class DocTermOrds implements Accountable {
         if ((pass << 16) > maxDoc) break;
       }
     }
-    indexedTermsArray = indexedTerms.toArray(new BytesRef[indexedTerms.size()]);
+    indexedTermsArray = indexedTerms.toArray(new BytesRef[0]);
 
     long endTime = System.nanoTime();
 

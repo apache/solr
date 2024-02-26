@@ -35,4 +35,5 @@ public class CollectionBackupDetails {
   public String configsetName;
 
   @JsonProperty public String collectionAlias;
+  @JsonProperty public Map<String, String> extraProperties;
 }

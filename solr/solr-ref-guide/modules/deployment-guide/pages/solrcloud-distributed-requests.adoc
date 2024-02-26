@@ -60,6 +60,7 @@ A `zkConnected` header is included in every search response indicating if the no
 To prevent stale or incorrect results in the event that the request-serving node can't communicate with ZooKeeper, set the <<shards-tolerant-parameter,`shards.tolerant`>> parameter to `requireZkConnected`.
 This will cause requests to fail rather than setting a `zkConnected` header to `false`.
 
+[#shards-tolerant-parameter]
 === shards.tolerant Parameter
 
 In the event that one or more shards queried are unavailable, then Solr's default behavior is to fail the request.
@@ -445,6 +446,17 @@ For example, the following line makes Solr use the `ExactStatsCache` implementat
 ----
 <statsCache class="org.apache.solr.search.stats.ExactStatsCache"/>
 ----
+
+=== distrib.statsCache Parameter
+
+The query param distrib.statsCache defaults to `true`. If set to `false`, distributed calls to fetch global term stats is turned off for this query. This can reduce overhead for queries that do not utilize distributed IDF for score calculation.
+
+[source,xml]
+----
+http://localhost:8987/solr/collection1/select?q=*%3A*&wt=json&fq={!terms f=id}id1,id2&distrib.statsCache=false
+----
+
+
 
 == Avoiding Distributed Deadlock
 

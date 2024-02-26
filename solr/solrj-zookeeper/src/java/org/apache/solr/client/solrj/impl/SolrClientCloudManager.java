@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -139,7 +140,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
     final HttpRequestBase req;
     HttpEntity entity = null;
     if (payload != null) {
-      entity = new StringEntity(payload, "UTF-8");
+      entity = new StringEntity(payload, StandardCharsets.UTF_8);
     }
     switch (method) {
       case GET:

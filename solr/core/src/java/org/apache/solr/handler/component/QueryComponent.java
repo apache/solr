@@ -42,6 +42,7 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Sort;
@@ -166,6 +167,9 @@ public class QueryComponent extends SearchComponent {
       queryString = params.get(CommonParams.Q);
       rb.setQueryString(queryString);
     }
+
+    // set the flag for distributed stats
+    rb.setEnableDistribStats(params.getBool(CommonParams.DISTRIB_STATS_CACHE, true));
 
     try {
       QParser parser = QParser.getParser(rb.getQueryString(), defType, req);
@@ -364,6 +368,7 @@ public class QueryComponent extends SearchComponent {
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
     cmd.setMinExactCount(getMinExactCount(params));
+    cmd.setEnableDistribStats(rb.isEnableDistribStats());
 
     boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
 
@@ -497,7 +502,12 @@ public class QueryComponent extends SearchComponent {
           // :TODO: would be simpler to always serialize every position of SortField[]
           if (type == SortField.Type.SCORE || type == SortField.Type.DOC) continue;
 
-          FieldComparator<?> comparator = sortField.getComparator(1, true);
+          FieldComparator<?> comparator =
+              sortField.getComparator(
+                  1,
+                  schemaFields.size() > 1
+                      ? Pruning.GREATER_THAN
+                      : Pruning.GREATER_THAN_OR_EQUAL_TO);
           LeafFieldComparator leafComparator = null;
           Object[] vals = new Object[nDocs];
 
@@ -730,8 +740,9 @@ public class QueryComponent extends SearchComponent {
 
   protected void createDistributedStats(ResponseBuilder rb) {
     StatsCache cache = rb.req.getSearcher().getStatsCache();
-    if ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
-        || rb.getSortSpec().includesScore()) {
+    if (rb.isEnableDistribStats()
+        && ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
+            || rb.getSortSpec().includesScore())) {
       ShardRequest sreq = cache.retrieveStatsRequest(rb);
       if (sreq != null) {
         rb.addRequest(this, sreq);

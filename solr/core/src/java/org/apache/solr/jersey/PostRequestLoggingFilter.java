@@ -22,6 +22,14 @@ import static org.apache.solr.jersey.MessageBodyReaders.CachingDelegatingMessage
 import static org.apache.solr.jersey.PostRequestLoggingFilter.PRIORITY;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 
+import jakarta.annotation.Priority;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -30,17 +38,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.annotation.Priority;
-import javax.ws.rs.Path;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ContainerResponseFilter;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MultivaluedMap;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.servlet.HttpSolrCall;
@@ -141,19 +142,23 @@ public class PostRequestLoggingFilter implements ContainerResponseFilter {
       return "{}";
     }
 
-    if (!(requestContext.getProperty(DESERIALIZED_REQUEST_BODY_KEY)
-        instanceof JacksonReflectMapWriter)) {
-      log.warn(
-          "Encountered unexpected request-body type {} for request {}; only {} expected.",
-          requestContext.getProperty(DESERIALIZED_REQUEST_BODY_KEY).getClass().getName(),
-          requestContext.getUriInfo().getPath(),
-          JacksonReflectMapWriter.class.getName());
-      return "{}";
+    final Object deserializedBody = requestContext.getProperty(DESERIALIZED_REQUEST_BODY_KEY);
+    if (deserializedBody instanceof JacksonReflectMapWriter) {
+      return ((JacksonReflectMapWriter) requestContext.getProperty(DESERIALIZED_REQUEST_BODY_KEY))
+          .jsonStr()
+          .replace("\n", "");
     }
 
-    return ((JacksonReflectMapWriter) requestContext.getProperty(DESERIALIZED_REQUEST_BODY_KEY))
-        .jsonStr()
-        .replace("\n", "");
+    final Object reflectWritable = Utils.getReflectWriter(deserializedBody);
+    if (reflectWritable instanceof Utils.DelegateReflectWriter) {
+      return Utils.toJSONString(reflectWritable).replaceAll("\n", "");
+    }
+
+    log.warn(
+        "No reflection data found for request-body type {} for request {}; omitting request-body details from logging",
+        deserializedBody.getClass().getName(),
+        requestContext.getUriInfo().getPath());
+    return "{}";
   }
 
   public static String filterAndStringifyQueryParameters(

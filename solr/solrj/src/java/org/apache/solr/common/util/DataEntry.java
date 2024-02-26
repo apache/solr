@@ -113,6 +113,7 @@ public interface DataEntry {
     BYTEARR(false),
     /** don't know how to stream it. read as an object using {{@link DataEntry#val()}} method */
     JAVA_OBJ(false);
+
     /** A primitive type which usually maps to a java primitive */
     public final boolean isPrimitive;
 

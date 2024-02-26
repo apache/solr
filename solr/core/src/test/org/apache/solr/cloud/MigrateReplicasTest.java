@@ -36,6 +36,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.api.model.MigrateReplicasRequestBody;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -49,7 +50,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.handler.admin.api.MigrateReplicasAPI;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.Before;
@@ -125,7 +125,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     Map<?, ?> response =
         callMigrateReplicas(
             cloudClient,
-            new MigrateReplicasAPI.MigrateReplicasRequestBody(
+            new MigrateReplicasRequestBody(
                 Set.of(nodeToBeDecommissioned), Set.of(emptyNode), true, null));
     assertEquals(
         "MigrateReplicas request was unsuccessful",
@@ -153,7 +153,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     response =
         callMigrateReplicas(
             cloudClient,
-            new MigrateReplicasAPI.MigrateReplicasRequestBody(
+            new MigrateReplicasRequestBody(
                 Set.of(emptyNode), Set.of(nodeToBeDecommissioned), true, null));
     assertEquals(
         "MigrateReplicas request was unsuccessful",
@@ -277,7 +277,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     Map<?, ?> response =
         callMigrateReplicas(
             cloudClient,
-            new MigrateReplicasAPI.MigrateReplicasRequestBody(
+            new MigrateReplicasRequestBody(
                 new HashSet<>(nodesToBeDecommissioned), Collections.emptySet(), true, null));
     assertEquals(
         "MigrateReplicas request was unsuccessful",
@@ -327,8 +327,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     Map<?, ?> response =
         callMigrateReplicas(
             cloudClient,
-            new MigrateReplicasAPI.MigrateReplicasRequestBody(
-                Set.of(liveNode), Collections.emptySet(), true, null));
+            new MigrateReplicasRequestBody(Set.of(liveNode), Collections.emptySet(), true, null));
     assertNotNull(
         "No error in response, when the request should have failed", response.get("error"));
     assertEquals(
@@ -337,8 +336,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
         ((Map<?, ?>) response.get("error")).get("msg"));
   }
 
-  public Map<?, ?> callMigrateReplicas(
-      CloudSolrClient cloudClient, MigrateReplicasAPI.MigrateReplicasRequestBody body)
+  public Map<?, ?> callMigrateReplicas(CloudSolrClient cloudClient, MigrateReplicasRequestBody body)
       throws IOException {
     HttpEntityEnclosingRequestBase httpRequest = null;
     HttpEntity entity;
@@ -351,7 +349,9 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     try {
       httpRequest = new HttpPost(uri);
 
-      httpRequest.setEntity(new ByteArrayEntity(Utils.toJSON(body), ContentType.APPLICATION_JSON));
+      httpRequest.setEntity(
+          new ByteArrayEntity(
+              Utils.toJSON(Utils.getReflectWriter(body)), ContentType.APPLICATION_JSON));
       httpRequest.setHeader("Accept", "application/json");
       entity =
           ((CloudLegacySolrClient) cloudClient).getHttpClient().execute(httpRequest).getEntity();

@@ -29,14 +29,46 @@ public class GenericSolrRequest extends SolrRequest<SimpleSolrResponse> {
   public SolrParams params;
   public SimpleSolrResponse response = new SimpleSolrResponse();
   public ContentWriter contentWriter;
+  public boolean requiresCollection;
 
+  /**
+   * @param m the HTTP method to use for this request
+   * @param path the HTTP path to use for this request. If users are making a collection-aware
+   *     request (i.e. {@link #setRequiresCollection(boolean)} is called with 'true'), only the
+   *     section of the API path following the collection or core should be provided here.
+   */
   public GenericSolrRequest(METHOD m, String path) {
     this(m, path, new ModifiableSolrParams());
   }
 
+  /**
+   * @param m the HTTP method to use for this request
+   * @param path the HTTP path to use for this request. If users are making a collection-aware
+   *     request (i.e. {@link #setRequiresCollection(boolean)} is called with 'true'), only the
+   *     section of the API path following the collection or core should be provided here.
+   * @param params query parameter names and values for making this request.
+   */
   public GenericSolrRequest(METHOD m, String path, SolrParams params) {
     super(m, path);
     this.params = params;
+  }
+
+  /**
+   * Determines whether the SolrRequest should use a default collection or core from the client
+   *
+   * <p>Should generally be 'true' whenever making a request to a particular collection or core, and
+   * 'false' otherwise.
+   *
+   * @param requiresCollection true if a default collection should be used, false otherwise.
+   */
+  public GenericSolrRequest setRequiresCollection(boolean requiresCollection) {
+    this.requiresCollection = requiresCollection;
+    return this;
+  }
+
+  @Override
+  public boolean requiresCollection() {
+    return requiresCollection;
   }
 
   public GenericSolrRequest setContentWriter(ContentWriter contentWriter) {

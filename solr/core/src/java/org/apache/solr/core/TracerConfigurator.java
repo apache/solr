@@ -18,10 +18,15 @@
 package org.apache.solr.core;
 
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.SimplePropagator;
@@ -33,10 +38,10 @@ import org.slf4j.LoggerFactory;
 public abstract class TracerConfigurator implements NamedListInitializedPlugin {
 
   public static final boolean TRACE_ID_GEN_ENABLED =
-      Boolean.parseBoolean(System.getProperty("solr.alwaysOnTraceId", "true"));
+      Boolean.parseBoolean(EnvUtils.getProperty("solr.alwaysOnTraceId", "true"));
 
   private static final String DEFAULT_CLASS_NAME =
-      System.getProperty(
+      EnvUtils.getProperty(
           "solr.otelDefaultConfigurator", "org.apache.solr.opentelemetry.OtelTracerConfigurator");
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -46,12 +51,14 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
       TracerConfigurator configurator =
           loader.newInstance(info.className, TracerConfigurator.class);
       configurator.init(info.initArgs);
+      ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
       return configurator.getTracer();
     }
     if (shouldAutoConfigOTEL()) {
       return autoConfigOTEL(loader);
     }
     if (TRACE_ID_GEN_ENABLED) {
+      ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
       return SimplePropagator.load();
     }
     return TraceUtils.getGlobalTracer();
@@ -59,11 +66,34 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
 
   protected abstract Tracer getTracer();
 
+  private static class ContextThreadLocalProvider
+      implements ExecutorUtil.InheritableThreadLocalProvider {
+
+    @Override
+    public void store(AtomicReference<Object> ctx) {
+      ctx.set(Context.current());
+    }
+
+    @Override
+    public void set(AtomicReference<Object> ctx) {
+      var traceContext = (Context) ctx.get();
+      var scope = traceContext.makeCurrent();
+      ctx.set(scope);
+    }
+
+    @Override
+    public void clean(AtomicReference<Object> ctx) {
+      var scope = (Scope) ctx.get();
+      scope.close();
+    }
+  }
+
   private static Tracer autoConfigOTEL(SolrResourceLoader loader) {
     try {
       TracerConfigurator configurator =
           loader.newInstance(DEFAULT_CLASS_NAME, TracerConfigurator.class);
       configurator.init(new NamedList<>());
+      ExecutorUtil.addThreadLocalProvider(new ContextThreadLocalProvider());
       return configurator.getTracer();
     } catch (SolrException e) {
       log.error(

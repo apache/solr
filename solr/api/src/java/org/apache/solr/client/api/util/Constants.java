@@ -22,5 +22,12 @@ public class Constants {
     /* Private ctor prevents instantiation */
   }
 
+  public static final String INDEX_TYPE_PATH_PARAMETER = "indexType";
+  public static final String INDEX_NAME_PATH_PARAMETER = "indexName";
+  public static final String INDEX_PATH_PREFIX =
+      "/{" + INDEX_TYPE_PATH_PARAMETER + ":cores|collections}/{" + INDEX_NAME_PATH_PARAMETER + "}";
+
+  public static final String GENERIC_ENTITY_PROPERTY = "genericEntity";
+
   public static final String BINARY_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
 }
