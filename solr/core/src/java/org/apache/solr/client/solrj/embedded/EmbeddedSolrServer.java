@@ -188,13 +188,12 @@ public class EmbeddedSolrServer extends SolrClient {
     }
 
     // Check for cores action
+    SolrCore core = coreContainer.getCore(coreName);
+    if (core == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No such core: " + coreName);
+    }
     SolrQueryRequest req = null;
-    try (SolrCore core = coreContainer.getCore(coreName)) {
-
-      if (core == null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No such core: " + coreName);
-      }
-
+    try {
       SolrParams params = request.getParams();
       if (params == null) {
         params = new ModifiableSolrParams();
@@ -280,6 +279,11 @@ public class EmbeddedSolrServer extends SolrClient {
         req.close();
         SolrRequestInfo.clearRequestInfo();
       }
+      // NOTE: `req` must be closed _before_ core, because `req` can hold a reference to
+      // SolrIndexSearcher which can in some cases block `core.close()` from completing
+      // successfully (by holding a reference to a core Directory). Hence we cannot trivially
+      // use try-with-resources to close `core`.
+      core.close();
     }
   }
 
