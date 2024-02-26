@@ -325,7 +325,7 @@ public abstract class LBSolrClient extends SolrClient {
     private final Integer numServersToTry;
 
     /**
-     * @deprecated use {@link #Req(SolrRequest, Collection<Endpoint>)} instead
+     * @deprecated use {@link #Req(SolrRequest, Collection)} instead
      */
     @Deprecated
     public Req(SolrRequest<?> request, List<String> servers) {
@@ -339,7 +339,7 @@ public abstract class LBSolrClient extends SolrClient {
     }
 
     /**
-     * @deprecated use {@link #Req(SolrRequest, Collection<Endpoint>, Integer)} instead
+     * @deprecated use {@link #Req(SolrRequest, Collection, Integer)} instead
      */
     @Deprecated
     public Req(SolrRequest<?> request, List<String> servers, Integer numServersToTry) {
@@ -540,6 +540,8 @@ public abstract class LBSolrClient extends SolrClient {
 
   protected abstract SolrClient getClient(String baseUrl);
 
+  protected abstract SolrClient getClient(Endpoint endpoint);
+
   protected Exception addZombie(String serverStr, Exception e) {
     ServerWrapper wrapper = createServerWrapper(serverStr);
     wrapper.standard = false;
@@ -689,7 +691,7 @@ public abstract class LBSolrClient extends SolrClient {
   }
 
   /**
-   * @deprecated use {@link #removeSolrServer(Endpoint)} instead
+   * @deprecated use {@link #removeSolrEndpoint(Endpoint)} instead
    */
   @Deprecated
   public String removeSolrServer(String server) {
@@ -709,7 +711,7 @@ public abstract class LBSolrClient extends SolrClient {
     return null;
   }
 
-  public String removeSolrServer(Endpoint endpoint) {
+  public String removeSolrEndpoint(Endpoint endpoint) {
     return removeSolrServer(endpoint.getUrl());
   }
 

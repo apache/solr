@@ -83,7 +83,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     // locks.
     this.locks = objectList(builder.parallelCacheRefreshesLocks);
 
-    this.lbClient = new LBHttp2SolrClient.Builder(myClient).build();
+    this.lbClient = new LBHttp2SolrClient.Builder(myClient, new String[0]).build();
   }
 
   @Override
