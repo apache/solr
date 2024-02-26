@@ -23,7 +23,7 @@ All of the examples in this section assume you are running the "techproducts" So
 
 [source,bash]
 ----
-bin/solr -c -e techproducts
+bin/solr start -c -e techproducts
 ----
 
 [[create]]

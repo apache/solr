@@ -50,9 +50,12 @@ Deprecation Removals
 
 * SOLR-17042: Remove deprecated `V2RequestSupport` and associated `SolrRequest` methods `setUseV2` and `setUseBinaryV2`. (Jason Gerlowski)
 
+* SOLR-17159: Remove deprecated bin/post and bin/postlogs scripts in favour of bin/solr equivalents. (Eric Pugh)
+
 * SOLR-17066: `SolrClient` implementations that rely on "base URL" strings now only accept "root" URL paths (i.e. URLs that
   end in "/solr").  Users may still specify a default collection through use of the `withDefaultCollection` method available
   on most SolrClient builders. (Jason Gerlowski, David Smiley, Eric Pugh)
+
 
 Dependency Upgrades
 ---------------------
@@ -103,6 +106,10 @@ Improvements
 
 * SOLR-17159: bin/solr post now has proper unit testing.  Users can specify a --dry-run option to 
   simulate posting documents without sending them to Solr. (Eric Pugh)
+
+* SOLR-17058: Add 'distrib.statsCache' parameter to disable distributed stats requests at query time. (Wei Wang, Mikhail Khludnev)
+
+* SOLR-16138: Throw a exception when issuing a streaming expression and all cores are down instead of returning 0 documents. (Antoine Bursaux via Eric Pugh)
 
 Optimizations
 ---------------------
