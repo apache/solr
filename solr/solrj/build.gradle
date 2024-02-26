@@ -49,7 +49,6 @@ dependencies {
   })
   implementation 'org.apache.httpcomponents:httpclient'
   implementation 'org.apache.httpcomponents:httpcore'
-  implementation 'commons-io:commons-io'
 
   compileOnly 'com.github.stephenc.jcip:jcip-annotations'
 
