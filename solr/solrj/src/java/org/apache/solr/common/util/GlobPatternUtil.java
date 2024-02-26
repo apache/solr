@@ -16,8 +16,7 @@
  */
 package org.apache.solr.common.util;
 
-import java.nio.file.FileSystems;
-import java.nio.file.Paths;
+import org.apache.commons.io.FilenameUtils;
 
 /** Provides methods for matching glob patterns against input strings. */
 public class GlobPatternUtil {
@@ -32,6 +31,6 @@ public class GlobPatternUtil {
    * @return true if the input string matches the glob pattern, false otherwise
    */
   public static boolean matches(String pattern, String input) {
-    return FileSystems.getDefault().getPathMatcher("glob:" + pattern).matches(Paths.get(input));
+    return FilenameUtils.wildcardMatch(input, pattern);
   }
 }
