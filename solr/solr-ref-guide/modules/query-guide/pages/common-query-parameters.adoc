@@ -284,6 +284,17 @@ The query above allows you to examine the scoring explain info of the top matchi
 
 The default value of this parameter is blank, which causes no extra "explain info" to be returned.
 
+== partialResults Parameter
+
+This parameter controls Solr's behavior when a query execution limit is reached (e.g. `timeAllowed` or `cpuAllowed`).
+
+When this parameter is set to `true` (default) then even though reaching a limit terminates further query processing
+Solr will still attempt to return partial results collected so far. These results may be incomplete in
+non-deterministic way (e.g. only some matching documents, documents without fields, missing facets or pivots, no spellcheck results, etc).
+
+When this parameter is set to `false` then reaching a limit will generate an exception and any partial results
+collected so far will be discarded.
+
 == timeAllowed Parameter
 
 This parameter specifies the amount of time, in milliseconds, allowed for a search to complete.

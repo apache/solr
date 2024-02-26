@@ -41,6 +41,9 @@ public class QueryLimits implements QueryTimeout {
   private final SolrQueryResponse rsp;
   private final boolean allowPartialResults;
 
+  // short-circuit the checks if any limit has been tripped
+  private volatile boolean limitsTripped = false;
+
   private QueryLimits() {
     rsp = null;
     allowPartialResults = true;
@@ -67,12 +70,16 @@ public class QueryLimits implements QueryTimeout {
 
   @Override
   public boolean shouldExit() {
+    if (limitsTripped) {
+      return true;
+    }
     for (QueryTimeout limit : limits) {
       if (limit.shouldExit()) {
-        return true;
+        limitsTripped = true;
+        break;
       }
     }
-    return false;
+    return limitsTripped;
   }
 
   /**
@@ -129,24 +136,18 @@ public class QueryLimits implements QueryTimeout {
    * @return A string describing the state pass/fail state of each limit specified for this request.
    */
   public String limitStatusMessage() {
-    StringBuilder sb = new StringBuilder();
-    boolean first = true;
+    if (limits.isEmpty()) {
+      return "This request is unlimited.";
+    }
+    StringBuilder sb = new StringBuilder("Query limits: ");
     for (QueryTimeout limit : limits) {
-      if (first) {
-        first = false;
-        sb.append("Query limits:");
-      }
       sb.append("[");
       sb.append(limit.getClass().getSimpleName());
       sb.append(":");
       sb.append(limit.shouldExit() ? "LIMIT EXCEEDED" : "within limit");
       sb.append("]");
     }
-    if (sb.length() == 0) {
-      return "This request is unlimited.";
-    } else {
-      return sb.toString();
-    }
+    return sb.toString();
   }
 
   /** Return true if there are any limits enabled for the current request. */
