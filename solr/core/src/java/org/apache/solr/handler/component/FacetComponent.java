@@ -278,7 +278,7 @@ public class FacetComponent extends SearchComponent {
 
       NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
       rb.rsp.add(FACET_COUNTS_KEY, counts);
-      if (queryLimits.maybeExitWithPartialResults("Faceting counts", rb.req, rb.rsp)) {
+      if (queryLimits.maybeExitWithPartialResults("Faceting counts")) {
         return;
       }
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
@@ -289,7 +289,7 @@ public class FacetComponent extends SearchComponent {
         if (v != null) {
           counts.add(PIVOT_KEY, v);
         }
-        if (queryLimits.maybeExitWithPartialResults("Faceting pivots", rb.req, rb.rsp)) {
+        if (queryLimits.maybeExitWithPartialResults("Faceting pivots")) {
           return;
         }
       }
@@ -1176,10 +1176,10 @@ public class FacetComponent extends SearchComponent {
     }
 
     rb.rsp.add(FACET_COUNTS_KEY, facet_counts);
-    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-    queryLimits.maybeExitWithPartialResults("Faceting finish", rb.req, rb.rsp);
 
     rb._facetInfo = null; // could be big, so release asap
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    queryLimits.maybeExitWithPartialResults("Faceting finish");
   }
 
   private SimpleOrderedMap<List<NamedList<Object>>> createPivotFacetOutput(ResponseBuilder rb) {

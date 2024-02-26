@@ -166,7 +166,7 @@ public class HighlightComponent extends SearchComponent
           rb.rsp.add(highlightingResponseField(), convertHighlights(sumData));
         }
         QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-        queryLimits.maybeExitWithPartialResults("Highlighting process", rb.req, rb.rsp);
+        queryLimits.maybeExitWithPartialResults("Highlighting process");
       }
     }
   }

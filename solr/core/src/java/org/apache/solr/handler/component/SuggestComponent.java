@@ -196,8 +196,7 @@ public class SuggestComponent extends SearchComponent
       rb.rsp.add("command", (!buildAll) ? "build" : "buildAll");
       for (SolrSuggester suggester : querysuggesters) {
         suggester.build(rb.req.getCore(), rb.req.getSearcher());
-        if (queryLimits.maybeExitWithPartialResults(
-            "Suggester build " + suggester.getName(), rb.req, rb.rsp)) {
+        if (queryLimits.maybeExitWithPartialResults("Suggester build " + suggester.getName())) {
           return;
         }
       }
@@ -205,8 +204,7 @@ public class SuggestComponent extends SearchComponent
       rb.rsp.add("command", (!reloadAll) ? "reload" : "reloadAll");
       for (SolrSuggester suggester : querysuggesters) {
         suggester.reload();
-        if (queryLimits.maybeExitWithPartialResults(
-            "Suggester reload " + suggester.getName(), rb.req, rb.rsp)) {
+        if (queryLimits.maybeExitWithPartialResults("Suggester reload " + suggester.getName())) {
           return;
         }
       }
@@ -286,8 +284,7 @@ public class SuggestComponent extends SearchComponent
       for (SolrSuggester suggester : querySuggesters) {
         SuggesterResult suggesterResult = suggester.getSuggestions(options);
         toNamedList(suggesterResult, namedListResults);
-        if (queryLimits.maybeExitWithPartialResults(
-            "Suggester process " + suggester.getName(), rb.req, rb.rsp)) {
+        if (queryLimits.maybeExitWithPartialResults("Suggester process " + suggester.getName())) {
           return;
         }
       }
@@ -322,7 +319,7 @@ public class SuggestComponent extends SearchComponent
         }
         suggesterResults.add(toSuggesterResult(namedList));
         // may have tripped the mem limits
-        if (queryLimits.maybeExitWithPartialResults("Suggester finish", rb.req, rb.rsp)) {
+        if (queryLimits.maybeExitWithPartialResults("Suggester finish")) {
           break;
         }
       }
@@ -336,7 +333,7 @@ public class SuggestComponent extends SearchComponent
     rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
 
     // either throw or mark
-    queryLimits.maybeExitWithPartialResults("Suggester finish", rb.req, rb.rsp);
+    queryLimits.maybeExitWithPartialResults("Suggester finish");
   }
 
   /**

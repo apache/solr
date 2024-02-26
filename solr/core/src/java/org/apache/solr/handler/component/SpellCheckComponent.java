@@ -55,7 +55,6 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocSet;
@@ -119,21 +118,18 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     if (!params.getBool(COMPONENT_NAME, false)) {
       return;
     }
-    QueryLimits queryLimits =
-        SolrRequestInfo.getRequestInfo() != null
-            ? SolrRequestInfo.getRequestInfo().getLimits()
-            : QueryLimits.NONE;
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
     SolrSpellChecker spellChecker = getSpellChecker(params);
     if (params.getBool(SPELLCHECK_BUILD, false)) {
       spellChecker.build(rb.req.getCore(), rb.req.getSearcher());
       rb.rsp.add("command", "build");
       queryLimits.maybeExitWithPartialResults(
-          "SpellCheck build " + spellChecker.getDictionaryName(), rb.req, rb.rsp);
+          "SpellCheck build " + spellChecker.getDictionaryName());
     } else if (params.getBool(SPELLCHECK_RELOAD, false)) {
       spellChecker.reload(rb.req.getCore(), rb.req.getSearcher());
       rb.rsp.add("command", "reload");
       queryLimits.maybeExitWithPartialResults(
-          "SpellCheck reload " + spellChecker.getDictionaryName(), rb.req, rb.rsp);
+          "SpellCheck reload " + spellChecker.getDictionaryName());
     }
   }
 
@@ -215,7 +211,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           spellingResult = new SpellingResult();
         }
 
-        if (queryLimits.maybeExitWithPartialResults("SpellCheck getSuggestions", rb.req, rb.rsp)) {
+        if (queryLimits.maybeExitWithPartialResults("SpellCheck getSuggestions")) {
           return;
         }
 

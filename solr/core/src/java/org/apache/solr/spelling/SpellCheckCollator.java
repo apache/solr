@@ -97,8 +97,7 @@ public class SpellCheckCollator {
             suggestionsMayOverlap);
     while (tryNo < maxTries && collNo < maxCollations && possibilityIter.hasNext()) {
 
-      if (queryLimits.maybeExitWithPartialResults(
-          "SpellCheck collator", ultimateResponse.req, ultimateResponse.rsp)) {
+      if (queryLimits.maybeExitWithPartialResults("SpellCheck collator")) {
         return List.of();
       }
 

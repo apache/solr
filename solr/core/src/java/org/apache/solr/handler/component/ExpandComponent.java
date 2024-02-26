@@ -255,7 +255,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       return;
     }
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-    if (queryLimits.maybeExitWithPartialResults("Expand process", rb.req, rb.rsp)) {
+    if (queryLimits.maybeExitWithPartialResults("Expand process")) {
       return;
     }
 
@@ -446,7 +446,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     searcher.search(QueryUtils.combineQueryAndFilter(query, pfilter.filter), collector);
-    if (queryLimits.maybeExitWithPartialResults("Expand expand", rb.req, rb.rsp)) {
+    if (queryLimits.maybeExitWithPartialResults("Expand expand")) {
       return;
     }
 

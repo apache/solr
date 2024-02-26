@@ -129,7 +129,7 @@ public class MoreLikeThisComponent extends SearchComponent {
         rb.rsp.add("moreLikeThis", sim);
       }
       QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-      queryLimits.maybeExitWithPartialResults("MoreLikeThis process", rb.req, rb.rsp);
+      queryLimits.maybeExitWithPartialResults("MoreLikeThis process");
     }
   }
 

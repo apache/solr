@@ -138,6 +138,45 @@ public class SolrQueryResponse {
   }
 
   /**
+   * If {@link #getResponseHeader()} is available, set {@link #RESPONSE_HEADER_PARTIAL_RESULTS_KEY}
+   * flag to true.
+   */
+  public void setPartialResults() {
+    NamedList<Object> header = getResponseHeader();
+    if (header != null
+        && header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null) {
+      header.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+    }
+  }
+
+  /**
+   * If {@link #getResponseHeader()} is available, return the value of {@link
+   * #RESPONSE_HEADER_PARTIAL_RESULTS_KEY} or false.
+   */
+  public boolean isPartialResults() {
+    NamedList<Object> header = getResponseHeader();
+    if (header != null) {
+      return Boolean.TRUE.equals(
+          header.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * If {@link #getResponseHeader()} is available, add a reason for returning partial response.
+   *
+   * @param detail reason for returning partial response. Multiple components can add multiple
+   *     reasons at different stages in request processing.
+   */
+  public void addPartialResponseDetail(String detail) {
+    NamedList<Object> header = getResponseHeader();
+    if (header != null) {
+      header.add(RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY, detail);
+    }
+  }
+
+  /**
    * Appends a named value to the list of named values to be returned.
    *
    * @param name the name of the value - may be null if unnamed

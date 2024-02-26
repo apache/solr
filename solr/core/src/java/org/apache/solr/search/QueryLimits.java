@@ -38,15 +38,25 @@ public class QueryLimits implements QueryTimeout {
 
   public static QueryLimits NONE = new QueryLimits();
 
-  private QueryLimits() {}
+  private final SolrQueryResponse rsp;
+  private final boolean allowPartialResults;
+
+  private QueryLimits() {
+    rsp = null;
+    allowPartialResults = true;
+  }
 
   /**
    * Implementors of a Query Limit should add an if block here to activate it, and typically this if
    * statement will hinge on hasXXXLimit() static method attached to the implementation class.
    *
    * @param req the current SolrQueryRequest.
+   * @param rsp the current SolrQueryResponse.
    */
-  public QueryLimits(SolrQueryRequest req) {
+  public QueryLimits(SolrQueryRequest req, SolrQueryResponse rsp) {
+    this.rsp = rsp;
+    this.allowPartialResults =
+        req != null ? req.getParams().getBool(CommonParams.PARTIAL_RESULTS, true) : true;
     if (hasTimeLimit(req)) {
       limits.add(new TimeAllowedLimit(req));
     }
@@ -66,6 +76,13 @@ public class QueryLimits implements QueryTimeout {
   }
 
   /**
+   * Returns true if {@link CommonParams#PARTIAL_RESULTS} request parameter is true (or missing).
+   */
+  public boolean isAllowPartialResults() {
+    return allowPartialResults;
+  }
+
+  /**
    * Format an exception message with optional label and details from {@link #limitStatusMessage()}.
    */
   public String formatExceptionMessage(String label) {
@@ -81,29 +98,16 @@ public class QueryLimits implements QueryTimeout {
    * exception.
    *
    * @param label optional label to indicate the caller.
-   * @param req current {@link SolrQueryRequest}
-   * @param rsp current {@link SolrQueryResponse}
    * @return true if the caller should stop processing and return partial results, false otherwise.
    * @throws QueryLimitsExceededException if {@link CommonParams#PARTIAL_RESULTS} request parameter
    *     is false and limits have been reached.
    */
-  public boolean maybeExitWithPartialResults(
-      String label, SolrQueryRequest req, SolrQueryResponse rsp)
-      throws QueryLimitsExceededException {
+  public boolean maybeExitWithPartialResults(String label) throws QueryLimitsExceededException {
     if (isLimitsEnabled() && shouldExit()) {
-      if (req.getParams().getBool(CommonParams.PARTIAL_RESULTS, true)) {
-        if (rsp.getResponseHeader() != null) {
-          // add only one flag
-          if (rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)
-              == null) {
-            rsp.getResponseHeader()
-                .add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, true);
-          }
-          // add first or next reason why we're returning partial results
-          rsp.getResponseHeader()
-              .add(
-                  SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY,
-                  formatExceptionMessage(label));
+      if (allowPartialResults) {
+        if (rsp != null) {
+          rsp.setPartialResults();
+          rsp.addPartialResponseDetail(formatExceptionMessage(label));
         }
         return true;
       } else {
