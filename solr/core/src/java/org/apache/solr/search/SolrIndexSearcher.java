@@ -1566,7 +1566,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // all the current flags can be reused during warming,
       // so set all of them on the cache key.
       key =
-          new QueryResultKey(q, cmd.getFilterList(), cmd.getSort(), flags, cmd.getMinExactCount());
+          new QueryResultKey(
+              q,
+              cmd.getFilterList(),
+              cmd.getSort(),
+              flags,
+              cmd.getMinExactCount(),
+              cmd.isEnableDistribStats());
       if ((flags & NO_CHECK_QCACHE) == 0) {
         superset = queryResultCache.get(key);
 
@@ -1731,6 +1737,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
   }
 
+  private Relation populateScoresIfNeeded(
+      QueryCommand cmd, boolean needScores, TopDocs topDocs, Query query, ScoreMode scoreModeUsed)
+      throws IOException {
+    if (cmd.getSort() != null && !(cmd.getQuery() instanceof RankQuery) && needScores) {
+      TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
+    }
+    if (scoreModeUsed == ScoreMode.COMPLETE || scoreModeUsed == ScoreMode.COMPLETE_NO_SCORES) {
+      return TotalHits.Relation.EQUAL_TO;
+    } else {
+      return topDocs.totalHits.relation;
+    }
+  }
+
   /**
    * Helper method for extracting the {@link FieldDoc} sort values from a {@link TopFieldDocs} when
    * available and making the appropriate call to {@link QueryResult#setNextCursorMark} when
@@ -1886,14 +1905,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       totalHits = topCollector.getTotalHits();
       final TopDocs topDocs = topCollector.topDocs(0, len);
-      if (scoreModeUsed == ScoreMode.COMPLETE || scoreModeUsed == ScoreMode.COMPLETE_NO_SCORES) {
-        hitsRelation = TotalHits.Relation.EQUAL_TO;
-      } else {
-        hitsRelation = topDocs.totalHits.relation;
-      }
-      if (cmd.getSort() != null && cmd.getQuery() instanceof RankQuery == false && needScores) {
-        TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
-      }
+      hitsRelation = populateScoresIfNeeded(cmd, needScores, topDocs, query, scoreModeUsed);
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
 
       maxScore =
@@ -2004,9 +2016,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       assert (totalHits == set.size()) || qr.isPartialResults();
 
       final TopDocs topDocs = topCollector.topDocs(0, len);
-      if (cmd.getSort() != null && !(cmd.getQuery() instanceof RankQuery) && needScores) {
-        TopFieldCollector.populateScores(topDocs.scoreDocs, this, query);
-      }
+      populateScoresIfNeeded(cmd, needScores, topDocs, query, ScoreMode.COMPLETE);
       populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
       maxScore =
           totalHits > 0
@@ -2252,9 +2262,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
       return;
     }
-
-    // bit of a hack to tell if a set is sorted - do it better in the future.
-    boolean inOrder = set instanceof BitDocSet || set instanceof SortedIntDocSet;
 
     TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(nDocs, cmd);
 

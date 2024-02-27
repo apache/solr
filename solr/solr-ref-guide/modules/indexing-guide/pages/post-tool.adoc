@@ -20,9 +20,6 @@ Solr includes a simple command line tool for POSTing various types of content to
 
 NOTE: This tool is meant for use by new users exploring Solr's capabilities, and is not intended as a robust solution to be used for indexing documents into production systems.
 
-NOTE: You may be familiar with SimplePostTool and the `bin/post` Unix shell script.  While this is still available, it is deprecated and will be removed in Solr 10.
-
-
 To run it, open a window and enter:
 
 [,console]
