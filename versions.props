@@ -73,6 +73,6 @@ org.openjdk.jmh:*=1.37
 org.osgi:osgi.annotation=8.1.0
 org.quicktheories:quicktheories=0.26
 org.semver4j:semver4j=5.2.2
-org.slf4j:*=2.0.10
+org.slf4j:*=2.0.12
 org.xerial.snappy:snappy-java=1.1.10.5
 software.amazon.awssdk:*=2.20.155
