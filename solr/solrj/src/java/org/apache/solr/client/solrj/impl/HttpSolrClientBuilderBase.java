@@ -151,7 +151,7 @@ public abstract class HttpSolrClientBuilderBase<
    * If true, prefer http1.1 over http2. If not set, the default is determined by system property
    * 'solr.http1'. Otherwise, false.
    *
-   * @param useHttp1_1
+   * @param useHttp1_1 prefer http1.1?
    * @return this Builder
    */
   @SuppressWarnings("unchecked")

@@ -408,7 +408,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     /**
      * Use the provided CookieHandler.
      *
-     * @param cookieHandler
+     * @param cookieHandler the cookie handler to use
      * @return this Builder
      */
     public HttpSolrJdkClient.Builder withCookieHandler(CookieHandler cookieHandler) {
