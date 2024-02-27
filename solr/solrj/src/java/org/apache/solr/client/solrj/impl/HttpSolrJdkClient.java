@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.CookieHandler;
 import java.net.InetSocketAddress;
 import java.net.ProxySelector;
 import java.net.URI;
@@ -102,6 +103,10 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
 
     if(builder.useHttp1_1) {
       b.version(HttpClient.Version.HTTP_1_1);
+    }
+
+    if(builder.cookieHandler != null) {
+      b.cookieHandler(builder.cookieHandler);
     }
 
     if (builder.proxyHost != null) {
@@ -367,6 +372,8 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
 
     private SSLContext sslContext;
 
+    private CookieHandler cookieHandler;
+
     public Builder() {
       super();
     }
@@ -392,10 +399,21 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
      * java.net.http.HttpClient.Builder#sslContext(SSLContext)}.
      *
      * @param sslContext the ssl context to use
-     * @return this
+     * @return this Builder
      */
     public HttpSolrJdkClient.Builder withSSLContext(SSLContext sslContext) {
       this.sslContext = sslContext;
+      return this;
+    }
+
+    /**
+     * Use the provided CookieHandler.
+     *
+     * @param cookieHandler
+     * @return this Builder
+     */
+    public HttpSolrJdkClient.Builder withCookieHandler(CookieHandler cookieHandler) {
+      this.cookieHandler = cookieHandler;
       return this;
     }
   }

@@ -39,7 +39,6 @@ public abstract class HttpSolrClientBuilderBase<
   protected Set<String> urlParamNames;
   protected Integer maxConnectionsPerHost;
   protected ExecutorService executor;
-  protected CookieStore cookieStore;
   protected boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
   protected String proxyHost;
   protected int proxyPort;
@@ -150,17 +149,7 @@ public abstract class HttpSolrClientBuilderBase<
     return (B) this;
   }
 
-  /**
-   * Set a cookieStore other than the default ({@code java.net.InMemoryCookieStore})
-   *
-   * @param cookieStore The CookieStore to set. {@code null} will set the default.
-   * @return this Builder
-   */
-  @SuppressWarnings("unchecked")
-  public B withCookieStore(CookieStore cookieStore) {
-    this.cookieStore = cookieStore;
-    return (B) this;
-  }
+
 
   /**
    * If true, prefer http1.1 over http2.  If not set, the default is determined

@@ -805,6 +805,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     private HttpClient httpClient;
 
+    protected CookieStore cookieStore;
+
     private SSLConfig sslConfig;
 
     protected Long keyStoreReloadIntervalSecs;
@@ -989,6 +991,17 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (this.urlParamNames == null) {
         this.urlParamNames = http2SolrClient.urlParamNames;
       }
+      return this;
+    }
+
+    /**
+     * Set a cookieStore other than the default ({@code java.net.InMemoryCookieStore})
+     *
+     * @param cookieStore The CookieStore to set. {@code null} will set the default.
+     * @return this Builder
+     */
+    public Builder withCookieStore(CookieStore cookieStore) {
+      this.cookieStore = cookieStore;
       return this;
     }
   }

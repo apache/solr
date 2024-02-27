@@ -18,6 +18,8 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.net.CookieHandler;
+import java.net.CookieManager;
 import java.net.Socket;
 import java.net.http.HttpClient;
 import java.security.cert.CertificateException;
@@ -466,6 +468,14 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
       } catch (Exception e1) {
         // ignore
       }
+    }
+  }
+
+  @Test
+  public void testCookieHandlerSettingHonored() throws Exception {
+    CookieHandler myCookieHandler = new CookieManager();
+    try (HttpSolrJdkClient client = builder(getBaseUrl()).withCookieHandler(myCookieHandler).build()) {
+      assertEquals(myCookieHandler, client.client.cookieHandler().get());
     }
   }
 
