@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.http.HttpClient;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.concurrent.ExecutorService;
@@ -302,6 +303,15 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testUpdateXml() throws Exception {
+    testUpdateXml(false);
+  }
+
+  @Test
+  public void testUpdateXmlWithHttp11() throws Exception {
+    testUpdateXml(true);
+  }
+
+  private void testUpdateXml(boolean http11) throws Exception {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
 
     // 64k+ post body, just to be sure we are using the [in|out]put streams correctly.
@@ -312,11 +322,17 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
     String value = sb.toString();
 
     try (HttpSolrJdkClient client =
-        builder(url)
-            .withRequestWriter(new RequestWriter())
-            .withResponseParser(new XMLResponseParser())
-            .build()) {
-      testUpdate(client, WT.XML, "application/xml; charset=UTF-8", value);
+                 builder(url)
+                         .withRequestWriter(new RequestWriter())
+                         .withResponseParser(new XMLResponseParser())
+                         .useHttp1_1(http11)
+                         .build()) {
+      if(http11) {
+        assertEquals(HttpClient.Version.HTTP_1_1, client.client.version());
+      } else {
+        assertEquals(HttpClient.Version.HTTP_2, client.client.version());
+      }
+      testUpdate(client, HttpSolrClientTestBase.WT.XML, "application/xml; charset=UTF-8", value);
     }
   }
 

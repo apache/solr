@@ -807,8 +807,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     private SSLConfig sslConfig;
 
-    private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
-
     protected Long keyStoreReloadIntervalSecs;
 
     public Builder() {
@@ -991,11 +989,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (this.urlParamNames == null) {
         this.urlParamNames = http2SolrClient.urlParamNames;
       }
-      return this;
-    }
-
-    public Builder useHttp1_1(boolean useHttp1_1) {
-      this.useHttp1_1 = useHttp1_1;
       return this;
     }
   }

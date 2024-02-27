@@ -65,7 +65,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
   private static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] 1.0";
 
-  private HttpClient client;
+  protected HttpClient client;
 
   protected ExecutorService executor;
 
@@ -99,6 +99,10 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
       this.shutdownExecutor = true;
     }
     b.executor(this.executor);
+
+    if(builder.useHttp1_1) {
+      b.version(HttpClient.Version.HTTP_1_1);
+    }
 
     if (builder.proxyHost != null) {
       if (builder.proxyIsSocks4) {
