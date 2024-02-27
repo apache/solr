@@ -46,7 +46,7 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@LogLevel("org.eclipse.jetty.http2=DEBUG") //NOCOMMIT
+@LogLevel("org.eclipse.jetty.http2=DEBUG") // NOCOMMIT
 public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
 
   private static SSLContext allTrustingSslContext;
@@ -72,8 +72,10 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
     The NOCOMMIT on verbose logging here is to try and figure out what is going wrong.
      */
 
-    //NOCOMMIT
-    System.setProperty("jdk.httpclient.HttpClient.log","errors,requests,headers,frames[:control:data:window:all],content,ssl,trace,channel,all");
+    // NOCOMMIT
+    System.setProperty(
+        "jdk.httpclient.HttpClient.log",
+        "errors,requests,headers,frames[:control:data:window:all],content,ssl,trace,channel,all");
 
     try {
       KeyManagerFactory keyManagerFactory =
@@ -324,12 +326,12 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
     String value = sb.toString();
 
     try (HttpSolrJdkClient client =
-                 builder(url)
-                         .withRequestWriter(new RequestWriter())
-                         .withResponseParser(new XMLResponseParser())
-                         .useHttp1_1(http11)
-                         .build()) {
-      if(http11) {
+        builder(url)
+            .withRequestWriter(new RequestWriter())
+            .withResponseParser(new XMLResponseParser())
+            .useHttp1_1(http11)
+            .build()) {
+      if (http11) {
         assertEquals(HttpClient.Version.HTTP_1_1, client.client.version());
       } else {
         assertEquals(HttpClient.Version.HTTP_2, client.client.version());
@@ -474,7 +476,8 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
   @Test
   public void testCookieHandlerSettingHonored() throws Exception {
     CookieHandler myCookieHandler = new CookieManager();
-    try (HttpSolrJdkClient client = builder(getBaseUrl()).withCookieHandler(myCookieHandler).build()) {
+    try (HttpSolrJdkClient client =
+        builder(getBaseUrl()).withCookieHandler(myCookieHandler).build()) {
       assertEquals(myCookieHandler, client.client.cookieHandler().get());
     }
   }

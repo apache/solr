@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
@@ -101,11 +100,11 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     }
     b.executor(this.executor);
 
-    if(builder.useHttp1_1) {
+    if (builder.useHttp1_1) {
       b.version(HttpClient.Version.HTTP_1_1);
     }
 
-    if(builder.cookieHandler != null) {
+    if (builder.cookieHandler != null) {
       b.cookieHandler(builder.cookieHandler);
     }
 

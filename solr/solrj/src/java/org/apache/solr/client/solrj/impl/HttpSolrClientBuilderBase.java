@@ -17,12 +17,10 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import java.net.CookieStore;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.request.RequestWriter;
 
 public abstract class HttpSolrClientBuilderBase<
@@ -149,11 +147,9 @@ public abstract class HttpSolrClientBuilderBase<
     return (B) this;
   }
 
-
-
   /**
-   * If true, prefer http1.1 over http2.  If not set, the default is determined
-   * by system property 'solr.http1'.  Otherwise, false.
+   * If true, prefer http1.1 over http2. If not set, the default is determined by system property
+   * 'solr.http1'. Otherwise, false.
    *
    * @param useHttp1_1
    * @return this Builder
