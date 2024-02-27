@@ -37,17 +37,41 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LogLevel("org.eclipse.jetty.http2=DEBUG") //NOCOMMIT
 public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
 
   private static SSLContext allTrustingSslContext;
 
   @BeforeClass
   public static void beforeClass() {
+    /*
+    A goal of java.net.http.HttpClient is to seamlessly prefer http2 but downgrade to http1 if the
+    remote server does not support it.  To achieve this, it begins with a http1
+    upgrade request, and if honored by the remote server, continues with http2.  When using
+    PipedOutputStream with POST requests, something goes wrong with this and our Jetty test server
+    responds with an "invalid_preface", causing the stream to fail.
+
+    Note, this always works with TLS, or if forcing http1.1.
+    See comment on https://bugs.openjdk.org/browse/JDK-8326420
+
+    This always works if we buffer the request body and use a ByteArrayOutputStream.  The only
+    obvious difference in this case is the request includes a Content-Length header.
+
+    See also https://bugs.openjdk.org/browse/JDK-8287589 for a discussion on how the
+    JDK Http client is designed to work with upgrade requests.
+
+    The NOCOMMIT on verbose logging here is to try and figure out what is going wrong.
+     */
+
+    //NOCOMMIT
+    System.setProperty("jdk.httpclient.HttpClient.log","errors,requests,headers,frames[:control:data:window:all],content,ssl,trace,channel,all");
+
     try {
       KeyManagerFactory keyManagerFactory =
           KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
