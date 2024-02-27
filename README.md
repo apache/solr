@@ -91,7 +91,7 @@ Solr uses [Gradle](https://gradle.org/) for its build system. Here are some usef
 
 ```
 cd ./solr/packaging/build/dev
-bin/solr start
+bin/solr start -c
 ```
 
 - Open a web browser and go to http://localhost:8983/solr/ to access the Solr Admin interface. You can also use the `bin/solr` script to create and manage Solr collections. For example use the ` bin/solr post` tool to index some sample data.
