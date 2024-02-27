@@ -75,7 +75,7 @@ Guide](https://solr.apache.org/guide/solr/latest/getting-started/solr-tutorial.h
 
 ## Developer Documentation
 
- Learn more about developing Solr by reading through the developer docs in [./dev-docs](./dev-docs) source tree or building Solr from source [./dev-docs/solr-source-code.adoc](./dev-docs/solr-source-code.adoc)
+Learn more about developing Solr by reading through the developer docs in [./dev-docs](./dev-docs) source tree or building Solr from source in [./dev-docs/solr-source-code.adoc](./dev-docs/solr-source-code.adoc)
 
 ### Quickstart
 
