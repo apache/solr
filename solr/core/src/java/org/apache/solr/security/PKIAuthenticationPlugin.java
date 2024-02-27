@@ -249,6 +249,11 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   }
 
   private PKIHeaderData validateSignature(String data, byte[] sig, PublicKey key, boolean isRetry) {
+    if (key == null) {
+      log.warn("Key is null when attempting to validate signature; skipping...");
+      return null;
+    }
+
     try {
       if (CryptoKeys.verifySha256(data.getBytes(UTF_8), sig, key)) {
         int timestampStart = data.lastIndexOf(' ');
@@ -268,9 +273,13 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
       }
     } catch (InvalidKeyException | SignatureException e) {
       if (isRetry) {
-        log.error("Signature validation on retry failed, likely key error");
+        if (log.isErrorEnabled()) {
+          log.error("Signature validation on retry failed, likely key error: {}", e.getMessage());
+        }
       } else {
-        log.info("Signature validation failed first attempt, likely key error");
+        if (log.isInfoEnabled()) {
+          log.info("Signature validation failed first attempt, likely key error: {}", e.getMessage());
+        }
       }
       return null;
     }
