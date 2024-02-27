@@ -25,10 +25,16 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SortSpecParsing;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class TestNestedDocsSort extends SolrTestCaseJ4 {
+
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
