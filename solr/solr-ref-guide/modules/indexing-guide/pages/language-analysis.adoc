@@ -3231,11 +3231,11 @@ Lucene includes an example stopword list.
 
 Solr includes three stemmers for Swedish: one in the `solr.SnowballPorterFilterFactory language="Swedish"`, a lighter stemmer called `solr.SwedishLightStemFilterFactory`, and a minimal stemmer `solr.SwedishMinimalStemFilterFactory`.
 
-The Light variant is based on simple rules, and removes suffixes like `-het`, `-heten`, `-else`, `-elser` etc., while the Minimal one only tries to normalize singular/plural endings like `-er`, `-ar`, `-arne` etc. See {lucene-javadocs}/analyzers-common/org/apache/lucene/analysis/sv/package-summary.html[the Lucene javadocs] for more information.
+The Light variant is based on simple rules, and removes suffixes like `-het`, `-heten`, `-else`, `-elser` etc., while the Minimal one only tries to normalize singular/plural endings like `-er`, `-ar`, `-arne` etc. See {lucene-javadocs}/analysis/common/org/apache/lucene/analysis/sv/package-summary.html[the Lucene javadocs] for more information.
 
 [NOTE]
 ====
-The Swedish Light and Minimal stemmers are known to produce many conflicting word stems, significantly hurting search precision. It may be necessary to provide an extensive list of custom stemmer mappings to counteract this, e.g. using the <<stemmeroverridefilterfactory,StemmerOverrideFilter>>.
+The Swedish Light and Minimal stemmers are known to produce many conflicting word stems, significantly hurting search precision. It may be necessary to provide an extensive list of custom stemmer mappings to counteract this, e.g. using the xref:stemmeroverridefilterfactory[StemmerOverrideFilter].
 ====
 
 Lucene includes an example stopword list.
