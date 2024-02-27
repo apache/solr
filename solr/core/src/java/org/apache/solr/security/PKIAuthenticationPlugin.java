@@ -153,7 +153,9 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     PKIHeaderData headerData = null;
     String headerV2 = request.getHeader(HEADER_V2);
     String headerV1 = request.getHeader(HEADER);
-    if (headerV2 != null) {
+    if (headerV1 == null && headerV2 == null) {
+      return sendError(response, true, "No PKI auth header was provided");
+    } else if (headerV2 != null) {
       // Try V2 first
       int nodeNameEnd = headerV2.indexOf(' ');
       if (nodeNameEnd <= 0) {
@@ -172,7 +174,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     }
 
     if (headerData == null) {
-      return sendError(response, true, "Could not load principal from SolrAuthV2 header.");
+      return sendError(response, true, "Could not validate PKI header.");
     }
     long elapsed = receivedTime - headerData.timestamp;
     if (elapsed > MAX_VALIDITY) {
@@ -218,13 +220,19 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     }
   }
 
-  private PKIHeaderData decipherHeaderV2(String header, String nodeName) {
+  private PublicKey getOrFetchPublicKey(String nodeName) {
     PublicKey key = keyCache.get(nodeName);
     if (key == null) {
       log.debug("No key available for node: {} fetching now ", nodeName);
-      key = getRemotePublicKey(nodeName);
+      key = fetchPublicKeyFromRemote(nodeName);
       log.debug("public key obtained {} ", key);
     }
+
+    return key;
+  }
+
+  private PKIHeaderData decipherHeaderV2(String header, String nodeName) {
+    PublicKey key = getOrFetchPublicKey(nodeName);
 
     int sigStart = header.lastIndexOf(' ');
 
@@ -233,7 +241,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     PKIHeaderData rv = validateSignature(data, sig, key, false);
     if (rv == null) {
       log.warn("Failed to verify signature, trying after refreshing the key ");
-      key = getRemotePublicKey(nodeName);
+      key = fetchPublicKeyFromRemote(nodeName);
       rv = validateSignature(data, sig, key, true);
     }
 
@@ -269,17 +277,12 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   }
 
   private PKIHeaderData decipherHeader(String nodeName, String cipherBase64) {
-    PublicKey key = keyCache.get(nodeName);
-    if (key == null) {
-      log.debug("No key available for node: {} fetching now ", nodeName);
-      key = getRemotePublicKey(nodeName);
-      log.debug("public key obtained {} ", key);
-    }
+    PublicKey key = getOrFetchPublicKey(nodeName);
 
     PKIHeaderData header = parseCipher(cipherBase64, key, false);
     if (header == null) {
       log.warn("Failed to decrypt header, trying after refreshing the key ");
-      key = getRemotePublicKey(nodeName);
+      key = fetchPublicKeyFromRemote(nodeName);
       return parseCipher(cipherBase64, key, true);
     } else {
       return header;
@@ -320,6 +323,15 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
     }
   }
 
+  private boolean isInLiveNodes(String nodeName) {
+    return cores
+        .getZkController()
+        .getZkStateReader()
+        .getClusterState()
+        .getLiveNodes()
+        .contains(nodeName);
+  }
+
   /**
    * Fetch the public key for a remote Solr node and store it in our key cache, replacing any
    * existing entries.
@@ -327,13 +339,13 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
    * @param nodename the node to fetch a key from
    * @return the public key
    */
-  PublicKey getRemotePublicKey(String nodename) {
-    if (!cores
-        .getZkController()
-        .getZkStateReader()
-        .getClusterState()
-        .getLiveNodes()
-        .contains(nodename)) return null;
+  PublicKey fetchPublicKeyFromRemote(String nodename) {
+    if (!isInLiveNodes(nodename)) {
+      log.warn(
+          "Unable to fetch public key for {} as it does not appear to be a Solr 'live node'",
+          nodename);
+      return null;
+    }
     String url = cores.getZkController().getZkStateReader().getBaseUrlForNodeName(nodename);
     HttpEntity entity = null;
     try {
