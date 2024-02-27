@@ -160,8 +160,7 @@ public class QueryLimits implements QueryTimeout {
    * if it exists, otherwise it returns {@link #NONE}.
    */
   public static QueryLimits getCurrentLimits() {
-    return SolrRequestInfo.getRequestInfo() != null
-        ? SolrRequestInfo.getRequestInfo().getLimits()
-        : NONE;
+    final SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+    return info != null ? info.getLimits() : NONE;
   }
 }

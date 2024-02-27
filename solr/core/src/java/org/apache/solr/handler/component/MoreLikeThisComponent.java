@@ -102,12 +102,16 @@ public class MoreLikeThisComponent extends SearchComponent {
           MoreLikeThisHandler.MoreLikeThisHelper mlt =
               new MoreLikeThisHandler.MoreLikeThisHelper(params, searcher);
           NamedList<NamedList<?>> mltQueryByDocKey = new NamedList<>();
+          QueryLimits queryLimits = QueryLimits.getCurrentLimits();
           for (DocIterator results = rb.getResults().docList.iterator(); results.hasNext(); ) {
             int docId = results.nextDoc();
             final List<MoreLikeThisHandler.InterestingTerm> interestingTerms =
                 mlt.getInterestingTerms(mlt.getBoostedMLTQuery(docId), -1);
             if (interestingTerms.isEmpty()) {
               continue;
+            }
+            if (queryLimits.maybeExitWithPartialResults("MoreLikeThis process")) {
+              break;
             }
             final String uniqueKey = rb.req.getSchema().getUniqueKeyField().getName();
             final Document document = rb.req.getSearcher().doc(docId);
@@ -128,8 +132,6 @@ public class MoreLikeThisComponent extends SearchComponent {
             getMoreLikeThese(rb, rb.req.getSearcher(), rb.getResults().docList, flags);
         rb.rsp.add("moreLikeThis", sim);
       }
-      QueryLimits queryLimits = QueryLimits.getCurrentLimits();
-      queryLimits.maybeExitWithPartialResults("MoreLikeThis process");
     }
   }
 
@@ -419,6 +421,8 @@ public class MoreLikeThisComponent extends SearchComponent {
       interestingTermsResponse = new SimpleOrderedMap<>();
     }
 
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+
     while (iterator.hasNext()) {
       int id = iterator.nextDoc();
       int rows = p.getInt(MoreLikeThisParams.DOC_COUNT, 5);
@@ -460,6 +464,9 @@ public class MoreLikeThisComponent extends SearchComponent {
           }
           interestingTermsResponse.add(name, interestingTermsString);
         }
+      }
+      if (queryLimits.maybeExitWithPartialResults("MoreLikeThis moreLikeThese")) {
+        break;
       }
     }
     // add debug information
