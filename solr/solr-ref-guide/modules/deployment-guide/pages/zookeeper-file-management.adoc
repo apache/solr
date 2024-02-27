@@ -26,13 +26,13 @@ These files are uploaded in either of the following cases:
 
 == Startup Bootstrap
 
-When you try SolrCloud for the first time using the `bin/solr -e cloud`, the related configset gets uploaded to ZooKeeper automatically and is linked with the newly created collection.
+When you try SolrCloud for the first time using the `bin/solr start -e cloud`, the related configset gets uploaded to ZooKeeper automatically and is linked with the newly created collection.
 
 The below command would start SolrCloud with the default collection name (`gettingstarted`) and default configset (`_default`) uploaded and linked to it.
 
 [source,bash]
 ----
-bin/solr -e cloud -noprompt
+bin/solr start -e cloud -noprompt
 ----
 
 You can also explicitly upload a configuration directory when creating a collection using the `bin/solr` script with the `-d` option, such as:

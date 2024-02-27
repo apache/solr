@@ -32,6 +32,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -208,7 +209,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     } else {
       CollectionAdminRequest.Create create =
           CollectionAdminRequest.createCollection(name, config, 2, 1)
-              .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
+              .setPerReplicaState(SolrCloudTestCase.isPRS());
       response = create.process(solrCluster.getSolrClient());
       solrCluster.waitForActiveCollection(name, 2, 2);
     }
@@ -262,5 +263,56 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     solrCluster.getSolrClient().commit("collection2");
     solrCluster.getSolrClient().commit("collection1_local");
     solrCluster.getSolrClient().commit("collection2_local");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testDisableDistribStats() throws Exception {
+
+    // single collection with implicit router
+    final String COLLECTION = "collection1";
+    createCollection(COLLECTION, "conf1", ImplicitDocRouter.NAME);
+    SolrClient client = solrCluster.getSolrClient();
+
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    doc.setField("cat", "tv");
+    doc.addField(ShardParams._ROUTE_, "a");
+    client.add(COLLECTION, doc);
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "2");
+    doc.setField("cat", "ipad");
+    doc.addField(ShardParams._ROUTE_, "b");
+    client.add(COLLECTION, doc);
+
+    client.commit(COLLECTION);
+    // distributed stats implicitly enabled by default
+    SolrQuery query =
+        new SolrQuery(
+            "q", "cat:tv",
+            "fl", "id,score",
+            "debug", "track");
+    QueryResponse rsp = client.query(COLLECTION, query);
+    NamedList<Object> track = (NamedList<Object>) rsp.getDebugMap().get("track");
+    assertNotNull(track);
+    assertNotNull("stats cache hit", track.get("PARSE_QUERY"));
+
+    // distributed stats explicitly disabled
+    query.set("distrib.statsCache", "false");
+    query.set("q", "{!terms f=id}1,2");
+    rsp = client.query(COLLECTION, query);
+    track = (NamedList<Object>) rsp.getDebugMap().get("track");
+    assertNotNull(track);
+    assertNull("NO stats cache hit", track.get("PARSE_QUERY"));
+    assertNotNull("just search", track.get("EXECUTE_QUERY"));
+
+    // distributed stats explicitly enabled
+    query.set("distrib.statsCache", "true");
+    query.set("q", "name:ipad"); // trick around LRUStatsCache
+    rsp = client.query(COLLECTION, query);
+    track = (NamedList<Object>) rsp.getDebugMap().get("track");
+    assertNotNull(track);
+    assertNotNull("stats cache hit:" + track, track.get("PARSE_QUERY"));
   }
 }

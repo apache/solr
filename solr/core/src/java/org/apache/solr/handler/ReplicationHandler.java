@@ -1801,6 +1801,8 @@ public class ReplicationHandler extends RequestHandlerBase
   // in case of TLOG replica, if leaderVersion = zero, don't do commit
   // otherwise updates from current tlog won't copied over properly to the new tlog, leading to data
   // loss
+  // don't commit on leader version zero for PULL replicas as PULL should only get its index
+  // state from leader
   public static final String SKIP_COMMIT_ON_LEADER_VERSION_ZERO = "skipCommitOnLeaderVersionZero";
 
   /**

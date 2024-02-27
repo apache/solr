@@ -168,6 +168,9 @@ public class QueryComponent extends SearchComponent {
       rb.setQueryString(queryString);
     }
 
+    // set the flag for distributed stats
+    rb.setEnableDistribStats(params.getBool(CommonParams.DISTRIB_STATS_CACHE, true));
+
     try {
       QParser parser = QParser.getParser(rb.getQueryString(), defType, req);
       Query q = parser.getQuery();
@@ -365,6 +368,7 @@ public class QueryComponent extends SearchComponent {
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
     cmd.setMinExactCount(getMinExactCount(params));
+    cmd.setEnableDistribStats(rb.isEnableDistribStats());
 
     boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
 
@@ -736,8 +740,9 @@ public class QueryComponent extends SearchComponent {
 
   protected void createDistributedStats(ResponseBuilder rb) {
     StatsCache cache = rb.req.getSearcher().getStatsCache();
-    if ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
-        || rb.getSortSpec().includesScore()) {
+    if (rb.isEnableDistribStats()
+        && ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
+            || rb.getSortSpec().includesScore())) {
       ShardRequest sreq = cache.retrieveStatsRequest(rb);
       if (sreq != null) {
         rb.addRequest(this, sreq);
