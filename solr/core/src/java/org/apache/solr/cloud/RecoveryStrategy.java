@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -34,8 +35,6 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.util.AsyncListener;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
@@ -69,7 +68,6 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 /**
  * This class may change in future and customisations are not supported between versions in terms of
@@ -125,7 +123,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   private int retries;
   private boolean recoveringAfterStartup;
   private CoreContainer cc;
-  private volatile Cancellable prevSendPreRecoveryHttpUriRequest;
+  private volatile FutureTask<NamedList<Object>> prevSendPreRecoveryHttpUriRequest;
   private final Replica.Type replicaType;
 
   private CoreDescriptor coreDescriptor;
@@ -190,7 +188,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   public final void close() {
     close = true;
     if (prevSendPreRecoveryHttpUriRequest != null) {
-      prevSendPreRecoveryHttpUriRequest.cancel();
+      prevSendPreRecoveryHttpUriRequest.cancel(true);
     }
     log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
   }
@@ -633,9 +631,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
                 .getSlice(cloudDesc.getShardId());
 
         try {
-          prevSendPreRecoveryHttpUriRequest.cancel();
+          prevSendPreRecoveryHttpUriRequest.cancel(true);
         } catch (NullPointerException e) {
           // okay
+          log.info("Failed to abort the Prep Recovery command as it has not been sent yet.");
         }
 
         if (isClosed()) {
@@ -918,28 +917,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
                 null) // leader core omitted since client only used for 'admin' request
             .withIdleTimeout(readTimeout, TimeUnit.MILLISECONDS)
             .build()) {
+      prevSendPreRecoveryHttpUriRequest = new FutureTask<>(() -> client.request(prepCmd));
       log.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd);
-      MDC.put("HttpSolrClient.url", baseUrl);
-      prevSendPreRecoveryHttpUriRequest =
-          client.asyncRequest(
-              prepCmd,
-              null,
-              new AsyncListener<>() {
-                @Override
-                public void onSuccess(NamedList<Object> entries) {
-                  log.info(
-                      "Prep recovery command successfully sent to [{}]; [{}]",
-                      leaderBaseUrl,
-                      prepCmd);
-                }
-
-                @Override
-                public void onFailure(Throwable throwable) {
-                  log.error("Prep recovery command failed! [{}] [{}]", leaderBaseUrl, prepCmd);
-                }
-              });
-    } finally {
-      MDC.remove("HttpSolrClient.url");
+      prevSendPreRecoveryHttpUriRequest.run();
     }
   }
 }

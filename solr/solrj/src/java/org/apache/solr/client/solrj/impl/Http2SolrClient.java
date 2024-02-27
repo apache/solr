@@ -176,16 +176,6 @@ public class Http2SolrClient extends SolrClient {
 
     this.idleTimeoutMillis = builder.idleTimeoutMillis;
 
-    executor = builder.executor;
-    if (executor == null) {
-      BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
-      this.executor =
-          new ExecutorUtil.MDCAwareThreadPoolExecutor(
-              32, 256, 60, TimeUnit.SECONDS, queue, new SolrNamedThreadFactory("h2sc"));
-      shutdownExecutor = true;
-    } else {
-      shutdownExecutor = false;
-    }
     if (builder.httpClient != null) {
       this.httpClient = builder.httpClient;
       this.closeClient = false;
@@ -213,9 +203,6 @@ public class Http2SolrClient extends SolrClient {
     } else {
       this.urlParamNames = Set.of();
     }
-    if (builder.executor != null) {
-      this.executor = builder.executor;
-    }
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -235,6 +222,17 @@ public class Http2SolrClient extends SolrClient {
 
   private HttpClient createHttpClient(Builder builder) {
     HttpClient httpClient;
+
+    executor = builder.executor;
+    if (executor == null) {
+      BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
+      this.executor =
+          new ExecutorUtil.MDCAwareThreadPoolExecutor(
+              32, 256, 60, TimeUnit.SECONDS, queue, new SolrNamedThreadFactory("h2sc"));
+      shutdownExecutor = true;
+    } else {
+      shutdownExecutor = false;
+    }
 
     SslContextFactory.Client sslContextFactory;
     if (builder.sslConfig == null) {
@@ -502,6 +500,7 @@ public class Http2SolrClient extends SolrClient {
       String collection,
       AsyncListener<NamedList<Object>> asyncListener) {
     MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
+
     Request req;
     try {
       String url = getRequestPath(solrRequest, collection);
@@ -1177,9 +1176,6 @@ public class Http2SolrClient extends SolrClient {
     public Builder withHttpClient(Http2SolrClient http2SolrClient) {
       this.httpClient = http2SolrClient.httpClient;
 
-      if (this.executor == null) {
-        this.executor = http2SolrClient.executor;
-      }
       if (this.basicAuthAuthorizationStr == null) {
         this.basicAuthAuthorizationStr = http2SolrClient.basicAuthAuthorizationStr;
       }
