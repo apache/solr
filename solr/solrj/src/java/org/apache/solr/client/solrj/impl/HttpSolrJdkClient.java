@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
@@ -210,15 +211,12 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     }
 
     HttpRequest.BodyPublisher bodyPublisher;
-    final PipedOutputStream source;
     if (contentWriter != null) {
-      source = new PipedOutputStream();
-      PipedInputStream sink = new PipedInputStream(source);
+
+      final PipedOutputStream source = new PipedOutputStream();
+      final PipedInputStream sink = new PipedInputStream(source);
       bodyPublisher = HttpRequest.BodyPublishers.ofInputStream(() -> sink);
-      // NOCOMMIT - this does not work.  The call to "client.send" sometimes will throw an
-      // IOException
-      // because our thread closes the outputstream too early.  But if we wait to close it until
-      // after the response returns, "client.send" blocks.
+
       executor.submit(
           () -> {
             try (source) {
@@ -227,18 +225,16 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
               log.error("Cannot write Content Stream", e);
             }
           });
+
     } else if (streams != null && streams.size() == 1) {
-      source = null;
       InputStream is = streams.iterator().next().getStream();
       bodyPublisher = HttpRequest.BodyPublishers.ofInputStream(() -> is);
     } else if (queryParams != null && urlParamNames != null) {
-      source = null;
       ModifiableSolrParams requestParams = queryParams;
       queryParams = calculateQueryParams(urlParamNames, requestParams);
       queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), requestParams));
       bodyPublisher = HttpRequest.BodyPublishers.ofString(requestParams.toString());
     } else {
-      source = null;
       bodyPublisher = HttpRequest.BodyPublishers.noBody();
     }
     if (isPut) {
@@ -250,11 +246,6 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     reqb.uri(new URI(url + "?" + queryParams));
     HttpResponse<InputStream> response =
         client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
-    try {
-      source.close();
-    } catch (Exception e1) {
-      // ignore
-    }
     return response;
   }
 
