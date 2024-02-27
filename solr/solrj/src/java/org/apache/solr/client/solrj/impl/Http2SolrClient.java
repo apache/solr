@@ -146,7 +146,7 @@ public class Http2SolrClient extends SolrClient {
 
   protected RequestWriter requestWriter = new BinaryRequestWriter();
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
-  private final AsyncTracker asyncTracker = new AsyncTracker();
+  private final AsyncTracker asyncTracker;
 
   /** The URL of the Solr server. */
   private final String serverBaseUrl;
@@ -175,6 +175,12 @@ public class Http2SolrClient extends SolrClient {
     }
 
     this.idleTimeoutMillis = builder.idleTimeoutMillis;
+
+    if (builder.maxOutstandingAsyncRequests != null) {
+      this.asyncTracker = new AsyncTracker(builder.maxOutstandingAsyncRequests);
+    } else {
+      this.asyncTracker = new AsyncTracker(AsyncTracker.DEFAULT_MAX_OUTSTANDING_REQUESTS);
+    }
 
     if (builder.httpClient != null) {
       this.httpClient = builder.httpClient;
@@ -1017,19 +1023,21 @@ public class Http2SolrClient extends SolrClient {
   }
 
   private static class AsyncTracker {
-    private static final int MAX_OUTSTANDING_REQUESTS = 1000;
+    private static final int DEFAULT_MAX_OUTSTANDING_REQUESTS = 1000;
 
     // wait for async requests
     private final Phaser phaser;
+    private final int maxOutstandingRequests;
     // maximum outstanding requests left
     private final Semaphore available;
     private final Request.QueuedListener queuedListener;
     private final Response.CompleteListener completeListener;
 
-    AsyncTracker() {
+    AsyncTracker(int maxOutstandingRequests) {
       // TODO: what about shared instances?
+      this.maxOutstandingRequests = maxOutstandingRequests;
       phaser = new Phaser(1);
-      available = new Semaphore(MAX_OUTSTANDING_REQUESTS, false);
+      available = new Semaphore(maxOutstandingRequests, false);
       queuedListener =
           request -> {
             phaser.register();
@@ -1048,7 +1056,7 @@ public class Http2SolrClient extends SolrClient {
 
     int getMaxRequestsQueuedPerDestination() {
       // comfortably above max outstanding requests
-      return MAX_OUTSTANDING_REQUESTS * 3;
+      return maxOutstandingRequests * 3;
     }
 
     public void waitForComplete() {
@@ -1065,6 +1073,7 @@ public class Http2SolrClient extends SolrClient {
     private Long connectionTimeoutMillis;
     private Long requestTimeoutMillis;
     private Integer maxConnectionsPerHost;
+    private Integer maxOutstandingAsyncRequests;
     private String basicAuthAuthorizationStr;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
     private Boolean followRedirects;
@@ -1275,6 +1284,14 @@ public class Http2SolrClient extends SolrClient {
      */
     public Builder withMaxConnectionsPerHost(int max) {
       this.maxConnectionsPerHost = max;
+      return this;
+    }
+
+    /**
+     * The maximum outstanding async requests, default is 1000 requests
+     */
+    public Builder withMaxOutstandingRequests(int max) {
+      this.maxOutstandingAsyncRequests = max;
       return this;
     }
 
