@@ -447,6 +447,17 @@ For example, the following line makes Solr use the `ExactStatsCache` implementat
 <statsCache class="org.apache.solr.search.stats.ExactStatsCache"/>
 ----
 
+=== distrib.statsCache Parameter
+
+The query param distrib.statsCache defaults to `true`. If set to `false`, distributed calls to fetch global term stats is turned off for this query. This can reduce overhead for queries that do not utilize distributed IDF for score calculation.
+
+[source,xml]
+----
+http://localhost:8987/solr/collection1/select?q=*%3A*&wt=json&fq={!terms f=id}id1,id2&distrib.statsCache=false
+----
+
+
+
 == Avoiding Distributed Deadlock
 
 Each shard serves top-level query requests and then makes sub-requests to all of the other shards.

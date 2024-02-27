@@ -338,7 +338,9 @@ public class PostTool extends ToolBase {
       info("Entering auto mode. File endings considered are " + fileTypes);
     }
     if (recursive > 0) {
-      info("Entering recursive mode, max depth=" + recursive + ", delay=" + delay + "s");
+      if (recursionPossible(args)) {
+        info("Entering recursive mode, max depth=" + recursive + ", delay=" + delay + "s");
+      }
     }
     fileFilter = getFileFilterFromFileTypes(fileTypes);
     int numFilesPosted = postFiles(args, 0, out, type);
@@ -415,6 +417,24 @@ public class PostTool extends ToolBase {
 
   private boolean checkIsValidPath(File srcFile) {
     return Files.exists(srcFile.toPath());
+  }
+
+  /**
+   * Check all the arguments looking to see if any are directories, and if so then we can recurse
+   * into them.
+   *
+   * @param args array of file names
+   * @return if we have a directory to recurse into
+   */
+  boolean recursionPossible(String[] args) {
+    boolean recursionPossible = false;
+    for (String arg : args) {
+      File f = new File(arg);
+      if (f.isDirectory()) {
+        recursionPossible = true;
+      }
+    }
+    return recursionPossible;
   }
 
   /**

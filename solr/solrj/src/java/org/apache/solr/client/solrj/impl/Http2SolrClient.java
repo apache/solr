@@ -1084,6 +1084,21 @@ public class Http2SolrClient extends SolrClient {
 
     public Builder() {}
 
+    /**
+     * Initialize a Builder object, based on the provided Solr URL.
+     *
+     * <p>The provided URL must point to the root Solr path ("/solr"), for example:
+     *
+     * <pre>
+     *   SolrClient client = new Http2SolrClient.Builder("http://my-solr-server:8983/solr")
+     *       .withDefaultCollection("core1")
+     *       .build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * @param baseSolrUrl a URL to the root Solr path (i.e. "/solr") that will be targeted by any
+     *     created clients.
+     */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;
     }

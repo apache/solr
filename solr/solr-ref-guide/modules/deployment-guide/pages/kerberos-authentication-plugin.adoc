@@ -448,7 +448,7 @@ Note you also need to customize the `-z` property as appropriate for the locatio
 
 [source,bash]
 ----
-$ bin/solr -c -z server1:2181,server2:2181,server3:2181/solr
+$ bin/solr start -c -z server1:2181,server2:2181,server3:2181/solr
 ----
 
 NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zookeeper-ensemble#updating-solr-include-files[Updating Solr Include Files]) you can omit `-z <zk host string>` from the above command.

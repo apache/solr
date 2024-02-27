@@ -41,7 +41,7 @@ Real Time Get requests can be performed using the `/get` handler which exists im
 </requestHandler>
 ----
 
-For example, if you started Solr using the `bin/solr -e techproducts` example command, you could then index a new document without committing it, like so:
+For example, if you started Solr using the `bin/solr start -e techproducts` example command, you could then index a new document without committing it, like so:
 
 [source,bash]
 ----
