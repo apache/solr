@@ -272,14 +272,11 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
         return null;
       }
     } catch (InvalidKeyException | SignatureException e) {
+      final String excMessage = e.getMessage();
       if (isRetry) {
-        if (log.isErrorEnabled()) {
-          log.error("Signature validation on retry failed, likely key error: {}", e.getMessage());
-        }
+        log.error("Signature validation on retry failed, likely key error: {}", excMessage);
       } else {
-        if (log.isInfoEnabled()) {
-          log.info("Signature validation failed first attempt, likely key error: {}", e.getMessage());
-        }
+        log.info("Signature validation failed first attempt, likely key error: {}", excMessage);
       }
       return null;
     }
