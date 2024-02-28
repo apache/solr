@@ -164,13 +164,9 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
             break;
           }
         case POST:
-          {
-            resp = doPutOrPost(url, false, reqb, solrRequest, queryParams);
-            break;
-          }
         case PUT:
           {
-            resp = doPutOrPost(url, true, reqb, solrRequest, queryParams);
+            resp = doPutOrPost(url, solrRequest.getMethod(), reqb, solrRequest, queryParams);
             break;
           }
         default:
@@ -217,7 +213,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
 
   private HttpResponse<InputStream> doPutOrPost(
       String url,
-      boolean isPut,
+      SolrRequest.METHOD method,
       HttpRequest.Builder reqb,
       SolrRequest<?> solrRequest,
       ModifiableSolrParams queryParams)
@@ -271,7 +267,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
       bodyPublisher = HttpRequest.BodyPublishers.noBody();
     }
 
-    if (isPut) {
+    if (method == SolrRequest.METHOD.PUT) {
       reqb.PUT(bodyPublisher);
     } else {
       reqb.POST(bodyPublisher);
