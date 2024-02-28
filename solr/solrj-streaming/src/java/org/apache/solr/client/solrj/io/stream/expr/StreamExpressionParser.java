@@ -132,15 +132,12 @@ public class StreamExpressionParser {
         }
       }
 
-      // If contains ` replace with "
+      // If contains ` replace with ". Preserves ` which are escaped.
       // This allows ` to be used as a quote character
-
-      if (parameter.contains("`")) {
-        parameter = parameter.replace('`', '"');
-        if (0 == parameter.length()) {
-          throw new IllegalArgumentException(
-              String.format(Locale.ROOT, "'%s' is not a proper named parameter clause", working));
-        }
+      parameter = parameter.replaceAll("(?<!\\\\)`", "\"");
+      if (0 == parameter.length()) {
+        throw new IllegalArgumentException(
+            String.format(Locale.ROOT, "'%s' is not a proper named parameter clause", working));
       }
 
       namedParameter.setParameter(new StreamExpressionValue(parameter));
