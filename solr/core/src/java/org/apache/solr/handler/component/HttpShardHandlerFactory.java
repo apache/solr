@@ -28,6 +28,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -347,7 +348,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     if (numServersToTry < this.permittedLoadBalancerRequestsMinimumAbsolute) {
       numServersToTry = this.permittedLoadBalancerRequestsMinimumAbsolute;
     }
-    return new LBSolrClient.Req(req, urls, numServersToTry);
+
+    final var endpoints =
+        urls.stream().map(url -> LBSolrClient.Endpoint.from(url)).collect(Collectors.toList());
+    return new LBSolrClient.Req(req, endpoints, numServersToTry);
   }
 
   /**

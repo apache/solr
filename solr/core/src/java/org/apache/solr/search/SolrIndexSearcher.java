@@ -1566,7 +1566,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // all the current flags can be reused during warming,
       // so set all of them on the cache key.
       key =
-          new QueryResultKey(q, cmd.getFilterList(), cmd.getSort(), flags, cmd.getMinExactCount());
+          new QueryResultKey(
+              q,
+              cmd.getFilterList(),
+              cmd.getSort(),
+              flags,
+              cmd.getMinExactCount(),
+              cmd.isEnableDistribStats());
       if ((flags & NO_CHECK_QCACHE) == 0) {
         superset = queryResultCache.get(key);
 

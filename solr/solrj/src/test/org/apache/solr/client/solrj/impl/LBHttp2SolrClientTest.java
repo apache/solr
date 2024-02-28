@@ -38,7 +38,8 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     try (Http2SolrClient http2SolrClient =
             new Http2SolrClient.Builder(url).withTheseParamNamesInTheUrl(urlParamNames).build();
         LBHttp2SolrClient testClient =
-            new LBHttp2SolrClient.Builder(http2SolrClient, url).build()) {
+            new LBHttp2SolrClient.Builder(http2SolrClient, new LBSolrClient.Endpoint(url))
+                .build()) {
 
       assertArrayEquals(
           "Wrong urlParamNames found in lb client.",
