@@ -24,6 +24,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
 
@@ -37,7 +38,7 @@ public class V2StandaloneTest extends SolrTestCaseJ4 {
     Files.copy(Path.of(TEST_HOME(), "solr.xml"), solrHomeTmp.resolve("solr.xml"));
 
     JettySolrRunner jetty =
-        new JettySolrRunner(solrHomeTmp.toAbsolutePath().toString(), buildJettyConfig());
+        new JettySolrRunner(solrHomeTmp.toAbsolutePath().toString(), JettyConfig.builder().build());
     jetty.start();
 
     try (SolrClient client = getHttpSolrClient(buildUrl(jetty.getLocalPort()))) {
