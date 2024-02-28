@@ -413,7 +413,9 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     QueryResponse qacResponse;
     qacResponse =
         queryAndCompare(
-            params("q", "*:*", "rows", "10000", "sort", "_version_ desc,id desc"), client0, client1);
+            params("q", "*:*", "rows", "10000", "sort", "_version_ desc,id desc"),
+            client0,
+            client1);
     validateQACResponse(docsAdded, qacResponse);
   }
 
