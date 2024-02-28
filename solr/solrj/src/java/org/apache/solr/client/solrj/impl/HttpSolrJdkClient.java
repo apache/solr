@@ -37,8 +37,11 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -56,7 +59,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +90,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
       this.executor = builder.executor;
       this.shutdownExecutor = false;
     } else {
-      BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(32, 32);
+      BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(1024);
       this.executor =
           new ExecutorUtil.MDCAwareThreadPoolExecutor(
               4,
