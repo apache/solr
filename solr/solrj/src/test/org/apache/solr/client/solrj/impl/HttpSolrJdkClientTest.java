@@ -175,7 +175,7 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpSolrJdkClient client =
         (HttpSolrJdkClient)
-            builder(getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 2000).build()) {
+            builder(getBaseUrl() + SLOW_SERVLET_PATH, 500, 500).build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
