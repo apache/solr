@@ -44,6 +44,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -250,17 +251,18 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     }
 
     HttpRequest.BodyPublisher bodyPublisher;
+    Future<?> contentWritingFuture = null;
     if (contentWriter != null) {
 
       final PipedOutputStream source = new PipedOutputStream();
       final PipedInputStream sink = new PipedInputStream(source);
       bodyPublisher = HttpRequest.BodyPublishers.ofInputStream(() -> sink);
 
-      executor.submit(
+      contentWritingFuture = executor.submit(
           () -> {
             try (source) {
               contentWriter.write(source);
-            } catch (Exception e) {
+            } catch(Exception e) {
               log.error("Cannot write Content Stream", e);
             }
           });
@@ -284,8 +286,16 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     decorateRequest(reqb, solrRequest);
     reqb.uri(new URI(url + "?" + queryParams));
 
-    HttpResponse<InputStream> response =
-        client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
+    HttpResponse<InputStream> response;
+    try {
+     response =
+              client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
+    } catch(IOException | InterruptedException | RuntimeException e) {
+      if(contentWritingFuture != null) {
+        contentWritingFuture.cancel(true);
+      }
+      throw e;
+    }
     return response;
   }
 
