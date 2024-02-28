@@ -306,9 +306,9 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
             .useHttp1_1(http11)
             .build()) {
       if (http11) {
-        assertEquals(HttpClient.Version.HTTP_1_1, client.client.version());
+        assertEquals(HttpClient.Version.HTTP_1_1, client.httpClient.version());
       } else {
-        assertEquals(HttpClient.Version.HTTP_2, client.client.version());
+        assertEquals(HttpClient.Version.HTTP_2, client.httpClient.version());
       }
       testUpdate(client, HttpSolrClientTestBase.WT.XML, "application/xml; charset=UTF-8", value);
     }
@@ -452,7 +452,7 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
     CookieHandler myCookieHandler = new CookieManager();
     try (HttpSolrJdkClient client =
         builder(getBaseUrl()).withCookieHandler(myCookieHandler).build()) {
-      assertEquals(myCookieHandler, client.client.cookieHandler().get());
+      assertEquals(myCookieHandler, client.httpClient.cookieHandler().get());
     }
   }
 

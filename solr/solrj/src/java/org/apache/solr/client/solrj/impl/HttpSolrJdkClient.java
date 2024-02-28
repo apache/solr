@@ -66,7 +66,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
   private static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] 1.0";
 
-  protected HttpClient client;
+  protected HttpClient httpClient;
 
   protected ExecutorService executor;
 
@@ -116,7 +116,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
       }
       b.proxy(ProxySelector.of(new InetSocketAddress(builder.proxyHost, builder.proxyPort)));
     }
-    this.client = b.build();
+    this.httpClient = b.build();
     updateDefaultMimeTypeForParser();
 
     // This is a workaround for the case where the first request using
@@ -212,7 +212,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     reqb.GET();
     decorateRequest(reqb, solrRequest);
     reqb.uri(new URI(url + "?" + queryParams));
-    return client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
+    return httpClient.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
   }
 
   private HttpResponse<InputStream> doPutOrPost(
@@ -281,7 +281,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
 
     HttpResponse<InputStream> response;
     try {
-      response = client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
+      response = httpClient.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
     } catch (IOException | InterruptedException | RuntimeException e) {
       if (contentWritingFuture != null) {
         contentWritingFuture.cancel(true);
@@ -355,20 +355,20 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     executor = null;
 
     // TODO: Java 21 adds close/autoclosable to HttpClient.  We should use it.
-    client = null;
+    httpClient = null;
 
     assert ObjectReleaseTracker.release(this);
   }
 
   private void checkClosed() {
-    if (client == null) {
+    if (httpClient == null) {
       throw new IllegalStateException("This is closed and cannot be reused.");
     }
   }
 
   @Override
   protected boolean isFollowRedirects() {
-    return client.followRedirects() != HttpClient.Redirect.NEVER;
+    return httpClient.followRedirects() != HttpClient.Redirect.NEVER;
   }
 
   @Override
