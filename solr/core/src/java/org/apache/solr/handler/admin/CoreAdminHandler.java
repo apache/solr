@@ -430,6 +430,13 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   public static class CoreAdminAsyncTracker {
+    /**
+     * Max number of requests we track in the Caffeine cache. This limit is super high on
+     * purpose, we're not supposed to hit it. This is just a protection to grow in memory too
+     * much when receiving an abusive number of admin requests.
+     */
+    private static final int MAX_TRACKED_REQUESTS = 10_000;
+
     public static final String RUNNING = "running";
     public static final String COMPLETED = "completed";
     public static final String FAILED = "failed";
@@ -467,7 +474,12 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     CoreAdminAsyncTracker(Ticker ticker, long runningTimeoutNanos, long completedTimeoutNanos) {
 
       TaskExpiry expiry = new TaskExpiry(runningTimeoutNanos, completedTimeoutNanos);
-      requestStatusCache = Caffeine.newBuilder().ticker(ticker).expireAfter(expiry).build();
+      requestStatusCache =
+          Caffeine.newBuilder()
+              .ticker(ticker)
+              .maximumSize(MAX_TRACKED_REQUESTS)
+              .expireAfter(expiry)
+              .build();
     }
 
     public void shutdown() {
