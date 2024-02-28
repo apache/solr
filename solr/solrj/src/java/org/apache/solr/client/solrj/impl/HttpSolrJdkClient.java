@@ -17,10 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
@@ -28,7 +24,6 @@ import java.io.PipedOutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.CookieHandler;
 import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,7 +31,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
@@ -53,7 +47,6 @@ import javax.net.ssl.SSLContext;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
@@ -78,7 +71,6 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
   protected ExecutorService executor;
 
   private boolean shutdownExecutor;
-
 
   protected HttpSolrJdkClient(String serverBaseUrl, HttpSolrJdkClient.Builder builder) {
     super(serverBaseUrl, builder);
@@ -145,8 +137,8 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     //
     try {
       ping();
-    } catch(Exception e) {
-      //ignore
+    } catch (Exception e) {
+      // ignore
     }
 
     assert ObjectReleaseTracker.track(this);
@@ -258,14 +250,15 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
       final PipedInputStream sink = new PipedInputStream(source);
       bodyPublisher = HttpRequest.BodyPublishers.ofInputStream(() -> sink);
 
-      contentWritingFuture = executor.submit(
-          () -> {
-            try (source) {
-              contentWriter.write(source);
-            } catch(Exception e) {
-              log.error("Cannot write Content Stream", e);
-            }
-          });
+      contentWritingFuture =
+          executor.submit(
+              () -> {
+                try (source) {
+                  contentWriter.write(source);
+                } catch (Exception e) {
+                  log.error("Cannot write Content Stream", e);
+                }
+              });
     } else if (streams != null && streams.size() == 1) {
       InputStream is = streams.iterator().next().getStream();
       bodyPublisher = HttpRequest.BodyPublishers.ofInputStream(() -> is);
@@ -288,10 +281,9 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
 
     HttpResponse<InputStream> response;
     try {
-     response =
-              client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
-    } catch(IOException | InterruptedException | RuntimeException e) {
-      if(contentWritingFuture != null) {
+      response = client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
+    } catch (IOException | InterruptedException | RuntimeException e) {
+      if (contentWritingFuture != null) {
         contentWritingFuture.cancel(true);
       }
       throw e;

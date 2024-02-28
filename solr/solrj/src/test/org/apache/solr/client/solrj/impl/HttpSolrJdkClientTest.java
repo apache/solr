@@ -41,7 +41,6 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -174,8 +173,7 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
   public void testTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpSolrJdkClient client =
-        (HttpSolrJdkClient)
-            builder(getBaseUrl() + SLOW_SERVLET_PATH, 500, 500).build()) {
+        (HttpSolrJdkClient) builder(getBaseUrl() + SLOW_SERVLET_PATH, 500, 500).build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
