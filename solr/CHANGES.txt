@@ -27,7 +27,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-
+SOLR-17186: Streaming query breaks if token contains backtick (Rahul Goswami)
 
 Deprecation Removals
 ----------------------
