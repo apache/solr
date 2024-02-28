@@ -1287,7 +1287,10 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
-    /** The maximum outstanding async requests, default is 1000 requests */
+    /**
+     * Specify the maximum number of concurrent asynchronous requests the client can send. The
+     * default value is 1000
+     */
     public Builder withMaxOutstandingRequests(int max) {
       this.maxOutstandingAsyncRequests = max;
       return this;
