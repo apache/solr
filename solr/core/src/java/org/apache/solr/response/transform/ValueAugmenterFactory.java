@@ -73,8 +73,8 @@ public class ValueAugmenterFactory extends TransformerFactory {
   }
 
   public static class ValueAugmenter extends DocTransformer {
-    final String name;
-    final Object value;
+    private final String name;
+    protected final Object value;
 
     public ValueAugmenter(String name, Object value) {
       this.name = name;
