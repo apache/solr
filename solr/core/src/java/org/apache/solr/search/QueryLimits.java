@@ -26,6 +26,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.TestInjection;
 
 /**
  * Represents the limitations on the query. These limits might be wall clock time, cpu time, memory,
@@ -45,8 +46,7 @@ public class QueryLimits implements QueryTimeout {
   private volatile boolean limitsTripped = false;
 
   private QueryLimits() {
-    rsp = null;
-    allowPartialResults = true;
+    this(null, null);
   }
 
   /**
@@ -60,11 +60,17 @@ public class QueryLimits implements QueryTimeout {
     this.rsp = rsp;
     this.allowPartialResults =
         req != null ? req.getParams().getBool(CommonParams.PARTIAL_RESULTS, true) : true;
-    if (hasTimeLimit(req)) {
-      limits.add(new TimeAllowedLimit(req));
+    if (req != null) {
+      if (hasTimeLimit(req)) {
+        limits.add(new TimeAllowedLimit(req));
+      }
+      if (hasCpuLimit(req)) {
+        limits.add(new CpuAllowedLimit(req));
+      }
     }
-    if (hasCpuLimit(req)) {
-      limits.add(new CpuAllowedLimit(req));
+    // for testing
+    if (TestInjection.queryTimeout != null) {
+      limits.add(TestInjection.queryTimeout);
     }
   }
 
@@ -80,13 +86,6 @@ public class QueryLimits implements QueryTimeout {
       }
     }
     return limitsTripped;
-  }
-
-  /**
-   * Returns true if {@link CommonParams#PARTIAL_RESULTS} request parameter is true (or missing).
-   */
-  public boolean isAllowPartialResults() {
-    return allowPartialResults;
   }
 
   /**

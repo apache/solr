@@ -1362,6 +1362,8 @@ public class QueryComponent extends SearchComponent {
               responseHeader.getBooleanArg(
                   SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
             rb.rsp.setPartialResults();
+            rb.rsp.addPartialResponseDetail(
+                responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY));
           }
         }
         SolrDocumentList docs =

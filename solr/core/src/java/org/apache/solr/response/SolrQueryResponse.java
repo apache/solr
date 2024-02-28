@@ -169,9 +169,9 @@ public class SolrQueryResponse {
    * @param detail reason for returning partial response. Multiple components can add multiple
    *     reasons at different stages in request processing.
    */
-  public void addPartialResponseDetail(String detail) {
+  public void addPartialResponseDetail(Object detail) {
     NamedList<Object> header = getResponseHeader();
-    if (header != null) {
+    if (header != null && detail != null) {
       header.add(RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY, detail);
     }
   }
