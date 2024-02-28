@@ -282,11 +282,10 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     HttpResponse<InputStream> response;
     try {
       response = httpClient.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
-    } catch (IOException | InterruptedException | RuntimeException e) {
+    } finally {
       if (contentWritingFuture != null) {
         contentWritingFuture.cancel(true);
       }
-      throw e;
     }
     return response;
   }
