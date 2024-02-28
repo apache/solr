@@ -28,6 +28,7 @@ import java.io.PipedOutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.CookieHandler;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.ProxySelector;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -51,6 +52,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
@@ -75,6 +77,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
   protected ExecutorService executor;
 
   private boolean shutdownExecutor;
+
 
   protected HttpSolrJdkClient(String serverBaseUrl, HttpSolrJdkClient.Builder builder) {
     super(serverBaseUrl, builder);
@@ -122,6 +125,29 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     }
     this.client = b.build();
     updateDefaultMimeTypeForParser();
+
+    // This is a workaround for the case where the first request using
+    // this client:
+    //
+    // (1) no SSL/TLS (2) using POST with stream and (3) using Http/2
+    //
+    // The JDK Http Client will send an upgrade request over Http/1
+    // along with request content in the same request.  However,
+    // the Jetty Server underpinning Solr does not accept this.
+    //
+    // By sending a ping before any real requests occur, the client
+    // knows if Solr can accept Http/2, and no additional
+    // upgrade requests will be sent.
+    //
+    // See https://bugs.openjdk.org/browse/JDK-8287589
+    // See https://github.com/jetty/jetty.project/issues/9998#issuecomment-1614216870
+    //
+    try {
+      ping();
+    } catch(Exception e) {
+      //ignore
+    }
+
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -249,6 +275,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     } else {
       bodyPublisher = HttpRequest.BodyPublishers.noBody();
     }
+
     if (isPut) {
       reqb.PUT(bodyPublisher);
     } else {
@@ -256,6 +283,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     }
     decorateRequest(reqb, solrRequest);
     reqb.uri(new URI(url + "?" + queryParams));
+
     HttpResponse<InputStream> response =
         client.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
     return response;
