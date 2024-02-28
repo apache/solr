@@ -126,6 +126,9 @@ Bug Fixes
 
 * SOLR-17148: Fixing Config API overlay property enabling or disabling the cache (Sanjay Dutt, hossman, Eric Pugh)
 
+* PR#2320: Avoid NullPointerException in SolrJ client due to missing
+  EnvToSyspropMappings.properties file (janhoy)
+
 Dependency Upgrades
 ---------------------
 (No changes)
