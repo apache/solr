@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.util.LogLevel;
@@ -479,6 +480,15 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
     try (HttpSolrJdkClient client =
         builder(getBaseUrl()).withCookieHandler(myCookieHandler).build()) {
       assertEquals(myCookieHandler, client.client.cookieHandler().get());
+    }
+  }
+
+  @Test
+  public void testPing() throws Exception {
+    try (HttpSolrJdkClient client = builder(getBaseUrl()).build()) {
+      SolrPingResponse spr = client.ping("collection1");
+      assertEquals(0, spr.getStatus());
+      assertNull(spr.getException());
     }
   }
 
