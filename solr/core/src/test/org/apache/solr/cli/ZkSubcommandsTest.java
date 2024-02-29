@@ -96,19 +96,14 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
-    SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkServer.getZkHost())
-            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-            .build();
-    zkClient.makePath("/solr", false, true);
-    zkClient.close();
+    //zkClient.close();
 
     zkClient =
         new SolrZkClient.Builder()
             .withUrl(zkServer.getZkAddress())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
+    zkClient.makePath("/solr", false, true);
 
     if (log.isInfoEnabled()) {
       log.info("####SETUP_END {}", getTestName());
@@ -262,9 +257,11 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     assertEquals(0, runTool(args2, tool));
 
     final String standardOutput2 = byteStream2.toString(StandardCharsets.UTF_8);
+
+    System.out.println(standardOutput2);
     String separator2 = System.lineSeparator();
     assertEquals(
-        "/" + separator2 + "/test" + separator2 + "     path" + separator2, standardOutput2);
+        "/" + separator2 + "/test" + separator2 + "     path" + separator2+ "/solr" + separator2, standardOutput2);
   }
 
   //  @Test
