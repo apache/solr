@@ -82,6 +82,8 @@ Other Changes
 
 * SOLR-16995: Add a ReplicaCount class to keep track of replicas per type (Vincent Primault)
 
+* SOLR-14410: Switch from SysV init script to systemd service definition (Marius Ghita via janhoy)
+
 ==================  9.6.0 ==================
 New Features
 ---------------------
@@ -111,7 +113,8 @@ Improvements
 
 * SOLR-16138: Throw a exception when issuing a streaming expression and all cores are down instead of returning 0 documents. (Antoine Bursaux via Eric Pugh)
 
-* SOLR-16505: Switch UpdateShardHandler.getRecoveryOnlyHttpClient to Jetty HTTP2 (Sanjay Dutt, David Smiley)
+* SOLR-17172: Add QueryLimits termination to the existing heavy SearchComponent-s. This allows query limits (e.g. timeAllowed,
+  cpuAllowed) to terminate expensive operations within components if limits are exceeded. (Andrzej Bialecki)
 
 Optimizations
 ---------------------
