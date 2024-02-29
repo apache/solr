@@ -1339,7 +1339,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return pf;
   }
 
-  // the old method
   public ProcessedFilter getProcessedFilter_bk(List<Query> queries) throws IOException {
     ProcessedFilter pf = new ProcessedFilter();
     if (queries == null || queries.size() == 0) {
@@ -1564,6 +1563,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   // query must be positive
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
+    // instead of generating > 1m docs, just try to simulate the slowness
     try {
       Thread.sleep(20);
     } catch (Exception e) {}
