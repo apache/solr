@@ -36,6 +36,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -125,7 +126,8 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testZkConnected() throws Exception {
     MiniSolrCloudCluster miniCluster =
-        new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig("/solr"));
+        new MiniSolrCloudCluster(
+            5, createTempDir(), JettyConfig.builder().setContext("/solr").build());
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 
@@ -173,7 +175,8 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testRequireZkConnected() throws Exception {
     MiniSolrCloudCluster miniCluster =
-        new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig("/solr"));
+        new MiniSolrCloudCluster(
+            5, createTempDir(), JettyConfig.builder().setContext("/solr").build());
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 
@@ -227,7 +230,8 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testRequireZkConnectedDistrib() throws Exception {
     MiniSolrCloudCluster miniCluster =
-        new MiniSolrCloudCluster(2, createTempDir(), buildJettyConfig("/solr"));
+        new MiniSolrCloudCluster(
+            2, createTempDir(), JettyConfig.builder().setContext("/solr").build());
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 
