@@ -1175,17 +1175,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     // We combine all the filter queries that come from the filter cache into "answer".
     // This might become pf.answer but not if there are any non-cached filters
-    final DocSet[] answer0 = new DocSet[]{null};
-
+    DocSet[] answer0 = new DocSet[]{null};
+    DocSet answer = null;
     boolean[] neg = new boolean[length];
     DocSet[] sets = new DocSet[length];
     List<ExtendedQuery> notCached = null;
     List<PostFilter> postFilters = null;
     AtomicReference<IOException> ioException = new AtomicReference<>(null);
-    List<CompletableFuture<Void>> futures = new ArrayList<>();
+    List<CompletableFuture<Void>> futures = new ArrayList<>(length);
 
     int end = 0; // size of "sets" and "neg"; parallel arrays
-    AtomicInteger nf = new AtomicInteger(0);
+    AtomicInteger numDocSets = new AtomicInteger(0);
 
     for (Query q : queries) {
       if (q instanceof ExtendedQuery) {
@@ -1211,7 +1211,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         continue;
       }
 
-      final int clonedEnd = end;
+      final int index = end;
       CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
         Query posQuery = QueryUtils.getAbs(q);
         if (ioException.get() != null) {
@@ -1240,12 +1240,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
               docSet = tmp;
             }
           }
-          neg[clonedEnd] = false;
+          neg[index] = false;
         } else {
-          neg[clonedEnd] = true;
+          neg[index] = true;
         }
-        sets[clonedEnd] = docSet;
-        nf.incrementAndGet();
+        sets[index] = docSet;
+        numDocSets.incrementAndGet();
         return null;
       });
       futures.add(future);
@@ -1256,6 +1256,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]));
     try {
       future.get(); // TODO add time limit?
+      answer = answer0[0];
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
@@ -1263,9 +1264,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       throw ioException.get();
     }
 
-    DocSet answer = answer0[0];
-
-    if (nf.get() > 0) {
+    if (numDocSets.get() > 0) {
       // Are all of our normal cached filters negative?
       if (answer == null) {
         answer = getLiveDocSet();
@@ -1274,7 +1273,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // This optimizes for the case where we have more than 2 filters and instead
       // of copying the bitsets we make one mutable bitset. We should only do this
       // for BitDocSet since it clones the backing bitset for andNot and intersection.
-      if (nf.get() > 1 && answer instanceof BitDocSet) {
+      if (numDocSets.get() > 1 && answer instanceof BitDocSet) {
         answer = MutableBitDocSet.fromBitDocSet((BitDocSet) answer);
       }
 
@@ -1340,6 +1339,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return pf;
   }
 
+  // the old method
   public ProcessedFilter getProcessedFilter_bk(List<Query> queries) throws IOException {
     ProcessedFilter pf = new ProcessedFilter();
     if (queries == null || queries.size() == 0) {
