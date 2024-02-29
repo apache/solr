@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import javax.servlet.http.HttpServletResponse;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.ReturnFields;
@@ -60,7 +61,8 @@ import org.apache.solr.search.SolrReturnFields;
  */
 public class SolrQueryResponse {
   public static final String NAME = "response";
-  public static final String RESPONSE_HEADER_PARTIAL_RESULTS_KEY = "partialResults";
+  public static final String RESPONSE_HEADER_PARTIAL_RESULTS_KEY = CommonParams.PARTIAL_RESULTS;
+  public static final String RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY = "partialResultsDetails";
   public static final String RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY =
       "segmentTerminatedEarly";
   public static final String RESPONSE_HEADER_KEY = "responseHeader";
@@ -133,6 +135,45 @@ public class SolrQueryResponse {
       returnFields = new SolrReturnFields(); // by default return everything
     }
     return returnFields;
+  }
+
+  /**
+   * If {@link #getResponseHeader()} is available, set {@link #RESPONSE_HEADER_PARTIAL_RESULTS_KEY}
+   * flag to true.
+   */
+  public void setPartialResults() {
+    NamedList<Object> header = getResponseHeader();
+    if (header != null
+        && header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null) {
+      header.add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+    }
+  }
+
+  /**
+   * If {@link #getResponseHeader()} is available, return the value of {@link
+   * #RESPONSE_HEADER_PARTIAL_RESULTS_KEY} or false.
+   */
+  public boolean isPartialResults() {
+    NamedList<Object> header = getResponseHeader();
+    if (header != null) {
+      return Boolean.TRUE.equals(
+          header.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * If {@link #getResponseHeader()} is available, add a reason for returning partial response.
+   *
+   * @param detail reason for returning partial response. Multiple components can add multiple
+   *     reasons at different stages in request processing.
+   */
+  public void addPartialResponseDetail(Object detail) {
+    NamedList<Object> header = getResponseHeader();
+    if (header != null && detail != null) {
+      header.add(RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY, detail);
+    }
   }
 
   /**
