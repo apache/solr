@@ -50,6 +50,7 @@ import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.suggest.SolrSuggester;
 import org.apache.solr.spelling.suggest.SuggesterOptions;
@@ -190,17 +191,23 @@ public class SuggestComponent extends SearchComponent
     } else {
       querysuggesters = getSuggesters(params);
     }
-
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
     if (params.getBool(SUGGEST_BUILD, false) || buildAll) {
+      rb.rsp.add("command", (!buildAll) ? "build" : "buildAll");
       for (SolrSuggester suggester : querysuggesters) {
         suggester.build(rb.req.getCore(), rb.req.getSearcher());
+        if (queryLimits.maybeExitWithPartialResults("Suggester build " + suggester.getName())) {
+          return;
+        }
       }
-      rb.rsp.add("command", (!buildAll) ? "build" : "buildAll");
     } else if (params.getBool(SUGGEST_RELOAD, false) || reloadAll) {
+      rb.rsp.add("command", (!reloadAll) ? "reload" : "reloadAll");
       for (SolrSuggester suggester : querysuggesters) {
         suggester.reload();
+        if (queryLimits.maybeExitWithPartialResults("Suggester reload " + suggester.getName())) {
+          return;
+        }
       }
-      rb.rsp.add("command", (!reloadAll) ? "reload" : "reloadAll");
     }
   }
 
@@ -229,7 +236,7 @@ public class SuggestComponent extends SearchComponent
   @Override
   public void process(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
-    log.info("SuggestComponent process with : {}", params);
+    log.debug("SuggestComponent process with : {}", params);
     if (!params.getBool(COMPONENT_NAME, false) || suggesters.isEmpty()) {
       return;
     }
@@ -272,11 +279,15 @@ public class SuggestComponent extends SearchComponent
               new CharsRef(query), count, contextFilter, allTermsRequired, highlight);
       SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> namedListResults =
           new SimpleOrderedMap<>();
+      rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
+      QueryLimits queryLimits = QueryLimits.getCurrentLimits();
       for (SolrSuggester suggester : querySuggesters) {
         SuggesterResult suggesterResult = suggester.getSuggestions(options);
         toNamedList(suggesterResult, namedListResults);
+        if (queryLimits.maybeExitWithPartialResults("Suggester process " + suggester.getName())) {
+          return;
+        }
       }
-      rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
     }
   }
 
@@ -290,6 +301,7 @@ public class SuggestComponent extends SearchComponent
     int count = params.getInt(SUGGEST_COUNT, 1);
 
     List<SuggesterResult> suggesterResults = new ArrayList<>();
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
 
     // Collect Shard responses
     for (ShardRequest sreq : rb.finished) {
@@ -306,9 +318,12 @@ public class SuggestComponent extends SearchComponent
           log.info("{} : {}", srsp.getShard(), namedList);
         }
         suggesterResults.add(toSuggesterResult(namedList));
+        // may have tripped the mem limits
+        if (queryLimits.maybeExitWithPartialResults("Suggester finish")) {
+          break;
+        }
       }
     }
-
     // Merge Shard responses
     SuggesterResult suggesterResult = merge(suggesterResults, count);
     SimpleOrderedMap<SimpleOrderedMap<NamedList<Object>>> namedListResults =
@@ -316,6 +331,9 @@ public class SuggestComponent extends SearchComponent
     toNamedList(suggesterResult, namedListResults);
 
     rb.rsp.add(SuggesterResultLabels.SUGGEST, namedListResults);
+
+    // either throw or mark
+    queryLimits.maybeExitWithPartialResults("Suggester finish");
   }
 
   /**

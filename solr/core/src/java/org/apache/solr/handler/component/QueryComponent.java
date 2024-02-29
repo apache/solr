@@ -1361,10 +1361,9 @@ public class QueryComponent extends SearchComponent {
           if (Boolean.TRUE.equals(
               responseHeader.getBooleanArg(
                   SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-            rb.rsp
-                .getResponseHeader()
-                .asShallowMap()
-                .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+            rb.rsp.setPartialResults();
+            rb.rsp.addPartialResponseDetail(
+                responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY));
           }
         }
         SolrDocumentList docs =

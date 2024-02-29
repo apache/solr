@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -153,6 +154,8 @@ public class TestInjection {
 
   public static volatile AtomicInteger countDocSetDelays = new AtomicInteger(0);
 
+  public static volatile QueryTimeout queryTimeout = null;
+
   public static volatile boolean failInExecutePlanAction = false;
 
   /**
@@ -199,6 +202,7 @@ public class TestInjection {
     failInExecutePlanAction = false;
     skipIndexWriterCommitOnClose = false;
     uifOutOfMemoryError = false;
+    queryTimeout = null;
     notifyPauseForeverDone();
     newSearcherHooks.clear();
     for (Timer timer : timers) {
