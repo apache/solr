@@ -114,7 +114,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     // test put
     String data = "my data";
     File localFile = File.createTempFile("temp", ".data");
-    FileWriter writer = new FileWriter(localFile);
+    FileWriter writer = new FileWriter(localFile, StandardCharsets.UTF_8);
     writer.write(data);
     writer.close();
 
@@ -139,7 +139,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     data = "my data deux";
 
     // Write text to the temporary file
-    writer = new FileWriter(localFile);
+    writer = new FileWriter(localFile, StandardCharsets.UTF_8);
     writer.write(data);
     writer.close();
 
@@ -158,7 +158,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String data = "my data";
 
     File localFile = File.createTempFile("state", ".json");
-    FileWriter writer = new FileWriter(localFile);
+    FileWriter writer = new FileWriter(localFile, StandardCharsets.UTF_8);
     writer.write(data);
     writer.close();
 
