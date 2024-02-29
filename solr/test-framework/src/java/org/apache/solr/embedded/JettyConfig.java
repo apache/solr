@@ -85,10 +85,11 @@ public class JettyConfig {
     Long waitForLoadingCoresToFinishMs = 300000L;
     Map<ServletHolder, String> extraServlets = new TreeMap<>();
     Map<Class<? extends Filter>, String> extraFilters = new LinkedHashMap<>();
-    SSLConfig sslConfig = SolrTestCaseJ4.sslConfig != null ? SolrTestCaseJ4.sslConfig.buildServerSSLConfig() : null;
+    SSLConfig sslConfig =
+        SolrTestCaseJ4.sslConfig != null ? SolrTestCaseJ4.sslConfig.buildServerSSLConfig() : null;
     int portRetryTime = 60;
 
-      public Builder useOnlyHttp1(boolean useOnlyHttp1) {
+    public Builder useOnlyHttp1(boolean useOnlyHttp1) {
       this.onlyHttp1 = useOnlyHttp1;
       return this;
     }
