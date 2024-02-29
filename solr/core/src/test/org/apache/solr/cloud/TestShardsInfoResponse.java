@@ -16,9 +16,10 @@
  */
 package org.apache.solr.cloud;
 
+import static org.hamcrest.core.IsIterableContaining.hasItems;
+
 import java.util.ArrayList;
 import java.util.Collection;
-
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -29,20 +30,15 @@ import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.hamcrest.core.IsIterableContaining.hasItems;
-
 /**
- * Test which asserts that shards.info=true works even if several shards are down
- * It must return one unique key per shard.
- * See SOLR-14892
+ * Test which asserts that shards.info=true works even if several shards are down It must return one
+ * unique key per shard. See SOLR-14892
  */
 public class TestShardsInfoResponse extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(3)
-        .addConfig("cloud-minimal", configset("cloud-minimal"))
-        .configure();
+    configureCluster(3).addConfig("cloud-minimal", configset("cloud-minimal")).configure();
   }
 
   @Test
@@ -63,14 +59,20 @@ public class TestShardsInfoResponse extends SolrCloudTestCase {
       cluster.waitForJettyToStop(cluster.stopJettySolrRunner(i));
     }
 
-    QueryResponse response = cluster.getSolrClient().query("collection", new SolrQuery("*:*")
-        .setRows(1)
-        .setParam(ShardParams.SHARDS_TOLERANT, true)
-        .setParam(ShardParams.SHARDS_INFO, true));
+    QueryResponse response =
+        cluster
+            .getSolrClient()
+            .query(
+                "collection",
+                new SolrQuery("*:*")
+                    .setRows(1)
+                    .setParam(ShardParams.SHARDS_TOLERANT, true)
+                    .setParam(ShardParams.SHARDS_INFO, true));
     assertEquals(0, response.getStatus());
     assertTrue(response.getResults().getNumFound() > 0);
 
-    SimpleOrderedMap<Object> shardsInfo = (SimpleOrderedMap<Object>) response.getResponse().get("shards.info");
+    SimpleOrderedMap<Object> shardsInfo =
+        (SimpleOrderedMap<Object>) response.getResponse().get("shards.info");
     // We verify that there are no duplicate keys in case of 2 shards in error
     assertEquals(3, shardsInfo.size());
 
@@ -79,6 +81,7 @@ public class TestShardsInfoResponse extends SolrCloudTestCase {
     keys.add(shardsInfo.getName(1));
     keys.add(shardsInfo.getName(2));
 
-    MatcherAssert.assertThat((Iterable<String>) keys, hasItems("unknown_shard_1", "unknown_shard_2"));
+    MatcherAssert.assertThat(
+        (Iterable<String>) keys, hasItems("unknown_shard_1", "unknown_shard_2"));
   }
 }
