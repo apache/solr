@@ -23,7 +23,11 @@ import static org.apache.solr.search.TimeAllowedLimit.hasTimeLimit;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.index.QueryTimeout;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.TestInjection;
 
 /**
  * Represents the limitations on the query. These limits might be wall clock time, cpu time, memory,
@@ -36,20 +40,38 @@ public class QueryLimits implements QueryTimeout {
 
   public static QueryLimits NONE = new QueryLimits();
 
-  private QueryLimits() {}
+  private final SolrQueryResponse rsp;
+  private final boolean allowPartialResults;
+
+  // short-circuit the checks if any limit has been tripped
+  private volatile boolean limitsTripped = false;
+
+  private QueryLimits() {
+    this(null, null);
+  }
 
   /**
    * Implementors of a Query Limit should add an if block here to activate it, and typically this if
    * statement will hinge on hasXXXLimit() static method attached to the implementation class.
    *
    * @param req the current SolrQueryRequest.
+   * @param rsp the current SolrQueryResponse.
    */
-  public QueryLimits(SolrQueryRequest req) {
-    if (hasTimeLimit(req)) {
-      limits.add(new TimeAllowedLimit(req));
+  public QueryLimits(SolrQueryRequest req, SolrQueryResponse rsp) {
+    this.rsp = rsp;
+    this.allowPartialResults =
+        req != null ? req.getParams().getBool(CommonParams.PARTIAL_RESULTS, true) : true;
+    if (req != null) {
+      if (hasTimeLimit(req)) {
+        limits.add(new TimeAllowedLimit(req));
+      }
+      if (hasCpuLimit(req)) {
+        limits.add(new CpuAllowedLimit(req));
+      }
     }
-    if (hasCpuLimit(req)) {
-      limits.add(new CpuAllowedLimit(req));
+    // for testing
+    if (TestInjection.queryTimeout != null) {
+      limits.add(TestInjection.queryTimeout);
     }
     if (hasMemLimit(req)) {
       limits.add(new MemAllowedLimit(req));
@@ -58,12 +80,52 @@ public class QueryLimits implements QueryTimeout {
 
   @Override
   public boolean shouldExit() {
+    if (limitsTripped) {
+      return true;
+    }
     for (QueryTimeout limit : limits) {
       if (limit.shouldExit()) {
-        return true;
+        limitsTripped = true;
+        break;
       }
     }
-    return false;
+    return limitsTripped;
+  }
+
+  /**
+   * Format an exception message with optional label and details from {@link #limitStatusMessage()}.
+   */
+  public String formatExceptionMessage(String label) {
+    return "Limits exceeded!"
+        + (label != null ? " (" + label + ")" : "")
+        + ": "
+        + limitStatusMessage();
+  }
+
+  /**
+   * If limit is reached then depending on the request param {@link CommonParams#PARTIAL_RESULTS}
+   * either mark it as partial result in the response and signal the caller to return, or throw an
+   * exception.
+   *
+   * @param label optional label to indicate the caller.
+   * @return true if the caller should stop processing and return partial results, false otherwise.
+   * @throws QueryLimitsExceededException if {@link CommonParams#PARTIAL_RESULTS} request parameter
+   *     is false and limits have been reached.
+   */
+  public boolean maybeExitWithPartialResults(String label) throws QueryLimitsExceededException {
+    if (isLimitsEnabled() && shouldExit()) {
+      if (allowPartialResults) {
+        if (rsp != null) {
+          rsp.setPartialResults();
+          rsp.addPartialResponseDetail(formatExceptionMessage(label));
+        }
+        return true;
+      } else {
+        throw new QueryLimitsExceededException(formatExceptionMessage(label));
+      }
+    } else {
+      return false;
+    }
   }
 
   /**
@@ -77,27 +139,31 @@ public class QueryLimits implements QueryTimeout {
    * @return A string describing the state pass/fail state of each limit specified for this request.
    */
   public String limitStatusMessage() {
-    StringBuilder sb = new StringBuilder();
-    boolean first = true;
+    if (limits.isEmpty()) {
+      return "This request is unlimited.";
+    }
+    StringBuilder sb = new StringBuilder("Query limits: ");
     for (QueryTimeout limit : limits) {
-      if (first) {
-        first = false;
-        sb.append("Query limits:");
-      }
       sb.append("[");
       sb.append(limit.getClass().getSimpleName());
       sb.append(":");
       sb.append(limit.shouldExit() ? "LIMIT EXCEEDED" : "within limit");
       sb.append("]");
     }
-    if (sb.length() == 0) {
-      return "This request is unlimited.";
-    } else {
-      return sb.toString();
-    }
+    return sb.toString();
   }
 
-  public boolean isTimeoutEnabled() {
+  /** Return true if there are any limits enabled for the current request. */
+  public boolean isLimitsEnabled() {
     return !limits.isEmpty();
+  }
+
+  /**
+   * Helper method to retrieve the current QueryLimits from {@link SolrRequestInfo#getRequestInfo()}
+   * if it exists, otherwise it returns {@link #NONE}.
+   */
+  public static QueryLimits getCurrentLimits() {
+    final SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+    return info != null ? info.getLimits() : NONE;
   }
 }

@@ -470,7 +470,7 @@ Separate each list of fields with a comma.
 +
 The `facet.pivot.mincount` parameter defines the minimum number of documents that need to match in order for the facet to be included in results.
 +
-Using the "`bin/solr -e techproducts`" example, A query URL like this one will return the data below, with the pivot faceting results found in the section "facet_pivot":
+Using the "`bin/solr start -e techproducts`" example, A query URL like this one will return the data below, with the pivot faceting results found in the section "facet_pivot":
 +
 [source,text]
 ----
