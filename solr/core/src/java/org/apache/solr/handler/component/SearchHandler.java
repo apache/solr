@@ -496,10 +496,7 @@ public class SearchHandler extends RequestHandlerBase
           debug.add("explain", new NamedList<>());
           rb.rsp.add("debug", debug);
         }
-        rb.rsp
-            .getResponseHeader()
-            .asShallowMap()
-            .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+        rb.rsp.setPartialResults();
       }
     } else {
       // a distributed request
@@ -591,9 +588,7 @@ public class SearchHandler extends RequestHandlerBase
                 if (allShardsFailed) {
                   throwSolrException(srsp.getException());
                 } else {
-                  rsp.getResponseHeader()
-                      .asShallowMap()
-                      .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+                  rsp.setPartialResults();
                 }
               }
             }
