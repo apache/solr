@@ -175,8 +175,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   private Http2SolrClient.Builder recoverySolrClientBuilder(String baseUrl, String leaderCoreName) {
-    // workaround for SOLR-13605: get the configured timeouts & set them directly
-    // (even though getRecoveryOnlyHttpClient() already has them set)
     final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
     return new Http2SolrClient.Builder(baseUrl)
         .withDefaultCollection(leaderCoreName)
@@ -630,11 +628,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
                 .getCollection(cloudDesc.getCollectionName())
                 .getSlice(cloudDesc.getShardId());
 
-        try {
+        if (prevSendPreRecoveryHttpUriRequest != null) {
           prevSendPreRecoveryHttpUriRequest.cancel(true);
-        } catch (NullPointerException e) {
-          // okay
-          log.info("Failed to abort the Prep Recovery command as it has not been sent yet.");
         }
 
         if (isClosed()) {
@@ -911,7 +906,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     int readTimeout =
         conflictWaitMs
             + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "8000"));
-    try (Http2SolrClient client =
+    try (SolrClient client =
         recoverySolrClientBuilder(
                 leaderBaseUrl,
                 null) // leader core omitted since client only used for 'admin' request
