@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -53,7 +54,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     }
 
     super.setUp();
-    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig());
+    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build());
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
