@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 /**
  * Most of the tests for {@link org.apache.solr.handler.component.SearchHandler} are in {@link
@@ -28,6 +29,38 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
+  }
+
+  public void testMultipleFq() {
+    int n = 10000;
+    for (int i = 0; i < n; i++) {
+      assertU(adoc("id", String.valueOf(i), "title", String.format("test-%d", i)));
+    }
+    assertU(commit());
+    long start = System.currentTimeMillis();
+    assertQ(req(
+            "q", "*:*",
+            "fq", "*:* AND NOT title:test-0",
+            "fq", "*:* AND NOT title:test-1",
+            "fq", "*:* AND NOT title:test-2",
+            "fq", "*:* AND NOT title:test-3",
+            "fq", "*:* AND NOT title:test-4",
+            "fq", "*:* AND NOT title:test-5",
+            "fq", "*:* AND NOT title:test-6",
+            "fq", "*:* AND NOT title:test-7",
+            "fq", "*:* AND NOT title:test-8",
+            "fq", "*:* AND NOT title:test-9",
+            "fq", "*:* AND NOT title:test-10",
+            "fq", "*:* AND NOT title:test-11",
+            "fq", "*:* AND NOT title:test-12",
+            "fq", "*:* AND NOT title:test-13",
+            "fq", "*:* AND NOT title:test-14",
+            "fq", "*:* AND NOT title:test-15",
+            "fq", "*:* AND NOT title:test-16",
+            "fq", "*:* AND NOT title:test-17"
+    ), "//*[@numFound='9982']");
+    long stop = System.currentTimeMillis();
+    System.out.println("[REPORT ]elapsed time (ms) " + (stop - start));
   }
 
   public void testSorting() {

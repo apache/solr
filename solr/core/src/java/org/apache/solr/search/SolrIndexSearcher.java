@@ -30,11 +30,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.atomic.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -1167,6 +1167,181 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   public ProcessedFilter getProcessedFilter(List<Query> queries) throws IOException {
     ProcessedFilter pf = new ProcessedFilter();
+    if (queries == null || queries.isEmpty()) {
+      return pf;
+    }
+
+    int length = queries.size();
+
+    // We combine all the filter queries that come from the filter cache into "answer".
+    // This might become pf.answer but not if there are any non-cached filters
+    final DocSet[] answer0 = new DocSet[]{null};
+
+    boolean[] neg = new boolean[length];
+    DocSet[] sets = new DocSet[length];
+    List<ExtendedQuery> notCached = null;
+    List<PostFilter> postFilters = null;
+    AtomicReference<IOException> ioException = new AtomicReference<>(null);
+    List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+    int end = 0; // size of "sets" and "neg"; parallel arrays
+    AtomicInteger nf = new AtomicInteger(0);
+
+    for (Query q : queries) {
+      if (q instanceof ExtendedQuery) {
+        ExtendedQuery eq = (ExtendedQuery) q;
+        if (!eq.getCache()) {
+          if (eq.getCost() >= 100 && eq instanceof PostFilter) {
+            if (postFilters == null) postFilters = new ArrayList<>(length - end);
+            postFilters.add((PostFilter) q);
+          } else {
+            if (notCached == null) notCached = new ArrayList<>(length - end);
+            notCached.add((ExtendedQuery) q);
+          }
+          continue;
+        }
+      }
+
+      if (filterCache == null) {
+        // there is no cache: don't pull bitsets
+        if (notCached == null) notCached = new ArrayList<>(length - end);
+        WrappedQuery uncached = new WrappedQuery(q);
+        uncached.setCache(false);
+        notCached.add(uncached);
+        continue;
+      }
+
+      final int clonedEnd = end;
+      CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
+        Query posQuery = QueryUtils.getAbs(q);
+        if (ioException.get() != null) {
+          return null;
+        }
+        DocSet docSet = null;
+        try {
+          docSet = getPositiveDocSet(posQuery);
+        } catch (IOException e) {
+          ioException.compareAndSet(null, e);
+          return null;
+        }
+        // Negative query if absolute value different from original
+        if (Objects.equals(q, posQuery)) {
+          synchronized (answer0) {
+            // keep track of the smallest positive set; use "answer" for this.
+            if (answer0[0] == null) {
+              answer0[0] = docSet;
+              return null;
+            }
+            // note: assume that size() is cached.  It generally comes from the cache, so should be.
+            if (docSet.size() < answer0[0].size()) {
+              // swap answer & docSet so that answer is smallest
+              DocSet tmp = answer0[0];
+              answer0[0] = docSet;
+              docSet = tmp;
+            }
+          }
+          neg[clonedEnd] = false;
+        } else {
+          neg[clonedEnd] = true;
+        }
+        sets[clonedEnd] = docSet;
+        nf.incrementAndGet();
+        return null;
+      });
+      futures.add(future);
+      end++;
+    } // end of queries
+
+    // await futures
+    CompletableFuture<Void> future = CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0]));
+    try {
+      future.get(); // TODO add time limit?
+    } catch (InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+    if (ioException.get() != null) {
+      throw ioException.get();
+    }
+
+    DocSet answer = answer0[0];
+
+    if (nf.get() > 0) {
+      // Are all of our normal cached filters negative?
+      if (answer == null) {
+        answer = getLiveDocSet();
+      }
+
+      // This optimizes for the case where we have more than 2 filters and instead
+      // of copying the bitsets we make one mutable bitset. We should only do this
+      // for BitDocSet since it clones the backing bitset for andNot and intersection.
+      if (nf.get() > 1 && answer instanceof BitDocSet) {
+        answer = MutableBitDocSet.fromBitDocSet((BitDocSet) answer);
+      }
+
+      // do negative queries first to shrink set size
+      for (int i = 0; i < end; i++) {
+        if (neg[i] && sets[i] != null) answer = answer.andNot(sets[i]);
+      }
+
+      for (int i = 0; i < end; i++) {
+        if (!neg[i] && sets[i] != null) answer = answer.intersection(sets[i]);
+      }
+
+      // Make sure to keep answer as an immutable DocSet if we made it mutable
+      answer = MutableBitDocSet.unwrapIfMutable(answer);
+    }
+
+    // ignore "answer" if it simply matches all docs
+    if (answer != null && answer.size() == numDocs()) {
+      answer = null;
+    }
+
+    // answer is done.
+
+    // If no notCached nor postFilters, we can return now.
+    if (notCached == null && postFilters == null) {
+      // "answer" is the only part of the filter, so set it.
+      if (answer != null) {
+        pf.answer = answer;
+        pf.filter = answer.makeQuery();
+      }
+      return pf;
+    }
+    // pf.answer will remain null ...  (our local "answer" var is not the complete answer)
+
+    // Set pf.filter based on combining "answer" and "notCached"
+    if (notCached == null) {
+      if (answer != null) {
+        pf.filter = answer.makeQuery();
+      }
+    } else {
+      notCached.sort(sortByCost); // pointless?
+      final BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      if (answer != null) {
+        builder.add(answer.makeQuery(), Occur.FILTER);
+      }
+      for (ExtendedQuery eq : notCached) {
+        Query q = eq.getCostAppliedQuery();
+        builder.add(q, Occur.FILTER);
+      }
+      pf.filter = builder.build();
+    }
+
+    // Set pf.postFilter
+    if (postFilters != null) {
+      postFilters.sort(sortByCost);
+      for (int i = postFilters.size() - 1; i >= 0; i--) {
+        DelegatingCollector prev = pf.postFilter;
+        pf.postFilter = postFilters.get(i).getFilterCollector(this);
+        if (prev != null) pf.postFilter.setDelegate(prev);
+      }
+    }
+
+    return pf;
+  }
+
+  public ProcessedFilter getProcessedFilter_bk(List<Query> queries) throws IOException {
+    ProcessedFilter pf = new ProcessedFilter();
     if (queries == null || queries.size() == 0) {
       return pf;
     }
@@ -1389,6 +1564,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   // query must be positive
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
+    try {
+      Thread.sleep(20);
+    } catch (Exception e) {}
     return DocSetUtil.createDocSet(this, query, filter);
   }
 
