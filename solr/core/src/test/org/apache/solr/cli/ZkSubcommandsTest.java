@@ -35,10 +35,11 @@ import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkCLI;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.DigestZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
+import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
 import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -103,7 +104,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     zkClient.makePath("/solr", false, true);
     zkClient.close();
 
-    this.zkClient =
+    zkClient =
         new SolrZkClient.Builder()
             .withUrl(zkServer.getZkAddress())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
@@ -122,35 +123,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   //    assertEquals(ConfigSetService.UPLOAD_FILENAME_EXCLUDE_REGEX, ZkCLI.EXCLUDE_REGEX_DEFAULT);
   //  }
 
-  @Test
-  public void testBootstrapWithChroot() throws Exception {
-    String chroot = "/foo/bar";
-    assertFalse(zkClient.exists(chroot, true));
-
-    String[] args =
-        new String[] {
-          "-zkhost",
-          zkServer.getZkAddress() + chroot,
-          "-cmd",
-          "bootstrap",
-          "-solrhome",
-          this.solrHome
-        };
-
-    ZkCLI.main(args);
-
-    assertTrue(zkClient.exists(chroot + ZkConfigSetService.CONFIGS_ZKNODE + "/collection1", true));
-  }
-
-  @Test
-  public void testMakePath() throws Exception {
-    // test bootstrap_conf
-    String[] args =
-        new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "makepath", "/path/mynewpath"};
-    ZkCLI.main(args);
-
-    assertTrue(zkClient.exists("/path/mynewpath", true));
-  }
 
   @Test
   public void testPut() throws Exception {
@@ -431,7 +403,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String getNode = "/getNode";
     byte[] data = "getNode-data".getBytes(StandardCharsets.UTF_8);
     //    ByteArrayOutputStream systemOut = new ByteArrayOutputStream();
-    //    this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
+    zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
     //    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "get", getNode};
     //    ZkCLI.setStdout(new PrintStream(systemOut, true, StandardCharsets.UTF_8));
     //    ZkCLI.main(args);
@@ -481,7 +453,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         random().nextBoolean()
             ? zLibCompressor.compressBytes(data)
             : zLibCompressor.compressBytes(data, data.length / 10);
-    this.zkClient.create(getNode, compressedData, CreateMode.PERSISTENT, true);
+    zkClient.create(getNode, compressedData, CreateMode.PERSISTENT, true);
     //    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "get", getNode};
     //    ZkCLI.setStdout(new PrintStream(systemOut, true, StandardCharsets.UTF_8));
     //    ZkCLI.main(args);
@@ -517,7 +489,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     String getNode = "/getFileNode";
     byte[] data = "getFileNode-data".getBytes(StandardCharsets.UTF_8);
-    this.zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
+    zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
 
     Path file =
         tmpDir.resolve("solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
@@ -561,7 +533,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         random().nextBoolean()
             ? zLibCompressor.compressBytes(data)
             : zLibCompressor.compressBytes(data, data.length / 10);
-    this.zkClient.create(getNode, compressedData, CreateMode.PERSISTENT, true);
+    zkClient.create(getNode, compressedData, CreateMode.PERSISTENT, true);
 
     Path file =
         tmpDir.resolve("solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
@@ -623,16 +595,15 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     assertEquals(1, runTool(args2, tool));
   }
 
-  public void testInvalidZKAddress() throws SolrException {
-    SolrException ex =
-        expectThrows(
-            SolrException.class,
-            () ->
-                new SolrZkClient.Builder()
-                    .withUrl("----------:33332")
-                    .withTimeout(100, TimeUnit.MILLISECONDS)
-                    .build());
-    zkClient.close();
+  public void testInvalidZKAddress() throws Exception {
+
+    String[] args2 = new String[] {"ls", "-path", "/", "-r", "true", "-z", "----------:33332"};
+
+    ByteArrayOutputStream byteStream2 = new ByteArrayOutputStream();
+    final PrintStream myOut2 = new PrintStream(byteStream2, false, StandardCharsets.UTF_8);
+
+    ZkLsTool tool = new ZkLsTool(myOut2);
+    assertEquals(1, runTool(args2, tool));
   }
 
   @Test
@@ -650,15 +621,18 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "-val",
           "http"
         };
-    ZkCLI.main(args);
+    // ZkCLI.main(args);
+    String[] args2 =
+        new String[] {
+          "cluster", "-property", "urlScheme", "-value", "http", "-z", zkServer.getZkAddress()
+        };
+    ClusterTool tool = new ClusterTool();
+    assertEquals(0, runTool(args2, tool));
+
     assertEquals("http", properties.getClusterProperty("urlScheme", "none"));
 
-    // remove it again
-    args =
-        new String[] {
-          "-zkhost", zkServer.getZkAddress(), "-cmd", "CLUSTERPROP", "-name", "urlScheme"
-        };
-    ZkCLI.main(args);
+    args2 = new String[] {"cluster", "-property", "urlScheme", "-z", zkServer.getZkAddress()};
+    assertEquals(0, runTool(args2, tool));
     assertNull(properties.getClusterProperty("urlScheme", (String) null));
   }
 
@@ -667,23 +641,37 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     try {
       System.setProperty(
           SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
-          VMParamsAllAndReadonlyDigestZkACLProvider.class.getName());
+              DigestZkACLProvider.class.getName());
       System.setProperty(
-          VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME,
+              VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME,
           "user");
       System.setProperty(
-          VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME,
-          "pass");
+              VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME,
+          "pass");      System.setProperty(
+              SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
+              VMParamsAllAndReadonlyDigestZkACLProvider.class.getName());
+      System.setProperty(
+              VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME,
+              "user");
+      System.setProperty(
+              VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME,
+              "pass");
 
-      String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "updateacls", "/"};
-      ZkCLI.main(args);
+      //String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "updateacls", "/"};
+      //ZkCLI.main(args);
+      String[] args2 =
+              new String[] {
+                      "updateacls", "-path", "/", "-z", zkServer.getZkAddress()
+              };
+      UpdateACLTool tool = new UpdateACLTool();
+      assertEquals(0, runTool(args2, tool));
     } finally {
       // Need to clear these before we open the next SolrZkClient
       System.clearProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
       System.clearProperty(
-          VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME);
+              VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME);
       System.clearProperty(
-          VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME);
+              VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME);
     }
 
     boolean excepted = false;
