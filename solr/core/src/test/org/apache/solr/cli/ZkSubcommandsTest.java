@@ -20,6 +20,7 @@ import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -40,6 +41,7 @@ import org.apache.solr.common.cloud.DigestZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
 import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
+import org.apache.solr.common.util.StringBytes;
 import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -123,19 +125,48 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   public void testPut() throws Exception {
     // test put
     String data = "my data";
-    String[] args =
-        new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/data.txt", data};
-    ZkCLI.main(args);
+    //String[] args =
+    //    new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/data.txt", data};
+    //ZkCLI.main(args);
+    File localFile = File.createTempFile("temp", ".data");
+    FileWriter writer = new FileWriter(localFile);
+    writer.write(data);
+    writer.close();
 
-    zkClient.getData("/data.txt", null, null, true);
+    String[] args2 =
+            new String[] {
+                    "cp",
+                    "-src",
+                    localFile.getAbsolutePath(),
+                    "-dst",
+                    "zk:/data.txt",
+                    "-z",
+                    zkServer.getZkAddress()
+            };
+
+
+
+    ZkCpTool tool = new ZkCpTool();
+    assertEquals(0, runTool(args2, tool));
+
+
+    //zkClient.getData("/data.txt", null, null, true);
 
     assertArrayEquals(
         zkClient.getData("/data.txt", null, null, true), data.getBytes(StandardCharsets.UTF_8));
 
     // test re-put to existing
     data = "my data deux";
-    args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/data.txt", data};
-    ZkCLI.main(args);
+
+    // Write text to the temporary file
+    writer = new FileWriter(localFile);
+    writer.write(data);
+    writer.close();
+    System.out.println(localFile.getAbsolutePath());
+    //args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/data.txt", data};
+    assertEquals(0, runTool(args2, tool));
+    //ZkCLI.main(args);
+
     assertArrayEquals(
         zkClient.getData("/data.txt", null, null, true), data.getBytes(StandardCharsets.UTF_8));
   }
@@ -147,6 +178,12 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     System.setProperty("minStateByteLenForCompression", "0");
 
     String data = "my data";
+
+    File localFile = File.createTempFile("state", ".json");
+    FileWriter writer = new FileWriter(localFile);
+    writer.write(data);
+    writer.close();
+
     ZLibCompressor zLibCompressor = new ZLibCompressor();
     byte[] dataBytes = data.getBytes(StandardCharsets.UTF_8);
     byte[] expected =
@@ -155,7 +192,20 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
             : zLibCompressor.compressBytes(dataBytes, dataBytes.length / 10);
     String[] args =
         new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/state.json", data};
-    ZkCLI.main(args);
+    //ZkCLI.main(args);
+    String[] args2 =
+            new String[] {
+                    "cp",
+                    "-src",
+                    localFile.getAbsolutePath(),
+                    "-dst",
+                    "zk:/state.json",
+                    "-z",
+                    zkServer.getZkAddress()
+            };
+    ZkCpTool tool = new ZkCpTool();
+    assertEquals(0, runTool(args2, tool));
+
     assertArrayEquals(zkClient.getZooKeeper().getData("/state.json", null, null), expected);
 
     // test re-put to existing
@@ -182,13 +232,29 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "/foo.xml",
           SOLR_HOME + File.separator + "solr-stress-new.xml"
         };
-    ZkCLI.main(args);
+    //ZkCLI.main(args);
+
+    String[] args2 =
+            new String[] {
+                    "cp",
+                    "-src",
+                    SOLR_HOME + File.separator + "solr-stress-new.xml",
+                    "-dst",
+                    "zk:/foo.xml",
+                    "-z",
+                    zkServer.getZkAddress()
+            };
+
+
+
+    ZkCpTool tool = new ZkCpTool();
+    assertEquals(0, runTool(args2, tool));
 
     String fromZk =
         new String(zkClient.getData("/foo.xml", null, null, true), StandardCharsets.UTF_8);
-    Path locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
-    String fromLoc = Files.readString(locFile);
-    assertEquals("Should get back what we put in ZK", fromZk, fromLoc);
+    Path localFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
+    String fromLocalFile = Files.readString(localFile);
+    assertEquals("Should get back what we put in ZK", fromZk, fromLocalFile);
   }
 
   @Test
@@ -215,7 +281,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPutFileNotExists() {
+  public void testPutFileNotExists() throws Exception {
     // test put file
     String[] args =
         new String[] {
@@ -226,10 +292,27 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "/foo.xml",
           SOLR_HOME + File.separator + "not-there.xml"
         };
-    NoSuchFileException e = expectThrows(NoSuchFileException.class, () -> ZkCLI.main(args));
-    assertTrue(
-        "Didn't find expected error message containing 'not-there.xml' in " + e.getMessage(),
-        e.getMessage().contains("not-there.xml"));
+
+    String[] args2 =
+            new String[] {
+                    "cp",
+                    "-src",
+                    SOLR_HOME + File.separator + "not-there.xml",
+                    "-dst",
+                    "zk:/foo.xml",
+                    "-z",
+                    zkServer.getZkAddress()
+            };
+
+
+
+    ZkCpTool tool = new ZkCpTool();
+    assertEquals(1, runTool(args2, tool));
+
+    //NoSuchFileException e = expectThrows(NoSuchFileException.class, () -> ZkCLI.main(args));
+    //assertTrue(
+    //    "Didn't find expected error message containing 'not-there.xml' in " + e.getMessage(),
+     //   e.getMessage().contains("not-there.xml"));
   }
 
   @Test
@@ -431,7 +514,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     assertEquals(0, runTool(args2, tool));
 
     final String standardOutput2 = byteStream2.toString(StandardCharsets.UTF_8);
-    String separator2 = System.lineSeparator();
     assertTrue(standardOutput2.startsWith("Copying from 'zk:/getNode'"));
     byte[] fileBytes = Files.readAllBytes(Paths.get(localFile.getAbsolutePath()));
     assertArrayEquals(data, fileBytes);
