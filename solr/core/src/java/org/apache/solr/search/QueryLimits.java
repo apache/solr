@@ -68,13 +68,13 @@ public class QueryLimits implements QueryTimeout {
       if (hasCpuLimit(req)) {
         limits.add(new CpuAllowedLimit(req));
       }
+      if (hasMemLimit(req)) {
+        limits.add(new MemAllowedLimit(req));
+      }
     }
     // for testing
     if (TestInjection.queryTimeout != null) {
       limits.add(TestInjection.queryTimeout);
-    }
-    if (hasMemLimit(req)) {
-      limits.add(new MemAllowedLimit(req));
     }
   }
 

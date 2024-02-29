@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.ThreadCpuTimer;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -35,6 +36,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LogLevel("org.apache.solr.search.MemAllowedLimit=DEBUG")
 public class TestMemAllowedLimit extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -66,6 +68,7 @@ public class TestMemAllowedLimit extends SolrCloudTestCase {
   @BeforeClass
   public static void setup() throws Exception {
     System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
+    System.setProperty("metricsEnabled", "true");
     Path configset = createConfigSet();
     configureCluster(1).addConfig("conf", configset).configure();
     SolrClient solrClient = cluster.getSolrClient();
@@ -83,14 +86,14 @@ public class TestMemAllowedLimit extends SolrCloudTestCase {
   @Test
   public void testHardLimit() throws Exception {
     Assume.assumeTrue("Thread memory monitoring is not available", MemAllowedLimit.isSupported());
-    long limitMs = 100;
+    long limitMs = 100000;
     // 1 MiB
     MemAllowedLimit memLimit = new MemAllowedLimit(1f, -1f, MemAllowedLimit.createHistogram());
     ArrayList<byte[]> data = new ArrayList<>();
     long startNs = System.nanoTime();
     int wakeups = 0;
     while (!memLimit.shouldExit()) {
-      Thread.sleep(1);
+      Thread.sleep(100);
       // allocate memory
       for (int i = 0; i < 20; i++) {
         data.add(new byte[1000]);
@@ -143,7 +146,7 @@ public class TestMemAllowedLimit extends SolrCloudTestCase {
     Assume.assumeTrue("Thread memory monitoring is not available", MemAllowedLimit.isSupported());
     SolrClient solrClient = cluster.getSolrClient();
     // no limits set - should complete
-    long dataSize = 1000;
+    long dataSize = 150; // 150 KiB
     QueryResponse rsp =
         solrClient.query(
             COLLECTION,
@@ -182,7 +185,70 @@ public class TestMemAllowedLimit extends SolrCloudTestCase {
                 "stages",
                 "prepare,process",
                 "memAllowed",
-                "0.5"));
+                "0.1"));
     assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
+
+    // test dynamic limit
+
+    // first, let's prime the histogram using values smaller than the hard limit
+    for (int i = 0; i < 1000; i++) {
+      dataSize = 100 + random().nextInt(75);
+      rsp =
+          solrClient.query(
+              COLLECTION,
+              params(
+                  "q",
+                  "id:*",
+                  "sort",
+                  "id asc",
+                  "memLoadCount",
+                  String.valueOf(dataSize),
+                  "stages",
+                  "process",
+                  "memAllowed",
+                  "1.0"));
+      assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
+    }
+    // use data size below the hard limit but above the dynamic limit
+    // which by now should be around 175 KiB * 1.2 = 210 KiB
+    dataSize = 300;
+    rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "sort",
+                "id asc",
+                "memLoadCount",
+                String.valueOf(dataSize),
+                "stages",
+                "process",
+                "memAllowedRatio",
+                "1.2",
+                "memAllowed",
+                "0.4"));
+    assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
+
+    // now use the data between hard and dynamic limit
+    dataSize = 200;
+    rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "sort",
+                "id asc",
+                "memLoadCount",
+                String.valueOf(dataSize),
+                "stages",
+                "process",
+                "memAllowedRatio",
+                "1.2",
+                "memAllowed",
+                "0.4"));
+    assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
+
   }
 }

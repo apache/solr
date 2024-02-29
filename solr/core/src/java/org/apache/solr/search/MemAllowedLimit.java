@@ -16,9 +16,13 @@
  */
 package org.apache.solr.search;
 
+import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.LockFreeExponentiallyDecayingReservoir;
+import com.codahale.metrics.Snapshot;
 import com.google.common.annotations.VisibleForTesting;
+
+import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Method;
@@ -26,8 +30,11 @@ import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.request.SolrQueryRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MemAllowedLimit implements QueryTimeout {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final double MEBI = 1024.0 * 1024.0;
   private static final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
   private static Method GET_BYTES_METHOD;
@@ -65,7 +72,7 @@ public class MemAllowedLimit implements QueryTimeout {
   private long limitAtBytes;
   private float limitRatio;
   private long initialBytes;
-  private Histogram memHistogram;
+  private final Histogram memHistogram;
 
   public MemAllowedLimit(SolrQueryRequest req) {
     if (!supported) {
@@ -120,7 +127,7 @@ public class MemAllowedLimit implements QueryTimeout {
   }
 
   static Histogram createHistogram() {
-    return new Histogram(LockFreeExponentiallyDecayingReservoir.builder().build());
+    return new Histogram(new ExponentiallyDecayingReservoir());
   }
 
   @VisibleForTesting
@@ -142,18 +149,43 @@ public class MemAllowedLimit implements QueryTimeout {
         previousMaxDelta.set(currentAllocatedBytes - initialBytes);
       }
       if (limitRatio > 0.0f && memHistogram.getCount() > MIN_COUNT) {
+        Snapshot snapshot = memHistogram.getSnapshot();
         long maxDynamicDelta =
-            Math.round(memHistogram.getSnapshot().get99thPercentile() * (double) limitRatio);
+            Math.round(snapshot.get99thPercentile() * (double) limitRatio);
         if (initialBytes + maxDynamicDelta < currentAllocatedBytes) {
+          if (log.isDebugEnabled()) {
+            log.debug("++++ Dynamic limit tripped: count/min/avg/median/p99={}/{}/{}/{}/{}, actual {}",
+                memHistogram.getCount(),
+                snapshot.getMin(),
+                snapshot.getMean(),
+                snapshot.getMedian(),
+                snapshot.get99thPercentile(),
+                currentAllocatedBytes - initialBytes);
+          }
           return true;
         }
         // don't exit yet - check the absolute limit, too
       }
       if (limitAtBytes > 0) {
-        return limitAtBytes - currentAllocatedBytes < 0L;
-      } else {
-        return false;
+        long currentDelta = limitAtBytes - currentAllocatedBytes;
+        if (currentDelta < 0L) {
+          if (log.isDebugEnabled()) {
+            log.debug("++++ Hard limit tripped: limit {}, actual {}",
+                limitAtBytes - initialBytes,
+                currentAllocatedBytes - initialBytes);
+            Snapshot snapshot = memHistogram.getSnapshot();
+            log.debug("++++ Current dynamic limit: count/min/avg/median/p99={}/{}/{}/{}/{}, actual {}",
+                memHistogram.getCount(),
+                snapshot.getMin(),
+                snapshot.getMean(),
+                snapshot.getMedian(),
+                snapshot.get99thPercentile(),
+                currentAllocatedBytes - initialBytes);
+          }
+          return true;
+        }
       }
+      return false;
     } catch (Exception e) {
       supported = false;
       throw new IllegalArgumentException(

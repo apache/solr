@@ -374,6 +374,8 @@ allocations and GC.
 Note: this functionality relies on an internal JVM class `com.sun.management.ThreadMXBean` - if this
 class is not available in the current JVM but the `memAllowed` parameter is used the query will return an error.
 
+Note 2: this functionality requires that metrics collection be enabled (which is enabled in the default `solr.xml` configuration).
+
 == segmentTerminateEarly Parameter
 
 This parameter may be set to either `true` or `false`.

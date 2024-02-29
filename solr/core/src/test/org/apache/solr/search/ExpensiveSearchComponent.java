@@ -23,8 +23,8 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
-import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.TestUtil;
+import java.util.Arrays;
+
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
@@ -56,10 +56,10 @@ import org.slf4j.LoggerFactory;
  * For example, if the request parameters are as follows:
  *
  * <pre>{@code
- * sleepMs=100&memLoadCount=1000&cpuLoadCount=10&stages=prepare,process
+ * sleepMs=100&memLoadCount=100&cpuLoadCount=10&stages=prepare,process
  * }</pre>
  *
- * the component will introduce a 100ms delay, allocate ~20kB and consume around 500ms of CPU time
+ * the component will introduce a 100ms delay, allocate ~100 KiB and consume around 500ms of CPU time
  * both in the "prepare" and in the "process" stages of the distributed query processing.
  */
 public class ExpensiveSearchComponent extends SearchComponent {
@@ -97,7 +97,7 @@ public class ExpensiveSearchComponent extends SearchComponent {
     kpg = generator;
   }
 
-  final ArrayList<String> data = new ArrayList<>();
+  final ArrayList<byte[]> data = new ArrayList<>();
 
   private void generateLoad(ResponseBuilder rb, String stage) {
     if (log.isTraceEnabled()) {
@@ -118,8 +118,9 @@ public class ExpensiveSearchComponent extends SearchComponent {
         log.trace("--- STAGE {}: creating mem load {}", stage, memLoadCount);
       }
       for (int j = 0; j < memLoadCount; j++) {
-        String str = TestUtil.randomUnicodeString(LuceneTestCase.random(), 100);
-        data.add(str);
+        byte[] chunk = new byte[1024];
+        Arrays.fill(chunk, (byte) 1);
+        data.add(chunk);
       }
     }
     // create CPU load
