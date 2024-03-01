@@ -237,13 +237,9 @@ public abstract class RequestHandlerBase
       rsp.setHttpCaching(httpCaching);
       handleRequestBody(req, rsp);
       // count timeouts
-      NamedList<?> header = rsp.getResponseHeader();
-      if (header != null) {
-        if (Boolean.TRUE.equals(
-            header.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-          metrics.numTimeouts.mark();
-          rsp.setHttpCaching(false);
-        }
+      if (rsp.isPartialResults()) {
+        metrics.numTimeouts.mark();
+        rsp.setHttpCaching(false);
       }
     } catch (Exception e) {
       e = normalizeReceivedException(req, e);

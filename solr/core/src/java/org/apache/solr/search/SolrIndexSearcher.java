@@ -211,10 +211,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     assert reader != null;
     reader = UninvertingReader.wrap(reader, core.getLatestSchema().getUninversionMapper());
     if (useExitableDirectoryReader) { // SOLR-16693 legacy; may be removed.  Probably inefficient.
-      SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
-      assert requestInfo != null;
-      QueryLimits limits = requestInfo.getLimits();
-      reader = ExitableDirectoryReader.wrap(reader, limits);
+      reader = ExitableDirectoryReader.wrap(reader, QueryLimits.getCurrentLimits());
     }
     return reader;
   }
@@ -724,10 +721,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   @Override
   protected void search(List<LeafReaderContext> leaves, Weight weight, Collector collector)
       throws IOException {
-    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
-    if (useExitableDirectoryReader
-        || requestInfo == null
-        || !requestInfo.getLimits().isTimeoutEnabled()) {
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    if (useExitableDirectoryReader || !queryLimits.isLimitsEnabled()) {
       // no timeout.  Pass through to super class
       super.search(leaves, weight, collector);
     } else {
@@ -737,11 +732,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // So we need to make a new IndexSearcher instead of using "this".
       new IndexSearcher(reader) { // cheap, actually!
         void searchWithTimeout() throws IOException {
-          setTimeout(requestInfo.getLimits()); // Lucene's method name is less than ideal here...
+          setTimeout(queryLimits); // Lucene's method name is less than ideal here...
           super.search(leaves, weight, collector); // FYI protected access
           if (timedOut()) {
-            throw new LimitExceededFromScorerException(
-                "Limits exceeded! " + requestInfo.getLimits().limitStatusMessage());
+            throw new QueryLimitsExceededException(
+                "Limits exceeded! (search): " + queryLimits.limitStatusMessage());
           }
         }
       }.searchWithTimeout();
@@ -985,8 +980,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     DocSet answer;
-    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
-    if (requestInfo != null && requestInfo.getLimits().isTimeoutEnabled()) {
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    if (queryLimits.isLimitsEnabled()) {
       // If there is a possibility of timeout for this query, then don't reserve a computation slot.
       // Further, we can't naively wait for an in progress computation to finish, because if we time
       // out before it does then we won't even have partial results to provide. We could possibly

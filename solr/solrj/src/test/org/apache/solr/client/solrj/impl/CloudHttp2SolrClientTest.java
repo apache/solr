@@ -1038,9 +1038,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     while (it.hasNext()) {
       Map.Entry<String, ? extends LBSolrClient.Req> entry = it.next();
       assertEquals(
-          "wrong number of servers: " + entry.getValue().getServers(),
+          "wrong number of servers: " + entry.getValue().getEndpoints(),
           1,
-          entry.getValue().getServers().size());
+          entry.getValue().getEndpoints().size());
     }
   }
 
