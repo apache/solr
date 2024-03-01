@@ -228,7 +228,9 @@ public class SolrMessageProcessor extends MessageProcessor implements IQueueHand
                 final int numDeleteByQuery = ((UpdateRequest) request).getDeleteQuery().size();
                 rmsg.append(" numDeleteByQuery=").append(numDeleteByQuery);
             }
-            log.info(rmsg.toString());
+            if (log.isInfoEnabled()) {
+                log.info(rmsg.toString());
+            }
         }
     }
 
@@ -302,23 +304,23 @@ public class SolrMessageProcessor extends MessageProcessor implements IQueueHand
             ModifiableSolrParams params = updateRequest.getParams();
             String shouldMirror = (params == null ? null : params.get(CrossDcConstants.SHOULD_MIRROR));
             if (shouldMirror == null) {
-                log.warn(CrossDcConstants.SHOULD_MIRROR + " param is missing - setting to false. Request={}", mirroredSolrRequest);
+                log.warn("{} param is missing - setting to false. Request={}", CrossDcConstants.SHOULD_MIRROR, mirroredSolrRequest);
                 updateRequest.setParam(CrossDcConstants.SHOULD_MIRROR, "false");
             } else if (!"false".equalsIgnoreCase(shouldMirror)) {
-                log.warn(CrossDcConstants.SHOULD_MIRROR + " param equal to " + shouldMirror);
+                log.warn("{} param equal to {}", CrossDcConstants.SHOULD_MIRROR, shouldMirror);
             }
         } else {
             SolrParams params = mirroredSolrRequest.getSolrRequest().getParams();
             String shouldMirror = (params == null ? null : params.get(CrossDcConstants.SHOULD_MIRROR));
             if (shouldMirror == null) {
                 if (params instanceof ModifiableSolrParams) {
-                    log.warn("{} {}", CrossDcConstants.SHOULD_MIRROR, "param is missing - setting to false");
+                    log.warn("{} param is missing - setting to false", CrossDcConstants.SHOULD_MIRROR);
                     ((ModifiableSolrParams) params).set(CrossDcConstants.SHOULD_MIRROR, "false");
                 } else {
-                    log.warn("{} {}", CrossDcConstants.SHOULD_MIRROR, "param is missing and params are not modifiable");
+                    log.warn("{} param is missing and params are not modifiable", CrossDcConstants.SHOULD_MIRROR);
                 }
             } else if (!"false".equalsIgnoreCase(shouldMirror)) {
-                log.warn("{} {}", CrossDcConstants.SHOULD_MIRROR, "param is present and set to " + shouldMirror);
+                log.warn("{} param is present and set to {}", CrossDcConstants.SHOULD_MIRROR, shouldMirror);
             }
         }
     }

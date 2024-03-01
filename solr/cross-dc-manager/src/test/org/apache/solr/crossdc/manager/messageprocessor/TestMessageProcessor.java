@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.crossdc.manager.messageprocessor;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -27,6 +26,7 @@ import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.common.ResubmitBackoffPolicy;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -35,6 +35,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Map;
 
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.*;
@@ -52,6 +53,11 @@ public class TestMessageProcessor {
             return 0;
         }
     });
+
+    @BeforeClass
+    public static void ensureWorkingMockito() {
+        assumeWorkingMockito();
+    }
 
     @Before
     public void setUp() {

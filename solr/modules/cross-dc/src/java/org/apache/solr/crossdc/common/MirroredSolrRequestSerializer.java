@@ -115,7 +115,9 @@ public class MirroredSolrRequestSerializer implements Serializer<MirroredSolrReq
                 throw new RuntimeException("Missing 'action' parameter! " + requestMap);
             }
             request = new MirroredSolrRequest.MirroredAdminRequest(action, params);
-            log.debug("-- admin req={}", ((MirroredSolrRequest.MirroredAdminRequest) request).jsonStr());
+            if (log.isDebugEnabled()) {
+                log.debug("Mirrored Admin request={}", ((MirroredSolrRequest.MirroredAdminRequest) request).jsonStr());
+            }
         } else if (type == MirroredSolrRequest.Type.CONFIGSET) {
             List<ContentStream> contentStreams = null;
             String m = (String) requestMap.get("method");
@@ -136,7 +138,9 @@ public class MirroredSolrRequestSerializer implements Serializer<MirroredSolrReq
                 }
             }
             request = new MirroredSolrRequest.MirroredConfigSetRequest(method, params, contentStreams);
-            log.debug("-- configSet method={}, req={}, streams={}", request.getMethod(), request.getParams(), csNames);
+            if (log.isDebugEnabled()) {
+                log.debug("Mirrored configSet method={}, req={}, streams={}", request.getMethod(), request.getParams(), csNames);
+            }
         } else {
             throw new RuntimeException("Unknown request type: " + requestMap);
         }

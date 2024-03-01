@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.crossdc.manager.consumer;
 
 import com.codahale.metrics.*;
@@ -27,19 +43,29 @@ public class Util {
     public static void logMetrics(MetricRegistry metricRegistry) {
         log.info("Metrics Registry:");
         for (Map.Entry<String, Gauge> entry : metricRegistry.getGauges().entrySet()) {
-            log.info("Gauge {}: {}", entry.getKey(), entry.getValue().getValue());
+            if (log.isInfoEnabled()) {
+                log.info("Gauge {}: {}", entry.getKey(), entry.getValue().getValue());
+            }
         }
         for (Map.Entry<String, Counter> entry : metricRegistry.getCounters().entrySet()) {
-            log.info("Counter {}: {}", entry.getKey(), entry.getValue().getCount());
+            if (log.isInfoEnabled()) {
+                log.info("Counter {}: {}", entry.getKey(), entry.getValue().getCount());
+            }
         }
         for (Map.Entry<String, Histogram> entry : metricRegistry.getHistograms().entrySet()) {
-            log.info("Histogram {}: {}", entry.getKey(), entry.getValue().getSnapshot().toString());
+            if (log.isInfoEnabled()) {
+                log.info("Histogram {}: {}", entry.getKey(), entry.getValue().getSnapshot().toString());
+            }
         }
         for (Map.Entry<String, Meter> entry : metricRegistry.getMeters().entrySet()) {
-            log.info("Meter {}: {}", entry.getKey(), entry.getValue().getCount());
+            if (log.isInfoEnabled()) {
+                log.info("Meter {}: {}", entry.getKey(), entry.getValue().getCount());
+            }
         }
         for (Map.Entry<String, Timer> entry : metricRegistry.getTimers().entrySet()) {
-            log.info("Timer {}: {}", entry.getKey(), entry.getValue().getSnapshot().toString());
+            if (log.isInfoEnabled()) {
+                log.info("Timer {}: {}", entry.getKey(), entry.getValue().getSnapshot().toString());
+            }
         }
     }
 

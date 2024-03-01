@@ -18,6 +18,7 @@ package org.apache.solr.crossdc.handler;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
@@ -82,7 +83,6 @@ public class MirroringCollectionsHandler extends CollectionsHandler {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    log.debug("-- handler got req params={}", req.getParams());
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist(req, CrossDcConstants.SHOULD_MIRROR);
     // throw any errors before mirroring
     baseHandleRequestBody(req, rsp);
@@ -94,12 +94,14 @@ public class MirroringCollectionsHandler extends CollectionsHandler {
     }
     boolean doMirroring = req.getParams().getBool(CrossDcConstants.SHOULD_MIRROR, true);
     if (!doMirroring) {
-      log.debug(" -- doMirroring=false, skipping...");
+      log.debug("doMirroring=false, skipping...");
       return;
     }
     CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(req.getParams().get(CoreAdminParams.ACTION));
     if (action == null) {
-      log.debug("-- unrecognized action, skipping mirroring. Params: {}", req.getParams());
+      if (log.isDebugEnabled()) {
+        log.debug("unrecognized action, skipping mirroring. Params: {}", req.getParams());
+      }
       return;
     }
     // select collection names only when they are mirrored
@@ -111,7 +113,7 @@ public class MirroringCollectionsHandler extends CollectionsHandler {
         collection = req.getParams().get(CollectionAdminParams.COLLECTION);
       }
       if (!collections.contains(collection)) {
-        log.debug("-- collection {} not enabled for mirroring, skipping...", collection);
+        log.debug("collection {} not enabled for mirroring, skipping...", collection);
         return;
       }
     }
@@ -119,8 +121,10 @@ public class MirroringCollectionsHandler extends CollectionsHandler {
     ModifiableSolrParams mirrorParams = ModifiableSolrParams.of(req.getParams());
     // make sure to turn this off to prevent looping
     mirrorParams.set(CrossDcConstants.SHOULD_MIRROR, Boolean.FALSE.toString());
-    log.debug("  -- mirroring mirrorParams={}, original responseHeader={}, responseValues={}", mirrorParams, rsp.getResponseHeader(), rsp.getValues());
-    SolrRequest solrRequest = new MirroredSolrRequest.MirroredAdminRequest(action, mirrorParams);
+    if (log.isDebugEnabled()) {
+      log.debug("mirroring mirrorParams={}, original responseHeader={}, responseValues={}", mirrorParams, rsp.getResponseHeader(), rsp.getValues());
+    }
+    SolrRequest<CollectionAdminResponse> solrRequest = new MirroredSolrRequest.MirroredAdminRequest(action, mirrorParams);
     MirroredSolrRequest mirror = new MirroredSolrRequest(MirroredSolrRequest.Type.ADMIN, solrRequest);
     sink.submit(mirror);
   }

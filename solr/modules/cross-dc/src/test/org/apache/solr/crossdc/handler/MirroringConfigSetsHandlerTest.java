@@ -42,6 +42,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -62,6 +63,11 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
     private SolrZkClient solrZkClient = Mockito.mock(SolrZkClient.class);
     private ArgumentCaptor<MirroredSolrRequest> captor;
     private SolrCore solrCore = Mockito.mock(SolrCore.class);
+
+    @BeforeClass
+    public static void ensureWorkingMockito() {
+        assumeWorkingMockito();
+    }
 
     private static SolrQueryRequest createRequest(SolrCore solrCore, ConfigSetParams.ConfigSetAction action, String configSetName, String zipResource) throws Exception {
         ModifiableSolrParams params = new ModifiableSolrParams();

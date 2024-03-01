@@ -65,8 +65,10 @@ public class Consumer {
 
         ConfUtil.fillProperties(null, properties);
 
-        log.info("Consumer startup config properties before adding additional properties from Zookeeper={}",
+        if (log.isInfoEnabled()) {
+            log.info("Consumer startup config properties before adding additional properties from Zookeeper={}",
                 SensitivePropRedactionUtils.flattenAndRedactForLogging(properties));
+        }
 
         String zkConnectString = (String) properties.get(ZK_CONNECT_STRING);
         if (zkConnectString == null) {
@@ -98,7 +100,9 @@ public class Consumer {
             context.addServlet(MetricsServlet.class, "/metrics/*");
             context.setAttribute("com.codahale.metrics.servlets.MetricsServlet.registry", SharedMetricRegistries.getOrCreate(METRICS_REGISTRY));
             for (ServletMapping mapping : context.getServletHandler().getServletMappings()) {
-                log.info(" - {}", mapping.getPathSpecs()[0]);
+                if (log.isInfoEnabled()) {
+                    log.info(" - {}", mapping.getPathSpecs()[0]);
+                }
             }
         }
 
