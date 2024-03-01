@@ -47,7 +47,7 @@ import java.util.Properties;
   protected static volatile MiniSolrCloudCluster solrCluster1;
   protected static volatile MiniSolrCloudCluster solrCluster2;
 
-  protected static volatile Consumer consumer = new Consumer();
+  protected static volatile Consumer consumer;
 
   private static String TOPIC = "topic1";
 
@@ -55,6 +55,8 @@ import java.util.Properties;
 
   @BeforeClass
   public static void beforeSolrAndKafkaIntegrationTest() throws Exception {
+    System.setProperty(KafkaCrossDcConf.PORT, "-1");
+    consumer = new Consumer();
 
     Properties config = new Properties();
     config.put("unclean.leader.election.enable", "true");

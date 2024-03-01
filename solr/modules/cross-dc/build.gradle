@@ -39,8 +39,10 @@ dependencies {
   testImplementation 'org.hamcrest:hamcrest'
   testImplementation 'org.mockito:mockito-core'
 
-  testImplementation 'org.apache.kafka:kafka_2.13:2.8.1:test'
-  testImplementation 'org.apache.kafka:kafka-streams:2.8.1:test'
+  testImplementation "org.apache.kafka:kafka-clients:3.5.1:test"
+  testImplementation 'org.apache.kafka:kafka_2.13:3.5.1:test'
+  testImplementation 'org.apache.kafka:kafka-streams:3.5.1:test'
+  testImplementation 'org.apache.kafka:kafka-server-common:3.5.1:test'
 
   testFixturesApi 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
 }

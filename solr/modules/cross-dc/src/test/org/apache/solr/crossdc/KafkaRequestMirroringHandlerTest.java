@@ -18,7 +18,7 @@ import static org.mockito.Mockito.verify;
 public class KafkaRequestMirroringHandlerTest {
 
     @Mock
-    KafkaMirroringSink kafkaMirroringSink;
+    private KafkaMirroringSink kafkaMirroringSink;
 
     @Test
     public void testCheckDeadLetterQueueMessageExecution() throws MirroringException {

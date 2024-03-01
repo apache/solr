@@ -7,6 +7,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.errors.WakeupException;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -36,7 +37,7 @@ import java.util.concurrent.*;
 public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final MetricRegistry metrics = SharedMetricRegistries.getOrCreate("metrics");
+  private final MetricRegistry metrics = SharedMetricRegistries.getOrCreate(Consumer.METRICS_REGISTRY);
 
   private final KafkaConsumer<String,MirroredSolrRequest> kafkaConsumer;
   private final CountDownLatch startLatch;
@@ -45,9 +46,11 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private final static int KAFKA_CONSUMER_POLL_TIMEOUT_MS = 5000;
   private final String[] topicNames;
   private final int maxAttempts;
+  private final CrossDcConf.CollapseUpdates collapseUpdates;
+  private final int maxCollapseRecords;
   private final SolrMessageProcessor messageProcessor;
 
-  private final CloudSolrClient solrClient;
+  protected final CloudSolrClient solrClient;
 
   private final ThreadPoolExecutor executor;
 
@@ -70,6 +73,8 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
     this.topicNames = conf.get(KafkaCrossDcConf.TOPIC_NAME).split(",");
     this.maxAttempts = conf.getInt(KafkaCrossDcConf.MAX_ATTEMPTS);
+    this.collapseUpdates = CrossDcConf.CollapseUpdates.getOrDefault(conf.get(CrossDcConf.COLLAPSE_UPDATES), CrossDcConf.CollapseUpdates.PARTIAL);
+    this.maxCollapseRecords = conf.getInt(KafkaCrossDcConf.MAX_COLLAPSE_RECORDS);
     this.startLatch = startLatch;
     final Properties kafkaConsumerProps = new Properties();
 
@@ -191,7 +196,8 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         log.trace("poll return {} records", records.count());
       }
 
-      UpdateRequest solrReqBatch = null;
+      UpdateRequest updateReqBatch = null;
+      int currentCollapsed = 0;
 
       ConsumerRecord<String,MirroredSolrRequest> lastRecord = null;
 
@@ -203,9 +209,8 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         workUnit.nextOffset = PartitionManager.getOffsetForPartition(partitionRecords);
         partitionWork.partitionQueue.add(workUnit);
         try {
-          ModifiableSolrParams lastParams = null;
-          NamedList lastParamsAsNamedList = null;
-          solrReqBatch = new UpdateRequest();
+          ModifiableSolrParams lastUpdateParams = null;
+          NamedList lastUpdateParamsAsNamedList = null;
           for (ConsumerRecord<String,MirroredSolrRequest> requestRecord : partitionRecords) {
             if (log.isTraceEnabled()) {
               log.trace("Fetched record from topic={} partition={} key={} value={}", requestRecord.topic(), requestRecord.partition(), requestRecord.key(),
@@ -214,48 +219,96 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
             lastRecord = requestRecord;
             MirroredSolrRequest req = requestRecord.value();
-            UpdateRequest solrReq = (UpdateRequest) req.getSolrRequest();
-            ModifiableSolrParams params = solrReq.getParams();
+            SolrRequest solrReq = req.getSolrRequest();
+            MirroredSolrRequest.Type type = req.getType();
+            metrics.counter(MetricRegistry.name(type.name(), "input")).inc();
+            ModifiableSolrParams params = new ModifiableSolrParams(solrReq.getParams());
             if (log.isTraceEnabled()) {
-              log.trace("params={}", params);
+              log.trace("-- picked type={}, params={}", req.getType(), params);
             }
 
-            if (lastParams != null && !lastParams.toNamedList().equals(params.toNamedList())) {
+            // determine if it's an UPDATE with deletes, or if the existing batch has deletes
+            boolean hasDeletes = false;
+            if (type == MirroredSolrRequest.Type.UPDATE) {
+              UpdateRequest ureq = (UpdateRequest) solrReq;
+              hasDeletes = hasDeletes(ureq) || hasDeletes(updateReqBatch);
+            }
+
+            // it's an update but with different params
+            if (type == MirroredSolrRequest.Type.UPDATE &&
+                  (
+                    // different params
+                    (lastUpdateParams != null && !lastUpdateParams.toNamedList().equals(params.toNamedList())) ||
+                    // no collapsing
+                    (collapseUpdates == CrossDcConf.CollapseUpdates.NONE) ||
+                    // partial collapsing but has deletes
+                    (collapseUpdates == CrossDcConf.CollapseUpdates.PARTIAL && hasDeletes) ||
+                    // too many collapsed - emit
+                    currentCollapsed >= maxCollapseRecords
+                  )
+                ) {
               if (log.isTraceEnabled()) {
-                log.trace("SolrParams have changed, starting new UpdateRequest, params={}", params);
+                log.trace("Starting new UpdateRequest, params={}", params);
               }
-              lastParamsAsNamedList = null;
-              sendBatch(solrReqBatch, lastRecord, workUnit);
-              solrReqBatch = new UpdateRequest();
+              // send previous batch, if any
+              if (updateReqBatch != null) {
+                sendBatch(updateReqBatch, type, lastRecord, workUnit);
+              }
+              updateReqBatch = null;
+              lastUpdateParamsAsNamedList = null;
+              currentCollapsed = 0;
               workUnit = new PartitionManager.WorkUnit(partition);
               workUnit.nextOffset = PartitionManager.getOffsetForPartition(partitionRecords);
               partitionWork.partitionQueue.add(workUnit);
             }
 
-            lastParams = solrReq.getParams();
-            solrReqBatch.setParams(params);
-            if (lastParamsAsNamedList == null) {
-              lastParamsAsNamedList = lastParams.toNamedList();
-            }
-
-            List<SolrInputDocument> docs = solrReq.getDocuments();
-            if (docs != null) {
-              solrReqBatch.add(docs);
-            }
-            List<String> deletes = solrReq.getDeleteById();
-            if (deletes != null) {
-              solrReqBatch.deleteById(deletes);
-            }
-            List<String> deleteByQuery = solrReq.getDeleteQuery();
-            if (deleteByQuery != null) {
-              for (String delByQuery : deleteByQuery) {
-                solrReqBatch.deleteByQuery(delByQuery);
+            lastUpdateParams = params;
+            if (type == MirroredSolrRequest.Type.UPDATE) {
+              if (updateReqBatch == null) {
+                // just initialize
+                updateReqBatch = new UpdateRequest();
+              } else {
+                if (collapseUpdates == CrossDcConf.CollapseUpdates.NONE) {
+                  throw new RuntimeException("Can't collapse requests.");
+                }
+                if (collapseUpdates == CrossDcConf.CollapseUpdates.PARTIAL && hasDeletes) {
+                  throw new RuntimeException("Can't collapse requests with deletions.");
+                }
+                metrics.counter(MetricRegistry.name(type.name(), "collapsed")).inc();
+                currentCollapsed++;
               }
+              UpdateRequest update = (UpdateRequest) solrReq;
+              MirroredSolrRequest.setParams(updateReqBatch, params);
+              if (lastUpdateParamsAsNamedList == null) {
+                lastUpdateParamsAsNamedList = lastUpdateParams.toNamedList();
+              }
+              // merge
+              List<SolrInputDocument> docs = update.getDocuments();
+              if (docs != null) {
+                updateReqBatch.add(docs);
+                metrics.counter(MetricRegistry.name(type.name(), "add")).inc(docs.size());
+              }
+              List<String> deletes = update.getDeleteById();
+              if (deletes != null) {
+                updateReqBatch.deleteById(deletes);
+                metrics.counter(MetricRegistry.name(type.name(), "dbi")).inc(deletes.size());
+              }
+              List<String> deleteByQuery = update.getDeleteQuery();
+              if (deleteByQuery != null) {
+                for (String delByQuery : deleteByQuery) {
+                  updateReqBatch.deleteByQuery(delByQuery);
+                }
+                metrics.counter(MetricRegistry.name(type.name(), "dbq")).inc(deleteByQuery.size());
+              }
+            } else {
+              // non-update requests should be sent immediately
+              sendBatch(req.getSolrRequest(), type, lastRecord, workUnit);
             }
-
           }
 
-          sendBatch(solrReqBatch, lastRecord, workUnit);
+          if (updateReqBatch != null) {
+            sendBatch(updateReqBatch, MirroredSolrRequest.Type.UPDATE, lastRecord, workUnit);
+          }
           try {
             partitionManager.checkForOffsetUpdates(partition);
           } catch (Throwable e) {
@@ -305,13 +358,23 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
     return true;
   }
 
-  public void sendBatch(UpdateRequest solrReqBatch, ConsumerRecord<String,MirroredSolrRequest> lastRecord, PartitionManager.WorkUnit workUnit) {
-    UpdateRequest finalSolrReqBatch = solrReqBatch;
+  private boolean hasDeletes(UpdateRequest ureq) {
+    if (ureq == null) {
+      return false;
+    }
+    return (ureq.getDeleteByIdMap() != null && !ureq.getDeleteByIdMap().isEmpty()) ||
+        (ureq.getDeleteQuery() != null && !ureq.getDeleteQuery().isEmpty());
+  }
+
+  public void sendBatch(SolrRequest solrReqBatch, MirroredSolrRequest.Type type, ConsumerRecord<String, MirroredSolrRequest> lastRecord, PartitionManager.WorkUnit workUnit) {
+    SolrRequest finalSolrReqBatch = solrReqBatch;
+    // Kafka client is not thread-safe !!!
     Future<?> future = executor.submit(() -> {
       try {
-        IQueueHandler.Result<MirroredSolrRequest> result = messageProcessor.handleItem(new MirroredSolrRequest(finalSolrReqBatch));
+        final MirroredSolrRequest mirroredSolrRequest = new MirroredSolrRequest(type, lastRecord.value().getAttempt(), finalSolrReqBatch);
+        final IQueueHandler.Result<MirroredSolrRequest> result = messageProcessor.handleItem(mirroredSolrRequest);
 
-        processResult(lastRecord, result);
+        processResult(type, result);
       } catch (MirroringException e) {
         // We don't really know what to do here
         log.error("Mirroring exception occurred while resubmitting to Kafka. We are going to stop the consumer thread now.", e);
@@ -324,19 +387,21 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
 
 
-  void processResult(ConsumerRecord<String,MirroredSolrRequest> record, IQueueHandler.Result<MirroredSolrRequest> result) throws MirroringException {
+  protected void processResult(MirroredSolrRequest.Type type, IQueueHandler.Result<MirroredSolrRequest> result) throws MirroringException {
+    MirroredSolrRequest item = result.getItem();
     switch (result.status()) {
       case FAILED_RESUBMIT:
         if (log.isTraceEnabled()) {
           log.trace("result=failed-resubmit");
         }
-        metrics.counter("failed-resubmit").inc();
-        final int attempt = record.value().getAttempt();
+        final int attempt = item.getAttempt();
         if (attempt > this.maxAttempts) {
           log.info("Sending message to dead letter queue because of max attempts limit with current value = {}", attempt);
-          kafkaMirroringSink.submitToDlq(result.newItem());
+          kafkaMirroringSink.submitToDlq(item);
+          metrics.counter(MetricRegistry.name(type.name(), "failed-dlq")).inc();
         } else {
-          kafkaMirroringSink.submit(result.newItem());
+          kafkaMirroringSink.submit(item);
+          metrics.counter(MetricRegistry.name(type.name(), "failed-resubmit")).inc();
         }
         break;
       case HANDLED:
@@ -344,16 +409,16 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         if (log.isTraceEnabled()) {
           log.trace("result=handled");
         }
-        metrics.counter("handled").inc();
+        metrics.counter(MetricRegistry.name(type.name(), "handled")).inc();
         break;
       case NOT_HANDLED_SHUTDOWN:
         if (log.isTraceEnabled()) {
           log.trace("result=nothandled_shutdown");
         }
-        metrics.counter("nothandled_shutdown").inc();
+        metrics.counter(MetricRegistry.name(type.name(), "nothandled_shutdown")).inc();
       case FAILED_RETRY:
         log.error("Unexpected response while processing request. We never expect {}.", result.status().toString());
-        metrics.counter("failed-retry").inc();
+        metrics.counter(MetricRegistry.name(type.name(), "failed-retry")).inc();
         break;
       default:
         if (log.isTraceEnabled()) {

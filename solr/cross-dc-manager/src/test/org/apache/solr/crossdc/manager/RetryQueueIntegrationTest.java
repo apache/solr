@@ -48,7 +48,7 @@ import java.util.Properties;
   protected static volatile MiniSolrCloudCluster solrCluster1;
   protected static volatile MiniSolrCloudCluster solrCluster2;
 
-  protected static volatile Consumer consumer = new Consumer();
+  protected static volatile Consumer consumer;
 
   private static String TOPIC = "topic1";
 
@@ -60,6 +60,9 @@ import java.util.Properties;
 
   @BeforeClass
   public static void beforeRetryQueueIntegrationTestTest() throws Exception {
+
+    System.setProperty(KafkaCrossDcConf.PORT, "-1");
+    consumer = new Consumer();
 
     Properties config = new Properties();
     config.put("unclean.leader.election.enable", "true");
@@ -114,6 +117,7 @@ import java.util.Properties;
     properties.put(KafkaCrossDcConf.ZK_CONNECT_STRING, solrCluster2.getZkServer().getZkAddress());
     properties.put(KafkaCrossDcConf.TOPIC_NAME, TOPIC);
     properties.put(KafkaCrossDcConf.GROUP_ID, "group1");
+    properties.put(KafkaCrossDcConf.MAX_ATTEMPTS, 100);
     consumer.start(properties);
   }
 
@@ -221,7 +225,7 @@ import java.util.Properties;
       }
     }
 
-    assertTrue("results=" + results, foundUpdates);
+    assertTrue("expected updates not found, results=" + results, foundUpdates);
     System.out.println("Rest: " + results);
 
   }
@@ -275,7 +279,7 @@ import java.util.Properties;
       }
     }
 
-    assertTrue("results=" + results, foundUpdates);
+    assertTrue("expected updates not found, results=" + results, foundUpdates);
     System.out.println("Rest: " + results);
 
   }

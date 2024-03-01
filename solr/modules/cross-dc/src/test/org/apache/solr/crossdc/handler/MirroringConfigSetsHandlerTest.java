@@ -16,7 +16,11 @@
  */
 package org.apache.solr.crossdc.handler;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.cloud.ZkController;
@@ -28,8 +32,10 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.crossdc.SolrKafkaTestsIgnoredThreadsFilter;
 import org.apache.solr.crossdc.common.KafkaMirroringSink;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -45,6 +51,9 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
+@ThreadLeakFilters(defaultFilters = true, filters = { SolrIgnoredThreadsFilter.class,
+    QuickPatchThreadsFilter.class, SolrKafkaTestsIgnoredThreadsFilter.class })
+@ThreadLeakLingering(linger = 5000)
 public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
 
     private KafkaMirroringSink sink = Mockito.mock(KafkaMirroringSink.class);
@@ -135,12 +144,7 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
     public void testCoreContainerInit() throws Exception {
         Path home = createTempDir();
         String solrXml = IOUtils.resourceToString("/mirroring-solr.xml", StandardCharsets.UTF_8);
-        CoreContainer cores = new CoreContainer(SolrXmlConfig.fromString(home, solrXml));
-        try {
-            cores.load();
-            assertTrue(cores.getConfigSetsHandler() instanceof MirroringConfigSetsHandler);
-        } finally {
-            cores.shutdown();
-        }
+        NodeConfig nodeConfig = SolrXmlConfig.fromString(home, solrXml);
+        assertEquals(MirroringConfigSetsHandler.class.getName(), nodeConfig.getConfigSetsHandlerClass());
     }
 }

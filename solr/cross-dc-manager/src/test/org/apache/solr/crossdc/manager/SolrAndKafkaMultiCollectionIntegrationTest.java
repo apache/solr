@@ -66,6 +66,7 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
 
   @Before
   public void beforeSolrAndKafkaIntegrationTest() throws Exception {
+    System.setProperty(KafkaCrossDcConf.PORT, "-1");
     consumer = new Consumer();
     Properties config = new Properties();
     //config.put("unclean.leader.election.enable", "true");
