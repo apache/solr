@@ -27,7 +27,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* PR#????: Fix getting fieldType by its name in FileBasedSpellChecker (Andrey Bozhko)
 
 Deprecation Removals
 ----------------------

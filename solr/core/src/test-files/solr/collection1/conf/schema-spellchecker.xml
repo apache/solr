@@ -49,9 +49,22 @@
     </analyzer>
   </fieldType>
 
+  <fieldType name="teststop_type" class="solr.TextField">
+    <analyzer type="index">
+      <tokenizer class="solr.LetterTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.StopFilterFactory" words="stopwords.txt"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.LetterTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
   <field name="id" type="string" indexed="true" stored="true"/>
   <field name="spell" type="spellText" indexed="true" stored="true"/>
   <field name="suggest" type="spellText" indexed="true" stored="true"/>
+  <field name="teststop" type="teststop_type" indexed="true" stored="true"/>
   <field name="text" type="text" indexed="true" stored="false" multiValued="true"/>
 
   <copyField source="text" dest="spell"/>
