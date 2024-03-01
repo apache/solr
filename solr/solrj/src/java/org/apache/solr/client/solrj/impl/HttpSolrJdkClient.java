@@ -37,11 +37,13 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -49,6 +51,7 @@ import javax.net.ssl.SSLContext;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
@@ -119,28 +122,6 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     }
     this.httpClient = b.build();
     updateDefaultMimeTypeForParser();
-
-    // This is a workaround for the case where the first request using
-    // this client:
-    //
-    // (1) no SSL/TLS (2) using POST with stream and (3) using Http/2
-    //
-    // The JDK Http Client will send an upgrade request over Http/1
-    // along with request content in the same request.  However,
-    // the Jetty Server underpinning Solr does not accept this.
-    //
-    // By sending a ping before any real requests occur, the client
-    // knows if Solr can accept Http/2, and no additional
-    // upgrade requests will be sent.
-    //
-    // See https://bugs.openjdk.org/browse/JDK-8287589
-    // See https://github.com/jetty/jetty.project/issues/9998#issuecomment-1614216870
-    //
-    try {
-      ping();
-    } catch (Exception e) {
-      // ignore
-    }
 
     assert ObjectReleaseTracker.track(this);
   }
@@ -242,6 +223,10 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     HttpRequest.BodyPublisher bodyPublisher;
     Future<?> contentWritingFuture = null;
     if (contentWriter != null) {
+      boolean success = maybeTryHeadRequest(url);
+      if(!success) {
+        reqb.version(HttpClient.Version.HTTP_1_1);
+      }
 
       final PipedOutputStream source = new PipedOutputStream();
       final PipedInputStream sink = new PipedInputStream(source);
@@ -257,6 +242,11 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
                 }
               });
     } else if (streams != null && streams.size() == 1) {
+      boolean success = maybeTryHeadRequest(url);
+      if(!success) {
+        reqb.version(HttpClient.Version.HTTP_1_1);
+      }
+
       InputStream is = streams.iterator().next().getStream();
       bodyPublisher = HttpRequest.BodyPublishers.ofInputStream(() -> is);
     } else if (queryParams != null && urlParamNames != null) {
@@ -268,13 +258,14 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
       bodyPublisher = HttpRequest.BodyPublishers.noBody();
     }
 
-    if (method == SolrRequest.METHOD.PUT) {
-      reqb.PUT(bodyPublisher);
-    } else {
-      reqb.POST(bodyPublisher);
-    }
     decorateRequest(reqb, solrRequest);
-    reqb.uri(new URI(url + "?" + queryParams));
+    if (method == SolrRequest.METHOD.PUT) {
+      reqb.method("PUT", bodyPublisher);
+    } else {
+      reqb.method("POST", bodyPublisher);
+    }
+    URI uriWithQueryParams = new URI(url + "?" + queryParams);
+    reqb.uri(uriWithQueryParams);
 
     HttpResponse<InputStream> response;
     try {
@@ -286,6 +277,64 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     }
     return response;
   }
+
+  private volatile boolean headRequested;
+  private volatile boolean headSucceeded;
+
+  /**
+   *  TODO: we should only try this if not set to Http/1.1 and not TLS
+   *
+   *
+   *  This is a workaround for the case where the first request using
+   *  this client:
+   *
+   *    (1) no SSL/TLS (2) using POST with stream and (3) using Http/2
+   *
+   *    The JDK Http Client will send an upgrade request over Http/1
+   *    along with request content in the same request.  However,
+   *    the Jetty Server underpinning Solr does not accept this.
+   *
+   *    By sending a ping before any real requests occur, the client
+   *    knows if Solr can accept Http/2, and no additional
+   *    upgrade requests will be sent.
+   *
+   *    See https://bugs.openjdk.org/browse/JDK-8287589
+   *    See https://github.com/jetty/jetty.project/issues/9998#issuecomment-1614216870
+   *
+   *    We only try once, and if it fails, we downgrade to Http/1
+   *
+   * @param url the url with no request parameters
+   * @return true if success
+   */
+  private synchronized boolean maybeTryHeadRequest(String url) {
+    if(headRequested) {
+      return headSucceeded;
+    }
+    URI uriNoQueryParams;
+    try {
+      uriNoQueryParams = new URI(url);
+    } catch(URISyntaxException e) {
+      headSucceeded = false;
+      return false;
+    }
+    HttpRequest.Builder headReqB = HttpRequest.newBuilder(uriNoQueryParams).method("HEAD", HttpRequest.BodyPublishers.noBody());
+    decorateRequest(headReqB, new QueryRequest());
+    try {
+      httpClient.send(headReqB.build(), HttpResponse.BodyHandlers.discarding());
+      headSucceeded = true;
+    } catch(IOException ioe) {
+      log.warn("Could not issue HEAD request to {} ", url, ioe);
+      headSucceeded = false;
+    } catch(InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      headSucceeded = false;
+    } finally {
+      headRequested = true;
+    }
+    return headSucceeded;
+  }
+
+
 
   private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {
     if (requestTimeoutMillis > 0) {
