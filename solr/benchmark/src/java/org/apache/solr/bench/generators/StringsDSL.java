@@ -58,7 +58,7 @@ public class StringsDSL {
         words.add(scanner.nextLine());
       }
     }
-    Collections.shuffle(words, new Random(BaseBenchState.getRandomSeed()));
+    Collections.shuffle(words, new Random(BaseBenchState.RANDOM_SEED));
     WORD_SIZE = words.size();
   }
 
