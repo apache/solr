@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -175,6 +176,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   private Http2SolrClient.Builder recoverySolrClientBuilder(String baseUrl, String leaderCoreName) {
+    // workaround for SOLR-13605: get the configured timeouts & set them directly
+    // (even though getRecoveryOnlyHttpClient() already has them set)
     final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
     return new Http2SolrClient.Builder(baseUrl)
         .withDefaultCollection(leaderCoreName)
@@ -628,9 +631,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
                 .getCollection(cloudDesc.getCollectionName())
                 .getSlice(cloudDesc.getShardId());
 
-        if (prevSendPreRecoveryHttpUriRequest != null) {
-          prevSendPreRecoveryHttpUriRequest.cancel(true);
-        }
+        Optional.ofNullable(prevSendPreRecoveryHttpUriRequest).ifPresent(req -> req.cancel(true));
 
         if (isClosed()) {
           log.info("RecoveryStrategy has been closed");
