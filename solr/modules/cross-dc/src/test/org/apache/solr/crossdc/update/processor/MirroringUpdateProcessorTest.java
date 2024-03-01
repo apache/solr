@@ -1,5 +1,7 @@
 package org.apache.solr.crossdc.update.processor;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Histogram;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -20,6 +22,8 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.crossdc.common.CrossDcConf;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.AddUpdateCommand;
@@ -30,10 +34,16 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.util.Map;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
 
@@ -47,28 +57,29 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     UpdateRequest requestMock;
     private UpdateRequestProcessor nextProcessor;
     private SolrCore core;
-    private HttpSolrClient.Builder builder = Mockito.mock(HttpSolrClient.Builder.class);
-    private HttpSolrClient client = Mockito.mock(HttpSolrClient.class);
+    private HttpSolrClient.Builder builder = mock(HttpSolrClient.Builder.class);
+    private HttpSolrClient client = mock(HttpSolrClient.class);
     private CloudDescriptor cloudDesc;
     private ZkStateReader zkStateReader;
     private Replica replica;
+    private ProducerMetrics producerMetrics;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
-        req = Mockito.mock(SolrQueryRequestBase.class);
-        Mockito.when(req.getParams()).thenReturn(new ModifiableSolrParams());
-
         addUpdateCommand = new AddUpdateCommand(req);
         addUpdateCommand.solrDoc = new SolrInputDocument();
         addUpdateCommand.solrDoc.addField("id", "test");
+        req = mock(SolrQueryRequestBase.class);
+        when(req.getParams()).thenReturn(new ModifiableSolrParams());
 
-        requestMock = Mockito.mock(UpdateRequest.class);
+        requestMock = mock(UpdateRequest.class);
+        addUpdateCommand.setReq(req);
 
-        nextProcessor = Mockito.mock(UpdateRequestProcessor.class);
+        nextProcessor = mock(UpdateRequestProcessor.class);
 
-        IndexSchema schema = Mockito.mock(IndexSchema.class);
-        Mockito.when(req.getSchema()).thenReturn(schema);
+        IndexSchema schema = mock(IndexSchema.class);
+        when(req.getSchema()).thenReturn(schema);=
 
         deleteUpdateCommand = new DeleteUpdateCommand(req);
         deleteUpdateCommand.query = "*:*";
@@ -82,58 +93,88 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
         commitUpdateCommand.openSearcher = true;
         commitUpdateCommand.waitSearcher = true;
 
-        next = Mockito.mock(UpdateRequestProcessor.class);
-        requestMirroringHandler = Mockito.mock(RequestMirroringHandler.class);
+        producerMetrics = spy(new ProducerMetrics(mock(SolrMetricsContext.class), mock(SolrCore.class)) {
+            private final Counter counterMock = mock(Counter.class);
+
+            public Counter getLocal() {
+                return counterMock;
+            }
+
+            public Counter getLocalError() {
+                return counterMock;
+            }
+
+            public Counter getSubmitted() {
+                return counterMock;
+            }
+
+            public Counter getDocumentTooLarge() {
+                return counterMock;
+            }
+
+            public Counter getSubmitError() {
+                return counterMock;
+            }
+
+            public Histogram getDocumentSize() {
+                return mock(Histogram.class);
+            }
+        });
+
+        next = mock(UpdateRequestProcessor.class);
+        requestMirroringHandler = mock(RequestMirroringHandler.class);
         processor =
                 new MirroringUpdateProcessor(
                         next,
                         true,
                         true,
                         true,
+                        CrossDcConf.ExpandDbq.EXPAND,
                         1000L,
                         new ModifiableSolrParams(),
                         DistributedUpdateProcessor.DistribPhase.NONE,
-                        requestMirroringHandler) {
+                        requestMirroringHandler,
+                        producerMetrics) {
                     UpdateRequest createMirrorRequest() {
                         return requestMock;
                     }
                 };
 
-        core = Mockito.mock(SolrCore.class);
-        CoreDescriptor coreDesc = Mockito.mock(CoreDescriptor.class);
-        cloudDesc = Mockito.mock(CloudDescriptor.class);
-        Mockito.when(cloudDesc.getShardId()).thenReturn("shard1");
-        CoreContainer coreContainer = Mockito.mock(CoreContainer.class);
-        ZkController zkController = Mockito.mock(ZkController.class);
-        ClusterState clusterState = Mockito.mock(ClusterState.class);
-        DocCollection docCollection = Mockito.mock(DocCollection.class);
-        DocRouter docRouter = Mockito.mock(DocRouter.class);
-        Slice slice = Mockito.mock(Slice.class);
-        Mockito.when(slice.getName()).thenReturn("shard1");
-        zkStateReader = Mockito.mock(ZkStateReader.class);
-        replica = Mockito.mock(Replica.class);
+        core = mock(SolrCore.class);
+        CoreDescriptor coreDesc = mock(CoreDescriptor.class);
+        cloudDesc = mock(CloudDescriptor.class);
+        when(cloudDesc.getShardId()).thenReturn("shard1");
+        CoreContainer coreContainer = mock(CoreContainer.class);
+        ZkController zkController = mock(ZkController.class);
+        ClusterState clusterState = mock(ClusterState.class);
+        DocCollection docCollection = mock(DocCollection.class);
+        DocRouter docRouter = mock(DocRouter.class);
+        Slice slice = mock(Slice.class);
+        when(slice.getName()).thenReturn("shard1");
+        zkStateReader = mock(ZkStateReader.class);
+        replica = mock(Replica.class);
 
-        Mockito.when(replica.getName()).thenReturn("replica1");
-        Mockito.when(zkStateReader.getLeaderRetry(Mockito.any(), Mockito.any()))
-                .thenReturn(replica);
-        Mockito.when(zkController.getZkStateReader()).thenReturn(zkStateReader);
-        Mockito.when(coreDesc.getCloudDescriptor()).thenReturn(cloudDesc);
-        Mockito.when(clusterState.getCollection(Mockito.any())).thenReturn(docCollection);
-        Mockito.when(docCollection.getRouter()).thenReturn(docRouter);
-        Mockito.when(
-                        docRouter.getTargetSlice(
-                                Mockito.any(),
-                                Mockito.any(),
-                                Mockito.any(),
-                                Mockito.any(),
-                                Mockito.any()))
-                .thenReturn(slice);
-        Mockito.when(docCollection.getSlicesMap()).thenReturn(Map.of("shard1", slice));
-        Mockito.when(zkController.getClusterState()).thenReturn(clusterState);
-        Mockito.when(coreContainer.getZkController()).thenReturn(zkController);
-        Mockito.when(core.getCoreContainer()).thenReturn(coreContainer);
-        Mockito.when(core.getCoreDescriptor()).thenReturn(coreDesc);
-        Mockito.when(req.getCore()).thenReturn(core);
+        when(replica.getName()).thenReturn("replica1");
+        when(zkStateReader.getLeaderRetry(any(), any()))
+            .thenReturn(replica);
+        when(zkController.getZkStateReader()).thenReturn(zkStateReader);
+        when(coreDesc.getCloudDescriptor()).thenReturn(cloudDesc);
+        when(clusterState.getCollection(any())).thenReturn(docCollection);
+        when(docCollection.getRouter()).thenReturn(docRouter);
+        when(
+            docRouter.getTargetSlice(
+                any(),
+                any(),
+                any(),
+                any(),
+                any()))
+            .thenReturn(slice);
+        when(docCollection.getSlicesMap()).thenReturn(Map.of("shard1", slice));
+        when(zkController.getClusterState()).thenReturn(clusterState);
+        when(coreContainer.getZkController()).thenReturn(zkController);
+        when(core.getCoreContainer()).thenReturn(coreContainer);
+        when(core.getCoreDescriptor()).thenReturn(coreDesc);
+        when(req.getCore()).thenReturn(core);
     }
 
     /**
@@ -144,7 +185,7 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     public void processDeleteWhenDistribPhaseIsNoneAndDeleteByIdIsFalse() {
         try {
             processor.processDelete(deleteUpdateCommand);
-            Mockito.verify(requestMirroringHandler, Mockito.times(1)).mirror(requestMock);
+            verify(requestMirroringHandler, times(1)).mirror(requestMock);
         } catch (Exception e) {
             fail("IOException should not be thrown");
         }
@@ -157,9 +198,9 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     @Test
     public void processAddWhenDocSizeWithinLimitAndNodeIsLeader() {
         try {
-            Mockito.when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
+            when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
             processor.processAdd(addUpdateCommand);
-            Mockito.verify(requestMirroringHandler, Mockito.times(1)).mirror(requestMock);
+            verify(requestMirroringHandler, times(1)).mirror(requestMock);
         } catch (IOException e) {
             fail("IOException should not be thrown");
         } catch (Exception e) {
@@ -174,10 +215,10 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     @Test
     public void processDeleteWhenNodeIsLeaderAndDeleteByIdIsTrue() {
         try {
-            Mockito.when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
+            when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
             deleteUpdateCommand.setId("test");
             processor.processDelete(deleteUpdateCommand);
-            Mockito.verify(requestMirroringHandler, Mockito.times(1)).mirror(requestMock);
+            verify(requestMirroringHandler, times(1)).mirror(requestMock);
         } catch (Exception e) {
             fail("IOException should not be thrown");
         }
@@ -187,10 +228,10 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     public void processCommitOnlyAnotherShard() {
         try {
             // should skip if processing in other shard than the first
-            Mockito.when(cloudDesc.getShardId()).thenReturn("shard2");
+            when(cloudDesc.getShardId()).thenReturn("shard2");
             processor.processCommit(commitUpdateCommand);
-            Mockito.verify(next).processCommit(commitUpdateCommand);
-            Mockito.verify(requestMirroringHandler, Mockito.times(0)).mirror(requestMock);
+            verify(next).processCommit(commitUpdateCommand);
+            verify(requestMirroringHandler, times(0)).mirror(requestMock);
         } catch (Exception e) {
             fail("IOException should not be thrown: " + e);
         }
@@ -200,11 +241,11 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     public void processCommitOnlyNonLeader() {
         try {
             // should skip if processing on non-leader replica
-            Mockito.when(replica.getName()).thenReturn("foobar");
-            Mockito.when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
+            when(replica.getName()).thenReturn("foobar");
+            when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
             processor.processCommit(commitUpdateCommand);
-            Mockito.verify(next).processCommit(commitUpdateCommand);
-            Mockito.verify(requestMirroringHandler, Mockito.times(0)).mirror(requestMock);
+            verify(next).processCommit(commitUpdateCommand);
+            verify(requestMirroringHandler, times(0)).mirror(requestMock);
         } catch (Exception e) {
             fail("IOException should not be thrown: " + e);
         }
@@ -213,7 +254,7 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     @Test
     public void processCommitOnlyLeader() {
         try {
-            Mockito.when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
+            when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
             // don't override createMirrorRequest, call actual method
             processor =
                 new MirroringUpdateProcessor(
@@ -221,14 +262,16 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
                     true,
                     true,
                     true,
+                    CrossDcConf.ExpandDbq.EXPAND,
                     1000L,
                     new ModifiableSolrParams(),
                     DistributedUpdateProcessor.DistribPhase.NONE,
-                    requestMirroringHandler);
+                    requestMirroringHandler,
+                    producerMetrics);
             ArgumentCaptor<UpdateRequest> captor = ArgumentCaptor.forClass(UpdateRequest.class);
             processor.processCommit(commitUpdateCommand);
-            Mockito.verify(next).processCommit(commitUpdateCommand);
-            Mockito.verify(requestMirroringHandler, Mockito.times(1)).mirror(captor.capture());
+            verify(next).processCommit(commitUpdateCommand);
+            verify(requestMirroringHandler, times(1)).mirror(captor.capture());
             UpdateRequest req = captor.getValue();
             assertNotNull(req.getParams());
             SolrParams params = req.getParams();
@@ -248,7 +291,7 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     @Test
     public void processCommitNoMirroring() {
         try {
-            Mockito.when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
+            when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
             // don't override createMirrorRequest, call actual method
             processor =
                 new MirroringUpdateProcessor(
@@ -256,13 +299,15 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
                     true,
                     true,
                     false,
+                    CrossDcConf.ExpandDbq.EXPAND,
                     1000L,
                     new ModifiableSolrParams(),
                     DistributedUpdateProcessor.DistribPhase.NONE,
-                    requestMirroringHandler);
+                    requestMirroringHandler,
+                    producerMetrics);
             processor.processCommit(commitUpdateCommand);
-            Mockito.verify(next).processCommit(commitUpdateCommand);
-            Mockito.verify(requestMirroringHandler, Mockito.times(0)).mirror(requestMock);
+            verify(next).processCommit(commitUpdateCommand);
+            verify(requestMirroringHandler, times(0)).mirror(requestMock);
         } catch (Exception e) {
             fail("Exception should not be thrown: " + e);
         }
@@ -270,7 +315,7 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
 
     @Test
     public void testProcessAddWithinLimit() throws Exception {
-        Mockito.when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
+        when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
         SolrInputDocument doc = new SolrInputDocument();
         doc.addField("id", "1");
         AddUpdateCommand cmd = new AddUpdateCommand(req);
@@ -278,8 +323,8 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
         cmd.commitWithin = 1000;
         cmd.overwrite = true;
         processor.processAdd(cmd);
-        Mockito.verify(next).processAdd(cmd);
-        Mockito.verify(requestMirroringHandler).mirror(requestMock);
+        verify(next).processAdd(cmd);
+        verify(requestMirroringHandler).mirror(requestMock);
     }
 
     @Test
@@ -290,45 +335,73 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
         solrInputDocument.addField("large_field", "Test ".repeat(10000));
         addUpdateCommand.solrDoc = solrInputDocument;
 
-        Mockito.when(req.getCore()).thenReturn(core);
-        Mockito.when(req.getCore().getCoreDescriptor()).thenReturn(Mockito.mock(CoreDescriptor.class));
-        Mockito.when(req.getCore().getCoreDescriptor().getCloudDescriptor()).thenReturn(Mockito.mock(CloudDescriptor.class));
-        Mockito.when(req.getCore().getCoreContainer()).thenReturn(Mockito.mock(CoreContainer.class));
-        Mockito.when(req.getCore().getCoreContainer().getZkController()).thenReturn(Mockito.mock(ZkController.class));
-        Mockito.when(req.getCore().getCoreContainer().getZkController().getClusterState()).thenReturn(Mockito.mock(ClusterState.class));
+        when(req.getCore()).thenReturn(core);
+        when(req.getCore().getCoreDescriptor()).thenReturn(mock(CoreDescriptor.class));
+        when(req.getCore().getCoreDescriptor().getCloudDescriptor()).thenReturn(mock(CloudDescriptor.class));
+        when(req.getCore().getCoreContainer()).thenReturn(mock(CoreContainer.class));
+        when(req.getCore().getCoreContainer().getZkController()).thenReturn(mock(ZkController.class));
+        when(req.getCore().getCoreContainer().getZkController().getClusterState()).thenReturn(mock(ClusterState.class));
 
         SolrParams mirrorParams = new ModifiableSolrParams();
         MirroringUpdateProcessor mirroringUpdateProcessorWithLimit = new MirroringUpdateProcessor(nextProcessor, true, false, // indexUnmirrorableDocs set to false
-                true, 50000, mirrorParams, DistributedUpdateProcessor.DistribPhase.NONE, requestMirroringHandler);
+                true, CrossDcConf.ExpandDbq.EXPAND, 50000, mirrorParams, DistributedUpdateProcessor.DistribPhase.NONE, requestMirroringHandler, producerMetrics);
 
         assertThrows(SolrException.class, () -> mirroringUpdateProcessorWithLimit.processAdd(addUpdateCommand));
     }
 
     @Test
     public void testProcessAddLeader() throws Exception {
-        Mockito.when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
+        when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
         processor.processAdd(addUpdateCommand);
-        Mockito.verify(requestMirroringHandler, Mockito.times(1)).mirror(Mockito.any());
+        verify(requestMirroringHandler, times(1)).mirror(any());
     }
 
     @Test
     public void testProcessAddNotLeader() throws Exception {
-        Mockito.when(cloudDesc.getCoreNodeName()).thenReturn("replica2");
+        when(cloudDesc.getCoreNodeName()).thenReturn("replica2");
         processor.processAdd(addUpdateCommand);
-        Mockito.verify(requestMirroringHandler, Mockito.times(0)).mirror(Mockito.any());
+        verify(requestMirroringHandler, times(0)).mirror(any());
     }
 
     @Test
     public void testProcessDelete() throws Exception {
-        Mockito.when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
+        when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
         processor.processDelete(deleteUpdateCommand);
-        Mockito.verify(requestMirroringHandler, Mockito.times(1)).mirror(Mockito.any());
+        verify(requestMirroringHandler, times(1)).mirror(any());
+    }
+
+    @Test
+    public void testExpandDbq() throws Exception {
+        when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
+        deleteUpdateCommand.query = "id:test*";
+        UpdateRequest updateRequest = new UpdateRequest();
+        processor =
+            new MirroringUpdateProcessor(
+                next,
+                true,
+                true,
+                true,
+                CrossDcConf.ExpandDbq.NONE,
+                1000L,
+                new ModifiableSolrParams(),
+                DistributedUpdateProcessor.DistribPhase.NONE,
+                requestMirroringHandler,
+                producerMetrics) {
+                UpdateRequest createMirrorRequest() {
+                    return updateRequest;
+                }
+            };
+
+        processor.processDelete(deleteUpdateCommand);
+        verify(requestMirroringHandler, times(1)).mirror(updateRequest);
+        assertEquals("missing dbq", 1, updateRequest.getDeleteQuery().size());
+        assertEquals("dbq value", "id:test*", updateRequest.getDeleteQuery().get(0));
     }
 
     @Test
     public void testProcessDBQResults() throws Exception {
-        Mockito.when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
-        Mockito.when(builder.build()).thenReturn(client);
+        when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
+        when(builder.build()).thenReturn(client);
         SolrInputDocument doc = new SolrInputDocument();
         doc.addField("id", "test");
         addUpdateCommand.solrDoc = doc;

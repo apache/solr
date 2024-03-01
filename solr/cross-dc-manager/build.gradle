@@ -26,9 +26,11 @@ dependencies {
   implementation project(':solr:modules:cross-dc')
 
   implementation 'io.dropwizard.metrics:metrics-core'
+  implementation 'io.dropwizard.metrics:metrics-servlets'
   implementation 'org.eclipse.jetty:jetty-http'
   implementation 'org.eclipse.jetty:jetty-server'
   implementation 'org.eclipse.jetty:jetty-servlet'
+  implementation 'org.slf4j:slf4j-simple'
   runtimeOnly ('com.google.protobuf:protobuf-java-util')
   runtimeOnly ('commons-codec:commons-codec')
 
@@ -51,9 +53,10 @@ dependencies {
   testImplementation 'org.apache.httpcomponents:httpclient'
   testImplementation 'org.apache.httpcomponents:httpcore'
 
-  testImplementation 'org.apache.kafka:kafka_2.13:2.8.1:test'
-  testImplementation 'org.apache.kafka:kafka-streams:2.8.1:test'
-  testImplementation 'org.apache.kafka:kafka-clients:2.8.1:test'
+  testImplementation 'org.apache.kafka:kafka_2.13:3.5.1:test'
+  testImplementation 'org.apache.kafka:kafka-streams:3.5.1:test'
+  testImplementation 'org.apache.kafka:kafka-clients:3.5.1:test'
+  testImplementation 'org.apache.kafka:kafka-server-common:3.5.1:test'
 }
 
 ext {

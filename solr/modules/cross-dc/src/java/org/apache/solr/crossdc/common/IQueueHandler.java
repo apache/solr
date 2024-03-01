@@ -37,24 +37,24 @@ public interface IQueueHandler<T> {
     class Result<T> {
         private final ResultStatus _status;
         private final Throwable _throwable;
-        private final T _newItem;
+        private final T _item;
 
         public Result(final ResultStatus status) {
             _status = status;
             _throwable = null;
-            _newItem = null;
+            _item = null;
         }
 
         public Result(final ResultStatus status, final Throwable throwable) {
             _status = status;
             _throwable = throwable;
-            _newItem = null;
+            _item = null;
         }
 
         public Result(final ResultStatus status, final Throwable throwable, final T newItem) {
             _status = status;
             _throwable = throwable;
-            _newItem = newItem;
+            _item = newItem;
         }
 
         public ResultStatus status() {
@@ -65,8 +65,8 @@ public interface IQueueHandler<T> {
             return _throwable;
         }
 
-        public T newItem() {
-            return _newItem;
+        public T getItem() {
+            return _item;
         }
     }
 

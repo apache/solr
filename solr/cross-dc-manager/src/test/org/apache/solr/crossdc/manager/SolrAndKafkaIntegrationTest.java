@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.DEFAULT_MAX_REQUEST_SIZE;
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE_DOCS;
+import static org.apache.solr.crossdc.common.KafkaCrossDcConf.PORT;
 
 @ThreadLeakFilters(defaultFilters = true, filters = { SolrIgnoredThreadsFilter.class,
     QuickPatchThreadsFilter.class, SolrKafkaTestsIgnoredThreadsFilter.class })
@@ -76,6 +77,7 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.INDEX_UNMIRRORABLE
     Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
       log.error("Uncaught exception in thread " + t, e);
     });
+    System.setProperty(PORT, "-1");
     consumer = new Consumer();
     Properties config = new Properties();
     //config.put("unclean.leader.election.enable", "true");

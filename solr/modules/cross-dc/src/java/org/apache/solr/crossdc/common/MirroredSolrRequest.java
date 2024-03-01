@@ -174,7 +174,11 @@ public class MirroredSolrRequest {
     }
 
     public MirroredSolrRequest(final Type type, final SolrRequest solrRequest) {
-        this(type, 1, solrRequest, TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis()));
+        this(type, 1, solrRequest);
+    }
+
+    public MirroredSolrRequest(final Type type, final int attempt, final SolrRequest solrRequest) {
+        this(type, attempt, solrRequest, TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis()));
     }
 
     public MirroredSolrRequest(final Type type, final int attempt, final SolrRequest solrRequest, final long submitTimeNanos) {

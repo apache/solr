@@ -5,10 +5,14 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.crossdc.common.CrossDcConf;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.KafkaMirroringSink;
@@ -73,10 +77,15 @@ public class KafkaCrossDcConsumerTest {
                 };
     }
 
-    private static KafkaCrossDcConf testCrossDCConf() {
+    private static KafkaCrossDcConf testCrossDCConf(String... keyValues) {
         Map config = new HashMap<>();
         config.put(KafkaCrossDcConf.TOPIC_NAME, "topic1");
         config.put(KafkaCrossDcConf.BOOTSTRAP_SERVERS, "localhost:9092");
+        if (keyValues != null) {
+            for (int i = 0; i < keyValues.length; i += 2) {
+                config.put(keyValues[i], keyValues[i + 1]);
+            }
+        }
         return new KafkaCrossDcConf(config);
     }
 
@@ -179,7 +188,7 @@ public class KafkaCrossDcConsumerTest {
         KafkaConsumer<String, MirroredSolrRequest> mockConsumer = mock(KafkaConsumer.class);
         KafkaCrossDcConsumer consumer = createCrossDcConsumerSpy(mockConsumer);
 
-        doNothing().when(consumer).sendBatch(any(UpdateRequest.class), any(ConsumerRecord.class), any(PartitionManager.WorkUnit.class));
+        doNothing().when(consumer).sendBatch(any(UpdateRequest.class), eq(MirroredSolrRequest.Type.UPDATE), any(ConsumerRecord.class), any(PartitionManager.WorkUnit.class));
 
         // Set up the SolrMessageProcessor mock
         SolrMessageProcessor mockMessageProcessor = mock(SolrMessageProcessor.class);
@@ -193,8 +202,7 @@ public class KafkaCrossDcConsumerTest {
         consumer.kafkaMirroringSink = mockKafkaMirroringSink;
 
         // Call the method to test
-        ConsumerRecord<String, MirroredSolrRequest> record = createSampleConsumerRecord();
-        consumer.processResult(record, failedResubmitResult);
+        consumer.processResult(MirroredSolrRequest.Type.UPDATE, failedResubmitResult);
 
         // Verify that the KafkaMirroringSink.submit() method was called
         verify(consumer.kafkaMirroringSink, times(1)).submit(request);
@@ -213,7 +221,7 @@ public class KafkaCrossDcConsumerTest {
     public void testHandleValidMirroredSolrRequest() {
         KafkaConsumer<String, MirroredSolrRequest> mockConsumer = mock(KafkaConsumer.class);
         KafkaCrossDcConsumer spyConsumer = createCrossDcConsumerSpy(mockConsumer);
-
+        doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED)).when(messageProcessorMock).handleItem(any());
         SolrInputDocument doc = new SolrInputDocument();
         doc.addField("id", "1");
         UpdateRequest validRequest = new UpdateRequest();
@@ -228,17 +236,98 @@ public class KafkaCrossDcConsumerTest {
         spyConsumer.run();
 
         // Verify that the valid MirroredSolrRequest was processed.
-        verify(spyConsumer, times(1)).sendBatch(argThat(updateRequest -> {
+        verify(spyConsumer, times(1)).sendBatch(argThat(solrRequest -> {
             // Check if the UpdateRequest has the same content as the original validRequest
-            return updateRequest.getDocuments().equals(validRequest.getDocuments()) &&
-                    updateRequest.getParams().equals(validRequest.getParams());
-        }), eq(record), any());
+            return ((UpdateRequest) solrRequest).getDocuments().equals(validRequest.getDocuments()) &&
+                    solrRequest.getParams().toNamedList().equals(validRequest.getParams().toNamedList());
+        }), eq(MirroredSolrRequest.Type.UPDATE), eq(record), any());
     }
+
+    @Test
+    public void testHandleValidAdminRequest() throws Exception {
+        KafkaConsumer<String, MirroredSolrRequest> mockConsumer = mock(KafkaConsumer.class);
+        KafkaCrossDcConsumer spyConsumer = createCrossDcConsumerSpy(mockConsumer);
+        doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED)).when(messageProcessorMock).handleItem(any());
+        CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection("test", "testConfig", 2, 2);
+
+        ConsumerRecord<String, MirroredSolrRequest> record1 = new ConsumerRecord<>("test-topic", 0, 0, "key1", new MirroredSolrRequest(MirroredSolrRequest.Type.ADMIN, create));
+        ConsumerRecord<String, MirroredSolrRequest> record2 = new ConsumerRecord<>("test-topic", 0, 1, "key2", new MirroredSolrRequest(MirroredSolrRequest.Type.UPDATE, new UpdateRequest()));
+        ConsumerRecords<String, MirroredSolrRequest> records = new ConsumerRecords<>(Collections.singletonMap(new TopicPartition("test-topic", 0), List.of(record1, record2)));
+
+        when(mockConsumer.poll(any())).thenReturn(records).thenThrow(new WakeupException());
+
+        spyConsumer.run();
+
+        // Verify that the valid MirroredSolrRequest was processed.
+        verify(spyConsumer, times(1)).sendBatch(argThat(solrRequest -> {
+            // Check if the SolrRequest has the same content as the original validRequest
+            return solrRequest.getParams().toNamedList().equals(create.getParams().toNamedList());
+        }), eq(MirroredSolrRequest.Type.ADMIN), eq(record1), any());
+        verify(spyConsumer, times(1)).sendBatch(any(), eq(MirroredSolrRequest.Type.UPDATE), eq(record2), any());
+    }
+
+    @Test
+    public void testCollapseUpdatesNONE() {
+        int NUM_REQS = 100;
+        doTestCollapseUpdates(CrossDcConf.CollapseUpdates.NONE, 500, NUM_REQS, NUM_REQS, 0);
+    }
+
+    @Test
+    public void testCollapseUpdatesALL() {
+        int NUM_REQS = 100;
+        doTestCollapseUpdates(CrossDcConf.CollapseUpdates.ALL, 500, NUM_REQS, 1, 5);
+    }
+
+    @Test
+    public void testCollapseUpdatesALLMaxCollapse() {
+        int NUM_REQS = 100;
+        doTestCollapseUpdates(CrossDcConf.CollapseUpdates.ALL, 50, NUM_REQS, 2, 5);
+    }
+
+    @Test
+    public void testCollapseUpdatesPARTIAL() {
+        int NUM_REQS = 100;
+        doTestCollapseUpdates(CrossDcConf.CollapseUpdates.PARTIAL, 500, NUM_REQS, 10, 5);
+    }
+
+    private void doTestCollapseUpdates(CrossDcConf.CollapseUpdates collapseUpdates, int maxCollapseRecords, int inputReqs, int outputReqs, int reqsWithDeletes) {
+        KafkaConsumer<String, MirroredSolrRequest> mockConsumer = mock(KafkaConsumer.class);
+        // override
+        conf = testCrossDCConf(
+            CrossDcConf.COLLAPSE_UPDATES, collapseUpdates.name(),
+            CrossDcConf.MAX_COLLAPSE_RECORDS, String.valueOf(maxCollapseRecords));
+        KafkaCrossDcConsumer spyConsumer = createCrossDcConsumerSpy(mockConsumer);
+        doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED)).when(messageProcessorMock).handleItem(any());
+        List<ConsumerRecord<String, MirroredSolrRequest>> records = new ArrayList<>();
+        for (int i = 0; i < inputReqs; i++) {
+            SolrInputDocument doc = new SolrInputDocument();
+            doc.addField("id", "id-" + i);
+            UpdateRequest validRequest = new UpdateRequest();
+            validRequest.add(doc);
+            if ((i % 3) == 0 && reqsWithDeletes > 0) {
+                validRequest.deleteById("fakeId-" + i);
+                reqsWithDeletes--;
+            }
+            // Create a valid MirroredSolrRequest
+            ConsumerRecord<String, MirroredSolrRequest> record = new ConsumerRecord<>("test-topic", 0, 0, "key", new MirroredSolrRequest(validRequest));
+            records.add(record);
+        }
+        ConsumerRecords<String, MirroredSolrRequest> consumerRecords = new ConsumerRecords<>(Collections.singletonMap(new TopicPartition("test-topic", 0), records));
+
+        when(mockConsumer.poll(any())).thenReturn(consumerRecords).thenThrow(new WakeupException());
+
+        spyConsumer.run();
+
+        // Verify that the valid MirroredSolrRequest was processed.
+        verify(spyConsumer, times(outputReqs)).sendBatch(any(), eq(MirroredSolrRequest.Type.UPDATE), any(), any());
+    }
+
 
     @Test
     public void testHandleInvalidMirroredSolrRequest() {
         KafkaConsumer<String, MirroredSolrRequest> mockConsumer = mock(KafkaConsumer.class);
         SolrMessageProcessor mockSolrMessageProcessor = mock(SolrMessageProcessor.class);
+        doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED)).when(mockSolrMessageProcessor).handleItem(any());
         KafkaCrossDcConsumer spyConsumer = spy(new KafkaCrossDcConsumer(conf, new CountDownLatch(1)) {
             @Override
             public KafkaConsumer<String, MirroredSolrRequest> createKafkaConsumer(Properties properties) {
@@ -269,11 +358,12 @@ public class KafkaCrossDcConsumerTest {
         spyConsumer.run();
 
         // Verify that the valid MirroredSolrRequest was processed.
-        verify(spyConsumer, times(1)).sendBatch(argThat(updateRequest -> {
+        verify(spyConsumer, times(1)).sendBatch(argThat(solrRequest -> {
+            System.out.println(Utils.toJSONString(solrRequest));
             // Check if the UpdateRequest has the same content as the original invalidRequest
-            return updateRequest.getDocuments() == null &&
-                    updateRequest.getParams().equals(invalidRequest.getParams());
-        }), eq(record), any());
+            return ((UpdateRequest) solrRequest).getDocuments() == null &&
+                solrRequest.getParams().toNamedList().equals(invalidRequest.getParams().toNamedList());
+        }), any(), eq(record), any());
     }
 
     @Test

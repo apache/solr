@@ -18,6 +18,7 @@ package org.apache.solr.crossdc.manager.messageprocessor;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.SharedMetricRegistries;
+import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -33,6 +34,7 @@ import org.apache.solr.crossdc.common.CrossDcConstants;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.common.SolrExceptionUtil;
+import org.apache.solr.crossdc.consumer.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -52,7 +54,7 @@ import java.util.concurrent.TimeUnit;
 public class SolrMessageProcessor extends MessageProcessor implements IQueueHandler<MirroredSolrRequest>  {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private final MetricRegistry metrics = SharedMetricRegistries.getOrCreate("metrics");
+    private final MetricRegistry metrics = SharedMetricRegistries.getOrCreate(Consumer.METRICS_REGISTRY);
 
     final CloudSolrClient client;
 
@@ -77,7 +79,7 @@ public class SolrMessageProcessor extends MessageProcessor implements IQueueHand
     private Result<MirroredSolrRequest> processMirroredRequest(MirroredSolrRequest request) {
         final Result<MirroredSolrRequest> result = handleSolrRequest(request);
         // Back-off before returning
-        backoffIfNeeded(result);
+        backoffIfNeeded(result, request.getType());
         return result;
     }
 
@@ -103,7 +105,7 @@ public class SolrMessageProcessor extends MessageProcessor implements IQueueHand
         try {
             prepareIfUpdateRequest(request);
             logRequest(request);
-            result = processMirroredSolrRequest(request);
+            result = processMirroredSolrRequest(request, mirroredSolrRequest.getType());
         } catch (Exception e) {
             result = handleException(mirroredSolrRequest, e);
         }
@@ -122,12 +124,12 @@ public class SolrMessageProcessor extends MessageProcessor implements IQueueHand
         } else {
             logFailure(mirroredSolrRequest, e, solrException, true);
             mirroredSolrRequest.setAttempt(mirroredSolrRequest.getAttempt() + 1);
-            maybeBackoff(solrException);
+            maybeBackoff(mirroredSolrRequest, solrException);
             return new Result<>(ResultStatus.FAILED_RESUBMIT, e, mirroredSolrRequest);
         }
     }
 
-    private void maybeBackoff(SolrException solrException) {
+    private void maybeBackoff(MirroredSolrRequest request, SolrException solrException) {
         if (solrException == null) {
             return;
         }
@@ -138,6 +140,7 @@ public class SolrMessageProcessor extends MessageProcessor implements IQueueHand
             sleepTimeMs = Math.max(1, Long.parseLong(backoffTimeSuggested));
         }
         log.info("Consumer backoff. sleepTimeMs={}", sleepTimeMs);
+        metrics.meter(MetricRegistry.name(request.getType().name(), "backoff")).mark(sleepTimeMs);
         uncheckedSleep(sleepTimeMs);
     }
 
@@ -176,13 +179,19 @@ public class SolrMessageProcessor extends MessageProcessor implements IQueueHand
      *
      * Process the SolrRequest. If not, this method throws an exception.
      */
-    private Result<MirroredSolrRequest> processMirroredSolrRequest(SolrRequest request) throws Exception {
+    private Result<MirroredSolrRequest> processMirroredSolrRequest(SolrRequest request, MirroredSolrRequest.Type type) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("Sending request to Solr at ZK address={} with params {}", ZkStateReader.from(client).getZkClient().getZkServerAddress(), request.getParams());
         }
         Result<MirroredSolrRequest> result;
+        SolrResponseBase response = null;
+        Timer.Context ctx = metrics.timer(MetricRegistry.name(type.name(), "outputTime")).time();
 
-        SolrResponseBase response = (SolrResponseBase) request.process(client);
+        try {
+            response = (SolrResponseBase) request.process(client);
+        } finally {
+            ctx.stop();
+        }
 
         int status = response.getStatus();
 
@@ -191,11 +200,10 @@ public class SolrMessageProcessor extends MessageProcessor implements IQueueHand
         }
 
         if (status != 0) {
-            metrics.counter("processedErrors").inc();
+            metrics.counter(MetricRegistry.name(type.name(), "outputErrors")).inc();
             throw new SolrException(SolrException.ErrorCode.getErrorCode(status), "response=" + response);
         }
 
-        metrics.counter("processed").inc();
         if (log.isDebugEnabled()) {
             log.debug("Finished sending request to Solr at ZK address={} with params {} status_code={}", ZkStateReader.from(client).getZkClient().getZkServerAddress(), request.getParams(), status);
         }
@@ -210,17 +218,14 @@ public class SolrMessageProcessor extends MessageProcessor implements IQueueHand
             rmsg.append("Submitting update request for collection=").append(collection != null ? collection : request.getParams().get("collection"));
             if(((UpdateRequest) request).getDeleteById() != null) {
                 final int numDeleteByIds = ((UpdateRequest) request).getDeleteById().size();
-                metrics.counter("numDeleteByIds").inc(numDeleteByIds);
                 rmsg.append(" numDeleteByIds=").append(numDeleteByIds);
             }
             if(((UpdateRequest) request).getDocuments() != null) {
                 final int numUpdates = ((UpdateRequest) request).getDocuments().size();
-                metrics.counter("numUpdates").inc(numUpdates);
                 rmsg.append(" numUpdates=").append(numUpdates);
             }
             if(((UpdateRequest) request).getDeleteQuery() != null) {
                 final int numDeleteByQuery = ((UpdateRequest) request).getDeleteQuery().size();
-                metrics.counter("numDeleteByQuery").inc(numDeleteByQuery);
                 rmsg.append(" numDeleteByQuery=").append(numDeleteByQuery);
             }
             log.info(rmsg.toString());
@@ -281,7 +286,7 @@ public class SolrMessageProcessor extends MessageProcessor implements IQueueHand
         if (mirroredSolrRequest.getAttempt() == 1) {
             final long latency = System.currentTimeMillis() - TimeUnit.NANOSECONDS.toMillis(mirroredSolrRequest.getSubmitTimeNanos());
             log.debug("First attempt latency = {}", latency);
-            metrics.timer("latency").update(latency, TimeUnit.MILLISECONDS);
+            metrics.timer(MetricRegistry.name(mirroredSolrRequest.getType().name(), "outputLatency")).update(latency, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -341,10 +346,11 @@ public class SolrMessageProcessor extends MessageProcessor implements IQueueHand
         }
     }
 
-    private void backoffIfNeeded(Result<MirroredSolrRequest> result) {
+    private void backoffIfNeeded(Result<MirroredSolrRequest> result, MirroredSolrRequest.Type type) {
         if (result.status().equals(ResultStatus.FAILED_RESUBMIT)) {
-            final long backoffMs = getResubmitBackoffPolicy().getBackoffTimeMs(result.newItem());
+            final long backoffMs = getResubmitBackoffPolicy().getBackoffTimeMs(result.getItem());
             if (backoffMs > 0L) {
+                metrics.meter(MetricRegistry.name(type.name(), "backoff")).mark(backoffMs);
                 try {
                     Thread.sleep(backoffMs);
                 } catch (final InterruptedException ex) {

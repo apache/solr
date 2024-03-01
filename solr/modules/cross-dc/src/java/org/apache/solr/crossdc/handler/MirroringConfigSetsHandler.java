@@ -65,6 +65,7 @@ public class MirroringConfigSetsHandler extends ConfigSetsHandler {
           zkClient = coreContainer.getZkController().getZkClient();
         }
         ConfUtil.fillProperties(zkClient, properties);
+        ConfUtil.verifyProperties(properties);
         KafkaCrossDcConf conf = new KafkaCrossDcConf(properties);
         this.sink = new KafkaMirroringSink(conf);
       } catch (Exception e) {
