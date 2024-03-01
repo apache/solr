@@ -34,8 +34,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
 
     // Start by creating a cluster with no jetties
     MiniSolrCloudCluster cluster =
-        new MiniSolrCloudCluster(
-            0, createTempDir(), JettyConfig.builder().setContext("/solr").build());
+        new MiniSolrCloudCluster(0, createTempDir(), JettyConfig.builder().build());
     try {
 
       CloudSolrClient client = cluster.getSolrClient();
@@ -64,8 +63,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
     Path configPath = getFile("solrj").toPath().resolve("solr/configsets/configset-2/conf");
 
     MiniSolrCloudCluster cluster =
-        new MiniSolrCloudCluster(
-            0, createTempDir(), JettyConfig.builder().setContext("/solr").build());
+        new MiniSolrCloudCluster(0, createTempDir(), JettyConfig.builder().build());
     try {
       CloudSolrClient client = cluster.getSolrClient();
       SolrException e =
@@ -97,8 +95,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
   public void testAlreadyClosedClusterStateProvider() throws Exception {
 
     final MiniSolrCloudCluster cluster =
-        new MiniSolrCloudCluster(
-            1, createTempDir(), JettyConfig.builder().setContext("/solr").build());
+        new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
     // from a client perspective the behavior of ZkClientClusterStateProvider should be
     // consistent regardless of wether it's constructed with a zkhost or an existing ZkStateReader
     try {

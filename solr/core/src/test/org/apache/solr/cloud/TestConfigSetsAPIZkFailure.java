@@ -87,7 +87,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
             1,
             testDir,
             MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML,
-            JettyConfig.builder().setContext("/solr").build(),
+            JettyConfig.builder().build(),
             zkTestServer,
             true);
   }

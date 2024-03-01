@@ -329,7 +329,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       props.setProperty("solrconfig", "bad_solrconfig.xml");
       props.setProperty("solr.data.dir", getDataDir());
 
-      JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(port).build();
+      JettyConfig jettyConfig = JettyConfig.builder().setPort(port).build();
 
       jetty = new JettySolrRunner(getHomeDir(), props, jettyConfig);
       jetty.start();

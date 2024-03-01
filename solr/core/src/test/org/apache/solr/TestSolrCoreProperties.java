@@ -74,8 +74,7 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
       nodeProperties.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
     }
 
-    solrClientTestRule.startSolr(
-        homeDir, nodeProperties, JettyConfig.builder().setContext("/solr").build());
+    solrClientTestRule.startSolr(homeDir, nodeProperties, JettyConfig.builder().build());
 
     // createJetty(homeDir.getAbsolutePath(), null, null);
   }

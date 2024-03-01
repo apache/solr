@@ -203,9 +203,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir().toString());
     JettySolrRunner jetty =
         new JettySolrRunner(
-            instance.getHomeDir().toString(),
-            nodeProperties,
-            JettyConfig.builder().setContext("/solr").build());
+            instance.getHomeDir().toString(), nodeProperties, JettyConfig.builder().build());
     jetty.start();
     return jetty;
   }

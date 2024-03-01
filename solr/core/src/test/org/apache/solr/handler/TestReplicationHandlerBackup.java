@@ -78,7 +78,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
         new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
-    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
+    JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
     jetty.start();
     return jetty;

@@ -43,8 +43,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
   public void testWaitForStateAfterShutDown() throws Exception {
     final String col_name = "test_col";
     final MiniSolrCloudCluster cluster =
-        new MiniSolrCloudCluster(
-            1, createTempDir(), JettyConfig.builder().setContext("/solr").build());
+        new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
     try {
       log.info("Create our collection");
       CollectionAdminRequest.createCollection(col_name, "_default", 1, 1)
@@ -78,8 +77,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
         ExecutorUtil.newMDCAwareFixedThreadPool(
             1, new SolrNamedThreadFactory("background_executor"));
     final MiniSolrCloudCluster cluster =
-        new MiniSolrCloudCluster(
-            1, createTempDir(), JettyConfig.builder().setContext("/solr").build());
+        new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
     try {
       log.info("Create our collection");
       CollectionAdminRequest.createCollection(col_name, "_default", 1, 1)

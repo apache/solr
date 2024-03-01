@@ -123,7 +123,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
                   Files.readAllBytes(Paths.get(solrHomeDir).resolve("solr.xml")),
                   Charset.defaultCharset());
 
-          JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(port).build();
+          JettyConfig jettyConfig = JettyConfig.builder().setPort(port).build();
           try {
             if (solrCloudCluster == null) {
               Path logDir = createTempDir("solr_logs");

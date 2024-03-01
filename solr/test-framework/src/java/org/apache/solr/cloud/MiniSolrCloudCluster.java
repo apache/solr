@@ -1124,7 +1124,7 @@ public class MiniSolrCloudCluster {
       this.nodeCount = nodeCount;
       this.baseDir = baseDir;
 
-      jettyConfigBuilder = JettyConfig.builder().setContext("/solr");
+      jettyConfigBuilder = JettyConfig.builder();
     }
 
     /** Use a JettyConfig.Builder to configure the cluster's jetty servers */
