@@ -23,9 +23,9 @@ import java.util.Map;
 public abstract class CrossDcConf {
     public static final String CROSSDC_PROPERTIES = "/crossdc.properties";
     public static final String ZK_CROSSDC_PROPS_PATH = "zkCrossDcPropsPath";
-    public static final String EXPAND_DBQ = "expandDbq";
-    public static final String COLLAPSE_UPDATES = "collapseUpdates";
-    public static final String MAX_COLLAPSE_RECORDS = "maxCollapseRecords";
+    public static final String EXPAND_DBQ = "solr.crossdc.expandDbq";
+    public static final String COLLAPSE_UPDATES = "solr.crossdc.collapseUpdates";
+    public static final String MAX_COLLAPSE_RECORDS = "solr.crossdc.maxCollapseRecords";
 
     /**
      * Option to expand Delete-By-Query requests on the producer side.
