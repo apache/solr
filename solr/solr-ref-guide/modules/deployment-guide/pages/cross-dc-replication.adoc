@@ -114,28 +114,39 @@ Add the following line to `solr.xml`:
 
 The required configuration properties are:
 
-`solr.crossdc.bootstrapServers`:: list of servers used to connect to the Kafka cluster
-`solr.crossdc.topicName`:: Kafka topicName used to indicate which Kafka queue the Solr updates will be pushed on
+`solr.crossdc.bootstrapServers`:: list of servers used to connect to the Kafka cluster.
+`solr.crossdc.topicName`:: Kafka topicName used to indicate which Kafka queue the Solr updates will be pushed on.
+This topic must already exist.
 
 Optional configuration properties:
 
-`solr.crossdc.batchSizeBytes`:: maximum batch size in bytes for the Kafka queue
-`solr.crossdc.bufferMemoryBytes`:: memory allocated by the MirroringURP in total for buffering
-`solr.crossdc.lingerMs`:: amount of time that the MirroringURP will wait to add to a batch
-`solr.crossdc.requestTimeoutMS`:: request timeout for the MirroringURP
-`solr.crossdc.indexUnmirrorableDocs`:: if set to True, updates that are too large for the Kafka queue will still be indexed on the primary.
-`solr.crossdc.enableDataCompression`:: whether to use compression for data sent over the Kafka queue - can be none (default), gzip, snappy, lz4, or zstd
-`solr.crossdc.numRetries`:: Setting a value greater than zero will cause the MirroringURP to resend any record whose send fails with a potentially transient error.
-`solr.crossdc.retryBackoffMs`:: The amount of time to wait before attempting to retry a failed request to a given topic partition.
-`solr.crossdc.deliveryTimeoutMS`:: Updates sent to the Kafka queue will be failed before the number of retries has been exhausted if the timeout configured by delivery.timeout.ms expires first
-`solr.crossdc.maxRequestSizeBytes`:: The maximum size of a Kafka queue request in bytes - limits the number of requests that will be sent over the queue in a single batch.
-`solr.crossdc.mirrorCommits`:: if `true` then standalone commit requests will be mirrored, otherwise they will be processed only locally.
+`solr.crossdc.batchSizeBytes` _<integer>_:: maximum batch size in bytes for the Kafka queue
+`solr.crossdc.bufferMemoryBytes` _<integer>_:: memory allocated by the MirroringURP in total for buffering
+`solr.crossdc.lingerMs` _<integer>_:: amount of time that the MirroringURP will wait to add to a batch
+`solr.crossdc.requestTimeoutMS` _<integer>_:: request timeout for the MirroringURP
+`solr.crossdc.indexUnmirrorableDocs` _<boolean>_:: if set to True, updates that are too large for the Kafka queue will still be indexed on the primary.
+`solr.crossdc.enableDataCompression` _<boolean>_:: whether to use compression for data sent over the Kafka queue - can be none (default), gzip, snappy, lz4, or zstd
+`solr.crossdc.numRetries` _<integer>_:: Setting a value greater than zero will cause the MirroringURP to resend any record whose send fails with a potentially transient error.
+`solr.crossdc.retryBackoffMs` _<integer>_:: The amount of time to wait before attempting to retry a failed request to a given topic partition.
+`solr.crossdc.deliveryTimeoutMS` _<integer>_:: Updates sent to the Kafka queue will be failed before the number of retries has been exhausted if the timeout configured by delivery.timeout.ms expires first
+`solr.crossdc.maxRequestSizeBytes` _<integer>_:: The maximum size of a Kafka queue request in bytes - limits the number of requests that will be sent over the queue in a single batch.
+`solr.crossdc.dlqTopicName` _<string>_: If not empty then requests that failed processing `maxAttempts` times will be sent to a "dead letter queue" topic in Kafka (must exist if configured).
+`solr.crossdc.mirrorCommits` _<boolean>_:: If `true` then standalone commit requests will be mirrored, otherwise they will be processed only locally.
+`solr.crossdc.expandDbq` _<enum>_ :: If set to `expand` (default) then Delete-By-Query will be expanded before mirroring into series of Delete-By-Id, which may help with correct processing of out-of-order requests on the consumer side.
+If set to `none` then Delete-By-Query requests will be mirrored as-is.
 
 === CrossDC Manager
 
 . Start the Manager process using the included start script at `solr/cross-dc-manager/bin/cross-dc-manager` (or `cross-dc-manager.cmd` for Windows).
     - The Manager can also be run via the docker image. The `cross-dc-manager` script will be found on the `$PATH`.
 . Configure the CrossDC Manager with Java system properties using the `JAVA_OPTS` environment variable.
+
+==== API Endpoints
+
+Currently the following endpoints are exposed (on local port configured using `port` property, default is 8090):
+
+`/metrics` - (GET):: This endpoint returns JSON-formatted metrics describing various aspects of document processing in Consumer.
+`/threads` - (GET):: Returns a plain-text thread dump of the JVM running the Consumer application.
 
 ==== Configuration Properties for the CrossDC Manager:
 
@@ -148,7 +159,10 @@ This can be a comma separated list for the Manager if you would like to consume 
 
 Optional configuration properties:
 
-`solr.crossdc.consumerProcessingThreads`:: The number of threads used by the manager to concurrently process updates from the Kafka queue.
+`solr.crossdc.consumerProcessingThreads` _<integer>_:: The number of threads used by the manager to concurrently process updates from the Kafka queue.
+`port` _<integer>_:: Local port for the API endpoints. Default is `8090`.
+`solr.crossdc.collapseUpdates` _<enum>_:: When set to `all` then all incoming update requests (up to `maxCollapseRecords`) will be collapsed into a single UpdateRequest, as long as their parameters are identical. When set to `partial` (default) then only requests without deletions will be collapsed - requests with any delete ops will be sent individually in order to preserve ordering of updates. When set to `none` the incoming update requests will be sent individually without any collapsing. NOTE: requests of other types than UPDATE are never collapsed.
+`solr.crossdc.maxCollapseRecords` _<integer>_:: Maximum number of incoming update request to collapse into a single outgoing request. Default is `500`.
 
 Optional configuration properties used when the manager must retry by putting updates back on the Kafka queue:
 
@@ -188,5 +202,7 @@ Setting the `solr.crossdc.enabled` system property or xref:collection-management
 
 == Limitations
 
-* Delete-By-Query converts to DeleteById, which can be much less efficient for queries matching large numbers of documents.
- Forwarding a real Delete-By-Query could also be a reasonable option to add if it is not strictly reliant on not being reordered with other requests.
+- When `solr.crossdc.expandDbq` property is set to `expand` (default) then Delete-By-Query converts to a series of Delete-By-Id, which can be much less efficient for queries matching large numbers of documents.
+Setting this property to `none` results in forwarding a real Delete-By-Query - this reduces the amount of data to mirror but may cause different results due to the potential re-ordering of failed & re-submitted requests between Consumer and the target Solr.
+- When `solr.crossdc.collapseUpdates` is set to `all` then multiple requests containing a mix of add and delete ops will be collapsed into a single outgoing request.
+This will cause the original ordering of add / delete ops to be lost (because Solr processing of an update request always processes all add ops first, and only then the delete ops), which may affect the final outcome when some of the ops refer to the same document ids.
