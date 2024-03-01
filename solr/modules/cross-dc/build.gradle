@@ -24,8 +24,8 @@ dependencies {
   api project(':solr:core')
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-zookeeper')
-  implementation(group: 'org.apache.kafka', name: 'kafka-clients')
-  implementation(group: 'com.google.guava', name: 'guava')
+  implementation 'org.apache.kafka:kafka-clients'
+  implementation 'com.google.guava:guava'
 
   implementation 'com.google.guava:guava'
   implementation 'org.slf4j:slf4j-api'
