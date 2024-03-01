@@ -24,7 +24,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.Arrays;
-
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
@@ -59,8 +58,8 @@ import org.slf4j.LoggerFactory;
  * sleepMs=100&memLoadCount=100&cpuLoadCount=10&stages=prepare,process
  * }</pre>
  *
- * the component will introduce a 100ms delay, allocate ~100 KiB and consume around 500ms of CPU time
- * both in the "prepare" and in the "process" stages of the distributed query processing.
+ * the component will introduce a 100ms delay, allocate ~100 KiB and consume around 500ms of CPU
+ * time both in the "prepare" and in the "process" stages of the distributed query processing.
  */
 public class ExpensiveSearchComponent extends SearchComponent {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

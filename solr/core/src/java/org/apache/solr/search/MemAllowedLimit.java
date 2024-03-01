@@ -18,10 +18,8 @@ package org.apache.solr.search;
 
 import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Histogram;
-import com.codahale.metrics.LockFreeExponentiallyDecayingReservoir;
 import com.codahale.metrics.Snapshot;
 import com.google.common.annotations.VisibleForTesting;
-
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
@@ -150,11 +148,11 @@ public class MemAllowedLimit implements QueryTimeout {
       }
       if (limitRatio > 0.0f && memHistogram.getCount() > MIN_COUNT) {
         Snapshot snapshot = memHistogram.getSnapshot();
-        long maxDynamicDelta =
-            Math.round(snapshot.get99thPercentile() * (double) limitRatio);
+        long maxDynamicDelta = Math.round(snapshot.get99thPercentile() * (double) limitRatio);
         if (initialBytes + maxDynamicDelta < currentAllocatedBytes) {
           if (log.isDebugEnabled()) {
-            log.debug("++++ Dynamic limit tripped: count/min/avg/median/p99={}/{}/{}/{}/{}, actual {}",
+            log.debug(
+                "++++ Dynamic limit tripped: count/min/avg/median/p99={}/{}/{}/{}/{}, actual {}",
                 memHistogram.getCount(),
                 snapshot.getMin(),
                 snapshot.getMean(),
@@ -170,11 +168,12 @@ public class MemAllowedLimit implements QueryTimeout {
         long currentDelta = limitAtBytes - currentAllocatedBytes;
         if (currentDelta < 0L) {
           if (log.isDebugEnabled()) {
-            log.debug("++++ Hard limit tripped: limit {}, actual {}",
-                limitAtBytes - initialBytes,
-                currentAllocatedBytes - initialBytes);
             Snapshot snapshot = memHistogram.getSnapshot();
-            log.debug("++++ Current dynamic limit: count/min/avg/median/p99={}/{}/{}/{}/{}, actual {}",
+            log.debug( // nowarn
+                "++++ Hard limit tripped: limit {}, actual {}\n"
+                    + "++++ Current dynamic limit: count/min/avg/median/p99={}/{}/{}/{}/{}, actual {}",
+                limitAtBytes - initialBytes,
+                currentAllocatedBytes - initialBytes,
                 memHistogram.getCount(),
                 snapshot.getMin(),
                 snapshot.getMean(),

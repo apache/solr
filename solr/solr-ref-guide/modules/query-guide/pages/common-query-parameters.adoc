@@ -363,7 +363,7 @@ If the query parameter is set to `memAllowedRatio=5.0` then a query that allocat
 that after a while the queries began to gradually consume more and more memory so the recent queries
 caused the `p99` to increase to `0.2 MiB` - and now only queries that allocate more than `1.0 MiB` will be terminated. Since the
 histogram uses an exponentially decaying reservoir then if recent queries begin allocating less memory this reference value of
-`p99` will decrease.
+`p99` will decrease.n
 
 When `memAllowed` is specified then it enforces the hard limit regardless of `memAllowedRatio` calculations. This way
 users can protect against this gradual "creep" exceeding
