@@ -217,7 +217,7 @@ Unlike most local params, `op` is actually _not_ defined by any query parser (`f
 In the above example, it would find documents with indexed ranges that _contain_ (or equals) the range 2013 thru 2018.
 Multi-valued overlapping indexed ranges in a document are effectively coalesced.
 
-=== DateRangeField Example Use Case
+== An Example Use Case
 
 Suppose we want to find all restaurants that are open within a certain time window.
 Let's add a date range field to the schema.xml, so that we could index the information about the restaurant opening hours:
@@ -253,7 +253,7 @@ Next, we will add two restaurants to the index:
 Each restaurant can have multiple opening hours in a single day,
 and the opening hours can be different on different days.
 
-NOTE: The date ranges in opening_hours should be converted to UTC before indexing.
+NOTE: The date ranges in `opening_hours` should be converted to UTC before indexing.
 
 Now, to find the restaurants that are open during a specific time window,
 we can use a filter query:
