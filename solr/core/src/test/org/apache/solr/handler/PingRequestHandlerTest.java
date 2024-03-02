@@ -170,8 +170,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testPingInClusterWithNoHealthCheck() throws Exception {
 
     MiniSolrCloudCluster miniCluster =
-        new MiniSolrCloudCluster(
-            NUM_SERVERS, createTempDir(), JettyConfig.builder().setContext("/solr").build());
+        new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), JettyConfig.builder().build());
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 

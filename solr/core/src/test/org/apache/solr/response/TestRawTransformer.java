@@ -94,9 +94,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
     nodeProperties.setProperty("solr.data.dir", h.getCore().getDataDir());
     JSR =
         new JettySolrRunner(
-            homeDir.toAbsolutePath().toString(),
-            nodeProperties,
-            JettyConfig.builder().setContext("/solr").build());
+            homeDir.toAbsolutePath().toString(), nodeProperties, JettyConfig.builder().build());
   }
 
   private static void initCloud() throws Exception {

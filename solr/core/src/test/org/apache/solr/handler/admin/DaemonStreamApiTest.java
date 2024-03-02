@@ -66,9 +66,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    cluster =
-        new MiniSolrCloudCluster(
-            1, createTempDir(), JettyConfig.builder().setContext("/solr").build());
+    cluster = new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
 
     url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + CHECKPOINT_COLL;
 

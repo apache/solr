@@ -54,9 +54,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     }
 
     super.setUp();
-    solrCluster =
-        new MiniSolrCloudCluster(
-            3, createTempDir(), JettyConfig.builder().setContext("/solr").build());
+    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build());
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");

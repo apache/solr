@@ -45,9 +45,7 @@ public class ConcurrentCreateRoutedAliasTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    solrCluster =
-        new MiniSolrCloudCluster(
-            4, createTempDir(), JettyConfig.builder().setContext("/solr").build());
+    solrCluster = new MiniSolrCloudCluster(4, createTempDir(), JettyConfig.builder().build());
   }
 
   @Override
