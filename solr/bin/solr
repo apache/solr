@@ -589,6 +589,8 @@ function print_short_zk_usage() {
   echo "         solr zk mv <src> <dest> [-z zkHost]"
   echo "         solr zk ls [-r] <path> [-z zkHost]"
   echo "         solr zk mkroot <path> [-z zkHost]"
+  echo "         solr zk linkconfig -confname <confname> -c <collection> [-z zkHost]"
+  echo "         solr zk updateacls <path> [-z zkHost]"
   echo ""
 
   if [ "$1" == "" ]; then
@@ -874,7 +876,7 @@ if [[ "$SCRIPT_CMD" == "delete" ]]; then
 fi
 
 # Prevent any zk subcommands from going through with out invoking zk command
-if [[ "$SCRIPT_CMD" == "upconfig" || $SCRIPT_CMD == "downconfig" || $SCRIPT_CMD == "cp" || $SCRIPT_CMD == "rm" || $SCRIPT_CMD == "mv" || $SCRIPT_CMD == "ls" || $SCRIPT_CMD == "mkroot" ]]; then
+if [[ "$SCRIPT_CMD" == "upconfig" || $SCRIPT_CMD == "downconfig" || $SCRIPT_CMD == "cp" || $SCRIPT_CMD == "rm" || $SCRIPT_CMD == "mv" || $SCRIPT_CMD == "ls" || $SCRIPT_CMD == "mkroot" || $SCRIPT_CMD == "linkconfig" || $SCRIPT_CMD == "updateacls" ]]; then
   print_short_zk_usage "You must invoke this subcommand using the zk command.   bin/solr zk $SCRIPT_CMD."
   exit $?
 fi
