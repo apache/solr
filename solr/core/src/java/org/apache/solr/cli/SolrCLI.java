@@ -250,6 +250,7 @@ public class SolrCLI implements CLIO {
     else if ("ls".equals(toolType)) return new ZkLsTool();
     else if ("cluster".equals(toolType)) return new ClusterTool();
     else if ("updateacls".equals(toolType)) return new UpdateACLTool();
+    else if ("linkconfig".equals(toolType)) return new LinkConfigTool();
     else if ("mkroot".equals(toolType)) return new ZkMkrootTool();
     else if ("assert".equals(toolType)) return new AssertTool();
     else if ("auth".equals(toolType)) return new AuthTool();

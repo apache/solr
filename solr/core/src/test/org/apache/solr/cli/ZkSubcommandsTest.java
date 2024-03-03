@@ -27,19 +27,29 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.RegexFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkCLI;
+import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.DigestZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
 import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ZLibCompressor;
+import org.apache.solr.core.ConfigSetService;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
@@ -281,136 +291,127 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         standardOutput2);
   }
 
-  //  @Test
-  //  public void testUpConfigLinkConfigClearZk() throws Exception {
-  //    File tmpDir = createTempDir().toFile();
-  //
-  //    // test upconfig
-  //    String confsetname = "confsetone";
-  //    final String[] upconfigArgs;
-  //    if (random().nextBoolean()) {
-  //      upconfigArgs =
-  //          new String[] {
-  //            "-zkhost",
-  //            zkServer.getZkAddress(),
-  //            "-cmd",
-  //            ZkCLI.UPCONFIG,
-  //            "-confdir",
-  //            ExternalPaths.TECHPRODUCTS_CONFIGSET,
-  //            "-confname",
-  //            confsetname
-  //          };
-  //    } else {
-  //      final String excluderegexOption =
-  //          (random().nextBoolean() ? "--" + ZkCLI.EXCLUDE_REGEX : "-" +
-  // ZkCLI.EXCLUDE_REGEX_SHORT);
-  //      upconfigArgs =
-  //          new String[] {
-  //            "-zkhost",
-  //            zkServer.getZkAddress(),
-  //            "-cmd",
-  //            ZkCLI.UPCONFIG,
-  //            excluderegexOption,
-  //            ZkCLI.EXCLUDE_REGEX_DEFAULT,
-  //            "-confdir",
-  //            ExternalPaths.TECHPRODUCTS_CONFIGSET,
-  //            "-confname",
-  //            confsetname
-  //          };
-  //    }
-  //    ZkCLI.main(upconfigArgs);
-  //
-  //    assertTrue(zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, true));
-  //
-  //    // print help
-  //    // ZkCLI.main(new String[0]);
-  //
-  //    // test linkconfig
-  //    String[] args =
-  //        new String[] {
-  //          "-zkhost",
-  //          zkServer.getZkAddress(),
-  //          "-cmd",
-  //          "linkconfig",
-  //          "-collection",
-  //          "collection1",
-  //          "-confname",
-  //          confsetname
-  //        };
-  //    ZkCLI.main(args);
-  //
-  //    ZkNodeProps collectionProps =
-  //        ZkNodeProps.load(
-  //            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/collection1", null, null,
-  // true));
-  //    assertTrue(collectionProps.containsKey("configName"));
-  //    assertEquals(confsetname, collectionProps.getStr("configName"));
-  //
-  //    // test down config
-  //    File confDir =
-  //        new File(
-  //            tmpDir, "solrtest-confdropspot-" + this.getClass().getName() + "-" +
-  // System.nanoTime());
-  //    assertFalse(confDir.exists());
-  //
-  //    args =
-  //        new String[] {
-  //          "-zkhost",
-  //          zkServer.getZkAddress(),
-  //          "-cmd",
-  //          "downconfig",
-  //          "-confdir",
-  //          confDir.getAbsolutePath(),
-  //          "-confname",
-  //          confsetname
-  //        };
-  //    ZkCLI.main(args);
-  //
-  //    File[] files = confDir.listFiles();
-  //    List<String> zkFiles =
-  //        zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null, true);
-  //    assertEquals(files.length, zkFiles.size());
-  //
-  //    File sourceConfDir = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET);
-  //    // filter out all directories starting with . (e.g. .svn)
-  //    Collection<File> sourceFiles =
-  //        FileUtils.listFiles(
-  //            sourceConfDir, TrueFileFilter.INSTANCE, new RegexFileFilter("[^\\.].*"));
-  //    for (File sourceFile : sourceFiles) {
-  //      int indexOfRelativePath =
-  //          sourceFile
-  //              .getAbsolutePath()
-  //              .lastIndexOf("sample_techproducts_configs" + File.separator + "conf");
-  //      String relativePathofFile =
-  //          sourceFile
-  //              .getAbsolutePath()
-  //              .substring(indexOfRelativePath + 33, sourceFile.getAbsolutePath().length());
-  //      File downloadedFile = new File(confDir, relativePathofFile);
-  //      if
-  // (ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN.matcher(relativePathofFile).matches()) {
-  //        assertFalse(
-  //            sourceFile.getAbsolutePath()
-  //                + " exists in ZK, downloaded:"
-  //                + downloadedFile.getAbsolutePath(),
-  //            downloadedFile.exists());
-  //      } else {
-  //        assertTrue(
-  //            downloadedFile.getAbsolutePath()
-  //                + " does not exist source:"
-  //                + sourceFile.getAbsolutePath(),
-  //            downloadedFile.exists());
-  //        assertTrue(
-  //            relativePathofFile + " content changed",
-  //            FileUtils.contentEquals(sourceFile, downloadedFile));
-  //      }
-  //    }
-  //
-  //    // test reset zk
-  //    args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "clear", "/"};
-  //    ZkCLI.main(args);
-  //
-  //    assertEquals(0, zkClient.getChildren("/", null, true).size());
-  //  }
+  @Test
+  public void testUpConfigLinkConfigClearZk() throws Exception {
+    File tmpDir = createTempDir().toFile();
+
+    // test upconfig
+    String confsetname = "confsetone";
+
+    String[] args =
+        new String[] {
+          "upconfig",
+          "-confname",
+          confsetname,
+          "-confdir",
+          ExternalPaths.TECHPRODUCTS_CONFIGSET,
+          "-z",
+          zkServer.getZkAddress()
+        };
+
+    ConfigSetUploadTool configSetUploadTool = new ConfigSetUploadTool();
+    assertEquals(0, runTool(args, configSetUploadTool));
+
+    assertTrue(zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, true));
+
+    // test linkconfig
+    args =
+        new String[] {
+          "linkconfig", "-confname", confsetname, "-c", "collection1", "-z", zkServer.getZkAddress()
+        };
+
+    LinkConfigTool linkConfigTool = new LinkConfigTool();
+    assertEquals(0, runTool(args, linkConfigTool));
+
+    ZkNodeProps collectionProps =
+        ZkNodeProps.load(
+            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/collection1", null, null, true));
+    assertTrue(collectionProps.containsKey("configName"));
+    assertEquals(confsetname, collectionProps.getStr("configName"));
+
+    // test down config
+    File configSetDir =
+        new File(
+            tmpDir, "solrtest-confdropspot-" + this.getClass().getName() + "-" + System.nanoTime());
+    assertFalse(configSetDir.exists());
+
+    args =
+        new String[] {
+          "-zkhost",
+          zkServer.getZkAddress(),
+          "-cmd",
+          "downconfig",
+          "-confdir",
+          configSetDir.getAbsolutePath(),
+          "-confname",
+          confsetname
+        };
+    // ZkCLI.main(args);
+
+    args =
+        new String[] {
+          "downconfig",
+          "-confname",
+          confsetname,
+          "-confdir",
+          configSetDir.getAbsolutePath(),
+          "-z",
+          zkServer.getZkAddress()
+        };
+
+    ConfigSetDownloadTool configSetDownloadTool = new ConfigSetDownloadTool();
+    assertEquals(0, runTool(args, configSetDownloadTool));
+
+    File confDir = new File(configSetDir, "conf");
+    File[] files = confDir.listFiles();
+    List<String> zkFiles =
+        zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null, true);
+    assertEquals(files.length, zkFiles.size());
+
+    File sourceConfDir = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET);
+    // filter out all directories starting with . (e.g. .svn)
+    Collection<File> sourceFiles =
+        FileUtils.listFiles(
+            sourceConfDir, TrueFileFilter.INSTANCE, new RegexFileFilter("[^\\.].*"));
+    for (File sourceFile : sourceFiles) {
+      int indexOfRelativePath =
+          sourceFile
+              .getAbsolutePath()
+              .lastIndexOf("sample_techproducts_configs" + File.separator + "conf");
+      String relativePathofFile =
+          sourceFile
+              .getAbsolutePath()
+              .substring(indexOfRelativePath + 33, sourceFile.getAbsolutePath().length());
+      File downloadedFile = new File(confDir, relativePathofFile);
+      if (ConfigSetService.UPLOAD_FILENAME_EXCLUDE_PATTERN.matcher(relativePathofFile).matches()) {
+        assertFalse(
+            sourceFile.getAbsolutePath()
+                + " exists in ZK, downloaded:"
+                + downloadedFile.getAbsolutePath(),
+            downloadedFile.exists());
+      } else {
+        assertTrue(
+            downloadedFile.getAbsolutePath()
+                + " does not exist source:"
+                + sourceFile.getAbsolutePath(),
+            downloadedFile.exists());
+        assertTrue(
+            relativePathofFile + " content changed",
+            FileUtils.contentEquals(sourceFile, downloadedFile));
+      }
+    }
+
+    // test reset zk
+    args =
+        new String[] {
+          "rm", "-path", "zk:/configs/confsetone", "-r", "true", "-z", zkServer.getZkAddress()
+        };
+
+    ZkRmTool zkRmTool = new ZkRmTool();
+    assertEquals(0, runTool(args, zkRmTool));
+
+    assertEquals(0, zkClient.getChildren("/configs", null, true).size());
+  }
 
   @Test
   public void testGet() throws Exception {
