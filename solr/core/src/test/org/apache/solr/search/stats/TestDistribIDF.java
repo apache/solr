@@ -31,9 +31,9 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -54,7 +54,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     }
 
     super.setUp();
-    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig());
+    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build());
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
@@ -300,8 +300,8 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     assertNotNull("stats cache hit", track.get("PARSE_QUERY"));
 
     // distributed stats explicitly disabled
-    query.set(CommonParams.DISTRIB_STATS_CACHE, "false");
-    query.set(CommonParams.Q, "{!terms f=id}1,2");
+    query.set("distrib.statsCache", "false");
+    query.set("q", "{!terms f=id}1,2");
     rsp = client.query(COLLECTION, query);
     track = (NamedList<Object>) rsp.getDebugMap().get("track");
     assertNotNull(track);
@@ -309,11 +309,11 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     assertNotNull("just search", track.get("EXECUTE_QUERY"));
 
     // distributed stats explicitly enabled
-    query.set(CommonParams.DISTRIB_STATS_CACHE, "true");
-    query.set(CommonParams.Q, "cat:electronics");
+    query.set("distrib.statsCache", "true");
+    query.set("q", "name:ipad"); // trick around LRUStatsCache
     rsp = client.query(COLLECTION, query);
     track = (NamedList<Object>) rsp.getDebugMap().get("track");
     assertNotNull(track);
-    assertNotNull("stats cache hit", track.get("PARSE_QUERY"));
+    assertNotNull("stats cache hit:" + track, track.get("PARSE_QUERY"));
   }
 }
