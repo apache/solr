@@ -48,6 +48,12 @@ public class ZkMkrootTool extends ToolBase {
             .required(true)
             .desc("Path to create.")
             .build(),
+            Option.builder()
+                    .longOpt("fail-on-exists")
+                    .hasArg()
+                    .required(false)
+                    .desc("Raise an error if the root exists.  Defaults to false.")
+                    .build(),
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_VERBOSE);
   }
@@ -61,6 +67,7 @@ public class ZkMkrootTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
+    boolean failOnExists = cli.hasOption("fail-on-exists");
 
     if (zkHost == null) {
       throw new IllegalStateException(
@@ -78,7 +85,7 @@ public class ZkMkrootTool extends ToolBase {
 
       String znode = cli.getOptionValue("path");
       echo("Creating ZooKeeper path " + znode + " on ZooKeeper at " + zkHost);
-      zkClient.makePath(znode, true);
+      zkClient.makePath(znode, failOnExists, true);
     } catch (Exception e) {
       log.error("Could not complete mkroot operation for reason: ", e);
       throw (e);
