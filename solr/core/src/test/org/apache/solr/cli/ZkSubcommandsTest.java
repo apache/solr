@@ -337,19 +337,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     args =
         new String[] {
-          "-zkhost",
-          zkServer.getZkAddress(),
-          "-cmd",
-          "downconfig",
-          "-confdir",
-          configSetDir.getAbsolutePath(),
-          "-confname",
-          confsetname
-        };
-    // ZkCLI.main(args);
-
-    args =
-        new String[] {
           "downconfig",
           "-confname",
           confsetname,

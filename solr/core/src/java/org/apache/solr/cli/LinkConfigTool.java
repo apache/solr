@@ -26,10 +26,7 @@ import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
 
-/**
- * Supports linking a configset to a collection
- *
- */
+/** Supports linking a configset to a collection */
 public class LinkConfigTool extends ToolBase {
 
   public LinkConfigTool() {
