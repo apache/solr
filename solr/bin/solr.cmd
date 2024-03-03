@@ -476,6 +476,8 @@ echo         solr zk rm [-r] ^<path^> [-z zkHost]
 echo         solr zk mv ^<src^> ^<dest^> [-z zkHost]
 echo         solr zk ls [-r] ^<path^> [-z zkHost]
 echo         solr zk mkroot ^<path^> [-z zkHost]
+echo         solr zk linkconfig -confname ^<confname^> -c ^<collection^> [-z zkHost]
+echo         solr zk updateacls ^<path^> [-z zkHost]
 echo.
 IF "%ZK_FULL%"=="true" (
   goto zk_full_usage
@@ -1395,6 +1397,10 @@ IF "%1"=="-V" (
   goto set_zk_op
 ) ELSE IF "%1"=="mkroot" (
   goto set_zk_op
+) ELSE IF "%1"=="linkconfig" (
+  goto set_zk_op  
+) ELSE IF "%1"=="updateacls" (
+  goto set_zk_op  
 ) ELSE IF "%1"=="-n" (
   goto set_config_name
 ) ELSE IF "%1"=="-r" (
@@ -1405,6 +1411,8 @@ IF "%1"=="-V" (
   goto set_configdir
 ) ELSE IF "%1"=="-confdir" (
   goto set_configdir
+) ELSE IF "%1"=="-c" (
+  goto set_collection_zk
 ) ELSE IF "%1"=="-z" (
   goto set_config_zk
 ) ELSE IF "%1"=="/?" (
@@ -1449,6 +1457,12 @@ goto parse_zk_args
 
 :set_configdir
 set CONFIGSET_DIR=%~2
+SHIFT
+SHIFT
+goto parse_zk_args
+
+:set_collection_zk
+set ZK_COLLECTION=%~2
 SHIFT
 SHIFT
 goto parse_zk_args
@@ -1512,6 +1526,28 @@ IF "!ZK_OP!"=="upconfig" (
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.cli.SolrCLI !ZK_OP! -confname !CONFIGSET_NAME! -confdir !CONFIGSET_DIR! -zkHost !ZK_HOST! %ZK_VERBOSE%
+) ELSE IF "!ZK_OP!"=="linkconfig" (
+  IF "!CONFIGSET_NAME!"=="" (
+    set ERROR_MSG="-n option must be set for linkconfig"
+    goto zk_short_usage
+  )
+  IF "!ZK_COLLECTION!"=="" (
+    set ERROR_MSG="The -c option must be set for linkconfig."
+    goto zk_short_usage
+  )
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.cli.SolrCLI !ZK_OP! -confname !CONFIGSET_NAME! -c !ZK_COLLECTION! -zkHost !ZK_HOST! %ZK_VERBOSE%  
+) ELSE IF "!ZK_OP!"=="updateacls" (
+  IF "%ZK_SRC"=="" (
+    set ERROR_MSG="Zookeeper path to remove must be specified when using the 'ls' command"
+    goto zk_short_usage
+  )
+  "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.cli.SolrCLI !ZK_OP! -path !ZK_SRC! -zkHost !ZK_HOST! %ZK_VERBOSE%   
 ) ELSE IF "!ZK_OP!"=="cp" (
   IF "%ZK_SRC%"=="" (
     set ERROR_MSG="<src> must be specified for 'cp' command"
