@@ -176,8 +176,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   private Http2SolrClient.Builder recoverySolrClientBuilder(String baseUrl, String leaderCoreName) {
-    // workaround for SOLR-13605: get the configured timeouts & set them directly
-    // (even though getRecoveryOnlyHttpClient() already has them set)
     final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
     return new Http2SolrClient.Builder(baseUrl)
         .withDefaultCollection(leaderCoreName)
@@ -188,9 +186,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   @Override
   public final void close() {
     close = true;
-    if (prevSendPreRecoveryHttpUriRequest != null) {
-      prevSendPreRecoveryHttpUriRequest.cancel(true);
-    }
+    cancelPrepRecoveryCmd();
     log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
   }
 
@@ -631,7 +627,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
                 .getCollection(cloudDesc.getCollectionName())
                 .getSlice(cloudDesc.getShardId());
 
-        Optional.ofNullable(prevSendPreRecoveryHttpUriRequest).ifPresent(req -> req.cancel(true));
+        cancelPrepRecoveryCmd();
 
         if (isClosed()) {
           log.info("RecoveryStrategy has been closed");
@@ -917,5 +913,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
       log.info("Sending prep recovery command to [{}]; [{}]", leaderBaseUrl, prepCmd);
       prevSendPreRecoveryHttpUriRequest.run();
     }
+  }
+
+  private void cancelPrepRecoveryCmd() {
+    Optional.ofNullable(prevSendPreRecoveryHttpUriRequest).ifPresent(req -> req.cancel(true));
   }
 }
