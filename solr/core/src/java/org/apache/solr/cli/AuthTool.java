@@ -87,19 +87,19 @@ public class AuthTool extends ToolBase {
                 "Configuration parameters (Solr startup parameters). Required for Kerberos authentication.")
             .build(),
         Option.builder()
-            .longOpt("blockUnknown")
+            .longOpt("block-unknown")
             .desc(
                 "Blocks all access for unknown users (requires authentication for all endpoints).")
             .hasArg()
             .build(),
         Option.builder()
-            .longOpt("solrIncludeFile")
+            .longOpt("solr-include-file")
             .hasArg()
             .desc(
                 "The Solr include file which contains overridable environment variables for configuring Solr configurations.")
             .build(),
         Option.builder()
-            .longOpt("updateIncludeFileOnly")
+            .longOpt("update-include-file-only")
             .desc(
                 "Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
                     + " authentication (i.e. don't update security.json).")
@@ -131,8 +131,8 @@ public class AuthTool extends ToolBase {
   public int runTool(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
-    ensureArgumentIsValidBooleanIfPresent(cli, "blockUnknown");
-    ensureArgumentIsValidBooleanIfPresent(cli, "updateIncludeFileOnly");
+    ensureArgumentIsValidBooleanIfPresent(cli, "block-unknown");
+    ensureArgumentIsValidBooleanIfPresent(cli, "update-include-file-only");
 
     String type = cli.getOptionValue("type", "basicAuth");
     switch (type) {
@@ -150,7 +150,7 @@ public class AuthTool extends ToolBase {
   private int handleKerberos(CommandLine cli) throws Exception {
     String cmd = cli.getArgs()[0];
     boolean updateIncludeFileOnly =
-        Boolean.parseBoolean(cli.getOptionValue("updateIncludeFileOnly", "false"));
+        Boolean.parseBoolean(cli.getOptionValue("update-include-file-only", "false"));
     String securityJson =
         "{"
             + "\n  \"authentication\":{"
@@ -230,7 +230,7 @@ public class AuthTool extends ToolBase {
                 StandardCharsets.UTF_8);
         config = config.replace("\n", "").replace("\r", "");
 
-        String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
+        String solrIncludeFilename = cli.getOptionValue("solr-include-file");
         File includeFile = new File(solrIncludeFilename);
         if (!includeFile.exists() || !includeFile.canWrite()) {
           CLIO.out(
@@ -248,7 +248,7 @@ public class AuthTool extends ToolBase {
       case "disable":
         clearSecurityJson(cli, updateIncludeFileOnly);
 
-        solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
+        solrIncludeFilename = cli.getOptionValue("solr-include-file");
         includeFile = new File(solrIncludeFilename);
         if (!includeFile.exists() || !includeFile.canWrite()) {
           CLIO.out(
@@ -277,7 +277,7 @@ public class AuthTool extends ToolBase {
     String cmd = cli.getArgs()[0];
     boolean prompt = Boolean.parseBoolean(cli.getOptionValue("prompt", "false"));
     boolean updateIncludeFileOnly =
-        Boolean.parseBoolean(cli.getOptionValue("updateIncludeFileOnly", "false"));
+        Boolean.parseBoolean(cli.getOptionValue("update-include-file-only", "false"));
     switch (cmd) {
       case "enable":
         if (!prompt && !cli.hasOption("credentials")) {
@@ -348,7 +348,7 @@ public class AuthTool extends ToolBase {
           } while (password.length() == 0);
         }
 
-        boolean blockUnknown = Boolean.parseBoolean(cli.getOptionValue("blockUnknown", "true"));
+        boolean blockUnknown = Boolean.parseBoolean(cli.getOptionValue("block-unknown", "true"));
 
         String resourceName = "security.json";
         final URL resource = SolrCore.class.getClassLoader().getResource(resourceName);
@@ -382,7 +382,7 @@ public class AuthTool extends ToolBase {
           }
         }
 
-        String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
+        String solrIncludeFilename = cli.getOptionValue("solr-include-file");
         File includeFile = new File(solrIncludeFilename);
         if (!includeFile.exists() || !includeFile.canWrite()) {
           CLIO.out(
@@ -419,7 +419,7 @@ public class AuthTool extends ToolBase {
       case "disable":
         clearSecurityJson(cli, updateIncludeFileOnly);
 
-        solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
+        solrIncludeFilename = cli.getOptionValue("solr-include-file");
         includeFile = new File(solrIncludeFilename);
         if (!includeFile.exists() || !includeFile.canWrite()) {
           CLIO.out(

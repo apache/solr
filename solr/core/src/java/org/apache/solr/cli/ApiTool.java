@@ -53,7 +53,7 @@ public class ApiTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder("url")
-            .longOpt("solr-api-url")
+            .longOpt("solr-url")
             .argName("URL")
             .hasArg()
             .required(true)
@@ -65,7 +65,7 @@ public class ApiTool extends ToolBase {
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     String response = null;
-    String getUrl = cli.getOptionValue("solr-api-url");
+    String getUrl = cli.getOptionValue("solr-url");
     if (getUrl != null) {
       response = callGet(getUrl, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     }

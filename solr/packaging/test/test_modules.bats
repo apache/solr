@@ -32,7 +32,7 @@ teardown() {
 @test "SQL Module" {
   run solr start -c -Dsolr.modules=sql
   run solr create -c COLL_NAME
-  run solr api --get http://localhost:${SOLR_PORT}/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10
+  run solr api --solr-url http://localhost:${SOLR_PORT}/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10
   assert_output --partial '"docs":'
   assert_output --partial '"EOF":true'
   assert_output --partial '"RESPONSE_TIME":'

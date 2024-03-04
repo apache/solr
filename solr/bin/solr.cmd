@@ -485,9 +485,9 @@ IF "%ZK_FULL%"=="true" (
 goto done
 
 :auth_usage
-echo Usage: solr auth enable [--type basicAuth] --credentials user:pass [--blockUnknown ^<true^|false^>] [--updateIncludeFileOnly ^<true^|false^>] [-v]
-echo        solr auth enable [--type basicAuth] --prompt ^<true^|false^> [--blockUnknown ^<true^|false^>] [--updateIncludeFileOnly ^<true^|false^>] [-v]
-echo        solr auth disable [--updateIncludeFileOnly ^<true^|false^>] [-v]
+echo Usage: solr auth enable [--type basicAuth] --credentials user:pass [--block-unknown ^<true^|false^>] [--update-include-file-only ^<true^|false^>] [-v]
+echo        solr auth enable [--type basicAuth] --prompt ^<true^|false^> [--block-unknown ^<true^|false^>] [--update-include-file-only ^<true^|false^>] [-v]
+echo        solr auth disable [--update-include-file-only ^<true^|false^>] [-v]
 echo.
 echo  Updates or enables/disables authentication.  Must be run on the machine hosting Solr.
 echo.
@@ -499,12 +499,12 @@ echo.
 echo   --prompt ^<true^|false^>        Prompts the user to provide the credentials
 echo                                Note: only one of --prompt or --credentials must be provided
 echo.
-echo   --blockUnknown ^<true^|false^>  When true, this blocks out access to unauthenticated users. When not provided,
+echo   --block-unknown ^<true^|false^>  When true, this blocks out access to unauthenticated users. When not provided,
 echo                                this defaults to false (i.e. unauthenticated users can access all endpoints, except the
 echo                                operations like collection-edit, security-edit, core-admin-edit etc.^). Check the reference
 echo                                guide for Basic Authentication for more details.
 echo.
-echo   --updateIncludeFileOnly ^<true^|false^>   Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
+echo   --update-include-file-only ^<true^|false^>   Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
 echo                                          authentication (i.e. don't update security.json^)"
 echo.
 echo   -z zkHost                    Zookeeper connection string. Unnecessary if ZK_HOST is defined in solr.in.cmd.
@@ -1629,7 +1629,7 @@ if "!AUTH_PORT!"=="" (
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-    org.apache.solr.cli.SolrCLI auth %AUTH_PARAMS% --solrIncludeFile "%SOLR_INCLUDE%" --authConfDir "%SOLR_HOME%" ^
+    org.apache.solr.cli.SolrCLI auth %AUTH_PARAMS% --solr-include-file "%SOLR_INCLUDE%" --authConfDir "%SOLR_HOME%" ^
     --solr-url !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!AUTH_PORT!
 goto done
 

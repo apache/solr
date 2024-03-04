@@ -915,10 +915,10 @@ Here are some example usages:
 
 [source,plain]
 ----
-Usage: solr auth enable [--type basicAuth] --credentials user:pass [--blockUnknown <true|false>] [--updateIncludeFileOnly <true|false>] [-v]
-       solr auth enable [--type basicAuth] --prompt <true|false> [--blockUnknown <true|false>] [--updateIncludeFileOnly <true|false>] [-v]
-       solr auth enable --type kerberos --config <kerberos configs> [--updateIncludeFileOnly <true|false>] [-v]
-       solr auth disable [--updateIncludeFileOnly <true|false>] [-v]
+Usage: solr auth enable [--type basicAuth] --credentials user:pass [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]
+       solr auth enable [--type basicAuth] --prompt <true|false> [--block-unknown <true|false>] [--update-include-file-only <true|false>] [-v]
+       solr auth enable --type kerberos --config <kerberos configs> [--update-include-file-only <true|false>] [-v]
+       solr auth disable [--update-include-file-only <true|false>] [-v]
 ----
 
 
@@ -949,7 +949,7 @@ Prompts the user to provide the credentials. If prompt is preferred, pass `true`
 +
 Either `-credentials` or `-prompt` *must* be specified.
 
-`-blockUnknown <true|false>`::
+`--block-unknown <true|false>`::
 +
 [%autowidth,frame=none]
 |===
@@ -977,7 +977,7 @@ If not specified this script looks for an include file named solr.in.sh to set e
 * `/var/solr`
 * `/opt/solr`
 
-`-updateIncludeFileOnly <true|false>`::
+`--update-include-file-only <true|false>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1022,9 +1022,9 @@ This is where any credentials or authentication configuration files (e.g. basicA
 
 You can disable Basic Authentication with `bin/solr auth disable`.
 
-If the `-updateIncludeFileOnly` option is set to *true*, then only the settings in `bin/solr.in.sh` or `bin\solr.in.cmd` will be updated, and `security.json` will not be removed.
+If the `--update-include-file-only` option is set to *true*, then only the settings in `bin/solr.in.sh` or `bin\solr.in.cmd` will be updated, and `security.json` will not be removed.
 
-If the `-updateIncludeFileOnly` option is set to *false*, then the settings in `bin/solr.in.sh` or `bin\solr.in.cmd` will be updated, and `security.json` will be removed.
+If the `--update-include-file-only` option is set to *false*, then the settings in `bin/solr.in.sh` or `bin\solr.in.cmd` will be updated, and `security.json` will be removed.
 However, the `basicAuth.conf` file is not removed with either option.
 
 == Set or Unset Configuration Properties
@@ -1730,13 +1730,13 @@ $ curl -X POST --header "Content-Type: application/javabin" --data-binary @getti
 The `api` command will allow you to send an arbitrary HTTP request to a Solr API endpoint.
 If you have configured basicAuth or TLS with your Solr you may find this easier than using a separate tool like `curl`.
 
-`bin/solr api --get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
+`bin/solr api --solr-url http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
 
 `bin/solr api --help`
 
 The `bin/solr api` command takes the following parameters:
 
-`--get <url>`::
+`--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1745,7 +1745,7 @@ The `bin/solr api` command takes the following parameters:
 +
 Send a GET request to a Solr API endpoint.
 +
-*Example*: `bin/solr api --get http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
+*Example*: `bin/solr api --solr-url http://localhost:8983/solr/COLL_NAME/sql?stmt=select+id+from+COLL_NAME+limit+10`
 
 `-u <user:pass>` or `--credentials <username:user:pass>`::
 +
@@ -1762,12 +1762,12 @@ This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or 
 Simple search passing in Basic authentication credentials:
 
 [source,bash]
-$ bin/solr api --get http://localhost:8983/solr/techproducts/select?q=*:* -u user:password
+$ bin/solr api --solr-url http://localhost:8983/solr/techproducts/select?q=*:* -u user:password
 
 
 Here is an example of sending a SQL query to the techproducts `/sql` end point (assumes you started Solr in Cloud mode with the SQL module enabled):
 
 [source,bash]
-$ bin/solr api --get http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
+$ bin/solr api -url http://localhost:8983/solr/techproducts/sql?stmt=select+id+from+techproducts+limit+10
 
 Results are streamed to the terminal.
