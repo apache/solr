@@ -51,6 +51,8 @@ Bug Fixes
 
 * SOLR-17186: Streaming query breaks if token contains backtick (Rahul Goswami via Eric Pugh)
 
+* SOLR-17197: Fix getting fieldType by its name in FileBasedSpellChecker (Andrey Bozhko via Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
