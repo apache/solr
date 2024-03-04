@@ -298,7 +298,7 @@ public class RunExampleTool extends ToolBase {
           new String[] {
             "-name", collectionName,
             "-shards", "1",
-            "-replicationFactor", "1",
+            "--replication-factor", "1",
             "-confname", collectionName,
             "-confdir", configSet,
             "-configsetsDir", configsetsDir.getAbsolutePath(),
@@ -853,7 +853,7 @@ public class RunExampleTool extends ToolBase {
         new String[] {
           "-name", collectionName,
           "-shards", String.valueOf(numShards),
-          "-replicationFactor", String.valueOf(replicationFactor),
+          "--replication-factor", String.valueOf(replicationFactor),
           "-confname", collectionName,
           "-confdir", cloudConfig,
           "-configsetsDir", configsetsDir.getAbsolutePath(),

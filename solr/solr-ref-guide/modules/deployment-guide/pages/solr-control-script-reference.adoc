@@ -708,7 +708,7 @@ Only applies when Solr is running in SolrCloud mode.
 +
 *Example*: `bin/solr create -s 2`
 
-`-rf <replicas>` or `--replicationFactor <replicas>`::
+`-rf <replicas>` or `--replication-factor <replicas>`::
 +
 [%autowidth,frame=none]
 |===

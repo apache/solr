@@ -77,7 +77,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           testCollectionName,
           "-shards",
           "2",
-          "-replicationFactor",
+          "--replication-factor",
           "2",
           "-confname",
           testCollectionName,
