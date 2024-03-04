@@ -385,7 +385,7 @@ function print_usage() {
     echo ""
     echo "  -d <dir>              Specify the Solr server directory; defaults to server"
     echo ""
-    echo "  -z/--zkHost <zkHost>  Zookeeper connection string; only used when running in SolrCloud mode using -c"
+    echo "  -z/--zk-host <zkHost> Zookeeper connection string; only used when running in SolrCloud mode using -c"
     echo "                          If neither ZK_HOST is defined in solr.in.sh nor the -z parameter is specified,"
     echo "                          an embedded ZooKeeper instance will be launched."
     echo "                          Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
@@ -562,7 +562,7 @@ function print_usage() {
     echo "  --update-include-file-only <true|false>   Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
     echo "                                          authentication (i.e. don't update security.json)"
     echo ""
-    echo "  -z or --zkHost <zkHost>                Zookeeper connection string. Unnecessary if ZK_HOST is defined in solr.in.sh."
+    echo "  -z or --zk-host <zkHost>               Zookeeper connection string. Unnecessary if ZK_HOST is defined in solr.in.sh."
     echo ""
     echo "  -d or --dir <dir>                      Specify the Solr server directory"
     echo ""
@@ -894,7 +894,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
             ZK_OP=$1
             shift 1
         ;;
-        -z|--zkHost)
+        -z|--zk-host)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_short_zk_usage "$SCRIPT_CMD" "ZooKeeper connection string is required when using the $1 option!"
             fi
@@ -986,34 +986,34 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
 
   case "$ZK_OP" in
     upconfig)
-      run_tool "$ZK_OP" --confname "$CONFIGSET_CONFNAME" --confdir "$CONFIGSET_CONFDIR" --zkHost "$ZK_HOST" $VERBOSE
+      run_tool "$ZK_OP" --confname "$CONFIGSET_CONFNAME" --confdir "$CONFIGSET_CONFDIR" -z "$ZK_HOST" $VERBOSE
     ;;
     downconfig)
-      run_tool "$ZK_OP" --confname "$CONFIGSET_CONFNAME" --confdir "$CONFIGSET_CONFDIR" --zkHost "$ZK_HOST" $VERBOSE
+      run_tool "$ZK_OP" --confname "$CONFIGSET_CONFNAME" --confdir "$CONFIGSET_CONFDIR" -z "$ZK_HOST" $VERBOSE
     ;;
     rm)
       if [ -z "$ZK_SRC" ]; then
         print_short_zk_usage "Zookeeper path to remove must be specified when using the 'rm' command"
       fi
-      run_tool "$ZK_OP" -path "$ZK_SRC" --zkHost "$ZK_HOST" --recurse "$ZK_RECURSE" $VERBOSE
+      run_tool "$ZK_OP" -path "$ZK_SRC" -z "$ZK_HOST" --recurse "$ZK_RECURSE" $VERBOSE
     ;;
     mv)
-      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" --zkHost "$ZK_HOST" $VERBOSE
+      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" -z "$ZK_HOST" $VERBOSE
     ;;
     cp)
-      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" --zkHost "$ZK_HOST" --recurse "$ZK_RECURSE" $VERBOSE
+      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" -z "$ZK_HOST" --recurse "$ZK_RECURSE" $VERBOSE
     ;;
     ls)
       if [ -z "$ZK_SRC" ]; then
         print_short_zk_usage "Zookeeper path to list must be specified when using the 'ls' command"
       fi
-      run_tool "$ZK_OP" -path "$ZK_SRC" --recurse "$ZK_RECURSE" --zkHost "$ZK_HOST" $VERBOSE
+      run_tool "$ZK_OP" -path "$ZK_SRC" --recurse "$ZK_RECURSE" -z "$ZK_HOST" $VERBOSE
     ;;
     mkroot)
       if [ -z "$ZK_SRC" ]; then
         print_short_zk_usage "Zookeeper path to list must be specified when using the 'mkroot' command"
       fi
-      run_tool "$ZK_OP" -path "$ZK_SRC" --zkHost "$ZK_HOST" $VERBOSE
+      run_tool "$ZK_OP" -path "$ZK_SRC" -z "$ZK_HOST" $VERBOSE
     ;;
     *)
       print_short_zk_usage "Unrecognized Zookeeper operation $ZK_OP"
@@ -1059,9 +1059,9 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "$AUTH_OP")
             shift
         ;;
-        -z|--zkHost)
+        -z|--zk-host)
             ZK_HOST="$2"
-            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--zkHost" "$ZK_HOST")
+            AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-z" "$ZK_HOST")
             shift 2
         ;;
         -t|--type)
@@ -1331,7 +1331,7 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("-p" "$SOLR_PORT")
             shift 2
         ;;
-        -z|--zkHost)
+        -z|--zk-host)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Zookeeper connection string is required when using the $1 option!"
               exit 1
@@ -1658,7 +1658,7 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
   CLOUD_MODE_OPTS=("-DzkClientTimeout=$ZK_CLIENT_TIMEOUT")
 
   if [ -n "${ZK_HOST:-}" ]; then
-    CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
+    CLOUD_MODE_OPTS+=("-z=$ZK_HOST")
   else
     if [ $SOLR_PORT -gt 64535 ]; then
       echo -e "\nZK_HOST is not set and Solr port is $SOLR_PORT, which would result in an invalid embedded Zookeeper port!\n"

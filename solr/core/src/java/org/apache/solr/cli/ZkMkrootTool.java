@@ -64,7 +64,7 @@ public class ZkMkrootTool extends ToolBase {
     if (zkHost == null) {
       throw new IllegalStateException(
           "Solr at "
-              + cli.getOptionValue("zkHost")
+              + cli.getOptionValue("z")
               + " is running in standalone server mode, 'zk mkroot' can only be used when running in SolrCloud mode.\n");
     }
 

@@ -82,7 +82,7 @@ public class SolrCLI implements CLIO {
 
   public static final Option OPTION_ZKHOST =
       Option.builder("z")
-          .longOpt("zkHost")
+          .longOpt("zk-host")
           .argName("HOST")
           .hasArg()
           .required(false)
@@ -90,7 +90,6 @@ public class SolrCLI implements CLIO {
               "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
                   + ZK_HOST
                   + '.')
-          .longOpt("zkHost")
           .build();
   public static final Option OPTION_SOLRURL =
       Option.builder("url")
@@ -99,7 +98,7 @@ public class SolrCLI implements CLIO {
           .hasArg()
           .required(false)
           .desc(
-              "Base Solr URL, which can be used to determine the zkHost if that's not known; defaults to: "
+              "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
                   + getDefaultSolrUrl()
                   + '.')
           .build();
@@ -540,12 +539,12 @@ public class SolrCLI implements CLIO {
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
     String solrUrl = cli.getOptionValue("solr-url");
     if (solrUrl == null) {
-      String zkHost = cli.getOptionValue("zkHost");
+      String zkHost = cli.getOptionValue("z");
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
         CLIO.getOutStream()
             .println(
-                "Neither --zkHost or --solr-url parameters provided so assuming solrUrl is "
+                "Neither --zk-host or --solr-url parameters provided so assuming solrUrl is "
                     + solrUrl
                     + ".");
       } else {
@@ -574,7 +573,7 @@ public class SolrCLI implements CLIO {
    */
   public static String getZkHost(CommandLine cli) throws Exception {
 
-    String zkHost = cli.getOptionValue("zkHost");
+    String zkHost = cli.getOptionValue("z");
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }

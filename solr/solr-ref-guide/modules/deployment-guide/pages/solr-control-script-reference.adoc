@@ -259,7 +259,7 @@ Verbose messages from this script.
 +
 *Example*: `bin/solr start -V`
 
-`-z <zkHost>` or `-zkHost <zkHost>`::
+`-z <zkHost>` or `--zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -570,7 +570,7 @@ Name of the collection to run a healthcheck against.
 +
 Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
-`-z <zkhost>` or `--zkHost <zkhost>`::
+`-z <zkhost>` or `--zk-host <zkhost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -732,7 +732,7 @@ It is possible to override this warning with the -force parameter.
 +
 *Example*: `bin/solr create -c foo --force`
 
-`-z <zkHost>` or `-zkHost <zkHost>`::
+`-z <zkHost>` or `-zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -851,7 +851,7 @@ If the configuration directory is being used by another collection, then it will
 +
 Skip safety checks when deleting the configuration directory used by a collection.
 
-`-z <zkHost>` or `-zkHost <zkHost>`::
+`-z <zkHost>` or `-zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -986,7 +986,7 @@ If not specified this script looks for an include file named solr.in.sh to set e
 +
 When `true`, only update the `bin/solr.in.sh` or `bin\solr.in.cmd`, and skip actual enabling/disabling authentication (i.e. don't update `security.json`).
 
-`-z <zkHost>` or `-zkHost <zkHost>`::
+`-z <zkHost>` or `-zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1097,7 +1097,7 @@ Name of the Config API property to apply the action to, such as: 'updateHandler.
 +
 Set the property to this value; accepts JSON objects and strings.
 
-`-z <zkHost>` or `--zkHost <zkHost>`::
+`-z <zkHost>` or `--zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===

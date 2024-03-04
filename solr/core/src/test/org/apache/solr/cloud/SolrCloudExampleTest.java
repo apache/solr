@@ -156,7 +156,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     String[] args =
         new String[] {
           "-name", testCollectionName,
-          "-zkHost", zkHost
+          "--zk-host", zkHost
         };
     HealthcheckTool tool = new HealthcheckTool();
     CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
