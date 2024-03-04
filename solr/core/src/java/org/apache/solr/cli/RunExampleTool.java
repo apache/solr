@@ -132,7 +132,8 @@ public class RunExampleTool extends ToolBase {
             .desc(
                 "Path to the Solr example directory; if not provided, ${serverDir}/../example is expected to exist.")
             .build(),
-        Option.builder("urlScheme")
+        Option.builder()
+            .longOpt("url-scheme")
             .argName("SCHEME")
             .hasArg()
             .required(false)
@@ -179,7 +180,7 @@ public class RunExampleTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    this.urlScheme = cli.getOptionValue("urlScheme", "http");
+    this.urlScheme = cli.getOptionValue("url-scheme", "http");
 
     serverDir = new File(cli.getOptionValue("serverDir"));
     if (!serverDir.isDirectory())
