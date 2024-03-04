@@ -87,16 +87,10 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     // Now just use a name in the configsets directory, do we find it?
     configSet = TEST_PATH().resolve("configsets");
 
+    File confDir = new File(configSet.toFile(), "cloud-subdirs");
     String[] args =
         new String[] {
-          "--confname",
-          "upconfig2",
-          "--confdir",
-          "cloud-subdirs",
-          "--zkHost",
-          zkAddr,
-          "--configsetsDir",
-          configSet.toAbsolutePath().toString(),
+          "--confname", "upconfig2", "--confdir", confDir.getAbsolutePath(), "--zkHost", zkAddr
         };
 
     ConfigSetUploadTool tool = new ConfigSetUploadTool();
@@ -107,17 +101,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     verifyZkLocalPathsMatch(srcPathCheck, "/configs/upconfig2");
 
     // do we barf on a bogus path?
-    args =
-        new String[] {
-          "--confname",
-          "upconfig3",
-          "--confdir",
-          "nothinghere",
-          "--zkHost",
-          zkAddr,
-          "--configsetsDir",
-          configSet.toAbsolutePath().toString(),
-        };
+    args = new String[] {"--confname", "upconfig3", "--confdir", "nothinghere", "--zkHost", zkAddr};
 
     res = tool.runTool(SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args));
     assertTrue("tool should have returned non-zero for failure ", 0 != res);
