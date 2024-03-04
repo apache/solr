@@ -301,7 +301,7 @@ public class RunExampleTool extends ToolBase {
             "--replication-factor", "1",
             "-confname", collectionName,
             "-confdir", configSet,
-            "-configsetsDir", configsetsDir.getAbsolutePath(),
+            "--configsets-directory", configsetsDir.getAbsolutePath(),
             "--solr-url", solrUrl
           };
       CreateTool createTool = new CreateTool(stdout);
@@ -856,7 +856,7 @@ public class RunExampleTool extends ToolBase {
           "--replication-factor", String.valueOf(replicationFactor),
           "-confname", collectionName,
           "-confdir", cloudConfig,
-          "-configsetsDir", configsetsDir.getAbsolutePath(),
+          "-configsets-directory", configsetsDir.getAbsolutePath(),
           "--solr-url", solrUrl
         };
 

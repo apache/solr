@@ -83,8 +83,6 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           testCollectionName,
           "-confdir",
           "_default",
-          "-configsetsDir",
-          defaultConfigs.getParentFile().getParentFile().getAbsolutePath(),
           "--solr-url",
           solrUrl
         };

@@ -61,7 +61,7 @@ public class ConfigSetUploadTool extends ToolBase {
             .desc("Local directory with configs.")
             .build(),
         Option.builder("configsetsDir")
-            .longOpt("configsetsDir")
+            .longOpt("configsets-directory")
             .argName("configsetsDir")
             .hasArg()
             .required(false)
@@ -95,7 +95,7 @@ public class ConfigSetUploadTool extends ToolBase {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
       Path confPath =
           ConfigSetService.getConfigsetPath(
-              cli.getOptionValue("confdir"), cli.getOptionValue("configsetsDir"));
+              cli.getOptionValue("confdir"), cli.getOptionValue("configsets-directory"));
 
       echo(
           "Uploading "
