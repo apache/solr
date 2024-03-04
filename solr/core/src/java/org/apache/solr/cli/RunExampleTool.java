@@ -261,7 +261,7 @@ public class RunExampleTool extends ToolBase {
 
     String solrUrl = (String) nodeStatus.get("baseUrl");
 
-    // If the example already exists then let the user know they should delete it or
+    // If the example already exists then let the user know they should delete it, or
     // they may get unusual behaviors.
     boolean alreadyExists = false;
     boolean cloudMode = nodeStatus.get("cloud") != null;
