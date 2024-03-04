@@ -2111,7 +2111,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   static class FixedBitSetCollector extends SimpleCollector {
-    final FixedBitSet bitSet;
+    private final FixedBitSet bitSet;
 
     private int docBase;
 
@@ -2132,6 +2132,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     @Override
     public ScoreMode scoreMode() {
       return ScoreMode.COMPLETE_NO_SCORES;
+    }
+
+    FixedBitSet bitSet() {
+      return this.bitSet;
     }
   }
 
