@@ -152,13 +152,7 @@ public class RunExampleTool extends ToolBase {
             .desc("Specify the hostname for this Solr instance.")
             .longOpt("host")
             .build(),
-        Option.builder("z")
-            .argName("ZKHOST")
-            .hasArg()
-            .required(false)
-            .desc("ZooKeeper connection string; only used when running in SolrCloud mode using -c.")
-            .longOpt("zkhost")
-            .build(),
+            SolrCLI.OPTION_ZKHOST,
         Option.builder("c")
             .required(false)
             .desc(
