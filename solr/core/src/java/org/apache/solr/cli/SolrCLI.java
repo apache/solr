@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.SocketException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -646,5 +648,10 @@ public class SolrCLI implements CLIO {
     NamedList<Object> systemInfo =
         solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
     return "solrcloud".equals(systemInfo.get("mode"));
+  }
+
+  public static Path getConfigSetsDir(Path solrInstallDir) {
+    Path configSetsPath = Paths.get("server/solr/configsets/");
+    return solrInstallDir.resolve(configSetsPath);
   }
 }

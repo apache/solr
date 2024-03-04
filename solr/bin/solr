@@ -986,7 +986,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
 
   case "$ZK_OP" in
     upconfig)
-      run_tool "$ZK_OP" --confname "$CONFIGSET_CONFNAME" --confdir "$CONFIGSET_CONFDIR" --zkHost "$ZK_HOST" --configsets-dir "$SOLR_TIP/server/solr/configsets" $VERBOSE
+      run_tool "$ZK_OP" --confname "$CONFIGSET_CONFNAME" --confdir "$CONFIGSET_CONFDIR" --zkHost "$ZK_HOST" $VERBOSE
     ;;
     downconfig)
       run_tool "$ZK_OP" --confname "$CONFIGSET_CONFNAME" --confdir "$CONFIGSET_CONFDIR" --zkHost "$ZK_HOST" $VERBOSE

@@ -260,7 +260,7 @@ public class CreateTool extends ToolBase {
         confName = collectionName;
       }
 
-      final Path configsetsDirPath = getConfigSetsDir(solrInstallDirPath);
+      final Path configsetsDirPath = SolrCLI.getConfigSetsDir(solrInstallDirPath);
       Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
 
       echoIfVerbose(
@@ -324,13 +324,8 @@ public class CreateTool extends ToolBase {
     }
   }
 
-  private Path getConfigSetsDir(Path solrInstallDir) {
-    Path configSetsPath = Paths.get("server/solr/configsets/");
-    return solrInstallDir.resolve(configSetsPath);
-  }
-
   private Path getFullConfDir(Path solrInstallDir, Path confDirName) {
-    return getConfigSetsDir(solrInstallDir).resolve(confDirName);
+    return SolrCLI.getConfigSetsDir(solrInstallDir).resolve(confDirName);
   }
 
   private void ensureConfDirExists(Path solrInstallDir, Path confDirName) {

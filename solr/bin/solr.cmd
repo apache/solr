@@ -1495,8 +1495,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! --confname !CONFIGSET_NAME! --confdir !CONFIGSET_DIR! --zkHost !ZK_HOST! %ZK_VERBOSE%^
-  --configsetsDir "%SOLR_TIP%/server/solr/configsets"
+  org.apache.solr.cli.SolrCLI !ZK_OP! --confname !CONFIGSET_NAME! --confdir !CONFIGSET_DIR! --zkHost !ZK_HOST! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="downconfig" (
   IF "!CONFIGSET_NAME!"=="" (
     set ERROR_MSG="-n option must be set for downconfig"
