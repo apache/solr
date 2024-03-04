@@ -73,11 +73,11 @@ run solr create -c COLL_NAME
   assert_output --partial '1 files indexed.'
 
   # Test postlogs
-  run solr postlogs -u name:password -solr-update-url http://localhost:${SOLR_PORT}/solr/COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
+  run solr postlogs -u name:password --solr-collection-url http://localhost:${SOLR_PORT}/solr/COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
   assert_output --partial 'Committed'
   
   # Test export
-  #run solr export -u name:password -solr-update-url "http://localhost:${SOLR_PORT}/solr/COLL_NAME" -query "*:*" -out "${BATS_TEST_TMPDIR}/output"
+  #run solr export -u name:password --solr-collection-url "http://localhost:${SOLR_PORT}/solr/COLL_NAME" -query "*:*" -out "${BATS_TEST_TMPDIR}/output"
   #assert_output --partial 'Export complete'
   
 }

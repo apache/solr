@@ -65,7 +65,7 @@ public class PostLogsTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder("url")
-            .longOpt("url")
+            .longOpt("solr-collection-url")
             .argName("ADDRESS")
             .hasArg()
             .required(true)
