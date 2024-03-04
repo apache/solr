@@ -66,7 +66,7 @@ public class AuthToolTest extends SolrCloudTestCase {
       "enable",
       "-zkHost",
       cluster.getZkClient().getZkServerAddress(),
-      "-authConfDir",
+      "--auth-conf-dir",
       dir.toAbsolutePath().toString(),
       "--solr-include-file",
       solrIncludeFile.toAbsolutePath().toString(),

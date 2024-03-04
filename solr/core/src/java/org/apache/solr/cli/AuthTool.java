@@ -106,7 +106,7 @@ public class AuthTool extends ToolBase {
             .hasArg()
             .build(),
         Option.builder()
-            .longOpt("authConfDir")
+            .longOpt("auth-conf-dir")
             .hasArg()
             .required()
             .desc(
@@ -390,7 +390,7 @@ public class AuthTool extends ToolBase {
           printAuthEnablingInstructions(username, password);
           System.exit(0);
         }
-        String authConfDir = cli.getOptionValue("authConfDir");
+        String authConfDir = cli.getOptionValue("auth-conf-dir");
         File basicAuthConfFile = new File(authConfDir + File.separator + "basicAuth.conf");
 
         if (!basicAuthConfFile.getParentFile().canWrite()) {
