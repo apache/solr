@@ -67,9 +67,9 @@ public class StatusTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        // The solrUrl option is not exposed to the end user, and is
-        // created by the bin/solr script and passed into this too.
-        // Therefore we don't use the SolrCLI.OPTION_SOLRURL
+        // The solr-url option is not exposed to the end user, and is
+        // created by the bin/solr script and passed into this command directly,
+        // therefore we don't use the SolrCLI.OPTION_SOLRURL.
         Option.builder()
             .argName("URL")
             .longOpt("solr-url")
