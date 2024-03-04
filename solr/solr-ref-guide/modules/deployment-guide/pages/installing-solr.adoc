@@ -190,7 +190,7 @@ For instance, to launch the "techproducts" example, you would do:
 
 [source,bash]
 ----
-bin/solr -e techproducts
+bin/solr start -e techproducts
 ----
 
 Currently, the available examples you can run are: techproducts, schemaless, and cloud.

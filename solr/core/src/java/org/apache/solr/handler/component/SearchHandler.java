@@ -67,7 +67,7 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.util.ThreadStats;
+import org.apache.solr.util.ThreadCpuTimer;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
@@ -497,10 +497,7 @@ public class SearchHandler extends RequestHandlerBase
           debug.add("explain", new NamedList<>());
           rb.rsp.add("debug", debug);
         }
-        rb.rsp
-            .getResponseHeader()
-            .asShallowMap()
-            .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+        rb.rsp.setPartialResults();
       }
     } else {
       // a distributed request
@@ -593,9 +590,7 @@ public class SearchHandler extends RequestHandlerBase
                 if (allShardsFailed) {
                   throwSolrException(srsp.getException());
                 } else {
-                  rsp.getResponseHeader()
-                      .asShallowMap()
-                      .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+                  rsp.setPartialResults();
                 }
               }
             }
@@ -622,8 +617,8 @@ public class SearchHandler extends RequestHandlerBase
       } while (nextStage != Integer.MAX_VALUE);
 
       if (publishCpuTime) {
-        rsp.getResponseHeader().add(ThreadStats.CPU_TIME, totalShardCpuTime);
-        rsp.addToLog(ThreadStats.CPU_TIME, totalShardCpuTime);
+        rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
+        rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
       }
     }
 
@@ -677,7 +672,7 @@ public class SearchHandler extends RequestHandlerBase
             (SimpleOrderedMap<Object>)
                 response.getSolrResponse().getResponse().get(SolrQueryResponse.RESPONSE_HEADER_KEY);
         if (header != null) {
-          Long shardCpuTime = (Long) header.get(ThreadStats.CPU_TIME);
+          Long shardCpuTime = (Long) header.get(ThreadCpuTimer.CPU_TIME);
           if (shardCpuTime != null) {
             totalShardCpuTime += shardCpuTime;
           }

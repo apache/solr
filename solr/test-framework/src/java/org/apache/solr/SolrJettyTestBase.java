@@ -47,11 +47,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
     assert context == null || context.equals("/solr"); // deprecated
 
     JettyConfig jettyConfig =
-        JettyConfig.builder()
-            .stopAtShutdown(stopAtShutdown)
-            .withServlets(extraServlets)
-            .withSSLConfig(sslConfig.buildServerSSLConfig())
-            .build();
+        JettyConfig.builder().stopAtShutdown(stopAtShutdown).withServlets(extraServlets).build();
 
     Properties nodeProps = new Properties();
     if (configFile != null) nodeProps.setProperty("solrconfig", configFile);
@@ -76,10 +72,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   }
 
   protected static JettySolrRunner createAndStartJetty(String solrHome) throws Exception {
-    return createAndStartJetty(
-        solrHome,
-        new Properties(),
-        JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build());
+    return createAndStartJetty(solrHome, new Properties(), JettyConfig.builder().build());
   }
 
   protected static JettySolrRunner createAndStartJetty(

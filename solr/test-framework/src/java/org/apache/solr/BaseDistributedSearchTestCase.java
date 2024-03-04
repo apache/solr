@@ -431,7 +431,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
                 .stopAtShutdown(true)
                 .withFilters(getExtraRequestFilters())
                 .withServlets(getExtraServlets())
-                .withSSLConfig(sslConfig.buildServerSSLConfig())
                 .build());
 
     return jetty;

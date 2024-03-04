@@ -1,6 +1,5 @@
 = Solr in Docker
-:page-children: docker-faq, \
-    docker-networking
+:page-children: docker-faq
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -89,8 +88,37 @@ you can simply run:
 
 [source,bash]
 ----
-docker-compose up -d
+docker compose up -d
 ----
+
+Below is an example compose file that starts a Solr Cloud cluster with Zookeeper. By
+creating a Docker network, Solr can reach the zookeeper container with the internal
+name `zoo`.:
+
+[source,yaml]
+----
+version: '3'
+services:
+  solr:
+    image: solr:9-slim
+    ports:
+      - "8983:8983"
+    networks: [search]
+    environment:
+      ZK_HOST: "zoo:2181"
+    depends_on: [zoo]
+
+  zoo:
+    image: zookeeper:3.9
+    networks: [search]
+    environment:
+      ZOO_4LW_COMMANDS_WHITELIST: "mntr,conf,ruok"
+
+networks:
+  search:
+    driver: bridge
+----
+
 
 === Single-Command Demo
 
@@ -174,7 +202,7 @@ docker run -p 8983:8983 -v $PWD/mysetup.sh:/mysetup.sh --name my_solr solr bash 
 
 In a "SolrCloud" cluster you create "collections" to store data; and again you have several options for creating a core.
 
-These examples assume you're running a <<docker-compose,docker compose cluster>>.
+These examples assume you're running a xref:docker-compose[docker compose cluster].
 
 The first way to create a collection is to go to the http://localhost:8983/[Solr Admin UI], select "Collections" from the left-hand side navigation menu, then press the "Add Collection" button, give it a name, select the `_default` config set, then press the "Add Collection" button.
 
@@ -220,7 +248,7 @@ wget -O mydata/books.csv https://raw.githubusercontent.com/apache/solr/main/solr
 docker run --rm -v "$PWD/mydata:/mydata" --network=host solr post -c books /mydata/books.csv
 ----
 
-The same works if you use the <<docker-compose,example docker compose cluster>>, or you can just start your loading container in the same network:
+The same works if you use the xref:docker-compose[example docker compose cluster], or you can just start your loading container in the same network:
 
 [source,bash]
 ----
@@ -322,23 +350,6 @@ Example commands to do a thread dump and get heap info for `PID 10`:
 jattach 10 threaddump
 jattach 10 jcmd GC.heap_info
 ----
-
-== Updating from Solr 5-7 to 8+
-
-In Solr 8, the Solr Docker image switched from just extracting the Solr tar, to using the xref:taking-solr-to-production.adoc#service-installation-script[service installation script].
-This was done for various reasons: to bring it in line with the recommendations by the Solr Ref Guide and to make it easier to mount volumes.
-
-This is a backwards incompatible change, and means that if you're upgrading from an older version, you will most likely need to make some changes.
-If you don't want to upgrade at this time, specify `solr:7` as your container image.
-If you use `solr:8` you will use the new style.
-If you use just `solr` then you risk being tripped up by backwards incompatible changes; always specify at least a major version.
-
-Changes:
-
-* The Solr data is now stored in `/var/solr/data` rather than `/opt/solr/server/solr`.
-The `/opt/solr/server/solr/mycores` no longer exists.
-* The custom `SOLR_HOME` can no longer be used, because various scripts depend on the new locations.
-Consequently, `INIT_SOLR_HOME` is also no longer supported.
 
 == Running under tini
 

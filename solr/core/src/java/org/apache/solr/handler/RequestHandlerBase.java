@@ -43,13 +43,14 @@ import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.ThreadStats;
+import org.apache.solr.util.ThreadCpuTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +77,7 @@ public abstract class RequestHandlerBase
 
   private PluginInfo pluginInfo;
 
-  protected boolean publishCpuTime = Boolean.getBoolean(ThreadStats.ENABLE_CPU_TIME);
+  protected boolean publishCpuTime = Boolean.getBoolean(ThreadCpuTimer.ENABLE_CPU_TIME);
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
   public RequestHandlerBase() {
@@ -216,11 +217,13 @@ public abstract class RequestHandlerBase
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    ThreadStats cpuStats = null;
+    ThreadCpuTimer threadCpuTimer = null;
     if (publishCpuTime) {
-      cpuStats = new ThreadStats();
+      threadCpuTimer =
+          SolrRequestInfo.getRequestInfo() == null
+              ? new ThreadCpuTimer()
+              : SolrRequestInfo.getRequestInfo().getThreadCpuTimer();
     }
-
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
 
@@ -234,13 +237,9 @@ public abstract class RequestHandlerBase
       rsp.setHttpCaching(httpCaching);
       handleRequestBody(req, rsp);
       // count timeouts
-      NamedList<?> header = rsp.getResponseHeader();
-      if (header != null) {
-        if (Boolean.TRUE.equals(
-            header.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-          metrics.numTimeouts.mark();
-          rsp.setHttpCaching(false);
-        }
+      if (rsp.isPartialResults()) {
+        metrics.numTimeouts.mark();
+        rsp.setHttpCaching(false);
       }
     } catch (Exception e) {
       e = normalizeReceivedException(req, e);
@@ -250,17 +249,17 @@ public abstract class RequestHandlerBase
       long elapsed = timer.stop();
       metrics.totalTime.inc(elapsed);
 
-      if (cpuStats != null) {
-        Optional<Long> cpuTime = cpuStats.getCpuTimeMs();
+      if (publishCpuTime) {
+        Optional<Long> cpuTime = threadCpuTimer.getCpuTimeMs();
         if (cpuTime.isPresent()) {
           // add CPU_TIME if not already added by SearchHandler
           NamedList<Object> header = rsp.getResponseHeader();
           if (header != null) {
-            if (header.get(ThreadStats.CPU_TIME) == null) {
-              header.add(ThreadStats.CPU_TIME, cpuTime.get());
+            if (header.get(ThreadCpuTimer.CPU_TIME) == null) {
+              header.add(ThreadCpuTimer.CPU_TIME, cpuTime.get());
             }
           }
-          rsp.addToLog(ThreadStats.LOCAL_CPU_TIME, cpuTime.get());
+          rsp.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, cpuTime.get());
         }
       }
     }
