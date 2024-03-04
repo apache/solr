@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud;
+package org.apache.solr.cli;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -31,13 +31,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.cli.ConfigSetDownloadTool;
-import org.apache.solr.cli.ConfigSetUploadTool;
-import org.apache.solr.cli.SolrCLI;
-import org.apache.solr.cli.ZkCpTool;
-import org.apache.solr.cli.ZkLsTool;
-import org.apache.solr.cli.ZkMvTool;
-import org.apache.solr.cli.ZkRmTool;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.zookeeper.KeeperException;
@@ -46,7 +41,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
+public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -874,7 +869,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     for (String child : zkClient.getChildren(zkRoot, null, true)) {
       // Skip ephemeral nodes
-      if (zkRoot.endsWith("/") == false) zkRoot += "/";
+      if (!zkRoot.endsWith("/")) {
+        zkRoot += "/";
+      }
       if (isEphemeral(zkRoot + child)) continue;
 
       Path thisPath = Paths.get(fileRoot.toAbsolutePath().toString(), child);
