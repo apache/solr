@@ -2065,40 +2065,24 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       int maxDoc = rawReader.maxDoc();
       log.error("raw read max={}", rawReader.maxDoc());
 
-      LeafSlice[] leaves = getSlices();
-      int[] docBase = new int[1];
-
-      //   DocSetCollector collector = new DocSetCollector(maxDoc);
-
-      ThreadSafeBitSet bits = new ThreadSafeBitSet(14, 2);
-
       collectors.add(
           new CollectorManager<>() {
             @Override
             public Collector newCollector() throws IOException {
-              int numDocs = 0;
-
-              if (leaves != null) {
-                LeafSlice leaf = leaves[docBase[0]++];
-
-                for (LeafReaderContext reader : leaf.leaves) {
-                  numDocs += reader.reader().maxDoc();
-                }
-              } else {
-                numDocs = maxDoc();
-              }
-              log.error("new docset collector for {} max={}", numDocs, maxDoc());
-
               // TODO: add to firstCollectors here? or if not have comment w.r.t. why not adding
-              return new ThreadSafeBitSetCollector(bits, maxDoc);
+              return new FixedBitSetCollector(maxDoc);
             }
 
             @Override
             @SuppressWarnings({"rawtypes"})
             public Object reduce(Collection collectors) throws IOException {
-
-              return new DocSetResult(
-                  ((ThreadSafeBitSetCollector) collectors.iterator().next()).getDocSet());
+              final FixedBitSet reduced = new FixedBitSet(maxDoc);
+              for (Object collector : collectors) {
+                if (collector instanceof FixedBitSetCollector) {
+                  reduced.or(((FixedBitSetCollector) collector).bitSet);
+                }
+              }
+              return reduced;
             }
           });
     }
@@ -2126,6 +2110,31 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return new SearchResult(scoreMode, ret);
   }
 
+  static class FixedBitSetCollector extends SimpleCollector {
+    final FixedBitSet bitSet;
+
+    private int docBase;
+
+    FixedBitSetCollector(int maxDoc) {
+      this.bitSet = new FixedBitSet(maxDoc);
+    }
+
+    @Override
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
+      this.docBase = context.docBase;
+    }
+
+    @Override
+    public void collect(int doc) throws IOException {
+      this.bitSet.set(this.docBase + doc);
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE_NO_SCORES;
+    }
+  }
+
   static class TopDocsResult {
     final TopDocs topDocs;
     final int totalHits;
@@ -2141,14 +2150,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     public MaxScoreResult(float maxScore) {
       this.maxScore = maxScore;
-    }
-  }
-
-  static class DocSetResult {
-    final DocSet docSet;
-
-    public DocSetResult(DocSet docSet) {
-      this.docSet = docSet;
     }
   }
 
@@ -2183,10 +2184,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
     }
 
-    public DocSet getDocSet() {
+    public FixedBitSet getFixedBitSet() {
       for (Object res : result) {
-        if (res instanceof DocSetResult) {
-          return ((DocSetResult) res).docSet;
+        if (res instanceof FixedBitSet) {
+          return (FixedBitSet) res;
         }
       }
       return null;
@@ -2299,7 +2300,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         totalHits = topDocsResult.totalHits;
         topDocs = topDocsResult.topDocs;
         maxScore = searchResult.getMaxScore(totalHits);
-        set = searchResult.getDocSet();
+        set = new BitDocSet(searchResult.getFixedBitSet());
 
         // TODO: Is this correct?
         // hitsRelation = populateScoresIfNeeded(cmd, needScores, topDocs, query,
