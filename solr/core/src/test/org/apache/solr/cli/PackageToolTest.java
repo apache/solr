@@ -128,12 +128,12 @@ public class PackageToolTest extends SolrCloudTestCase {
 
     run(
         tool,
-        new String[] {"--solrUrl", solrUrl, "list-installed", "--credentials", USER + ":" + PASS});
+        new String[] {"--solr-url", solrUrl, "list-installed", "--credentials", USER + ":" + PASS});
 
     run(
         tool,
         new String[] {
-          "--solrUrl",
+          "--solr-url",
           solrUrl,
           "add-repo",
           "fullstory",
@@ -144,12 +144,12 @@ public class PackageToolTest extends SolrCloudTestCase {
 
     run(
         tool,
-        new String[] {"--solrUrl", solrUrl, "list-available", "--credentials", USER + ":" + PASS});
+        new String[] {"--solr-url", solrUrl, "list-available", "--credentials", USER + ":" + PASS});
 
     run(
         tool,
         new String[] {
-          "--solrUrl",
+          "--solr-url",
           solrUrl,
           "install",
           "question-answer:1.0.0",
@@ -159,7 +159,7 @@ public class PackageToolTest extends SolrCloudTestCase {
 
     run(
         tool,
-        new String[] {"--solrUrl", solrUrl, "list-installed", "--credentials", USER + ":" + PASS});
+        new String[] {"--solr-url", solrUrl, "list-installed", "--credentials", USER + ":" + PASS});
 
     withBasicAuth(CollectionAdminRequest.createCollection("abc", "conf1", 1, 1))
         .processAndWait(cluster.getSolrClient(), 10);
@@ -171,7 +171,7 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "--solrUrl",
+          "--solr-url",
           solrUrl,
           "list-deployed",
           "question-answer",
@@ -182,7 +182,7 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "--solrUrl",
+          "--solr-url",
           solrUrl,
           "deploy",
           "question-answer",
@@ -199,7 +199,7 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "--solrUrl",
+          "--solr-url",
           solrUrl,
           "list-deployed",
           "question-answer",
@@ -210,7 +210,7 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "--solrUrl", solrUrl, "list-deployed", "-c", "abc", "--credentials", USER + ":" + PASS
+          "--solr-url", solrUrl, "list-deployed", "-c", "abc", "--credentials", USER + ":" + PASS
         });
 
     // Should we test the "auto-update to latest" functionality or the default explicit deploy
@@ -224,7 +224,7 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "--solrUrl",
+            "--solr-url",
             solrUrl,
             "deploy",
             "question-answer:latest",
@@ -239,7 +239,7 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "--solrUrl", solrUrl, "install", "question-answer", "--credentials", USER + ":" + PASS
+            "--solr-url", solrUrl, "install", "question-answer", "--credentials", USER + ":" + PASS
           });
       assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.1.0", USER + ":" + PASS);
     } else {
@@ -248,7 +248,7 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "--solrUrl", solrUrl, "install", "question-answer", "--credentials", USER + ":" + PASS
+            "--solr-url", solrUrl, "install", "question-answer", "--credentials", USER + ":" + PASS
           });
       assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0", USER + ":" + PASS);
 
@@ -257,7 +257,7 @@ public class PackageToolTest extends SolrCloudTestCase {
         run(
             tool,
             new String[] {
-              "--solrUrl",
+              "--solr-url",
               solrUrl,
               "deploy",
               "--update",
@@ -274,7 +274,7 @@ public class PackageToolTest extends SolrCloudTestCase {
         run(
             tool,
             new String[] {
-              "--solrUrl",
+              "--solr-url",
               solrUrl,
               "deploy",
               "--update",
@@ -293,7 +293,7 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "--solrUrl",
+          "--solr-url",
           solrUrl,
           "undeploy",
           "question-answer",
@@ -306,7 +306,7 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "--solrUrl",
+          "--solr-url",
           solrUrl,
           "list-deployed",
           "question-answer",

@@ -40,14 +40,14 @@ teardown() {
 
 }
 
-@test "status shell script ignores passed in --solrUrl cli parameter from user" {
+@test "status shell script ignores passed in --solr-url cli parameter from user" {
   solr start
-  run solr status --solrUrl http://localhost:9999
+  run solr status --solr-url http://localhost:9999
   assert_output --partial "Found 1 Solr nodes:"
   assert_output --partial "running on port ${SOLR_PORT}"
 }
 
-@test "status help flag outputs message highlighting not to use solrUrl." {
+@test "status help flag outputs message highlighting not to use solr-url." {
   run solr status --help
   assert_output --partial 'usage: status'
   refute_output --partial 'ERROR'

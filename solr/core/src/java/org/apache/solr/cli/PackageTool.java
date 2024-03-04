@@ -279,7 +279,7 @@ public class PackageTool extends ToolBase {
         "Uninstall an unused package with specified version from Solr. Both package name and version are required.");
     print("\n");
     print(
-        "Note: (a) Please add '-solrUrl http://host:port' parameter if needed (usually on Windows).");
+        "Note: (a) Please add '--solr-url http://host:port' parameter if needed (usually on Windows).");
     print(
         "      (b) Please make sure that all Solr nodes are started with '-Denable.packages=true' parameter.");
     print("\n");

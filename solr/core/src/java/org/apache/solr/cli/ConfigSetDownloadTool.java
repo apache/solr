@@ -74,7 +74,7 @@ public class ConfigSetDownloadTool extends ToolBase {
     if (zkHost == null) {
       throw new IllegalStateException(
           "Solr at "
-              + cli.getOptionValue("solrUrl")
+              + cli.getOptionValue("solr-Url")
               + " is running in standalone server mode, downconfig can only be used when running in SolrCloud mode.\n");
     }
 

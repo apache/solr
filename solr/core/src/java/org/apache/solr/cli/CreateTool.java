@@ -130,7 +130,7 @@ public class CreateTool extends ToolBase {
 
   protected void createCore(CommandLine cli, SolrClient solrClient) throws Exception {
     String coreName = cli.getOptionValue("name");
-    String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
+    String solrUrl = cli.getOptionValue("solr-url", SolrCLI.getDefaultSolrUrl());
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
     final String confDirName = cli.getOptionValue("confdir", SolrCLI.DEFAULT_CONFIG_SET);

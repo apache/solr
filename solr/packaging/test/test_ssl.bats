@@ -574,12 +574,12 @@ teardown() {
   # Give some time for the server reload
   sleep 6
 
-  run solr healthcheck --solrUrl https://localhost:${SOLR_PORT}
+  run solr healthcheck --solr-url https://localhost:${SOLR_PORT}
 
   # Server 2 still uses the cert1, so this request should fail
   run ! solr api --get "https://localhost:${SOLR2_PORT}/solr/test/select?q=query2"
 
-  run ! solr healthcheck --solrUrl https://localhost:${SOLR2_PORT}
+  run ! solr healthcheck --solr-url https://localhost:${SOLR2_PORT}
 
   (
     cd "$ssl_dir"
@@ -589,8 +589,8 @@ teardown() {
   # Give some time for the server reload
   sleep 6
 
-  run solr healthcheck --solrUrl https://localhost:${SOLR_PORT}
-  run solr healthcheck --solrUrl https://localhost:${SOLR2_PORT}
+  run solr healthcheck --solr-url https://localhost:${SOLR_PORT}
+  run solr healthcheck --solr-url https://localhost:${SOLR2_PORT}
 
   run solr api --get "https://localhost:${SOLR_PORT}/solr/test/select?q=query3"
   assert_output --partial '"numFound":0'

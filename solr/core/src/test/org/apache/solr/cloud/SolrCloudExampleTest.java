@@ -90,7 +90,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           "_default",
           "-configsetsDir",
           defaultConfigs.getParentFile().getParentFile().getAbsolutePath(),
-          "-solrUrl",
+          "--solr-url",
           solrUrl
         };
 
@@ -190,7 +190,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     String[] args =
         new String[] {
           "-name", testCollectionName,
-          "-solrUrl", solrUrl
+          "--solr-url", solrUrl
         };
     DeleteTool tool = new DeleteTool();
     CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);

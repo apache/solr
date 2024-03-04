@@ -299,7 +299,7 @@ public class RunExampleTool extends ToolBase {
             "-confname", collectionName,
             "-confdir", configSet,
             "-configsetsDir", configsetsDir.getAbsolutePath(),
-            "-solrUrl", solrUrl
+            "--solr-url", solrUrl
           };
       CreateTool createTool = new CreateTool(stdout);
       int createCode =
@@ -858,7 +858,7 @@ public class RunExampleTool extends ToolBase {
           "-confname", collectionName,
           "-confdir", cloudConfig,
           "-configsetsDir", configsetsDir.getAbsolutePath(),
-          "-solrUrl", solrUrl
+          "--solr-url", solrUrl
         };
 
     CreateTool createTool = new CreateTool(stdout);

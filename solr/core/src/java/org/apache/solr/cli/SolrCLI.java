@@ -92,7 +92,7 @@ public class SolrCLI implements CLIO {
           .build();
   public static final Option OPTION_SOLRURL =
       Option.builder()
-          .longOpt("solrUrl")
+          .longOpt("solr-url")
           .argName("HOST")
           .hasArg()
           .required(false)
@@ -532,18 +532,18 @@ public class SolrCLI implements CLIO {
   }
 
   /**
-   * Get the base URL of a live Solr instance from either the solrUrl command-line option or from
+   * Get the base URL of a live Solr instance from either the --solr-url command-line option or from
    * ZooKeeper.
    */
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
-    String solrUrl = cli.getOptionValue("solrUrl");
+    String solrUrl = cli.getOptionValue("solr-url");
     if (solrUrl == null) {
       String zkHost = cli.getOptionValue("zkHost");
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
         CLIO.getOutStream()
             .println(
-                "Neither --zkHost or --solrUrl parameters provided so assuming solrUrl is "
+                "Neither --zkHost or --solr-url parameters provided so assuming solrUrl is "
                     + solrUrl
                     + ".");
       } else {

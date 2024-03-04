@@ -49,7 +49,7 @@ teardown() {
   assert_output --partial "Created collection 'COLL_NAME'"
   
   # Test config
-  run solr config -u name:password -c COLL_NAME --action set-property -property updateHandler.autoCommit.maxDocs --value 100 --solrUrl http://localhost:${SOLR_PORT}/solr
+  run solr config -u name:password -c COLL_NAME --action set-property -property updateHandler.autoCommit.maxDocs --value 100 --solr-url http://localhost:${SOLR_PORT}/solr
   assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
   
   # Test api
