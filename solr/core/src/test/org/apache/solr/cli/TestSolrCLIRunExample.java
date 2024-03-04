@@ -552,7 +552,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // delete the collection
     DeleteTool deleteTool = new DeleteTool(stdoutSim);
-    String[] deleteArgs = new String[] {"-name", collectionName, "-solrUrl", solrUrl};
+    String[] deleteArgs = new String[] {"-name", collectionName, "--solr-url", solrUrl};
     deleteTool.runTool(
         SolrCLI.processCommandLineArgs(deleteTool.getName(), deleteTool.getOptions(), deleteArgs));
 
