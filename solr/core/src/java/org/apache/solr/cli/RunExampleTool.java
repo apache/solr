@@ -152,7 +152,7 @@ public class RunExampleTool extends ToolBase {
             .desc("Specify the hostname for this Solr instance.")
             .longOpt("host")
             .build(),
-            SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST,
         Option.builder("c")
             .required(false)
             .desc(

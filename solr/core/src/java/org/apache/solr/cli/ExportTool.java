@@ -98,7 +98,7 @@ public class ExportTool extends ToolBase {
     return List.of(
         Option.builder("url")
             .hasArg()
-                .longOpt("solr-collection-url")
+            .longOpt("solr-collection-url")
             .required()
             .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
             .build(),
