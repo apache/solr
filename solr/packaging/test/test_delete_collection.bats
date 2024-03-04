@@ -70,10 +70,10 @@ teardown() {
   refute config_exists "NONDEFAULT_CONFIG_NAME"
 }
 
-@test "deleteConfig option can opt to leave config in zk" {
+@test "delete-config option can opt to leave config in zk" {
   solr create -c "COLL_NAME"
   assert config_exists "COLL_NAME"
 
-  solr delete -c "COLL_NAME" --deleteConfig false
+  solr delete -c "COLL_NAME" --delete-config false
   assert config_exists "COLL_NAME"
 }

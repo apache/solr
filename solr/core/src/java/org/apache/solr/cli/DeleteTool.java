@@ -72,7 +72,7 @@ public class DeleteTool extends ToolBase {
             .desc("Name of the core / collection to delete.")
             .build(),
         Option.builder("d")
-            .longOpt("deleteConfig")
+            .longOpt("delete-config")
             .argName("true|false")
             .hasArg()
             .required(false)
@@ -80,7 +80,7 @@ public class DeleteTool extends ToolBase {
                 "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
             .build(),
         Option.builder("f")
-            .longOpt("forceDeleteConfig")
+            .longOpt("force-delete-config")
             .required(false)
             .desc(
                 "Skip safety checks when deleting the configuration directory used by a collection.")
@@ -138,9 +138,9 @@ public class DeleteTool extends ToolBase {
 
     String configName =
         zkStateReader.getClusterState().getCollection(collectionName).getConfigName();
-    boolean deleteConfig = "true".equals(cli.getOptionValue("deleteConfig", "true"));
+    boolean deleteConfig = "true".equals(cli.getOptionValue("force-delete-config", "true"));
     if (deleteConfig && configName != null) {
-      if (cli.hasOption("forceDeleteConfig")) {
+      if (cli.hasOption("force-delete-config")) {
         log.warn(
             "Skipping safety checks, configuration directory {} will be deleted with impunity.",
             configName);
@@ -171,7 +171,7 @@ public class DeleteTool extends ToolBase {
               "Configuration directory {} is also being used by {}{}",
               configName,
               inUse.get(),
-              "; configuration will not be deleted from ZooKeeper. You can pass the -forceDeleteConfig flag to force delete.");
+              "; configuration will not be deleted from ZooKeeper. You can pass the --force-delete-config flag to force delete.");
         }
       }
     }
