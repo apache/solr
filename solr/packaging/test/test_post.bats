@@ -148,7 +148,7 @@ teardown() {
   run solr create -c monitors2 -d _default
   assert_output --partial "Created collection 'monitors2'"
 
-  run solr post -url http://localhost:${SOLR_PORT}/solr/monitors2/update -type application/xml -skipcommit -optimize ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post --solr-update-url http://localhost:${SOLR_PORT}/solr/monitors2/update -type application/xml -skipcommit -optimize ${SOLR_TIP}/example/exampledocs/monitor.xml
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'COMMITting Solr index'
@@ -162,18 +162,18 @@ teardown() {
   run solr create -c test_args -d _default
   assert_output --partial "Created collection 'test_args'"
 
-  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -type application/xml -out "<delete><query>*:*</query></delete>"
+  run solr post --solr-update-url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -type application/xml -out "<delete><query>*:*</query></delete>"
   assert_output --partial '<int name="status">0</int>'
 
   # confirm default type
-  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -out "{'delete': {'query': '*:*'}}"
+  run solr post --solr-update-url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -out "{'delete': {'query': '*:*'}}"
   assert_output --partial '"status":0'
 
   # confirm we don't get back output without -out
-  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args "{'delete': {'query': '*:*'}}"
+  run solr post --solr-update-url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args "{'delete': {'query': '*:*'}}"
   refute_output --partial '"status":0'
 
-  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -type text/csv -out $'id,value\nROW1,0.47'
+  run solr post --solr-update-url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -type text/csv -out $'id,value\nROW1,0.47'
   assert_output --partial '"status":0'
   run curl "http://localhost:${SOLR_PORT}/solr/test_args/select?q=id:ROW1"
   assert_output --partial '"numFound":1'
@@ -181,7 +181,7 @@ teardown() {
 
 # function used because run echo | solr ends up being (run echo) | solr and we loose the output capture.
 capture_echo_to_solr() {
-    echo "{'commit': {}}" | solr post -url http://localhost:${SOLR_PORT}/solr/test_stdin/update -mode stdin -type application/json -out
+    echo "{'commit': {}}" | solr post --solr-update-url http://localhost:${SOLR_PORT}/solr/test_stdin/update -mode stdin -type application/json -out
 }
 
 @test "stdin mode" {

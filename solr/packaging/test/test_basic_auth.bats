@@ -69,15 +69,15 @@ run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
 
   # Test post
-  run solr post -u name:password -type application/xml -url http://localhost:${SOLR_PORT}/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post -u name:password -type application/xml --solr-update-url http://localhost:${SOLR_PORT}/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
   assert_output --partial '1 files indexed.'
 
   # Test postlogs
-  run solr postlogs -u name:password -url http://localhost:${SOLR_PORT}/solr/COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
+  run solr postlogs -u name:password -solr-update-url http://localhost:${SOLR_PORT}/solr/COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
   assert_output --partial 'Committed'
   
   # Test export
-  #run solr export -u name:password -url "http://localhost:${SOLR_PORT}/solr/COLL_NAME" -query "*:*" -out "${BATS_TEST_TMPDIR}/output"
+  #run solr export -u name:password -solr-update-url "http://localhost:${SOLR_PORT}/solr/COLL_NAME" -query "*:*" -out "${BATS_TEST_TMPDIR}/output"
   #assert_output --partial 'Export complete'
   
 }

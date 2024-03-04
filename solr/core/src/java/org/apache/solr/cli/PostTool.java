@@ -171,9 +171,8 @@ public class PostTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder()
-            .longOpt("url")
-            .argName("url")
+        Option.builder("url")
+            .argName("UPDATEURL")
             .longOpt("solr-update-url")
             .hasArg()
             .required(false)

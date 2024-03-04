@@ -98,6 +98,7 @@ public class ExportTool extends ToolBase {
     return List.of(
         Option.builder("url")
             .hasArg()
+                .longOpt("solr-collection-url")
             .required()
             .desc("Address of the collection, example http://localhost:8983/solr/gettingstarted.")
             .build(),
@@ -248,7 +249,7 @@ public class ExportTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    String url = cli.getOptionValue("url");
+    String url = cli.getOptionValue("solr-collection-url");
     String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
     Info info = new MultiThreadedRunner(url, credentials);
     info.query = cli.getOptionValue("query", "*:*");
