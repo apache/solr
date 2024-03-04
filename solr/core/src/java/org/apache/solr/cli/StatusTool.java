@@ -72,7 +72,7 @@ public class StatusTool extends ToolBase {
         // Therefore we don't use the SolrCLI.OPTION_SOLRURL
         Option.builder()
             .argName("URL")
-            .longOpt("solrUrl")
+            .longOpt("solr-url")
             .hasArg()
             .required(false)
             .desc("Property set by calling scripts, not meant for user configuration.")
