@@ -101,8 +101,17 @@ public class LBHttp2SolrClient extends LBSolrClient {
     this.defaultCollection = builder.defaultCollection;
   }
 
+  /**
+   * @deprecated Use {@link #getClient(Endpoint)} instead.
+   */
+  @Deprecated
   @Override
   protected SolrClient getClient(String baseUrl) {
+    return solrClient;
+  }
+
+  @Override
+  protected SolrClient getClient(Endpoint endpoint) {
     return solrClient;
   }
 
@@ -352,10 +361,53 @@ public class LBHttp2SolrClient extends LBSolrClient {
      * In this case the client is more flexible and can be used to send requests to any cores. Users
      * can still provide a "default" collection if desired through use of {@link
      * #withDefaultCollection(String)}.
+     *
+     * @deprecated use {@link #Builder(Http2SolrClient, Endpoint...)} instead
      */
+    @Deprecated
     public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
       this.http2SolrClient = http2Client;
       this.baseSolrUrls = baseSolrUrls;
+    }
+
+    /**
+     * Create a Builder object, based on the provided solrClient and endpoint objects.
+     *
+     * <p>Endpoint instances come in two main flavors:
+     *
+     * <p>1) Endpoints representing a particular core or collection
+     *
+     * <pre>
+     *   SolrClient client = new LBHttp2SolrClient.Builder(
+     *           client, new LBSolrClient.Endpoint("http://my-solr-server:8983/solr", "core1"))
+     *       .build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * Note that when a core is provided in the endpoint, queries and other requests can be made
+     * without mentioning the core explicitly. However, the client can only send requests to that
+     * core. Attempts to make core-agnostic requests, or requests for other cores will fail.
+     *
+     * <p>2) Endpoints representing the root Solr path (i.e. "/solr")
+     *
+     * <pre>
+     *   SolrClient client = new LBHttp2SolrClient.Builder(
+     *           client, new LBSolrClient.Endpoint("http://my-solr-server:8983/solr"))
+     *       .build();
+     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
+     * </pre>
+     *
+     * In this case the client is more flexible and can be used to send requests to any cores. Users
+     * can still provide a "default" collection if desired through use of {@link
+     * #withDefaultCollection(String)}.
+     */
+    public Builder(Http2SolrClient http2Client, Endpoint... endpoints) {
+      this.http2SolrClient = http2Client;
+
+      this.baseSolrUrls = new String[endpoints.length];
+      for (int i = 0; i < endpoints.length; i++) {
+        this.baseSolrUrls[i] = endpoints[i].getUrl();
+      }
     }
 
     /**

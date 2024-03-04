@@ -28,18 +28,21 @@ import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -98,6 +101,82 @@ public abstract class LBSolrClient extends SolrClient {
     // not a top-level request, we are interested only in the server being sent to i.e. it need not
     // distribute our request to further servers
     solrQuery.setDistrib(false);
+  }
+
+  /**
+   * A Solr endpoint for {@link LBSolrClient} to include in its load-balancing
+   *
+   * <p>Used in many places instead of the more common String URL to allow {@link LBSolrClient} to
+   * more easily determine whether a URL is a "base" or "core-aware" URL.
+   */
+  public static class Endpoint {
+    private final String baseUrl;
+    private final String core;
+
+    /**
+     * Creates an {@link Endpoint} representing a "base" URL of a Solr node
+     *
+     * @param baseUrl a base Solr URL, in the form "http[s]://host:port/solr"
+     */
+    public Endpoint(String baseUrl) {
+      this(baseUrl, null);
+    }
+
+    /**
+     * Create an {@link Endpoint} representing a Solr core or collection
+     *
+     * @param baseUrl a base Solr URL, in the form "http[s]://host:port/solr"
+     * @param core the name of a Solr core or collection
+     */
+    public Endpoint(String baseUrl, String core) {
+      this.baseUrl = normalize(baseUrl);
+      this.core = core;
+    }
+
+    /**
+     * Return the base URL of the Solr node this endpoint represents
+     *
+     * @return a base Solr URL, in the form "http[s]://host:port/solr"
+     */
+    public String getBaseUrl() {
+      return baseUrl;
+    }
+
+    /**
+     * The core or collection this endpoint represents
+     *
+     * @return a core/collection name, or null if this endpoint doesn't represent a particular core.
+     */
+    public String getCore() {
+      return core;
+    }
+
+    /** Get the full URL, possibly including the collection/core if one was provided */
+    public String getUrl() {
+      if (core == null) {
+        return baseUrl;
+      }
+      return baseUrl + "/" + core;
+    }
+
+    @Override
+    public String toString() {
+      return getUrl();
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(baseUrl, core);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) return true;
+      if (!(obj instanceof Endpoint)) return false;
+      final Endpoint rhs = (Endpoint) obj;
+
+      return Objects.equals(baseUrl, rhs.baseUrl) && Objects.equals(core, rhs.core);
+    }
   }
 
   protected static class ServerWrapper {
@@ -245,10 +324,24 @@ public abstract class LBSolrClient extends SolrClient {
     protected int numDeadServersToTry;
     private final Integer numServersToTry;
 
+    /**
+     * @deprecated use {@link #Req(SolrRequest, Collection)} instead
+     */
+    @Deprecated
     public Req(SolrRequest<?> request, List<String> servers) {
       this(request, servers, null);
     }
 
+    public Req(SolrRequest<?> request, Collection<Endpoint> servers) {
+      this(
+          request,
+          servers.stream().map(endpoint -> endpoint.getUrl()).collect(Collectors.toList()));
+    }
+
+    /**
+     * @deprecated use {@link #Req(SolrRequest, Collection, Integer)} instead
+     */
+    @Deprecated
     public Req(SolrRequest<?> request, List<String> servers, Integer numServersToTry) {
       this.request = request;
       this.servers = servers;
@@ -256,10 +349,22 @@ public abstract class LBSolrClient extends SolrClient {
       this.numServersToTry = numServersToTry;
     }
 
+    public Req(SolrRequest<?> request, Collection<Endpoint> servers, Integer numServersToTry) {
+      this(
+          request,
+          servers.stream().map(endpoint -> endpoint.getUrl()).collect(Collectors.toList()),
+          numServersToTry);
+    }
+
     public SolrRequest<?> getRequest() {
       return request;
     }
 
+    /**
+     * @deprecated will be replaced with a similar method in 10.0 that returns {@link Endpoint}
+     *     instances instead.
+     */
+    @Deprecated
     public List<String> getServers() {
       return servers;
     }
@@ -435,6 +540,8 @@ public abstract class LBSolrClient extends SolrClient {
 
   protected abstract SolrClient getClient(String baseUrl);
 
+  protected abstract SolrClient getClient(Endpoint endpoint);
+
   protected Exception addZombie(String serverStr, Exception e) {
     ServerWrapper wrapper = createServerWrapper(serverStr);
     wrapper.standard = false;
@@ -571,10 +678,22 @@ public abstract class LBSolrClient extends SolrClient {
     }
   }
 
+  /**
+   * @deprecated use {@link #addSolrServer(Endpoint)} instead
+   */
+  @Deprecated
   public void addSolrServer(String server) throws MalformedURLException {
     addToAlive(createServerWrapper(server));
   }
 
+  public void addSolrServer(Endpoint server) throws MalformedURLException {
+    addSolrServer(server.getUrl());
+  }
+
+  /**
+   * @deprecated use {@link #removeSolrEndpoint(Endpoint)} instead
+   */
+  @Deprecated
   public String removeSolrServer(String server) {
     try {
       server = new URL(server).toExternalForm();
@@ -590,6 +709,10 @@ public abstract class LBSolrClient extends SolrClient {
     removeFromAlive(server);
     zombieServers.remove(server);
     return null;
+  }
+
+  public String removeSolrEndpoint(Endpoint endpoint) {
+    return removeSolrServer(endpoint.getUrl());
   }
 
   /**
