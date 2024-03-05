@@ -66,7 +66,7 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
   }
 
   @Override
-  protected void checkDistribStatsException() throws Exception {
+  protected void checkDistribStatsException() {
     // doing nothing on distrib stats
   }
 }
