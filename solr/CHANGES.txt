@@ -8,7 +8,8 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 ==================  9.5.1 ==================
 Bug Fixes
 ---------------------
-(No changes)
+* PR#2320: Avoid NullPointerException in SolrJ client due to missing
+  EnvToSyspropMappings.properties file (janhoy)
 
 Dependency Upgrades
 ---------------------
