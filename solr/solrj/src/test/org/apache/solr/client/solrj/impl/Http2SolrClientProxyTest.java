@@ -39,10 +39,7 @@ public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
     RandomizedTest.assumeFalse(sslConfig.isSSLMode());
 
     solrClientTestRule.enableProxy();
-    solrClientTestRule.startSolr(
-        createTempDir(),
-        new Properties(),
-        JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build());
+    solrClientTestRule.startSolr(createTempDir(), new Properties(), JettyConfig.builder().build());
     // Actually only need extremely minimal configSet but just use the default
     solrClientTestRule
         .newCollection()
