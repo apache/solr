@@ -509,12 +509,12 @@ echo                                          authentication (i.e. don't update 
 echo.
 echo   -z zkHost                    Zookeeper connection string. Unnecessary if ZK_HOST is defined in solr.in.cmd.
 echo.
-echo   -d ^<dir^>                   Specify the Solr server directory"
+echo   -d ^<dir^>                     Specify the Solr server directory"
 echo.
-echo   -s ^<dir^>                   Specify the Solr home directory. This is where any credentials or authentication"
+echo   -s ^<dir^>                     Specify the Solr home directory. This is where any credentials or authentication"
 echo                                configuration files (e.g. basicAuth.conf^) would be placed."
 echo.
-echo   -v                           Enable more verbose output
+echo   -v                             Enable more verbose output
 echo.
 goto done
 
