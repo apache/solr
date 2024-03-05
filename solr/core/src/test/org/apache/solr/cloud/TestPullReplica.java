@@ -226,19 +226,19 @@ public class TestPullReplica extends SolrCloudTestCase {
   /**
    * For some tests (when we want to check for <i>absence</i> of tlog dir), we need a standin for
    * the common case where <code>core.getUpdateHandler().getUpdateLog() == null</code>. This method
-   * returns the actual tlog dir an {@link UpdateLog} is configured on the core's {@link
+   * returns the actual tlog dir if an {@link UpdateLog} is configured on the core's {@link
    * org.apache.solr.update.UpdateHandler}; otherwise, falls back to the legacy behavior: if {@link
    * CoreDescriptor#getUlogDir()} is specified, returns the <code>tlog</code> subdirectory of that;
    * otherwise returns the <code>tlog</code> subdirectory within {@link SolrCore#getDataDir()}.
    * (NOTE: the last of these is by far the most common default location of the tlog directory).
    */
   static File getHypotheticalTlogDir(SolrCore core) {
-    String tlogDir;
+    String ulogDir;
     UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
     if (ulog != null) {
       return new File(ulog.getTlogDir());
-    } else if ((tlogDir = core.getCoreDescriptor().getUlogDir()) != null) {
-      return new File(tlogDir, UpdateLog.TLOG_NAME);
+    } else if ((ulogDir = core.getCoreDescriptor().getUlogDir()) != null) {
+      return new File(ulogDir, UpdateLog.TLOG_NAME);
     } else {
       return new File(core.getDataDir(), UpdateLog.TLOG_NAME);
     }
