@@ -29,7 +29,7 @@ Before starting an upgrade to this version of Solr, please take the time to revi
 === Solr CLI and Scripts
 
 The Solr CLI has gone through some signficant rennovations to reduce technical debt, and function more consistently and predictably.
-You will need to review any custom scripts that use the `bin/solr` command to ensure that you are using the correct options. 
+Users are urged to review all use of the `bin/solr` command, such as in scripts and documentation, to ensure that the correct options are being used.
 
 === SolrJ
 
