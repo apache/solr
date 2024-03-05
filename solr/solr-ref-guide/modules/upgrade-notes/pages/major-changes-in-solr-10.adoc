@@ -28,7 +28,7 @@ Before starting an upgrade to this version of Solr, please take the time to revi
 
 === Solr CLI and Scripts
 
-The Solr CLI has gone through some signficant rennovations to reduce technical debt, and function more consistently and predictably.
+The Solr CLI has gone through some significant renovations to reduce technical debt, and now functions more consistently and predictably. Most notably, CLI commands now use unix-style options, e.g. `--help` instead of `-help`.
 Users are urged to review all use of the `bin/solr` command, such as in scripts and documentation, to ensure that the correct options are being used.
 
 === SolrJ
