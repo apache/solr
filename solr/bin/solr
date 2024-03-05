@@ -1658,7 +1658,7 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
   CLOUD_MODE_OPTS=("-DzkClientTimeout=$ZK_CLIENT_TIMEOUT")
 
   if [ -n "${ZK_HOST:-}" ]; then
-    CLOUD_MODE_OPTS+=("-z=$ZK_HOST")
+    CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
   else
     if [ $SOLR_PORT -gt 64535 ]; then
       echo -e "\nZK_HOST is not set and Solr port is $SOLR_PORT, which would result in an invalid embedded Zookeeper port!\n"
