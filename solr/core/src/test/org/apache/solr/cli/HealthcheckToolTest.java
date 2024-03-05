@@ -47,9 +47,7 @@ public class HealthcheckToolTest extends SolrCloudTestCase {
   public void testHealthcheckWithZkHostParameter() throws Exception {
 
     String[] args =
-        new String[] {
-          "healthcheck", "-c", "bob", "-z", cluster.getZkClient().getZkServerAddress()
-        };
+        new String[] {"healthcheck", "-c", "bob", "-z", cluster.getZkClient().getZkServerAddress()};
     assertEquals(0, runTool(args));
   }
 

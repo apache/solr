@@ -124,12 +124,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     String[] args =
         new String[] {
-          "--confname",
-          "downconfig1",
-          "--confdir",
-          tmp.toAbsolutePath().toString(),
-          "-z",
-          zkAddr,
+          "--confname", "downconfig1", "--confdir", tmp.toAbsolutePath().toString(), "-z", zkAddr,
         };
 
     ConfigSetDownloadTool downTool = new ConfigSetDownloadTool();
@@ -151,12 +146,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     downTool = new ConfigSetDownloadTool();
     args =
         new String[] {
-          "--confname",
-          "downconfig2",
-          "--confdir",
-          tmp2.toAbsolutePath().toString(),
-          "-z",
-          zkAddr,
+          "--confname", "downconfig2", "--confdir", tmp2.toAbsolutePath().toString(), "-z", zkAddr,
         };
 
     res =
