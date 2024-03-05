@@ -115,7 +115,7 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
     checkResponse(controlRsp, rsp);
   }
 
-  public void checkDistribStatsException() throws Exception {
+  protected void checkDistribStatsException() throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("shards", shards);
     params.set("distrib.statsCache", "true");
