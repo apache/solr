@@ -146,6 +146,8 @@ Other Changes
 * SOLR-17066: GenericSolrRequest now has a `setRequiresCollection` setter that allows it to specify whether
   it should make use of the client-level default collection/core. (Jason Gerlowski)
 
+* SOLR-17190: Replace org.apache.solr.util.LongSet with hppc LongHashSet (Michael Gibney)
+
 ==================  9.5.0 ==================
 New Features
 ---------------------
