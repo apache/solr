@@ -57,7 +57,7 @@ teardown() {
   assert_output --partial '"numFound":0'
   
   # Test delete
-  run solr delete --credentials name:password -c COLL_NAME -zkHost localhost:${ZK_PORT} -verbose
+  run solr delete --credentials name:password -c COLL_NAME -z localhost:${ZK_PORT} -verbose
   assert_output --partial "Deleted collection 'COLL_NAME'"
   refute collection_exists "COLL_NAME"
   

@@ -416,7 +416,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
         new String[] {
           "-confname", dstConfigName,
           "-confdir", fullConfDir.getAbsolutePath(),
-          "-zkHost", zkAddr
+          "-z", zkAddr
         };
 
     ConfigSetUploadTool tool = new ConfigSetUploadTool();

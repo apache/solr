@@ -58,7 +58,7 @@ teardown() {
 }
 
 @test "create collection using Zookeeper" {
-  run solr create -c COLL_NAME -zkHost localhost:${ZK_PORT}
+  run solr create -c COLL_NAME -z localhost:${ZK_PORT}
   assert_output --partial "Created collection 'COLL_NAME'"
 }
 
