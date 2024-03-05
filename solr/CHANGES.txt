@@ -128,6 +128,9 @@ Bug Fixes
 
 * SOLR-17148: Fixing Config API overlay property enabling or disabling the cache (Sanjay Dutt, hossman, Eric Pugh)
 
+* PR#2320: Avoid NullPointerException in SolrJ client due to missing
+  EnvToSyspropMappings.properties file (janhoy)
+
 * SOLR-17186: Streaming query breaks if token contains backtick (Rahul Goswami via Eric Pugh)
 
 * SOLR-17197: Fix getting fieldType by its name in FileBasedSpellChecker (Andrey Bozhko via Eric Pugh)
