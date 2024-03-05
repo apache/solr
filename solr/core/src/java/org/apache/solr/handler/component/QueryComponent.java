@@ -148,11 +148,14 @@ public class QueryComponent extends SearchComponent {
         rb.queryID = generateQueryID(req);
       }
       // set the flag for distributed stats
-      if (req.getSearcher().getStatsCache().getClass().equals(LocalStatsCache.class)){
+      if (req.getSearcher().getStatsCache().getClass().equals(LocalStatsCache.class)) {
         if (params.getPrimitiveBool(CommonParams.DISTRIB_STATS_CACHE)) {
           throw new SolrException(
-                  SolrException.ErrorCode.BAD_REQUEST,
-                  "Explicitly set "+CommonParams.DISTRIB_STATS_CACHE+"=true is not supported with "+LocalStatsCache.class.getSimpleName());
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Explicitly set "
+                  + CommonParams.DISTRIB_STATS_CACHE
+                  + "=true is not supported with "
+                  + LocalStatsCache.class.getSimpleName());
         }
       }
       rb.setDistribStatsDisabled(!params.getBool(CommonParams.DISTRIB_STATS_CACHE, true));

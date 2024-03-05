@@ -115,19 +115,15 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
     checkResponse(controlRsp, rsp);
   }
 
-
   public void checkDistribStatsException() throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("shards", shards);
-    params.set("distrib.statsCache","true");
+    params.set("distrib.statsCache", "true");
     int which = r.nextInt(clients.size());
     SolrClient client = clients.get(which);
-    try {
-      client.query(params);
-    }catch (SolrException e) {
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code,e.code());
-      assertTrue(e.getMessage().contains("distrib.statsCache"));
-      assertTrue(e.getMessage().contains(LocalStatsCache.class.getSimpleName()));
-    }
+    SolrException e = assertThrows(SolrException.class, () -> client.query(params));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage().contains("distrib.statsCache"));
+    assertTrue(e.getMessage().contains(LocalStatsCache.class.getSimpleName()));
   }
 }
