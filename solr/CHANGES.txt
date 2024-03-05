@@ -28,7 +28,6 @@ Optimizations
 Bug Fixes
 ---------------------
 
-
 Deprecation Removals
 ----------------------
 
@@ -106,7 +105,7 @@ Improvements
 
 * SOLR-17145: The INSTALLSHARDDATA API now includes a 'requestid' field when run asynchronously (Jason Gerlowski)
 
-* SOLR-17159: bin/solr post now has proper unit testing.  Users can specify a --dry-run option to 
+* SOLR-17159: bin/solr post now has proper unit testing.  Users can specify a --dry-run option to
   simulate posting documents without sending them to Solr. (Eric Pugh)
 
 * SOLR-17058: Add 'distrib.statsCache' parameter to disable distributed stats requests at query time. (Wei Wang, Mikhail Khludnev)
@@ -128,6 +127,13 @@ Bug Fixes
 * SOLR-17152: Better alignment of Admin UI graph (janhoy)
 
 * SOLR-17148: Fixing Config API overlay property enabling or disabling the cache (Sanjay Dutt, hossman, Eric Pugh)
+
+* PR#2320: Avoid NullPointerException in SolrJ client due to missing
+  EnvToSyspropMappings.properties file (janhoy)
+
+* SOLR-17186: Streaming query breaks if token contains backtick (Rahul Goswami via Eric Pugh)
+
+* SOLR-17197: Fix getting fieldType by its name in FileBasedSpellChecker (Andrey Bozhko via Eric Pugh)
 
 Dependency Upgrades
 ---------------------

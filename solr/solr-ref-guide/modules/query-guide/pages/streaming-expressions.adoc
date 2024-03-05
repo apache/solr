@@ -125,7 +125,7 @@ Instead, they operate on and return numbers, vectors, matrices and mathematical 
 The documentation will show how to combine streaming expressions and math
 expressions.
 
-The math expressions user guide is available in <<>>
+The math expressions user guide is available in xref:math-expressions.adoc[].
 
 From a language standpoint math expressions are referred to as *stream evaluators*.
 
