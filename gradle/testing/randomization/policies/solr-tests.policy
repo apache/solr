@@ -152,6 +152,11 @@ grant {
   // needed by s3mock
   permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.fs";
 
+  // needed for kafka mockito
+  permission java.lang.RuntimePermission "manageProcess";
+  permission java.io.FilePermission "${/}proc${/}self${/}io", "read";
+  permission java.io.FilePermission "${java.home}${/}bin${/}java", "execute";
+
   // SSL related properties for Solr tests
   permission javax.net.ssl.SSLPermission "setDefaultSSLContext";
 

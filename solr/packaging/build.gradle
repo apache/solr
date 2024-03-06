@@ -38,6 +38,7 @@ configurations {
   modules
   example
   prometheusExporter
+  crossdc
   server
   docs
   docker
@@ -53,6 +54,8 @@ dependencies {
   }
 
   prometheusExporter project(path: ":solr:prometheus-exporter", configuration: "packaging")
+
+  crossdc project(path: ":solr:cross-dc-manager", configuration: "packaging")
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
@@ -142,7 +145,16 @@ distributions {
       from(configurations.prometheusExporter, {
         into "prometheus-exporter"
         filesMatching([
-            "bin/*",
+                "bin/*",
+        ]) { copy ->
+          copy.setMode(0755)
+        }
+      })
+
+      from(configurations.crossdc, {
+        into "cross-dc"
+        filesMatching([
+                "bin/*",
         ]) { copy ->
           copy.setMode(0755)
         }
