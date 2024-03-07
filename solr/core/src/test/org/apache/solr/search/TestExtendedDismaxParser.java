@@ -1405,6 +1405,39 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             containsString("(phrase1_sw:\"aaaa bbbb cccc\" | phrase_sw:\"aaaa bbbb cccc\")")));
   }
 
+  /** Test phrase fields boosts with grouped fields (SOLR-16953). */
+  @Test
+  public void testPhraseFieldsWithGroupedFields() {
+
+    assertU(adoc("id", "doc1", "name", "aaaa bbbb", "text", "bbbb cccc dddd"));
+    assertU(adoc("id", "doc2", "name", "aaaa bbbb", "text", "     cccc dddd"));
+    assertU(commit());
+
+    SolrQueryRequest req =
+        req(
+            "q",
+            "name:(aaaa AND bbbb) AND cccc AND dddd",
+            "defType",
+            "edismax",
+            "qf",
+            "name text",
+            "pf",
+            "text",
+            "debugQuery",
+            "true");
+
+    // Make sure the token 'bbbb' is *NOT *in the query for shingled phrases
+    // since it is explicitly searched in 'name' field
+    String expectedQuery = "(text:\"cccc dddd\")";
+
+    // doc2 is to be ranked first because 'bbbb' is not in the boosting query
+    assertQ(
+        req,
+        "//result/doc[1]/str[@name='id'][.='doc2']",
+        "//result/doc[2]/str[@name='id'][.='doc1']",
+        "//str[@name='parsedquery_toString' and contains(., '" + expectedQuery + "')]");
+  }
+
   @Test
   public void testWhitespaceCharacters() {
     assertU(adoc("id", "whitespaceChars", "cat_s", "foo\nfoo"));
@@ -1564,6 +1597,45 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     clauses = parser.splitIntoClauses(query, false);
     assertEquals(1, clauses.size());
     assertClause(clauses.get(0), "foo\\/", false, true);
+  }
+
+  @Test
+  public void testSplitIntoClausesGroupedFields() {
+
+    String query = "name:(aa bb) AND (cc dd)";
+    SolrQueryRequest request = req("q", query, "qf", "cat_s", "defType", "edismax");
+    ExtendedDismaxQParser parser =
+        new ExtendedDismaxQParser(query, null, request.getParams(), request);
+    List<ExtendedDismaxQParser.Clause> clauses = parser.splitIntoClauses(query, false);
+    assertEquals(5, clauses.size());
+    assertClause(clauses.get(0), "\\(aa", true, true, "name");
+    assertClause(clauses.get(1), "bb\\)", true, true, "name");
+    assertClause(clauses.get(2), "AND", true, false, null);
+    assertClause(clauses.get(3), "\\(cc", true, true, null);
+    assertClause(clauses.get(4), "dd\\)", false, true, null);
+    assertEquals(query + " ", parser.rebuildUserQuery(clauses, false));
+
+    query = "name:(aa id:bb cc)";
+    request = req("q", query, "qf", "cat_s", "defType", "edismax");
+    parser = new ExtendedDismaxQParser(query, null, request.getParams(), request);
+    clauses = parser.splitIntoClauses(query, false);
+    assertEquals(3, clauses.size());
+    assertClause(clauses.get(0), "\\(aa", true, true, "name");
+    assertClause(clauses.get(1), "bb", true, false, "id");
+    assertClause(clauses.get(2), "cc\\)", false, true, "name");
+    assertEquals(query + " ", parser.rebuildUserQuery(clauses, false));
+
+    query = "name:(aa id:(bb cc) dd) ee";
+    request = req("q", query, "qf", "cat_s", "defType", "edismax");
+    parser = new ExtendedDismaxQParser(query, null, request.getParams(), request);
+    clauses = parser.splitIntoClauses(query, false);
+    assertEquals(5, clauses.size());
+    assertClause(clauses.get(0), "\\(aa", true, true, "name");
+    assertClause(clauses.get(1), "\\(bb", true, true, "id");
+    assertClause(clauses.get(2), "cc\\)", true, true, "id");
+    assertClause(clauses.get(3), "dd\\)", true, true, "name");
+    assertClause(clauses.get(4), "ee", false, false, null);
+    assertEquals(query + " ", parser.rebuildUserQuery(clauses, false));
   }
 
   private static void assertClause(
