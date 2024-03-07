@@ -389,7 +389,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     assert (instancePath = Path.of(instancePath.toUri())).getClass()
         == (dataDirPath = Path.of(dataDirPath.toUri())).getClass();
 
-    tlogDir = ulogToTlogDir(core.getName(), dataDirPath, dataDir, instancePath, core.getDataDir());
+    tlogDir = ulogToTlogDir(core.getName(), dataDirPath, instancePath, core.getDataDir());
 
     // usage of tlog dir almost entirely bypasses `Directory` API; we only need to do this so that
     // we can remove the tlog dir via `DirectoryFactory.remove()`, which understands how to delete
@@ -409,14 +409,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   public static Path ulogToTlogDir(
-      String coreName, Path ulogDirPath, String ulogDir, Path instancePath, String coreDataDir) {
+      String coreName, Path ulogDirPath, Path instancePath, String coreDataDir) {
     boolean unscopedDataDir =
         !ulogDirPath.startsWith(instancePath) && !ulogDirPath.startsWith(coreDataDir);
 
     // if the ulog dataDir is unscoped (neither under core instanceDir, nor core dataDir),
     // then we must scope it to the core; otherwise, scope to purpose (TLOG_NAME).
     if (unscopedDataDir) {
-      Path tlog = Path.of(ulogDir, coreName);
+      Path tlog = ulogDirPath.resolve(coreName);
       if (tlog.equals(instancePath)) {
         throw new IllegalArgumentException(
             "tlog path " + tlog + " conflicts with instance path " + instancePath);
@@ -429,7 +429,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       return tlog;
     } else {
       // the simple case
-      return Path.of(ulogDir, TLOG_NAME);
+      return ulogDirPath.resolve(TLOG_NAME);
     }
   }
 
