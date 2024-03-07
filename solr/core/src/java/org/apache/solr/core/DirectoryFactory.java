@@ -28,7 +28,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FlushInfo;
@@ -36,6 +35,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
 import org.apache.solr.update.UpdateLog;
+import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -395,7 +395,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin, Cl
   // directories
   protected boolean deleteOldIndexDirectory(String oldDirPath) throws IOException {
     Path dirToRm = Path.of(oldDirPath);
-    PathUtils.deleteDirectory(dirToRm);
+    FileUtils.deleteDirectory(dirToRm);
     return !Files.isDirectory(dirToRm);
   }
 

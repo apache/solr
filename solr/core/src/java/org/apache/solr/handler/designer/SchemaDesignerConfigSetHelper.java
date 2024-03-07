@@ -56,7 +56,6 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpGet;
@@ -98,6 +97,7 @@ import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.ManagedIndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TextField;
+import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.RTimer;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -1213,7 +1213,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
             });
       }
     } finally {
-      PathUtils.deleteDirectory(tmpDirectory);
+      FileUtils.deleteDirectory(tmpDirectory);
     }
     return baos.toByteArray();
   }

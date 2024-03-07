@@ -66,7 +66,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexDeletionPolicy;
@@ -167,6 +166,7 @@ import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.IOFunction;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
@@ -3310,7 +3310,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
             public void postClose(SolrCore core) {
               if (desc != null) {
                 try {
-                  PathUtils.deleteDirectory(desc.getInstanceDir());
+                  FileUtils.deleteDirectory(desc.getInstanceDir());
                 } catch (IOException e) {
                   log.error(
                       "Failed to delete instance dir for core: {} dir: {}",
@@ -3329,7 +3329,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     if (deleteDataDir) {
       Path dataDir = cd.getInstanceDir().resolve(cd.getDataDir());
       try {
-        PathUtils.deleteDirectory(dataDir);
+        FileUtils.deleteDirectory(dataDir);
       } catch (IOException e) {
         log.error(
             "Failed to delete data dir for unloaded core: {} dir: {}",
@@ -3340,7 +3340,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
     if (deleteInstanceDir) {
       try {
-        PathUtils.deleteDirectory(cd.getInstanceDir());
+        FileUtils.deleteDirectory(cd.getInstanceDir());
       } catch (IOException e) {
         log.error(
             "Failed to delete instance dir for unloaded core: {} dir: {}",

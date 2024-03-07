@@ -24,8 +24,10 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import org.apache.commons.io.FileExistsException;
+import org.apache.commons.io.file.PathUtils;
 
 /** */
 public class FileUtils {
@@ -102,5 +104,17 @@ public class FileUtils {
               + path.toString());
     }
     return Files.createDirectories(path);
+  }
+
+  /*
+   Delete a directory including subdirectories, ignoring NoSuchFileExceptions
+  */
+  public static void deleteDirectory(Path path) throws IOException {
+    if (Files.exists(path)) {
+      try {
+        PathUtils.deleteDirectory(path);
+      } catch (NoSuchFileException ignored) {
+      }
+    }
   }
 }
