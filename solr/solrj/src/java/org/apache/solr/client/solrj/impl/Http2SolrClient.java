@@ -633,8 +633,7 @@ public class Http2SolrClient extends SolrClient {
   }
 
   private void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
-    if (!solrRequest.isExternalCompressionEnabled())
-      req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
+    req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
 
     if (requestTimeoutMillis > 0) {
       req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);

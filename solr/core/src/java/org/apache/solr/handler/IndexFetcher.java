@@ -379,6 +379,7 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
     req.setBasePath(leaderBaseUrl);
+    if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip, deflate");
     // TODO modify to use shardhandler
     try {
       return solrClient.request(req, leaderCoreName);
@@ -400,6 +401,7 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
     req.setBasePath(leaderBaseUrl);
+    if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip, deflate");
     // TODO modify to use shardhandler
     try {
       NamedList<?> response = solrClient.request(req, leaderCoreName);
@@ -1982,7 +1984,7 @@ public class IndexFetcher {
         QueryRequest req = new QueryRequest(params);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
         req.setBasePath(leaderBaseUrl);
-        req.setExternalCompression(useExternalCompression);
+        if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip, deflate");
         response = solrClient.request(req, leaderCoreName);
         is = (InputStream) response.get("stream");
         if (useInternalCompression) {
@@ -2109,6 +2111,7 @@ public class IndexFetcher {
 
     QueryRequest request = new QueryRequest(params);
     request.setBasePath(leaderBaseUrl);
+    if (useExternalCompression) request.addHeader("Accept-Encoding", "gzip, deflate");
     // TODO use shardhandler
     return solrClient.request(request, leaderCoreName);
   }
