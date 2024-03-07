@@ -93,6 +93,15 @@ public class LTRScoringQuery extends Query implements Accountable {
     }
   }
 
+  @Override
+  public LTRScoringQuery clone() {
+    LTRScoringQuery cloned = new LTRScoringQuery(ltrScoringModel, efi, ltrThreadMgr);
+    cloned.setOriginalQuery(getOriginalQuery());
+    cloned.setFeatureLogger(getFeatureLogger());
+    cloned.setRequest(getRequest());
+    return cloned;
+  }
+
   public LTRScoringModel getScoringModel() {
     return ltrScoringModel;
   }
@@ -129,6 +138,10 @@ public class LTRScoringQuery extends Query implements Accountable {
     return request;
   }
 
+  protected LTRThreadModule getThreadModule() {
+    return ltrThreadMgr;
+  }
+
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -159,7 +172,7 @@ public class LTRScoringQuery extends Query implements Accountable {
     visitor.visitLeaf(this);
   }
 
-  private boolean equalsTo(LTRScoringQuery other) {
+  protected boolean equalsTo(LTRScoringQuery other) {
     if (ltrScoringModel == null) {
       if (other.ltrScoringModel != null) {
         return false;
