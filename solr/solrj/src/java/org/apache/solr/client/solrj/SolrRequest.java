@@ -81,6 +81,15 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   private ResponseParser responseParser;
   private StreamingResponseCallback callback;
   private Set<String> queryParams;
+  private boolean useExternalCompression;
+
+  public void setExternalCompression(boolean useCompression) {
+    this.useExternalCompression = useCompression;
+  }
+
+  public boolean isExternalCompressionEnabled() {
+    return useExternalCompression;
+  }
 
   public SolrRequest<T> setPreferredNodes(List<String> nodes) {
     this.preferredNodes = nodes;

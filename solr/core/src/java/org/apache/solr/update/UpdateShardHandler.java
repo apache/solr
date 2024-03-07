@@ -79,8 +79,6 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private final CloseableHttpClient defaultClient;
 
-  private final InstrumentedPoolingHttpClientConnectionManager recoveryOnlyConnectionManager;
-
   private final InstrumentedPoolingHttpClientConnectionManager defaultConnectionManager;
 
   private final InstrumentedHttpRequestExecutor httpRequestExecutor;
@@ -93,16 +91,11 @@ public class UpdateShardHandler implements SolrInfoBean {
   private int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
-    recoveryOnlyConnectionManager =
-        new InstrumentedPoolingHttpClientConnectionManager(
-            HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
     defaultConnectionManager =
         new InstrumentedPoolingHttpClientConnectionManager(
             HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     if (cfg != null) {
-      recoveryOnlyConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
-      recoveryOnlyConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
       defaultConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
       defaultConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
       clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
@@ -271,10 +264,6 @@ public class UpdateShardHandler implements SolrInfoBean {
     return defaultConnectionManager;
   }
 
-  public PoolingHttpClientConnectionManager getRecoveryOnlyConnectionManager() {
-    return recoveryOnlyConnectionManager;
-  }
-
   /**
    * @return executor for recovery operations
    */
@@ -300,7 +289,6 @@ public class UpdateShardHandler implements SolrInfoBean {
       IOUtils.closeQuietly(recoveryOnlyClient);
       HttpClientUtil.close(defaultClient);
       defaultConnectionManager.close();
-      recoveryOnlyConnectionManager.close();
     }
   }
 
@@ -316,5 +304,6 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   public void setSecurityBuilder(HttpClientBuilderPlugin builder) {
     builder.setup(updateOnlyClient);
+    builder.setup(recoveryOnlyClient);
   }
 }

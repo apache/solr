@@ -203,6 +203,9 @@ public class Http2SolrClient extends SolrClient {
     } else {
       this.urlParamNames = Set.of();
     }
+    if (builder.listenerFactory != null) {
+      this.listenerFactory.addAll(builder.listenerFactory);
+    }
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -630,7 +633,8 @@ public class Http2SolrClient extends SolrClient {
   }
 
   private void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
-    req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
+    if (!solrRequest.isExternalCompressionEnabled())
+      req.headers(headers -> headers.remove(HttpHeader.ACCEPT_ENCODING));
 
     if (requestTimeoutMillis > 0) {
       req.timeout(requestTimeoutMillis, TimeUnit.MILLISECONDS);
@@ -1081,6 +1085,8 @@ public class Http2SolrClient extends SolrClient {
     private boolean proxyIsSecure;
     private Long keyStoreReloadIntervalSecs;
 
+    private List<HttpListenerFactory> listenerFactory;
+
     public Builder() {}
 
     /**
@@ -1175,7 +1181,6 @@ public class Http2SolrClient extends SolrClient {
      */
     public Builder withHttpClient(Http2SolrClient http2SolrClient) {
       this.httpClient = http2SolrClient.httpClient;
-
       if (this.basicAuthAuthorizationStr == null) {
         this.basicAuthAuthorizationStr = http2SolrClient.basicAuthAuthorizationStr;
       }
@@ -1196,6 +1201,9 @@ public class Http2SolrClient extends SolrClient {
       }
       if (this.urlParamNames == null) {
         this.urlParamNames = http2SolrClient.urlParamNames;
+      }
+      if (this.listenerFactory == null) {
+        this.listenerFactory = http2SolrClient.listenerFactory;
       }
       return this;
     }
