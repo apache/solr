@@ -28,6 +28,8 @@ Optimizations
 Bug Fixes
 ---------------------
 
+* SOLR-17198: Affinity Placement Plugin can fail if Shard leadership changes occur while it is collecting metrics. (Paul McArthur)
+
 Deprecation Removals
 ----------------------
 
