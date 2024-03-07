@@ -328,6 +328,7 @@ public class IndexFetcher {
 
   private void setLeaderCoreUrl(String leaderCoreUrl) {
     if (leaderCoreUrl != null) {
+      leaderCoreUrl = leaderCoreUrl.trim();
       ClusterState clusterState =
           solrCore.getCoreContainer().getZkController() == null
               ? null
