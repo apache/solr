@@ -264,6 +264,7 @@ import org.apache.solr.client.solrj.io.stream.ComplementStream;
 import org.apache.solr.client.solrj.io.stream.CsvStream;
 import org.apache.solr.client.solrj.io.stream.DaemonStream;
 import org.apache.solr.client.solrj.io.stream.DeleteStream;
+import org.apache.solr.client.solrj.io.stream.DemoVectorToTextStream;
 import org.apache.solr.client.solrj.io.stream.DrillStream;
 import org.apache.solr.client.solrj.io.stream.EchoStream;
 import org.apache.solr.client.solrj.io.stream.EvalStream;
@@ -414,6 +415,9 @@ public class Lang {
         .withFunctionName("group", GroupOperation.class)
         .withFunctionName("distinct", DistinctOperation.class)
         .withFunctionName("having", HavingStream.class)
+
+        // experimental
+        .withFunctionName("demoVectorToText", DemoVectorToTextStream.class)
 
         // Stream Evaluators
         .withFunctionName("val", RawValueEvaluator.class)
