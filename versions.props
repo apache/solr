@@ -1,6 +1,6 @@
 # The lines in this file needs to be lexicographically sorted.
 # Please only add direct dependencies. Overrides of transitive versions should be called out in a comment.
-biz.aQute.bnd:biz.aQute.bnd.annotation=6.4.1
+biz.aQute.bnd:biz.aQute.bnd.annotation=7.0.0
 com.adobe.testing:s3mock-junit4=2.17.0
 com.carrotsearch.randomizedtesting:*=2.8.1
 com.carrotsearch:hppc=0.9.1
@@ -47,7 +47,7 @@ org.apache.httpcomponents:httpclient=4.5.14
 org.apache.httpcomponents:httpcore=4.4.16
 org.apache.httpcomponents:httpmime=4.5.14
 org.apache.kerby:*=1.0.1
-org.apache.logging.log4j:*=2.21.0
+org.apache.logging.log4j:*=2.23.0
 org.apache.lucene:*=9.9.2
 org.apache.tika:*=1.28.5
 org.apache.tomcat:annotations-api=6.0.53
