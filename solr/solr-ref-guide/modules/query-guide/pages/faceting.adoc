@@ -113,7 +113,7 @@ This does not limit the query in any way, only the facets that would be returned
 |Optional |Default: none
 |===
 +
-Causes case to be ignored when matching the `facet.contains` substring against candidate facet terms.
+If set to `true`, causes case to be ignored when matching the `facet.contains` substring against candidate facet terms.
 
 `facet.matches`::
 +
@@ -131,7 +131,7 @@ Only returns facet buckets for the terms that match this regular expression.
 |Optional |Default: none
 |===
 +
-The ordering of the facet field constraints. There are two options:
+The ordering of the facet field terms. There are two options:
 +
 `count`::: Return the terms sorted by highest count first.
 `index`::: Return the terms sorted lexicographically.
@@ -148,7 +148,7 @@ Note that the default logic is changed when <<Limiting Facet with Certain Terms>
 |===
 +
 The number of facet counts returned.
-A negative value means that Solr will return unlimited number of constraint counts.
+A negative value means that Solr will return all counts.
 
 `facet.offset`::
 +
@@ -185,7 +185,7 @@ If set to `true`, this parameter indicates that, in addition to the Term-based c
 |Optional |Default: `fc`
 |===
 +
-Selects the type of algorithm or method Solr should use when faceting a field.
+Selects the type of algorithm or method to use when faceting a field.
 +
 The following methods are available.
 +
