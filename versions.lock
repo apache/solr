@@ -1,5 +1,5 @@
 # Run ./gradlew --write-locks to regenerate this file
-biz.aQute.bnd:biz.aQute.bnd.annotation:6.4.1 (1 constraints: 0d051636)
+biz.aQute.bnd:biz.aQute.bnd.annotation:7.0.0 (1 constraints: 09050e36)
 com.adobe.xmp:xmpcore:6.1.10 (1 constraints: fd0d5947)
 com.beust:jcommander:1.82 (2 constraints: 2b123714)
 com.carrotsearch:hppc:0.9.1 (2 constraints: ad0fc9a6)
