@@ -26,11 +26,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.OverseerTest;
@@ -689,6 +694,82 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       CommonTestInjection.reset();
       ExecutorUtil.awaitTermination(executorService);
     }
+  }
+
+  /**
+   * Simulates race condition that can arise from the normal way in which the removal of collection
+   * StateWatchers is deferred.
+   *
+   * <p>StateWatchers are registered at the level of Zk code, so when StateWatchers are removed in
+   * Solr code, the actual removal is deferred until the next callback for the associated collection
+   * fires, at which point the removed watcher should allow itself to expire. If a watcher is
+   * re-added for the associated collection in the intervening time, only the most recently added
+   * watcher should re-register; the removed watcher should simply expire.
+   *
+   * <p>Duplicate/redundant StateWatchers should no longer be registered with the new code that
+   * tracks the currently registered singleton-per-collection watcher in Solr code, and only
+   * re-registers the currently active watcher, with all other watchers allowing themselves to
+   * expire.
+   */
+  public void testStateWatcherRaceCondition() throws Exception {
+    ZkStateWriter writer = fixture.writer;
+    final ZkStateReader reader = fixture.reader;
+    fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
+    int extraWatchers = 10;
+    int iterations = 10;
+    for (int i = 0; i < extraWatchers; i++) {
+      // add and remove a bunch of watchers
+      DocCollectionWatcher w = (coll) -> false;
+      try {
+        reader.registerDocCollectionWatcher("c1", w);
+      } finally {
+        reader.removeDocCollectionWatcher("c1", w);
+      }
+    }
+    final ConcurrentHashMap<Integer, LongAdder> invoked = new ConcurrentHashMap<>();
+    CyclicBarrier barrier = new CyclicBarrier(2);
+    reader.registerDocCollectionWatcher(
+        "c1",
+        (coll) -> {
+          // add a watcher that tracks how many times it's invoked per znode version
+          if (coll != null) {
+            try {
+              barrier.await(250, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException | TimeoutException | BrokenBarrierException e) {
+              throw new RuntimeException(e);
+            }
+            invoked.computeIfAbsent(coll.getZNodeVersion(), (k) -> new LongAdder()).increment();
+          }
+          return false;
+        });
+
+    ClusterState clusterState = reader.getClusterState();
+    int dataVersion = -1;
+    for (int i = 0; i < iterations; i++) {
+      // create or update collection
+      DocCollection state =
+          DocCollection.create(
+              "c1",
+              new HashMap<>(),
+              Map.of(ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+              DocRouter.DEFAULT,
+              dataVersion,
+              Instant.now(),
+              PerReplicaStatesOps.getZkClientPrsSupplier(
+                  fixture.zkClient, DocCollection.getCollectionPath("c1")));
+      ZkWriteCommand wc = new ZkWriteCommand("c1", state);
+      writer.enqueueUpdate(clusterState, Collections.singletonList(wc), null);
+      clusterState = writer.writePendingUpdates();
+      barrier.await(250, TimeUnit.MILLISECONDS); // wait for the watch callback to execute
+      fixture.zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1" + i, true);
+      dataVersion = clusterState.getCollectionOrNull("c1").getZNodeVersion();
+    }
+    // expect to have been invoked for each iteration ...
+    assertEquals(iterations, invoked.size());
+    // ... and only _once_ for each iteration
+    assertTrue(
+        "wrong number of watchers (expected 1): " + invoked,
+        invoked.values().stream().mapToLong(LongAdder::sum).allMatch((l) -> l == 1));
   }
 
   /**
