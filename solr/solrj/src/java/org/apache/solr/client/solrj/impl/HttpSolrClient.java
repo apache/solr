@@ -95,7 +95,7 @@ import org.slf4j.MDC;
 /**
  * A SolrClient implementation that talks directly to a Solr server via Apache HTTP client
  *
- * @deprecated Please use {@link Http2SolrClient}
+ * @deprecated Please use {@link Http2SolrClient} or {@link HttpSolrJdkClient}
  */
 @Deprecated(since = "9.0")
 public class HttpSolrClient extends BaseHttpSolrClient {
