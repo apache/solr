@@ -72,6 +72,8 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
 
   protected ExecutorService executor;
 
+  private boolean forceHttp11;
+
   private boolean shutdownExecutor;
 
   protected HttpSolrJdkClient(String serverBaseUrl, HttpSolrJdkClient.Builder builder) {
@@ -104,6 +106,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     b.executor(this.executor);
 
     if (builder.useHttp1_1) {
+      this.forceHttp11 = true;
       b.version(HttpClient.Version.HTTP_1_1);
     }
 
@@ -276,15 +279,8 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     return response;
   }
 
-  private boolean headRequested;
-  private boolean headSucceeded;
-
   /**
-   *  TODO: we should only try this if not set to Http/1.1 and not TLS
-   *
-   *
-   *  This is a workaround for the case where the first request using
-   *  this client:
+   *  This is a workaround for the case where:
    *
    *    (1) no SSL/TLS (2) using POST with stream and (3) using Http/2
    *
@@ -292,7 +288,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
    *    along with request content in the same request.  However,
    *    the Jetty Server underpinning Solr does not accept this.
    *
-   *    By sending a ping before any real requests occur, the client
+   *    We send a HEAD request first, then the client
    *    knows if Solr can accept Http/2, and no additional
    *    upgrade requests will be sent.
    *
@@ -304,7 +300,18 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
    * @param url the url with no request parameters
    * @return true if success
    */
-  private synchronized boolean maybeTryHeadRequest(String url) {
+
+  private boolean maybeTryHeadRequest(String url) {
+    if(forceHttp11 || url == null || url.toLowerCase(Locale.ROOT).startsWith("https://")) {
+      return true;
+    }
+    return maybeTryHeadRequestSync(url);
+  }
+
+  protected volatile boolean headRequested; // must be threadsafe
+  private boolean headSucceeded; // must be threadsafe
+
+  private synchronized boolean maybeTryHeadRequestSync(String url) {
     if(headRequested) {
       return headSucceeded;
     }
@@ -314,8 +321,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
       uriNoQueryParams = new URI(url);
     } catch(URISyntaxException e) {
 
-      // If the url is invalid, let a subsequent request
-      // try again.
+      // If the url is invalid, let a subsequent request try again.
       return false;
     }
     HttpRequest.Builder headReqB = HttpRequest.newBuilder(uriNoQueryParams).method("HEAD", HttpRequest.BodyPublishers.noBody());
@@ -331,18 +337,16 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
       headSucceeded = false;
     } finally {
 
-      // The HEAD request is only tried once.  All future requests will
-      // skip this check.
+      // The HEAD request is tried only once.  All future requests will skip this check.
       headRequested = true;
 
       if(!headSucceeded) {
-        LOG.info("All insecure POST requests with a variable-length body will use http/1.1");
+        LOG.info("All insecure POST requests with a chunked body will use http/1.1");
       }
     }
 
     return headSucceeded;
   }
-
 
 
   private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {

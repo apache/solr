@@ -305,12 +305,14 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
             .withResponseParser(new XMLResponseParser())
             .useHttp1_1(http11)
             .build()) {
+      testUpdate(client, HttpSolrClientTestBase.WT.XML, "application/xml; charset=UTF-8", value);
       if (http11) {
         assertEquals(HttpClient.Version.HTTP_1_1, client.httpClient.version());
+        assertFalse("The HEAD request should not be performed if already forcing Http/1.1.", client.headRequested);
       } else {
         assertEquals(HttpClient.Version.HTTP_2, client.httpClient.version());
       }
-      testUpdate(client, HttpSolrClientTestBase.WT.XML, "application/xml; charset=UTF-8", value);
+      assertNoHeadRequestWithSsl(client);
     }
   }
 
@@ -323,6 +325,7 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
             .withResponseParser(new BinaryResponseParser())
             .build()) {
       testUpdate(client, WT.JAVABIN, "application/javabin", "\u1234");
+      assertNoHeadRequestWithSsl(client);
     }
   }
 
@@ -462,6 +465,12 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
       SolrPingResponse spr = client.ping("collection1");
       assertEquals(0, spr.getStatus());
       assertNull(spr.getException());
+    }
+  }
+
+  private void assertNoHeadRequestWithSsl(HttpSolrJdkClient client) {
+    if(isSSLMode()) {
+      assertFalse("The HEAD request should not be performed if using SSL.", client.headRequested);
     }
   }
 
