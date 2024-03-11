@@ -308,7 +308,9 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
       testUpdate(client, HttpSolrClientTestBase.WT.XML, "application/xml; charset=UTF-8", value);
       if (http11) {
         assertEquals(HttpClient.Version.HTTP_1_1, client.httpClient.version());
-        assertFalse("The HEAD request should not be performed if already forcing Http/1.1.", client.headRequested);
+        assertFalse(
+            "The HEAD request should not be performed if already forcing Http/1.1.",
+            client.headRequested);
       } else {
         assertEquals(HttpClient.Version.HTTP_2, client.httpClient.version());
       }
@@ -469,7 +471,7 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
   }
 
   private void assertNoHeadRequestWithSsl(HttpSolrJdkClient client) {
-    if(isSSLMode()) {
+    if (isSSLMode()) {
       assertFalse("The HEAD request should not be performed if using SSL.", client.headRequested);
     }
   }
