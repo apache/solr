@@ -37,13 +37,11 @@ import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -65,7 +63,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HttpSolrJdkClient extends HttpSolrClientBase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] 1.0";
@@ -115,7 +113,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
 
     if (builder.proxyHost != null) {
       if (builder.proxyIsSocks4) {
-        log.warn(
+        LOG.warn(
             "Socks4 is likely not supported by this client.  See https://bugs.openjdk.org/browse/JDK-8214516");
       }
       b.proxy(ProxySelector.of(new InetSocketAddress(builder.proxyHost, builder.proxyPort)));
@@ -238,7 +236,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
                 try (source) {
                   contentWriter.write(source);
                 } catch (Exception e) {
-                  log.error("Cannot write Content Stream", e);
+                  LOG.error("Cannot write Content Stream", e);
                 }
               });
     } else if (streams != null && streams.size() == 1) {
@@ -278,8 +276,8 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     return response;
   }
 
-  private volatile boolean headRequested;
-  private volatile boolean headSucceeded;
+  private boolean headRequested;
+  private boolean headSucceeded;
 
   /**
    *  TODO: we should only try this if not set to Http/1.1 and not TLS
@@ -310,11 +308,14 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     if(headRequested) {
       return headSucceeded;
     }
+
     URI uriNoQueryParams;
     try {
       uriNoQueryParams = new URI(url);
     } catch(URISyntaxException e) {
-      headSucceeded = false;
+
+      // If the url is invalid, let a subsequent request
+      // try again.
       return false;
     }
     HttpRequest.Builder headReqB = HttpRequest.newBuilder(uriNoQueryParams).method("HEAD", HttpRequest.BodyPublishers.noBody());
@@ -323,14 +324,22 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
       httpClient.send(headReqB.build(), HttpResponse.BodyHandlers.discarding());
       headSucceeded = true;
     } catch(IOException ioe) {
-      log.warn("Could not issue HEAD request to {} ", url, ioe);
+      LOG.warn("Could not issue HEAD request to {} ", url, ioe);
       headSucceeded = false;
     } catch(InterruptedException ie) {
       Thread.currentThread().interrupt();
       headSucceeded = false;
     } finally {
+
+      // The HEAD request is only tried once.  All future requests will
+      // skip this check.
       headRequested = true;
+
+      if(!headSucceeded) {
+        LOG.info("All insecure POST requests with a variable-length body will use http/1.1");
+      }
     }
+
     return headSucceeded;
   }
 
