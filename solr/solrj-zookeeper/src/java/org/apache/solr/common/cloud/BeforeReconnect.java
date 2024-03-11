@@ -16,6 +16,17 @@
  */
 package org.apache.solr.common.cloud;
 
-public interface BeforeReconnect {
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
+
+public interface BeforeReconnect extends ConnectionStateListener {
   public void command();
+
+  @Override
+  default void stateChanged(CuratorFramework client, ConnectionState newState) {
+    if (newState == ConnectionState.LOST) {
+      command();
+    }
+  }
 }

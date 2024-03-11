@@ -24,6 +24,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -188,7 +189,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public ZkACLProvider createZkACLProvider() {
+    public ZkACLProvider createACLProvider() {
       return new SaslZkACLProvider();
     }
   }
@@ -204,7 +205,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public ZkACLProvider createZkACLProvider() {
+    public ACLProvider createACLProvider() {
       return new DefaultZkACLProvider();
     }
   }

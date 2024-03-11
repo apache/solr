@@ -50,14 +50,15 @@ dependencies {
   implementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
-  implementation ('org.apache.zookeeper:zookeeper-jute') {
-    exclude group: 'org.apache.yetus', module: 'audience-annotations'
-  }
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
   runtimeOnly 'org.xerial.snappy:snappy-java'
-  implementation 'org.apache.curator:curator-client'
-  implementation 'org.apache.curator:curator-framework'
-  runtimeOnly 'org.apache.curator:curator-recipes'
+
+  implementation('org.apache.curator:curator-framework', {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
+  runtimeOnly('org.apache.curator:curator-recipes', {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
 
   // Hadoop auth framework
   implementation 'org.apache.hadoop:hadoop-annotations'
@@ -105,6 +106,9 @@ dependencies {
   testImplementation('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
+  testImplementation ('org.apache.zookeeper:zookeeper-jute') {
+    exclude group: 'org.apache.yetus', module: 'audience-annotations'
+  }
   // required for instantiating a Zookeeper server in tests or embedded
   testRuntimeOnly ('org.xerial.snappy:snappy-java')
 }

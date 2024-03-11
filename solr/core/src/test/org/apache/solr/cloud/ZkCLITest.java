@@ -188,7 +188,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/state.json", data};
     ZkCLI.main(args);
-    assertArrayEquals(zkClient.getZooKeeper().getData("/state.json", null, null), expected);
+    assertArrayEquals(zkClient.getCuratorFramework().getData().forPath("/state.json"), expected);
 
     // test re-put to existing
     data = "my data deux";
@@ -199,7 +199,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
             : zLibCompressor.compressBytes(dataBytes, dataBytes.length / 10);
     args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/state.json", data};
     ZkCLI.main(args);
-    assertArrayEquals(zkClient.getZooKeeper().getData("/state.json", null, null), expected);
+    assertArrayEquals(zkClient.getCuratorFramework().getData().forPath("/state.json"), expected);
   }
 
   @Test
@@ -240,7 +240,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         };
     ZkCLI.main(args);
 
-    byte[] fromZk = zkClient.getZooKeeper().getData("/state.json", null, null);
+    byte[] fromZk = zkClient.getCuratorFramework().getData().forPath("/state.json");
     Path locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
     byte[] fromLoc = new ZLibCompressor().compressBytes(Files.readAllBytes(locFile));
     assertArrayEquals("Should get back what we put in ZK", fromLoc, fromZk);

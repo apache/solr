@@ -36,7 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -188,7 +187,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       // We don't need to handle this. This is just a fail-safe which comes in handy in skipping
       // already processed async calls.
       log.error("KeeperException", e);
-    } catch (AlreadyClosedException e) {
+    } catch (IllegalStateException ignore) {
       return;
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
@@ -202,7 +201,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     try {
       prioritizer.prioritizeOverseerNodes(myId);
-    } catch (AlreadyClosedException e) {
+    } catch (IllegalStateException ignore) {
       return;
     } catch (Exception e) {
       if (!zkStateReader.getZkClient().isClosed()) {
@@ -395,7 +394,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           return;
-        } catch (AlreadyClosedException ignore) {
+        } catch (IllegalStateException ignore) {
 
         } catch (Exception e) {
           log.error("Exception processing", e);
@@ -602,7 +601,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               response.getResponse());
         }
         success = true;
-      } catch (AlreadyClosedException ignore) {
+      } catch (IllegalStateException ignore) {
 
       } catch (KeeperException e) {
         log.error("KeeperException", e);
@@ -617,7 +616,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           // Reset task from tracking data structures so that it can be retried.
           try {
             resetTaskWithException(messageHandler, head.getId(), asyncId, taskKey, message);
-          } catch (AlreadyClosedException ignore) {
+          } catch (IllegalStateException ignore) {
 
           }
         }
