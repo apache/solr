@@ -192,6 +192,7 @@ grant {
   permission "java.net.URLPermission" "http://127.0.0.1:*/solr/slow/foo/*", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "http://127.0.0.1:*/solr/collection1/*", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "http://127.0.0.1:*/solr/collection1/admin/ping", "GET:*";
+  permission "java.net.URLPermission" "socket://127.0.0.1:*", "CONNECT:*";
 
   permission "java.net.URLPermission" "https://127.0.0.1:*/solr/debug/foo/*", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "https://127.0.0.1:*/solr/debug/foo/admin/ping", "GET:*";
@@ -206,6 +207,7 @@ grant {
   permission "java.net.URLPermission" "http://localhost:*/solr/slow/foo/*", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "http://localhost:*/solr/collection1/*", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "http://localhost:*/solr/collection1/admin/ping", "GET:*";
+  permission "java.net.URLPermission" "socket://localhost:*", "CONNECT:*";
 
   permission "java.net.URLPermission" "https://localhost:*/solr/debug/foo/*", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "https://localhost:*/solr/debug/foo/admin/ping", "GET:*";
@@ -220,6 +222,7 @@ grant {
   permission "java.net.URLPermission" "http://[::1]:*/solr/slow/foo/*", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "http://[::1]:*/solr/collection1/*", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "http://[::1]:*/solr/collection1/admin/ping", "GET:*";
+  permission "java.net.URLPermission" "socket://[::1]:*", "CONNECT:*";
 
   permission "java.net.URLPermission" "https://[::1]:*/solr/debug/foo/*", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "https://[::1]:*/solr/debug/foo/admin/ping", "GET:*";
