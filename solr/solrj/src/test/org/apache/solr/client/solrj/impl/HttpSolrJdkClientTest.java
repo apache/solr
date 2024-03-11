@@ -478,9 +478,9 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
   }
 
   /**
-   * This is not required for any test, but there appears to be a bug in the JDK client
-   * where it does not release all threads if the client has not performed any queries,
-   * even after a forced full gc (see "after" in this test class).
+   * This is not required for any test, but there appears to be a bug in the JDK client where it
+   * does not release all threads if the client has not performed any queries, even after a forced
+   * full gc (see "after" in this test class).
    *
    * @param client the client
    */
