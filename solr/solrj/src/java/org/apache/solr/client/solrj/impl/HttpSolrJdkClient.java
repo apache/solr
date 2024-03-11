@@ -63,7 +63,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HttpSolrJdkClient extends HttpSolrClientBase {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] 1.0";
@@ -116,7 +116,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
 
     if (builder.proxyHost != null) {
       if (builder.proxyIsSocks4) {
-        LOG.warn(
+        log.warn(
             "Socks4 is likely not supported by this client.  See https://bugs.openjdk.org/browse/JDK-8214516");
       }
       b.proxy(ProxySelector.of(new InetSocketAddress(builder.proxyHost, builder.proxyPort)));
@@ -239,7 +239,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
                 try (source) {
                   contentWriter.write(source);
                 } catch (Exception e) {
-                  LOG.error("Cannot write Content Stream", e);
+                  log.error("Cannot write Content Stream", e);
                 }
               });
     } else if (streams != null && streams.size() == 1) {
@@ -329,7 +329,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
       httpClient.send(headReqB.build(), HttpResponse.BodyHandlers.discarding());
       headSucceeded = true;
     } catch (IOException ioe) {
-      LOG.warn("Could not issue HEAD request to {} ", url, ioe);
+      log.warn("Could not issue HEAD request to {} ", url, ioe);
       headSucceeded = false;
     } catch (InterruptedException ie) {
       Thread.currentThread().interrupt();
@@ -340,7 +340,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
       headRequested = true;
 
       if (!headSucceeded) {
-        LOG.info("All insecure POST requests with a chunked body will use http/1.1");
+        log.info("All insecure POST requests with a chunked body will use http/1.1");
       }
     }
 
