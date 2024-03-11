@@ -185,10 +185,48 @@ grant {
   permission java.net.NetPermission "getProxySelector";
   permission java.net.NetPermission "requestPasswordAuthentication";
 
-  // for java.net.http.HttpClient
-  //permission java.net.URLPermission "http://www.oracle.com/a/b/c.html" "POST,GET,DELETE"
-  //TODO NOCOMMIT !!
-  permission java.security.AllPermission;
+  // for java.net.http.HttpClient.  See HttpSolrJdkClientTest
+  permission "java.net.URLPermission" "http://127.0.0.1:*/solr/debug/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://127.0.0.1:*/solr/debug/foo/admin/ping", "GET:*";
+  permission "java.net.URLPermission" "http://127.0.0.1:*/solr/redirect/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://127.0.0.1:*/solr/slow/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://127.0.0.1:*/solr/collection1/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://127.0.0.1:*/solr/collection1/admin/ping", "GET:*";
+
+  permission "java.net.URLPermission" "https://127.0.0.1:*/solr/debug/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://127.0.0.1:*/solr/debug/foo/admin/ping", "GET:*";
+  permission "java.net.URLPermission" "https://127.0.0.1:*/solr/redirect/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://127.0.0.1:*/solr/slow/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://127.0.0.1:*/solr/collection1/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://127.0.0.1:*/solr/collection1/admin/ping", "GET:*";
+
+  permission "java.net.URLPermission" "http://localhost:*/solr/debug/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://localhost:*/solr/debug/foo/admin/ping", "GET:*";
+  permission "java.net.URLPermission" "http://localhost:*/solr/redirect/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://localhost:*/solr/slow/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://localhost:*/solr/collection1/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://localhost:*/solr/collection1/admin/ping", "GET:*";
+
+  permission "java.net.URLPermission" "https://localhost:*/solr/debug/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://localhost:*/solr/debug/foo/admin/ping", "GET:*";
+  permission "java.net.URLPermission" "https://localhost:*/solr/redirect/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://localhost:*/solr/slow/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://localhost:*/solr/collection1/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://localhost:*/solr/collection1/admin/ping", "GET:*";
+
+  permission "java.net.URLPermission" "http://[::1]:*/solr/debug/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://[::1]:*/solr/debug/foo/admin/ping", "GET:*";
+  permission "java.net.URLPermission" "http://[::1]:*/solr/redirect/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://[::1]:*/solr/slow/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://[::1]:*/solr/collection1/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://[::1]:*/solr/collection1/admin/ping", "GET:*";
+
+  permission "java.net.URLPermission" "https://[::1]:*/solr/debug/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://[::1]:*/solr/debug/foo/admin/ping", "GET:*";
+  permission "java.net.URLPermission" "https://[::1]:*/solr/redirect/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://[::1]:*/solr/slow/foo/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://[::1]:*/solr/collection1/*", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://[::1]:*/solr/collection1/admin/ping", "GET:*";
 };
 
 // additional permissions based on system properties set by /bin/solr
