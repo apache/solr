@@ -40,7 +40,7 @@ import org.slf4j.MDC;
 
 /**
  * LBHttp2SolrClient or "LoadBalanced LBHttp2SolrClient" is a load balancing wrapper around {@link
- * Http2SolrClient}. This is useful when you have multiple Solr servers and the requests need to be
+ * Http2SolrClient}. This is useful when you have multiple Solr endpoints and requests need to be
  * Load Balanced among them.
  *
  * <p>Do <b>NOT</b> use this class for indexing in leader/follower scenarios since documents must be
@@ -53,24 +53,40 @@ import org.slf4j.MDC;
  * <p>It offers automatic failover when a server goes down, and it detects when the server comes
  * back up.
  *
- * <p>Load balancing is done using a simple round-robin on the list of servers.
- *
- * <p>If a request to a server fails by an IOException due to a connection timeout or read timeout
- * then the host is taken off the list of live servers and moved to a 'dead server list' and the
- * request is resent to the next live server. This process is continued till it tries all the live
- * servers. If at least one server is alive, the request succeeds, and if not it fails.
+ * <p>Load balancing is done using a simple round-robin on the list of endpoints. Endpoint URLs are
+ * expected to point to the Solr "root" path (i.e. "/solr").
  *
  * <blockquote>
  *
  * <pre>
- * SolrClient lbHttp2SolrClient = new LBHttp2SolrClient(http2SolrClient, "http://host1:8080/solr/", "http://host2:8080/solr", "http://host2:8080/solr");
+ * SolrClient client = new LBHttp2SolrClient.Builder(http2SolrClient,
+ *         new LBSolrClient.Endpoint("http://host1:8080/solr"), new LBSolrClient.Endpoint("http://host2:8080/solr"))
+ *     .build();
  * </pre>
  *
  * </blockquote>
  *
- * This detects if a dead server comes alive automatically. The check is done in fixed intervals in
- * a dedicated thread. This interval can be set using {@link
- * LBHttp2SolrClient.Builder#setAliveCheckInterval(int, TimeUnit)} , the default is set to one
+ * Users who wish to balance traffic across a specific set of replicas or cores may specify each
+ * endpoint as a root-URL and core-name pair. For example:
+ *
+ * <blockquote>
+ *
+ * <pre>
+ * SolrClient client = new LBHttp2SolrClient.Builder(http2SolrClient,
+ *         new LBSolrClient.Endpoint("http://host1:8080/solr", "coreA"),
+ *         new LBSolrClient.Endpoint("http://host2:8080/solr", "coreB"))
+ *     .build();
+ * </pre>
+ *
+ * </blockquote>
+ *
+ * <p>If a request to an endpoint fails by an IOException due to a connection timeout or read
+ * timeout then the host is taken off the list of live endpoints and moved to a 'dead endpoint list'
+ * and the request is resent to the next live endpoint. This process is continued till it tries all
+ * the live endpoints. If at least one endpoint is alive, the request succeeds, and if not it fails.
+ *
+ * <p>Dead endpoints are periodically healthchecked on a fixed interval controlled by {@link
+ * LBHttp2SolrClient.Builder#setAliveCheckInterval(int, TimeUnit)}. The default is set to one
  * minute.
  *
  * <p><b>When to use this?</b><br>
@@ -86,14 +102,14 @@ public class LBHttp2SolrClient extends LBSolrClient {
   private final Http2SolrClient solrClient;
 
   private LBHttp2SolrClient(Builder builder) {
-    super(Arrays.asList(builder.baseSolrUrls));
+    super(Arrays.asList(builder.solrEndpoints));
     this.solrClient = builder.http2SolrClient;
     this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
-    this.defaultCollection = builder.defaultDataStore;
+    this.defaultCollection = builder.defaultCollection;
   }
 
   @Override
-  protected SolrClient getClient(String baseUrl) {
+  protected SolrClient getClient(Endpoint endpoint) {
     return solrClient;
   }
 
@@ -115,7 +131,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     Rsp rsp = new Rsp();
     boolean isNonRetryable =
         req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
-    ServerIterator it = new ServerIterator(req, zombieServers);
+    EndpointIterator it = new EndpointIterator(req, zombieServers);
     asyncListener.onStart();
     final AtomicBoolean cancelled = new AtomicBoolean(false);
     AtomicReference<Cancellable> currentCancellable = new AtomicReference<>();
@@ -130,7 +146,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
           @Override
           public void onFailure(Exception e, boolean retryReq) {
             if (retryReq) {
-              String url;
+              Endpoint url;
               try {
                 url = it.nextOrError(e);
               } catch (SolrServerException ex) {
@@ -138,7 +154,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
                 return;
               }
               try {
-                MDC.put("LBSolrClient.url", url);
+                MDC.put("LBSolrClient.url", url.toString());
                 synchronized (cancelled) {
                   if (cancelled.get()) {
                     return;
@@ -185,15 +201,15 @@ public class LBHttp2SolrClient extends LBSolrClient {
   }
 
   private Cancellable doRequest(
-      String baseUrl,
+      Endpoint endpoint,
       Req req,
       Rsp rsp,
       boolean isNonRetryable,
       boolean isZombie,
       RetryListener listener) {
-    rsp.server = baseUrl;
-    req.getRequest().setBasePath(baseUrl);
-    return ((Http2SolrClient) getClient(baseUrl))
+    rsp.server = endpoint.toString();
+    req.getRequest().setBasePath(endpoint.toString());
+    return ((Http2SolrClient) getClient(endpoint))
         .asyncRequest(
             req.getRequest(),
             null,
@@ -202,7 +218,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
               public void onSuccess(NamedList<Object> result) {
                 rsp.rsp = result;
                 if (isZombie) {
-                  zombieServers.remove(baseUrl);
+                  zombieServers.remove(endpoint);
                 }
                 listener.onSuccess(rsp);
               }
@@ -217,32 +233,32 @@ public class LBHttp2SolrClient extends LBSolrClient {
                   // we retry on 404 or 403 or 503 or 500
                   // unless it's an update - then we only retry on connect exception
                   if (!isNonRetryable && RETRY_CODES.contains(e.code())) {
-                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
+                    listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
                   } else {
                     // Server is alive but the request was likely malformed or invalid
                     if (isZombie) {
-                      zombieServers.remove(baseUrl);
+                      zombieServers.remove(endpoint);
                     }
                     listener.onFailure(e, false);
                   }
                 } catch (SocketException e) {
                   if (!isNonRetryable || e instanceof ConnectException) {
-                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
+                    listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
                   } else {
                     listener.onFailure(e, false);
                   }
                 } catch (SocketTimeoutException e) {
                   if (!isNonRetryable) {
-                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
+                    listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
                   } else {
                     listener.onFailure(e, false);
                   }
                 } catch (SolrServerException e) {
                   Throwable rootCause = e.getRootCause();
                   if (!isNonRetryable && rootCause instanceof IOException) {
-                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
+                    listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
                   } else if (isNonRetryable && rootCause instanceof ConnectException) {
-                    listener.onFailure((!isZombie) ? addZombie(baseUrl, e) : e, true);
+                    listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
                   } else {
                     listener.onFailure(e, false);
                   }
@@ -256,14 +272,14 @@ public class LBHttp2SolrClient extends LBSolrClient {
   public static class Builder {
 
     private final Http2SolrClient http2SolrClient;
-    private final String[] baseSolrUrls;
+    private final Endpoint[] solrEndpoints;
     private long aliveCheckIntervalMillis =
         TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
-    protected String defaultDataStore;
+    protected String defaultCollection;
 
-    public Builder(Http2SolrClient http2Client, String... baseSolrUrls) {
+    public Builder(Http2SolrClient http2Client, Endpoint... endpoints) {
       this.http2SolrClient = http2Client;
-      this.baseSolrUrls = baseSolrUrls;
+      this.solrEndpoints = endpoints;
     }
 
     /**
@@ -281,9 +297,9 @@ public class LBHttp2SolrClient extends LBSolrClient {
       return this;
     }
 
-    /** Sets a default data store for core- or collection-based requests. */
-    public LBHttp2SolrClient.Builder withDefaultDataStore(String defaultCoreOrCollection) {
-      this.defaultDataStore = defaultCoreOrCollection;
+    /** Sets a default for core or collection based requests. */
+    public LBHttp2SolrClient.Builder withDefaultCollection(String defaultCoreOrCollection) {
+      this.defaultCollection = defaultCoreOrCollection;
       return this;
     }
 

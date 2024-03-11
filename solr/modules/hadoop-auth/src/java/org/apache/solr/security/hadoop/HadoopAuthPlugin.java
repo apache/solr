@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.slf4j.Logger;
@@ -162,7 +163,7 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
     for (String configName : authConfigNames) {
       String systemProperty = sysPropPrefix + configName;
       String defaultConfigVal = authConfigDefaults.get(configName);
-      String configVal = System.getProperty(systemProperty, defaultConfigVal);
+      String configVal = EnvUtils.getProperty(systemProperty, defaultConfigVal);
       if (configVal != null) {
         params.put(configName, configVal);
       }

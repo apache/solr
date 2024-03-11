@@ -19,6 +19,7 @@ package org.apache.solr.opentelemetry;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.Before;
@@ -92,7 +93,7 @@ public class OtelTracerConfiguratorTest extends SolrTestCaseJ4 {
     instance.prepareConfiguration(new NamedList<>());
     assertEquals(
         List.of("host.name=my.solr.host", "foo=bar"),
-        List.of(System.getProperty("otel.resource.attributes").split(",")));
+        List.of(EnvUtils.getProperty("otel.resource.attributes").split(",")));
   }
 
   @Test

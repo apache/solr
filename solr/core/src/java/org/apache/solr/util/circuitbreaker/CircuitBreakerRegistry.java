@@ -33,8 +33,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.util.EnvUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +69,7 @@ public class CircuitBreakerRegistry implements Closeable {
   private static void initGlobal(CoreContainer coreContainer) {
     // Read system properties to register global circuit breakers for update and query:
     // Example: solr.circuitbreaker.update.cpu = 50
-    EnvUtils.getProps().keySet().stream()
+    EnvUtils.getProperties().keySet().stream()
         .map(SYSPROP_REGEX::matcher)
         .filter(Matcher::matches)
         .collect(Collectors.groupingBy(m -> m.group(2) + ":" + System.getProperty(m.group(0))))

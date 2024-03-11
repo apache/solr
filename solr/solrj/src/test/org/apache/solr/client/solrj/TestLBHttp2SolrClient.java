@@ -31,6 +31,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
@@ -102,7 +103,8 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       docs.add(doc);
     }
     SolrResponseBase resp;
-    try (SolrClient client = getHttpSolrClient(solrInstance.getUrl())) {
+    try (SolrClient client =
+        getHttpSolrClient(solrInstance.getBaseUrl(), solrInstance.getDefaultCollection())) {
       resp = client.add(docs);
       assertEquals(0, resp.getStatus());
       resp = client.commit();
@@ -122,18 +124,16 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
   }
 
   public void testSimple() throws Exception {
-    String[] solrUrls = new String[solr.length];
-    for (int i = 0; i < solr.length; i++) {
-      solrUrls[i] = solr[i].getUrl();
-    }
+    final var baseSolrEndpoints = bootstrapBaseSolrEndpoints(solr.length);
     try (LBHttp2SolrClient client =
-        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
+        new LBHttp2SolrClient.Builder(httpClient, baseSolrEndpoints)
+            .withDefaultCollection(solr[0].getDefaultCollection())
             .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
             .build()) {
       SolrQuery solrQuery = new SolrQuery("*:*");
       Set<String> names = new HashSet<>();
       QueryResponse resp = null;
-      for (String ignored : solrUrls) {
+      for (int i = 0; i < solr.length; i++) {
         resp = client.query(solrQuery);
         assertEquals(10, resp.getResults().getNumFound());
         names.add(resp.getResults().get(0).getFieldValue("name").toString());
@@ -144,7 +144,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       solr[1].jetty.stop();
       solr[1].jetty = null;
       names.clear();
-      for (String ignored : solrUrls) {
+      for (int i = 0; i < solr.length; i++) {
         resp = client.query(solrQuery);
         assertEquals(10, resp.getResults().getNumFound());
         names.add(resp.getResults().get(0).getFieldValue("name").toString());
@@ -157,7 +157,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       // Wait for the alive check to complete
       Thread.sleep(1200);
       names.clear();
-      for (String ignored : solrUrls) {
+      for (int i = 0; i < solr.length; i++) {
         resp = client.query(solrQuery);
         assertEquals(10, resp.getResults().getNumFound());
         names.add(resp.getResults().get(0).getFieldValue("name").toString());
@@ -166,17 +166,11 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
     }
   }
 
-  private LBHttp2SolrClient getLBHttp2SolrClient(Http2SolrClient httpClient, String... s) {
-    return new LBHttp2SolrClient.Builder(httpClient, s).build();
-  }
-
   public void testTwoServers() throws Exception {
-    String[] solrUrls = new String[2];
-    for (int i = 0; i < 2; i++) {
-      solrUrls[i] = solr[i].getUrl();
-    }
+    final var baseSolrEndpoints = bootstrapBaseSolrEndpoints(2);
     try (LBHttp2SolrClient client =
-        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
+        new LBHttp2SolrClient.Builder(httpClient, baseSolrEndpoints)
+            .withDefaultCollection(solr[0].getDefaultCollection())
             .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
             .build()) {
       SolrQuery solrQuery = new SolrQuery("*:*");
@@ -206,13 +200,11 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
   }
 
   public void testReliability() throws Exception {
-    String[] solrUrls = new String[solr.length];
-    for (int i = 0; i < solr.length; i++) {
-      solrUrls[i] = solr[i].getUrl();
-    }
+    final var baseSolrEndpoints = bootstrapBaseSolrEndpoints(solr.length);
 
     try (LBHttp2SolrClient client =
-        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
+        new LBHttp2SolrClient.Builder(httpClient, baseSolrEndpoints)
+            .withDefaultCollection(solr[0].getDefaultCollection())
             .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
             .build()) {
 
@@ -221,7 +213,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       solr[1].jetty = null;
 
       // query the servers
-      for (String ignored : solrUrls) client.query(new SolrQuery("*:*"));
+      for (int i = 0; i < solr.length; i++) client.query(new SolrQuery("*:*"));
 
       // Start the killed server once again
       solr[1].startJetty();
@@ -249,6 +241,14 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
     }
   }
 
+  private LBSolrClient.Endpoint[] bootstrapBaseSolrEndpoints(int max) {
+    LBSolrClient.Endpoint[] solrUrls = new LBSolrClient.Endpoint[max];
+    for (int i = 0; i < max; i++) {
+      solrUrls[i] = new LBSolrClient.Endpoint(solr[i].getBaseUrl());
+    }
+    return solrUrls;
+  }
+
   private static class SolrInstance {
     String name;
     File homeDir;
@@ -272,6 +272,14 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
 
     public String getUrl() {
       return buildUrl(port) + "/collection1";
+    }
+
+    public String getBaseUrl() {
+      return buildUrl(port);
+    }
+
+    public String getDefaultCollection() {
+      return "collection1";
     }
 
     public String getSchemaFile() {
@@ -320,7 +328,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       props.setProperty("solrconfig", "bad_solrconfig.xml");
       props.setProperty("solr.data.dir", getDataDir());
 
-      JettyConfig jettyConfig = JettyConfig.builder(buildJettyConfig()).setPort(port).build();
+      JettyConfig jettyConfig = JettyConfig.builder().setPort(port).build();
 
       jetty = new JettySolrRunner(getHomeDir(), props, jettyConfig);
       jetty.start();

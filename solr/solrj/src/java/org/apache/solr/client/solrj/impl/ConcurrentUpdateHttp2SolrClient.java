@@ -150,7 +150,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
     this.basePath = builder.baseSolrUrl;
-    this.defaultCollection = builder.defaultDataStore;
+    this.defaultCollection = builder.defaultCollection;
     this.pollQueueTimeMillis = builder.pollQueueTimeMillis;
     this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
 
@@ -361,7 +361,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
-    if (ClientUtils.shouldApplyDefaultDataStore(collection, request))
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
       collection = defaultCollection;
     if (!(request instanceof UpdateRequest)) {
       request.setBasePath(basePath);
@@ -701,7 +701,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   public static class Builder {
     protected Http2SolrClient client;
     protected String baseSolrUrl;
-    protected String defaultDataStore;
+    protected String defaultCollection;
     protected int queueSize = 10;
     protected int threadCount;
     protected ExecutorService executorService;
@@ -709,10 +709,48 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     protected boolean closeHttp2Client;
     private long pollQueueTimeMillis;
 
+    /**
+     * Initialize a Builder object, based on the provided URL and client.
+     *
+     * <p>The provided URL must point to the root Solr path (i.e. "/solr"), for example:
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr", http2Client)
+     *       .withDefaultCollection("core1")
+     *       .build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * @param baseSolrUrl a URL pointing to the root Solr path, typically of the form
+     *     "http[s]://host:port/solr"
+     * @param client a client for this ConcurrentUpdateHttp2SolrClient to use for all requests
+     *     internally. Callers are responsible for closing the provided client (after closing any
+     *     clients created by this builder)
+     */
     public Builder(String baseSolrUrl, Http2SolrClient client) {
       this(baseSolrUrl, client, false);
     }
 
+    /**
+     * Initialize a Builder object, based on the provided arguments.
+     *
+     * <p>The provided URL must point to the root Solr path (i.e. "/solr"), for example:
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr", http2Client)
+     *       .withDefaultCollection("core1")
+     *       .build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * @param baseSolrUrl a URL pointing to the root Solr path, typically of the form
+     *     "http[s]://host:port/solr"
+     * @param client a client for this ConcurrentUpdateHttp2SolrClient to use for all requests
+     *     internally.
+     * @param closeHttp2Client a boolean flag indicating whether the created
+     *     ConcurrentUpdateHttp2SolrClient should assume responsibility for closing the provided
+     *     'client'
+     */
     public Builder(String baseSolrUrl, Http2SolrClient client, boolean closeHttp2Client) {
       this.baseSolrUrl = baseSolrUrl;
       this.client = client;
@@ -792,9 +830,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       return this;
     }
 
-    /** Sets a default data store for core- or collection-based requests. */
-    public Builder withDefaultDataStore(String defaultCoreOrCollection) {
-      this.defaultDataStore = defaultCoreOrCollection;
+    /** Sets a default for core or collection based requests. */
+    public Builder withDefaultCollection(String defaultCoreOrCollection) {
+      this.defaultCollection = defaultCoreOrCollection;
       return this;
     }
 

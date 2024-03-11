@@ -278,7 +278,7 @@ Customize the values for the parameters shown as needed and add any used in your
 [.tab-label]**nix Command*
 [source,terminal]
 ----
-$ bin/solr -p 8984
+$ bin/solr start -p 8984
 ----
 ====
 
@@ -308,7 +308,7 @@ If you created the SSL key without all DNS names or IP addresses on which Solr n
 [.tab-label]*\*nix*
 [source,terminal]
 ----
-$ bin/solr -cloud -s cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
+$ bin/solr start -cloud -s cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
 ----
 ====
 

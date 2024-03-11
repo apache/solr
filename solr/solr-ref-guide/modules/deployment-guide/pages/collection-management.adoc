@@ -23,7 +23,7 @@ All of the examples in this section assume you are running the "techproducts" So
 
 [source,bash]
 ----
-bin/solr -c -e techproducts
+bin/solr start -c -e techproducts
 ----
 
 [[create]]
@@ -1253,6 +1253,7 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
     },
     "gettingstarted": {
         "znodeVersion": 16,
+        "creationTimeMillis": 1706228861003,
         "properties": {
             "nrtReplicas": "2",
             "pullReplicas": "0",

@@ -298,7 +298,7 @@ IF "%SCRIPT_CMD%"=="stop" goto stop_usage
 IF "%SCRIPT_CMD%"=="healthcheck" goto run_solrcli
 IF "%SCRIPT_CMD%"=="create" goto run_solrcli
 IF "%SCRIPT_CMD%"=="delete" goto run_solrcli
-IF  "%SCRIPT_CMD%"=="zk" goto zk_usage
+IF "%SCRIPT_CMD%"=="zk" goto zk_usage
 IF "%SCRIPT_CMD%"=="auth" goto auth_usage
 IF "%SCRIPT_CMD%"=="status" goto run_solrcli
 IF "%SCRIPT_CMD%"=="postlogs" goto run_solrcli
@@ -1632,7 +1632,7 @@ if "!AUTH_PORT!"=="" (
     -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
     -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
     org.apache.solr.cli.SolrCLI auth %AUTH_PARAMS% -solrIncludeFile "%SOLR_INCLUDE%" -authConfDir "%SOLR_HOME%" ^
-    -solrUrl !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!AUTH_PORT!/solr
+    -solrUrl !SOLR_URL_SCHEME!://%SOLR_TOOL_HOST%:!AUTH_PORT!
 goto done
 
 

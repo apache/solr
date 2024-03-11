@@ -291,10 +291,11 @@ public class TestPackages extends SolrCloudTestCase {
         10,
         cluster.getSolrClient(),
         new GenericSolrRequest(
-            SolrRequest.METHOD.GET,
-            "/stream",
-            new MapSolrParams(
-                Map.of("collection", COLLECTION_NAME, WT, JAVABIN, "action", "plugins"))),
+                SolrRequest.METHOD.GET,
+                "/stream",
+                new MapSolrParams(
+                    Map.of("collection", COLLECTION_NAME, WT, JAVABIN, "action", "plugins")))
+            .setRequiresCollection(true),
         Map.of(":plugins:mincopy", "org.apache.solr.client.solrj.io.stream.metrics.MinCopyMetric"));
 
     UpdateRequest ur = new UpdateRequest();
@@ -439,6 +440,11 @@ public class TestPackages extends SolrCloudTestCase {
         return new RequestWriter.StringPayloadContentWriter(
             "{set:{PKG_VERSIONS:{mypkg : '1.1'}}}", ClientUtils.TEXT_JSON);
       }
+
+      @Override
+      public boolean requiresCollection() {
+        return true;
+      }
     }.process(cluster.getSolrClient());
 
     add.version = "2.1";
@@ -462,6 +468,11 @@ public class TestPackages extends SolrCloudTestCase {
       public RequestWriter.ContentWriter getContentWriter(String expectedType) {
         return new RequestWriter.StringPayloadContentWriter(
             "{set:{PKG_VERSIONS:{mypkg : '2.1'}}}", ClientUtils.TEXT_JSON);
+      }
+
+      @Override
+      public boolean requiresCollection() {
+        return true;
       }
     }.process(cluster.getSolrClient());
 
@@ -558,7 +569,8 @@ public class TestPackages extends SolrCloudTestCase {
                 "true"));
 
     GenericSolrRequest req1 =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/" + componentType, params);
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/config/" + componentType, params)
+            .setRequiresCollection(true);
     TestDistribFileStore.assertResponseValues(
         10,
         client,
@@ -843,7 +855,8 @@ public class TestPackages extends SolrCloudTestCase {
     SolrParams params =
         new MapSolrParams(Map.of("collection", COLLECTION_NAME, WT, JAVABIN, "meta", "true"));
 
-    GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
+    GenericSolrRequest req =
+        new GenericSolrRequest(SolrRequest.METHOD.GET, path, params).setRequiresCollection(true);
     TestDistribFileStore.assertResponseValues(10, client, req, expected);
   }
 

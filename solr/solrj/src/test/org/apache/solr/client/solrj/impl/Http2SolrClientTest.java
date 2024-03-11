@@ -43,12 +43,10 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -67,6 +65,14 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
   private static final String EXPECTED_USER_AGENT =
       "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
+
+  private static final String DEFAULT_CORE = "foo";
+  private static final String SLOW_SERVLET_PATH = "/slow";
+  private static final String SLOW_SERVLET_REGEX = SLOW_SERVLET_PATH + "/*";
+  private static final String DEBUG_SERVLET_PATH = "/debug";
+  private static final String DEBUG_SERVLET_REGEX = DEBUG_SERVLET_PATH + "/*";
+  private static final String REDIRECT_SERVLET_PATH = "/redirect";
+  private static final String REDIRECT_SERVLET_REGEX = REDIRECT_SERVLET_PATH + "/*";
 
   public static class DebugServlet extends HttpServlet {
     public static void clear() {
@@ -181,10 +187,11 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     JettyConfig jettyConfig =
         JettyConfig.builder()
             .withServlet(
-                new ServletHolder(BasicHttpSolrClientTest.RedirectServlet.class), "/redirect/*")
-            .withServlet(new ServletHolder(BasicHttpSolrClientTest.SlowServlet.class), "/slow/*")
-            .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
-            .withSSLConfig(sslConfig.buildServerSSLConfig())
+                new ServletHolder(BasicHttpSolrClientTest.RedirectServlet.class),
+                REDIRECT_SERVLET_REGEX)
+            .withServlet(
+                new ServletHolder(BasicHttpSolrClientTest.SlowServlet.class), SLOW_SERVLET_REGEX)
+            .withServlet(new ServletHolder(DebugServlet.class), DEBUG_SERVLET_REGEX)
             .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
@@ -208,7 +215,9 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClientBuilder(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 2000)
+        getHttp2SolrClientBuilder(
+                getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 2000)
+            .withDefaultCollection(DEFAULT_CORE)
             .build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
@@ -221,7 +230,8 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void test0IdleTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClientBuilder(getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
+        getHttp2SolrClientBuilder(getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0)
+            .withDefaultCollection(DEFAULT_CORE)
             .build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
@@ -234,7 +244,8 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testRequestTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClientBuilder(getBaseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 0)
+        getHttp2SolrClientBuilder(getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0)
+            .withDefaultCollection(DEFAULT_CORE)
             .withRequestTimeout(500, TimeUnit.MILLISECONDS)
             .build()) {
       client.query(q, SolrRequest.METHOD.GET);
@@ -258,7 +269,9 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
         SolrException.ErrorCode.getErrorCode(status));
 
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build()) {
+        new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+            .withDefaultCollection(DEFAULT_CORE)
+            .build()) {
       DebugServlet.setErrorCode(status);
       try {
         SolrQuery q = new SolrQuery("foo");
@@ -290,8 +303,8 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       try {
         // if client base url is null, request url will be used in exception message
         SolrPing ping = new SolrPing();
-        ping.setBasePath(getBaseUrl() + "/debug/foo");
-        client.request(ping);
+        ping.setBasePath(getBaseUrl() + DEBUG_SERVLET_PATH);
+        client.request(ping, DEFAULT_CORE);
 
         fail("Didn't get excepted exception from oversided request");
       } catch (SolrException e) {
@@ -306,10 +319,11 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testQuery() throws Exception {
     DebugServlet.clear();
-    String url = getBaseUrl() + "/debug/foo";
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", "\u1234");
-    try (Http2SolrClient client = new Http2SolrClient.Builder(url).build()) {
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).build()) {
 
       try {
         client.query(q, SolrRequest.METHOD.GET);
@@ -436,8 +450,9 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testDelete() throws Exception {
     DebugServlet.clear();
-    String url = getBaseUrl() + "/debug/foo";
-    try (Http2SolrClient client = new Http2SolrClient.Builder(url).build()) {
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
         client.deleteById("id");
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -459,7 +474,10 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     }
     // XML
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(url).withResponseParser(new XMLResponseParser()).build()) {
+        new Http2SolrClient.Builder(url)
+            .withDefaultCollection(DEFAULT_CORE)
+            .withResponseParser(new XMLResponseParser())
+            .build()) {
 
       try {
         client.deleteByQuery("*:*");
@@ -481,7 +499,9 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testGetById() throws Exception {
     DebugServlet.clear();
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build()) {
+        new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+            .withDefaultCollection(DEFAULT_CORE)
+            .build()) {
       Collection<String> ids = Collections.singletonList("a");
       try {
         client.getById("a");
@@ -508,11 +528,12 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testUpdate() throws Exception {
     DebugServlet.clear();
-    String url = getBaseUrl() + "/debug/foo";
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     UpdateRequest req = new UpdateRequest();
     req.add(new SolrInputDocument());
     req.setParam("a", "\u1234");
-    try (Http2SolrClient client = new Http2SolrClient.Builder(url).build()) {
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).build()) {
 
       try {
         client.request(req);
@@ -538,6 +559,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     }
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url)
+            .withDefaultCollection(DEFAULT_CORE)
             .withRequestWriter(new RequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build()) {
@@ -563,6 +585,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     // javabin request
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url)
+            .withDefaultCollection(DEFAULT_CORE)
             .withRequestWriter(new BinaryRequestWriter())
             .withResponseParser(new BinaryResponseParser())
             .build()) {
@@ -588,9 +611,12 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testFollowRedirect() throws Exception {
-    final String clientUrl = getBaseUrl() + "/redirect/foo";
+    final String clientUrl = getBaseUrl() + REDIRECT_SERVLET_PATH;
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(clientUrl).withFollowRedirects(true).build()) {
+        new Http2SolrClient.Builder(clientUrl)
+            .withDefaultCollection(DEFAULT_CORE)
+            .withFollowRedirects(true)
+            .build()) {
       SolrQuery q = new SolrQuery("*:*");
       client.query(q);
     }
@@ -598,9 +624,12 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testDoNotFollowRedirect() throws Exception {
-    final String clientUrl = getBaseUrl() + "/redirect/foo";
+    final String clientUrl = getBaseUrl() + REDIRECT_SERVLET_PATH;
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(clientUrl).withFollowRedirects(false).build()) {
+        new Http2SolrClient.Builder(clientUrl)
+            .withDefaultCollection(DEFAULT_CORE)
+            .withFollowRedirects(false)
+            .build()) {
       SolrQuery q = new SolrQuery("*:*");
 
       SolrServerException thrown = assertThrows(SolrServerException.class, () -> client.query(q));
@@ -610,25 +639,32 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testRedirectSwapping() throws Exception {
-    final String clientUrl = getBaseUrl() + "/redirect/foo";
+    final String clientUrl = getBaseUrl() + REDIRECT_SERVLET_PATH;
     SolrQuery q = new SolrQuery("*:*");
 
     // default for follow redirects is false
-    try (Http2SolrClient client = new Http2SolrClient.Builder(clientUrl).build()) {
+    try (Http2SolrClient client =
+        new Http2SolrClient.Builder(clientUrl).withDefaultCollection(DEFAULT_CORE).build()) {
 
       SolrServerException e = expectThrows(SolrServerException.class, () -> client.query(q));
       assertTrue(e.getMessage().contains("redirect"));
     }
 
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(clientUrl).withFollowRedirects(true).build()) {
+        new Http2SolrClient.Builder(clientUrl)
+            .withDefaultCollection(DEFAULT_CORE)
+            .withFollowRedirects(true)
+            .build()) {
       // shouldn't throw an exception
       client.query(q);
     }
 
     // set explicit false for following redirects
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(clientUrl).withFollowRedirects(false).build()) {
+        new Http2SolrClient.Builder(clientUrl)
+            .withDefaultCollection(DEFAULT_CORE)
+            .withFollowRedirects(false)
+            .build()) {
 
       SolrServerException e = expectThrows(SolrServerException.class, () -> client.query(q));
       assertTrue(e.getMessage().contains("redirect"));
@@ -688,11 +724,12 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testQueryString() throws Exception {
 
-    final String clientUrl = getBaseUrl() + "/debug/foo";
+    final String clientUrl = getBaseUrl() + DEBUG_SERVLET_PATH;
     UpdateRequest req = new UpdateRequest();
 
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(clientUrl)
+            .withDefaultCollection(DEFAULT_CORE)
             .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
             .build()) {
       // test without request query params
@@ -821,7 +858,8 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testSetCredentialsExplicitly() {
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
+        new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+            .withDefaultCollection(DEFAULT_CORE)
             .withBasicAuthCredentials("foo", "explicit")
             .build(); ) {
       QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
@@ -855,7 +893,9 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(
         new PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver().defaultParams);
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build(); ) {
+        new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+            .withDefaultCollection(DEFAULT_CORE)
+            .build()) {
       QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
       DebugServlet.addResponseHeader(
           WWWAuthenticationProtocolHandler.NAME, "Basic realm=\"Debug Servlet\"");
@@ -884,7 +924,8 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testPerRequestCredentialsWin() {
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
+        new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+            .withDefaultCollection(DEFAULT_CORE)
             .withBasicAuthCredentials("foo2", "explicit")
             .build(); ) {
       QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
@@ -914,7 +955,9 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   @Test
   public void testNoCredentials() {
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build(); ) {
+        new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+            .withDefaultCollection(DEFAULT_CORE)
+            .build()) {
       QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
       try {
         ignoreException("Error from server");
@@ -933,7 +976,8 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testUseOptionalCredentials() {
     // username foo, password with embedded colon separator is "expli:cit".
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
+        new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+            .withDefaultCollection(DEFAULT_CORE)
             .withOptionalBasicAuthCredentials("foo:expli:cit")
             .build(); ) {
       QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
@@ -961,7 +1005,8 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testUseOptionalCredentialsWithNull() {
     // username foo, password with embedded colon separator is "expli:cit".
     try (Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo")
+        new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+            .withDefaultCollection(DEFAULT_CORE)
             .withOptionalBasicAuthCredentials(null)
             .build(); ) {
       QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
@@ -998,7 +1043,10 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testBadHttpFactory() {
     System.setProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY, "FakeClassName");
     try {
-      SolrClient client = new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build();
+      SolrClient client =
+          new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
+              .withDefaultCollection(DEFAULT_CORE)
+              .build();
       fail("Expecting exception");
     } catch (RuntimeException e) {
       assertTrue(e.getMessage().contains("Unable to instantiate"));
@@ -1010,12 +1058,14 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     DebugServlet.clear();
     try (Http2SolrClient client =
         getHttp2SolrClientBuilder(
-                getBaseUrl() + "/debug/foo", DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
+                getBaseUrl() + DEBUG_SERVLET_PATH,
+                DEFAULT_CONNECTION_TIMEOUT,
+                DEFAULT_CONNECTION_TIMEOUT)
+            .withDefaultCollection(DEFAULT_CORE)
             .build()) {
-      GenericSolrRequest req =
-          new GenericSolrRequest(SolrRequest.METHOD.GET, "/select", params("q", "*:*"));
+      final var req = new QueryRequest(params("q", "*:*"));
       req.setResponseParser(new InputStreamResponseParser("xml"));
-      SimpleSolrResponse rsp = req.process(client);
+      final var rsp = req.process(client);
       Object stream = rsp.getResponse().get("stream");
       assertNotNull(stream);
       MatcherAssert.assertThat(stream, instanceOf(InputStream.class));

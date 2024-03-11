@@ -125,25 +125,6 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testConfigurationInSolrXml() {
-    String solrXml =
-        "<solr><replicaPlacementFactory class=\"org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory\"><int name=\"minimalFreeDiskGB\">10</int><int name=\"prioritizedFreeDiskGB\">200</int></replicaPlacementFactory></solr>";
-    CoreContainer cc = createCoreContainer(TEST_PATH(), solrXml);
-
-    MatcherAssert.assertThat(
-        cc.getPlacementPluginFactory().createPluginInstance(),
-        instanceOf(AffinityPlacementFactory.AffinityPlacementPlugin.class));
-    MatcherAssert.assertThat(
-        cc.getPlacementPluginFactory().getConfig(), instanceOf(AffinityPlacementConfig.class));
-
-    AffinityPlacementConfig config =
-        (AffinityPlacementConfig) cc.getPlacementPluginFactory().getConfig();
-    assertEquals(config.minimalFreeDiskGB, 10);
-    assertEquals(config.prioritizedFreeDiskGB, 200);
-    cc.shutdown();
-  }
-
-  @Test
   public void testMinimizeCores() throws Exception {
     PluginMeta plugin = new PluginMeta();
     plugin.name = PlacementPluginFactory.PLUGIN_NAME;

@@ -25,9 +25,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.EnvUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.tracing.SimplePropagator;
 import org.apache.solr.util.tracing.TraceUtils;
@@ -38,10 +38,10 @@ import org.slf4j.LoggerFactory;
 public abstract class TracerConfigurator implements NamedListInitializedPlugin {
 
   public static final boolean TRACE_ID_GEN_ENABLED =
-      Boolean.parseBoolean(EnvUtils.getProp("solr.alwaysOnTraceId", "true"));
+      Boolean.parseBoolean(EnvUtils.getProperty("solr.alwaysOnTraceId", "true"));
 
   private static final String DEFAULT_CLASS_NAME =
-      EnvUtils.getProp(
+      EnvUtils.getProperty(
           "solr.otelDefaultConfigurator", "org.apache.solr.opentelemetry.OtelTracerConfigurator");
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

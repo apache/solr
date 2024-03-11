@@ -284,6 +284,14 @@ The query above allows you to examine the scoring explain info of the top matchi
 
 The default value of this parameter is blank, which causes no extra "explain info" to be returned.
 
+== partialResults Parameter
+
+This parameter controls Solr's behavior when a query execution limit is reached (e.g. `timeAllowed` or `cpuAllowed`).
+
+When this parameter is set to `true` (default) then even though reaching a limit terminates further query processing  Solr will still attempt to return partial results collected so far. These results may be incomplete in a non-deterministic way (e.g. only some matching documents, documents without fields, missing facets or pivots, no spellcheck results, etc).
+
+When this parameter is set to `false` then reaching a limit will generate an exception and any partial results collected so far will be discarded.
+
 == timeAllowed Parameter
 
 This parameter specifies the amount of time, in milliseconds, allowed for a search to complete.
@@ -321,6 +329,17 @@ This value is only checked at the time of:
 As this check is periodically performed, the actual time for which a request can be processed before it is aborted would be marginally greater than or equal to the value of `timeAllowed`.
 If the request consumes more time in other stages, custom components, etc., this parameter is not expected to abort the request.
 Regular search and the JSON Facet component abandon requests in accordance with this parameter.
+
+== cpuAllowed Parameter
+
+This parameter specifies the amount of CPU time, in milliseconds, allowed for a search to complete.
+In contrast to the `timeAllowed` this parameter monitors the actual CPU usage by the thread that executes the query. The same CPU usage limit is applied to the query coordinator as to each replica that participates in the distributed search (although reaching this limit first in the query coordinator is unlikely).
+Should any replica locally exceed the allowed CPU time the whole distributed search will be terminated (by canceling requests to other shards).
+
+Note: the same CPU limit is applied to each stage in the distributed query processing. Typically this involves two or more stages (e.g. getting top document id-s, retrieving their fields, additional stages may be required for faceting, grouping, etc).
+For example, setting `cpuAllowed=500` gives a limit of at most 500 ms of CPU time for each of these stages - meaning that the total CPU usage by the query may reach a multiple of the `cpuAllowed` value depending on the number of stages.
+
+All other considerations regarding partial results listed for the `timeAllowed` parameter apply here, too.
 
 == segmentTerminateEarly Parameter
 
