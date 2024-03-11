@@ -437,6 +437,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
         .anyMatch(mimeType::equalsIgnoreCase);
   }
 
+  @Override
   protected void updateDefaultMimeTypeForParser() {
     defaultParserMimeTypes =
         parser.getContentTypes().stream()
