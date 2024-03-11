@@ -543,13 +543,15 @@ public class SolrZkClient implements Closeable {
       boolean retryOnConnLoss,
       Stat stat)
       throws KeeperException, InterruptedException {
-    if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(
-          () -> keeper.create(path, data, zkACLProvider.getACLsToAdd(path), createMode, stat));
-    } else {
-      List<ACL> acls = zkACLProvider.getACLsToAdd(path);
-      return keeper.create(path, data, acls, createMode, stat);
+    String result =
+        runWithCorrectThrows(
+            "creating znode",
+            () -> client.create().storingStatIn(stat).withMode(createMode).forPath(path, data));
+    metrics.writes.increment();
+    if (data != null) {
+      metrics.bytesWritten.add(data.length);
     }
+    return result;
   }
 
   /**
