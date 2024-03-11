@@ -63,10 +63,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A SolrClient implementation that communicates to a Solr server using the built-in Java 11+ Http Client.
- * This client is targeted for those users who wish to minimize application dependencies.
- * This client will connect to solr using Http/2 but can seamlessly downgrade to Http/1.1 when connecting
- * to Solr hosts running on older versions.
+ * A SolrClient implementation that communicates to a Solr server using the built-in Java 11+ Http
+ * Client. This client is targeted for those users who wish to minimize application dependencies.
+ * This client will connect to solr using Http/2 but can seamlessly downgrade to Http/1.1 when
+ * connecting to Solr hosts running on older versions.
  */
 public class HttpSolrJdkClient extends HttpSolrClientBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
