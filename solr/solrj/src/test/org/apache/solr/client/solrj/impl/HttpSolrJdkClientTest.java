@@ -24,6 +24,7 @@ import java.net.Socket;
 import java.net.http.HttpClient;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.KeyManagerFactory;
@@ -40,6 +41,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
@@ -412,6 +414,7 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
     try (HttpSolrJdkClient client = builder(getBaseUrl()).withResponseParser(rp).build()) {
       assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/xml"));
       assertFalse(client.processorAcceptsMimeType(rp.getContentTypes(), "application/json"));
+      queryToHelpJdkReleaseThreads(client);
     }
 
     rp = new BinaryResponseParser();
@@ -421,6 +424,7 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
               rp.getContentTypes(), "application/vnd.apache.solr.javabin"));
       assertTrue(client.processorAcceptsMimeType(rp.getContentTypes(), "application/octet-stream"));
       assertFalse(client.processorAcceptsMimeType(rp.getContentTypes(), "application/xml"));
+      queryToHelpJdkReleaseThreads(client);
     }
   }
 
@@ -431,6 +435,7 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
       assertNull(client.contentTypeToEncoding("application/vnd.apache.solr.javabin"));
       assertNull(client.contentTypeToEncoding("application/octet-stream"));
       assertNull(client.contentTypeToEncoding("multipart/form-data; boundary=something"));
+      queryToHelpJdkReleaseThreads(client);
     }
   }
 
@@ -441,6 +446,7 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
       myExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor(new NamedThreadFactory("tpiens"));
       try (HttpSolrJdkClient client = builder(getBaseUrl()).withExecutor(myExecutor).build()) {
         assertEquals(myExecutor, client.executor);
+        queryToHelpJdkReleaseThreads(client);
       }
       assertFalse(myExecutor.isShutdown());
     } finally {
@@ -458,6 +464,7 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
     try (HttpSolrJdkClient client =
         builder(getBaseUrl()).withCookieHandler(myCookieHandler).build()) {
       assertEquals(myCookieHandler, client.httpClient.cookieHandler().get());
+      queryToHelpJdkReleaseThreads(client);
     }
   }
 
@@ -468,6 +475,17 @@ public class HttpSolrJdkClientTest extends HttpSolrClientTestBase {
       assertEquals(0, spr.getStatus());
       assertNull(spr.getException());
     }
+  }
+
+  /**
+   * This is not required for any test, but there appears to be a bug in the JDK client
+   * where it does not release all threads if the client has not performed any queries,
+   * even after a forced full gc (see "after" in this test class).
+   *
+   * @param client the client
+   */
+  private void queryToHelpJdkReleaseThreads(HttpSolrJdkClient client) throws Exception {
+    client.query("collection1", new MapSolrParams(Collections.singletonMap("q", "*:*")));
   }
 
   private void assertNoHeadRequestWithSsl(HttpSolrJdkClient client) {
