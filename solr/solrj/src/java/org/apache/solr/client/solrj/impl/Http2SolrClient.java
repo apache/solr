@@ -601,7 +601,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
       SolrRequest<?> solrRequest, String url, InputStreamResponseListener listener, boolean isAsync)
       throws IOException, SolrServerException {
 
-    ResponseParser parser = responseParser(solrRequest);
     ModifiableSolrParams wparams = initalizeSolrParams(solrRequest);
 
     if (SolrRequest.METHOD.GET == solrRequest.getMethod()) {

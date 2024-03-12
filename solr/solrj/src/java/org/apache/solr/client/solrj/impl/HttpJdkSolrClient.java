@@ -141,7 +141,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       collection = defaultCollection;
     }
     String url = getRequestPath(solrRequest, collection);
-    ResponseParser parser = responseParser(solrRequest);
+    ResponseParser parserToUse = responseParser(solrRequest);
     ModifiableSolrParams queryParams = initalizeSolrParams(solrRequest);
     HttpResponse<InputStream> resp = null;
     try {
@@ -163,7 +163,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
             throw new IllegalStateException("Unsupported method: " + solrRequest.getMethod());
           }
       }
-      return processErrorsAndResponse(solrRequest, parser, resp, url);
+      return processErrorsAndResponse(solrRequest, parserToUse, resp, url);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);
@@ -177,7 +177,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     } finally {
       // See
       // https://docs.oracle.com/en/java/javase/17/docs/api/java.net.http/java/net/http/HttpResponse.BodySubscribers.html#ofInputStream()
-      if (!wantStream(parser)) {
+      if (!wantStream(parserToUse)) {
         try {
           resp.body().close();
         } catch (Exception e1) {
