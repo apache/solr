@@ -916,6 +916,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       return type.cast(build());
     }
 
+    @Override
     public Http2SolrClient build() {
       if (sslConfig == null) {
         sslConfig = Http2SolrClient.defaultSSLConfig;
