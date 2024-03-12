@@ -77,31 +77,37 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
+  @Override
   public void testQueryGet() throws Exception {
     super.testQueryGet();
   }
 
   @Test
+  @Override
   public void testQueryPost() throws Exception {
     super.testQueryPost();
   }
 
   @Test
+  @Override
   public void testQueryPut() throws Exception {
     super.testQueryPut();
   }
 
   @Test
+  @Override
   public void testQueryXmlGet() throws Exception {
     super.testQueryXmlGet();
   }
 
   @Test
+  @Override
   public void testQueryXmlPost() throws Exception {
     super.testQueryXmlPost();
   }
 
   @Test
+  @Override
   public void testQueryXmlPut() throws Exception {
     super.testQueryXmlPut();
   }

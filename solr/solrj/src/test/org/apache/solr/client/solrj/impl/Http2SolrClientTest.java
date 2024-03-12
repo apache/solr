@@ -124,7 +124,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
       DebugServlet.clear();
     }
   }
-
+  @Override
   protected void testQuerySetup(SolrRequest.METHOD method, ResponseParser rp) throws Exception {
     DebugServlet.clear();
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
@@ -144,31 +144,37 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
+  @Override
   public void testQueryGet() throws Exception {
     super.testQueryGet();
   }
 
   @Test
+  @Override
   public void testQueryPost() throws Exception {
     super.testQueryPost();
   }
 
   @Test
+  @Override
   public void testQueryPut() throws Exception {
     super.testQueryPut();
   }
 
   @Test
+  @Override
   public void testQueryXmlGet() throws Exception {
     super.testQueryXmlGet();
   }
 
   @Test
+  @Override
   public void testQueryXmlPost() throws Exception {
     super.testQueryXmlPost();
   }
 
   @Test
+  @Override
   public void testQueryXmlPut() throws Exception {
     super.testQueryXmlPut();
   }
