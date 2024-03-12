@@ -304,7 +304,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
    * @param url the url with no request parameters
    * @return true if success
    */
-  private boolean maybeTryHeadRequest(String url) {
+  protected boolean maybeTryHeadRequest(String url) {
     if (forceHttp11 || url == null || url.toLowerCase(Locale.ROOT).startsWith("https://")) {
       return true;
     }
@@ -323,7 +323,6 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     try {
       uriNoQueryParams = new URI(url);
     } catch (URISyntaxException e) {
-
       // If the url is invalid, let a subsequent request try again.
       return false;
     }
@@ -346,7 +345,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
       headRequested = true;
 
       if (!headSucceeded) {
-        log.info("All insecure POST requests with a chunked body will use http/1.1");
+        log.info("All unencrypted POST requests with a chunked body will use http/1.1");
       }
     }
 
