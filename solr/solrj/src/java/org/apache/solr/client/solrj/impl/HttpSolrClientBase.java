@@ -135,7 +135,8 @@ public abstract class HttpSolrClientBase extends SolrClient {
     return solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
   }
 
-  protected ModifiableSolrParams initalizeSolrParams(SolrRequest<?> solrRequest, ResponseParser parserToUse) {
+  protected ModifiableSolrParams initalizeSolrParams(
+      SolrRequest<?> solrRequest, ResponseParser parserToUse) {
     // The parser 'wt=' and 'version=' params are used instead of the original
     // params
     ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
