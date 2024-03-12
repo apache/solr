@@ -124,6 +124,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
       DebugServlet.clear();
     }
   }
+
   @Override
   protected void testQuerySetup(SolrRequest.METHOD method, ResponseParser rp) throws Exception {
     DebugServlet.clear();
