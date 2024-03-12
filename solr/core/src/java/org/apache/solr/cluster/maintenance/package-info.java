@@ -15,8 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Placeholder to allow a successful build for a Draft PR; may or may not be required depending on
- * community feedback and will be edited if/when needed.
- */
+/** Cluster Singleton plugins that can are used to perform maintenance tasks within the cluster. */
 package org.apache.solr.cluster.maintenance;

@@ -18,29 +18,33 @@
 package org.apache.solr.cluster.maintenance;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.api.ConfigurablePlugin;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** This Cluster Singleton can be configured to periodically find and remove inactive Shards */
+/**
+ * This Cluster Singleton can be configured to periodically find and remove {@link
+ * org.apache.solr.common.cloud.Slice.State#INACTIVE} Shards that are left behind after a Shard is
+ * split
+ */
 public class InactiveShardRemover
     implements ClusterSingleton, ConfigurablePlugin<InactiveShardRemoverConfig> {
 
@@ -56,11 +60,18 @@ public class InactiveShardRemover
       this.coreContainer = coreContainer;
     }
 
-    void delete(final Slice slice, final String asyncId) throws IOException {
+    void delete(final Slice slice) {
       CollectionAdminRequest.DeleteShard deleteRequest =
           CollectionAdminRequest.deleteShard(slice.getCollection(), slice.getName());
-      deleteRequest.setAsyncId(asyncId);
-      coreContainer.getZkController().getSolrCloudManager().request(deleteRequest);
+      try {
+        SolrResponse response =
+            coreContainer.getZkController().getSolrCloudManager().request(deleteRequest);
+        if (response.getException() != null) {
+          throw response.getException();
+        }
+      } catch (Exception e) {
+        log.warn("An exception occurred when deleting an inactive shard", e);
+      }
     }
   }
 
@@ -83,14 +94,15 @@ public class InactiveShardRemover
     this(cc, new DeleteActor(cc));
   }
 
-  @VisibleForTesting
-  InactiveShardRemover(final CoreContainer cc, final DeleteActor actor) {
+  public InactiveShardRemover(final CoreContainer cc, final DeleteActor deleteActor) {
     this.coreContainer = cc;
-    this.deleteActor = actor;
+    this.deleteActor = deleteActor;
   }
 
   @Override
   public void configure(final InactiveShardRemoverConfig cfg) {
+    Objects.requireNonNull(cfg, "config must be specified");
+    cfg.validate();
     this.scheduleIntervalSeconds = cfg.scheduleIntervalSeconds;
     this.maxDeletesPerCycle = cfg.maxDeletesPerCycle;
     this.ttlSeconds = cfg.ttlSeconds;
@@ -122,18 +134,7 @@ public class InactiveShardRemover
   public void stop() {
     if (state == State.RUNNING) {
       state = State.STOPPING;
-      executor.shutdownNow();
-      try {
-        if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
-          log.warn(
-              "Executor pool did not terminate within the specified timeout: {} {}",
-              10,
-              TimeUnit.SECONDS);
-        }
-      } catch (InterruptedException e) {
-        log.warn("Failed to shut down the executor pool", e);
-        Thread.currentThread().interrupt();
-      }
+      ExecutorUtil.shutdownNowAndAwaitTermination(executor);
     }
     state = State.STOPPED;
   }
@@ -141,16 +142,16 @@ public class InactiveShardRemover
   @VisibleForTesting
   void deleteInactiveSlices() {
     final ClusterState clusterState = coreContainer.getZkController().getClusterState();
-    Collection<Slice> inactiveSlices = new HashSet<>();
-    clusterState
-        .getCollectionsMap()
-        .forEach((k, v) -> inactiveSlices.addAll(collectInactiveSlices(v)));
+    Collection<Slice> inactiveSlices =
+        clusterState.getCollectionsMap().values().stream()
+            .flatMap(v -> collectInactiveSlices(v).stream())
+            .collect(Collectors.toSet());
 
     if (log.isInfoEnabled()) {
       log.info(
           "Found {} inactive Shards to delete, {} will be deleted",
           inactiveSlices.size(),
-          Math.max(inactiveSlices.size(), maxDeletesPerCycle));
+          Math.min(inactiveSlices.size(), maxDeletesPerCycle));
     }
 
     inactiveSlices.stream().limit(maxDeletesPerCycle).forEach(this::deleteShard);
@@ -159,28 +160,11 @@ public class InactiveShardRemover
   private Collection<Slice> collectInactiveSlices(final DocCollection docCollection) {
     final Collection<Slice> slices = new HashSet<>(docCollection.getSlices());
     slices.removeAll(docCollection.getActiveSlices());
-    return slices.stream().filter(this::isExpired).collect(Collectors.toList());
+    return slices.stream().filter(this::isExpired).collect(Collectors.toSet());
   }
 
   private void deleteShard(final Slice s) {
-    final String asyncId = s.getCollection() + ";" + s.getName() + ";DELETESHARD";
-    try {
-      final RequestStatusState status = getStatus(asyncId);
-      if (status != RequestStatusState.FAILED && status != RequestStatusState.NOT_FOUND) {
-        log.info(
-            "Delete Shard request is already submitted or in progress with asyncId {}", asyncId);
-        return;
-      }
-
-      if (status == RequestStatusState.FAILED) {
-        // Delete, so that we can try again
-        deleteStatus(asyncId);
-      }
-
-      deleteActor.delete(s, asyncId);
-    } catch (IOException e) {
-      log.warn("An exception occurred when deleting an inactive shard with asyncId {}", asyncId);
-    }
+    deleteActor.delete(s);
   }
 
   /**
@@ -231,21 +215,5 @@ public class InactiveShardRemover
           expired);
     }
     return expired;
-  }
-
-  private RequestStatusState getStatus(final String asyncId) throws IOException {
-    CollectionAdminRequest.RequestStatus req = CollectionAdminRequest.requestStatus(asyncId);
-    CollectionAdminRequest.RequestStatusResponse statusResponse =
-        coreContainer.getZkController().getSolrCloudManager().request(req);
-    return statusResponse.getRequestStatus();
-  }
-
-  private void deleteStatus(final String asyncId) throws IOException {
-    CollectionAdminRequest.DeleteStatus req = CollectionAdminRequest.deleteAsyncId(asyncId);
-    CollectionAdminResponse rsp =
-        coreContainer.getZkController().getSolrCloudManager().request(req);
-    if (log.isInfoEnabled()) {
-      log.info(String.valueOf(rsp.getResponse().get("status")));
-    }
   }
 }

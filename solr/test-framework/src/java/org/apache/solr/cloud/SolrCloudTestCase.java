@@ -35,20 +35,16 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.DistributedQueue;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
-import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.LiveNodesPredicate;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -421,40 +417,5 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       }
     }
     return replicaTypeMap;
-  }
-
-  protected void setSliceState(String collection, String slice, Slice.State state)
-      throws Exception {
-
-    // TODO can this be encapsulated better somewhere?
-    MapWriter m =
-        ew ->
-            ew.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower())
-                .put(slice, state.toString())
-                .put(ZkStateReader.COLLECTION_PROP, collection);
-    final Overseer overseer = cluster.getOpenOverseer();
-    if (overseer.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-      overseer
-          .getDistributedClusterStateUpdater()
-          .doSingleStateUpdate(
-              DistributedClusterStateUpdater.MutatingCommand.SliceUpdateShardState,
-              new ZkNodeProps(m),
-              cluster.getOpenOverseer().getSolrCloudManager(),
-              cluster.getOpenOverseer().getZkStateReader());
-    } else {
-      DistributedQueue inQueue =
-          cluster
-              .getJettySolrRunner(0)
-              .getCoreContainer()
-              .getZkController()
-              .getOverseer()
-              .getStateUpdateQueue();
-      inQueue.offer(m);
-    }
-
-    waitForState(
-        "Expected shard " + slice + " to be in state " + state,
-        collection,
-        (n, c) -> c.getSlice(slice).getState() == state);
   }
 }

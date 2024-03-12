@@ -17,6 +17,7 @@
 
 package org.apache.solr.cluster.maintenance;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
@@ -44,5 +45,16 @@ public class InactiveShardRemoverConfig implements ReflectMapWriter {
     this.scheduleIntervalSeconds = scheduleIntervalSeconds;
     this.ttlSeconds = ttlSeconds;
     this.maxDeletesPerCycle = maxDeletesPerCycle;
+  }
+
+  public void validate() {
+    if (scheduleIntervalSeconds <= 0) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "scheduleIntervalSeconds must be greater than 0");
+    }
+    if (maxDeletesPerCycle <= 0) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "maxDeletesPerCycle must be greater than 0");
+    }
   }
 }
