@@ -259,7 +259,7 @@ public class IndexFetcher {
     }
   }
 
-  private Http2SolrClient createHttpClient(
+  private Http2SolrClient createSolrClient(
       SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, String leaderBaseUrl) {
     final ModifiableSolrParams httpClientParams = new ModifiableSolrParams();
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
@@ -317,7 +317,7 @@ public class IndexFetcher {
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
     solrClient =
-        createHttpClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, leaderBaseUrl);
+        createSolrClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, leaderBaseUrl);
   }
 
   private void setLeaderCoreUrl(String leaderCoreUrl) {
