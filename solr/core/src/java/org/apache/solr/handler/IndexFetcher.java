@@ -132,7 +132,6 @@ import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -266,16 +265,13 @@ public class IndexFetcher {
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
     // no metrics, just tracing
-    InstrumentedHttpListenerFactory httpListenerFactory = new InstrumentedHttpListenerFactory(null);
     Http2SolrClient httpClient =
         new Http2SolrClient.Builder(leaderBaseUrl)
             .withHttpClient(
                 core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyHttpClient())
-            .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
             .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
             .build();
-    httpClient.addListenerFactory(httpListenerFactory);
     return httpClient;
   }
 
@@ -379,7 +375,6 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
     req.setBasePath(leaderBaseUrl);
-    if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip, deflate");
     // TODO modify to use shardhandler
     try {
       return solrClient.request(req, leaderCoreName);
@@ -401,7 +396,6 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
     req.setBasePath(leaderBaseUrl);
-    if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip, deflate");
     // TODO modify to use shardhandler
     try {
       NamedList<?> response = solrClient.request(req, leaderCoreName);
@@ -1984,7 +1978,7 @@ public class IndexFetcher {
         QueryRequest req = new QueryRequest(params);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
         req.setBasePath(leaderBaseUrl);
-        if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip, deflate");
+        if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
         response = solrClient.request(req, leaderCoreName);
         is = (InputStream) response.get("stream");
         if (useInternalCompression) {
@@ -2111,7 +2105,6 @@ public class IndexFetcher {
 
     QueryRequest request = new QueryRequest(params);
     request.setBasePath(leaderBaseUrl);
-    if (useExternalCompression) request.addHeader("Accept-Encoding", "gzip, deflate");
     // TODO use shardhandler
     return solrClient.request(request, leaderCoreName);
   }
