@@ -104,27 +104,48 @@ public class Replica extends ZkNodeProps implements MapWriter {
      * support NRT (soft commits) and RTG. Any {@link Type#NRT} replica can become a leader. A shard
      * leader will forward updates to all active {@link Type#NRT} and {@link Type#TLOG} replicas.
      */
-    NRT(true, CollectionAdminParams.NRT_REPLICAS),
+    NRT(true, true, false, CollectionAdminParams.NRT_REPLICAS),
     /**
      * Writes to transaction log, but not to index, uses replication. Any {@link Type#TLOG} replica
      * can become leader (by first applying all local transaction log elements). If a replica is of
      * type {@link Type#TLOG} but is also the leader, it will behave as a {@link Type#NRT}. A shard
      * leader will forward updates to all active {@link Type#NRT} and {@link Type#TLOG} replicas.
      */
-    TLOG(true, CollectionAdminParams.TLOG_REPLICAS),
+    TLOG(true, true, true, CollectionAdminParams.TLOG_REPLICAS),
     /**
      * Doesn’t index or writes to transaction log. Just replicates from {@link Type#NRT} or {@link
      * Type#TLOG} replicas. {@link Type#PULL} replicas can’t become shard leaders (i.e., if there
      * are only pull replicas in the collection at some point, updates will fail same as if there is
      * no leaders, queries continue to work), so they don’t even participate in elections.
      */
-    PULL(false, CollectionAdminParams.PULL_REPLICAS);
+    PULL(false, false, true, CollectionAdminParams.PULL_REPLICAS);
 
+    /** Whether replicas of this type join the leader election and can be elected. */
     public final boolean leaderEligible;
+
+    /**
+     * Whether replicas of this type require a transaction log. A transaction log will be created
+     * only if this is {@code true}.
+     */
+    public final boolean requireTransactionLog;
+
+    /**
+     * Whether replicas of this type continuously replicate from the leader, if they are not
+     * themselves the leader.
+     */
+    public final boolean replicateFromLeader;
+
+    /** Name of the property in messages that contains the number of replicas of this type. */
     public final String numReplicasPropertyName;
 
-    Type(boolean leaderEligible, String numReplicasPropertyName) {
+    Type(
+        boolean leaderEligible,
+        boolean requireTransactionLog,
+        boolean replicateFromLeader,
+        String numReplicasPropertyName) {
       this.leaderEligible = leaderEligible;
+      this.requireTransactionLog = requireTransactionLog;
+      this.replicateFromLeader = replicateFromLeader;
       this.numReplicasPropertyName = numReplicasPropertyName;
     }
 

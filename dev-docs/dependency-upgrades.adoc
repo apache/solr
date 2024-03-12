@@ -22,7 +22,7 @@ Keeping them up-to-date is crucial for a number of reasons:
 * minimizing the risk of critical CVE vulnerabilities by staying on a recent and supported version
 * avoiding "dependency hell", that can arise from falling too far behind
 
-Read the `help/dependencies.txt` file for an in-depth explanation of how gradle is deployed in Solr, using
+Read the https://github.com/apache/solr/blob/main/help/dependencies.txt[help/dependencies.txt] file for an in-depth explanation of how gradle is deployed in Solr, using
 https://github.com/palantir/gradle-consistent-versions[Gradle consistent-versions] plugin.
 
 == Manual dependency upgrades

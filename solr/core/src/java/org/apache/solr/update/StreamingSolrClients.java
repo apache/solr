@@ -76,7 +76,7 @@ public class StreamingSolrClients {
       client =
           new ErrorReportingConcurrentUpdateSolrClient.Builder(
                   req.node.getBaseUrl(), httpClient, req, errors)
-              .withDefaultDataStore(defaultCore)
+              .withDefaultCollection(defaultCore)
               .withQueueSize(100)
               .withThreadCount(runnerCount)
               .withExecutorService(updateExecutor)
@@ -158,6 +158,13 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2Solr
     protected SolrCmdDistributor.Req req;
     protected List<SolrError> errors;
 
+    /**
+     * @param baseSolrUrl the base URL of a Solr node. Should <em>not</em> contain a collection or
+     *     core name
+     * @param client the client to use in making requests
+     * @param req the command distributor request object for this client
+     * @param errors a collector for any errors
+     */
     public Builder(
         String baseSolrUrl,
         Http2SolrClient client,

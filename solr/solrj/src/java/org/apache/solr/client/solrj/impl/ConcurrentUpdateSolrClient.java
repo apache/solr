@@ -52,6 +52,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,8 +101,13 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
    */
   protected ConcurrentUpdateSolrClient(Builder builder) {
     this.internalHttpClient = (builder.httpClient == null);
+    final var httpSolrClientBuilder =
+        (URLUtil.isBaseUrl(builder.baseSolrUrl))
+            ? new HttpSolrClient.Builder(builder.baseSolrUrl)
+            : new HttpSolrClient.Builder(URLUtil.extractBaseUrl(builder.baseSolrUrl))
+                .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(builder.baseSolrUrl));
     this.client =
-        new HttpSolrClient.Builder(builder.baseSolrUrl)
+        httpSolrClientBuilder
             .withHttpClient(builder.httpClient)
             .withConnectionTimeout(builder.connectionTimeoutMillis, TimeUnit.MILLISECONDS)
             .withSocketTimeout(builder.socketTimeoutMillis, TimeUnit.MILLISECONDS)
@@ -116,7 +122,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.soTimeout = builder.socketTimeoutMillis;
     this.pollQueueTimeMillis = builder.pollQueueTime;
     this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
-    this.defaultCollection = builder.defaultDataStore;
+    this.defaultCollection = builder.defaultCollection;
 
     // make sure the stall time is larger than the polling time
     // to give a chance for the queue to change
@@ -317,7 +323,11 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           requestParams.set(CommonParams.VERSION, client.parser.getVersion());
 
           String basePath = client.getBaseURL();
-          if (update.getCollection() != null) basePath += "/" + update.getCollection();
+          if (update.getCollection() != null) {
+            basePath += "/" + update.getCollection();
+          } else if (client.getDefaultCollection() != null) {
+            basePath += "/" + client.getDefaultCollection();
+          }
 
           method = new HttpPost(basePath + "/update" + requestParams.toQueryString());
 
@@ -476,7 +486,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
-    if (ClientUtils.shouldApplyDefaultDataStore(collection, request))
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
       collection = defaultCollection;
     if (!(request instanceof UpdateRequest)) {
       return client.request(request, collection);
@@ -834,30 +844,16 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     protected boolean streamDeletes;
 
     /**
-     * Create a Builder object, based on the provided Solr URL.
+     * Initialize a Builder object, based on the provided Solr URL.
      *
-     * <p>Two different paths can be specified as a part of this URL:
-     *
-     * <p>1) A path pointing directly at a particular core
+     * <p>The provided URL must point to the root Solr path ("/solr"), for example:
      *
      * <pre>
-     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr/core1").build();
+     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr")
+     *       .withDefaultCollection("core1")
+     *       .build();
      *   QueryResponse resp = client.query(new SolrQuery("*:*"));
      * </pre>
-     *
-     * Note that when a core is provided in the base URL, queries and other requests can be made
-     * without mentioning the core explicitly. However, the client can only send requests to that
-     * core.
-     *
-     * <p>2) The path of the root Solr path ("/solr")
-     *
-     * <pre>
-     *   SolrClient client = new ConcurrentUpdateSolrClient.Builder("http://my-solr-server:8983/solr").build();
-     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
-     * </pre>
-     *
-     * In this case the client is more flexible and can be used to send requests to any cores. This
-     * flexibility though requires that the core be specified on all requests.
      */
     public Builder(String baseSolrUrl) {
       this.baseSolrUrl = baseSolrUrl;

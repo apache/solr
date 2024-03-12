@@ -23,9 +23,9 @@ import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTIO
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
+import jakarta.inject.Inject;
 import java.util.HashMap;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.AliasPropertyApis;
 import org.apache.solr.client.api.model.GetAliasPropertyResponse;
 import org.apache.solr.client.api.model.GetAllAliasPropertiesResponse;

@@ -29,7 +29,7 @@ import org.apache.solr.common.params.SolrParams;
  *
  * @since solr.14
  */
-public class FieldAnalysisRequest extends DataStoreSolrRequest<FieldAnalysisResponse> {
+public class FieldAnalysisRequest extends CollectionRequiringSolrRequest<FieldAnalysisResponse> {
 
   private String fieldValue;
   private String query;

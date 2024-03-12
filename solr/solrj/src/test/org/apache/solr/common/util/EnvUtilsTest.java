@@ -65,55 +65,56 @@ public class EnvUtilsTest extends SolrTestCase {
 
   @Test
   public void testGetProp() {
-    assertEquals("INFO", EnvUtils.getProp("solr.log.level"));
+    assertEquals("INFO", EnvUtils.getProperty("solr.log.level"));
 
-    assertNull(EnvUtils.getProp("solr.nonexist"));
-    assertEquals("myString", EnvUtils.getProp("solr.nonexist", "myString"));
+    assertNull(EnvUtils.getProperty("solr.nonexist"));
+    assertEquals("myString", EnvUtils.getProperty("solr.nonexist", "myString"));
 
-    assertTrue(EnvUtils.getPropAsBool("solr.boolean"));
-    assertFalse(EnvUtils.getPropAsBool("solr.boolean.nonexist", false));
+    assertTrue(EnvUtils.getPropertyAsBool("solr.boolean"));
+    assertFalse(EnvUtils.getPropertyAsBool("solr.boolean.nonexist", false));
 
-    assertEquals("1234567890", EnvUtils.getProp("solr.long"));
-    assertEquals(Long.valueOf(1234567890L), EnvUtils.getPropAsLong("solr.long"));
-    assertEquals(Long.valueOf(987L), EnvUtils.getPropAsLong("solr.long.nonexist", 987L));
+    assertEquals("1234567890", EnvUtils.getProperty("solr.long"));
+    assertEquals(Long.valueOf(1234567890L), EnvUtils.getPropertyAsLong("solr.long"));
+    assertEquals(Long.valueOf(987L), EnvUtils.getPropertyAsLong("solr.long.nonexist", 987L));
 
-    assertEquals("one,two, three", EnvUtils.getProp("solr.commasep"));
-    assertEquals(List.of("one", "two", "three"), EnvUtils.getPropAsList("solr.commasep"));
-    assertEquals(List.of("one", "two", "three"), EnvUtils.getPropAsList("solr.json.list"));
-    assertEquals(List.of("fallback"), EnvUtils.getPropAsList("SOLR_MISSING", List.of("fallback")));
+    assertEquals("one,two, three", EnvUtils.getProperty("solr.commasep"));
+    assertEquals(List.of("one", "two", "three"), EnvUtils.getPropertyAsList("solr.commasep"));
+    assertEquals(List.of("one", "two", "three"), EnvUtils.getPropertyAsList("solr.json.list"));
+    assertEquals(
+        List.of("fallback"), EnvUtils.getPropertyAsList("SOLR_MISSING", List.of("fallback")));
   }
 
   @Test
   public void getPropWithCamelCase() {
-    assertEquals("INFO", EnvUtils.getProp("solr.logLevel"));
-    assertEquals("INFO", EnvUtils.getProp("solr.LogLevel"));
-    assertEquals(Long.valueOf(1234567890L), EnvUtils.getPropAsLong("solrLong"));
-    assertEquals(Boolean.TRUE, EnvUtils.getPropAsBool("solr.alwaysOnTraceId"));
-    assertEquals(Boolean.TRUE, EnvUtils.getPropAsBool("solr.always.on.trace.id"));
+    assertEquals("INFO", EnvUtils.getProperty("solr.logLevel"));
+    assertEquals("INFO", EnvUtils.getProperty("solr.LogLevel"));
+    assertEquals(Long.valueOf(1234567890L), EnvUtils.getPropertyAsLong("solrLong"));
+    assertEquals(Boolean.TRUE, EnvUtils.getPropertyAsBool("solr.alwaysOnTraceId"));
+    assertEquals(Boolean.TRUE, EnvUtils.getPropertyAsBool("solr.always.on.trace.id"));
   }
 
   @Test
   public void testEnvsWithCustomKeyNameMappings() {
     // These have different names than the environment variables
-    assertEquals(EnvUtils.getEnv("SOLR_HOME"), EnvUtils.getProp("solr.solr.home"));
-    assertEquals(EnvUtils.getEnv("SOLR_PORT"), EnvUtils.getProp("jetty.port"));
-    assertEquals(EnvUtils.getEnv("SOLR_HOST"), EnvUtils.getProp("host"));
-    assertEquals(EnvUtils.getEnv("SOLR_LOGS_DIR"), EnvUtils.getProp("solr.log.dir"));
+    assertEquals(EnvUtils.getEnv("SOLR_HOME"), EnvUtils.getProperty("solr.solr.home"));
+    assertEquals(EnvUtils.getEnv("SOLR_PORT"), EnvUtils.getProperty("jetty.port"));
+    assertEquals(EnvUtils.getEnv("SOLR_HOST"), EnvUtils.getProperty("host"));
+    assertEquals(EnvUtils.getEnv("SOLR_LOGS_DIR"), EnvUtils.getProperty("solr.log.dir"));
   }
 
   @Test
   public void testNotMapped() {
-    assertFalse(EnvUtils.getProps().containsKey("solr.ssl.key.store.password"));
-    assertFalse(EnvUtils.getProps().containsKey("gc.log.opts"));
+    assertFalse(EnvUtils.getProperties().containsKey("solr.ssl.key.store.password"));
+    assertFalse(EnvUtils.getProperties().containsKey("gc.log.opts"));
   }
 
   @Test
   public void testOverwrite() {
-    EnvUtils.setProp("solr.overwrite", "original");
+    EnvUtils.setProperty("solr.overwrite", "original");
     EnvUtils.setEnv("SOLR_OVERWRITE", "overwritten");
     EnvUtils.init(false);
-    assertEquals("original", EnvUtils.getProp("solr.overwrite"));
+    assertEquals("original", EnvUtils.getProperty("solr.overwrite"));
     EnvUtils.init(true);
-    assertEquals("overwritten", EnvUtils.getProp("solr.overwrite"));
+    assertEquals("overwritten", EnvUtils.getProperty("solr.overwrite"));
   }
 }

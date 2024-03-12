@@ -27,7 +27,7 @@ import org.apache.solr.common.params.SolrParams;
 /**
  * @since solr 1.3
  */
-public class LukeRequest extends DataStoreSolrRequest<LukeResponse> {
+public class LukeRequest extends CollectionRequiringSolrRequest<LukeResponse> {
 
   private List<String> fields;
   private int numTerms = -1;

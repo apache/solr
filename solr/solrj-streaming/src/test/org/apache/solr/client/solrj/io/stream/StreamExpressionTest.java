@@ -3638,6 +3638,33 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     Tuple tuple = tuples.get(0);
     assertEquals("hello", tuple.get("id"));
     assertEquals("l b c d c e", tuple.get("test_t"));
+
+    // Below is the case when the search token itself contains a ` and is escaped
+    UpdateRequest updateRequest2 = new UpdateRequest();
+    updateRequest2.add(id, "hello2", "test_t", "l b c d color`s e");
+    updateRequest2.add(id, "hello3", "test_t", "b c d colors e");
+    updateRequest2.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    String expr2 =
+        "search("
+            + COLLECTIONORALIAS
+            + ", q=\"`c d color\\`s e`\", fl=\"id,test_t\", sort=\"id desc\")";
+
+    ModifiableSolrParams paramsLoc2 = new ModifiableSolrParams();
+    paramsLoc2.set("expr", expr2);
+    paramsLoc2.set("qt", "/stream");
+
+    String url2 =
+        cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream2 = new SolrStream(url2, paramsLoc2);
+
+    StreamContext context2 = new StreamContext();
+    solrStream2.setStreamContext(context2);
+    List<Tuple> tuples2 = getTuples(solrStream2);
+    assertEquals(1, tuples2.size());
+    Tuple tuple2 = tuples2.get(0);
+    assertEquals("hello2", tuple2.get("id"));
+    assertEquals("l b c d color`s e", tuple2.get("test_t"));
   }
 
   private Map<String, Double> getIdToLabel(TupleStream stream, String outField) throws IOException {
