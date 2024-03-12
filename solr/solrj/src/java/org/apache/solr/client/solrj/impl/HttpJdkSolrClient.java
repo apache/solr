@@ -142,7 +142,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
     String url = getRequestPath(solrRequest, collection);
     ResponseParser parserToUse = responseParser(solrRequest);
-    ModifiableSolrParams queryParams = initalizeSolrParams(solrRequest);
+    ModifiableSolrParams queryParams = initalizeSolrParams(solrRequest, parserToUse);
     HttpResponse<InputStream> resp = null;
     try {
       var reqb = HttpRequest.newBuilder();

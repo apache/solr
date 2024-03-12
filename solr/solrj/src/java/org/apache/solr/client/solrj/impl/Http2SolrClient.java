@@ -369,8 +369,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
       throws IOException {
     String contentType = requestWriter.getUpdateContentType();
     final ModifiableSolrParams origParams = new ModifiableSolrParams(updateRequest.getParams());
+    ModifiableSolrParams requestParams = initalizeSolrParams(updateRequest, responseParser(updateRequest));
 
-    ModifiableSolrParams requestParams = initalizeSolrParams(null);
 
     String basePath = baseUrl;
     if (collection != null) basePath += "/" + collection;
@@ -601,7 +601,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       SolrRequest<?> solrRequest, String url, InputStreamResponseListener listener, boolean isAsync)
       throws IOException, SolrServerException {
 
-    ModifiableSolrParams wparams = initalizeSolrParams(solrRequest);
+    ModifiableSolrParams wparams = initalizeSolrParams(solrRequest, responseParser(solrRequest));
 
     if (SolrRequest.METHOD.GET == solrRequest.getMethod()) {
       validateGetRequest(solrRequest);
