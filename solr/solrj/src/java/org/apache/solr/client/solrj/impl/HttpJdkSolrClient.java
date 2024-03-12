@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
  * This client will connect to solr using Http/2 but can seamlessly downgrade to Http/1.1 when
  * connecting to Solr hosts running on older versions.
  */
-public class HttpSolrJdkClient extends HttpSolrClientBase {
+public class HttpJdkSolrClient extends HttpSolrClientBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String USER_AGENT =
@@ -82,7 +82,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
 
   private boolean shutdownExecutor;
 
-  protected HttpSolrJdkClient(String serverBaseUrl, HttpSolrJdkClient.Builder builder) {
+  protected HttpJdkSolrClient(String serverBaseUrl, HttpJdkSolrClient.Builder builder) {
     super(serverBaseUrl, builder);
 
     HttpClient.Redirect followRedirects =
@@ -463,7 +463,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
   }
 
   public static class Builder
-      extends HttpSolrClientBuilderBase<HttpSolrJdkClient.Builder, HttpSolrJdkClient> {
+      extends HttpSolrClientBuilderBase<HttpJdkSolrClient.Builder, HttpJdkSolrClient> {
 
     private SSLContext sslContext;
 
@@ -479,14 +479,14 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
     }
 
     @Override
-    public HttpSolrJdkClient build() {
+    public HttpJdkSolrClient build() {
       if (idleTimeoutMillis == null || idleTimeoutMillis <= 0) {
         idleTimeoutMillis = (long) HttpClientUtil.DEFAULT_SO_TIMEOUT;
       }
       if (connectionTimeoutMillis == null) {
         connectionTimeoutMillis = (long) HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
       }
-      return new HttpSolrJdkClient(baseSolrUrl, this);
+      return new HttpJdkSolrClient(baseSolrUrl, this);
     }
 
     /**
@@ -496,7 +496,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
      * @param sslContext the ssl context to use
      * @return this Builder
      */
-    public HttpSolrJdkClient.Builder withSSLContext(SSLContext sslContext) {
+    public HttpJdkSolrClient.Builder withSSLContext(SSLContext sslContext) {
       this.sslContext = sslContext;
       return this;
     }
@@ -507,7 +507,7 @@ public class HttpSolrJdkClient extends HttpSolrClientBase {
      * @param cookieHandler the cookie handler to use
      * @return this Builder
      */
-    public HttpSolrJdkClient.Builder withCookieHandler(CookieHandler cookieHandler) {
+    public HttpJdkSolrClient.Builder withCookieHandler(CookieHandler cookieHandler) {
       this.cookieHandler = cookieHandler;
       return this;
     }

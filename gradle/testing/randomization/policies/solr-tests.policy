@@ -185,7 +185,7 @@ grant {
   permission java.net.NetPermission "getProxySelector";
   permission java.net.NetPermission "requestPasswordAuthentication";
 
-  // for java.net.http.HttpClient.  See HttpSolrJdkClientTest
+  // for java.net.http.HttpClient.  See HttpJdkSolrClientTest
   permission "java.net.URLPermission" "http://127.0.0.1:*/solr/debug/foo/*", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "http://127.0.0.1:*/solr/debug/foo/admin/ping", "GET:*";
   permission "java.net.URLPermission" "http://127.0.0.1:*/solr/redirect/foo/*", "HEAD,GET,PUT,POST:*";
