@@ -348,6 +348,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
+  @Override
   public void testQueryString() throws Exception {
     super.testQueryString();
   }
