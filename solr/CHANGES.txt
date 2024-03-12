@@ -88,6 +88,8 @@ New Features
 ---------------------
 * SOLR-17141: Implement 'cpuAllowed' query parameter to limit the maximum CPU usage by a running query. (Andrzej Bialecki, Gus Heck, David Smiley)
 
+* SOLR-599: Add a new SolrJ client using the JDK’s built-in Http Client.  (James Dyer)
+
 Improvements
 ---------------------
 * SOLR-17119: When registering or updating a ConfigurablePlugin through the `/cluster/plugin` API,
