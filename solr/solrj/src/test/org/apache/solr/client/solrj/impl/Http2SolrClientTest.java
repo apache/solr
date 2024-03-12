@@ -333,6 +333,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
+  @Override
   public void testQueryString() throws Exception {
     super.testQueryString();
   }
