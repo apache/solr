@@ -293,7 +293,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
 
     if (wt == WT.XML) {
-      String requestBody = new String(DebugServlet.requestBody, "UTF-8");
+      String requestBody = new String(DebugServlet.requestBody, StandardCharsets.UTF_8);
       assertTrue(requestBody, requestBody.contains("<field name=\"id\">" + docIdValue));
     } else if (wt == WT.JAVABIN) {
       assertNotNull(DebugServlet.requestBody);
