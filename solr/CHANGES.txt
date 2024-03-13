@@ -90,6 +90,8 @@ New Features
 
 * SOLR-599: Add a new SolrJ client using the JDK’s built-in Http Client.  (James Dyer)
 
+* SOLR-16403: A new cluster singleton plugin to automatically remove inactive shards. (Paul McArthur, David Smiley)
+
 Improvements
 ---------------------
 * SOLR-17119: When registering or updating a ConfigurablePlugin through the `/cluster/plugin` API,

@@ -190,9 +190,9 @@ public class InactiveShardRemover
       return false;
     }
 
-    final long epochTimestamp;
+    final long epochTimestampNs;
     try {
-      epochTimestamp = Long.parseLong(lastChangeTimestamp);
+      epochTimestampNs = Long.parseLong(lastChangeTimestamp);
     } catch (NumberFormatException e) {
       log.warn(
           "Collection {} Shard {} has an invalid last change timestamp and will not be deleted",
@@ -201,9 +201,9 @@ public class InactiveShardRemover
       return false;
     }
 
-    long currentEpochTime =
+    long currentEpochTimeNs =
         coreContainer.getZkController().getSolrCloudManager().getTimeSource().getEpochTimeNs();
-    long delta = TimeUnit.NANOSECONDS.toSeconds(currentEpochTime - epochTimestamp);
+    long delta = TimeUnit.NANOSECONDS.toSeconds(currentEpochTimeNs - epochTimestampNs);
 
     boolean expired = delta >= ttlSeconds;
     if (log.isDebugEnabled()) {

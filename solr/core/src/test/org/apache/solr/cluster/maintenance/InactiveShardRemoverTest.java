@@ -36,7 +36,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -48,11 +47,6 @@ public class InactiveShardRemoverTest extends SolrCloudTestCase {
         .addConfig(
             "conf", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
-  }
-
-  @AfterClass
-  public static void tearDownCluster() throws Exception {
-    cluster.shutdown();
   }
 
   @Test
