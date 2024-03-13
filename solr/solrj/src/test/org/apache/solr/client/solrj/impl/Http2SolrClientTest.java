@@ -17,208 +17,51 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.SolrPing;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.hamcrest.MatcherAssert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class Http2SolrClientTest extends SolrJettyTestBase {
+public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
-  private static final String EXPECTED_USER_AGENT =
-      "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
-
-  private static final String DEFAULT_CORE = "foo";
-  private static final String SLOW_SERVLET_PATH = "/slow";
-  private static final String SLOW_SERVLET_REGEX = SLOW_SERVLET_PATH + "/*";
-  private static final String DEBUG_SERVLET_PATH = "/debug";
-  private static final String DEBUG_SERVLET_REGEX = DEBUG_SERVLET_PATH + "/*";
-  private static final String REDIRECT_SERVLET_PATH = "/redirect";
-  private static final String REDIRECT_SERVLET_REGEX = REDIRECT_SERVLET_PATH + "/*";
-
-  public static class DebugServlet extends HttpServlet {
-    public static void clear() {
-      lastMethod = null;
-      headers = null;
-      parameters = null;
-      errorCode = null;
-      queryString = null;
-      cookies = null;
-      responseHeaders = null;
-    }
-
-    public static Integer errorCode = null;
-    public static String lastMethod = null;
-    public static HashMap<String, String> headers = null;
-    public static Map<String, String[]> parameters = null;
-    public static String queryString = null;
-    public static javax.servlet.http.Cookie[] cookies = null;
-    public static List<String[]> responseHeaders = null;
-
-    public static void setErrorCode(Integer code) {
-      errorCode = code;
-    }
-
-    public static void addResponseHeader(String headerName, String headerValue) {
-      if (responseHeaders == null) {
-        responseHeaders = new ArrayList<>();
-      }
-      responseHeaders.add(new String[] {headerName, headerValue});
-    }
-
-    @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException {
-      lastMethod = "delete";
-      recordRequest(req, resp);
-    }
-
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException {
-      lastMethod = "get";
-      recordRequest(req, resp);
-    }
-
-    @Override
-    protected void doHead(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException {
-      lastMethod = "head";
-      recordRequest(req, resp);
-    }
-
-    private void setHeaders(HttpServletRequest req) {
-      Enumeration<String> headerNames = req.getHeaderNames();
-      headers = new HashMap<>();
-      while (headerNames.hasMoreElements()) {
-        final String name = headerNames.nextElement();
-        headers.put(name.toLowerCase(Locale.getDefault()), req.getHeader(name));
-      }
-    }
-
-    @SuppressForbidden(reason = "fake servlet only")
-    private void setParameters(HttpServletRequest req) {
-      parameters = req.getParameterMap();
-    }
-
-    private void setQueryString(HttpServletRequest req) {
-      queryString = req.getQueryString();
-    }
-
-    private void setCookies(HttpServletRequest req) {
-      javax.servlet.http.Cookie[] ck = req.getCookies();
-      cookies = req.getCookies();
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException {
-      lastMethod = "post";
-      recordRequest(req, resp);
-    }
-
-    @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp)
-        throws ServletException, IOException {
-      lastMethod = "put";
-      recordRequest(req, resp);
-    }
-
-    private void recordRequest(HttpServletRequest req, HttpServletResponse resp) {
-      setHeaders(req);
-      setParameters(req);
-      setQueryString(req);
-      setCookies(req);
-      if (responseHeaders != null) {
-        for (String[] h : responseHeaders) {
-          resp.addHeader(h[0], h[1]);
-        }
-      }
-      if (null != errorCode) {
-        try {
-          resp.sendError(errorCode);
-        } catch (IOException e) {
-          throw new RuntimeException("sendError IO fail in DebugServlet", e);
-        }
-      }
-    }
-  }
-
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    JettyConfig jettyConfig =
-        JettyConfig.builder()
-            .withServlet(
-                new ServletHolder(BasicHttpSolrClientTest.RedirectServlet.class),
-                REDIRECT_SERVLET_REGEX)
-            .withServlet(
-                new ServletHolder(BasicHttpSolrClientTest.SlowServlet.class), SLOW_SERVLET_REGEX)
-            .withServlet(new ServletHolder(DebugServlet.class), DEBUG_SERVLET_REGEX)
-            .build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+  @Override
+  protected String expectedUserAgent() {
+    return "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
   }
 
   @Override
-  public void tearDown() throws Exception {
-    System.clearProperty("basicauth");
-    System.clearProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
-    DebugServlet.clear();
-    super.tearDown();
-  }
-
-  private Http2SolrClient.Builder getHttp2SolrClientBuilder(
+  @SuppressWarnings(value = "unchecked")
+  protected <B extends HttpSolrClientBuilderBase<?, ?>> B builder(
       String url, int connectionTimeout, int socketTimeout) {
-    return new Http2SolrClient.Builder(url)
-        .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
-        .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS);
+    Http2SolrClient.Builder b =
+        new Http2SolrClient.Builder(url)
+            .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
+            .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS);
+    return (B) b;
   }
 
   @Test
   public void testTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClientBuilder(
-                getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 2000)
-            .withDefaultCollection(DEFAULT_CORE)
-            .build()) {
+        (Http2SolrClient)
+            builder(getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 2000)
+                .withDefaultCollection(DEFAULT_CORE)
+                .build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
@@ -230,9 +73,10 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void test0IdleTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClientBuilder(getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0)
-            .withDefaultCollection(DEFAULT_CORE)
-            .build()) {
+        (Http2SolrClient)
+            builder(getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0)
+                .withDefaultCollection(DEFAULT_CORE)
+                .build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
@@ -244,10 +88,11 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   public void testRequestTimeout() throws Exception {
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client =
-        getHttp2SolrClientBuilder(getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0)
-            .withDefaultCollection(DEFAULT_CORE)
-            .withRequestTimeout(500, TimeUnit.MILLISECONDS)
-            .build()) {
+        (Http2SolrClient)
+            builder(getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0)
+                .withDefaultCollection(DEFAULT_CORE)
+                .withRequestTimeout(500, TimeUnit.MILLISECONDS)
+                .build()) {
       client.query(q, SolrRequest.METHOD.GET);
       fail("No exception thrown.");
     } catch (SolrServerException e) {
@@ -261,190 +106,78 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
    */
   @Test
   public void testSolrExceptionCodeNotFromSolr() throws IOException, SolrServerException {
-    final int status = 527;
-    assertEquals(
-        status
-            + " didn't generate an UNKNOWN error code, someone modified the list of valid ErrorCode's w/o changing this test to work a different way",
-        SolrException.ErrorCode.UNKNOWN,
-        SolrException.ErrorCode.getErrorCode(status));
-
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_CORE)
             .build()) {
-      DebugServlet.setErrorCode(status);
-      try {
-        SolrQuery q = new SolrQuery("foo");
-        client.query(q, SolrRequest.METHOD.GET);
-        fail("Didn't get excepted exception from oversided request");
-      } catch (SolrException e) {
-        assertEquals("Unexpected exception status code", status, e.code());
-      }
+      super.testSolrExceptionCodeNotFromSolr(client);
     } finally {
       DebugServlet.clear();
     }
   }
 
-  /**
-   * test that SolrExceptions thrown by HttpSolrClient can correctly encapsulate http status codes
-   * even when not on the list of ErrorCodes solr may return.
-   */
   @Test
   public void testSolrExceptionWithNullBaseurl() throws IOException, SolrServerException {
-    final int status = 527;
-    assertEquals(
-        status
-            + " didn't generate an UNKNOWN error code, someone modified the list of valid ErrorCode's w/o changing this test to work a different way",
-        SolrException.ErrorCode.UNKNOWN,
-        SolrException.ErrorCode.getErrorCode(status));
-
     try (Http2SolrClient client = new Http2SolrClient.Builder(null).build()) {
-      DebugServlet.setErrorCode(status);
-      try {
-        // if client base url is null, request url will be used in exception message
-        SolrPing ping = new SolrPing();
-        ping.setBasePath(getBaseUrl() + DEBUG_SERVLET_PATH);
-        client.request(ping, DEFAULT_CORE);
-
-        fail("Didn't get excepted exception from oversided request");
-      } catch (SolrException e) {
-        assertEquals("Unexpected exception status code", status, e.code());
-        assertTrue(e.getMessage().contains(getBaseUrl()));
-      }
+      super.testSolrExceptionWithNullBaseurl(client);
     } finally {
       DebugServlet.clear();
     }
   }
 
-  @Test
-  public void testQuery() throws Exception {
+  @Override
+  protected void testQuerySetup(SolrRequest.METHOD method, ResponseParser rp) throws Exception {
     DebugServlet.clear();
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", "\u1234");
-    try (Http2SolrClient client =
-        new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).build()) {
-
-      try {
-        client.query(q, SolrRequest.METHOD.GET);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      // default method
-      assertEquals("get", DebugServlet.lastMethod);
-      // agent
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      // default wt
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      // default version
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      // agent
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      // content-type
-      assertNull(DebugServlet.headers.get("content-type"));
-      // param encoding
-      assertEquals(1, DebugServlet.parameters.get("a").length);
-      assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
-
-      // POST
-      DebugServlet.clear();
-      try {
-        client.query(q, SolrRequest.METHOD.POST);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      assertEquals("post", DebugServlet.lastMethod);
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      assertEquals(1, DebugServlet.parameters.get("a").length);
-      assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
-
-      // PUT
-      DebugServlet.clear();
-      try {
-        client.query(q, SolrRequest.METHOD.PUT);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      assertEquals("put", DebugServlet.lastMethod);
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      assertEquals(1, DebugServlet.parameters.get("a").length);
-      assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
+    Http2SolrClient.Builder b =
+        new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE);
+    if (rp != null) {
+      b.withResponseParser(rp);
     }
-    // XML/GET
-    try (Http2SolrClient client =
-        new Http2SolrClient.Builder(url).withResponseParser(new XMLResponseParser()).build()) {
-
-      DebugServlet.clear();
-      try {
-        client.query(q, SolrRequest.METHOD.GET);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      assertEquals("get", DebugServlet.lastMethod);
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
+    try (Http2SolrClient client = b.build()) {
+      client.query(q, method);
       assertEquals(
           client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      assertEquals(1, DebugServlet.parameters.get("a").length);
-      assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-
-      // XML/POST
-      DebugServlet.clear();
-      try {
-        client.query(q, SolrRequest.METHOD.POST);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      assertEquals("post", DebugServlet.lastMethod);
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      assertEquals(1, DebugServlet.parameters.get("a").length);
-      assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
-
-      DebugServlet.clear();
-      try {
-        client.query(q, SolrRequest.METHOD.PUT);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      assertEquals("put", DebugServlet.lastMethod);
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      assertEquals(1, DebugServlet.parameters.get("a").length);
-      assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
+    } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
     }
+  }
+
+  @Test
+  @Override
+  public void testQueryGet() throws Exception {
+    super.testQueryGet();
+  }
+
+  @Test
+  @Override
+  public void testQueryPost() throws Exception {
+    super.testQueryPost();
+  }
+
+  @Test
+  @Override
+  public void testQueryPut() throws Exception {
+    super.testQueryPut();
+  }
+
+  @Test
+  @Override
+  public void testQueryXmlGet() throws Exception {
+    super.testQueryXmlGet();
+  }
+
+  @Test
+  @Override
+  public void testQueryXmlPost() throws Exception {
+    super.testQueryXmlPost();
+  }
+
+  @Test
+  @Override
+  public void testQueryXmlPut() throws Exception {
+    super.testQueryXmlPut();
   }
 
   @Test
@@ -457,41 +190,30 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
         client.deleteById("id");
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
       }
-
-      // default method
-      assertEquals("post", DebugServlet.lastMethod);
-      // agent
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      // default wt
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      // default version
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
       assertEquals(
           client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      // agent
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
+      assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
+      validateDelete();
     }
-    // XML
+  }
+
+  @Test
+  public void testDeleteXml() throws Exception {
+    DebugServlet.clear();
+    String url = getBaseUrl() + "/debug/foo";
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url)
             .withDefaultCollection(DEFAULT_CORE)
             .withResponseParser(new XMLResponseParser())
             .build()) {
-
       try {
         client.deleteByQuery("*:*");
       } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
       }
-
-      assertEquals("post", DebugServlet.lastMethod);
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
       assertEquals(
           client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
+      assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
+      validateDelete();
     }
   }
 
@@ -502,110 +224,42 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
         new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_CORE)
             .build()) {
-      Collection<String> ids = Collections.singletonList("a");
-      try {
-        client.getById("a");
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      try {
-        client.getById(ids, null);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      try {
-        client.getById("foo", "a");
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      try {
-        client.getById("foo", ids, null);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
+      super.testGetById(client);
     }
   }
 
   @Test
-  public void testUpdate() throws Exception {
-    DebugServlet.clear();
+  public void testUpdateDefault() throws Exception {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    UpdateRequest req = new UpdateRequest();
-    req.add(new SolrInputDocument());
-    req.setParam("a", "\u1234");
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).build()) {
-
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      // default method
-      assertEquals("post", DebugServlet.lastMethod);
-      // agent
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      // default wt
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      // default version
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      // content type
-      assertEquals("application/javabin", DebugServlet.headers.get("content-type"));
-      // parameter encoding
-      assertEquals(1, DebugServlet.parameters.get("a").length);
-      assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+      testUpdate(client, WT.JAVABIN, "application/javabin", "\u1234");
     }
+  }
+
+  @Test
+  public void testUpdateXml() throws Exception {
+    String url = getBaseUrl() + "/debug/foo";
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url)
             .withDefaultCollection(DEFAULT_CORE)
             .withRequestWriter(new RequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build()) {
-
-      // XML response and writer
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      assertEquals("post", DebugServlet.lastMethod);
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      assertEquals("application/xml; charset=UTF-8", DebugServlet.headers.get("content-type"));
-      assertEquals(1, DebugServlet.parameters.get("a").length);
-      assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+      testUpdate(client, WT.XML, "application/xml; charset=UTF-8", "\u1234");
     }
+  }
 
-    // javabin request
+  @Test
+  public void testUpdateJavabin() throws Exception {
+    String url = getBaseUrl() + "/debug/foo";
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url)
             .withDefaultCollection(DEFAULT_CORE)
             .withRequestWriter(new BinaryRequestWriter())
             .withResponseParser(new BinaryResponseParser())
             .build()) {
-
-      DebugServlet.clear();
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-
-      assertEquals("post", DebugServlet.lastMethod);
-      assertEquals(EXPECTED_USER_AGENT, DebugServlet.headers.get("user-agent"));
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.WT).length);
-      assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
-      assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
-      assertEquals(
-          client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
-      assertEquals("application/javabin", DebugServlet.headers.get("content-type"));
-      assertEquals(1, DebugServlet.parameters.get("a").length);
-      assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+      testUpdate(client, WT.JAVABIN, "application/javabin", "\u1234");
     }
   }
 
@@ -673,126 +327,15 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testCollectionParameters() throws IOException, SolrServerException {
-
-    try (Http2SolrClient client = new Http2SolrClient.Builder(getBaseUrl()).build()) {
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", "collection");
-      client.add("collection1", doc);
-      client.commit("collection1");
-
-      assertEquals(
-          1,
-          client.query("collection1", new SolrQuery("id:collection")).getResults().getNumFound());
-    }
-
-    final String collection1Url = getCoreUrl();
-    try (Http2SolrClient client = new Http2SolrClient.Builder(collection1Url).build()) {
-      assertEquals(1, client.query(new SolrQuery("id:collection")).getResults().getNumFound());
-    }
-  }
-
-  private void setReqParamsOf(UpdateRequest req, String... keys) {
-    if (keys != null) {
-      for (String k : keys) {
-        req.setParam(k, k + "Value");
-      }
-    }
-  }
-
-  private void verifyServletState(Http2SolrClient client, SolrRequest<?> request) {
-    // check query String
-    Iterator<String> paramNames = request.getParams().getParameterNamesIterator();
-    while (paramNames.hasNext()) {
-      String name = paramNames.next();
-      String[] values = request.getParams().getParams(name);
-      if (values != null) {
-        for (String value : values) {
-          boolean shouldBeInQueryString =
-              client.getUrlParamNames().contains(name)
-                  || (request.getQueryParams() != null && request.getQueryParams().contains(name));
-          assertEquals(
-              shouldBeInQueryString, DebugServlet.queryString.contains(name + "=" + value));
-          // in either case, it should be in the parameters
-          assertNotNull(DebugServlet.parameters.get(name));
-          assertEquals(1, DebugServlet.parameters.get(name).length);
-          assertEquals(value, DebugServlet.parameters.get(name)[0]);
-        }
-      }
-    }
+    Http2SolrClient baseUrlClient = new Http2SolrClient.Builder(getBaseUrl()).build();
+    Http2SolrClient collection1UrlClient = new Http2SolrClient.Builder(getCoreUrl()).build();
+    testCollectionParameters(baseUrlClient, collection1UrlClient);
   }
 
   @Test
+  @Override
   public void testQueryString() throws Exception {
-
-    final String clientUrl = getBaseUrl() + DEBUG_SERVLET_PATH;
-    UpdateRequest req = new UpdateRequest();
-
-    try (Http2SolrClient client =
-        new Http2SolrClient.Builder(clientUrl)
-            .withDefaultCollection(DEFAULT_CORE)
-            .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
-            .build()) {
-      // test without request query params
-      DebugServlet.clear();
-      setReqParamsOf(req, "serverOnly", "notServer");
-
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-      verifyServletState(client, req);
-
-      // test without server query params
-      DebugServlet.clear();
-    }
-    try (Http2SolrClient client =
-        new Http2SolrClient.Builder(clientUrl).withTheseParamNamesInTheUrl(Set.of()).build()) {
-      req = new UpdateRequest();
-      req.setQueryParams(Set.of("requestOnly"));
-      setReqParamsOf(req, "requestOnly", "notRequest");
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-      verifyServletState(client, req);
-
-      // test with both request and server query params
-      DebugServlet.clear();
-    }
-    try (Http2SolrClient client =
-        new Http2SolrClient.Builder(clientUrl)
-            .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
-            .build()) {
-      req = new UpdateRequest();
-      req.setQueryParams(Set.of("requestOnly", "both"));
-      setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-      verifyServletState(client, req);
-    }
-    try (Http2SolrClient client =
-        new Http2SolrClient.Builder(clientUrl)
-            .withTheseParamNamesInTheUrl(Set.of("serverOnly", "both"))
-            .build()) {
-
-      // test with both request and server query params with single stream
-      DebugServlet.clear();
-      req = new UpdateRequest();
-      req.add(new SolrInputDocument());
-      req.setQueryParams(Set.of("requestOnly", "both"));
-      setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
-      try {
-        client.request(req);
-      } catch (BaseHttpSolrClient.RemoteSolrException ignored) {
-      }
-      // NOTE: single stream requests send all the params
-      // as part of the query string.  So add "neither" to the request
-      // so it passes the verification step.
-      req.setQueryParams(Set.of("requestOnly", "both", "neither"));
-      verifyServletState(client, req);
-    }
+    super.testQueryString();
   }
 
   @Test
@@ -844,41 +387,13 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   }
 
   @Test
-  public void testBadExplicitCredentials() {
-    expectThrowsAndMessage(
-        IllegalStateException.class,
-        () -> new Http2SolrClient.Builder().withBasicAuthCredentials("foo", null),
-        "Invalid Authentication credentials");
-    expectThrowsAndMessage(
-        IllegalStateException.class,
-        () -> new Http2SolrClient.Builder().withBasicAuthCredentials(null, "foo"),
-        "Invalid Authentication credentials");
-  }
-
-  @Test
   public void testSetCredentialsExplicitly() {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_CORE)
             .withBasicAuthCredentials("foo", "explicit")
             .build(); ) {
-      QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-      try {
-        ignoreException("Error from server");
-        client.request(r);
-      } catch (Exception e) {
-        // expected
-      }
-      unIgnoreException("Error from server");
-      assertTrue(DebugServlet.headers.size() > 0);
-      String authorizationHeader = DebugServlet.headers.get("authorization");
-      assertNotNull(
-          "No authorization information in headers found. Headers: " + DebugServlet.headers,
-          authorizationHeader);
-      assertEquals(
-          "Basic "
-              + Base64.getEncoder().encodeToString("foo:explicit".getBytes(StandardCharsets.UTF_8)),
-          authorizationHeader);
+      super.testSetCredentialsExplicitly(client);
     }
   }
 
@@ -922,33 +437,13 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   }
 
   @Test
-  public void testPerRequestCredentialsWin() {
+  public void testPerRequestCredentials() {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_CORE)
             .withBasicAuthCredentials("foo2", "explicit")
             .build(); ) {
-      QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-      r.setBasicAuthCredentials("foo3", "per-request");
-      try {
-        ignoreException("Error from server");
-        client.request(r);
-      } catch (Exception e) {
-        // expected
-      }
-      unIgnoreException("Error from server");
-      assertTrue(DebugServlet.headers.size() > 0);
-      String authorizationHeader = DebugServlet.headers.get("authorization");
-      assertNotNull(
-          "No authorization information in headers found. Headers: " + DebugServlet.headers,
-          authorizationHeader);
-      assertEquals(
-          "Basic "
-              + Base64.getEncoder()
-                  .encodeToString("foo3:per-request".getBytes(StandardCharsets.UTF_8)),
-          authorizationHeader);
-    } finally {
-      System.clearProperty("basicauth");
+      super.testPerRequestCredentials(client);
     }
   }
 
@@ -957,18 +452,8 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_CORE)
-            .build()) {
-      QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-      try {
-        ignoreException("Error from server");
-        client.request(r);
-      } catch (Exception e) {
-        // expected
-      }
-      unIgnoreException("Error from server");
-      assertFalse(
-          "Expecting no authorization header but got: " + DebugServlet.headers,
-          DebugServlet.headers.containsKey("authorization"));
+            .build(); ) {
+      super.testNoCredentials(client);
     }
   }
 
@@ -980,48 +465,18 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
             .withDefaultCollection(DEFAULT_CORE)
             .withOptionalBasicAuthCredentials("foo:expli:cit")
             .build(); ) {
-      QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-      try {
-        ignoreException("Error from server");
-        client.request(r);
-      } catch (Exception e) {
-        // expected
-      }
-      unIgnoreException("Error from server");
-      assertTrue(DebugServlet.headers.size() > 0);
-      String authorizationHeader = DebugServlet.headers.get("authorization");
-      assertNotNull(
-          "No authorization information in headers found. Headers: " + DebugServlet.headers,
-          authorizationHeader);
-      assertEquals(
-          "Basic "
-              + Base64.getEncoder()
-                  .encodeToString("foo:expli:cit".getBytes(StandardCharsets.UTF_8)),
-          authorizationHeader);
+      super.testUseOptionalCredentials(client);
     }
   }
 
   @Test
   public void testUseOptionalCredentialsWithNull() {
-    // username foo, password with embedded colon separator is "expli:cit".
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_CORE)
             .withOptionalBasicAuthCredentials(null)
             .build(); ) {
-      QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
-      try {
-        ignoreException("Error from server");
-        client.request(r);
-      } catch (Exception e) {
-        // expected
-      }
-      unIgnoreException("Error from server");
-      assertTrue(DebugServlet.headers.size() > 0);
-      String authorizationHeader = DebugServlet.headers.get("authorization");
-      assertNull(
-          "No authorization headers expected. Headers: " + DebugServlet.headers,
-          authorizationHeader);
+      super.testUseOptionalCredentialsWithNull(client);
     }
   }
 
@@ -1040,6 +495,18 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
   }
 
   @Test
+  public void testBadExplicitCredentials() {
+    expectThrowsAndMessage(
+        IllegalStateException.class,
+        () -> new Http2SolrClient.Builder().withBasicAuthCredentials("foo", null),
+        "Invalid Authentication credentials");
+    expectThrowsAndMessage(
+        IllegalStateException.class,
+        () -> new Http2SolrClient.Builder().withBasicAuthCredentials(null, "foo"),
+        "Invalid Authentication credentials");
+  }
+
+  @Test
   public void testBadHttpFactory() {
     System.setProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY, "FakeClassName");
     try {
@@ -1055,21 +522,15 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
 
   @Test
   public void testGetRawStream() throws Exception {
-    DebugServlet.clear();
     try (Http2SolrClient client =
-        getHttp2SolrClientBuilder(
-                getBaseUrl() + DEBUG_SERVLET_PATH,
-                DEFAULT_CONNECTION_TIMEOUT,
-                DEFAULT_CONNECTION_TIMEOUT)
-            .withDefaultCollection(DEFAULT_CORE)
-            .build()) {
-      final var req = new QueryRequest(params("q", "*:*"));
-      req.setResponseParser(new InputStreamResponseParser("xml"));
-      final var rsp = req.process(client);
-      Object stream = rsp.getResponse().get("stream");
-      assertNotNull(stream);
-      MatcherAssert.assertThat(stream, instanceOf(InputStream.class));
-      org.apache.solr.common.util.IOUtils.closeQuietly((InputStream) stream);
+        (Http2SolrClient)
+            builder(
+                    getBaseUrl() + DEBUG_SERVLET_PATH,
+                    DEFAULT_CONNECTION_TIMEOUT,
+                    DEFAULT_CONNECTION_TIMEOUT)
+                .withDefaultCollection(DEFAULT_CORE)
+                .build()) {
+      super.testGetRawStream(client);
     }
   }
 
