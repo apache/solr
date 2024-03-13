@@ -139,7 +139,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.httpClient = createHttpClient(builder);
       this.closeClient = true;
     }
-
+    if (builder.listenerFactory != null) {
+      this.listenerFactory.addAll(builder.listenerFactory);
+    }
     updateDefaultMimeTypeForParser();
 
     this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
@@ -810,6 +812,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     protected Long keyStoreReloadIntervalSecs;
 
+    private List<HttpListenerFactory> listenerFactory;
+
     public Builder() {
       super();
     }
@@ -1005,6 +1009,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
       }
       if (this.urlParamNames == null) {
         this.urlParamNames = http2SolrClient.urlParamNames;
+      }
+      if (this.listenerFactory == null) {
+        this.listenerFactory = http2SolrClient.listenerFactory;
       }
       return this;
     }
