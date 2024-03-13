@@ -791,6 +791,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     httpClient.setFollowRedirects(follow);
   }
 
+  @Override
   public String getBaseURL() {
     return serverBaseUrl;
   }
@@ -1105,6 +1106,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
   @Deprecated
   public void setUrlParamNames(Set<String> urlParamNames) {}
 
+  @Override
   protected void updateDefaultMimeTypeForParser() {
     defaultParserMimeTypes =
         parser.getContentTypes().stream()
