@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** Cluster Singleton plugins that can are used to perform maintenance tasks within the cluster. */
+/** Cluster Singleton plugins that are used to perform maintenance tasks within the cluster. */
 package org.apache.solr.cluster.maintenance;
