@@ -31,12 +31,15 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.LogListener;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -126,10 +129,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
     for (int i = 0; i < solr.length; i++) {
       solrUrls[i] = solr[i].getUrl();
     }
-    try (LBHttp2SolrClient client =
-        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
-            .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
-            .build()) {
+    try (LBHttp2SolrClient client = createTestClient(solrUrls, 0)) {
       SolrQuery solrQuery = new SolrQuery("*:*");
       Set<String> names = new HashSet<>();
       QueryResponse resp = null;
@@ -175,10 +175,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
     for (int i = 0; i < 2; i++) {
       solrUrls[i] = solr[i].getUrl();
     }
-    try (LBHttp2SolrClient client =
-        new LBHttp2SolrClient.Builder(httpClient, solrUrls)
-            .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
-            .build()) {
+    try (LBHttp2SolrClient client = createTestClient(solrUrls, 0)) {
       SolrQuery solrQuery = new SolrQuery("*:*");
       QueryResponse resp = null;
       solr[0].jetty.stop();
@@ -205,42 +202,31 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
     }
   }
 
+  @LogLevel("org.apache.solr.client.solrj.impl.LBSolrClient=DEBUG")
   public void testReliabilityWithLivenessChecks() throws Exception {
-    String[] solrUrls = new String[solr.length];
-    for (int i = 0; i < solr.length; i++) {
-      solrUrls[i] = solr[i].getUrl();
-    }
-
-    try (LBHttp2SolrClient client =
-                 new LBHttp2SolrClient.Builder(httpClient, solrUrls)
-                         .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
-                         .build()) {
-
-      // Kill a server and test again
-      solr[1].jetty.stop();
-      solr[1].jetty = null;
-
-      // query the servers
-      for (String ignored : solrUrls) client.query(new SolrQuery("*:*"));
-
-      // Start the killed server once again
-      solr[1].startJetty();
-      // Wait for the alive check to complete
-      waitForServer(30, client, 3, solr[1].name);
-    }
+    LogReliabilityTestSetup logSetup = new LogReliabilityTestSetup(solr[1].getUrl());
+    testReliabilityCommon(0);
+    assertTrue(logSetup.getPingChecksOnServer().pollMessage().length() > 0);
+    assertTrue(logSetup.getSkippedCheckLogs().pollMessage() == null);
+    assertTrue(logSetup.getSuccessfulPingChecks().pollMessage().length() > 0);
   }
 
+  @LogLevel("org.apache.solr.client.solrj.impl.LBHttp2SolrClient=DEBUG")
   public void testReliabilityWithDelayedLivenessChecks() throws Exception {
+    LogReliabilityTestSetup logSetup = new LogReliabilityTestSetup(solr[1].getUrl());
+    testReliabilityCommon(3);
+
+    assertTrue(logSetup.getSkippedCheckLogs().pollMessage().length() > 0);
+    assertTrue(logSetup.getPingChecksOnServer().pollMessage().length() > 0);
+    assertTrue(logSetup.getSuccessfulPingChecks().pollMessage().length() > 0);
+  }
+
+  private void testReliabilityCommon(int aliveCheckSkipIters) throws Exception {
     String[] solrUrls = new String[solr.length];
     for (int i = 0; i < solr.length; i++) {
       solrUrls[i] = solr[i].getUrl();
     }
-
-    try (LBHttp2SolrClient client =
-                 new LBHttp2SolrClient.Builder(httpClient, solrUrls)
-                         .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
-                         .setAliveCheckSkipIters(3)
-                         .build()) {
+    try (LBHttp2SolrClient client = createTestClient(solrUrls, aliveCheckSkipIters)) {
 
       // Kill a server and test again
       solr[1].jetty.stop();
@@ -251,36 +237,22 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
 
       // Start the killed server once again
       solr[1].startJetty();
+
       // Wait for the alive check to complete
       waitForServer(30, client, 3, solr[1].name);
     }
   }
 
-  public void testReliabilityWithMinimumZombieTimeAndDisabledQueries() throws Exception {
-    String[] solrUrls = new String[solr.length];
-    for (int i = 0; i < solr.length; i++) {
-      solrUrls[i] = solr[i].getUrl();
-    }
-
-    //aliveCheckSkipIters defaults to 0
-    try (LBHttp2SolrClient client =
+  private LBHttp2SolrClient createTestClient(String[] solrUrls, int aliveCheckSkipIters) {
+    LBHttp2SolrClient.Builder builder =
         new LBHttp2SolrClient.Builder(httpClient, solrUrls)
-            .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
-                .setAliveCheckQuery(null)
-            .build()) {
-
-      // Kill a server and test again
-      solr[1].jetty.stop();
-      solr[1].jetty = null;
-
-      // query the servers
-      for (String ignored : solrUrls) client.query(new SolrQuery("*:*"));
-
-      // Start the killed server once again
-      solr[1].startJetty();
-      // Wait for the alive check to complete
-      waitForServer(30, client, 3, solr[1].name);
+            .setAliveCheckInterval(100, TimeUnit.MILLISECONDS)
+            .setAliveCheckSkipIters(aliveCheckSkipIters);
+    if (aliveCheckSkipIters > 0) {
+      builder = builder.setAliveCheckSkipIters(aliveCheckSkipIters);
     }
+
+    return builder.build();
   }
 
   // wait maximum ms for serverName to come back up
@@ -299,6 +271,37 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
       if (name.equals(serverName)) return;
 
       Thread.sleep(500);
+    }
+  }
+
+  public class LogReliabilityTestSetup {
+
+    private final LogListener pingChecksOnServer;
+    private final LogListener skippedCheckLogs;
+    private final LogListener successfulPingChecks;
+
+    public LogReliabilityTestSetup(String serverUrl) {
+      this.pingChecksOnServer =
+          LogListener.debug(LBSolrClient.class)
+              .substring("Running ping check on server " + serverUrl);
+      this.skippedCheckLogs =
+          LogListener.debug(LBSolrClient.class)
+              .substring("Skipping liveness check for server " + serverUrl);
+      this.successfulPingChecks =
+          LogListener.debug(LBSolrClient.class)
+              .substring("Successfully pinged server " + serverUrl);
+    }
+
+    public LogListener getPingChecksOnServer() {
+      return pingChecksOnServer;
+    }
+
+    public LogListener getSkippedCheckLogs() {
+      return skippedCheckLogs;
+    }
+
+    public LogListener getSuccessfulPingChecks() {
+      return successfulPingChecks;
     }
   }
 

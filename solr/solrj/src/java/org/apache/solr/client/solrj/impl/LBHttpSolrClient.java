@@ -102,6 +102,8 @@ public class LBHttpSolrClient extends LBSolrClient {
     this.soTimeoutMillis = builder.socketTimeoutMillis;
     this.parser = builder.responseParser;
     this.aliveCheckIntervalMillis = builder.aliveCheckInterval;
+    this.aliveCheckSkipIters = builder.aliveCheckSkipIters;
+    this.aliveCheckQuery = builder.aliveCheckQuery;
     for (String baseUrl : builder.baseSolrUrls) {
       urlToClient.put(baseUrl, makeSolrClient(baseUrl));
     }
@@ -187,8 +189,15 @@ public class LBHttpSolrClient extends LBSolrClient {
     protected final List<String> baseSolrUrls;
     protected HttpSolrClient.Builder httpSolrClientBuilder;
     private int aliveCheckInterval = CHECK_INTERVAL;
+    /**
+     * Value other than the default 0 can be reassigned using {@link #setAliveCheckSkipIters(int)}
+     */
     private int aliveCheckSkipIters = 0;
-    private SolrQuery aliveCheckQuery;
+    /**
+     * Value other than the default DEFAULT_ALIVE_CHECK_QUERY can be reassigned using {@link
+     * #setAliveCheckQuery(SolrQuery)}
+     */
+    private SolrQuery aliveCheckQuery = DEFAULT_ALIVE_CHECK_QUERY;
 
     public Builder() {
       this.baseSolrUrls = new ArrayList<>();
@@ -269,37 +278,45 @@ public class LBHttpSolrClient extends LBSolrClient {
 
     /**
      * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
-     * this to set that interval
-     *
-     * @param aliveCheckInterval time in milliseconds
+     * this to set that interval.
+     * @param aliveCheckInterval how often to ping for aliveness
+     * @see #setAliveCheckSkipIters(int)
+     * @see #setAliveCheckQuery(SolrQuery)
      */
     public Builder setAliveCheckInterval(int aliveCheckInterval) {
       if (aliveCheckInterval <= 0) {
         throw new IllegalArgumentException(
-                "Alive check interval must be positive, specified value = " + aliveCheckInterval);
+            "Alive check interval must be positive, specified value = " + aliveCheckInterval);
       }
       this.aliveCheckInterval = aliveCheckInterval;
       return this;
     }
 
     /**
-     * Positive values can be used to ensure that the liveness checks for a given URL will only be run every "Nth" iteration of the setAliveCheckInterval
-     * @param aliveCheckSkipIters, number of iterations to skip, an int value
+     * Positive values can be used to ensure that the liveness checks for a given URL will only be
+     * run every "Nth" iteration of the setAliveCheckInterval
+     * @param aliveCheckSkipIters, number of iterations to skip, an int value *
+     * @see #setAliveCheckInterval(int)
+     * @see #setAliveCheckQuery(SolrQuery)
      */
-    public Builder setAliveCheckSkipIters(int aliveCheckSkipIters){
-      if(aliveCheckSkipIters < 0) {
-        throw new IllegalArgumentException(("Alive Check Skip Iterations must be positive, specified value = " + aliveCheckSkipIters));
+    public Builder setAliveCheckSkipIters(int aliveCheckSkipIters) {
+      if (aliveCheckSkipIters < 0) {
+        throw new IllegalArgumentException(
+            ("Alive Check Skip Iterations must be positive, specified value = "
+                + aliveCheckSkipIters));
       }
       this.aliveCheckSkipIters = aliveCheckSkipIters;
       return this;
     }
 
-
     /**
-     * If @aliveCheckQuery is set to null the client will implicitly assume success anytime it would normally perform a liveness check on a server.
+     * If @aliveCheckQuery is set to null the client will implicitly assume success anytime it would
+     * normally perform a liveness check on a server.
      * @param aliveCheckQuery, query to be executed for liveness checks
+     * @see #setAliveCheckInterval(int)
+     * @see #setAliveCheckSkipIters(int)
      */
-    public Builder setAliveCheckQuery(SolrQuery aliveCheckQuery){
+    public Builder setAliveCheckQuery(SolrQuery aliveCheckQuery) {
       this.aliveCheckQuery = aliveCheckQuery;
       return this;
     }

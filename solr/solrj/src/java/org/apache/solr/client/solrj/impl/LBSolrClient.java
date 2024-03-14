@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
@@ -40,8 +41,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import io.swagger.v3.oas.annotations.servers.Server;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -50,20 +49,21 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 public abstract class LBSolrClient extends SolrClient {
 
   // defaults
   protected static final Set<Integer> RETRY_CODES =
-          new HashSet<>(Arrays.asList(404, 403, 503, 500));
+      new HashSet<>(Arrays.asList(404, 403, 503, 500));
   private static final int NONSTANDARD_PING_LIMIT =
       5; // number of times we'll ping dead servers not in the server list
 
@@ -80,27 +80,28 @@ public abstract class LBSolrClient extends SolrClient {
   private volatile ScheduledExecutorService aliveCheckExecutor;
 
   protected long aliveCheckIntervalMillis =
-          TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
+      TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
   protected int aliveCheckSkipIters = 0;
   private final AtomicInteger counter = new AtomicInteger(-1);
 
-  private static final SolrQuery solrQuery = new SolrQuery("*:*");
-  protected SolrQuery aliveCheckQuery = solrQuery;
+  protected static final SolrQuery DEFAULT_ALIVE_CHECK_QUERY = new SolrQuery("*:*");
+  protected SolrQuery aliveCheckQuery = DEFAULT_ALIVE_CHECK_QUERY;
   protected volatile ResponseParser parser;
   protected volatile RequestWriter requestWriter;
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static {
-    solrQuery.setRows(0);
+    DEFAULT_ALIVE_CHECK_QUERY.setRows(0);
     /*
      * Default sort (if we don't supply a sort) is by score and since we request 0 rows any sorting
      * and scoring is not necessary. SolrQuery.DOCID schema-independently specifies a non-scoring
      * sort. <code>_docid_ asc</code> sort is efficient, <code>_docid_ desc</code> sort is not, so
      * choose ascending DOCID sort.
      */
-    solrQuery.setSort(SolrQuery.DOCID, SolrQuery.ORDER.asc);
+    DEFAULT_ALIVE_CHECK_QUERY.setSort(SolrQuery.DOCID, SolrQuery.ORDER.asc);
     // not a top-level request, we are interested only in the server being sent to i.e. it need not
     // distribute our request to further servers
-    solrQuery.setDistrib(false);
+    DEFAULT_ALIVE_CHECK_QUERY.setDistrib(false);
   }
 
   protected static class ServerWrapper {
@@ -456,13 +457,13 @@ public abstract class LBSolrClient extends SolrClient {
       synchronized (this) {
         if (aliveCheckExecutor == null) {
           aliveCheckExecutor =
-                  Executors.newSingleThreadScheduledExecutor(
-                          new SolrNamedThreadFactory("aliveCheckExecutor"));
+              Executors.newSingleThreadScheduledExecutor(
+                  new SolrNamedThreadFactory("aliveCheckExecutor"));
           aliveCheckExecutor.scheduleAtFixedRate(
-                  getAliveCheckRunner(new WeakReference<>(this)),
-                  this.aliveCheckIntervalMillis,
-                  this.aliveCheckIntervalMillis,
-                  TimeUnit.MILLISECONDS);
+              getAliveCheckRunner(new WeakReference<>(this)),
+              this.aliveCheckIntervalMillis,
+              this.aliveCheckIntervalMillis,
+              TimeUnit.MILLISECONDS);
         }
       }
     }
@@ -487,18 +488,16 @@ public abstract class LBSolrClient extends SolrClient {
     return requestWriter;
   }
 
-
-  private QueryResponse pingServer(ServerWrapper zombieServer) throws SolrServerException, IOException {
-    if (aliveCheckQuery != null) {
-      QueryRequest queryRequest = new QueryRequest(aliveCheckQuery);
-      queryRequest.setBasePath(zombieServer.baseUrl);
-      return queryRequest.process(getClient(zombieServer.getBaseUrl()));
+  private boolean isServerAlive(ServerWrapper zombieServer)
+      throws SolrServerException, IOException {
+    if (null == aliveCheckQuery) {
+      log.debug("Assuming success because aliveCheckQuery is null");
+      return true;
     }
-    return null;
-  }
-
-  private boolean isServerAlive(QueryResponse resp) {
-    return aliveCheckQuery == null || (resp != null && resp.getStatus() == 0);
+    log.debug("Running ping check on server " + zombieServer.getBaseUrl());
+    QueryRequest queryRequest = new QueryRequest(aliveCheckQuery);
+    queryRequest.setBasePath(zombieServer.baseUrl);
+    return queryRequest.process(getClient(zombieServer.getBaseUrl())).getStatus() == 0;
   }
 
   private void handleServerBackUp(ServerWrapper zombieServer) {
@@ -520,6 +519,7 @@ public abstract class LBSolrClient extends SolrClient {
   private void handleServerDown(ServerWrapper zombieServer) {
     // Expected. The server is still down.
     zombieServer.failedPings++;
+    zombieServer.skipAliveCheckIters = this.aliveCheckSkipIters;
 
     // If the server doesn't belong in the standard set belonging to this load balancer
     // then simply drop it after a certain number of failed pings.
@@ -532,16 +532,25 @@ public abstract class LBSolrClient extends SolrClient {
     try {
       // push back on liveness checks only every Nth iteration
       if (zombieServer.skipAliveCheckIters > 0) {
+        log.debug(
+            "Skipping liveness check for server "
+                + zombieServer.getBaseUrl()
+                + " because skipAliveCheckIters = "
+                + zombieServer.skipAliveCheckIters);
         zombieServer.skipAliveCheckIters--;
         return;
       }
 
-      QueryResponse resp = pingServer(zombieServer);
-      if (isServerAlive(resp)) {
+      if (isServerAlive(zombieServer)) {
+        log.debug("Successfully pinged server " + zombieServer.getBaseUrl() + ", marking it alive");
         handleServerBackUp(zombieServer);
       }
 
     } catch (Exception e) {
+      log.debug(
+          "Ping to server "
+              + zombieServer.getBaseUrl()
+              + " failed, continuing to mark it as zombie");
       handleServerDown(zombieServer);
     }
   }
