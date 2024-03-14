@@ -61,7 +61,7 @@ public class ThreadCpuTimer {
    */
   public ThreadCpuTimer() {
     if (THREAD_MX_BEAN != null) {
-      this.startCpuTimeNanos = THREAD_MX_BEAN.getCurrentThreadCpuTime();
+      this.startCpuTimeNanos = getThreadTotalCpuNs();
     } else {
       this.startCpuTimeNanos = UNSUPPORTED;
     }
@@ -74,7 +74,7 @@ public class ThreadCpuTimer {
   /**
    * Return the initial value of CPU time for this thread when this instance was first created.
    * NOTE: absolute value returned by this method has no meaning by itself, it should only be used
-   * when comparing elapsed time between this value and {@link #getCurrentCpuTimeNs()}.
+   * when comparing elapsed time between this value and {@link #getElapsedTimerCpuNs()}.
    *
    * @return current value, or {@link #UNSUPPORTED} if not supported.
    */
@@ -87,14 +87,18 @@ public class ThreadCpuTimer {
    *
    * @return current value, or {@link #UNSUPPORTED} if not supported.
    */
-  public long getCurrentCpuTimeNs() {
+  public long getElapsedTimerCpuNs() {
     if (THREAD_MX_BEAN != null) {
       return this.startCpuTimeNanos != UNSUPPORTED
-          ? THREAD_MX_BEAN.getCurrentThreadCpuTime() - this.startCpuTimeNanos
+          ? getThreadTotalCpuNs() - this.startCpuTimeNanos
           : UNSUPPORTED;
     } else {
       return UNSUPPORTED;
     }
+  }
+
+  public long getThreadTotalCpuNs() {
+    return THREAD_MX_BEAN.getCurrentThreadCpuTime();
   }
 
   /**
@@ -103,7 +107,7 @@ public class ThreadCpuTimer {
    * instance, if the VM's cpu tracking is disabled, returned value will be {@link #UNSUPPORTED}.
    */
   public Optional<Long> getCpuTimeMs() {
-    long cpuTimeNs = getCurrentCpuTimeNs();
+    long cpuTimeNs = getElapsedTimerCpuNs();
     return cpuTimeNs != UNSUPPORTED
         ? Optional.of(TimeUnit.MILLISECONDS.convert(cpuTimeNs, TimeUnit.NANOSECONDS))
         : Optional.of(UNSUPPORTED);

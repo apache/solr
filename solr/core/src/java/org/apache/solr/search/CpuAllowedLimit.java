@@ -34,7 +34,9 @@ import org.slf4j.LoggerFactory;
 public class CpuAllowedLimit implements QueryTimeout {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final long limitAtNs;
+  private final long
+      timeOutAtThreadTotalCpuNs; // this is a value based on total cpu since the inception of the
+  // thread
   private final ThreadCpuTimer threadCpuTimer;
 
   /**
@@ -57,17 +59,17 @@ public class CpuAllowedLimit implements QueryTimeout {
       throw new IllegalArgumentException(
           "Check for limit with hasCpuLimit(req) before creating a CpuAllowedLimit");
     }
-    // calculate when the time limit is reached, account for the time already spent
-    limitAtNs =
-        threadCpuTimer.getStartCpuTimeNs()
+    // calculate when the time when the limit is reached, e.g. account for the time already spent
+    timeOutAtThreadTotalCpuNs =
+        threadCpuTimer.getStartCpuTimeNs() // how much the thread already used since it began
             + TimeUnit.NANOSECONDS.convert(reqCpuLimit, TimeUnit.MILLISECONDS);
   }
 
   @VisibleForTesting
   CpuAllowedLimit(long limitMs) {
     this.threadCpuTimer = new ThreadCpuTimer();
-    limitAtNs =
-        threadCpuTimer.getCurrentCpuTimeNs()
+    timeOutAtThreadTotalCpuNs =
+        threadCpuTimer.getThreadTotalCpuNs()
             + TimeUnit.NANOSECONDS.convert(limitMs, TimeUnit.MILLISECONDS);
   }
 
@@ -79,6 +81,6 @@ public class CpuAllowedLimit implements QueryTimeout {
   /** Return true if a max limit value is set and the current usage has exceeded the limit. */
   @Override
   public boolean shouldExit() {
-    return limitAtNs - threadCpuTimer.getCurrentCpuTimeNs() < 0L;
+    return timeOutAtThreadTotalCpuNs - threadCpuTimer.getThreadTotalCpuNs() < 0L;
   }
 }
