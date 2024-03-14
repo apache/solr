@@ -189,10 +189,12 @@ public class LBHttpSolrClient extends LBSolrClient {
     protected final List<String> baseSolrUrls;
     protected HttpSolrClient.Builder httpSolrClientBuilder;
     private int aliveCheckInterval = CHECK_INTERVAL;
+
     /**
      * Value other than the default 0 can be reassigned using {@link #setAliveCheckSkipIters(int)}
      */
     private int aliveCheckSkipIters = 0;
+
     /**
      * Value other than the default DEFAULT_ALIVE_CHECK_QUERY can be reassigned using {@link
      * #setAliveCheckQuery(SolrQuery)}

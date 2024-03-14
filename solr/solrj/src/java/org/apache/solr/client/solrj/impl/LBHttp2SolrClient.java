@@ -284,6 +284,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     /**
      * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
      * this to set that interval.
+     *
      * @param aliveCheckInterval how often to ping for aliveness
      * @see #setAliveCheckSkipIters(int)
      * @see #setAliveCheckQuery(SolrQuery)
@@ -293,14 +294,14 @@ public class LBHttp2SolrClient extends LBSolrClient {
         throw new IllegalArgumentException(
             "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
       }
-      Builder newBuilder = copyBuilder();
-      newBuilder.aliveCheckIntervalMillis = TimeUnit.MILLISECONDS.convert(aliveCheckInterval, unit);
-      return newBuilder;
+      this.aliveCheckIntervalMillis = TimeUnit.MILLISECONDS.convert(aliveCheckInterval, unit);
+      return this;
     }
 
     /**
      * Positive values can be used to ensure that the liveness checks for a given URL will only be
      * run every "Nth" iteration of the setAliveCheckInterval
+     *
      * @param aliveCheckSkipIters, number of iterations to skip, an int value *
      * @see #setAliveCheckInterval(int, TimeUnit)
      * @see #setAliveCheckQuery(SolrQuery)
@@ -311,38 +312,27 @@ public class LBHttp2SolrClient extends LBSolrClient {
             ("Alive Check Skip Iterations must be positive, specified value = "
                 + aliveCheckSkipIters));
       }
-      Builder newBuilder = copyBuilder();
-      newBuilder.aliveCheckSkipIters = aliveCheckSkipIters;
-      return newBuilder;
+      this.aliveCheckSkipIters = aliveCheckSkipIters;
+      return this;
     }
 
     /**
      * If @aliveCheckQuery is set to null the client will implicitly assume success anytime it would
      * normally perform a liveness check on a server.
+     *
      * @param aliveCheckQuery, query to be executed for liveness checks
      * @see #setAliveCheckInterval(int, TimeUnit)
      * @see #setAliveCheckSkipIters(int)
      */
     public LBHttp2SolrClient.Builder setAliveCheckQuery(SolrQuery aliveCheckQuery) {
-      Builder newBuilder = copyBuilder();
-      newBuilder.aliveCheckQuery = aliveCheckQuery;
-      return newBuilder;
+      this.aliveCheckQuery = aliveCheckQuery;
+      return this;
     }
 
     /** Sets a default collection for collection-based requests. */
     public LBHttp2SolrClient.Builder withDefaultCollection(String defaultCollection) {
-      Builder newBuilder = copyBuilder();
-      newBuilder.defaultCollection = defaultCollection;
-      return newBuilder;
-    }
-
-    private Builder copyBuilder() {
-      Builder newBuilder = new Builder(http2SolrClient, baseSolrUrls);
-      newBuilder.aliveCheckIntervalMillis = this.aliveCheckIntervalMillis;
-      newBuilder.aliveCheckSkipIters = this.aliveCheckSkipIters;
-      newBuilder.aliveCheckQuery = this.aliveCheckQuery;
-      newBuilder.defaultCollection = this.defaultCollection;
-      return newBuilder;
+      this.defaultCollection = defaultCollection;
+      return this;
     }
 
     public LBHttp2SolrClient build() {
