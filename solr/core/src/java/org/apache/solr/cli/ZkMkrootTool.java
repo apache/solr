@@ -48,12 +48,12 @@ public class ZkMkrootTool extends ToolBase {
             .required(true)
             .desc("Path to create.")
             .build(),
-            Option.builder()
-                    .longOpt("fail-on-exists")
-                    .hasArg()
-                    .required(false)
-                    .desc("Raise an error if the root exists.  Defaults to false.")
-                    .build(),
+        Option.builder()
+            .longOpt("fail-on-exists")
+            .hasArg()
+            .required(false)
+            .desc("Raise an error if the root exists.  Defaults to false.")
+            .build(),
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_VERBOSE);
   }
