@@ -17,7 +17,11 @@
 package org.apache.solr.client.solrj.impl;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
@@ -85,6 +89,16 @@ public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
     }
     // This is a workaround for java.net.http.HttpClient not implementing closeable/autoclosable
     // until Java 21.
+    Thread[] threads = new Thread[Thread.currentThread().getThreadGroup().activeCount()];
+    Thread.currentThread().getThreadGroup().enumerate(threads);
+    Set<Thread> tSet =
+        Arrays.stream(threads)
+            .filter(Objects::nonNull)
+            .filter(t -> t.getName().startsWith("HttpClient-"))
+            .collect(Collectors.toSet());
+    for (Thread t : tSet) {
+      t.interrupt();
+    }
     System.gc();
   }
 
