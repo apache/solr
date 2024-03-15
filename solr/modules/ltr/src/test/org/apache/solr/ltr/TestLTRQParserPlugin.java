@@ -153,7 +153,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("fl", "*, score");
     query.add("rows", "4");
     query.add("fv", "true");
-    query.add("rq", "{!ltr model=expensiveModel reRankDocs=3}");
+    query.add("rq", "{!ltr model=slowModel reRankDocs=3}");
     query.add("timeAllowed", "300");
 
     assertJQ(

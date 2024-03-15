@@ -8,7 +8,7 @@
   ],
   "params": {
     "weights": {
-      "expensive": 1
+      "slow": 1
     }
   }
 }
