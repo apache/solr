@@ -551,7 +551,13 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
       try {
         zkClient.zkTransfer(
-            getConfigSetZkPath(mutableId), true, getConfigSetZkPath(configSet), true, true);
+            getConfigSetZkPath(mutableId),
+            true,
+            getConfigSetZkPath(configSet),
+            true,
+            true,
+            -1,
+            null);
       } catch (KeeperException | InterruptedException e) {
         throw new IOException(
             "Failed to copy config set: " + mutableId, SolrZkClient.checkInterrupted(e));

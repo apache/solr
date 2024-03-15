@@ -18,13 +18,23 @@ package org.apache.solr.cli;
 
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.Compressor;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.ZLibCompressor;
+import org.apache.solr.core.NodeConfig;
+import org.apache.solr.core.SolrXmlConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,7 +115,51 @@ public class ZkCpTool extends ToolBase {
           dstName = dstName.substring(5);
         }
       }
-      zkClient.zkTransfer(srcName, srcIsZk, dstName, dstIsZk, recurse);
+
+      int minStateByteLenForCompression = -1;
+      Compressor compressor = new ZLibCompressor();
+
+      if (dstIsZk) {
+        String solrHome = cli.getOptionValue("solr.home");
+        if (StrUtils.isNullOrEmpty(solrHome)) {
+          solrHome = System.getProperty("solr.home");
+        }
+
+        if (solrHome != null) {
+          try {
+            Path solrHomePath = Paths.get(solrHome);
+            Properties props = new Properties();
+            props.put(SolrXmlConfig.ZK_HOST, zkHost);
+            NodeConfig nodeConfig = NodeConfig.loadNodeConfig(solrHomePath, props);
+            minStateByteLenForCompression =
+                nodeConfig.getCloudConfig().getMinStateByteLenForCompression();
+            String stateCompressorClass = nodeConfig.getCloudConfig().getStateCompressorClass();
+            if (StrUtils.isNotNullOrEmpty(stateCompressorClass)) {
+              Class<? extends Compressor> compressionClass =
+                  Class.forName(stateCompressorClass).asSubclass(Compressor.class);
+              compressor = compressionClass.getDeclaredConstructor().newInstance();
+            }
+          } catch (SolrException e) {
+            // Failed to load solr.xml
+            throw new IllegalStateException(
+                "Failed to load solr.xml from ZK or SolrHome, put/get operations on compressed data will use data as is. If you intention is to read and de-compress data or compress and write data, then solr.xml must be accessible.");
+          } catch (ClassNotFoundException
+              | NoSuchMethodException
+              | InstantiationException
+              | IllegalAccessException
+              | InvocationTargetException e) {
+            throw new IllegalStateException(
+                "Unable to find or instantiate compression class: " + e.getMessage());
+          }
+        }
+      }
+
+      // I *think* that we should have builder methods on SolrZkClient that sets
+      // minStateByteLenForCompression and the Compressor!
+      zkClient.zkTransfer(
+          srcName, srcIsZk, dstName, dstIsZk, recurse, minStateByteLenForCompression, compressor);
+      // ZkMaintenanceUtils.zkTransfer(zkClient, src, srcIsZk, dst, dstIsZk, recurse,
+      // minStateByteLenForCompression, compressor);
     } catch (Exception e) {
       log.error("Could not complete the zk operation for reason: ", e);
       throw (e);

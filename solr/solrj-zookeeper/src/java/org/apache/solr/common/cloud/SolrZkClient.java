@@ -580,16 +580,9 @@ public class SolrZkClient implements Closeable {
     makePath(path, null, CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss, 0);
   }
 
-  public void makePath(String path, Path data, boolean failOnExists, boolean retryOnConnLoss)
+  public void makePath(String path, byte[] data, boolean failOnExists, boolean retryOnConnLoss)
       throws IOException, KeeperException, InterruptedException {
-    makePath(
-        path,
-        Files.readAllBytes(data),
-        CreateMode.PERSISTENT,
-        null,
-        failOnExists,
-        retryOnConnLoss,
-        0);
+    makePath(path, data, CreateMode.PERSISTENT, null, failOnExists, retryOnConnLoss, 0);
   }
 
   public void makePath(String path, Path data, boolean retryOnConnLoss)
@@ -764,14 +757,25 @@ public class SolrZkClient implements Closeable {
    * Write file to ZooKeeper - default system encoding used.
    *
    * @param path path to upload file to e.g. /solr/conf/solrconfig.xml
-   * @param data a filepath to read data from
+   * @param source a filepath to read data from
    */
-  public Stat setData(String path, Path data, boolean retryOnConnLoss)
+  public Stat setData(
+      String path,
+      Path source,
+      boolean retryOnConnLoss,
+      int minStateByteLenForCompression,
+      Compressor compressor)
       throws IOException, KeeperException, InterruptedException {
     if (log.isDebugEnabled()) {
-      log.debug("Write to ZooKeeper: {} to {}", data.toAbsolutePath(), path);
+      log.debug("Write to ZooKeeper: {} to {}", source.toAbsolutePath(), path);
     }
-    return setData(path, Files.readAllBytes(data), retryOnConnLoss);
+    byte[] data = Files.readAllBytes(source);
+    if (shouldCompressData(data, path, minStateByteLenForCompression)) {
+      // state.json should be compressed before being put to ZK
+      data = compressor.compressBytes(data, data.length / 10);
+    }
+
+    return setData(path, data, retryOnConnLoss);
   }
 
   public List<OpResult> multi(final Iterable<Op> ops, boolean retryOnConnLoss)
@@ -1029,9 +1033,17 @@ public class SolrZkClient implements Closeable {
         this, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, confPath);
   }
 
-  public void zkTransfer(String src, Boolean srcIsZk, String dst, Boolean dstIsZk, Boolean recurse)
+  public void zkTransfer(
+      String src,
+      Boolean srcIsZk,
+      String dst,
+      Boolean dstIsZk,
+      Boolean recurse,
+      int minStateByteLenForCompression,
+      Compressor compressor)
       throws SolrServerException, KeeperException, InterruptedException, IOException {
-    ZkMaintenanceUtils.zkTransfer(this, src, srcIsZk, dst, dstIsZk, recurse);
+    ZkMaintenanceUtils.zkTransfer(
+        this, src, srcIsZk, dst, dstIsZk, recurse, minStateByteLenForCompression, compressor);
   }
 
   public void moveZnode(String src, String dst)
@@ -1237,5 +1249,15 @@ public class SolrZkClient implements Closeable {
     public SolrZkClient build() {
       return new SolrZkClient(this);
     }
+  }
+
+  static boolean shouldCompressData(byte[] data, String path, int minStateByteLenForCompression) {
+    if (path.endsWith("state.json")
+        && minStateByteLenForCompression > -1
+        && data.length > minStateByteLenForCompression) {
+      // state.json should be compressed before being put to ZK
+      return true;
+    }
+    return false;
   }
 }

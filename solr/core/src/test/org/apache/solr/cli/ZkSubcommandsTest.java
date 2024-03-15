@@ -37,7 +37,6 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
-import org.apache.solr.cloud.ZkCLI;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -196,11 +195,27 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     // test re-put to existing
     data = "my data deux";
+    localFile = File.createTempFile("state", ".json");
+    writer = new FileWriter(localFile, StandardCharsets.UTF_8);
+    writer.write(data);
+    writer.close();
+
     dataBytes = data.getBytes(StandardCharsets.UTF_8);
     expected =
         random().nextBoolean()
             ? zLibCompressor.compressBytes(dataBytes)
             : zLibCompressor.compressBytes(dataBytes, dataBytes.length / 10);
+    args2 =
+        new String[] {
+          "cp",
+          "-src",
+          localFile.getAbsolutePath(),
+          "-dst",
+          "zk:/state.json",
+          "-z",
+          zkServer.getZkAddress()
+        };
+    assertEquals(0, runTool(args2, tool));
     // args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "put", "/state.json", data};
     // ZkCLI.main(args);
     assertArrayEquals(zkClient.getZooKeeper().getData("/state.json", null, null), expected);
@@ -245,7 +260,21 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           "/state.json",
           SOLR_HOME + File.separator + "solr-stress-new.xml"
         };
-    ZkCLI.main(args);
+    // ZkCLI.main(args);
+
+    args =
+        new String[] {
+          "cp",
+          "-src",
+          SOLR_HOME + File.separator + "solr-stress-new.xml",
+          "-dst",
+          "zk:/state.json",
+          "-z",
+          zkServer.getZkAddress()
+        };
+
+    ZkCpTool tool = new ZkCpTool();
+    assertEquals(0, runTool(args, tool));
 
     byte[] fromZk = zkClient.getZooKeeper().getData("/state.json", null, null);
     Path locFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
@@ -545,6 +574,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     assertEquals(1, runTool(args, tool));
   }
 
+  @Test
   public void testInvalidZKAddress() throws Exception {
 
     String[] args = new String[] {"ls", "-path", "/", "-r", "true", "-z", "----------:33332"};
