@@ -234,6 +234,56 @@ public class TestDenseVectorFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testReportsErrorInvalidArgs() {
+    assertQEx(
+        "vectorSimilarity 2arg: first arg non-vector field",
+        "undefined field: \"bogus\"",
+        req(CommonParams.Q, "{!func} vectorSimilarity(bogus, vector_byte_encoding)"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity 2arg: second arg non-vector field",
+        "undefined field: \"bogus\"",
+        req(CommonParams.Q, "{!func} vectorSimilarity(vector_byte_encoding, bogus)"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity 3+ args: 1st arg not valid encoding",
+        "Invalid argument: BOGUS is not a valid VectorEncoding. Expected one of [",
+        req(
+            CommonParams.Q,
+            "{!func} vectorSimilarity(BOGUS, DOT_PRODUCT, vector_byte_encoding, vector_byte_encoding)"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity 3+ args: 2nd arg not valid encoding",
+        "Invalid argument: BOGUS is not a valid VectorSimilarityFunction. Expected one of [",
+        req(
+            CommonParams.Q,
+            "{!func} vectorSimilarity(BYTE, BOGUS, vector_byte_encoding, vector_byte_encoding)"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity 3 args: first two are valid for 2 arg syntax",
+        "SyntaxError: Expected ')'",
+        req(CommonParams.Q, "{!func} vectorSimilarity(vector_byte_encoding,[1,2,3,3],BOGUS)"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity 3 args: first two are valid for 4 arg syntax, w/valid 3rd arg field",
+        "SyntaxError: Expected identifier",
+        req(CommonParams.Q, "{!func} vectorSimilarity(BYTE, DOT_PRODUCT, vector_byte_encoding)"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity 3 args: first two are valid for 4 arg syntax, w/valid 3rd arg const vector",
+        "SyntaxError: Expected identifier",
+        req(CommonParams.Q, "{!func} vectorSimilarity(BYTE, DOT_PRODUCT, [1,2,3,3])"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity 5 args: valid 4 arg syntax with extra cruft",
+        "SyntaxError: Expected ')'",
+        req(
+            CommonParams.Q,
+            "{!func} vectorSimilarity(BYTE, DOT_PRODUCT, vector_byte_encoding, vector_byte_encoding, BOGUS)"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
   public void test2ArgsByteFieldAndConstVector() throws Exception {
     assertQ(
         req(

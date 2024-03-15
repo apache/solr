@@ -61,12 +61,8 @@ public class VectorSimilaritySourceParserTest extends SolrTestCase {
 
   @Test
   public void testReportErrorPassingZeroArg() throws SyntaxError {
-    final String functionQuery = "vectorSimilarity()";
-
-    FunctionQParser query =
-        new FunctionQParser(
-            truncatePrefixFunctionQName(functionQuery), localParams, params, request);
-    SolrException error = assertThrows(SolrException.class, () -> vecSimilarity.parse(query));
+    SolrException error =
+        assertThrows(SolrException.class, () -> parseWithMocks("vectorSimilarity()"));
     assertEquals(
         "Invalid number of arguments. Please provide either two or four arguments.",
         error.getMessage());
@@ -74,12 +70,8 @@ public class VectorSimilaritySourceParserTest extends SolrTestCase {
 
   @Test
   public void testReportErrorPassingOneArg() throws SyntaxError {
-    final String functionQuery = "vectorSimilarity(field1)";
-
-    FunctionQParser query =
-        new FunctionQParser(
-            truncatePrefixFunctionQName(functionQuery), localParams, params, request);
-    SolrException error = assertThrows(SolrException.class, () -> vecSimilarity.parse(query));
+    SolrException error =
+        assertThrows(SolrException.class, () -> parseWithMocks("vectorSimilarity(field1)"));
     assertEquals(
         "Invalid number of arguments. Please provide either two or four arguments.",
         error.getMessage());
@@ -90,11 +82,8 @@ public class VectorSimilaritySourceParserTest extends SolrTestCase {
     SchemaField field1 = new SchemaField("field1", new DenseVectorField(5));
     when(indexSchema.getField("field1")).thenReturn(field1);
 
-    final String functionQuery = "vectorSimilarity(field1,)";
-    FunctionQParser query =
-        new FunctionQParser(
-            truncatePrefixFunctionQName(functionQuery), localParams, params, request);
-    SolrException error = assertThrows(SolrException.class, () -> vecSimilarity.parse(query));
+    SolrException error =
+        assertThrows(SolrException.class, () -> parseWithMocks("vectorSimilarity(field1,)"));
     assertEquals(
         "Invalid number of arguments. Please provide either two or four arguments.",
         error.getMessage());
@@ -105,36 +94,59 @@ public class VectorSimilaritySourceParserTest extends SolrTestCase {
     SchemaField field1 = new SchemaField("field1", new IntPointField());
     when(indexSchema.getField("field1")).thenReturn(field1);
 
-    final String functionQuery = "vectorSimilarity(field1, field2)";
-    FunctionQParser query =
-        new FunctionQParser(
-            truncatePrefixFunctionQName(functionQuery), localParams, params, request);
-    SolrException error = assertThrows(SolrException.class, () -> vecSimilarity.parse(query));
+    SolrException error =
+        assertThrows(SolrException.class, () -> parseWithMocks("vectorSimilarity(field1, field2)"));
     assertEquals(
-        "Type mismatch: Expected [DenseVectorField], but found a different field type.",
+        "Type mismatch: Expected [DenseVectorField], but found a different field type for field: [field1]",
         error.getMessage());
   }
 
   @Test
-  public void testReportErrorIfSecArgNoVector() throws SyntaxError {
+  public void testReportErrorIfSecArgNotVector() throws SyntaxError {
     DenseVectorField fieldType = new DenseVectorField(5);
     SchemaField field1 = new SchemaField("field1", fieldType);
     SchemaField field2 = new SchemaField("field2", new BinaryField());
     when(indexSchema.getField("field1")).thenReturn(field1);
     when(indexSchema.getField("field2")).thenReturn(field2);
 
-    final String functionQuery = "vectorSimilarity(field1, field2)";
-    FunctionQParser query =
-        new FunctionQParser(
-            truncatePrefixFunctionQName(functionQuery), localParams, params, request);
-    SolrException error = assertThrows(SolrException.class, () -> vecSimilarity.parse(query));
+    SolrException error =
+        assertThrows(SolrException.class, () -> parseWithMocks("vectorSimilarity(field1, field2)"));
     assertEquals(
-        "Type mismatch: Expected [DenseVectorField], but found a different field type.",
+        "Type mismatch: Expected [DenseVectorField], but found a different field type for field: [field2]",
         error.getMessage());
   }
 
   @Test
-  public void test2AgsByteVectorField() throws SyntaxError {
+  public void testReportErrorIfFieldMissmatch() throws SyntaxError {
+    DenseVectorField vectorField1 =
+        new DenseVectorField(5, VectorSimilarityFunction.COSINE, VectorEncoding.BYTE);
+    SchemaField field1 = new SchemaField("field1", vectorField1);
+    DenseVectorField vectorField2 =
+        new DenseVectorField(5, VectorSimilarityFunction.COSINE, VectorEncoding.FLOAT32);
+    SchemaField field2 = new SchemaField("field2", vectorField2);
+    DenseVectorField vectorField3 =
+        new DenseVectorField(5, VectorSimilarityFunction.DOT_PRODUCT, VectorEncoding.FLOAT32);
+    SchemaField field3 = new SchemaField("field3", vectorField3);
+
+    when(indexSchema.getField("field1")).thenReturn(field1);
+    when(indexSchema.getField("field2")).thenReturn(field2);
+    when(indexSchema.getField("field3")).thenReturn(field3);
+
+    SolrException error =
+        assertThrows(SolrException.class, () -> parseWithMocks("vectorSimilarity(field1, field2)"));
+    assertEquals(
+        "Invalid arguments: vector field field1 and vector field field2 must have the same vectorEncoding and similarityFunction",
+        error.getMessage());
+
+    error =
+        assertThrows(SolrException.class, () -> parseWithMocks("vectorSimilarity(field2, field3)"));
+    assertEquals(
+        "Invalid arguments: vector field field2 and vector field field3 must have the same vectorEncoding and similarityFunction",
+        error.getMessage());
+  }
+
+  @Test
+  public void test2ArgsByteVectorField() throws SyntaxError {
     DenseVectorField vectorField =
         new DenseVectorField(5, VectorSimilarityFunction.COSINE, VectorEncoding.BYTE);
     SchemaField field1 = new SchemaField("field1", vectorField);
@@ -142,11 +154,7 @@ public class VectorSimilaritySourceParserTest extends SolrTestCase {
     when(indexSchema.getField("field1")).thenReturn(field1);
     when(indexSchema.getField("field2")).thenReturn(field2);
 
-    final String functionQuery = "vectorSimilarity(field1, field2)";
-    FunctionQParser query =
-        new FunctionQParser(
-            truncatePrefixFunctionQName(functionQuery), localParams, params, request);
-    ValueSource valueSource = vecSimilarity.parse(query);
+    ValueSource valueSource = parseWithMocks("vectorSimilarity(field1, field2)");
     assertTrue(valueSource instanceof ByteVectorSimilarityFunction);
   }
 
@@ -157,31 +165,8 @@ public class VectorSimilaritySourceParserTest extends SolrTestCase {
     SchemaField field1 = new SchemaField("field1", vectorField);
     when(indexSchema.getField("field1")).thenReturn(field1);
 
-    final String functionQuery = "vectorSimilarity(field1, [1, 2, 3, 4, 5])";
-    FunctionQParser query =
-        new FunctionQParser(
-            truncatePrefixFunctionQName(functionQuery), localParams, params, request);
-    ValueSource valueSource = vecSimilarity.parse(query);
+    ValueSource valueSource = parseWithMocks("vectorSimilarity(field1, [1, 2, 3, 4, 5])");
     assertTrue(valueSource instanceof FloatVectorSimilarityFunction);
-  }
-
-  @Test
-  public void test2AgsFloatAndVectorField() throws SyntaxError {
-    DenseVectorField vectorField1 =
-        new DenseVectorField(5, VectorSimilarityFunction.COSINE, VectorEncoding.BYTE);
-    SchemaField field1 = new SchemaField("field1", vectorField1);
-    DenseVectorField vectorField2 =
-        new DenseVectorField(5, VectorSimilarityFunction.COSINE, VectorEncoding.FLOAT32);
-    SchemaField field2 = new SchemaField("field2", vectorField2);
-    when(indexSchema.getField("field1")).thenReturn(field1);
-    when(indexSchema.getField("field2")).thenReturn(field2);
-
-    final String functionQuery = "vectorSimilarity(field1, field2)";
-    FunctionQParser query =
-        new FunctionQParser(
-            truncatePrefixFunctionQName(functionQuery), localParams, params, request);
-    ValueSource valueSource = vecSimilarity.parse(query);
-    assertTrue(valueSource instanceof ByteVectorSimilarityFunction);
   }
 
   private void resetMocks() {
@@ -192,8 +177,11 @@ public class VectorSimilaritySourceParserTest extends SolrTestCase {
     when(request.getSchema()).thenReturn(indexSchema);
   }
 
-  private String truncatePrefixFunctionQName(String functionName) {
+  protected ValueSource parseWithMocks(final String input) throws SyntaxError {
     final String funcPrefix = "vectorSimilarity(";
-    return functionName.substring(funcPrefix.length());
+    assert input.startsWith(funcPrefix);
+    final FunctionQParser fqp =
+        new FunctionQParser(input.substring(funcPrefix.length()), localParams, params, request);
+    return vecSimilarity.parse(fqp);
   }
 }

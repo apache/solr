@@ -156,27 +156,32 @@ There must be an even number of ValueSource instances passed in and the method a
 Returns the similarity between two Knn vectors in an n-dimensional space. There are two variants of this function.
 
 ==== vectorSimilarity(vector1, vector2)
-This function accepts two vectors as input: The first argument must be a Knn vector, and the second argument can be either a Knn vector or a constant vector. The function automatically deduces the Vector Encoding and Similarity function from the properties of the first Knn vector.
+
+This function accepts two vectors as input: The first argument must be the name of a `DenseVectorField`. The second argument can be either the name of a second `DenseVectorField` or a constant vector.
+
+If two field names are specified, they must be configured with the same `vectorDimensions`, `vectorEncoding`, and `similarityFunction`.  If a constant vector is specified, then it will be parsed using the `vectorEncoding` configured on the field specified by the first argument and must have the same dimensions.
 
 *Syntax Examples*
 
-* `vectorSimilarity(vectorField1, vectorField2)`: calculates the similarity between vector field 'vectorField1' and 'vectorField2'
-* `vectorSimilarity(vectorField1, [1, 2, 3, 4])`: calculates the similarity between vector field 'vectorField1' and [1, 2, 3, 4]
+* `vectorSimilarity(vectorField1, vectorField2)`: calculates the configured similarity between vector fields `vectorField1` and `vectorField2` for each document.
+* `vectorSimilarity(vectorField1, [1,2,3,4])`: calculates the configured similarity between vector field `vectorField1` and `[1, 2, 3, 4]` for each document.
+
+[NOTE]
+Only field names that follow xref:indexing-guide:fields.adoc#field-properties[recommended field naming conventions] are guaranteed to work with this syntax.  Atypical field names requiring `field("...")` syntax when used in Function Queries must use the more complex 4 argument variant syntax of the `vectorSimilarity(...)` function described below.
 
 ==== vectorSimilarity(ENCODING, SIMILARITY_FUNCTION, vector1, vector2)
 
-Takes in input the vector element encoding, the similarity measure plus two ValueSource instances and calculates the similarity between the two vectors.
+Takes in input the vector element encoding, the similarity measure plus two ValueSource instances (either a `DenseVectorField` or a constant vector) and calculates the similarity between the two vectors.
 
-* The encodings supported are: `BYTE`, `FLOAT32`.
+* The encodings supported are: `BYTE`, `FLOAT32`
+** This is used to parse any constant vector arguments
 * The similarities supported are: `EUCLIDEAN`, `COSINE`, `DOT_PRODUCT`
-
-Each ValueSource must be a knn vector (field or constant).
 
 *Syntax Examples*
 
-* `vectorSimilarity(FLOAT32, COSINE, [1,2,3], [4,5,6])`: calculates the cosine similarity between [1, 2, 3] and [4, 5, 6] for each document.
-* `vectorSimilarity(FLOAT32, DOT_PRODUCT, vectorField1, vectorField2)`: calculates the dot product similarity between the vector in 'vectorField1' and in 'vectorField2' for each document.
-* `vectorSimilarity(BYTE, EUCLIDEAN, [1,5,4,3], vectorField)`: calculates the euclidean similarity between the vector in 'vectorField' and the constant vector [1, 5, 4, 3] for each document.
+* `vectorSimilarity(FLOAT32, COSINE, [1,2,3], [4,5,6])`: calculates the cosine similarity between `[1, 2, 3]` and `[4, 5, 6]` for each document.
+* `vectorSimilarity(FLOAT32, DOT_PRODUCT, vectorField1, vectorField2)`: calculates the dot product similarity between the vector in `vectorField1` and in `vectorField2` for each document.
+* `vectorSimilarity(BYTE, EUCLIDEAN, [1,5,4,3], vectorField)`: calculates the euclidean similarity between the vector in `vectorField` and the constant vector `[1, 5, 4, 3]` for each document.
 
 === docfreq(field,val) Function
 Returns the number of documents that contain the term in the field.

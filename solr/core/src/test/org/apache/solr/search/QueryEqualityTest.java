@@ -911,13 +911,56 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   public void testFuncKnnVector() throws Exception {
-    assertFuncEquals(
-        "vectorSimilarity(FLOAT32,COSINE,[1,2,3],[4,5,6])",
-        "vectorSimilarity(FLOAT32, COSINE, [1, 2, 3], [4, 5, 6])");
+    try (SolrQueryRequest req =
+        req(
+            "v1", "[1,2,3]",
+            "v2", " [1,2,3] ",
+            "v3", " [1, 2, 3] ")) {
+      assertFuncEquals(
+          req,
+          "vectorSimilarity(FLOAT32,COSINE,[1,2,3],[4,5,6])",
+          "vectorSimilarity(FLOAT32, COSINE, [1, 2, 3], [4, 5, 6])",
+          "vectorSimilarity(FLOAT32, COSINE,$v1, [4, 5, 6])",
+          "vectorSimilarity(FLOAT32, COSINE, $v2 , [4, 5, 6])",
+          "vectorSimilarity(FLOAT32, COSINE, $v3 , [4, 5, 6])");
+    }
 
-    assertFuncEquals(
-        "vectorSimilarity(BYTE, EUCLIDEAN, bar_i, [4,5,6])",
-        "vectorSimilarity(BYTE, EUCLIDEAN, field(bar_i), [4, 5,  6])");
+    try (SolrQueryRequest req =
+        req(
+            "f1", "bar_i",
+            "f2", " bar_i ",
+            "f3", " field(bar_i) ")) {
+      assertFuncEquals(
+          req,
+          "vectorSimilarity(BYTE, EUCLIDEAN, bar_i, [4,5,6])",
+          "vectorSimilarity(BYTE, EUCLIDEAN, field(bar_i), [4, 5,  6])",
+          "vectorSimilarity(BYTE, EUCLIDEAN,$f1, [4, 5,  6])",
+          "vectorSimilarity(BYTE, EUCLIDEAN, $f1, [4, 5,  6])",
+          "vectorSimilarity(BYTE, EUCLIDEAN, $f2, [4, 5,  6])",
+          "vectorSimilarity(BYTE, EUCLIDEAN, $f3, [4, 5,  6])");
+    }
+
+    try (SolrQueryRequest req =
+        req(
+            "f", "vector",
+            "v1", "[1,2,3,4]",
+            "v2", " [1, 2, 3, 4]")) {
+      assertFuncEquals(
+          req,
+          "vectorSimilarity(FLOAT32,COSINE,vector,[1,2,3,4])",
+          "vectorSimilarity(FLOAT32,COSINE,vector,$v1)",
+          "vectorSimilarity(FLOAT32,COSINE,vector, $v1)",
+          "vectorSimilarity(FLOAT32,COSINE,vector,$v2)",
+          "vectorSimilarity(FLOAT32,COSINE,vector, $v2)",
+          "vectorSimilarity(vector,[1,2,3,4])",
+          "vectorSimilarity( vector,[1,2,3,4])",
+          "vectorSimilarity( $f,[1,2,3,4])",
+          "vectorSimilarity(vector,$v1)",
+          "vectorSimilarity(vector, $v1)",
+          "vectorSimilarity( $f, $v1)",
+          "vectorSimilarity(vector,$v2)",
+          "vectorSimilarity(vector, $v2)");
+    }
   }
 
   public void testFuncQuery() throws Exception {
