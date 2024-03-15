@@ -56,7 +56,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Tests the SolrCLI.RunExampleTool implementation that supports bin/solr -e [example] */
+/** Tests the SolrCLI.RunExampleTool implementation that supports bin/solr start -e [example] */
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 

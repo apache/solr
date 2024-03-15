@@ -734,7 +734,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
-            .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
 
     Properties props = new Properties();
@@ -779,7 +778,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
-            .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
 
     Properties props = new Properties();
@@ -817,7 +815,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
             .stopAtShutdown(false)
             .withServlets(getExtraServlets())
             .withFilters(getExtraRequestFilters())
-            .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
 
     Properties props = new Properties();

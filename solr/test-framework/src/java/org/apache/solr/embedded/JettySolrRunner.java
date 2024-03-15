@@ -383,7 +383,9 @@ public class JettySolrRunner {
 
             @Override
             public synchronized void lifeCycleStopped(LifeCycle arg0) {
-              coreContainerProvider.close();
+              if (coreContainerProvider != null) {
+                coreContainerProvider.close();
+              }
             }
 
             @Override
