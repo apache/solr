@@ -64,4 +64,9 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
       assertEquals(controlDoc.getFieldValue("score"), shardDoc.getFieldValue("score"));
     }
   }
+
+  @Override
+  protected void checkDistribStatsException() {
+    // doing nothing on distrib stats
+  }
 }
