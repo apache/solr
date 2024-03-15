@@ -1,0 +1,14 @@
+{
+  "class": "org.apache.solr.ltr.model.LinearModel",
+  "name": "slowModel",
+  "features": [
+    {
+      "name": "slow"
+    }
+  ],
+  "params": {
+    "weights": {
+      "expensive": 1
+    }
+  }
+}

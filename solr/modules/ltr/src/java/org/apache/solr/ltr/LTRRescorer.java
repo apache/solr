@@ -31,6 +31,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
+import org.apache.solr.search.QueryLimits;
+import org.apache.solr.search.QueryLimitsExceededException;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
@@ -233,7 +235,14 @@ public class LTRRescorer extends Rescorer {
     boolean logHit = false;
 
     scorer.getDocInfo().setOriginalDocScore(hit.score);
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
     hit.score = scorer.score();
+    if (queryLimits.maybeExitWithPartialResults(
+        "Learning To Rank rescoring -"
+            + " The full reranking didn't complete and got reverted."
+            + " All documents preserved their original score and ranking.")) {
+      throw new QueryLimitsExceededException("The Time Allowed has been exceeded when rescoring");
+    }
     if (hitUpto < topN) {
       reranked[hitUpto] = hit;
       // if the heap is not full, maybe I want to log the features for this
