@@ -1,0 +1,7 @@
+[
+  {
+    "name" : "slow",
+    "class" : "org.apache.solr.ltr.feature.SolrFeature",
+    "params" : { "q" : "{!func}sleep(1000,999)" }
+  }
+]
