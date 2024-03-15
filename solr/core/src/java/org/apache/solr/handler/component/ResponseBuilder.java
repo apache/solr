@@ -75,7 +75,7 @@ public class ResponseBuilder {
   private String cancellationUUID;
   private String taskStatusCheckUUID;
   private boolean isTaskListRequest;
-  private boolean isEnableDistribStats = true;
+  private boolean isDistribStatsDisabled;
 
   private QParser qparser = null;
   private String queryString = null;
@@ -546,11 +546,11 @@ public class ResponseBuilder {
     return taskStatusCheckUUID;
   }
 
-  public void setEnableDistribStats(boolean isEnableDistribStats) {
-    this.isEnableDistribStats = isEnableDistribStats;
+  public void setDistribStatsDisabled(boolean isEnableDistribStats) {
+    this.isDistribStatsDisabled = isEnableDistribStats;
   }
 
-  public boolean isEnableDistribStats() {
-    return isEnableDistribStats;
+  public boolean isDistribStatsDisabled() {
+    return isDistribStatsDisabled;
   }
 }
