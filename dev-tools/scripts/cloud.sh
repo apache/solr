@@ -41,8 +41,7 @@
 # By default the script sets up a local Solr cloud with 4 nodes, in a local
 # directory with ISO date as the name. A local zookeeper at 2181 or the
 # specified port is presumed to be available, a new zk chroot is used for each
-# cluster based on the file system path to the cluster directory. the default
-# solr.xml is added to this solr root dir in zookeeper.
+# cluster based on the file system path to the cluster directory.
 #
 # Debugging ports are automatically opened for each node starting with port 5001
 #
@@ -338,7 +337,7 @@ start(){
     mkdir -p "${CLUSTER_WD}/n${i}"
     argsArray=(-c -s $CLUSTER_WD_FULL/n${i} -z localhost:${ZK_PORT}/solr_${SAFE_DEST} -p 898${i} -m $MEMORY \
     -a "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=500${i} \
-    -Dsolr.solrxml.location=zookeeper -Dsolr.log.dir=$CLUSTER_WD_FULL/n${i} $JVM_ARGS")
+    -Dsolr.log.dir=$CLUSTER_WD_FULL/n${i} $JVM_ARGS")
     FINAL_COMMAND="${SOLR}/bin/solr ${argsArray[@]}"
     echo ${FINAL_COMMAND}
     ${SOLR}/bin/solr start "${argsArray[@]}"

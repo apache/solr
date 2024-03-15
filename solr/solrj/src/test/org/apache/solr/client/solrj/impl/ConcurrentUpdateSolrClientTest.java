@@ -129,10 +129,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     JettyConfig jettyConfig =
-        JettyConfig.builder()
-            .withServlet(new ServletHolder(TestServlet.class), "/cuss/*")
-            .withSSLConfig(sslConfig.buildServerSSLConfig())
-            .build();
+        JettyConfig.builder().withServlet(new ServletHolder(TestServlet.class), "/cuss/*").build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
 
@@ -227,7 +224,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     }
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(getCoreUrl()))
+        (new ConcurrentUpdateSolrClient.Builder(getBaseUrl()))
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .build()) {
@@ -283,7 +281,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     }
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(getCoreUrl()))
+        (new ConcurrentUpdateSolrClient.Builder(getBaseUrl()))
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .build()) {

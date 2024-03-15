@@ -40,6 +40,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -113,7 +114,8 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     SolrRequestParsers.DEFAULT.setAddRequestHeadersToContext(true);
     System.setProperty("collectionsHandler", ImpersonatorCollectionsHandler.class.getName());
 
-    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig());
+    miniCluster =
+        new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), JettyConfig.builder().build());
     JettySolrRunner runner = miniCluster.getJettySolrRunners().get(0);
     solrClient = new HttpSolrClient.Builder(runner.getBaseUrl().toString()).build();
   }
@@ -340,7 +342,8 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     // try a command to each node, one of them must be forwarded
     for (JettySolrRunner jetty : miniCluster.getJettySolrRunners()) {
       try (HttpSolrClient client =
-          new HttpSolrClient.Builder(jetty.getBaseUrl().toString() + "/" + collectionName)
+          new HttpSolrClient.Builder(jetty.getBaseUrl().toString())
+              .withDefaultCollection(collectionName)
               .build()) {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("q", "*:*");

@@ -64,7 +64,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     }
 
     @Override
-    PublicKey getRemotePublicKey(String ignored) {
+    PublicKey fetchPublicKeyFromRemote(String ignored) {
       return myKey;
     }
 
@@ -153,7 +153,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
           boolean firstCall = true;
 
           @Override
-          PublicKey getRemotePublicKey(String ignored) {
+          PublicKey fetchPublicKeyFromRemote(String ignored) {
             try {
               return firstCall ? myKey : mock.myKey;
             } finally {

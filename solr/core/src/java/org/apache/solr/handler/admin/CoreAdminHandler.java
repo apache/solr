@@ -58,6 +58,7 @@ import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
 import org.apache.solr.handler.admin.api.CoreSnapshot;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
 import org.apache.solr.handler.admin.api.CreateCoreBackup;
+import org.apache.solr.handler.admin.api.GetNodeCommandStatus;
 import org.apache.solr.handler.admin.api.InstallCoreData;
 import org.apache.solr.handler.admin.api.MergeIndexes;
 import org.apache.solr.handler.admin.api.OverseerOperationAPI;
@@ -67,7 +68,6 @@ import org.apache.solr.handler.admin.api.ReloadCore;
 import org.apache.solr.handler.admin.api.RenameCore;
 import org.apache.solr.handler.admin.api.RequestApplyCoreUpdatesAPI;
 import org.apache.solr.handler.admin.api.RequestBufferUpdatesAPI;
-import org.apache.solr.handler.admin.api.RequestCoreCommandStatusAPI;
 import org.apache.solr.handler.admin.api.RequestCoreRecoveryAPI;
 import org.apache.solr.handler.admin.api.RequestSyncShardAPI;
 import org.apache.solr.handler.admin.api.RestoreCore;
@@ -384,7 +384,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SplitCoreAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new RequestCoreCommandStatusAPI(this)));
     // Internal APIs
     apis.addAll(AnnotatedApi.getApis(new RequestCoreRecoveryAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new PrepareCoreRecoveryAPI(this)));
@@ -406,7 +405,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         UnloadCore.class,
         SwapCores.class,
         RenameCore.class,
-        MergeIndexes.class);
+        MergeIndexes.class,
+        GetNodeCommandStatus.class);
   }
 
   public interface CoreAdminOp {
@@ -443,7 +443,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     // We keep the number number of max threads very low to have throttling for expensive tasks
     private ExecutorService expensiveExecutor =
         ExecutorUtil.newMDCAwareCachedThreadPool(
-            5, new SolrNamedThreadFactory("parallelCoreAdminAPIExpensiveExecutor"));
+            5,
+            Integer.MAX_VALUE,
+            new SolrNamedThreadFactory("parallelCoreAdminAPIExpensiveExecutor"));
 
     public CoreAdminAsyncTracker() {
       HashMap<String, Map<String, TaskObject>> map = new HashMap<>(3, 1.0f);

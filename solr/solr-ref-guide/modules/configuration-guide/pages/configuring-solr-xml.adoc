@@ -726,7 +726,7 @@ If a default value is not specified, then the property must be specified at runt
 Any JVM system properties usually specified using the `-D` flag when starting the JVM, can be used as variables in the `solr.xml` file.
 
 For example, in the `solr.xml` file shown below, the `socketTimeout` and `connTimeout` values are each set to "60000".
-However, if you start Solr using `bin/solr -DsocketTimeout=1000`, the `socketTimeout` option of the `HttpShardHandlerFactory` to be overridden using a value of 1000ms, while the `connTimeout` option will continue to use the default property value of "60000".
+However, if you start Solr using `bin/solr start -DsocketTimeout=1000`, the `socketTimeout` option of the `HttpShardHandlerFactory` to be overridden using a value of 1000ms, while the `connTimeout` option will continue to use the default property value of "60000".
 
 [source,xml]
 ----

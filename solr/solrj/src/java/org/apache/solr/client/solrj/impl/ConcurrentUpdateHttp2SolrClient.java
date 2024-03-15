@@ -709,10 +709,48 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     protected boolean closeHttp2Client;
     private long pollQueueTimeMillis;
 
+    /**
+     * Initialize a Builder object, based on the provided URL and client.
+     *
+     * <p>The provided URL must point to the root Solr path (i.e. "/solr"), for example:
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr", http2Client)
+     *       .withDefaultCollection("core1")
+     *       .build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * @param baseSolrUrl a URL pointing to the root Solr path, typically of the form
+     *     "http[s]://host:port/solr"
+     * @param client a client for this ConcurrentUpdateHttp2SolrClient to use for all requests
+     *     internally. Callers are responsible for closing the provided client (after closing any
+     *     clients created by this builder)
+     */
     public Builder(String baseSolrUrl, Http2SolrClient client) {
       this(baseSolrUrl, client, false);
     }
 
+    /**
+     * Initialize a Builder object, based on the provided arguments.
+     *
+     * <p>The provided URL must point to the root Solr path (i.e. "/solr"), for example:
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr", http2Client)
+     *       .withDefaultCollection("core1")
+     *       .build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * @param baseSolrUrl a URL pointing to the root Solr path, typically of the form
+     *     "http[s]://host:port/solr"
+     * @param client a client for this ConcurrentUpdateHttp2SolrClient to use for all requests
+     *     internally.
+     * @param closeHttp2Client a boolean flag indicating whether the created
+     *     ConcurrentUpdateHttp2SolrClient should assume responsibility for closing the provided
+     *     'client'
+     */
     public Builder(String baseSolrUrl, Http2SolrClient client, boolean closeHttp2Client) {
       this.baseSolrUrl = baseSolrUrl;
       this.client = client;

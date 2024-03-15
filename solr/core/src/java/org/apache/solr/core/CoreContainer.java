@@ -412,7 +412,8 @@ public class CoreContainer {
         new OrderedExecutor(
             cfg.getReplayUpdatesThreads(),
             ExecutorUtil.newMDCAwareCachedThreadPool(
-                cfg.getReplayUpdatesThreads(),
+                cfg.getReplayUpdatesThreads(), // thread count
+                cfg.getReplayUpdatesThreads(), // queue size
                 new SolrNamedThreadFactory("replayUpdatesExecutor")));
     this.appHandlersByConfigSetId = new JerseyAppHandlerCache();
 
@@ -2050,15 +2051,13 @@ public class CoreContainer {
         if (docCollection != null) {
           Replica replica = docCollection.getReplica(cd.getCloudDescriptor().getCoreNodeName());
           assert replica != null : cd.getCloudDescriptor().getCoreNodeName() + " had no replica";
-          if (replica.getType() == Replica.Type.TLOG) { // TODO: needed here?
+          if (replica.getType().replicateFromLeader) {
             getZkController().stopReplicationFromLeader(core.getName());
             if (!cd.getCloudDescriptor().isLeader()) {
-              getZkController().startReplicationFromLeader(newCore.getName(), true);
+              getZkController()
+                  .startReplicationFromLeader(
+                      newCore.getName(), replica.getType().requireTransactionLog);
             }
-
-          } else if (replica.getType() == Replica.Type.PULL) {
-            getZkController().stopReplicationFromLeader(core.getName());
-            getZkController().startReplicationFromLeader(newCore.getName(), false);
           }
         }
         success = true;
@@ -2166,9 +2165,8 @@ public class CoreContainer {
     if (zkSys.getZkController() != null) {
       // cancel recovery in cloud mode
       core.getSolrCoreState().cancelRecovery();
-      if (cd.getCloudDescriptor().getReplicaType() == Replica.Type.PULL
-          || cd.getCloudDescriptor().getReplicaType() == Replica.Type.TLOG) {
-        // Stop replication if this is part of a pull/tlog replica before closing the core
+      if (cd.getCloudDescriptor().getReplicaType().replicateFromLeader) {
+        // Stop replication before closing the core
         zkSys.getZkController().stopReplicationFromLeader(name);
       }
     }
