@@ -44,7 +44,11 @@ Here is a simple example of configuring `solrconfig.xml` with the `IndexBasedSpe
     <!-- optional elements with defaults
     <str name="distanceMeasure">org.apache.lucene.search.spell.LevenshteinDistance</str>
     <float name="accuracy">0.5</float>
+    <float name="thresholdTokenFrequency">0.3</float>
     <str name="comparatorClass">score</str>
+    -->
+    <!-- additional elements to configure analysis on query
+    <str name="queryAnalyzerFieldType">text_general</str>
     -->
  </lst>
 </searchComponent>
@@ -135,6 +139,14 @@ In `solrconfig.xml`, you would define the searchComponent as so:
     <str name="distanceMeasure">org.apache.lucene.search.spell.LevenshteinDistance</str>
     <float name="accuracy">0.5</float>
     <str name="comparatorClass">score</str>
+    <str name="characterEncoding">UTF-8</str>
+    <bool name="buildOnCommit">false</bool>
+    <bool name="buildOnOptimize">false</bool>
+    -->
+    <!-- additional elements to configure analysis on dictionary and query
+    <str name="field">_text_</str>
+    <str name="fieldType">text_general</str>
+    <str name="queryAnalyzerFieldType">text_general</str>
     -->
  </lst>
 </searchComponent>
