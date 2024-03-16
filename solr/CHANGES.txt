@@ -27,8 +27,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-
-* SOLR-17198: Affinity Placement Plugin can fail if Shard leadership changes occur while it is collecting metrics. (Paul McArthur)
+(No changes)
 
 Deprecation Removals
 ----------------------
@@ -136,6 +135,9 @@ Bug Fixes
 * SOLR-17186: Streaming query breaks if token contains backtick (Rahul Goswami via Eric Pugh)
 
 * SOLR-17197: Fix getting fieldType by its name in FileBasedSpellChecker (Andrey Bozhko via Eric Pugh)
+
+* SOLR-17198: AffinityPlacementFactory can fail if Shard leadership changes occur while it is collecting metrics.
+  (Paul McArthur)
 
 Dependency Upgrades
 ---------------------
