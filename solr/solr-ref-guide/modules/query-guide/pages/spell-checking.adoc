@@ -43,7 +43,8 @@ Here is a simple example of configuring `solrconfig.xml` with the `IndexBasedSpe
     <str name="buildOnCommit">true</str>
     <!-- optional elements with defaults
     <str name="distanceMeasure">org.apache.lucene.search.spell.LevenshteinDistance</str>
-    <str name="accuracy">0.5</str>
+    <float name="accuracy">0.5</float>
+    <str name="comparatorClass">score</str>
     -->
  </lst>
 </searchComponent>
@@ -104,7 +105,7 @@ The `maxInspections` parameter defines the maximum number of possible matches to
 `maxQueryLength` enables the spell checker to skip over very long query terms, which can avoid expensive operations or exceptions.
 There is no limit to term length by default.
 
-At first, spellchecker analyses incoming query words by looking up them in the index.
+At first, spellchecker analyses incoming query words by looking them up in the index.
 Only query words which are absent from the index, or too rare (equal to or below `maxQueryFrequency`) are considered as misspelled and used for finding suggestions.
 Words which are more frequent than `maxQueryFrequency` bypass spellchecker unchanged.
 After suggestions for every misspelled word are found they are filtered for enough frequency with `thresholdTokenFrequency` as boundary value.
@@ -132,7 +133,8 @@ In `solrconfig.xml`, you would define the searchComponent as so:
     <str name="spellcheckIndexDir">./spellcheckerFile</str>
     <!-- optional elements with defaults
     <str name="distanceMeasure">org.apache.lucene.search.spell.LevenshteinDistance</str>
-    <str name="accuracy">0.5</str>
+    <float name="accuracy">0.5</float>
+    <str name="comparatorClass">score</str>
     -->
  </lst>
 </searchComponent>

@@ -122,6 +122,7 @@
       <str name="sourceLocation">spellings.txt</str>
       <str name="characterEncoding">UTF-8</str>
       <str name="spellcheckIndexDir">spellchecker3</str>
+      <float name="accuracy">0.5</float>
     </lst>
     <!-- Comparator -->
     <lst name="spellchecker">
