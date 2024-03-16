@@ -60,6 +60,9 @@ Bug Fixes
 
 * SOLR-17197: Fix getting fieldType by its name in FileBasedSpellChecker (Andrey Bozhko via Eric Pugh)
 
+* SOLR-17198: AffinityPlacementFactory can fail if Shard leadership changes occur while it is collecting metrics.
+  (Paul McArthur)
+
 Dependency Upgrades
 ---------------------
 (No changes)
