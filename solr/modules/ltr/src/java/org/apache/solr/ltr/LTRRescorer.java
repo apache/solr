@@ -235,13 +235,13 @@ public class LTRRescorer extends Rescorer {
     boolean logHit = false;
 
     scorer.getDocInfo().setOriginalDocScore(hit.score);
-    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
     hit.score = scorer.score();
-    if (queryLimits.maybeExitWithPartialResults(
-        "Learning To Rank rescoring -"
-            + " The full reranking didn't complete and got reverted."
-            + " All documents preserved their original score and ranking.")) {
-      throw new QueryLimitsExceededException("The Time Allowed has been exceeded when rescoring");
+    if (QueryLimits.getCurrentLimits()
+        .maybeExitWithPartialResults(
+            "Learning To Rank rescoring -"
+                + " The full reranking didn't complete and got reverted."
+                + " All documents preserved their original score and ranking.")) {
+      throw new QueryLimitsExceededException("A query limit has been exceeded when rescoring");
     }
     if (hitUpto < topN) {
       reranked[hitUpto] = hit;
