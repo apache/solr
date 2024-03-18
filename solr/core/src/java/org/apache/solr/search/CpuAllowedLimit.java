@@ -78,7 +78,7 @@ public class CpuAllowedLimit implements QueryTimeout {
     return req.getParams().getLong(CommonParams.CPU_ALLOWED, -1L) > 0L;
   }
 
-  /** Return true usage has exceeded the limit. */
+  /** Return true if usage has exceeded the limit. */
   @Override
   public boolean shouldExit() {
     return threadCpuTimer.getElapsedCpuNs() > requestedTimeoutNs;
