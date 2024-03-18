@@ -16,8 +16,14 @@
  */
 package org.apache.solr.request.json;
 
+import static org.apache.solr.common.params.CommonParams.ALLOW_PARTIAL_RESULTS;
+import static org.apache.solr.common.params.CommonParams.FL;
+import static org.apache.solr.common.params.CommonParams.FQ;
 import static org.apache.solr.common.params.CommonParams.JSON;
+import static org.apache.solr.common.params.CommonParams.Q;
+import static org.apache.solr.common.params.CommonParams.ROWS;
 import static org.apache.solr.common.params.CommonParams.SORT;
+import static org.apache.solr.common.params.CommonParams.START;
 
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -216,7 +222,7 @@ public class RequestUtil {
         boolean isQuery = false;
         boolean arr = false;
         if ("query".equals(key)) {
-          out = "q";
+          out = Q;
           isQuery = true;
           // if the value is not a String, then it'll get converted to a localParams query String.
           // Only the "lucene" query parser can parse it.  Ignore anything else that may exist.
@@ -224,16 +230,18 @@ public class RequestUtil {
             newMap.put(QueryParsing.DEFTYPE, new String[] {"lucene"});
           }
         } else if ("filter".equals(key)) {
-          out = "fq";
+          out = FQ;
           arr = true;
           isQuery = true;
         } else if ("fields".equals(key)) {
-          out = "fl";
+          out = FL;
           arr = true;
         } else if ("offset".equals(key)) {
-          out = "start";
+          out = START;
+        } else if ("allowPartialResults".equals(key)) {
+          out = ALLOW_PARTIAL_RESULTS;
         } else if ("limit".equals(key)) {
-          out = "rows";
+          out = ROWS;
         } else if (SORT.equals(key)) {
           out = SORT;
         } else if ("queries".equals(key)) {

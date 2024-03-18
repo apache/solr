@@ -64,7 +64,7 @@ public class SolrResponseUtil {
         }
       }
     } catch (Exception ex) {
-      if (rb != null && ShardParams.getShardsTolerantAsBool(rb.req.getParams())) {
+      if (rb != null && ShardParams.getShardsTolerantAsBool(rb.req)) {
         return null;
       } else {
         throw new SolrException(

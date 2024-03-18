@@ -21,6 +21,7 @@ import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.client.solrj.request.RequestParamsSupplier;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -37,10 +38,7 @@ import org.apache.solr.util.RTimerTree;
  *
  * <p><code>SolrQueryRequest</code> is not thread safe.
  */
-public interface SolrQueryRequest extends AutoCloseable {
-
-  /** returns the current request parameters */
-  SolrParams getParams();
+public interface SolrQueryRequest extends AutoCloseable, RequestParamsSupplier {
 
   /**
    * Change the parameters for this request. This does not affect the original parameters returned

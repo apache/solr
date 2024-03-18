@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.FAILURE;
 import static org.apache.solr.common.params.CommonParams.PATH;
@@ -183,12 +184,10 @@ public class SearchHandler extends RequestHandlerBase
     List<String> last = (List<String>) initArgs.get(INIT_LAST_COMPONENTS);
     missing.addAll(core.getSearchComponents().checkContains(last));
     if (!missing.isEmpty())
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Missing SearchComponents named : " + missing);
+      throw new SolrException(SERVER_ERROR, "Missing SearchComponents named : " + missing);
     if (c != null && (first != null || last != null))
       throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "First/Last components only valid if you do not declare 'components'");
+          SERVER_ERROR, "First/Last components only valid if you do not declare 'components'");
 
     if (shfInfo == null) {
       shardHandlerFactory = core.getCoreContainer().getShardHandlerFactory();
@@ -254,8 +253,7 @@ public class SearchHandler extends RequestHandlerBase
       list = (List<String>) declaredComponents;
       if (first != null || last != null) {
         throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "First/Last components only valid if you do not declare 'components'");
+            SERVER_ERROR, "First/Last components only valid if you do not declare 'components'");
       }
       makeDebugLast = false;
     }
@@ -327,8 +325,8 @@ public class SearchHandler extends RequestHandlerBase
       boolean zkConnected =
           zkController != null
               && !zkController.getZkClient().getConnectionManager().isLikelyExpired();
-      if (requireZkConnected && false == zkConnected) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ZooKeeper is not connected");
+      if (requireZkConnected && !zkConnected) {
+        throw new SolrException(SERVER_ERROR, "ZooKeeper is not connected");
       } else {
         NamedList<Object> headers = rb.rsp.getResponseHeader();
         if (headers != null) {
@@ -497,7 +495,12 @@ public class SearchHandler extends RequestHandlerBase
           debug.add("explain", new NamedList<>());
           rb.rsp.add("debug", debug);
         }
-        rb.rsp.setPartialResults();
+        if (req.shouldDiscardPartials()) {
+          // TODO: this isn't actually showing up... possibly need to do tis at a different point.
+          rb.rsp.getResponseHeader().add("partialResultsOmitted", "true");
+        } else {
+          rb.rsp.setPartialResults();
+        }
       }
     } else {
       // a distributed request
@@ -562,7 +565,7 @@ public class SearchHandler extends RequestHandlerBase
           // now wait for replies, but if anyone puts more requests on
           // the outgoing queue, send them out immediately (by exiting
           // this loop)
-          boolean tolerant = ShardParams.getShardsTolerantAsBool(rb.req.getParams());
+          boolean tolerant = ShardParams.getShardsTolerantAsBool(rb.req);
           while (rb.outgoing.size() == 0) {
             ShardResponse srsp =
                 tolerant
@@ -686,7 +689,7 @@ public class SearchHandler extends RequestHandlerBase
     if (shardResponseException instanceof SolrException) {
       throw (SolrException) shardResponseException;
     } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, shardResponseException);
+      throw new SolrException(SERVER_ERROR, shardResponseException);
     }
   }
 

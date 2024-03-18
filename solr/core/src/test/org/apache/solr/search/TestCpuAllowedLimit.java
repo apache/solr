@@ -16,10 +16,13 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.client.solrj.request.RequestParamsSupplier.SOLR_DISLIKE_PARTIAL_RESULTS;
+
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -28,11 +31,18 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.ThreadCpuTimer;
 import org.junit.Assume;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestCpuAllowedLimit extends SolrCloudTestCase {
+
+  @Rule
+  public TestRule syspropRestore =
+      new TestRuleRestoreSystemProperties(SOLR_DISLIKE_PARTIAL_RESULTS);
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String COLLECTION = "test";
@@ -214,5 +224,117 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
     // This looks silly, but it actually guards against:
     // https://issues.apache.org/jira/browse/SOLR-17203
     testDistribLimit();
+  }
+
+  public void testDistribLimitNoPartialParam() throws Exception {
+    Assume.assumeTrue("Thread CPU time monitoring is not available", ThreadCpuTimer.isSupported());
+
+    SolrClient solrClient = cluster.getSolrClient();
+
+    // no limits set - should eventually complete
+    log.info("--- No limits, full results ---");
+    long sleepMs = 1000;
+    QueryResponse rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "allowPartialResults",
+                "false",
+                "sort",
+                "id asc",
+                ExpensiveSearchComponent.SLEEP_MS_PARAM,
+                String.valueOf(sleepMs),
+                "stages",
+                "prepare,process"));
+    // System.err.println("rsp=" + rsp.jsonStr());
+    assertEquals(rsp.getHeader().get("status"), 0);
+    Number qtime = (Number) rsp.getHeader().get("QTime");
+    assertTrue("QTime expected " + qtime + " >> " + sleepMs, qtime.longValue() > sleepMs);
+    assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
+
+    // timeAllowed set, should return partial results
+    log.info("--- timeAllowed expires, but should not have partial results ---");
+    rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "allowPartialResults",
+                "false",
+                "sort",
+                "id asc",
+                ExpensiveSearchComponent.SLEEP_MS_PARAM,
+                String.valueOf(sleepMs),
+                "stages",
+                "prepare,process",
+                "timeAllowed",
+                "500"));
+    assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
+    assertEquals(0, rsp.getResults().size());
+
+    // cpuAllowed set with large value, should return full results
+    log.info("--- cpuAllowed, full results ---");
+    rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "allowPartialResults",
+                "false",
+                "sort",
+                "id desc",
+                ExpensiveSearchComponent.CPU_LOAD_COUNT_PARAM,
+                "1",
+                "stages",
+                "prepare,process",
+                "cpuAllowed",
+                "1000"));
+    assertNull("should have full results", rsp.getHeader().get("partialResults"));
+
+    // cpuAllowed set, should return partial results
+    log.info("--- cpuAllowed 1, partial results ---");
+    rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "allowPartialResults",
+                "false",
+                "sort",
+                "id desc",
+                ExpensiveSearchComponent.CPU_LOAD_COUNT_PARAM,
+                "10",
+                "stages",
+                "prepare,process",
+                "cpuAllowed",
+                "50"));
+    assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
+    assertEquals(0, rsp.getResults().size());
+
+    // cpuAllowed set, should return partial results
+    log.info("--- cpuAllowed 2, partial results ---");
+    rsp =
+        solrClient.query(
+            COLLECTION,
+            params(
+                "q",
+                "id:*",
+                "allowPartialResults",
+                "false",
+                "sort",
+                "id desc",
+                ExpensiveSearchComponent.CPU_LOAD_COUNT_PARAM,
+                "10",
+                "stages",
+                "prepare,process",
+                "cpuAllowed",
+                "50"));
+    assertNull("should have partial results", rsp.getHeader().get("partialResults"));
+    assertEquals(0, rsp.getResults().size());
   }
 }

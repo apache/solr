@@ -24,7 +24,8 @@ import org.apache.solr.common.params.SolrParams;
 /**
  * @since solr 1.3
  */
-public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse> {
+public class QueryRequest extends CollectionRequiringSolrRequest<QueryResponse>
+    implements RequestParamsSupplier {
 
   private SolrParams query;
 

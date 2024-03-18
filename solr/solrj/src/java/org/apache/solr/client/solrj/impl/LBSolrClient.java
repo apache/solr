@@ -41,7 +41,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -343,7 +342,7 @@ public abstract class LBSolrClient extends SolrClient {
 
     public Req(SolrRequest<?> request, Collection<Endpoint> endpoints, Integer numServersToTry) {
       this.request = request;
-      this.endpoints = endpoints.stream().collect(Collectors.toList());
+      this.endpoints = new ArrayList<>(endpoints);
       this.numDeadServersToTry = endpoints.size();
       this.numServersToTry = numServersToTry;
     }

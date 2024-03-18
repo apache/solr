@@ -24,9 +24,11 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Deque;
 import java.util.List;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.http.HttpServletRequest;
+import org.apache.solr.client.solrj.request.RequestParamsSupplier;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -66,6 +68,22 @@ public class SolrRequestInfo {
     Deque<SolrRequestInfo> stack = threadLocal.get();
     if (stack.isEmpty()) return null;
     return stack.peek();
+  }
+
+  public static Optional<SolrRequestInfo> getReqInfo() {
+    return Optional.ofNullable(getRequestInfo());
+  }
+
+  public static Optional<SolrQueryRequest> getRequest() {
+    return getReqInfo().map(i -> i.req);
+  }
+
+  public static boolean shouldDiscardPartials() {
+    return getRequest().map(RequestParamsSupplier::shouldDiscardPartials).orElse(false);
+  }
+
+  public static boolean shouldKeepPartials() {
+    return !shouldDiscardPartials();
   }
 
   /**

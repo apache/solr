@@ -34,6 +34,7 @@ import org.apache.solr.util.TestInjection;
  * return true the next time it is checked (it may be checked in either Lucene code or Solr code)
  */
 public class QueryLimits implements QueryTimeout {
+  public static final String UNLIMITED = "This request is unlimited.";
   private final List<QueryTimeout> limits =
       new ArrayList<>(3); // timeAllowed, cpu, and memory anticipated
 
@@ -136,7 +137,7 @@ public class QueryLimits implements QueryTimeout {
    */
   public String limitStatusMessage() {
     if (limits.isEmpty()) {
-      return "This request is unlimited.";
+      return UNLIMITED;
     }
     StringBuilder sb = new StringBuilder("Query limits: ");
     for (QueryTimeout limit : limits) {

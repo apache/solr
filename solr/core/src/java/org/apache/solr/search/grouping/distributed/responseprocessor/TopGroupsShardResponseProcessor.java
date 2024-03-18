@@ -116,7 +116,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         }
         shardInfo.add(srsp.getShard(), individualShardInfo);
       }
-      if (ShardParams.getShardsTolerantAsBool(rb.req.getParams()) && srsp.getException() != null) {
+      if (ShardParams.getShardsTolerantAsBool(rb.req) && srsp.getException() != null) {
         rb.rsp.setPartialResults();
         continue; // continue if there was an error and we're tolerant.
       }

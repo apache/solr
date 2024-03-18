@@ -100,8 +100,7 @@ public class ExactStatsCache extends StatsCache {
   protected void doMergeToGlobalStats(SolrQueryRequest req, List<ShardResponse> responses) {
     Set<Term> allTerms = new HashSet<>();
     for (ShardResponse r : responses) {
-      if ("true".equalsIgnoreCase(req.getParams().get(ShardParams.SHARDS_TOLERANT))
-          && r.getException() != null) {
+      if (ShardParams.getShardsTolerantAsBool(req) && r.getException() != null) {
         // Can't expect stats if there was an exception for this request on any shard
         // this should only happen when using shards.tolerant=true
         log.debug("Exception shard response={}", r);

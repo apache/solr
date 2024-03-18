@@ -1150,7 +1150,7 @@ public class QueryComponent extends SearchComponent {
 
     populateNextCursorMarkFromMergedShards(rb);
 
-    if (thereArePartialResults) {
+    if (thereArePartialResults && !rb.req.shouldDiscardPartials()) {
       rb.rsp
           .getResponseHeader()
           .asShallowMap()
