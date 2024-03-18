@@ -115,6 +115,6 @@ public class ThreadCpuTimer {
 
   @Override
   public String toString() {
-    return getElapsedCpuMs().toString();
+    return getElapsedCpuMs().map(String::valueOf).orElse("UNSUPPORTED");
   }
 }
