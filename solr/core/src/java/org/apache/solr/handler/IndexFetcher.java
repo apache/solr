@@ -259,16 +259,16 @@ public class IndexFetcher {
     }
   }
 
-  private Http2SolrClient createSolrClient(
+  private SolrClient createSolrClient(
       SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, String leaderBaseUrl) {
     final ModifiableSolrParams httpClientParams = new ModifiableSolrParams();
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
-    // no metrics, just tracing
     Http2SolrClient httpClient =
         new Http2SolrClient.Builder(leaderBaseUrl)
             .withHttpClient(
                 core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyHttpClient())
+            .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
             .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
             .build();
@@ -1950,7 +1950,7 @@ public class IndexFetcher {
     private FastInputStream getStream() throws IOException {
       ModifiableSolrParams params = new ModifiableSolrParams();
 
-      //    //the method is command=filecontent
+      //the method is command=filecontent
       params.set(COMMAND, CMD_GET_FILE);
       params.set(GENERATION, Long.toString(indexGen));
       params.set(CommonParams.QT, ReplicationHandler.PATH);
