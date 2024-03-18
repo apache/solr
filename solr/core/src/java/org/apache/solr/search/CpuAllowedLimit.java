@@ -17,27 +17,29 @@
 package org.apache.solr.search;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
+import net.jcip.annotations.NotThreadSafe;
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.util.ThreadCpuTimer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Enforces a CPU-time based timeout on a given SolrQueryRequest, as specified by the {@code
  * cpuAllowed} query parameter.
+ *
+ * <p>Since this class uses {@link ThreadCpuTimer} it is irrevocably lock-hostile and can never be
+ * exposed to multiple threads, even if guarded by synchronization. Normally this is attached to
+ * objects ultimately held by a ThreadLocal in {@link SolrRequestInfo} to provide safe usage on the
+ * assumption that such objects are not shared to other threads.
+ *
+ * @see ThreadCpuTimer
  */
+@NotThreadSafe
 public class CpuAllowedLimit implements QueryTimeout {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private final long
-      timeOutAtThreadTotalCpuNs; // this is a value based on total cpu since the inception of the
-  // thread
   private final ThreadCpuTimer threadCpuTimer;
+  private final long requestedTimeoutNs;
 
   /**
    * Create an object to represent a CPU time limit for the current request. NOTE: this
@@ -51,6 +53,8 @@ public class CpuAllowedLimit implements QueryTimeout {
       throw new IllegalArgumentException("Thread CPU time monitoring is not available.");
     }
     SolrRequestInfo solrRequestInfo = SolrRequestInfo.getRequestInfo();
+    // get existing timer if available to ensure sub-queries can't reset/exceed the intended time
+    // constraint.
     threadCpuTimer =
         solrRequestInfo != null ? solrRequestInfo.getThreadCpuTimer() : new ThreadCpuTimer();
     long reqCpuLimit = req.getParams().getLong(CommonParams.CPU_ALLOWED, -1L);
@@ -59,18 +63,14 @@ public class CpuAllowedLimit implements QueryTimeout {
       throw new IllegalArgumentException(
           "Check for limit with hasCpuLimit(req) before creating a CpuAllowedLimit");
     }
-    // calculate when the time when the limit is reached, e.g. account for the time already spent
-    timeOutAtThreadTotalCpuNs =
-        threadCpuTimer.getStartCpuTimeNs() // how much the thread already used since it began
-            + TimeUnit.NANOSECONDS.convert(reqCpuLimit, TimeUnit.MILLISECONDS);
+    // calculate the time when the limit is reached, e.g. account for the time already spent
+    requestedTimeoutNs = TimeUnit.NANOSECONDS.convert(reqCpuLimit, TimeUnit.MILLISECONDS);
   }
 
   @VisibleForTesting
   CpuAllowedLimit(long limitMs) {
     this.threadCpuTimer = new ThreadCpuTimer();
-    timeOutAtThreadTotalCpuNs =
-        threadCpuTimer.getThreadTotalCpuNs()
-            + TimeUnit.NANOSECONDS.convert(limitMs, TimeUnit.MILLISECONDS);
+    requestedTimeoutNs = TimeUnit.NANOSECONDS.convert(limitMs, TimeUnit.MILLISECONDS);
   }
 
   /** Return true if the current request has a parameter with a valid value of the limit. */
@@ -78,9 +78,9 @@ public class CpuAllowedLimit implements QueryTimeout {
     return req.getParams().getLong(CommonParams.CPU_ALLOWED, -1L) > 0L;
   }
 
-  /** Return true if a max limit value is set and the current usage has exceeded the limit. */
+  /** Return true usage has exceeded the limit. */
   @Override
   public boolean shouldExit() {
-    return timeOutAtThreadTotalCpuNs - threadCpuTimer.getThreadTotalCpuNs() < 0L;
+    return threadCpuTimer.getElapsedCpuNs() > requestedTimeoutNs;
   }
 }
