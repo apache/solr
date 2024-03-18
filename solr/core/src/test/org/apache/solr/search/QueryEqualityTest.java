@@ -961,6 +961,17 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "vectorSimilarity(vector,$v2)",
           "vectorSimilarity(vector, $v2)");
     }
+
+    // contrived, but helps us test the param resolution
+    // for both field names in the 2arg usecase
+    try (SolrQueryRequest req = req("f", "vector")) {
+      assertFuncEquals(
+          req,
+          "vectorSimilarity($f, $f)",
+          "vectorSimilarity($f, vector)",
+          "vectorSimilarity(vector, $f)",
+          "vectorSimilarity(vector, vector)");
+    }
   }
 
   public void testFuncQuery() throws Exception {
