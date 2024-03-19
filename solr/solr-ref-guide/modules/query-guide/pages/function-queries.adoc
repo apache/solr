@@ -457,7 +457,7 @@ Uses the Lucene spell checker `StringDistance` interface and supports all of the
 Possible values for distance measure are:
 
 * jw: Jaro-Winkler
-* edit: Levenstein or Edit distance
+* edit: Levenshtein or Edit distance
 * ngram: The NGramDistance, if specified, can optionally pass in the ngram size too.
 Default is 2.
 * FQN: Fully Qualified class Name for an implementation of the StringDistance interface.

@@ -62,7 +62,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
   public static final String PARAM_MIN_BREAK_WORD_LENGTH = "minBreakLength";
 
   /** See {@link BreakSuggestionTieBreaker} for options. */
-  public static final String PARAM_BREAK_SUGGESTION_TIE_BREAKER = "breakSugestionTieBreaker";
+  public static final String PARAM_BREAK_SUGGESTION_TIE_BREAKER = "breakSuggestionTieBreaker";
 
   /** See {@link WordBreakSpellChecker#setMaxEvaluations} */
   public static final String PARAM_MAX_EVALUATIONS = "maxEvaluations";
@@ -70,7 +70,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
   /** See {@link WordBreakSpellChecker#setMinSuggestionFrequency} */
   public static final String PARAM_MIN_SUGGESTION_FREQUENCY = "minSuggestionFreq";
 
-  /** Specify a value on the "breakSugestionTieBreaker" parameter. The default is MAX_FREQ. */
+  /** Specify a value on the "breakSuggestionTieBreaker" parameter. The default is MAX_FREQ. */
   public enum BreakSuggestionTieBreaker {
     /** See {@link BreakSuggestionSortMethod#NUM_CHANGES_THEN_MAX_FREQUENCY} # */
     MAX_FREQ,
