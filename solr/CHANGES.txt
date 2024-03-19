@@ -67,7 +67,8 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
-(No changes)
+
+* SOLR-17157: Upgrade Lucene to 9.10.0 (hossman, Christine Poerschke)
 
 Other Changes
 ---------------------
