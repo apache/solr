@@ -597,4 +597,4 @@ For example:
 http://localhost:8983/solr/techproducts/spell?spellcheck=true&spellcheck.build=true&spellcheck.q=toyata&shards.qt=/spell&shards=solr-shard1:8983/solr/techproducts,solr-shard2:8983/solr/techproducts
 
 In case of a distributed request to the SpellCheckComponent, the shards are requested for at least five suggestions even if the `spellcheck.count` parameter value is less than five.
-Once the suggestions are collected, they are ranked by the configured distance measure (LevenshteinDistance by default) and then by aggregate frequency.
+Once the suggestions are collected, they are ranked by the configured distance measure (Levenshtein distance by default) and then by aggregate frequency.
