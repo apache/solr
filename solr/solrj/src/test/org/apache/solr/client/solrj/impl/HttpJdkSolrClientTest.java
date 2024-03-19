@@ -24,9 +24,13 @@ import java.net.Socket;
 import java.net.http.HttpClient;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -73,6 +77,16 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @After
   public void workaroundToReleaseThreads_noClosableUntilJava21() {
+    Thread[] threads = new Thread[Thread.currentThread().getThreadGroup().activeCount()];
+    Thread.currentThread().getThreadGroup().enumerate(threads);
+    Set<Thread> tSet =
+        Arrays.stream(threads)
+            .filter(Objects::nonNull)
+            .filter(t -> t.getName().startsWith("HttpClient-"))
+            .collect(Collectors.toSet());
+    for (Thread t : tSet) {
+      t.interrupt();
+    }
     System.gc();
   }
 
