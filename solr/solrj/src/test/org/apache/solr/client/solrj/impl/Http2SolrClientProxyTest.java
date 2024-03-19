@@ -17,13 +17,19 @@
 package org.apache.solr.client.solrj.impl;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -47,31 +53,76 @@ public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
         .create();
   }
 
-  /** Setup a simple http proxy and verify a request works */
+  private SocketProxy proxy;
+
+  private String host;
+
+  private String url;
+
+  @Before
+  public void before() {
+    this.proxy = solrClientTestRule.getJetty().getProxy();
+    this.host = proxy.getUrl().getHost();
+    this.url = "http://" + host + ":" + (proxy.getUrl().getPort() + 10) + "/solr";
+  }
+
   @Test
-  public void testProxy() throws Exception {
-    var proxy = solrClientTestRule.getJetty().getProxy();
+  public void testProxyWithHttp2SolrClient() throws Exception {
     assertNotNull(proxy);
-
-    String host = proxy.getUrl().getHost();
-    String url = "http://" + host + ":" + (proxy.getUrl().getPort() + 10) + "/solr";
-
     var builder =
         new Http2SolrClient.Builder(url)
             .withProxyConfiguration(host, proxy.getListenPort(), false, false);
 
     try (Http2SolrClient client = builder.build()) {
-      String id = "1234";
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", id);
-      client.add(DEFAULT_TEST_COLLECTION_NAME, doc);
-      client.commit(DEFAULT_TEST_COLLECTION_NAME);
-      assertEquals(
-          1,
-          client
-              .query(DEFAULT_TEST_COLLECTION_NAME, new SolrQuery("id:" + id))
-              .getResults()
-              .getNumFound());
+      testProxy(client);
     }
+  }
+
+  @Test
+  public void testProxyWithHttpSolrClientJdkImpl() throws Exception {
+    assertNotNull(proxy);
+    var builder =
+        new HttpJdkSolrClient.Builder(url)
+            .withProxyConfiguration(host, proxy.getListenPort(), false, false);
+    try (HttpJdkSolrClient client = builder.build()) {
+      testProxy(client);
+    }
+    // This is a workaround for java.net.http.HttpClient not implementing closeable/autoclosable
+    // until Java 21.
+    Thread[] threads = new Thread[Thread.currentThread().getThreadGroup().activeCount()];
+    Thread.currentThread().getThreadGroup().enumerate(threads);
+    Set<Thread> tSet =
+        Arrays.stream(threads)
+            .filter(Objects::nonNull)
+            .filter(t -> t.getName().startsWith("HttpClient-"))
+            .collect(Collectors.toSet());
+    for (Thread t : tSet) {
+      t.interrupt();
+    }
+    System.gc();
+  }
+
+  /** Setup a simple http proxy and verify a request works */
+  public void testProxy(HttpSolrClientBase client) throws Exception {
+    String id = "1234";
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", id);
+    client.add(DEFAULT_TEST_COLLECTION_NAME, doc);
+    client.commit(DEFAULT_TEST_COLLECTION_NAME);
+    assertEquals(
+        1,
+        client
+            .query(DEFAULT_TEST_COLLECTION_NAME, new SolrQuery("id:" + id))
+            .getResults()
+            .getNumFound());
+
+    client.deleteByQuery(DEFAULT_TEST_COLLECTION_NAME, "*:*");
+    client.commit(DEFAULT_TEST_COLLECTION_NAME);
+    assertEquals(
+        0,
+        client
+            .query(DEFAULT_TEST_COLLECTION_NAME, new SolrQuery("*:*"))
+            .getResults()
+            .getNumFound());
   }
 }
