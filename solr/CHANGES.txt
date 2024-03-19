@@ -145,6 +145,8 @@ Bug Fixes
 * SOLR-17198: AffinityPlacementFactory can fail if Shard leadership changes occur while it is collecting metrics.
   (Paul McArthur)
 
+* SOLR-17204: REPLACENODE supports the source node not being live (Vincent Primault)
+
 Dependency Upgrades
 ---------------------
 (No changes)
