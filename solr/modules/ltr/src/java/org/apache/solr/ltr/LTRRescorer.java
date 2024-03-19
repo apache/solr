@@ -33,6 +33,9 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.IncompleteRerankingException;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryTimeoutImpl;
@@ -269,6 +272,10 @@ public class LTRRescorer extends Rescorer {
   }
 
   private static boolean maybeExitWithPartialResults(String label) {
+    SolrQueryRequest req = SolrRequestInfo.getRequestInfo().getReq();
+    SolrQueryResponse rsp = SolrRequestInfo.getRequestInfo().getRsp();
+    boolean allowPartialResults =
+            req != null ? req.getParams().getBool(CommonParams.PARTIAL_RESULTS, true) : true;
     if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled() && SolrQueryTimeoutImpl.getInstance().shouldExit()) {
       /*
       if (allowPartialResults) {
