@@ -29,6 +29,9 @@ public class TestLTRQParserPlugin extends TestRerankBase {
 
     loadFeatures("features-linear.json");
     loadModels("linear-model.json");
+
+    loadFeatures("features-slow.json");
+    loadModels("linear-slow-model.json"); // just a linear model with one feature
   }
 
   @AfterClass
@@ -142,10 +145,8 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   public void ltr_expensiveFeatureRescoring_shouldTimeOutAndReturnPartialResults()
       throws Exception {
     /* One SolrFeature is defined: {!func}sleep(1000,999)
-     *  It simulates a slow feature extraction, sleeping for 1000ms and returning 999 as a score when finished
+     * It simulates a slow feature extraction, sleeping for 1000ms and returning 999 as a score when finished
      * */
-    loadFeatures("features-slow.json");
-    loadModels("linear-slow-model.json"); // just a linear model with one feature
 
     final String solrQuery = "_query_:{!edismax qf='id' v='8^=10 9^=5 7^=3 6^=1'}";
     final SolrQuery query = new SolrQuery();
@@ -161,8 +162,9 @@ public class TestLTRQParserPlugin extends TestRerankBase {
         "/response/numFound/==4",
         "/responseHeader/partialResults/==true",
         "/responseHeader/partialResultsDetails/=='Limits exceeded! (Learning To Rank rescoring - "
-            + "The full reranking didn\\'t complete and got reverted. "
-            + "All documents preserved their original score and ranking.)"
+            + "The full reranking didn\\'t complete. "
+            + "If partial results are tolerated the reranking got reverted and "
+            + "all documents preserved their original score and ranking.)"
             + ": Query limits: [TimeAllowedLimit:LIMIT EXCEEDED]'",
         "/response/docs/[0]/id=='8'",
         "/response/docs/[0]/score==10.0",
@@ -172,5 +174,29 @@ public class TestLTRQParserPlugin extends TestRerankBase {
         "/response/docs/[2]/score==3.0",
         "/response/docs/[3]/id=='6'",
         "/response/docs/[3]/score==1.0");
+  }
+
+  @Test
+  public void ltr_expensiveFeatureRescoringAndPartialResultsNotTolerated_shouldRaiseException()
+      throws Exception {
+    /* One SolrFeature is defined: {!func}sleep(1000,999)
+     * It simulates a slow feature extraction, sleeping for 1000ms and returning 999 as a score when finished
+     * */
+    final String solrQuery = "_query_:{!edismax qf='id' v='8^=10 9^=5 7^=3 6^=1'}";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.add("fl", "*, score");
+    query.add("rows", "4");
+    query.add("fv", "true");
+    query.add("rq", "{!ltr model=slowModel reRankDocs=3}");
+    query.add("timeAllowed", "300");
+    query.add("partialResults", "false");
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/error/msg=='org.apache.solr.search.QueryLimitsExceededException: Limits exceeded! (Learning To Rank rescoring - "
+            + "The full reranking didn\\'t complete. "
+            + "If partial results are tolerated the reranking got reverted and all documents preserved their original score and ranking.)"
+            + ": Query limits: [TimeAllowedLimit:LIMIT EXCEEDED]'");
   }
 }

@@ -144,7 +144,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
                     .getReplaceRescorer()
                     .rescore(searcher, mainDocs, mainDocs.scoreDocs.length)
                 : reRankQueryRescorer.rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
-      } catch (QueryLimitsExceededException ex) {
+      } catch (IncompleteRerankingException ex) {
         mainDocs.scoreDocs = mainScoreDocsClone;
         rescoredDocs = mainDocs;
       }
