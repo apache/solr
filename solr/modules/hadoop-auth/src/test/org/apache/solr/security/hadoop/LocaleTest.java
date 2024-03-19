@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "https://issues.apache.org/jira/browse/DIRKRB-753")
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-17207")
 @LogLevel("org.apache.kerby=WARN")
 public class LocaleTest extends SolrTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
