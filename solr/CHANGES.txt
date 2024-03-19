@@ -142,7 +142,8 @@ Other Changes
 * SOLR-17066: GenericSolrRequest now has a `setRequiresCollection` setter that allows it to specify whether
   it should make use of the client-level default collection/core. (Jason Gerlowski)
 
-* SOLR-12089: Update FileBasedSpellChecker and IndexBasedSpellChecker to accept accuracy parameter as float (Andrey Bozhko)
+* SOLR-12089: Update FileBasedSpellChecker and IndexBasedSpellChecker to accept accuracy parameter as float;
+  rename `breakSugestionTieBreaker` parameter to `breakSuggestionTieBreaker` in WordBreakSolrSpellChecker (Andrey Bozhko)
 
 ==================  9.5.0 ==================
 New Features
