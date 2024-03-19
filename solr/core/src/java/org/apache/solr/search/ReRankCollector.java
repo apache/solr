@@ -39,6 +39,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.SolrQueryResponse;
 
 /* A TopDocsCollector used by reranking queries. */
 public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
@@ -117,10 +118,15 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
 
       TopDocs rescoredDocs;
       try {
-        rescoredDocs =reRankQueryRescorer.rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
+        rescoredDocs = reRankQueryRescorer.rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
       } catch (IncompleteRerankingException ex) {
         mainDocs.scoreDocs = mainScoreDocsClone;
         rescoredDocs = mainDocs;
+        SolrRequestInfo.getRequestInfo()
+            .getRsp()
+            .getResponseHeader()
+            .asShallowMap()
+            .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
       }
 
       // Lower howMany to return if we've collected fewer documents.

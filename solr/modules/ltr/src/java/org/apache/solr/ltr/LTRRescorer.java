@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-
-import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.Explanation;
@@ -33,9 +31,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.IncompleteRerankingException;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryTimeoutImpl;
@@ -241,12 +236,13 @@ public class LTRRescorer extends Rescorer {
 
     scorer.getDocInfo().setOriginalDocScore(hit.score);
     hit.score = scorer.score();
-    if (maybeExitWithPartialResults(
-            "Learning To Rank rescoring -"
-                + " The full reranking didn't complete."
-                + " If partial results are tolerated the reranking got reverted and all documents preserved their original score and ranking.")) {
-      throw new IncompleteRerankingException("A query limit has been exceeded when rescoring");
+
+    if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled()
+        && SolrQueryTimeoutImpl.getInstance().shouldExit()) {
+      SolrQueryTimeoutImpl.reset();
+      throw new IncompleteRerankingException();
     }
+
     if (hitUpto < topN) {
       reranked[hitUpto] = hit;
       // if the heap is not full, maybe I want to log the features for this
@@ -269,28 +265,6 @@ public class LTRRescorer extends Rescorer {
       }
     }
     return logHit;
-  }
-
-  private static boolean maybeExitWithPartialResults(String label) {
-    SolrQueryRequest req = SolrRequestInfo.getRequestInfo().getReq();
-    SolrQueryResponse rsp = SolrRequestInfo.getRequestInfo().getRsp();
-    boolean allowPartialResults =
-            req != null ? req.getParams().getBool(CommonParams.PARTIAL_RESULTS, true) : true;
-    if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled() && SolrQueryTimeoutImpl.getInstance().shouldExit()) {
-      /*
-      if (allowPartialResults) {
-        if (rsp != null) {
-          rsp.setPartialResults();
-          rsp.addPartialResponseDetail(formatExceptionMessage(label));
-        }
-        return true;
-      } else {*/
-        throw new ExitableDirectoryReader.ExitingReaderException(
-                label);
-      //}
-    } else {
-      return false;
-    }
   }
 
   @Override

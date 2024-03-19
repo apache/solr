@@ -155,17 +155,12 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rows", "4");
     query.add("fv", "true");
     query.add("rq", "{!ltr model=slowModel reRankDocs=3}");
-    query.add("timeAllowed", "3000");
+    query.add("timeAllowed", "300");
 
     assertJQ(
         "/query" + query.toQueryString(),
         "/response/numFound/==4",
         "/responseHeader/partialResults/==true",
-        "/responseHeader/partialResultsDetails/=='Limits exceeded! (Learning To Rank rescoring - "
-            + "The full reranking didn\\'t complete. "
-            + "If partial results are tolerated the reranking got reverted and "
-            + "all documents preserved their original score and ranking.)"
-            + ": Query limits: [TimeAllowedLimit:LIMIT EXCEEDED]'",
         "/response/docs/[0]/id=='8'",
         "/response/docs/[0]/score==10.0",
         "/response/docs/[1]/id=='9'",
@@ -177,11 +172,12 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   }
 
   @Test
-  public void ltr_expensiveFeatureRescoringAndPartialResultsNotTolerated_shouldRaiseException()
+  public void ltr_expensiveFeatureRescoringWithinTimeAllowed_shouldReturnRerankedResults()
       throws Exception {
     /* One SolrFeature is defined: {!func}sleep(1000,999)
      * It simulates a slow feature extraction, sleeping for 1000ms and returning 999 as a score when finished
      * */
+
     final String solrQuery = "_query_:{!edismax qf='id' v='8^=10 9^=5 7^=3 6^=1'}";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
@@ -189,14 +185,18 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rows", "4");
     query.add("fv", "true");
     query.add("rq", "{!ltr model=slowModel reRankDocs=3}");
-    query.add("timeAllowed", "300");
-    query.add("partialResults", "false");
+    query.add("timeAllowed", "2000");
 
     assertJQ(
         "/query" + query.toQueryString(),
-        "/error/msg=='org.apache.solr.search.QueryLimitsExceededException: Limits exceeded! (Learning To Rank rescoring - "
-            + "The full reranking didn\\'t complete. "
-            + "If partial results are tolerated the reranking got reverted and all documents preserved their original score and ranking.)"
-            + ": Query limits: [TimeAllowedLimit:LIMIT EXCEEDED]'");
+        "/response/numFound/==4",
+        "/response/docs/[0]/id=='7'",
+        "/response/docs/[0]/score==999.0",
+        "/response/docs/[1]/id=='8'",
+        "/response/docs/[1]/score==999.0",
+        "/response/docs/[2]/id=='9'",
+        "/response/docs/[2]/score==999.0",
+        "/response/docs/[3]/id=='6'",
+        "/response/docs/[3]/score==1.0");
   }
 }

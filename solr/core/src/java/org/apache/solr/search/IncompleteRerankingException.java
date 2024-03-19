@@ -18,7 +18,7 @@ package org.apache.solr.search;
 
 public class IncompleteRerankingException extends RuntimeException {
 
-  public IncompleteRerankingException(String msg) {
-    super(msg);
+  public IncompleteRerankingException() {
+    super();
   }
 }
