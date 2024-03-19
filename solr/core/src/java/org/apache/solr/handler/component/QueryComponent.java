@@ -955,8 +955,8 @@ public class QueryComponent extends SearchComponent {
 
         if (srsp.getException() != null) {
           Throwable t = srsp.getException();
-          if (t instanceof SolrServerException) {
-            t = ((SolrServerException) t).getCause();
+          if (t instanceof SolrServerException && t.getCause() != null) {
+            t = t.getCause();
           }
           nl.add("error", t.toString());
           if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
