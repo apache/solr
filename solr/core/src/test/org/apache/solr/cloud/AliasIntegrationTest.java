@@ -517,6 +517,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       }
     }
   }
+
   // Rather a long title, but it's common to recommend when people need to re-index for any reason
   // that they:
   // 1> create a new collection
@@ -967,8 +968,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       // HttpSolrClient
       JettySolrRunner jetty = cluster.getRandomJetty(random());
       if (random().nextBoolean()) {
-        try (SolrClient client =
-            getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + collectionList)) {
+        try (SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString(), collectionList)) {
           responseConsumer.accept(client.query(null, solrQuery));
         }
       } else {

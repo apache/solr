@@ -31,6 +31,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -636,7 +637,8 @@ public class DistributedClusterStateUpdater {
               data,
               Collections.emptySet(),
               updater.getCollectionName(),
-              zkStateReader.getZkClient());
+              zkStateReader.getZkClient(),
+              Instant.ofEpochMilli(stat.getCtime()));
 
       return clusterState;
     }
@@ -660,8 +662,10 @@ public class DistributedClusterStateUpdater {
    */
   public static class StateChangeRecorder {
     final List<Pair<MutatingCommand, ZkNodeProps>> mutations;
+
     /** The collection name for which are all recorded commands */
     final String collectionName;
+
     /**
      * {@code true} if recorded commands assume creation of the collection {@code state.json} file.
      * <br>

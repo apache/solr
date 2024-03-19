@@ -343,6 +343,7 @@ public interface FieldCache {
   /** Can be passed to {@link #getDocTermOrds} to filter for 32-bit numeric terms */
   public static final BytesRef INT32_TERM_PREFIX =
       new BytesRef(new byte[] {LegacyNumericUtils.SHIFT_START_INT});
+
   /** Can be passed to {@link #getDocTermOrds} to filter for 64-bit numeric terms */
   public static final BytesRef INT64_TERM_PREFIX =
       new BytesRef(new byte[] {LegacyNumericUtils.SHIFT_START_LONG});

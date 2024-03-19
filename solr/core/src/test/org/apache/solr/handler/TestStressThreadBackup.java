@@ -97,7 +97,6 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     assertEquals(
         0,
         (CollectionAdminRequest.createCollection(DEFAULT_TEST_COLLECTION_NAME, "conf1", 1, 1)
-            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .process(cluster.getSolrClient())
             .getStatus()));
     adminClient = getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
@@ -130,9 +129,11 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     testSnapshotsAndBackupsDuringConcurrentCommitsAndOptimizes(
         new BackupAPIImpl() {
           final BackupStatusChecker backupStatus = new BackupStatusChecker(coreClient);
+
           /** no solrj API for ReplicationHandler */
           private GenericSolrRequest makeReplicationReq(SolrParams p) {
-            return new GenericSolrRequest(GenericSolrRequest.METHOD.GET, "/replication", p);
+            return new GenericSolrRequest(GenericSolrRequest.METHOD.GET, "/replication", p)
+                .setRequiresCollection(true);
           }
 
           /**
@@ -368,7 +369,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
             .iterator()
             .next();
     coreName = r.getCoreName();
-    coreClient = getHttpSolrClient(r.getCoreUrl());
+    coreClient = getHttpSolrClient(r);
   }
 
   /**

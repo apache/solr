@@ -49,9 +49,9 @@
     }
   ],
   "schedule": [
-    "* * * * 0"
+    "* * * * *"
   ],
-  "prConcurrentLimit": 30,
+  "prConcurrentLimit": 50,
   "prHourlyLimit": 10,
   "stabilityDays": 5
 }

@@ -24,6 +24,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.LongSupplier;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrCore;
@@ -171,7 +172,7 @@ public final class CommitTracker implements Runnable {
    * @param commitWithin amount of time (in ms) within which a commit should be scheduled
    */
   public void addedDocument(int commitWithin) {
-    addedDocument(commitWithin, -1);
+    addedDocument(commitWithin, () -> -1);
   }
 
   /**
@@ -181,7 +182,7 @@ public final class CommitTracker implements Runnable {
    * @param currentTlogSize current tlog size (in bytes). Use -1 if we don't want to check for a max
    *     size triggered commit
    */
-  public void addedDocument(int commitWithin, long currentTlogSize) {
+  public void addedDocument(int commitWithin, LongSupplier currentTlogSize) {
     // maxDocs-triggered autoCommit
     _scheduleMaxDocsTriggeredCommitIfNeeded();
 
@@ -219,7 +220,7 @@ public final class CommitTracker implements Runnable {
    *
    * @param currentTlogSize current tlog size (in bytes)
    */
-  public void scheduleMaxSizeTriggeredCommitIfNeeded(long currentTlogSize) {
+  public void scheduleMaxSizeTriggeredCommitIfNeeded(LongSupplier currentTlogSize) {
     _scheduleMaxSizeTriggeredCommitIfNeeded(currentTlogSize);
   }
 
@@ -229,8 +230,8 @@ public final class CommitTracker implements Runnable {
    *
    * @param currentTlogSize current tlog size (in bytes)
    */
-  private void _scheduleMaxSizeTriggeredCommitIfNeeded(long currentTlogSize) {
-    if (tLogFileSizeUpperBound > 0 && currentTlogSize > tLogFileSizeUpperBound) {
+  private void _scheduleMaxSizeTriggeredCommitIfNeeded(LongSupplier currentTlogSize) {
+    if (tLogFileSizeUpperBound > 0 && currentTlogSize.getAsLong() > tLogFileSizeUpperBound) {
       docsSinceCommit.set(0);
       _scheduleCommitWithin(SIZE_COMMIT_DELAY_MS);
     }

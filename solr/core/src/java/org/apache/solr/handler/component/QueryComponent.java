@@ -42,6 +42,7 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Sort;
@@ -114,6 +115,7 @@ import org.apache.solr.search.grouping.endresulttransformer.EndResultTransformer
 import org.apache.solr.search.grouping.endresulttransformer.GroupedEndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.MainEndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.SimpleEndResultTransformer;
+import org.apache.solr.search.stats.LocalStatsCache;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrResponseUtil;
@@ -145,6 +147,18 @@ public class QueryComponent extends SearchComponent {
         // Generate Query ID
         rb.queryID = generateQueryID(req);
       }
+      // set the flag for distributed stats
+      if (req.getSearcher().getStatsCache().getClass().equals(LocalStatsCache.class)) {
+        if (params.getPrimitiveBool(CommonParams.DISTRIB_STATS_CACHE)) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Explicitly set "
+                  + CommonParams.DISTRIB_STATS_CACHE
+                  + "=true is not supported with "
+                  + LocalStatsCache.class.getSimpleName());
+        }
+      }
+      rb.setDistribStatsDisabled(!params.getBool(CommonParams.DISTRIB_STATS_CACHE, true));
     }
 
     // Set field flags
@@ -364,6 +378,7 @@ public class QueryComponent extends SearchComponent {
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
     cmd.setMinExactCount(getMinExactCount(params));
+    cmd.setDistribStatsDisabled(rb.isDistribStatsDisabled());
 
     boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
 
@@ -497,7 +512,12 @@ public class QueryComponent extends SearchComponent {
           // :TODO: would be simpler to always serialize every position of SortField[]
           if (type == SortField.Type.SCORE || type == SortField.Type.DOC) continue;
 
-          FieldComparator<?> comparator = sortField.getComparator(1, true);
+          FieldComparator<?> comparator =
+              sortField.getComparator(
+                  1,
+                  schemaFields.size() > 1
+                      ? Pruning.GREATER_THAN
+                      : Pruning.GREATER_THAN_OR_EQUAL_TO);
           LeafFieldComparator leafComparator = null;
           Object[] vals = new Object[nDocs];
 
@@ -730,8 +750,9 @@ public class QueryComponent extends SearchComponent {
 
   protected void createDistributedStats(ResponseBuilder rb) {
     StatsCache cache = rb.req.getSearcher().getStatsCache();
-    if ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
-        || rb.getSortSpec().includesScore()) {
+    if (!rb.isDistribStatsDisabled()
+        && ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
+            || rb.getSortSpec().includesScore())) {
       ShardRequest sreq = cache.retrieveStatsRequest(rb);
       if (sreq != null) {
         rb.addRequest(this, sreq);
@@ -1350,10 +1371,9 @@ public class QueryComponent extends SearchComponent {
           if (Boolean.TRUE.equals(
               responseHeader.getBooleanArg(
                   SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-            rb.rsp
-                .getResponseHeader()
-                .asShallowMap()
-                .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+            rb.rsp.setPartialResults();
+            rb.rsp.addPartialResponseDetail(
+                responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY));
           }
         }
         SolrDocumentList docs =

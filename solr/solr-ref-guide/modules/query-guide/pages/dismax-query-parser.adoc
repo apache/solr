@@ -92,7 +92,7 @@ The table below explains the various ways that mm values can be specified.
 |Percentage |75% |Sets the minimum number of matching clauses to this percentage of the total number of optional clauses. The number computed from the percentage is rounded down and used as the minimum.
 |Negative percentage |-25% |Indicates that this percent of the total number of optional clauses can be missing. The number computed from the percentage is rounded down, before being subtracted from the total to determine the minimum number.
 |An expression beginning with a positive integer followed by a > or < sign and another value |3<90% |Defines a conditional expression indicating that if the number of optional clauses is equal to (or less than) the integer, they are all required, but if it's greater than the integer, the specification applies. In this example: if there are 1 to 3 clauses they are all required, but for 4 or more clauses only 90% are required.
-|Multiple conditional expressions involving > or < signs |2\<-25% 9\<-3 |Defines multiple conditions, each one being valid only for numbers greater than the one before it. In the example at left, if there are 1 or 2 clauses, then both are required. If there are 3-9 clauses all but 25% are required. If there are more then 9 clauses, all but three are required.
+|Multiple conditional expressions involving > or < signs |2\<-25% 9\<-3 |Defines multiple conditions, each one being valid only for numbers greater than the one before it. In the example at left, if there are 1 or 2 clauses, then both are required. If there are 3-9 clauses all but 25% are required. If there are more than 9 clauses, all but three are required.
 |===
 
 When specifying `mm` values, keep in mind the following:
@@ -163,7 +163,7 @@ bq=category:food^10
 bq=category:deli^5
 ----
 
-Using the `bq` parameter in this way is functionally equivilent to combining your `q` and `bq` parameters into a single larger boolean query, where the (original) `q` parameter is "mandatory" and the other clauses are optional:
+Using the `bq` parameter in this way is functionally equivalent to combining your `q` and `bq` parameters into a single larger boolean query, where the (original) `q` parameter is "mandatory" and the other clauses are optional:
 
 [source,text]
 ----
@@ -219,7 +219,7 @@ All of the sample URLs in this section assume you are running Solr's "techproduc
 
 [source,bash]
 ----
-bin/solr -e techproducts
+bin/solr start -e techproducts
 ----
 
 Results for the word "video" using the standard query parser, and we assume "df" is pointing to a field to search:
@@ -249,7 +249,7 @@ Another request handler is registered at "/instock" and has slightly different c
 `\http://localhost:8983/solr/techproducts/instock?defType=dismax&q=video&fl=name,score,inStock`
 
 One of the other really cool features in this parser is robust support for specifying the "BooleanQuery.minimumNumberShouldMatch" you want to be used based on how many terms are in your user's query.
-These allows flexibility for typos and partial matches.
+This allows flexibility for typos and partial matches.
 For the dismax parser, one and two word queries require that all of the optional clauses match, but for three to five word queries one missing word is allowed.
 
 `\http://localhost:8983/solr/techproducts/select?defType=dismax&q=belkin+ipod`

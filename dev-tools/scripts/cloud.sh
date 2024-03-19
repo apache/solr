@@ -41,8 +41,7 @@
 # By default the script sets up a local Solr cloud with 4 nodes, in a local
 # directory with ISO date as the name. A local zookeeper at 2181 or the
 # specified port is presumed to be available, a new zk chroot is used for each
-# cluster based on the file system path to the cluster directory. the default
-# solr.xml is added to this solr root dir in zookeeper.
+# cluster based on the file system path to the cluster directory.
 #
 # Debugging ports are automatically opened for each node starting with port 5001
 #
@@ -280,10 +279,11 @@ copyTarball() {
       curl -o "$RC_FILE" "$SMOKE_RC_URL"
       pushd
     else
-      if [[ ! -f $(ls "$VCS_WORK"/solr/packaging/build/distributions/solr-*.tgz) ]]; then
+      TARBALL=$(find "$VCS_WORK" -regex '.*/solr-.*\.tgz' | grep -v slim)
+      if [[ ! -f "$TARBALL" ]]; then
         echo "No solr tarball found try again with -r"; popd; exit 10;
       fi
-      cp "$VCS_WORK"/solr/packaging/build/distributions/solr-*.tgz ${CLUSTER_WD}
+      cp "$TARBALL" "${CLUSTER_WD}"
     fi
     pushd # back into cluster wd to unpack
     tar xzvf solr-*.tgz
@@ -315,7 +315,6 @@ start(){
     # Need a fresh root in zookeeper...
     "${SOLR}/server/scripts/cloud-scripts/zkcli.sh" -zkhost localhost:${ZK_PORT} -cmd makepath "/solr_${SAFE_DEST}";
     "${SOLR}/server/scripts/cloud-scripts/zkcli.sh" -zkhost localhost:${ZK_PORT} -cmd put "/solr_${SAFE_DEST}" "created by cloud.sh"; # so we can test for existence next time
-    "${SOLR}/server/scripts/cloud-scripts/zkcli.sh" -zkhost localhost:${ZK_PORT} -cmd putfile "/solr_${SAFE_DEST}/solr.xml" "${SOLR}/server/solr/solr.xml";
   fi
 
   ACTUAL_NUM_NODES=$(ls -1 -d ${CLUSTER_WD}/n* | wc -l )
@@ -338,7 +337,7 @@ start(){
     mkdir -p "${CLUSTER_WD}/n${i}"
     argsArray=(-c -s $CLUSTER_WD_FULL/n${i} -z localhost:${ZK_PORT}/solr_${SAFE_DEST} -p 898${i} -m $MEMORY \
     -a "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=500${i} \
-    -Dsolr.solrxml.location=zookeeper -Dsolr.log.dir=$CLUSTER_WD_FULL/n${i} $JVM_ARGS")
+    -Dsolr.log.dir=$CLUSTER_WD_FULL/n${i} $JVM_ARGS")
     FINAL_COMMAND="${SOLR}/bin/solr ${argsArray[@]}"
     echo ${FINAL_COMMAND}
     ${SOLR}/bin/solr start "${argsArray[@]}"

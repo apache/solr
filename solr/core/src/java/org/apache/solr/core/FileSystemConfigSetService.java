@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.FileTypeMagicUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +50,7 @@ import org.slf4j.LoggerFactory;
  */
 public class FileSystemConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /** .metadata.json hidden file where metadata is stored */
   public static final String METADATA_FILE = ".metadata.json";
 
@@ -149,9 +151,17 @@ public class FileSystemConfigSetService extends ConfigSetService {
     if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
       log.warn("Not including uploading file to config, as it is a forbidden type: {}", fileName);
     } else {
-      Path filePath = getConfigDir(configName).resolve(normalizePathToOsSeparator(fileName));
-      if (!Files.exists(filePath) || overwriteOnExists) {
-        Files.write(filePath, data);
+      if (!FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
+        Path filePath = getConfigDir(configName).resolve(normalizePathToOsSeparator(fileName));
+        if (!Files.exists(filePath) || overwriteOnExists) {
+          Files.write(filePath, data);
+        }
+      } else {
+        String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(data);
+        log.warn(
+            "Not including uploading file {}, as it matched the MAGIC signature of a forbidden mime type {}",
+            fileName,
+            mimeType);
       }
     }
   }
@@ -204,8 +214,16 @@ public class FileSystemConfigSetService extends ConfigSetService {
                     "Not including uploading file to config, as it is a forbidden type: {}",
                     file.getFileName());
               } else {
-                Files.copy(
-                    file, target.resolve(source.relativize(file).toString()), REPLACE_EXISTING);
+                if (!FileTypeMagicUtil.isFileForbiddenInConfigset(file)) {
+                  Files.copy(
+                      file, target.resolve(source.relativize(file).toString()), REPLACE_EXISTING);
+                } else {
+                  String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(file);
+                  log.warn(
+                      "Not copying file {}, as it matched the MAGIC signature of a forbidden mime type {}",
+                      file.getFileName(),
+                      mimeType);
+                }
               }
               return FileVisitResult.CONTINUE;
             }

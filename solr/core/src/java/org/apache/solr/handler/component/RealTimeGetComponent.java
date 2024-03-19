@@ -21,6 +21,8 @@ import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 import static org.apache.solr.search.QueryUtils.makeQueryable;
 
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongSet;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -94,7 +96,6 @@ import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.AtomicUpdateDocumentMerger;
-import org.apache.solr.util.LongSet;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -1342,7 +1343,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
     // TODO: get this from cache instead of rebuilding?
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-      LongSet updateVersions = new LongSet(versions.size());
+      LongSet updateVersions = new LongHashSet(versions.size());
       for (Long version : versions) {
         try {
           Object o = recentUpdates.lookup(version);
@@ -1427,6 +1428,7 @@ public class RealTimeGetComponent extends SearchComponent {
   private static final class IdsRequested {
     /** An List (which may be empty but will never be null) of the uniqueKeys requested. */
     public final List<String> allIds;
+
     /**
      * true if the params provided by the user indicate that a single doc response structure should
      * be used. Value is meaningless if <code>ids</code> is empty.

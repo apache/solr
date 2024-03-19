@@ -66,13 +66,16 @@ import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.apache.solr.util.RefCounted;
 import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -95,6 +98,9 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   private RefCounted<SolrIndexSearcher> searcherRef;
   private SolrIndexSearcher _searcher;
+
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -458,6 +464,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     assertSingleParentOf(searcher, one("yz"), "X");
     assertSingleParentOf(searcher, one("bc"), "A");
   }
+
   // This is the same as testSolrJXML above but uses the XMLLoader
   // to illustrate the structure of the XML documents
   @Test

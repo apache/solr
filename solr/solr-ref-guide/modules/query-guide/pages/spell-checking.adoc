@@ -401,7 +401,7 @@ This is ignored if `spellcheck.collate` is false.
 +
 This parameter specifies the maximum number of documents that should be collected when testing potential collations against the index.
 A value of `0` indicates that all documents should be collected, resulting in exact hit-counts.
-Otherwise an estimation is provided as a performance optimization in cases where exact hit-counts are unnecessary – the higher the value specified, the more precise the estimation.
+Otherwise, an estimation is provided as a performance optimization in cases where exact hit-counts are unnecessary – the higher the value specified, the more precise the estimation.
 +
 When `spellcheck.collateExtendedResults` is `false`, the optimization is always used as if `1` had been specified.
 
@@ -450,7 +450,7 @@ For example, given a dictionary called `foo`, `spellcheck.foo.myKey=myValue` wou
 
 === Spell Check Example
 
-Using Solr's `bin/solr -e techproducts` example, this query shows the results of a simple request that defines a query using the `spellcheck.q` parameter, and forces the collations to require all input terms must match:
+Using Solr's `bin/solr start -e techproducts` example, this query shows the results of a simple request that defines a query using the `spellcheck.q` parameter, and forces the collations to require all input terms must match:
 
 `\http://localhost:8983/solr/techproducts/spell?df=text&spellcheck.q=delll+ultra+sharp&spellcheck=true&spellcheck.collateParam.q.op=AND&wt=xml`
 

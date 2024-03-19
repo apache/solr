@@ -56,7 +56,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Tests the SolrCLI.RunExampleTool implementation that supports bin/solr -e [example] */
+/** Tests the SolrCLI.RunExampleTool implementation that supports bin/solr start -e [example] */
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
@@ -408,7 +408,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       if ("techproducts".equals(exampleName)) {
         SolrClient solrClient =
-            getHttpSolrClient("http://localhost:" + bindPort + "/solr/" + exampleName);
+            getHttpSolrClient("http://localhost:" + bindPort + "/solr", exampleName);
         try {
           SolrQuery query = new SolrQuery("*:*");
           QueryResponse qr = solrClient.query(query);
@@ -503,7 +503,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // verify Solr is running on the expected port and verify the collection exists
     String solrUrl = "http://localhost:" + bindPort + "/solr";
-    if (!SolrCLI.safeCheckCollectionExists(solrUrl, collectionName)) {
+    if (!SolrCLI.safeCheckCollectionExists(solrUrl, collectionName, null)) {
       fail(
           "After running Solr cloud example, test collection '"
               + collectionName

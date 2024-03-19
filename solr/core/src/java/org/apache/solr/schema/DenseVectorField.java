@@ -17,8 +17,8 @@
 package org.apache.solr.schema;
 
 import static java.util.Optional.ofNullable;
-import static org.apache.lucene.codecs.lucene95.Lucene95HnswVectorsFormat.DEFAULT_BEAM_WIDTH;
-import static org.apache.lucene.codecs.lucene95.Lucene95HnswVectorsFormat.DEFAULT_MAX_CONN;
+import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_BEAM_WIDTH;
+import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_MAX_CONN;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -74,11 +74,13 @@ public class DenseVectorField extends FloatPointField {
   private int dimension;
   private VectorSimilarityFunction similarityFunction;
   private String knnAlgorithm;
+
   /**
    * This parameter is coupled with the hnsw algorithm. Controls how many of the nearest neighbor
    * candidates are connected to the new node. See {@link HnswGraph} for more details.
    */
   private int hnswMaxConn;
+
   /**
    * This parameter is coupled with the hnsw algorithm. The number of candidate neighbors to track
    * while searching the graph for each newly inserted node. See {@link HnswGraph} for details.

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -47,8 +48,10 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,8 +77,8 @@ import org.slf4j.LoggerFactory;
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final Boolean USE_PER_REPLICA_STATE =
-      Boolean.parseBoolean(System.getProperty("use.per-replica", "false"));
+
+  public static final String PRS_DEFAULT_PROP = System.getProperty("use.per-replica", null);
 
   // this is an important timeout for test stability - can't be too short
   public static final int DEFAULT_TIMEOUT = 45;
@@ -87,6 +90,13 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     ZkStateReader reader = cluster.getZkStateReader();
     if (reader == null) cluster.getSolrClient().connect();
     return cluster.getZkStateReader().getZkClient();
+  }
+
+  /** if the system property is not specified, use a random value */
+  public static boolean isPRS() {
+    return PRS_DEFAULT_PROP == null
+        ? random().nextBoolean()
+        : Boolean.parseBoolean(PRS_DEFAULT_PROP);
   }
 
   /**
@@ -119,6 +129,30 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       } finally {
         cluster = null;
       }
+    }
+  }
+
+  @BeforeClass
+  public static void setPrsDefault() {
+    if (isPRS()) {
+      System.setProperty("solr.prs.default", "true");
+    }
+  }
+
+  @After
+  public void _unsetPrsDefault() {
+    unsetPrsDefault();
+  }
+
+  @Before
+  public void _setPrsDefault() {
+    setPrsDefault();
+  }
+
+  @AfterClass
+  public static void unsetPrsDefault() {
+    if (isPRS()) {
+      System.clearProperty("solr.prs.default");
     }
   }
 
@@ -181,19 +215,20 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   /**
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
-   * number of shards and active replicas
+   * numbers of shards and active replicas
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
     return (liveNodes, collectionState) -> {
       if (collectionState == null) return false;
       if (collectionState.getSlices().size() != expectedShards) return false;
-      return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
+      return compareActiveReplicaCountsForShards(
+          expectedReplicas, liveNodes, collectionState.getSlices());
     };
   }
 
   /**
    * Return a {@link CollectionStatePredicate} that returns true if a collection has the expected
-   * number of active shards and active replicas
+   * numbers of active shards and active replicas on these shards
    */
   public static CollectionStatePredicate activeClusterShape(
       int expectedShards, int expectedReplicas) {
@@ -206,7 +241,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
             expectedShards);
       }
       if (collectionState.getActiveSlices().size() != expectedShards) return false;
-      return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
+      return compareActiveReplicaCountsForShards(
+          expectedReplicas, liveNodes, collectionState.getActiveSlices());
     };
   }
 
@@ -235,10 +271,19 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     };
   }
 
+  /**
+   * Checks if the actual count of active replicas on a set of nodes for a collection of shards
+   * matches the expected count
+   *
+   * @param expectedReplicas number of active replicas expected by the test
+   * @param liveNodes nodes on which the active replicas should be counted
+   * @param slices collection of slices whose replicas should be counted
+   * @return true if the actual count of active replicas matches the expected count
+   */
   private static boolean compareActiveReplicaCountsForShards(
-      int expectedReplicas, Set<String> liveNodes, DocCollection collectionState) {
+      int expectedReplicas, Set<String> liveNodes, Collection<Slice> slices) {
     int activeReplicas = 0;
-    for (Slice slice : collectionState) {
+    for (Slice slice : slices) {
       for (Replica replica : slice) {
         if (replica.isActive(liveNodes)) {
           activeReplicas++;

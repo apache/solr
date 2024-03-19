@@ -48,6 +48,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.FacetDebugInfo;
@@ -94,7 +95,7 @@ public class FacetComponent extends SearchComponent {
         }
         HashSet<String> deDupe =
             new LinkedHashSet<>(Arrays.asList(origParams.getParams(paramName)));
-        params.add(paramName, deDupe.toArray(new String[deDupe.size()]));
+        params.add(paramName, deDupe.toArray(new String[0]));
       }
       rb.req.setParams(params);
 
@@ -262,6 +263,7 @@ public class FacetComponent extends SearchComponent {
   public void process(ResponseBuilder rb) throws IOException {
 
     if (rb.doFacets) {
+      QueryLimits queryLimits = QueryLimits.getCurrentLimits();
       SolrParams params = rb.req.getParams();
       SimpleFacets f = newSimpleFacets(rb.req, rb.getResults().docSet, params, rb);
 
@@ -275,6 +277,10 @@ public class FacetComponent extends SearchComponent {
       }
 
       NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
+      rb.rsp.add(FACET_COUNTS_KEY, counts);
+      if (queryLimits.maybeExitWithPartialResults("Faceting counts")) {
+        return;
+      }
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
       if (pivots != null && Array.getLength(pivots) != 0) {
         PivotFacetProcessor pivotProcessor =
@@ -283,14 +289,15 @@ public class FacetComponent extends SearchComponent {
         if (v != null) {
           counts.add(PIVOT_KEY, v);
         }
+        if (queryLimits.maybeExitWithPartialResults("Faceting pivots")) {
+          return;
+        }
       }
 
       if (fdebug != null) {
         long timeElapsed = (long) timer.getTime();
         fdebug.setElapse(timeElapsed);
       }
-
-      rb.rsp.add(FACET_COUNTS_KEY, counts);
     }
   }
 
@@ -1171,6 +1178,8 @@ public class FacetComponent extends SearchComponent {
     rb.rsp.add(FACET_COUNTS_KEY, facet_counts);
 
     rb._facetInfo = null; // could be big, so release asap
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    queryLimits.maybeExitWithPartialResults("Faceting finish");
   }
 
   private SimpleOrderedMap<List<NamedList<Object>>> createPivotFacetOutput(ResponseBuilder rb) {
@@ -1510,14 +1519,14 @@ public class FacetComponent extends SearchComponent {
     }
 
     public ShardFacetCount[] getLexSorted() {
-      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
+      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[0]);
       Arrays.sort(arr, (o1, o2) -> o1.indexed.compareTo(o2.indexed));
       countSorted = arr;
       return arr;
     }
 
     public ShardFacetCount[] getCountSorted() {
-      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
+      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[0]);
       Arrays.sort(
           arr,
           (o1, o2) -> {

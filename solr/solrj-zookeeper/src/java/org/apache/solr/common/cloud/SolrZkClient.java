@@ -118,7 +118,8 @@ public class SolrZkClient implements Closeable {
         builder.zkACLProvider,
         builder.higherLevelIsClosed,
         builder.compressor,
-        builder.solrClassLoader);
+        builder.solrClassLoader,
+        builder.useDefaultCredsAndACLs);
   }
 
   private SolrZkClient(
@@ -131,7 +132,8 @@ public class SolrZkClient implements Closeable {
       ZkACLProvider zkACLProvider,
       IsClosed higherLevelIsClosed,
       Compressor compressor,
-      SolrClassLoader solrClassLoader) {
+      SolrClassLoader solrClassLoader,
+      boolean useDefaultCredsAndACLs) {
 
     if (zkServerAddress == null) {
       // only tests should create one without server address
@@ -148,9 +150,14 @@ public class SolrZkClient implements Closeable {
 
     this.solrClassLoader = solrClassLoader;
     if (!strat.hasZkCredentialsToAddAutomatically()) {
-      zkCredentialsInjector = createZkCredentialsInjector();
+      zkCredentialsInjector =
+          useDefaultCredsAndACLs
+              ? createZkCredentialsInjector()
+              : new DefaultZkCredentialsInjector();
       ZkCredentialsProvider zkCredentialsToAddAutomatically =
-          createZkCredentialsToAddAutomatically();
+          useDefaultCredsAndACLs
+              ? createZkCredentialsToAddAutomatically()
+              : new DefaultZkCredentialsProvider();
       strat.setZkCredentialsToAddAutomatically(zkCredentialsToAddAutomatically);
     }
 
@@ -210,7 +217,8 @@ public class SolrZkClient implements Closeable {
     }
     assert ObjectReleaseTracker.track(this);
     if (zkACLProvider == null) {
-      this.zkACLProvider = createZkACLProvider();
+      this.zkACLProvider =
+          useDefaultCredsAndACLs ? createZkACLProvider() : new DefaultZkACLProvider();
     } else {
       this.zkACLProvider = zkACLProvider;
     }
@@ -533,6 +541,27 @@ public class SolrZkClient implements Closeable {
       metrics.bytesWritten.add(data.length);
     }
     return result;
+  }
+
+  /**
+   * Returns path of created node
+   *
+   * @param stat Output argument that captures created node details
+   */
+  public String create(
+      final String path,
+      final byte[] data,
+      final CreateMode createMode,
+      boolean retryOnConnLoss,
+      Stat stat)
+      throws KeeperException, InterruptedException {
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(
+          () -> keeper.create(path, data, zkACLProvider.getACLsToAdd(path), createMode, stat));
+    } else {
+      List<ACL> acls = zkACLProvider.getACLsToAdd(path);
+      return keeper.create(path, data, acls, createMode, stat);
+    }
   }
 
   /**
@@ -1134,6 +1163,7 @@ public class SolrZkClient implements Closeable {
     public ZkACLProvider zkACLProvider;
     public IsClosed higherLevelIsClosed;
     public SolrClassLoader solrClassLoader;
+    public boolean useDefaultCredsAndACLs = true;
 
     public Compressor compressor;
 
@@ -1196,6 +1226,11 @@ public class SolrZkClient implements Closeable {
 
     public Builder withSolrClassLoader(SolrClassLoader solrClassLoader) {
       this.solrClassLoader = solrClassLoader;
+      return this;
+    }
+
+    public Builder withUseDefaultCredsAndACLs(boolean useDefaultCredsAndACLs) {
+      this.useDefaultCredsAndACLs = useDefaultCredsAndACLs;
       return this;
     }
 

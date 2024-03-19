@@ -129,7 +129,7 @@ public class SimplePlacementFactory
       int colReplicaCount =
           collectionReplicas.getOrDefault(replica.getShard().getCollection().getName(), 0);
       int shardReplicaCount = getReplicasForShardOnNode(replica.getShard()).size();
-      return getAllReplicasOnNode().size()
+      return getAllReplicaCount()
           + 1
           + colReplicaCount * SAME_COL_MULT
           + shardReplicaCount * SAME_SHARD_MULT;

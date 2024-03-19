@@ -26,14 +26,12 @@ import static org.apache.solr.common.params.CoreAdminParams.CORE_NODE_NAME;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.OTHER;
 import static org.apache.solr.common.params.CoreAdminParams.RANGES;
-import static org.apache.solr.common.params.CoreAdminParams.REQUESTID;
 import static org.apache.solr.common.params.CoreAdminParams.TARGET_CORE;
 
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.V2ApiMappingTest;
 import org.junit.Test;
@@ -64,27 +62,13 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   @Override
   public void populateApiBag() {
     final CoreAdminHandler handler = getRequestHandler();
-    apiBag.registerObject(new SwapCoresAPI(handler));
     apiBag.registerObject(new RenameCoreAPI(handler));
-    apiBag.registerObject(new MergeIndexesAPI(handler));
     apiBag.registerObject(new SplitCoreAPI(handler));
     apiBag.registerObject(new RequestCoreRecoveryAPI(handler));
     apiBag.registerObject(new PrepareCoreRecoveryAPI(handler));
     apiBag.registerObject(new RequestApplyCoreUpdatesAPI(handler));
     apiBag.registerObject(new RequestSyncShardAPI(handler));
     apiBag.registerObject(new RequestBufferUpdatesAPI(handler));
-    apiBag.registerObject(new RequestCoreCommandStatusAPI(handler));
-  }
-
-  @Test
-  public void testSwapCoresAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cores/coreName", "POST", "{\"swap\": {\"with\": \"otherCore\"}}");
-
-    assertEquals("swap", v1Params.get(ACTION));
-    assertEquals("coreName", v1Params.get(CORE));
-    assertEquals("otherCore", v1Params.get(OTHER));
   }
 
   @Test
@@ -96,31 +80,6 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     assertEquals("rename", v1Params.get(ACTION));
     assertEquals("coreName", v1Params.get(CORE));
     assertEquals("otherCore", v1Params.get(OTHER));
-  }
-
-  @Test
-  public void testMergeIndexesAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cores/coreName",
-            "POST",
-            "{"
-                + "\"merge-indexes\": {"
-                + "\"indexDir\": [\"dir1\", \"dir2\"], "
-                + "\"srcCore\": [\"core1\", \"core2\"], "
-                + "\"updateChain\": \"someUpdateChain\", "
-                + "\"async\": \"someRequestId\"}}");
-
-    assertEquals("mergeindexes", v1Params.get(ACTION));
-    assertEquals("coreName", v1Params.get(CORE));
-    assertEquals("someUpdateChain", v1Params.get(UpdateParams.UPDATE_CHAIN));
-    assertEquals("someRequestId", v1Params.get(ASYNC));
-    final List<String> indexDirs = Arrays.asList(v1Params.getParams("indexDir"));
-    assertEquals(2, indexDirs.size());
-    assertTrue(indexDirs.containsAll(List.of("dir1", "dir2")));
-    final List<String> srcCores = Arrays.asList(v1Params.getParams("srcCore"));
-    assertEquals(2, srcCores.size());
-    assertTrue(srcCores.containsAll(List.of("core1", "core2")));
   }
 
   @Test
@@ -210,16 +169,5 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
 
     assertEquals("requestbufferupdates", v1Params.get(ACTION));
     assertEquals("coreName", v1Params.get(NAME));
-  }
-
-  // Strictly speaking, this API isn't at the /cores/coreName path, but as the only API at its path
-  // (/cores/coreName/command-status/requestId) it doesn't merit its own test class.
-  @Test
-  public void testRequestCommandStatusAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params("/cores/coreName/command-status/someId", "GET", NO_BODY);
-
-    assertEquals("requeststatus", v1Params.get(ACTION));
-    assertEquals("someId", v1Params.get(REQUESTID));
   }
 }

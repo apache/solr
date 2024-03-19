@@ -161,7 +161,9 @@ public class SSLTestConfig {
    * (since that's what is almost always used during testing).
    */
   public SSLContext buildClientSSLContext()
-      throws KeyManagementException, UnrecoverableKeyException, NoSuchAlgorithmException,
+      throws KeyManagementException,
+          UnrecoverableKeyException,
+          NoSuchAlgorithmException,
           KeyStoreException {
 
     assert isSSLMode();
@@ -247,6 +249,21 @@ public class SSLTestConfig {
     };
   }
 
+  public KeyStore defaultKeyStore() {
+    if (keyStore == null) {
+      return null;
+    }
+    return buildKeyStore(keyStore, TEST_PASSWORD);
+  }
+
+  public String defaultKeyStorePassword() {
+    return TEST_PASSWORD;
+  }
+
+  public SecureRandom notSecureSecureRandom() {
+    return NotSecurePseudoRandom.INSTANCE;
+  }
+
   /** Constructs a KeyStore using the specified filename and password */
   private static KeyStore buildKeyStore(Resource resource, String password) {
     try {
@@ -322,6 +339,7 @@ public class SSLTestConfig {
    */
   private static class NotSecurePseudoRandom extends SecureRandom {
     public static final SecureRandom INSTANCE = new NotSecurePseudoRandom();
+
     /**
      * Helper method that can be used to fill an array with non-zero data. (Attempted workarround of
      * Solaris SSL Padding bug: SOLR-9068)
@@ -339,11 +357,13 @@ public class SSLTestConfig {
           public byte[] engineGenerateSeed(int numBytes) {
             return fillData(new byte[numBytes]);
           }
+
           /** fills the byte[] with static data */
           @Override
           public void engineNextBytes(byte[] bytes) {
             fillData(bytes);
           }
+
           /** NOOP */
           @Override
           public void engineSetSeed(byte[] seed) {
@@ -360,6 +380,7 @@ public class SSLTestConfig {
     public byte[] generateSeed(int numBytes) {
       return fillData(new byte[numBytes]);
     }
+
     /** fills the byte[] with static data */
     @Override
     public void nextBytes(byte[] bytes) {
@@ -370,11 +391,13 @@ public class SSLTestConfig {
     public void nextBytes(byte[] bytes, SecureRandomParameters params) {
       fillData(bytes);
     }
+
     /** NOOP */
     @Override
     public void setSeed(byte[] seed) {
       /* NOOP */
     }
+
     /** NOOP */
     @Override
     public void setSeed(long seed) {
