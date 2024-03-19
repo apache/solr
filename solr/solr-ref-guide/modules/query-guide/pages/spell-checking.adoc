@@ -25,7 +25,7 @@ The basis for these suggestions can be terms in a field in Solr, externally crea
 === Define Spell Check in solrconfig.xml
 
 The first step is to specify the source of terms in `solrconfig.xml`.
-There is a number of approaches to spell checking in Solr, discussed below.
+There are a number of approaches to spell checking in Solr, discussed below.
 
 ==== IndexBasedSpellChecker
 
