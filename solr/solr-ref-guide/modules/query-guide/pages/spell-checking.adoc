@@ -133,8 +133,8 @@ When choosing a `field` to query for this spellchecker, you want one which has r
 Note that you need to specify a field to use for the suggestions, so like the `IndexBasedSpellChecker`, you may want to copy data from fields like `title`, `body`, etc., to a field dedicated to providing spelling suggestions.
 
 Many of the parameters relate to how this spellchecker should query the index for term suggestions.
-The `distanceMeasure` defines the metric to use during the spellcheck query.
-The value "internal" uses the default Damerau-Levenshtein metric.
+The `distanceMeasure` defines the metric to use during the spellcheck query - the default value for this spellchecker is "internal",
+which corresponds to the Damerau-Levenshtein metric.
 
 Because this spellchecker is querying the main index, you may want to limit how often it queries the index to be sure to avoid any performance conflicts with user queries.
 The `accuracy` setting defines the threshold for a valid suggestion, while `maxEdits` defines the number of changes to the term to allow.
