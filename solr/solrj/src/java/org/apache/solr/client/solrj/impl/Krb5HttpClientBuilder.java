@@ -49,10 +49,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Kerberos-enabled SolrHttpClientBuilder
- *
- * @deprecated Please consider alternatives involving the new Solr Http2Client
  */
-@Deprecated(since = "9.0")
 public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
 
   public static final String LOGIN_CONFIG_PROP = "java.security.auth.login.config";
