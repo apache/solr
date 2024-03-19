@@ -18,7 +18,12 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.Closeable;
 
-/** Factory interface for configuring {@linkplain SolrHttpClientBuilder}. */
+/**
+ * Factory interface for configuring {@linkplain SolrHttpClientBuilder}. This relies on the internal
+ * HttpClient implementation and is subject to change.
+ *
+ * @lucene.experimental
+ */
 public interface HttpClientBuilderFactory extends Closeable {
 
   /**
