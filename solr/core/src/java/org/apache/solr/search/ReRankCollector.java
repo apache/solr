@@ -109,13 +109,19 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       }
 
       ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;
+      ScoreDoc[] mainScoreDocsClone = deepClone(mainScoreDocs);
       ScoreDoc[] reRankScoreDocs = new ScoreDoc[Math.min(mainScoreDocs.length, reRankDocs)];
       System.arraycopy(mainScoreDocs, 0, reRankScoreDocs, 0, reRankScoreDocs.length);
 
       mainDocs.scoreDocs = reRankScoreDocs;
 
-      TopDocs rescoredDocs =
-          reRankQueryRescorer.rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
+      TopDocs rescoredDocs;
+      try {
+        rescoredDocs =reRankQueryRescorer.rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
+      } catch (IncompleteRerankingException ex) {
+        mainDocs.scoreDocs = mainScoreDocsClone;
+        rescoredDocs = mainDocs;
+      }
 
       // Lower howMany to return if we've collected fewer documents.
       howMany = Math.min(howMany, mainScoreDocs.length);
@@ -162,6 +168,17 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
+  }
+
+  private ScoreDoc[] deepClone(ScoreDoc[] scoreDocs) {
+    ScoreDoc[] scoreDocs1 = new ScoreDoc[scoreDocs.length];
+    for (int i = 0; i < scoreDocs.length; i++) {
+      ScoreDoc scoreDoc = scoreDocs[i];
+      if (scoreDoc != null) {
+        scoreDocs1[i] = new ScoreDoc(scoreDoc.doc, scoreDoc.score);
+      }
+    }
+    return scoreDocs1;
   }
 
   public static class BoostedComp implements Comparator<ScoreDoc> {
