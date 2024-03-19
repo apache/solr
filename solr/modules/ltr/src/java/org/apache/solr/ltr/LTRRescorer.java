@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.Explanation;
@@ -33,6 +35,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
 import org.apache.solr.search.IncompleteRerankingException;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrQueryTimeoutImpl;
 
 /**
  * Implements the rescoring logic. The top documents returned by solr with their original scores,
@@ -235,8 +238,7 @@ public class LTRRescorer extends Rescorer {
 
     scorer.getDocInfo().setOriginalDocScore(hit.score);
     hit.score = scorer.score();
-    if (QueryLimits.getCurrentLimits()
-        .maybeExitWithPartialResults(
+    if (maybeExitWithPartialResults(
             "Learning To Rank rescoring -"
                 + " The full reranking didn't complete."
                 + " If partial results are tolerated the reranking got reverted and all documents preserved their original score and ranking.")) {
@@ -264,6 +266,24 @@ public class LTRRescorer extends Rescorer {
       }
     }
     return logHit;
+  }
+
+  private static boolean maybeExitWithPartialResults(String label) {
+    if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled() && SolrQueryTimeoutImpl.getInstance().shouldExit()) {
+      /*
+      if (allowPartialResults) {
+        if (rsp != null) {
+          rsp.setPartialResults();
+          rsp.addPartialResponseDetail(formatExceptionMessage(label));
+        }
+        return true;
+      } else {*/
+        throw new ExitableDirectoryReader.ExitingReaderException(
+                label);
+      //}
+    } else {
+      return false;
+    }
   }
 
   @Override
