@@ -82,6 +82,7 @@ public class SolrZkClient implements Closeable {
   private final ZkMetrics metrics = new ZkMetrics();
 
   private Compressor compressor;
+  private int minStateByteLenForCompression;
 
   public MapWriter getMetrics() {
     return metrics::writeMap;
@@ -117,6 +118,7 @@ public class SolrZkClient implements Closeable {
         builder.beforeReconnect,
         builder.zkACLProvider,
         builder.higherLevelIsClosed,
+        builder.minStateByteLenForCompression,
         builder.compressor,
         builder.solrClassLoader,
         builder.useDefaultCredsAndACLs);
@@ -131,6 +133,7 @@ public class SolrZkClient implements Closeable {
       BeforeReconnect beforeReconnect,
       ZkACLProvider zkACLProvider,
       IsClosed higherLevelIsClosed,
+      int minStateByteLenForCompression,
       Compressor compressor,
       SolrClassLoader solrClassLoader,
       boolean useDefaultCredsAndACLs) {
@@ -228,6 +231,7 @@ public class SolrZkClient implements Closeable {
     } else {
       this.compressor = compressor;
     }
+    this.minStateByteLenForCompression = minStateByteLenForCompression;
   }
 
   public ConnectionManager getConnectionManager() {
@@ -471,12 +475,16 @@ public class SolrZkClient implements Closeable {
   }
 
   /** Returns node's state */
-  public Stat setData(
-      final String path, final byte data[], final int version, boolean retryOnConnLoss)
+  public Stat setData(final String path, byte data[], final int version, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
     Stat result = null;
+    if (SolrZkClient.shouldCompressData(data, path, minStateByteLenForCompression)) {
+      // state.json should be compressed before being put to ZK
+      data = compressor.compressBytes(data);
+    }
     if (retryOnConnLoss) {
-      result = zkCmdExecutor.retryOperation(() -> keeper.setData(path, data, version));
+      byte[] finalData = data;
+      result = zkCmdExecutor.retryOperation(() -> keeper.setData(path, finalData, version));
     } else {
       result = keeper.setData(path, data, version);
     }
@@ -676,14 +684,20 @@ public class SolrZkClient implements Closeable {
       throws KeeperException, InterruptedException {
     log.debug("makePath: {}", path);
     metrics.writes.increment();
-    if (data != null) {
-      metrics.bytesWritten.add(data.length);
-    }
+
     boolean retry = true;
 
     if (path.startsWith("/")) {
       path = path.substring(1, path.length());
     }
+    if (SolrZkClient.shouldCompressData(data, path, minStateByteLenForCompression)) {
+      // state.json should be compressed before being put to ZK
+      data = compressor.compressBytes(data);
+    }
+    if (data != null) {
+      metrics.bytesWritten.add(data.length);
+    }
+
     String[] paths = path.split("/");
     StringBuilder sbPath = new StringBuilder();
     for (int i = 0; i < paths.length; i++) {
@@ -759,23 +773,12 @@ public class SolrZkClient implements Closeable {
    * @param path path to upload file to e.g. /solr/conf/solrconfig.xml
    * @param source a filepath to read data from
    */
-  public Stat setData(
-      String path,
-      Path source,
-      boolean retryOnConnLoss,
-      int minStateByteLenForCompression,
-      Compressor compressor)
+  public Stat setData(String path, Path source, boolean retryOnConnLoss)
       throws IOException, KeeperException, InterruptedException {
     if (log.isDebugEnabled()) {
       log.debug("Write to ZooKeeper: {} to {}", source.toAbsolutePath(), path);
     }
-    byte[] data = Files.readAllBytes(source);
-    if (shouldCompressData(data, path, minStateByteLenForCompression)) {
-      // state.json should be compressed before being put to ZK
-      data = compressor.compressBytes(data, data.length / 10);
-    }
-
-    return setData(path, data, retryOnConnLoss);
+    return setData(path, Files.readAllBytes(source), retryOnConnLoss);
   }
 
   public List<OpResult> multi(final Iterable<Op> ops, boolean retryOnConnLoss)
@@ -1033,17 +1036,9 @@ public class SolrZkClient implements Closeable {
         this, ZkMaintenanceUtils.CONFIGS_ZKNODE + "/" + confName, confPath);
   }
 
-  public void zkTransfer(
-      String src,
-      Boolean srcIsZk,
-      String dst,
-      Boolean dstIsZk,
-      Boolean recurse,
-      int minStateByteLenForCompression,
-      Compressor compressor)
+  public void zkTransfer(String src, Boolean srcIsZk, String dst, Boolean dstIsZk, Boolean recurse)
       throws SolrServerException, KeeperException, InterruptedException, IOException {
-    ZkMaintenanceUtils.zkTransfer(
-        this, src, srcIsZk, dst, dstIsZk, recurse, minStateByteLenForCompression, compressor);
+    ZkMaintenanceUtils.zkTransfer(this, src, srcIsZk, dst, dstIsZk, recurse);
   }
 
   public void moveZnode(String src, String dst)
@@ -1178,6 +1173,7 @@ public class SolrZkClient implements Closeable {
     public boolean useDefaultCredsAndACLs = true;
 
     public Compressor compressor;
+    private int minStateByteLenForCompression = -1;
 
     public Builder withUrl(String server) {
       this.zkServerAddress = server;
@@ -1192,6 +1188,20 @@ public class SolrZkClient implements Closeable {
      */
     public Builder withTimeout(int zkClientTimeout, TimeUnit unit) {
       this.zkClientTimeout = Math.toIntExact(unit.toMillis(zkClientTimeout));
+      return this;
+    }
+
+    /**
+     * If the state.json is greater than this many bytes and compression is enabled in solr.xml,
+     * then the data will be compressed
+     *
+     * @param minStateByteLenForCompression how big the state.json file can be
+     * @param compressor The compressor to use
+     */
+    public Builder withStateFileCompression(
+        int minStateByteLenForCompression, Compressor compressor) {
+      this.minStateByteLenForCompression = minStateByteLenForCompression;
+      this.compressor = compressor;
       return this;
     }
 
@@ -1231,6 +1241,7 @@ public class SolrZkClient implements Closeable {
       return this;
     }
 
+    // I believe this doesn't make sense with out the minStateByteLenForCompression flag?
     public Builder withCompressor(Compressor c) {
       this.compressor = c;
       return this;

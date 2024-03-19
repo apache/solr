@@ -86,80 +86,77 @@ public class ZkCpTool extends ToolBase {
               + " is running in standalone server mode, cp can only be used when running in SolrCloud mode.\n");
     }
 
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+    String src = cli.getOptionValue("src");
+    String dst = cli.getOptionValue("dst");
+    Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
+    echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
+
+    boolean srcIsZk = src.toLowerCase(Locale.ROOT).startsWith("zk:");
+    boolean dstIsZk = dst.toLowerCase(Locale.ROOT).startsWith("zk:");
+
+    String srcName = src;
+    if (srcIsZk) {
+      srcName = src.substring(3);
+    } else if (srcName.toLowerCase(Locale.ROOT).startsWith("file:")) {
+      srcName = srcName.substring(5);
+    }
+
+    String dstName = dst;
+    if (dstIsZk) {
+      dstName = dst.substring(3);
+    } else {
+      if (dstName.toLowerCase(Locale.ROOT).startsWith("file:")) {
+        dstName = dstName.substring(5);
+      }
+    }
+
+    int minStateByteLenForCompression = -1;
+    Compressor compressor = new ZLibCompressor();
+
+    if (dstIsZk) {
+      String solrHome = cli.getOptionValue("solr.home");
+      if (StrUtils.isNullOrEmpty(solrHome)) {
+        solrHome = System.getProperty("solr.home");
+      }
+
+      if (solrHome != null) {
+        try {
+          Path solrHomePath = Paths.get(solrHome);
+          Properties props = new Properties();
+          props.put(SolrXmlConfig.ZK_HOST, zkHost);
+          NodeConfig nodeConfig = NodeConfig.loadNodeConfig(solrHomePath, props);
+          minStateByteLenForCompression =
+              nodeConfig.getCloudConfig().getMinStateByteLenForCompression();
+          String stateCompressorClass = nodeConfig.getCloudConfig().getStateCompressorClass();
+          if (StrUtils.isNotNullOrEmpty(stateCompressorClass)) {
+            Class<? extends Compressor> compressionClass =
+                Class.forName(stateCompressorClass).asSubclass(Compressor.class);
+            compressor = compressionClass.getDeclaredConstructor().newInstance();
+          }
+        } catch (SolrException e) {
+          // Failed to load solr.xml
+          throw new IllegalStateException(
+              "Failed to load solr.xml from ZK or SolrHome, put/get operations on compressed data will use data as is. If you intention is to read and de-compress data or compress and write data, then solr.xml must be accessible.");
+        } catch (ClassNotFoundException
+            | NoSuchMethodException
+            | InstantiationException
+            | IllegalAccessException
+            | InvocationTargetException e) {
+          throw new IllegalStateException(
+              "Unable to find or instantiate compression class: " + e.getMessage());
+        }
+      }
+    }
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
             .withUrl(zkHost)
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+            .withStateFileCompression(minStateByteLenForCompression, compressor)
             .build()) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-      String src = cli.getOptionValue("src");
-      String dst = cli.getOptionValue("dst");
-      Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
-      echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
 
-      boolean srcIsZk = src.toLowerCase(Locale.ROOT).startsWith("zk:");
-      boolean dstIsZk = dst.toLowerCase(Locale.ROOT).startsWith("zk:");
+      zkClient.zkTransfer(srcName, srcIsZk, dstName, dstIsZk, recurse);
 
-      String srcName = src;
-      if (srcIsZk) {
-        srcName = src.substring(3);
-      } else if (srcName.toLowerCase(Locale.ROOT).startsWith("file:")) {
-        srcName = srcName.substring(5);
-      }
-
-      String dstName = dst;
-      if (dstIsZk) {
-        dstName = dst.substring(3);
-      } else {
-        if (dstName.toLowerCase(Locale.ROOT).startsWith("file:")) {
-          dstName = dstName.substring(5);
-        }
-      }
-
-      int minStateByteLenForCompression = -1;
-      Compressor compressor = new ZLibCompressor();
-
-      if (dstIsZk) {
-        String solrHome = cli.getOptionValue("solr.home");
-        if (StrUtils.isNullOrEmpty(solrHome)) {
-          solrHome = System.getProperty("solr.home");
-        }
-
-        if (solrHome != null) {
-          try {
-            Path solrHomePath = Paths.get(solrHome);
-            Properties props = new Properties();
-            props.put(SolrXmlConfig.ZK_HOST, zkHost);
-            NodeConfig nodeConfig = NodeConfig.loadNodeConfig(solrHomePath, props);
-            minStateByteLenForCompression =
-                nodeConfig.getCloudConfig().getMinStateByteLenForCompression();
-            String stateCompressorClass = nodeConfig.getCloudConfig().getStateCompressorClass();
-            if (StrUtils.isNotNullOrEmpty(stateCompressorClass)) {
-              Class<? extends Compressor> compressionClass =
-                  Class.forName(stateCompressorClass).asSubclass(Compressor.class);
-              compressor = compressionClass.getDeclaredConstructor().newInstance();
-            }
-          } catch (SolrException e) {
-            // Failed to load solr.xml
-            throw new IllegalStateException(
-                "Failed to load solr.xml from ZK or SolrHome, put/get operations on compressed data will use data as is. If you intention is to read and de-compress data or compress and write data, then solr.xml must be accessible.");
-          } catch (ClassNotFoundException
-              | NoSuchMethodException
-              | InstantiationException
-              | IllegalAccessException
-              | InvocationTargetException e) {
-            throw new IllegalStateException(
-                "Unable to find or instantiate compression class: " + e.getMessage());
-          }
-        }
-      }
-
-      // I *think* that we should have builder methods on SolrZkClient that sets
-      // minStateByteLenForCompression and the Compressor!
-      zkClient.zkTransfer(
-          srcName, srcIsZk, dstName, dstIsZk, recurse, minStateByteLenForCompression, compressor);
-      // ZkMaintenanceUtils.zkTransfer(zkClient, src, srcIsZk, dst, dstIsZk, recurse,
-      // minStateByteLenForCompression, compressor);
     } catch (Exception e) {
       log.error("Could not complete the zk operation for reason: ", e);
       throw (e);

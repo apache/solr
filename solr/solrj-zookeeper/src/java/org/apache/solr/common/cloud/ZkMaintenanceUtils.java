@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -131,9 +130,7 @@ public class ZkMaintenanceUtils {
       Boolean srcIsZk,
       String dst,
       Boolean dstIsZk,
-      Boolean recurse,
-      int minStateByteLenForCompression,
-      Compressor compressor)
+      Boolean recurse)
       throws SolrServerException, KeeperException, InterruptedException, IOException {
 
     if (srcIsZk == false && dstIsZk == false) {
@@ -168,8 +165,7 @@ public class ZkMaintenanceUtils {
 
     // local -> ZK copy
     if (dstIsZk) {
-      uploadToZKWithCompression(
-          zkClient, Paths.get(src), dst, null, minStateByteLenForCompression, compressor);
+      uploadToZK(zkClient, Paths.get(src), dst, null);
       return;
     }
 
@@ -183,7 +179,9 @@ public class ZkMaintenanceUtils {
 
     // Single file ZK -> local copy where ZK is a leaf node
     if (Files.isDirectory(Paths.get(dst))) {
-      if (dst.endsWith(File.separator) == false) dst += File.separator;
+      if (dst.endsWith(File.separator) == false) {
+        dst += File.separator;
+      }
       dst = normalizeDest(src, dst, srcIsZk, dstIsZk);
     }
     byte[] data = zkClient.getData(src, null, null, true);
@@ -327,7 +325,9 @@ public class ZkMaintenanceUtils {
 
     final Path rootPath = Paths.get(path);
 
-    if (!Files.exists(rootPath)) throw new IOException("Path " + rootPath + " does not exist");
+    if (!Files.exists(rootPath)) {
+      throw new IOException("Path " + rootPath + " does not exist");
+    }
 
     int partsOffset =
         Path.of(zkPath).getNameCount() - rootPath.getNameCount() - 1; // will be negative
@@ -358,10 +358,14 @@ public class ZkMaintenanceUtils {
               // if the path exists (and presumably we're uploading data to it) just set its data
               if (file.toFile().getName().equals(ZKNODE_DATA_FILE)
                   && zkClient.exists(zkNode, true)) {
-                zkClient.setData(zkNode, file, true, -1, null);
+                zkClient.setData(zkNode, file, true);
               } else if (file == rootPath) {
                 // We are only uploading a single file, preVisitDirectory was never called
-                zkClient.makePath(zkNode, Files.readAllBytes(file), false, true);
+                if (zkClient.exists(zkPath, true)) {
+                  zkClient.setData(zkPath, file, true);
+                } else {
+                  zkClient.makePath(zkPath, Files.readAllBytes(file), false, true);
+                }
               } else {
                 // Skip path parts here because they should have been created during
                 // preVisitDirectory
@@ -375,114 +379,7 @@ public class ZkMaintenanceUtils {
                     true,
                     pathParts);
               }
-            } catch (KeeperException | InterruptedException e) {
-              throw new IOException(
-                  "Error uploading file " + file + " to zookeeper path " + zkNode,
-                  SolrZkClient.checkInterrupted(e));
-            }
-            return FileVisitResult.CONTINUE;
-          }
 
-          @Override
-          public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-              throws IOException {
-            if (dir.getFileName().toString().startsWith(".")) return FileVisitResult.SKIP_SUBTREE;
-
-            String zkNode = createZkNodeName(zkPath, rootPath, dir);
-            try {
-              if (dir.equals(rootPath)) {
-                // Make sure the root path exists, including potential parents
-                zkClient.makePath(zkNode, true);
-              } else {
-                // Skip path parts here because they should have been created during previous visits
-                int pathParts = dir.getNameCount() + partsOffset;
-                zkClient.makePath(zkNode, null, CreateMode.PERSISTENT, null, true, true, pathParts);
-              }
-            } catch (KeeperException.NodeExistsException ignored) {
-              // Using fail-on-exists == false has side effect of makePath attempting to setData on
-              // the leaf of the path
-              // We prefer that if the parent directory already exists, we do not modify it
-              // Particularly relevant for marking config sets as trusted
-            } catch (KeeperException | InterruptedException e) {
-              throw new IOException(
-                  "Error creating intermediate directory " + dir, SolrZkClient.checkInterrupted(e));
-            }
-
-            return FileVisitResult.CONTINUE;
-          }
-        });
-  }
-
-  // If zkClient has a builder and knows about compression then we don't need this method.
-  public static void uploadToZKWithCompression(
-      SolrZkClient zkClient,
-      final Path fromPath,
-      final String zkPath,
-      final Pattern filenameExclusions,
-      int minStateByteLenForCompression,
-      Compressor compressor)
-      throws IOException {
-
-    String path = fromPath.toString();
-    if (path.endsWith("*")) {
-      path = path.substring(0, path.length() - 1);
-    }
-
-    final Path rootPath = Paths.get(path);
-
-    if (!Files.exists(rootPath)) throw new IOException("Path " + rootPath + " does not exist");
-
-    int partsOffset =
-        Path.of(zkPath).getNameCount() - rootPath.getNameCount() - 1; // will be negative
-    Files.walkFileTree(
-        rootPath,
-        new SimpleFileVisitor<Path>() {
-          @Override
-          public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-              throws IOException {
-            String filename = file.getFileName().toString();
-            if ((filenameExclusions != null && filenameExclusions.matcher(filename).matches())) {
-              log.info(
-                  "uploadToZK skipping '{}' due to filenameExclusions '{}'",
-                  filename,
-                  filenameExclusions);
-              return FileVisitResult.CONTINUE;
-            }
-            if (isFileForbiddenInConfigSets(filename)) {
-              log.info(
-                  "uploadToZK skipping '{}' due to forbidden file types '{}'",
-                  filename,
-                  USE_FORBIDDEN_FILE_TYPES);
-              return FileVisitResult.CONTINUE;
-            }
-            // TODO: Cannot check MAGIC header for file since FileTypeGuesser is in core
-            String zkNode = createZkNodeName(zkPath, rootPath, file);
-            try {
-              // if the path exists (and presumably we're uploading data to it) just set its data
-              if (file.toFile().getName().equals(ZKNODE_DATA_FILE)
-                  && zkClient.exists(zkNode, true)) {
-                zkClient.setData(zkNode, file, true, minStateByteLenForCompression, compressor);
-              } else if (file == rootPath) {
-                // We are only uploading a single file, preVisitDirectory was never called
-                byte[] data = Files.readAllBytes(file);
-                if (SolrZkClient.shouldCompressData(data, zkNode, minStateByteLenForCompression)) {
-                  // state.json should be compressed before being put to ZK
-                  data = compressor.compressBytes(data, data.length / 10);
-                }
-                zkClient.makePath(zkNode, data, false, true);
-              } else {
-
-                byte[] data = Files.readAllBytes(file);
-                if (SolrZkClient.shouldCompressData(data, zkNode, minStateByteLenForCompression)) {
-                  // state.json should be compressed before being put to ZK
-                  data = compressor.compressBytes(data, data.length / 10);
-                }
-                // Skip path parts here because they should have been created during
-                // preVisitDirectory
-                int pathParts = file.getNameCount() + partsOffset;
-                zkClient.makePath(
-                    zkNode, data, CreateMode.PERSISTENT, null, false, true, pathParts);
-              }
             } catch (KeeperException | InterruptedException e) {
               throw new IOException(
                   "Error uploading file " + file + " to zookeeper path " + zkNode,
