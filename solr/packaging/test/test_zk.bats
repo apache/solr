@@ -58,7 +58,9 @@ teardown() {
 
   touch myfile2.txt
   run solr zk cp myfile2.txt zk:myfile2.txt -z localhost:${ZK_PORT}
-  assert_output --partial "Copying from 'myfile2.txt' to 'zk:myfile2.txt'. ZooKeeper at localhost:${ZK_PORT}"
+  assert_output --partial "ERROR: Path must start with / character"
+  run solr zk cp myfile2.txt zk:/myfile2.txt -z localhost:${ZK_PORT}
+  assert_output --partial "Copying from 'myfile2.txt' to 'zk:/myfile2.txt'. ZooKeeper at localhost:${ZK_PORT}"
   sleep 1
   run solr zk ls / -z localhost:${ZK_PORT}
   assert_output --partial "myfile2.txt"
