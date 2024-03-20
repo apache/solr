@@ -62,6 +62,9 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
   public static final String PARAM_MIN_BREAK_WORD_LENGTH = "minBreakLength";
 
   /** See {@link BreakSuggestionTieBreaker} for options. */
+  @Deprecated since 9.6 and will be removed from 10.0
+  private static final String PARAM_BREAK_SUGESTION_TIE_BREAKER = "breakSugestionTieBreaker";
+
   public static final String PARAM_BREAK_SUGGESTION_TIE_BREAKER = "breakSuggestionTieBreaker";
 
   /** See {@link WordBreakSpellChecker#setMaxEvaluations} */
