@@ -1,6 +1,6 @@
 We have a movie data set in JSON, Solr XML, and CSV formats.  All 3 formats contain the same data.  You can use any one format to index documents to Solr.
 
-This example uses the `_default` configset that ships with Solr plus some custom fields added via Schema API.  It demonstrates the use of ParamSets in conjunction with the [Request Parameters API](https://solr.apache.org/guide/solr/latest/configuration-guide/request-parameters-api.html).
+This example uses the `_default` configset that ships with Solr plus some custom fields added via Schema API as described [here](https://solr.apache.org/guide/solr/latest/getting-started/tutorial-vectors.html#preparing-for-the-vector-data) in the Solr Reference Guide.  It demonstrates the use of ParamSets in conjunction with the [Request Parameters API](https://solr.apache.org/guide/solr/latest/configuration-guide/request-parameters-api.html).
 
 The original data was fetched from Freebase and the data license is present in the films-LICENSE.txt file.  Freebase was shutdown in 2016 by Google.
 
