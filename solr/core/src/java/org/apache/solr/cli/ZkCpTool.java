@@ -65,6 +65,13 @@ public class ZkCpTool extends ToolBase {
             .required(true)
             .desc("Destination of copy, may be local or a Znode.")
             .build(),
+        Option.builder()
+            .longOpt("solr-home")
+            .argName("DIR")
+            .hasArg()
+            .required(false)
+            .desc("Required to look up configuration for compressing state.json.")
+            .build(),
         SolrCLI.OPTION_RECURSE,
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_VERBOSE);
@@ -115,12 +122,13 @@ public class ZkCpTool extends ToolBase {
     Compressor compressor = new ZLibCompressor();
 
     if (dstIsZk) {
-      String solrHome = cli.getOptionValue("solr.home");
+      String solrHome = cli.getOptionValue("solr-home");
       if (StrUtils.isNullOrEmpty(solrHome)) {
         solrHome = System.getProperty("solr.home");
       }
 
       if (solrHome != null) {
+        echoIfVerbose("Using SolrHome: " + solrHome, cli);
         try {
           Path solrHomePath = Paths.get(solrHome);
           Properties props = new Properties();
@@ -137,7 +145,7 @@ public class ZkCpTool extends ToolBase {
         } catch (SolrException e) {
           // Failed to load solr.xml
           throw new IllegalStateException(
-              "Failed to load solr.xml from ZK or SolrHome, put/get operations on compressed data will use data as is. If you intention is to read and de-compress data or compress and write data, then solr.xml must be accessible.");
+              "Failed to load solr.xml from ZK or SolrHome, put/get operations on compressed data will use data as is. If your intention is to read and de-compress data or compress and write data, then solr.xml must be accessible.");
         } catch (ClassNotFoundException
             | NoSuchMethodException
             | InstantiationException

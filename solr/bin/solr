@@ -903,20 +903,24 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
             ZK_HOST="$2"
             shift 2
         ;;
-        -n|-confname)
+        -n|--confname)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_short_zk_usage "$SCRIPT_CMD" "Configuration name is required when using the $1 option!"
             fi
             CONFIGSET_CONFNAME="$2"
             shift 2
         ;;
-        -d|-confdir)
+        -d|--confdir)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_short_zk_usage "$SCRIPT_CMD" "Configuration directory is required when using the $1 option!"
             fi
             CONFIGSET_CONFDIR="$2"
             shift 2
         ;;
+        --solr-home)            
+            ZK_SOLR_HOME="$2"
+            shift 2
+        ;;        
         -r)
             ZK_RECURSE="true"
             shift
@@ -1007,7 +1011,12 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
       run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" -zkHost "$ZK_HOST" $VERBOSE
     ;;
     cp)
-      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" -zkHost "$ZK_HOST" -recurse "$ZK_RECURSE" $VERBOSE
+      if [ -z "$ZK_SOLR_HOME" ]; then
+        run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" -zkHost "$ZK_HOST" -recurse "$ZK_RECURSE" $VERBOSE
+      else
+        run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" -zkHost "$ZK_HOST" -recurse "$ZK_RECURSE" $VERBOSE --solr-home "$ZK_SOLR_HOME"
+      fi
+      
     ;;
     ls)
       if [ -z "$ZK_SRC" ]; then
