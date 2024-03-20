@@ -241,7 +241,7 @@ public class LTRRescorer extends Rescorer {
             "Learning To Rank rescoring -"
                 + " The full reranking didn't complete."
                 + " If partial results are tolerated the reranking got reverted and all documents preserved their original score and ranking.")) {
-      throw new IncompleteRerankingException("A query limit has been exceeded when rescoring");
+      throw new IncompleteRerankingException();
     }
     if (hitUpto < topN) {
       reranked[hitUpto] = hit;

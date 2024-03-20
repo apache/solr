@@ -139,7 +139,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       TopDocs rescoredDocs;
       try {
         rescoredDocs =
-            reRankScaler != null && reRankScaler.scaleScores()
+            zeroOutScores // previously zero-ed out scores are to be replaced
                 ? reRankScaler
                     .getReplaceRescorer()
                     .rescore(searcher, mainDocs, mainDocs.scoreDocs.length)
