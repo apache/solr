@@ -68,7 +68,7 @@ If the field has many word variations from processing synonyms and/or stemming, 
 By default, this spellchecker builds its dictionary from the Solr index.
 This can be changed by specifying `sourceLocation` - a folder with static Lucene index files to use instead of the Solr index.
 
-The spellchecker can be assigned a descriptive label, `name`, - which can helpful if the search component defines
+The spellchecker can be assigned a descriptive label, `name`, - which can be helpful if the search component defines
 multiple spellcheckers. With that, a spellcheck query can identify a subset of spellcheckers that should be consulted
 (see xref:spell-check-parameters[] for more details).
 
@@ -87,6 +87,7 @@ Common configuration parameters like `distanceMeasure`, `comparatorClass`, `accu
 provide control over the returned spellcheck suggestions.
 
 If the `distanceMeasure` is not specified, Solr will use the Levenshtein metric which is the default metric for other spellchecker implementations as well (except for `DirectSolrSpellChecker`).
+
 When `comparatorClass` is configured as "score", the suggestions with lower distance (i.e., higher similarity) scores are considered more relevant.
 The alternative value is "freq" - this prioritizes suggestions with higher document frequency.
 
@@ -193,7 +194,7 @@ The configuration is very similar to the `IndexBasedSpellChecker`, and the diffe
 If the `fieldType` parameter is specified and matches a type from the Solr schema, Solr will build the spellcheck index
 by first tokenizing each line from the external file using the `fieldType` index analyzer, and then adding each token to the index.
 
-If not, Solr will treat each line from the external file as individual tokens, and add them to the spellcheck index as is.
+If not, Solr will treat each line from the external file as an individual token, and add them to the spellcheck index as is.
 
 [TIP]
 ====
