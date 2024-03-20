@@ -81,7 +81,8 @@ public class TestShardsInfoResponse extends SolrCloudTestCase {
     keys.add(shardsInfo.getName(1));
     keys.add(shardsInfo.getName(2));
 
-    // The names of the shards in error are generated as unknown_shard_1 and unknown_shard_2 because we could not get the real shard names.
+    // The names of the shards in error are generated as unknown_shard_1 and unknown_shard_2 because
+    // we could not get the real shard names.
     MatcherAssert.assertThat(
         (Iterable<String>) keys, hasItems("unknown_shard_1", "unknown_shard_2"));
   }
