@@ -106,8 +106,6 @@ import org.slf4j.MDC;
  *       HttpSolrClient#getHttpClient()}, sharing connection pools should be done by {@link
  *       Http2SolrClient.Builder#withHttpClient(Http2SolrClient)}
  * </ul>
- *
- * @lucene.experimental
  */
 public class Http2SolrClient extends HttpSolrClientBase {
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";

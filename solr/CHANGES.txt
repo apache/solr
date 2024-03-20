@@ -79,6 +79,9 @@ Other Changes
 
 * SOLR-17190: Replace org.apache.solr.util.LongSet with hppc LongHashSet (Michael Gibney)
 
+* SOLR-17201: Http2SolrClient and friends no longer marked as @lucene.experimental.
+  Krb5HttpClientBuilder and PreemptiveBasicAuthClientBuilderFactory no longer deprecated (janhoy)
+
 ==================  9.5.0 ==================
 New Features
 ---------------------
