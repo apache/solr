@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
@@ -414,8 +413,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     // If used with Java 21+
     if (httpClient instanceof AutoCloseable) {
       try {
-      ((AutoCloseable) httpClient).close();
-      } catch(Exception e) {
+        ((AutoCloseable) httpClient).close();
+      } catch (Exception e) {
         log.warn("Could not close the http client.", e);
       }
     }
