@@ -119,6 +119,8 @@ Bug Fixes
 
 * SOLR-17148: Fixing Config API overlay property enabling or disabling the cache (Sanjay Dutt, hossman, Eric Pugh)
 
+* SOLR-14892: queries with shards.info and shards.tolerant can yield multiple null keys in place of shard names (Mathieu Marie, David Smiley) 
+
 Dependency Upgrades
 ---------------------
 (No changes)
