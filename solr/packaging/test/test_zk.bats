@@ -19,7 +19,7 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  solr start -c
+  solr start -DminStateByteLenForCompression=0 -c
 }
 
 teardown_file() {
@@ -106,8 +106,13 @@ teardown() {
   touch afile.txt
   
   run solr zk cp afile.txt zk:/afile.txt -z localhost:${ZK_PORT} -verbose --solr-home ${SOLR_TIP}/server/solr
-  assert_output --partial 'Using SolrHome: ${SOLR_TIP}/server/solr'
+  assert_output --partial "Using SolrHome: ${SOLR_TIP}/server/solr"
   refute_output --partial 'Failed to load solr.xml from ZK or SolrHome'
+  
+  # The -DminStateByteLenForCompression variable substitution on solr start is not seen
+  # by the ZkCpTool.java, so therefore we do not have compression unless solr.xml is directly edited.
+  #assert_output --partial 'Compression of state.json has been enabled'
+  
   
   rm afile.txt
 }

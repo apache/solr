@@ -130,6 +130,10 @@ public class ZkCpTool extends ToolBase {
       if (solrHome != null) {
         echoIfVerbose("Using SolrHome: " + solrHome, cli);
         try {
+          // Be aware that if you start Solr and pass in some variables via -D like
+          // solr start -DminStateByteLenForCompression=0 -c, this logic will not
+          // know about the -DminStateByteLenForCompression and only return the
+          // version set in the solr.xml.  So you must edit solr.xml directly.
           Path solrHomePath = Paths.get(solrHome);
           Properties props = new Properties();
           props.put(SolrXmlConfig.ZK_HOST, zkHost);
@@ -156,6 +160,10 @@ public class ZkCpTool extends ToolBase {
         }
       }
     }
+    if (minStateByteLenForCompression > -1){
+      echoIfVerbose("Compression of state.json has been enabled", cli);
+    }
+
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
             .withUrl(zkHost)
