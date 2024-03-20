@@ -42,8 +42,9 @@ public class ZkMkrootTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("path")
-            .argName("path")
+        Option.builder()
+            .longOpt("path")
+            .argName("PATH")
             .hasArg()
             .required(true)
             .desc("Path to create.")

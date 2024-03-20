@@ -52,8 +52,9 @@ public class LinkConfigTool extends ToolBase {
             .required(true)
             .desc("Name of the collection to link.")
             .build(),
-        Option.builder("confname")
-            .argName("confname")
+        Option.builder("n")
+            .longOpt("confname")
+            .argName("NAME")
             .hasArg()
             .required(true)
             .desc("Configset name in ZooKeeper.")

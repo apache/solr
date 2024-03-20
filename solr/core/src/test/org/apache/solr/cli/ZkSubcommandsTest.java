@@ -335,9 +335,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String[] args =
         new String[] {
           "upconfig",
-          "-confname",
+          "--confname",
           confsetname,
-          "-confdir",
+          "--confdir",
           ExternalPaths.TECHPRODUCTS_CONFIGSET,
           "-z",
           zkServer.getZkAddress()
@@ -356,7 +356,13 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     // test linkconfig
     args =
         new String[] {
-          "linkconfig", "-confname", confsetname, "-c", "collection1", "-z", zkServer.getZkAddress()
+          "linkconfig",
+          "--confname",
+          confsetname,
+          "-c",
+          "collection1",
+          "-z",
+          zkServer.getZkAddress()
         };
 
     LinkConfigTool linkConfigTool = new LinkConfigTool();
@@ -377,9 +383,9 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     args =
         new String[] {
           "downconfig",
-          "-confname",
+          "--confname",
           confsetname,
-          "-confdir",
+          "--confdir",
           configSetDir.getAbsolutePath(),
           "-z",
           zkServer.getZkAddress()
@@ -638,7 +644,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME,
           "pass");
 
-      String[] args = new String[] {"updateacls", "-path", "/", "-z", zkServer.getZkAddress()};
+      String[] args = new String[] {"updateacls", "--path", "/", "-z", zkServer.getZkAddress()};
       UpdateACLTool tool = new UpdateACLTool();
       assertEquals(0, runTool(args, tool));
     } finally {
