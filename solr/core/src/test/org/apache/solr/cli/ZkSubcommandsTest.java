@@ -351,7 +351,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     File[] files = confDir.listFiles();
     List<String> zkFiles =
         zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null, true);
-    assertEquals("Verify that all local files are uploaded to ZK",files.length, zkFiles.size());
+    assertEquals("Verify that all local files are uploaded to ZK", files.length, zkFiles.size());
 
     // test linkconfig
     args =
@@ -396,8 +396,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         "Comparing original conf files that were to be uploadedto what is in ZK",
         files.length,
         zkFiles.size());
-    assertEquals(
-        "Comparing downloaded files to what is in ZK", files.length, zkFiles.size());
+    assertEquals("Comparing downloaded files to what is in ZK", files.length, zkFiles.size());
 
     File sourceConfDir = new File(ExternalPaths.TECHPRODUCTS_CONFIGSET);
     // filter out all directories starting with . (e.g. .svn)
