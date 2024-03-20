@@ -84,6 +84,8 @@ Other Changes
 
 * SOLR-14410: Switch from SysV init script to systemd service definition (Marius Ghita via janhoy)
 
+* SOLR-17205: De-couple SolrJ required Java version from server Java version (janhoy)
+
 ==================  9.6.0 ==================
 New Features
 ---------------------

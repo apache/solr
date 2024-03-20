@@ -86,6 +86,8 @@ ext {
   buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
 
   minJavaVersion = JavaVersion.VERSION_11
+  // For client compatibility, build solrj artifacts for an older Java generation
+  minJavaVersionSolrJ = JavaVersion.VERSION_11
 
   // Allow definiting external tool locations using system props.
   externalTool = { name ->
