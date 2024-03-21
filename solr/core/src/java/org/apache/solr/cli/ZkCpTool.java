@@ -112,6 +112,9 @@ public class ZkCpTool extends ToolBase {
     String dstName = dst;
     if (dstIsZk) {
       dstName = dst.substring(3);
+      if (!dstName.startsWith("/")) {
+        dstName = "/" + dstName;
+      }
     } else {
       if (dstName.toLowerCase(Locale.ROOT).startsWith("file:")) {
         dstName = dstName.substring(5);
@@ -160,7 +163,7 @@ public class ZkCpTool extends ToolBase {
         }
       }
     }
-    if (minStateByteLenForCompression > -1){
+    if (minStateByteLenForCompression > -1) {
       echoIfVerbose("Compression of state.json has been enabled", cli);
     }
 

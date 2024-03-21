@@ -254,6 +254,30 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testPutFileWithoutSlash() throws Exception {
+
+    String[] args =
+        new String[] {
+          "cp",
+          "-src",
+          SOLR_HOME + File.separator + "solr-stress-new.xml",
+          "-dst",
+          "zk:foo.xml",
+          "-z",
+          zkServer.getZkAddress()
+        };
+
+    ZkCpTool tool = new ZkCpTool();
+    assertEquals(0, runTool(args, tool));
+
+    String fromZk =
+        new String(zkClient.getData("/foo.xml", null, null, true), StandardCharsets.UTF_8);
+    Path localFile = Path.of(SOLR_HOME, "solr-stress-new.xml");
+    String fromLocalFile = Files.readString(localFile);
+    assertEquals("Should get back what we put in ZK", fromZk, fromLocalFile);
+  }
+
+  @Test
   public void testPutFileCompressed() throws Exception {
     // test put file compressed
     System.setProperty("solr.home", solrHome);
