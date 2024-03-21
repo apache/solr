@@ -360,13 +360,9 @@ public class HttpSolrCall {
           SolrException.ErrorCode.BAD_REQUEST, "Solr not running in cloud mode ");
     }
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
+    String collectionName = collectionsList.get(0);
     Supplier<DocCollection> logic =
-        () -> {
-          String collectionName = collectionsList.get(0); // first
-          // TODO an option to choose another collection in the list if can't find a local replica
-          // of the first?
-          return zkStateReader.getClusterState().getCollectionOrNull(collectionName);
-        };
+        () -> zkStateReader.getClusterState().getCollectionOrNull(collectionName);
 
     DocCollection docCollection = logic.get();
     if (docCollection != null) {
@@ -375,7 +371,7 @@ public class HttpSolrCall {
     // ensure our view is up to date before trying again
     try {
       zkStateReader.aliasesManager.update();
-      zkStateReader.forceUpdateCollection(collectionsList.get(0));
+      zkStateReader.forceUpdateCollection(collectionName);
     } catch (Exception e) {
       log.error("Error trying to update state while resolving collection.", e);
       // don't propagate exception on purpose
