@@ -53,6 +53,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import net.jcip.annotations.ThreadSafe;
@@ -281,6 +282,8 @@ public class HttpSolrCall {
               queryParams.get(COLLECTION_PROP, def)); // &collection= takes precedence
 
       if (core == null) {
+        //force update collection only if local clusterstate is outdated
+        resolveDocCollection(collectionsList);
         // lookup core from collection, or route away if need to
         // route to 1st
         String collectionName = collectionsList.isEmpty() ? null : collectionsList.get(0);
@@ -343,6 +346,41 @@ public class HttpSolrCall {
     log.debug("no handler or core retrieved for {}, follow through...", path);
 
     action = PASSTHROUGH;
+  }
+
+  /**
+   * Lookup the collection from the collection string (maybe comma delimited). Also sets {@link
+   * #collectionsList} by side-effect. if {@code secondTry} is false then we'll potentially
+   * recursively try this all one more time while ensuring the alias and collection info is sync'ed
+   * from ZK.
+   */
+  protected DocCollection resolveDocCollection(List<String> collectionsList) {
+    if (!cores.isZooKeeperAware()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Solr not running in cloud mode ");
+    }
+    ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
+    Supplier<DocCollection> logic =
+        () -> {
+          String collectionName = collectionsList.get(0); // first
+          // TODO an option to choose another collection in the list if can't find a local replica
+          // of the first?
+          return zkStateReader.getClusterState().getCollectionOrNull(collectionName);
+        };
+
+    DocCollection docCollection = logic.get();
+    if (docCollection != null) {
+      return docCollection;
+    }
+    // ensure our view is up to date before trying again
+    try {
+      zkStateReader.aliasesManager.update();
+      zkStateReader.forceUpdateCollection(collectionsList.get(0));
+    } catch (Exception e) {
+      log.error("Error trying to update state while resolving collection.", e);
+      // don't propagate exception on purpose
+    }
+    return logic.get();
   }
 
   protected void autoCreateSystemColl(String corename) throws Exception {
