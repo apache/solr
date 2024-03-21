@@ -108,13 +108,13 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     String bstb = strParam(config, PARAM_BREAK_SUGGESTION_TIE_BREAKER);
     if (bstb == null) {
       bstb = strParam(config, PARAM_BREAK_SUGESTION_TIE_BREAKER);
-      if (bstb != null) {
+      if (bstb != null && log.isWarnEnabled()) {
         log.warn(
             "Parameter '"
                 + PARAM_BREAK_SUGESTION_TIE_BREAKER
                 + "' is deprecated and will be removed in Solr 10.x. Please use '"
                 + PARAM_BREAK_SUGGESTION_TIE_BREAKER
-                + "' instead.");
+                + "' instead."); // nowarn
       }
     }
     if (bstb != null) {
