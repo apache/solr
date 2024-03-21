@@ -18,18 +18,13 @@
 // Configure Java project defaults.
 
 allprojects {
-  // Assign different java version for client-side packages 'api' and 'solrj*'
-  var isClientSide = project.name.matches("(solrj.*|api)")
-  var javaVersion = isClientSide ? rootProject.minJavaVersionSolrJ : rootProject.minJavaVersion
-
   plugins.withType(JavaPlugin) {
-
-    sourceCompatibility = javaVersion
-    targetCompatibility = javaVersion
+    sourceCompatibility = project.minJavaVersion
+    targetCompatibility = project.minJavaVersion
 
     // Use 'release' flag instead of 'source' and 'target'
     tasks.withType(JavaCompile) {
-      options.compilerArgs += ["--release", javaVersion.toString()]
+      options.compilerArgs += ["--release", project.minJavaVersion.toString()]
     }
 
     // Configure warnings.
