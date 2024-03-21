@@ -147,7 +147,8 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
-(No changes)
+
+* SOLR-17157: Upgrade Lucene to 9.10.0 (hossman, Christine Poerschke)
 
 Other Changes
 ---------------------
@@ -160,6 +161,9 @@ Other Changes
 
 * SOLR-12089: Update FileBasedSpellChecker and IndexBasedSpellChecker to accept accuracy parameter as float;
   rename `breakSugestionTieBreaker` parameter to `breakSuggestionTieBreaker` in WordBreakSolrSpellChecker (Andrey Bozhko)
+
+* SOLR-17201: Http2SolrClient and friends no longer marked as @lucene.experimental.
+  Krb5HttpClientBuilder and PreemptiveBasicAuthClientBuilderFactory no longer deprecated (janhoy)
 
 ==================  9.5.0 ==================
 New Features
