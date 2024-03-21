@@ -312,6 +312,28 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
         () -> createReplaceNodeRequest(liveNode, null, null).process(cloudClient));
   }
 
+  @Test
+  public void testFailIfSourceIsSameAsTarget() throws Exception {
+    configureCluster(2)
+        .addConfig(
+            "conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
+        .configure();
+    String coll = "replacesourceissameastarget_coll";
+    if (log.isInfoEnabled()) {
+      log.info("total_jettys: {}", cluster.getJettySolrRunners().size());
+    }
+
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    cloudClient.request(CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 0, 0));
+
+    cluster.waitForActiveCollection(coll, 5, 5);
+
+    String liveNode = cloudClient.getClusterState().getLiveNodes().iterator().next();
+    expectThrows(
+        SolrException.class,
+        () -> createReplaceNodeRequest(liveNode, liveNode, null).process(cloudClient));
+  }
+
   public static CollectionAdminRequest.AsyncCollectionAdminRequest createReplaceNodeRequest(
       String sourceNode, String targetNode, Boolean parallel) {
     if (random().nextBoolean()) {
