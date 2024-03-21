@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -42,6 +41,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -88,7 +88,7 @@ public class CloudUtil {
             }
 
             try {
-              PathUtils.deleteDirectory(desc.getInstanceDir());
+              FileUtils.deleteDirectory(desc.getInstanceDir());
             } catch (IOException e) {
               log.error(
                   "Failed to delete instance dir for core: {} dir: {}",

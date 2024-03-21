@@ -27,7 +27,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
@@ -35,6 +34,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.util.FileUtils;
 
 /**
  * A concrete implementation of {@linkplain BackupRepository} interface supporting backup/restore of
@@ -95,7 +95,7 @@ public class LocalFileSystemRepository extends AbstractBackupRepository {
 
   @Override
   public void deleteDirectory(URI path) throws IOException {
-    PathUtils.deleteDirectory(Path.of(path));
+    FileUtils.deleteDirectory(Path.of(path));
   }
 
   @Override

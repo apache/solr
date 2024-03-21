@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -192,7 +191,7 @@ public class CreateTool extends ToolBase {
       }
     } catch (Exception e) {
       /* create-core failed, cleanup the copied configset before propagating the error. */
-      PathUtils.deleteDirectory(coreInstanceDir);
+      org.apache.solr.util.FileUtils.deleteDirectory(coreInstanceDir);
       throw e;
     }
   }

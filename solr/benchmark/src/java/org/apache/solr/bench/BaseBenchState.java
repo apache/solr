@@ -25,9 +25,9 @@ import java.nio.file.Path;
 import java.util.SplittableRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.MBeanServer;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.bench.generators.SolrGen;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.util.FileUtils;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
@@ -122,7 +122,7 @@ public class BaseBenchState {
       boolean dumpHeap = HEAP_DUMPED.compareAndExchange(false, true);
       if (dumpHeap) {
         Path file = Path.of(heapDump);
-        PathUtils.deleteDirectory(file);
+        FileUtils.deleteDirectory(file);
         Files.createDirectories(file);
         Path dumpFile = file.resolve(benchmarkParams.id() + ".hprof");
 
