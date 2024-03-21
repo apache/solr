@@ -159,8 +159,9 @@ Other Changes
 
 * SOLR-17190: Replace org.apache.solr.util.LongSet with hppc LongHashSet (Michael Gibney)
 
-* SOLR-12089: Update FileBasedSpellChecker and IndexBasedSpellChecker to accept accuracy parameter as float;
-  rename `breakSugestionTieBreaker` parameter to `breakSuggestionTieBreaker` in WordBreakSolrSpellChecker (Andrey Bozhko)
+* SOLR-12089: Update FileBasedSpellChecker and IndexBasedSpellChecker to accept accuracy parameter
+  as float; deprecate `breakSugestionTieBreaker` parameter in favor of `breakSuggestionTieBreaker`
+  in WordBreakSolrSpellChecker (Andrey Bozhko)
 
 * SOLR-17201: Http2SolrClient and friends no longer marked as @lucene.experimental.
   Krb5HttpClientBuilder and PreemptiveBasicAuthClientBuilderFactory no longer deprecated (janhoy)
