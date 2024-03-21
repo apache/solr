@@ -528,7 +528,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       return new ElevationBuilder().addElevatedIds(elevatedIds).addExcludedIds(excludedIds).build();
     } else {
       IndexReader reader = rb.req.getSearcher().getIndexReader();
-      return getElevationProvider(reader, rb.req.getCore()).getElevationForQuery(queryString);
+      ElevationProvider elevationProvider = getElevationProvider(reader, rb.req.getCore());
+      Elevation fqElevation = elevationProvider.getFqElevation(params.get("fq"));
+      Elevation queryElevation = elevationProvider.getElevationForQuery(queryString);
+      if (fqElevation == null) {
+        return queryElevation;
+      }
+      return fqElevation.mergeWith(queryElevation);
     }
   }
 
@@ -986,14 +992,23 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
      * Gets the elevation associated to the provided query.
      *
      * <p>By contract and by design, only one elevation may be associated to a given query (this can
-     * be safely verified by an assertion).
+     * be safely verified by an assertion).</p>
      *
      * @param queryString The query string (not {@link #analyzeQuery(String) analyzed} yet, this
      *     {@link ElevationProvider} is in charge of analyzing it).
      * @return The elevation associated with the query; or <code>null</code> if none.
      */
     Elevation getElevationForQuery(String queryString);
-
+    /**
+     * Gets the elevation associated to the provided filter query (fq)
+     *
+     * <p>By contract and by design, only one elevation may be associated to a given filter query (this can
+     * be safely verified by an assertion).
+     *
+     * @param filterQueryString the filter query string (will not be {@link #analyzeQuery(String) analyzed}).
+     * @return The elevation associated with the filter query; or <code>null</code> if none.
+     */
+    Elevation getFqElevation(String filterQueryString);
     /** Gets the number of query elevations in this {@link ElevationProvider}. */
     @VisibleForTesting
     int size();
@@ -1005,6 +1020,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       new ElevationProvider() {
         @Override
         public Elevation getElevationForQuery(String queryString) {
+          return null;
+        }
+
+        @Override
+        public Elevation getFqElevation(String param) {
           return null;
         }
 
@@ -1096,6 +1116,18 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     @Override
     public int size() {
       return exactMatchElevationMap.size() + subsetMatcher.getSubsetCount();
+    }
+    @Override
+    public Elevation getFqElevation(String fqParam) {
+      boolean hasExactMatchElevationRules = exactMatchElevationMap.size() != 0;
+        if (!hasExactMatchElevationRules || fqParam == null) {
+          return null;
+        }
+        String fqMatch = exactMatchElevationMap.keySet().stream().filter(analyzeQuery(fqParam)::contains).collect(Collectors.toList()).stream().findFirst().orElse("");
+        if(!fqMatch.isEmpty()){
+          return exactMatchElevationMap.get(fqMatch);
+        }
+        return null;
     }
   }
 
