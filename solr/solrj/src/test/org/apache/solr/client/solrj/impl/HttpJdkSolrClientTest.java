@@ -101,6 +101,20 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testAsyncGet() throws Exception {
+    testQueryAsync(SolrRequest.METHOD.GET);
+  }
+
+  @Test
+  public void testAsyncPost() throws Exception {
+    testQueryAsync(SolrRequest.METHOD.GET);
+  }
+
+  @Test
+  public void testAsyncPut() throws Exception {
+    testQueryAsync(SolrRequest.METHOD.GET);
+  }
+
+    protected void testQueryAsync(SolrRequest.METHOD method) throws Exception {
     ResponseParser rp = new XMLResponseParser();
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
@@ -118,6 +132,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
                 + "</str></doc></result></response>");
         QueryRequest query =
             new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
+        query.setMethod(SolrRequest.METHOD.GET);
         listeners[i] = new DebugAsyncListener(cdl);
         client.asyncRequest(query, "collection1", listeners[i]);
       }

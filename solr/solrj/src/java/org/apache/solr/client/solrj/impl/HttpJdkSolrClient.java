@@ -176,14 +176,13 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       this.response = response;
     }
 
-    protected CompletableFuture<NamedList<Object>> getResponse() {
-      return response;
-    }
-
-
     @Override
     public void cancel() {
       response.cancel(true);
+    }
+
+    protected CompletableFuture<NamedList<Object>> getResponse() {
+      return response;
     }
   }
 
