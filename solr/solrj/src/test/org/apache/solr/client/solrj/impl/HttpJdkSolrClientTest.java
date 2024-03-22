@@ -28,8 +28,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.net.ssl.KeyManagerFactory;
@@ -136,46 +139,53 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     }
   }
 
-  public static class DebugAsyncListener implements AsyncListener<NamedList<Object>> {
+  @Test
+  public void testAsyncAndCancel() throws Exception {
+    ResponseParser rp = new XMLResponseParser();
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
+    DebugServlet.responseBodyByQueryFragment.put("", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    HttpJdkSolrClient.Builder b = builder(url).withResponseParser(rp);
+    CountDownLatch cdl = new CountDownLatch(0);
+    DebugAsyncListener listener = new DebugAsyncListener(cdl);
+    Cancellable cancelMe = null;
+    try (HttpJdkSolrClient client = b.build()) {
+      QueryRequest query =
+              new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
+      listener.pause();
+      cancelMe = client.asyncRequest(query, "collection1", listener);
+      cancelMe.cancel();
+      listener.unPause();
+    }
+    assertTrue(listener.onStartCalled);
+    assertTrue(cancelMe instanceof HttpJdkSolrClient.HttpJdkSolrClientCancellable);
+    CompletableFuture<NamedList<Object>> response = ((HttpJdkSolrClient.HttpJdkSolrClientCancellable) cancelMe).getResponse();
+    assertTrue(response.isCancelled());
+  }
 
-    private final CountDownLatch cdl;
-
-    public DebugAsyncListener(CountDownLatch cdl) {
-      this.cdl = cdl;
+  @Test
+  public void testAsyncException() throws Exception {
+    ResponseParser rp = new XMLResponseParser();
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "Wrong Content Type!");
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    HttpJdkSolrClient.Builder b = builder(url).withResponseParser(rp);
+    CountDownLatch cdl = new CountDownLatch(1);
+    DebugAsyncListener listener = new DebugAsyncListener(cdl);
+    try (HttpJdkSolrClient client = b.build()) {
+      QueryRequest query =
+              new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
+      client.asyncRequest(query, "collection1", listener);
+      cdl.await(1, TimeUnit.MINUTES);
     }
 
-    public volatile boolean onStartCalled;
-
-    public volatile boolean latchCounted;
-
-    public volatile NamedList<Object> onSuccessResult = null;
-
-    public volatile Throwable onFailureResult = null;
-
-    @Override
-    public void onStart() {
-      onStartCalled = true;
-    }
-
-    @Override
-    public void onSuccess(NamedList<Object> entries) {
-      onSuccessResult = entries;
-      if (latchCounted) {
-        fail("either 'onSuccess' or 'onFailure' should be called exactly once.");
-      }
-      cdl.countDown();
-      latchCounted = true;
-    }
-
-    @Override
-    public void onFailure(Throwable throwable) {
-      onFailureResult = throwable;
-      if (latchCounted) {
-        fail("either 'onSuccess' or 'onFailure' should be called exactly once.");
-      }
-      cdl.countDown();
-      latchCounted = true;
-    }
+    assertTrue(listener.onFailureResult instanceof CompletionException);
+    CompletionException ce = (CompletionException) listener.onFailureResult;
+    assertTrue(ce.getCause() instanceof BaseHttpSolrClient.RemoteSolrException);
+    assertTrue(ce.getMessage(), ce.getMessage().contains("mime type"));
+    assertTrue(listener.onStartCalled);
+    assertNull(listener.onSuccessResult);
   }
 
   @Test
@@ -650,6 +660,67 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
           + "6f 6e 21 32 e0 28 72 65 73 "
           + "70 6f 6e 73 65 0c 84 60 60 "
           + "00 01 80";
+
+  public static class DebugAsyncListener implements AsyncListener<NamedList<Object>> {
+
+    private final CountDownLatch cdl;
+
+    private final Semaphore wait = new Semaphore(1);
+
+    public volatile boolean onStartCalled;
+
+    public volatile boolean latchCounted;
+
+    public volatile NamedList<Object> onSuccessResult = null;
+
+    public volatile Throwable onFailureResult = null;
+
+    public DebugAsyncListener(CountDownLatch cdl) {
+      this.cdl = cdl;
+    }
+
+    @Override
+    public void onStart() {
+      onStartCalled = true;
+    }
+
+    public void pause() {
+      try {
+        wait.acquire();
+      } catch(InterruptedException ie) {
+        Thread.currentThread().interrupt();
+      }
+    }
+
+    public void unPause() {
+      wait.release();
+    }
+
+
+    @Override
+    public void onSuccess(NamedList<Object> entries) {
+      pause();
+      onSuccessResult = entries;
+      if (latchCounted) {
+        fail("either 'onSuccess' or 'onFailure' should be called exactly once.");
+      }
+      cdl.countDown();
+      latchCounted = true;
+      unPause();
+    }
+
+    @Override
+    public void onFailure(Throwable throwable) {
+      pause();
+      onFailureResult = throwable;
+      if (latchCounted) {
+        fail("either 'onSuccess' or 'onFailure' should be called exactly once.");
+      }
+      cdl.countDown();
+      latchCounted = true;
+      unPause();
+    }
+  }
 
   /**
    * Taken from: https://www.baeldung.com/java-httpclient-ssl sec 4.1, 2024/02/12. This is an

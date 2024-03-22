@@ -143,13 +143,13 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     try {
       PreparedRequest pReq = prepareRequest(solrRequest, collection);
       asyncListener.onStart();
-      CompletableFuture<NamedList<Object>> resp =
+      CompletableFuture<NamedList<Object>> response =
           httpClient
               .sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream())
               .thenApply(
-                  response -> {
+                  httpResponse -> {
                     try {
-                      return processErrorsAndResponse(solrRequest, pReq.parserToUse, response, pReq.url);
+                      return processErrorsAndResponse(solrRequest, pReq.parserToUse, httpResponse, pReq.url);
                     } catch (SolrServerException e) {
                       throw new RuntimeException(e);
                     }
@@ -162,10 +162,28 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
                       asyncListener.onSuccess(nl);
                     }
                   });
-      return () -> resp.cancel(true);
+      return new HttpJdkSolrClientCancellable(response);
     } catch (Exception e) {
       asyncListener.onFailure(e);
       return () -> {};
+    }
+  }
+
+  protected class HttpJdkSolrClientCancellable implements Cancellable {
+    private final CompletableFuture<NamedList<Object>> response;
+
+    HttpJdkSolrClientCancellable(CompletableFuture<NamedList<Object>> response) {
+      this.response = response;
+    }
+
+    protected CompletableFuture<NamedList<Object>> getResponse() {
+      return response;
+    }
+
+
+    @Override
+    public void cancel() {
+      response.cancel(true);
     }
   }
 
