@@ -148,6 +148,8 @@ Bug Fixes
 * SOLR-14892: Queries with shards.info and shards.tolerant can yield multiple null keys in place of shard names
   (Mathieu Marie, David Smiley)
 
+* SOLR-17110: Fixed JacksonJsonWriter to properly quote uuid values in json query response (Andrey Bozhko)
+
 Dependency Upgrades
 ---------------------
 
