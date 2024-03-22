@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -42,11 +43,16 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -88,6 +94,88 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       t.interrupt();
     }
     System.gc();
+  }
+
+  @Test
+  public void testAsyncGet() throws Exception {
+    ResponseParser rp = new XMLResponseParser();
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    HttpJdkSolrClient.Builder b = builder(url).withResponseParser(rp);
+    int limit = 10;
+    CountDownLatch cdl = new CountDownLatch(limit);
+    DebugAsyncListener[] listeners = new DebugAsyncListener[limit];
+    Cancellable[] cancellables = new Cancellable[limit];
+    try (HttpJdkSolrClient client = b.build()) {
+      for (int i = 0; i < limit; i++) {
+        DebugServlet.responseBodyByQueryFragment.put(("id=KEY-" + i),
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response><result name=\"response\" numFound=\"2\" start=\"1\" numFoundExact=\"true\"><doc><str name=\"id\">KEY-"
+                + i
+                + "</str></doc></result></response>");
+        QueryRequest query =
+            new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
+        listeners[i] = new DebugAsyncListener(cdl);
+        client.asyncRequest(query, "collection1", listeners[i]);
+      }
+      cdl.await(1, TimeUnit.MINUTES);
+    }
+
+    for (int i = 0; i < limit; i++) {
+      NamedList<Object> result = listeners[i].onSuccessResult;
+      SolrDocumentList sdl = (SolrDocumentList) result.get("response");
+      assertEquals(2, sdl.getNumFound());
+      assertEquals(1, sdl.getStart());
+      assertTrue(sdl.getNumFoundExact());
+      assertEquals(1, sdl.size());
+      assertEquals(1, sdl.iterator().next().size());
+      assertEquals("KEY-"+i, sdl.iterator().next().get("id"));
+
+      assertNull(listeners[i].onFailureResult);
+      assertTrue(listeners[i].onStartCalled);
+    }
+  }
+
+  public static class DebugAsyncListener implements AsyncListener<NamedList<Object>> {
+
+    private final CountDownLatch cdl;
+
+    public DebugAsyncListener(CountDownLatch cdl) {
+      this.cdl = cdl;
+    }
+
+    public volatile boolean onStartCalled;
+
+    public volatile boolean latchCounted;
+
+    public volatile NamedList<Object> onSuccessResult = null;
+
+    public volatile Throwable onFailureResult = null;
+
+    @Override
+    public void onStart() {
+      onStartCalled = true;
+    }
+
+    @Override
+    public void onSuccess(NamedList<Object> entries) {
+      onSuccessResult = entries;
+      if (latchCounted) {
+        fail("either 'onSuccess' or 'onFailure' should be called exactly once.");
+      }
+      cdl.countDown();
+      latchCounted = true;
+    }
+
+    @Override
+    public void onFailure(Throwable throwable) {
+      onFailureResult = throwable;
+      if (latchCounted) {
+        fail("either 'onSuccess' or 'onFailure' should be called exactly once.");
+      }
+      cdl.countDown();
+      latchCounted = true;
+    }
   }
 
   @Test
@@ -164,10 +252,10 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     DebugServlet.clear();
     if (rp instanceof XMLResponseParser) {
       DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-      DebugServlet.responseBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />";
+      DebugServlet.responseBodyByQueryFragment.put("", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
     } else {
       DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
-      DebugServlet.responseBody = javabinResponse();
+      DebugServlet.responseBodyByQueryFragment.put("", javabinResponse());
     }
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");

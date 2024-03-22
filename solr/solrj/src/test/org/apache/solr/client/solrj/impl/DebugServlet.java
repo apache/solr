@@ -21,9 +21,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -39,7 +41,7 @@ public class DebugServlet extends HttpServlet {
     queryString = null;
     cookies = null;
     responseHeaders = null;
-    responseBody = null;
+    responseBodyByQueryFragment = new ConcurrentHashMap<>();
   }
 
   public static Integer errorCode = null;
@@ -49,7 +51,7 @@ public class DebugServlet extends HttpServlet {
   public static String queryString = null;
   public static javax.servlet.http.Cookie[] cookies = null;
   public static List<String[]> responseHeaders = null;
-  public static Object responseBody = null;
+  public static Map<String, Object> responseBodyByQueryFragment = new LinkedHashMap<>();
   public static byte[] requestBody = null;
 
   public static void setErrorCode(Integer code) {
@@ -65,21 +67,21 @@ public class DebugServlet extends HttpServlet {
 
   @Override
   protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
-      throws ServletException, IOException {
+          throws ServletException, IOException {
     lastMethod = "delete";
     recordRequest(req, resp);
   }
 
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-      throws ServletException, IOException {
+          throws ServletException, IOException {
     lastMethod = "get";
     recordRequest(req, resp);
   }
 
   @Override
   protected void doHead(HttpServletRequest req, HttpServletResponse resp)
-      throws ServletException, IOException {
+          throws ServletException, IOException {
     lastMethod = "head";
     recordRequest(req, resp);
   }
@@ -109,14 +111,14 @@ public class DebugServlet extends HttpServlet {
 
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-      throws ServletException, IOException {
+          throws ServletException, IOException {
     lastMethod = "post";
     recordRequest(req, resp);
   }
 
   @Override
   protected void doPut(HttpServletRequest req, HttpServletResponse resp)
-      throws ServletException, IOException {
+          throws ServletException, IOException {
     lastMethod = "put";
     recordRequest(req, resp);
   }
@@ -136,6 +138,17 @@ public class DebugServlet extends HttpServlet {
         resp.addHeader(h[0], h[1]);
       }
     }
+    String qs = req.getQueryString();
+    qs = qs == null ? "" : qs;
+    Object responseBody = null;
+    for(Map.Entry<String, Object> entry : responseBodyByQueryFragment.entrySet()) {
+      if(qs.contains(entry.getKey())) {
+        responseBody = entry.getValue();
+        break;
+      }
+    }
+
+
     if (responseBody != null) {
       try {
         if (responseBody instanceof String) {
@@ -144,7 +157,7 @@ public class DebugServlet extends HttpServlet {
           resp.getOutputStream().write((byte[]) responseBody);
         } else {
           throw new IllegalArgumentException(
-              "Only String and byte[] are supported for responseBody.");
+                  "Only String and byte[] are supported for responseBody.");
         }
       } catch (IOException ioe) {
         throw new RuntimeException(ioe);
