@@ -30,7 +30,6 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -545,7 +544,8 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    HttpSolrClientBuilderBase<?, ?> b = builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+    HttpSolrClientBuilderBase<?, ?> b =
+        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
     CountDownLatch cdl = new CountDownLatch(limit);
     DebugAsyncListener[] listeners = new DebugAsyncListener[limit];
@@ -553,12 +553,12 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     try (HttpSolrClientBase client = b.build()) {
       for (int i = 0; i < limit; i++) {
         DebugServlet.responseBodyByQueryFragment.put(
-                ("id=KEY-" + i),
-                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response><result name=\"response\" numFound=\"2\" start=\"1\" numFoundExact=\"true\"><doc><str name=\"id\">KEY-"
-                        + i
-                        + "</str></doc></result></response>");
+            ("id=KEY-" + i),
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response><result name=\"response\" numFound=\"2\" start=\"1\" numFoundExact=\"true\"><doc><str name=\"id\">KEY-"
+                + i
+                + "</str></doc></result></response>");
         QueryRequest query =
-                new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
+            new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
         query.setMethod(SolrRequest.METHOD.GET);
         listeners[i] = new DebugAsyncListener(cdl);
         client.asyncRequest(query, null, listeners[i]);
@@ -586,7 +586,8 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "Wrong Content Type!");
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    HttpSolrClientBuilderBase<?, ?> b = builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+    HttpSolrClientBuilderBase<?, ?> b =
+        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     CountDownLatch cdl = new CountDownLatch(1);
     DebugAsyncListener listener = new DebugAsyncListener(cdl);
     try (HttpSolrClientBase client = b.build()) {

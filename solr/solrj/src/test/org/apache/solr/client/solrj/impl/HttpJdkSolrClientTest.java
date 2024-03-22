@@ -228,7 +228,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
     DebugServlet.responseBodyByQueryFragment.put(
-            "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
+        "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     HttpJdkSolrClient.Builder b = builder(url).withResponseParser(rp);
     CountDownLatch cdl = new CountDownLatch(0);
@@ -244,7 +244,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     assertTrue(listener.onStartCalled);
     assertTrue(cancelMe instanceof HttpJdkSolrClient.HttpSolrClientCancellable);
     CompletableFuture<NamedList<Object>> response =
-            ((HttpJdkSolrClient.HttpSolrClientCancellable) cancelMe).getResponse();
+        ((HttpJdkSolrClient.HttpSolrClientCancellable) cancelMe).getResponse();
     assertTrue(response.isCancelled());
   }
 

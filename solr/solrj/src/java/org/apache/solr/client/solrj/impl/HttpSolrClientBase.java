@@ -375,13 +375,14 @@ public abstract class HttpSolrClientBase extends SolrClient {
    *
    * @param solrRequest the request to perform
    * @param collection if null the default collection is used
-   * @param asyncListener callers should provide an implementation to handle events: start, success, exception
+   * @param asyncListener callers should provide an implementation to handle events: start, success,
+   *     exception
    * @return Cancellable allowing the caller to attempt cancellation
    */
   public abstract Cancellable asyncRequest(
-          SolrRequest<?> solrRequest,
-          String collection,
-          AsyncListener<NamedList<Object>> asyncListener) ;
+      SolrRequest<?> solrRequest,
+      String collection,
+      AsyncListener<NamedList<Object>> asyncListener);
 
   public boolean isV2ApiRequest(final SolrRequest<?> request) {
     return request instanceof V2Request || request.getPath().contains("/____v2");
