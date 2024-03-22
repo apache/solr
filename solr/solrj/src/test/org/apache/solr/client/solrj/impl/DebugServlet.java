@@ -67,21 +67,21 @@ public class DebugServlet extends HttpServlet {
 
   @Override
   protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
-          throws ServletException, IOException {
+      throws ServletException, IOException {
     lastMethod = "delete";
     recordRequest(req, resp);
   }
 
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp)
-          throws ServletException, IOException {
+      throws ServletException, IOException {
     lastMethod = "get";
     recordRequest(req, resp);
   }
 
   @Override
   protected void doHead(HttpServletRequest req, HttpServletResponse resp)
-          throws ServletException, IOException {
+      throws ServletException, IOException {
     lastMethod = "head";
     recordRequest(req, resp);
   }
@@ -111,14 +111,14 @@ public class DebugServlet extends HttpServlet {
 
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-          throws ServletException, IOException {
+      throws ServletException, IOException {
     lastMethod = "post";
     recordRequest(req, resp);
   }
 
   @Override
   protected void doPut(HttpServletRequest req, HttpServletResponse resp)
-          throws ServletException, IOException {
+      throws ServletException, IOException {
     lastMethod = "put";
     recordRequest(req, resp);
   }
@@ -141,13 +141,12 @@ public class DebugServlet extends HttpServlet {
     String qs = req.getQueryString();
     qs = qs == null ? "" : qs;
     Object responseBody = null;
-    for(Map.Entry<String, Object> entry : responseBodyByQueryFragment.entrySet()) {
-      if(qs.contains(entry.getKey())) {
+    for (Map.Entry<String, Object> entry : responseBodyByQueryFragment.entrySet()) {
+      if (qs.contains(entry.getKey())) {
         responseBody = entry.getValue();
         break;
       }
     }
-
 
     if (responseBody != null) {
       try {
@@ -157,7 +156,7 @@ public class DebugServlet extends HttpServlet {
           resp.getOutputStream().write((byte[]) responseBody);
         } else {
           throw new IllegalArgumentException(
-                  "Only String and byte[] are supported for responseBody.");
+              "Only String and byte[] are supported for responseBody.");
         }
       } catch (IOException ioe) {
         throw new RuntimeException(ioe);

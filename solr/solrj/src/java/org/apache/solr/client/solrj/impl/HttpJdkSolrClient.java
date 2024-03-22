@@ -149,7 +149,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
               .thenApply(
                   httpResponse -> {
                     try {
-                      return processErrorsAndResponse(solrRequest, pReq.parserToUse, httpResponse, pReq.url);
+                      return processErrorsAndResponse(
+                          solrRequest, pReq.parserToUse, httpResponse, pReq.url);
                     } catch (SolrServerException e) {
                       throw new RuntimeException(e);
                     }

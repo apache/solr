@@ -114,7 +114,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     testQueryAsync(SolrRequest.METHOD.GET);
   }
 
-    protected void testQueryAsync(SolrRequest.METHOD method) throws Exception {
+  protected void testQueryAsync(SolrRequest.METHOD method) throws Exception {
     ResponseParser rp = new XMLResponseParser();
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
@@ -126,7 +126,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     Cancellable[] cancellables = new Cancellable[limit];
     try (HttpJdkSolrClient client = b.build()) {
       for (int i = 0; i < limit; i++) {
-        DebugServlet.responseBodyByQueryFragment.put(("id=KEY-" + i),
+        DebugServlet.responseBodyByQueryFragment.put(
+            ("id=KEY-" + i),
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response><result name=\"response\" numFound=\"2\" start=\"1\" numFoundExact=\"true\"><doc><str name=\"id\">KEY-"
                 + i
                 + "</str></doc></result></response>");
@@ -147,7 +148,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       assertTrue(sdl.getNumFoundExact());
       assertEquals(1, sdl.size());
       assertEquals(1, sdl.iterator().next().size());
-      assertEquals("KEY-"+i, sdl.iterator().next().get("id"));
+      assertEquals("KEY-" + i, sdl.iterator().next().get("id"));
 
       assertNull(listeners[i].onFailureResult);
       assertTrue(listeners[i].onStartCalled);
@@ -159,15 +160,15 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     ResponseParser rp = new XMLResponseParser();
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-    DebugServlet.responseBodyByQueryFragment.put("", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
+    DebugServlet.responseBodyByQueryFragment.put(
+        "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     HttpJdkSolrClient.Builder b = builder(url).withResponseParser(rp);
     CountDownLatch cdl = new CountDownLatch(0);
     DebugAsyncListener listener = new DebugAsyncListener(cdl);
     Cancellable cancelMe = null;
     try (HttpJdkSolrClient client = b.build()) {
-      QueryRequest query =
-              new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
+      QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
       listener.pause();
       cancelMe = client.asyncRequest(query, "collection1", listener);
       cancelMe.cancel();
@@ -175,7 +176,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     }
     assertTrue(listener.onStartCalled);
     assertTrue(cancelMe instanceof HttpJdkSolrClient.HttpJdkSolrClientCancellable);
-    CompletableFuture<NamedList<Object>> response = ((HttpJdkSolrClient.HttpJdkSolrClientCancellable) cancelMe).getResponse();
+    CompletableFuture<NamedList<Object>> response =
+        ((HttpJdkSolrClient.HttpJdkSolrClientCancellable) cancelMe).getResponse();
     assertTrue(response.isCancelled());
   }
 
@@ -189,8 +191,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     CountDownLatch cdl = new CountDownLatch(1);
     DebugAsyncListener listener = new DebugAsyncListener(cdl);
     try (HttpJdkSolrClient client = b.build()) {
-      QueryRequest query =
-              new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
+      QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
       client.asyncRequest(query, "collection1", listener);
       cdl.await(1, TimeUnit.MINUTES);
     }
@@ -277,7 +278,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     DebugServlet.clear();
     if (rp instanceof XMLResponseParser) {
       DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-      DebugServlet.responseBodyByQueryFragment.put("", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
+      DebugServlet.responseBodyByQueryFragment.put(
+          "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
     } else {
       DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
       DebugServlet.responseBodyByQueryFragment.put("", javabinResponse());
@@ -702,7 +704,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     public void pause() {
       try {
         wait.acquire();
-      } catch(InterruptedException ie) {
+      } catch (InterruptedException ie) {
         Thread.currentThread().interrupt();
       }
     }
@@ -710,7 +712,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     public void unPause() {
       wait.release();
     }
-
 
     @Override
     public void onSuccess(NamedList<Object> entries) {
