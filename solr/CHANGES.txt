@@ -148,6 +148,9 @@ Bug Fixes
 * SOLR-14892: Queries with shards.info and shards.tolerant can yield multiple null keys in place of shard names
   (Mathieu Marie, David Smiley)
 
+* SOLR-17206: Eliminate the possibility of a -1 status code for SolrCloud update requests that are distributed.
+  (Paul McArthur)
+  
 Dependency Upgrades
 ---------------------
 
