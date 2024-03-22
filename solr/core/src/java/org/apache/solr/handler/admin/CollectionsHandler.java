@@ -48,6 +48,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.AL
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BACKUP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERSIZING;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.COLLECTIONPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.COLSTATUS;
@@ -1205,6 +1206,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           final SolrJerseyResponse deleteNodeResponse =
               DeleteNode.invokeUsingV1Inputs(deleteNodeAPI, req.getParams());
           V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, deleteNodeResponse);
+          return null;
+        }),
+    CLUSTERSIZING_OP(
+        CLUSTERSIZING,
+        (req, rsp, h) -> {
+          ClusterSizing sizing =
+              new ClusterSizing(
+                  h.coreContainer.getZkController().getZkStateReader(), req.getParams());
+          sizing.populate(rsp.getValues());
           return null;
         }),
     MOCK_COLL_TASK_OP(
