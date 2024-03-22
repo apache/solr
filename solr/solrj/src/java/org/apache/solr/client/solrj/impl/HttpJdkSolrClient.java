@@ -136,6 +136,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     assert ObjectReleaseTracker.track(this);
   }
 
+  @Override
   public Cancellable asyncRequest(
       SolrRequest<?> solrRequest,
       String collection,
@@ -163,27 +164,10 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
                       asyncListener.onSuccess(nl);
                     }
                   });
-      return new HttpJdkSolrClientCancellable(response);
+      return new HttpSolrClientCancellable(response);
     } catch (Exception e) {
       asyncListener.onFailure(e);
       return () -> {};
-    }
-  }
-
-  protected class HttpJdkSolrClientCancellable implements Cancellable {
-    private final CompletableFuture<NamedList<Object>> response;
-
-    HttpJdkSolrClientCancellable(CompletableFuture<NamedList<Object>> response) {
-      this.response = response;
-    }
-
-    @Override
-    public void cancel() {
-      response.cancel(true);
-    }
-
-    protected CompletableFuture<NamedList<Object>> getResponse() {
-      return response;
     }
   }
 
@@ -545,6 +529,23 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
         .filter(Objects::nonNull)
         .map(s -> s.toLowerCase(Locale.ROOT).trim())
         .collect(Collectors.joining(", "));
+  }
+
+  protected static class HttpSolrClientCancellable implements Cancellable {
+    private final CompletableFuture<NamedList<Object>> response;
+
+    protected HttpSolrClientCancellable(CompletableFuture<NamedList<Object>> response) {
+      this.response = response;
+    }
+
+    @Override
+    public void cancel() {
+      response.cancel(true);
+    }
+
+    protected CompletableFuture<NamedList<Object>> getResponse() {
+      return response;
+    }
   }
 
   public static class Builder

@@ -32,7 +32,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.net.ssl.KeyManagerFactory;
@@ -49,9 +48,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
-import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -97,111 +94,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       t.interrupt();
     }
     System.gc();
-  }
-
-  @Test
-  public void testAsyncGet() throws Exception {
-    testQueryAsync(SolrRequest.METHOD.GET);
-  }
-
-  @Test
-  public void testAsyncPost() throws Exception {
-    testQueryAsync(SolrRequest.METHOD.GET);
-  }
-
-  @Test
-  public void testAsyncPut() throws Exception {
-    testQueryAsync(SolrRequest.METHOD.GET);
-  }
-
-  protected void testQueryAsync(SolrRequest.METHOD method) throws Exception {
-    ResponseParser rp = new XMLResponseParser();
-    DebugServlet.clear();
-    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    HttpJdkSolrClient.Builder b = builder(url).withResponseParser(rp);
-    int limit = 10;
-    CountDownLatch cdl = new CountDownLatch(limit);
-    DebugAsyncListener[] listeners = new DebugAsyncListener[limit];
-    Cancellable[] cancellables = new Cancellable[limit];
-    try (HttpJdkSolrClient client = b.build()) {
-      for (int i = 0; i < limit; i++) {
-        DebugServlet.responseBodyByQueryFragment.put(
-            ("id=KEY-" + i),
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response><result name=\"response\" numFound=\"2\" start=\"1\" numFoundExact=\"true\"><doc><str name=\"id\">KEY-"
-                + i
-                + "</str></doc></result></response>");
-        QueryRequest query =
-            new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
-        query.setMethod(SolrRequest.METHOD.GET);
-        listeners[i] = new DebugAsyncListener(cdl);
-        client.asyncRequest(query, "collection1", listeners[i]);
-      }
-      cdl.await(1, TimeUnit.MINUTES);
-    }
-
-    for (int i = 0; i < limit; i++) {
-      NamedList<Object> result = listeners[i].onSuccessResult;
-      SolrDocumentList sdl = (SolrDocumentList) result.get("response");
-      assertEquals(2, sdl.getNumFound());
-      assertEquals(1, sdl.getStart());
-      assertTrue(sdl.getNumFoundExact());
-      assertEquals(1, sdl.size());
-      assertEquals(1, sdl.iterator().next().size());
-      assertEquals("KEY-" + i, sdl.iterator().next().get("id"));
-
-      assertNull(listeners[i].onFailureResult);
-      assertTrue(listeners[i].onStartCalled);
-    }
-  }
-
-  @Test
-  public void testAsyncAndCancel() throws Exception {
-    ResponseParser rp = new XMLResponseParser();
-    DebugServlet.clear();
-    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-    DebugServlet.responseBodyByQueryFragment.put(
-        "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    HttpJdkSolrClient.Builder b = builder(url).withResponseParser(rp);
-    CountDownLatch cdl = new CountDownLatch(0);
-    DebugAsyncListener listener = new DebugAsyncListener(cdl);
-    Cancellable cancelMe = null;
-    try (HttpJdkSolrClient client = b.build()) {
-      QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
-      listener.pause();
-      cancelMe = client.asyncRequest(query, "collection1", listener);
-      cancelMe.cancel();
-      listener.unPause();
-    }
-    assertTrue(listener.onStartCalled);
-    assertTrue(cancelMe instanceof HttpJdkSolrClient.HttpJdkSolrClientCancellable);
-    CompletableFuture<NamedList<Object>> response =
-        ((HttpJdkSolrClient.HttpJdkSolrClientCancellable) cancelMe).getResponse();
-    assertTrue(response.isCancelled());
-  }
-
-  @Test
-  public void testAsyncException() throws Exception {
-    ResponseParser rp = new XMLResponseParser();
-    DebugServlet.clear();
-    DebugServlet.addResponseHeader("Content-Type", "Wrong Content Type!");
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    HttpJdkSolrClient.Builder b = builder(url).withResponseParser(rp);
-    CountDownLatch cdl = new CountDownLatch(1);
-    DebugAsyncListener listener = new DebugAsyncListener(cdl);
-    try (HttpJdkSolrClient client = b.build()) {
-      QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
-      client.asyncRequest(query, "collection1", listener);
-      cdl.await(1, TimeUnit.MINUTES);
-    }
-
-    assertTrue(listener.onFailureResult instanceof CompletionException);
-    CompletionException ce = (CompletionException) listener.onFailureResult;
-    assertTrue(ce.getCause() instanceof BaseHttpSolrClient.RemoteSolrException);
-    assertTrue(ce.getMessage(), ce.getMessage().contains("mime type"));
-    assertTrue(listener.onStartCalled);
-    assertNull(listener.onSuccessResult);
   }
 
   @Test
@@ -304,6 +196,56 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client = builder(getBaseUrl() + DEBUG_SERVLET_PATH).build()) {
       super.testGetById(client);
     }
+  }
+
+  @Test
+  public void testAsyncGet() throws Exception {
+    super.testQueryAsync(SolrRequest.METHOD.GET);
+  }
+
+  @Test
+  public void testAsyncPost() throws Exception {
+    super.testQueryAsync(SolrRequest.METHOD.GET);
+  }
+
+  @Test
+  public void testAsyncPut() throws Exception {
+    super.testQueryAsync(SolrRequest.METHOD.GET);
+  }
+
+  @Test
+  public void testAsyncException() throws Exception {
+    DebugAsyncListener listener = super.testAsyncExceptionBase();
+    assertTrue(listener.onFailureResult instanceof CompletionException);
+    CompletionException ce = (CompletionException) listener.onFailureResult;
+    assertTrue(ce.getCause() instanceof BaseHttpSolrClient.RemoteSolrException);
+    assertTrue(ce.getMessage(), ce.getMessage().contains("mime type"));
+  }
+
+  @Test
+  public void testAsyncAndCancel() throws Exception {
+    ResponseParser rp = new XMLResponseParser();
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
+    DebugServlet.responseBodyByQueryFragment.put(
+            "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    HttpJdkSolrClient.Builder b = builder(url).withResponseParser(rp);
+    CountDownLatch cdl = new CountDownLatch(0);
+    DebugAsyncListener listener = new DebugAsyncListener(cdl);
+    Cancellable cancelMe = null;
+    try (HttpJdkSolrClient client = b.build()) {
+      QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
+      listener.pause();
+      cancelMe = client.asyncRequest(query, "collection1", listener);
+      cancelMe.cancel();
+      listener.unPause();
+    }
+    assertTrue(listener.onStartCalled);
+    assertTrue(cancelMe instanceof HttpJdkSolrClient.HttpSolrClientCancellable);
+    CompletableFuture<NamedList<Object>> response =
+            ((HttpJdkSolrClient.HttpSolrClientCancellable) cancelMe).getResponse();
+    assertTrue(response.isCancelled());
   }
 
   @Test
@@ -677,66 +619,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
           + "6f 6e 21 32 e0 28 72 65 73 "
           + "70 6f 6e 73 65 0c 84 60 60 "
           + "00 01 80";
-
-  public static class DebugAsyncListener implements AsyncListener<NamedList<Object>> {
-
-    private final CountDownLatch cdl;
-
-    private final Semaphore wait = new Semaphore(1);
-
-    public volatile boolean onStartCalled;
-
-    public volatile boolean latchCounted;
-
-    public volatile NamedList<Object> onSuccessResult = null;
-
-    public volatile Throwable onFailureResult = null;
-
-    public DebugAsyncListener(CountDownLatch cdl) {
-      this.cdl = cdl;
-    }
-
-    @Override
-    public void onStart() {
-      onStartCalled = true;
-    }
-
-    public void pause() {
-      try {
-        wait.acquire();
-      } catch (InterruptedException ie) {
-        Thread.currentThread().interrupt();
-      }
-    }
-
-    public void unPause() {
-      wait.release();
-    }
-
-    @Override
-    public void onSuccess(NamedList<Object> entries) {
-      pause();
-      onSuccessResult = entries;
-      if (latchCounted) {
-        fail("either 'onSuccess' or 'onFailure' should be called exactly once.");
-      }
-      cdl.countDown();
-      latchCounted = true;
-      unPause();
-    }
-
-    @Override
-    public void onFailure(Throwable throwable) {
-      pause();
-      onFailureResult = throwable;
-      if (latchCounted) {
-        fail("either 'onSuccess' or 'onFailure' should be called exactly once.");
-      }
-      cdl.countDown();
-      latchCounted = true;
-      unPause();
-    }
-  }
 
   /**
    * Taken from: https://www.baeldung.com/java-httpclient-ssl sec 4.1, 2024/02/12. This is an

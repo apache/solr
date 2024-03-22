@@ -28,6 +28,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -36,9 +39,13 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.util.Cancellable;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.hamcrest.MatcherAssert;
@@ -531,5 +538,66 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     String authorizationHeader = DebugServlet.headers.get("authorization");
     assertNull(
         "No authorization headers expected. Headers: " + DebugServlet.headers, authorizationHeader);
+  }
+
+  protected void testQueryAsync(SolrRequest.METHOD method) throws Exception {
+    ResponseParser rp = new XMLResponseParser();
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    HttpSolrClientBuilderBase<?, ?> b = builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+    int limit = 10;
+    CountDownLatch cdl = new CountDownLatch(limit);
+    DebugAsyncListener[] listeners = new DebugAsyncListener[limit];
+    Cancellable[] cancellables = new Cancellable[limit];
+    try (HttpSolrClientBase client = b.build()) {
+      for (int i = 0; i < limit; i++) {
+        DebugServlet.responseBodyByQueryFragment.put(
+                ("id=KEY-" + i),
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response><result name=\"response\" numFound=\"2\" start=\"1\" numFoundExact=\"true\"><doc><str name=\"id\">KEY-"
+                        + i
+                        + "</str></doc></result></response>");
+        QueryRequest query =
+                new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
+        query.setMethod(SolrRequest.METHOD.GET);
+        listeners[i] = new DebugAsyncListener(cdl);
+        client.asyncRequest(query, null, listeners[i]);
+      }
+      cdl.await(1, TimeUnit.MINUTES);
+    }
+
+    for (int i = 0; i < limit; i++) {
+      NamedList<Object> result = listeners[i].onSuccessResult;
+      SolrDocumentList sdl = (SolrDocumentList) result.get("response");
+      assertEquals(2, sdl.getNumFound());
+      assertEquals(1, sdl.getStart());
+      assertTrue(sdl.getNumFoundExact());
+      assertEquals(1, sdl.size());
+      assertEquals(1, sdl.iterator().next().size());
+      assertEquals("KEY-" + i, sdl.iterator().next().get("id"));
+
+      assertNull(listeners[i].onFailureResult);
+      assertTrue(listeners[i].onStartCalled);
+    }
+  }
+
+  protected DebugAsyncListener testAsyncExceptionBase() throws Exception {
+    ResponseParser rp = new XMLResponseParser();
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "Wrong Content Type!");
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    HttpSolrClientBuilderBase<?, ?> b = builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+    CountDownLatch cdl = new CountDownLatch(1);
+    DebugAsyncListener listener = new DebugAsyncListener(cdl);
+    try (HttpSolrClientBase client = b.build()) {
+      QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
+      client.asyncRequest(query, "collection1", listener);
+      cdl.await(1, TimeUnit.MINUTES);
+    }
+
+    assertNotNull(listener.onFailureResult);
+    assertTrue(listener.onStartCalled);
+    assertNull(listener.onSuccessResult);
+    return listener;
   }
 }

@@ -422,6 +422,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   private static final Cancellable FAILED_MAKING_REQUEST_CANCELLABLE = () -> {};
 
+  @Override
   public Cancellable asyncRequest(
       SolrRequest<?> solrRequest,
       String collection,
@@ -470,7 +471,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
               }
             }
           };
-
+      asyncListener.onStart();
       req = makeRequestAndSend(solrRequest, url, listener, true);
     } catch (SolrServerException | IOException e) {
       asyncListener.onFailure(e);
