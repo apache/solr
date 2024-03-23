@@ -35,7 +35,7 @@ teardown() {
   save_home_on_failure
 
   run solr auth disable -z localhost:${ZK_PORT}
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 # Remaining commands that should support basic auth:

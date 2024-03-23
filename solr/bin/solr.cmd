@@ -375,7 +375,7 @@ goto done
 @echo.
 @echo  -p port        Specify the port the Solr HTTP listener is bound to
 @echo.
-@echo  -all           Find and stop all running Solr servers on this host
+@echo  --all          Find and stop all running Solr servers on this host
 @echo.
 @echo  -V/--verbose   Verbose messages from this script
 @echo.
@@ -555,11 +555,11 @@ IF "%1"=="--zk-host" goto set_zookeeper
 IF "%1"=="-a" goto set_addl_opts
 IF "%1"=="-addlopts" goto set_addl_opts
 IF "%1"=="-j" goto set_addl_jetty_config
-IF "%1"=="-jettyconfig" goto set_addl_jetty_config
+IF "%1"=="--jettyconfig" goto set_addl_jetty_config
 IF "%1"=="--noprompt" goto set_noprompt
 IF "%1"=="-k" goto set_stop_key
-IF "%1"=="-key" goto set_stop_key
-IF "%1"=="-all" goto set_stop_all
+IF "%1"=="--key" goto set_stop_key
+IF "%1"=="--all" goto set_stop_all
 IF "%firstTwo%"=="-D" goto set_passthru
 IF NOT "%1"=="" goto invalid_cmd_line
 goto invalid_cmd_line
@@ -930,7 +930,7 @@ IF "%SCRIPT_CMD%"=="stop" (
       )
       if "!found_it!"=="0" echo No Solr nodes found to stop.
     ) ELSE (
-      set "SCRIPT_ERROR=Must specify the port when trying to stop Solr, or use -all to stop all running nodes on this host."
+      set "SCRIPT_ERROR=Must specify the port when trying to stop Solr, or use --all to stop all running nodes on this host."
       goto err
     )
   ) ELSE (

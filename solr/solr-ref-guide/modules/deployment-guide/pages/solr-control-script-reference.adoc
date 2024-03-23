@@ -404,7 +404,7 @@ If you are running more than one instance, or are running in SolrCloud mode, you
 +
 *Example*: `bin/solr stop -p 8983`
 
-`-all`::
+`--all`::
 +
 [%autowidth,frame=none]
 |===
@@ -413,7 +413,7 @@ If you are running more than one instance, or are running in SolrCloud mode, you
 +
 Find and stop all running Solr servers on this host that have a valid PID.
 +
-*Example*: `bin/solr stop -all`
+*Example*: `bin/solr stop --all`
 
 `-k <key>`::
 +

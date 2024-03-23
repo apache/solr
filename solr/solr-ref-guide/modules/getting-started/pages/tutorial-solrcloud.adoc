@@ -156,7 +156,7 @@ To stop Solr in SolrCloud mode, you would use the `bin/solr` script and issue th
 
 [,console]
 ----
-$ bin/solr stop -all
+$ bin/solr stop --all
 ----
 
 === Starting with --noprompt

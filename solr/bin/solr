@@ -437,7 +437,7 @@ function print_usage() {
     echo ""
     echo "  -p <port>     Specify the port the Solr HTTP listener is bound to"
     echo ""
-    echo "  -all          Find and stop all running Solr servers on this host"
+    echo "  --all         Find and stop all running Solr servers on this host"
     echo ""
     echo "  -V/--verbose   Verbose messages from this script"
     echo ""
@@ -1346,16 +1346,16 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("-a" "$ADDITIONAL_CMD_OPTS")
             shift 2
         ;;
-        -j|-jettyconfig)
+        -j|--jettyconfig)
             ADDITIONAL_JETTY_CONFIG="$2"
             PASS_TO_RUN_EXAMPLE+=("-j" "$ADDITIONAL_JETTY_CONFIG")
             shift 2
         ;;
-        -k|-key)
+        -k|--key)
             STOP_KEY="$2"
             shift 2
         ;;
-        --help|-h)
+        -h|--help)
             print_usage "$SCRIPT_CMD"
             exit 0
         ;;
@@ -1376,13 +1376,13 @@ if [ $# -gt 0 ]; then
             SOLR_LOG_LEVEL=WARN
             shift
         ;;
-        -all)
+        --all)
             stop_all=true
             shift
         ;;
-        -force)
+        --force)
             FORCE=true
-            PASS_TO_RUN_EXAMPLE+=("-force")
+            PASS_TO_RUN_EXAMPLE+=("--force")
             shift
         ;;
         --)
@@ -1485,7 +1485,7 @@ if [[ "$SCRIPT_CMD" == "stop" ]]; then
     none_stopped=true
     numSolrs=$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' ')
     if [ "$numSolrs" -eq 1 ]; then
-      # only do this if there is only 1 node running, otherwise they must provide the -p or -all
+      # only do this if there is only 1 node running, otherwise they must provide the -p or --all
       PID="$(cat "$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)")"
       CHECK_PID=$(ps -o pid='' -p "$PID" | tr -d ' ')
       if [ "$CHECK_PID" != "" ]; then
@@ -1499,7 +1499,7 @@ if [[ "$SCRIPT_CMD" == "stop" ]]; then
 
     if $none_stopped; then
       if [ "$numSolrs" -gt 0 ]; then
-        echo -e "\nFound $numSolrs Solr nodes running! Must either specify a port using -p or -all to stop all Solr nodes on this host.\n"
+        echo -e "\nFound $numSolrs Solr nodes running! Must either specify a port using -p or --all to stop all Solr nodes on this host.\n"
       else
         echo -e "\nNo Solr nodes found to stop.\n"
       fi

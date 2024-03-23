@@ -504,7 +504,7 @@ To stop both of the Solr nodes we started, issue the command:
 
 [,console]
 ----
-$ bin/solr stop -all
+$ bin/solr stop --all
 ----
 
 For more information on start/stop and collection options with `bin/solr`, see xref:deployment-guide:solr-control-script-reference.adoc[].

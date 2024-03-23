@@ -26,7 +26,7 @@ teardown() {
   save_home_on_failure
 
   delete_all_collections
-  SOLR_STOP_WAIT=1 solr stop -all >/dev/null 2>&1
+  SOLR_STOP_WAIT=1 solr stop --all >/dev/null 2>&1
 }
 
 @test "SQL Module" {
