@@ -401,7 +401,7 @@ function print_usage() {
     echo "                          on which example is run. The default value is server/solr. If passed relative dir,"
     echo "                          validation with current dir will be done, before trying default server/<dir>"
     echo ""
-    echo "  -t <dir>              Sets the solr.data.home system property, where Solr will store index data in <instance_dir>/data subdirectories."
+    echo "  -t/--data-home <dir>  Sets the solr.data.home system property, where Solr will store index data in <instance_dir>/data subdirectories."
     echo "                          If not set, Solr uses solr.solr.home for config and data."
     echo ""
     echo "  -e <example>          Name of the example to run; available examples:"
@@ -1287,7 +1287,7 @@ if [ $# -gt 0 ]; then
             SOLR_HOME="$2"
             shift 2
         ;;
-        -t|-data.home)
+        -t|--data-home)
             SOLR_DATA_HOME="$2"
             shift 2
         ;;

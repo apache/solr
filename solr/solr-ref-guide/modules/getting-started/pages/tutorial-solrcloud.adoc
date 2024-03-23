@@ -81,7 +81,7 @@ The script will start each node in order and show you the command it uses to sta
 
 [,console]
 ----
-$ bin/solr start -cloud -s example/cloud/node1/solr -p 8983
+$ bin/solr start --cloud -s example/cloud/node1/solr -p 8983
 ----
 
 The first node will also start an embedded ZooKeeper server bound to port 9983.
@@ -195,7 +195,7 @@ Once you startup a SolrCloud cluster using the startup scripts, you can add a ne
 [,console]
 ----
 $ mkdir <solr.home for new Solr node>
-$ bin/solr start -cloud -s solr.home/solr -p <port num> -z <zk hosts string>
+$ bin/solr start --cloud -s solr.home/solr -p <port num> -z <zk hosts string>
 ----
 
 Notice that the above requires you to create a Solr home directory.
@@ -205,7 +205,7 @@ Example (with directory structure) that adds a node to an example started with "
 [,console]
 ----
 $ mkdir -p example/cloud/node3/solr
-$ bin/solr start -cloud -s example/cloud/node3/solr -p 8987 -z localhost:9983
+$ bin/solr start --cloud -s example/cloud/node3/solr -p 8987 -z localhost:9983
 ----
 
 The previous command will start another Solr node on port 8987 with Solr home set to `example/cloud/node3/solr`.

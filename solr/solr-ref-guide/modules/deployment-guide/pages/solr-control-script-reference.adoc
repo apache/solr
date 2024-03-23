@@ -80,7 +80,7 @@ Additional parameters to pass to Jetty when starting Solr.
 For example, to add configuration folder that Jetty should read you could pass: `-j "--include-jetty-dir=/etc/jetty/custom/server/"`.
 In most cases, you should wrap the additional parameters in double quotes.
 
-`-cloud` or `-c`::
+`--cloud` or `-c`::
 +
 [%autowidth,frame=none]
 |===
@@ -213,7 +213,7 @@ If passed relative dir, validation with current dir will be done, before trying 
 +
 *Example*: `bin/solr start -s newHome`
 
-`-t <dir>`::
+`-t <dir>` or `--data-home <dir>`::
 +
 [%autowidth,frame=none]
 |===
@@ -314,11 +314,11 @@ the `SOLR_TOOL_OPTS` environment variable should be used.
 
 ==== SolrCloud Mode
 
-The `-c` and `-cloud` options are equivalent:
+The `-c` and `--cloud` options are equivalent:
 
 `bin/solr start -c`
 
-`bin/solr start -cloud`
+`bin/solr start --cloud`
 
 If you specify a ZooKeeper connection string, such as `-z 192.168.1.4:2181`, then Solr will connect to ZooKeeper and join the cluster.
 
@@ -511,7 +511,7 @@ The basic usage of `bin/solr assert` is:
 $ bin/solr assert -h
 usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
                 <url>] [-C <url>] [-u <dir>] [-x <dir>] [-X <dir>]
- -c,--cloud <url>              Asserts that Solr is running in cloud mode.
+ -c,---cloud <url>             Asserts that Solr is running in cloud mode.
                                Also fails if Solr not running.  URL should
                                be for root Solr path.
  -C,--not-cloud <url>          Asserts that Solr is not running in cloud
@@ -536,7 +536,7 @@ usage: bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c
  -x,--exists <directory>       Asserts that directory <directory> exists.
  -X,--not-exists <directory>   Asserts that directory <directory> does NOT
                                exist.
- --credentials <user:pass>     Username and password for Basic authentication.
+ -u,--credentials <user:pass>  Username and password for Basic authentication.
 ----
 
 === Healthcheck

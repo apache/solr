@@ -114,7 +114,9 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       if (exe.endsWith("solr")) {
         String[] args = cmd.getArguments();
         if ("start".equals(args[0])) {
-          if (!hasFlag("-cloud", args) && !hasFlag("-c", args)) return startStandaloneSolr(args);
+          if (!hasFlag("--cloud", args) && !hasFlag("-c", args)) {
+            return startStandaloneSolr(args);
+          }
 
           String solrHomeDir = getArg("-s", args);
           int port = Integer.parseInt(getArg("-p", args));
