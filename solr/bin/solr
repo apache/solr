@@ -566,7 +566,7 @@ function print_usage() {
     echo ""
     echo "  -d or --dir <dir>                      Specify the Solr server directory"
     echo ""
-    echo "  -s or --solr.home <dir>                Specify the Solr home directory. This is where any credentials or authentication"
+    echo "  -s or --solr-home <dir>                Specify the Solr home directory. This is where any credentials or authentication"
     echo "                                          configuration files (e.g. basicAuth.conf) would be placed."
     echo ""
     echo "  -v/--verbose                           Enable more verbose output for this script."
@@ -1119,7 +1119,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             SOLR_SERVER_DIR="$(cd "$SOLR_SERVER_DIR" || (echo "SOLR_SERVER_DIR not found" && exit 1); pwd)"
             shift 2
         ;;
-        -s|--solr.home)
+        -s|--solr-home)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Solr home directory is required when using the $1 option!"
               exit 1
@@ -1278,7 +1278,7 @@ if [ $# -gt 0 ]; then
             SOLR_SERVER_DIR="$(cd "$SOLR_SERVER_DIR" || (echo "SOLR_SERVER_DIR not found" && exit 1); pwd)"
             shift 2
         ;;
-        -s|-solr.home)
+        -s|-solr-home)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Solr home directory is required when using the $1 option!"
               exit 1
@@ -1299,7 +1299,7 @@ if [ $# -gt 0 ]; then
             EXAMPLE="$2"
             shift 2
         ;;
-        -f|-foreground)
+        -f|--foreground)
             FG="true"
             shift
         ;;

@@ -530,7 +530,7 @@ IF "%1"=="-h" goto usage
 IF "%1"=="-usage" goto usage
 IF "%1"=="/?" goto usage
 IF "%1"=="-f" goto set_foreground_mode
-IF "%1"=="-foreground" goto set_foreground_mode
+IF "%1"=="--foreground" goto set_foreground_mode
 IF "%1"=="-V" goto set_verbose
 IF "%1"=="-verbose" goto set_verbose
 IF "%1"=="-v" goto set_debug
@@ -540,8 +540,9 @@ IF "%1"=="-cloud" goto set_cloud_mode
 IF "%1"=="-d" goto set_server_dir
 IF "%1"=="-dir" goto set_server_dir
 IF "%1"=="-s" goto set_solr_home_dir
+IF "%1"=="--solr-home" goto set_solr_home_dir
 IF "%1"=="-t" goto set_solr_data_dir
-IF "%1"=="-solr.home" goto set_solr_home_dir
+IF "%1"=="--solr-data" goto set_solr_data_dir
 IF "%1"=="-e" goto set_example
 IF "%1"=="--example" goto set_example
 IF "%1"=="--host" goto set_host

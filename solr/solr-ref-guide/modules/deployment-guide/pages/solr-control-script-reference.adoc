@@ -1007,7 +1007,7 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 Defines the Solr server directory, by default `$SOLR_TIP/server`.
 It is not common to need to override the default, and is only needed if you have customized the `$SOLR_HOME` directory path.
 
-`-s <dir>` or `-solr.home <dir>`::
+`-s <dir>` or `--solr-home <dir>`::
 +
 [%autowidth,frame=none]
 |===
