@@ -553,7 +553,7 @@ IF "%1"=="--port" goto set_port
 IF "%1"=="-z" goto set_zookeeper
 IF "%1"=="--zk-host" goto set_zookeeper
 IF "%1"=="-a" goto set_addl_opts
-IF "%1"=="-addlopts" goto set_addl_opts
+IF "%1"=="--addlopts" goto set_addl_opts
 IF "%1"=="-j" goto set_addl_jetty_config
 IF "%1"=="--jettyconfig" goto set_addl_jetty_config
 IF "%1"=="--noprompt" goto set_noprompt

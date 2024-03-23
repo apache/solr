@@ -1341,7 +1341,7 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("-z" "$ZK_HOST")
             shift 2
         ;;
-        -a|-addlopts)
+        -a|--addlopts)
             ADDITIONAL_CMD_OPTS="$2"
             PASS_TO_RUN_EXAMPLE+=("-a" "$ADDITIONAL_CMD_OPTS")
             shift 2
