@@ -42,6 +42,12 @@ teardown() {
   assert_output --partial "aliases.json"
 }
 
+@test "get zk host using solr url" {
+  sleep 1
+  run solr zk ls / -solrUrl http://localhost:${SOLR_PORT}
+  assert_output --partial "aliases.json"
+}
+
 @test "copying files around" {
   touch myfile.txt
   # Umm, what is solr cp?  It's like bin/solr zk cp but not?
