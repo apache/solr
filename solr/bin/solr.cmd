@@ -359,7 +359,7 @@ goto done
 @echo                 you could pass: -j "--include-jetty-dir=/etc/jetty/custom/server/"
 @echo                 In most cases, you should wrap the additional parameters in double quotes.
 @echo.
-@echo   -noprompt     Don't prompt for input; accept all defaults when running examples that accept user input
+@echo   --noprompt    Don't prompt for input; accept all defaults when running examples that accept user input
 @echo.
 @echo   -v and -q     Verbose (-v) or quiet (-q) logging. Sets default log level to DEBUG or WARN instead of INFO
 @echo.
@@ -543,19 +543,19 @@ IF "%1"=="-s" goto set_solr_home_dir
 IF "%1"=="-t" goto set_solr_data_dir
 IF "%1"=="-solr.home" goto set_solr_home_dir
 IF "%1"=="-e" goto set_example
-IF "%1"=="-example" goto set_example
+IF "%1"=="--example" goto set_example
 IF "%1"=="--host" goto set_host
 IF "%1"=="-m" goto set_memory
 IF "%1"=="-memory" goto set_memory
 IF "%1"=="-p" goto set_port
 IF "%1"=="-port" goto set_port
 IF "%1"=="-z" goto set_zookeeper
-IF "%1"=="-zk-host" goto set_zookeeper
+IF "%1"=="--zk-host" goto set_zookeeper
 IF "%1"=="-a" goto set_addl_opts
 IF "%1"=="-addlopts" goto set_addl_opts
 IF "%1"=="-j" goto set_addl_jetty_config
 IF "%1"=="-jettyconfig" goto set_addl_jetty_config
-IF "%1"=="-noprompt" goto set_noprompt
+IF "%1"=="--noprompt" goto set_noprompt
 IF "%1"=="-k" goto set_stop_key
 IF "%1"=="-key" goto set_stop_key
 IF "%1"=="-all" goto set_stop_all
@@ -800,7 +800,7 @@ goto parse_args
 
 :set_noprompt
 set NO_USER_PROMPT=1
-set "PASS_TO_RUN_EXAMPLE=-noprompt !PASS_TO_RUN_EXAMPLE!"
+set "PASS_TO_RUN_EXAMPLE=--noprompt !PASS_TO_RUN_EXAMPLE!"
 
 SHIFT
 goto parse_args
@@ -1356,7 +1356,7 @@ goto done
 :parse_config_args
 IF [%1]==[] goto run_config
 IF "%1"=="-z" goto set_config_zk
-IF "%1"=="-zk-host" goto set_config_zk
+IF "%1"=="--zk-host" goto set_config_zk
 IF "%1"=="-s" goto set_config_url_scheme
 IF "%1"=="-scheme" goto set_config_url_scheme
 set "CONFIG_ARGS=!CONFIG_ARGS! %1"

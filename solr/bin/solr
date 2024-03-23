@@ -420,7 +420,7 @@ function print_usage() {
     echo "                          you could pass: -j \"--include-jetty-dir=/etc/jetty/custom/server/\""
     echo "                          In most cases, you should wrap the additional parameters in double quotes."
     echo ""
-    echo "  -noprompt             Don't prompt for input; accept all defaults when running examples that accept user input"
+    echo "  --noprompt            Don't prompt for input; accept all defaults when running examples that accept user input"
     echo ""
     echo "  -force                If attempting to start Solr as the root user, the script will exit with a warning that running Solr as \"root\" can cause problems."
     echo "                          It is possible to override this warning with the '-force' parameter."
@@ -1291,7 +1291,7 @@ if [ $# -gt 0 ]; then
             SOLR_DATA_HOME="$2"
             shift 2
         ;;
-        -e|-example)
+        -e|--example)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Example name is required when using the $1 option!"
               exit 1
@@ -1359,8 +1359,8 @@ if [ $# -gt 0 ]; then
             print_usage "$SCRIPT_CMD"
             exit 0
         ;;
-        -noprompt)
-            PASS_TO_RUN_EXAMPLE+=("-noprompt")
+        --noprompt)
+            PASS_TO_RUN_EXAMPLE+=("--noprompt")
             shift
         ;;
         -V|-verbose)

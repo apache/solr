@@ -354,8 +354,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       String[] toolArgs =
           new String[] {
             "-e", exampleName,
-            "-serverDir", solrServerDir.getAbsolutePath(),
-            "-exampleDir", solrExampleDir.getAbsolutePath(),
+            "--serverDir", solrServerDir.getAbsolutePath(),
+            "--exampleDir", solrExampleDir.getAbsolutePath(),
             "-p", String.valueOf(bindPort)
           };
 
@@ -446,7 +446,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   /**
    * Tests the interactive SolrCloud example; we cannot test the non-interactive because we need
    * control over the port and can only test with one node since the test relies on setting the host
-   * and jetty.port system properties, i.e. there is no test coverage for the -noprompt option.
+   * and jetty.port system properties, i.e. there is no test coverage for the --noprompt option.
    */
   @Test
   public void testInteractiveSolrCloudExample() throws Exception {
@@ -461,9 +461,9 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     String[] toolArgs =
         new String[] {
-          "-example", "cloud",
+          "--example", "cloud",
           "-serverDir", solrServerDir.getAbsolutePath(),
-          "-exampleDir", solrExampleDir.getAbsolutePath()
+          "--exampleDir", solrExampleDir.getAbsolutePath()
         };
 
     int bindPort = -1;
@@ -587,8 +587,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     String[] toolArgs =
         new String[] {
           "-e", "techproducts",
-          "-serverDir", solrServerDir.getAbsolutePath(),
-          "-exampleDir", solrExampleDir.getAbsolutePath(),
+          "--serverDir", solrServerDir.getAbsolutePath(),
+          "--exampleDir", solrExampleDir.getAbsolutePath(),
           "-p", String.valueOf(bindPort),
           "-script", toExecute.getAbsolutePath().toString()
         };

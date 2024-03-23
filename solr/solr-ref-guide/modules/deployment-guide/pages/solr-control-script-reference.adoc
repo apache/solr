@@ -165,7 +165,7 @@ Sets the min (`-Xms`) and max (`-Xmx`) heap size for the JVM running Solr.
 +
 *Example*: `bin/solr start -m 4g` results in `-Xms4g -Xmx4g` settings.
 
-`-noprompt`::
+`--noprompt`::
 +
 [%autowidth,frame=none]
 |===
@@ -175,9 +175,9 @@ Sets the min (`-Xms`) and max (`-Xmx`) heap size for the JVM running Solr.
 Don't prompt for input; accept all defaults when running examples that accept user input.
 +
 For example, when using the "cloud" example, an interactive session guides you through several options for your SolrCloud cluster.
-If you want to accept all of the defaults, you can simply add the `-noprompt` option to your request.
+If you want to accept all of the defaults, you can simply add the `--noprompt` option to your request.
 +
-*Example*: `bin/solr start -e cloud -noprompt`
+*Example*: `bin/solr start -e cloud --noprompt`
 
 `-p <port>`::
 +

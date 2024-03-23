@@ -125,7 +125,8 @@ public class RunExampleTool extends ToolBase {
             .argName("FORCE")
             .desc("Force option in case Solr is run as root.")
             .build(),
-        Option.builder("exampleDir")
+        Option.builder()
+            .longOpt("exampleDir")
             .argName("DIR")
             .hasArg()
             .required(false)
@@ -215,7 +216,7 @@ public class RunExampleTool extends ToolBase {
             : new File(serverDir.getParent(), "example");
     if (!exampleDir.isDirectory())
       throw new IllegalArgumentException(
-          "Value of -exampleDir option is invalid! "
+          "Value of --exampleDir option is invalid! "
               + exampleDir.getAbsolutePath()
               + " is not a directory!");
 

@@ -97,7 +97,7 @@ The long form parameter options may be specified using either a single dash (e.g
 
 == ZooKeeper CLI Examples
 
-Below are some examples of using the `zkcli.sh` CLI which assume you have already started the SolrCloud example (`bin/solr start -e cloud -noprompt`)
+Below are some examples of using the `zkcli.sh` CLI which assume you have already started the SolrCloud example (`bin/solr start -e cloud --noprompt`)
 
 If you are on Windows machine, simply replace `zkcli.sh` with `zkcli.bat` in these examples.
 
