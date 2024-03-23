@@ -194,7 +194,7 @@ public class RunExampleTool extends ToolBase {
     if (script != null) {
       if (!(new File(script)).isFile())
         throw new IllegalArgumentException(
-            "Value of -script option is invalid! " + script + " not found");
+            "Value of --script option is invalid! " + script + " not found");
     } else {
       File scriptFile = new File(serverDir.getParentFile(), "bin/solr");
       if (scriptFile.isFile()) {
@@ -205,7 +205,7 @@ public class RunExampleTool extends ToolBase {
           script = scriptFile.getAbsolutePath();
         } else {
           throw new IllegalArgumentException(
-              "Cannot locate the bin/solr script! Please pass -script to this application.");
+              "Cannot locate the bin/solr script! Please pass --script to this application.");
         }
       }
     }

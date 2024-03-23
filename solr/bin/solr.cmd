@@ -1310,7 +1310,7 @@ REM Run the requested example
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -Dsolr.install.symDir="%SOLR_TIP%" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI run_example -script "%SDIR%\solr.cmd" -e %EXAMPLE% -d "%SOLR_SERVER_DIR%" ^
+  org.apache.solr.cli.SolrCLI run_example --script "%SDIR%\solr.cmd" -e %EXAMPLE% -d "%SOLR_SERVER_DIR%" ^
   --url-scheme !SOLR_URL_SCHEME! !PASS_TO_RUN_EXAMPLE!
 
 REM End of run_example
