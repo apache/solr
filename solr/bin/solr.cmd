@@ -363,7 +363,7 @@ goto done
 @echo.
 @echo   -v and -q     Verbose (-v) or quiet (-q) logging. Sets default log level to DEBUG or WARN instead of INFO
 @echo.
-@echo   -V/-verbose   Verbose messages from this script
+@echo   -V/--verbose  Verbose messages from this script
 @echo.
 goto done
 
@@ -371,13 +371,13 @@ goto done
 @echo.
 @echo Usage: solr stop [-k key] [-p port] [-V]
 @echo.
-@echo  -k key      Stop key; default is solrrocks
+@echo  -k key         Stop key; default is solrrocks
 @echo.
-@echo  -p port     Specify the port the Solr HTTP listener is bound to
+@echo  -p port        Specify the port the Solr HTTP listener is bound to
 @echo.
-@echo  -all        Find and stop all running Solr servers on this host
+@echo  -all           Find and stop all running Solr servers on this host
 @echo.
-@echo  -V/-verbose Verbose messages from this script
+@echo  -V/--verbose   Verbose messages from this script
 @echo.
 @echo  NOTE: To see if any Solr servers are running, do: solr status
 @echo.
@@ -547,9 +547,9 @@ IF "%1"=="-e" goto set_example
 IF "%1"=="--example" goto set_example
 IF "%1"=="--host" goto set_host
 IF "%1"=="-m" goto set_memory
-IF "%1"=="-memory" goto set_memory
+IF "%1"=="--memory" goto set_memory
 IF "%1"=="-p" goto set_port
-IF "%1"=="-port" goto set_port
+IF "%1"=="--port" goto set_port
 IF "%1"=="-z" goto set_zookeeper
 IF "%1"=="--zk-host" goto set_zookeeper
 IF "%1"=="-a" goto set_addl_opts
@@ -1436,7 +1436,7 @@ SHIFT
 goto parse_zk_args
 
 :set_zk_verbose
-set ZK_VERBOSE="-verbose"
+set ZK_VERBOSE="--verbose"
 SHIFT
 goto parse_zk_args
 

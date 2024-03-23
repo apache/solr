@@ -378,7 +378,7 @@ function print_usage() {
     echo ""
     echo "  --host <host>         Specify the hostname for this Solr instance"
     echo ""
-    echo "  -p <port>             Specify the port to start the Solr HTTP listener on; default is 8983"
+    echo "  -p/--port <port>      Specify the port to start the Solr HTTP listener on; default is 8983"
     echo "                          The specified port (SOLR_PORT) will also be used to determine the stop port"
     echo "                          STOP_PORT=(\$SOLR_PORT-1000) and JMX RMI listen port RMI_PORT=(\$SOLR_PORT+10000). "
     echo "                          For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985"
@@ -390,7 +390,7 @@ function print_usage() {
     echo "                          an embedded ZooKeeper instance will be launched."
     echo "                          Set the ZK_CREATE_CHROOT environment variable to true if your ZK host has a chroot path, and you want to create it automatically."
     echo ""
-    echo "  -m <memory>           Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g"
+    echo "  -m/--memory <memory>  Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g"
     echo "                          results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m"
     echo ""
     echo "  -s <dir>              Sets the solr.solr.home system property; Solr will create core directories under"
@@ -427,7 +427,7 @@ function print_usage() {
     echo ""
     echo "  -v and -q             Verbose (-v) or quiet (-q) logging. Sets default log level of Solr to DEBUG or WARN instead of INFO"
     echo ""
-    echo "  -v/-verbose           Verbose messages from this script"
+    echo "  -V/--verbose           Verbose messages from this script"
     echo ""
   elif [ "$CMD" == "stop" ]; then
     echo ""
@@ -439,7 +439,7 @@ function print_usage() {
     echo ""
     echo "  -all          Find and stop all running Solr servers on this host"
     echo ""
-    echo "  -V/-verbose   Verbose messages from this script"
+    echo "  -V/--verbose   Verbose messages from this script"
     echo ""
     echo "  NOTE: To see if any Solr servers are running, do: solr status"
     echo ""
@@ -919,8 +919,8 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
             ZK_RECURSE="true"
             shift
         ;;
-        -V|-verbose)
-            VERBOSE="-verbose"
+        -v|--verbose)
+            VERBOSE="--verbose"
             shift
         ;;
         --help|-h)
@@ -1312,7 +1312,7 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("--host" "$SOLR_HOST")
             shift 2
         ;;
-        -m|-memory)
+        -m|--memory)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Memory setting is required when using the $1 option!"
               exit 1
@@ -1321,7 +1321,7 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("-m" "$SOLR_HEAP")
             shift 2
         ;;
-        -p|-port)
+        -p|--port)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Port number is required when using the $1 option!"
               exit 1
@@ -1363,9 +1363,9 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("--noprompt")
             shift
         ;;
-        -V|-verbose)
+        -V|--verbose)
             verbose=true
-            PASS_TO_RUN_EXAMPLE+=("-verbose")
+            PASS_TO_RUN_EXAMPLE+=("--verbose")
             shift
         ;;
         -v)
