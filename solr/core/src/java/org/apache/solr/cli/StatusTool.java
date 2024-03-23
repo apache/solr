@@ -57,7 +57,8 @@ public class StatusTool extends ToolBase {
   }
 
   public static final Option OPTION_MAXWAITSECS =
-      Option.builder("maxWaitSecs")
+      Option.builder()
+          .longOpt("max-wait-secs")
           .argName("SECS")
           .hasArg()
           .required(false)
@@ -93,7 +94,7 @@ public class StatusTool extends ToolBase {
       return;
     }
 
-    int maxWaitSecs = Integer.parseInt(cli.getOptionValue("maxWaitSecs", "0"));
+    int maxWaitSecs = Integer.parseInt(cli.getOptionValue("max-wait-secs", "0"));
     String solrUrl = SolrCLI.normalizeSolrUrl(cli);
     if (maxWaitSecs > 0) {
       int solrPort = (new URL(solrUrl)).getPort();

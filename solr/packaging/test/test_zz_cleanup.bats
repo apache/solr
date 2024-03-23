@@ -32,6 +32,6 @@ setup() {
 @test "Cleanup" {
   sleep 1
   run solr stop --all
-  run solr status -maxWaitSecs 10
+  run solr status --max-wait-secs 10
   assert_output --partial "No Solr nodes are running"
 }
