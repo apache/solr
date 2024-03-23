@@ -1253,12 +1253,12 @@ PASS_TO_RUN_EXAMPLE=()
 if [ $# -gt 0 ]; then
   while true; do
     case "${1:-}" in
-        -c|-cloud)
+        -c|--cloud)
             SOLR_MODE="solrcloud"
             PASS_TO_RUN_EXAMPLE+=("-c")
             shift
         ;;
-        -d|-dir)
+        -d|--dir)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Server directory is required when using the $1 option!"
               exit 1
@@ -1278,7 +1278,7 @@ if [ $# -gt 0 ]; then
             SOLR_SERVER_DIR="$(cd "$SOLR_SERVER_DIR" || (echo "SOLR_SERVER_DIR not found" && exit 1); pwd)"
             shift 2
         ;;
-        -s|-solr-home)
+        -s|--solr-home)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Solr home directory is required when using the $1 option!"
               exit 1
