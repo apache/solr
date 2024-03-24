@@ -93,9 +93,7 @@ public class HealthcheckTool extends ToolBase {
       CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
       System.exit(1);
     }
-    try (CloudHttp2SolrClient cloudSolrClient =
-        new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-            .build()) {
+    try (CloudHttp2SolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
       cloudSolrClient.connect();
       runCloudTool(cloudSolrClient, cli);

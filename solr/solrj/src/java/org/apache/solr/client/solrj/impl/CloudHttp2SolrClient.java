@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.impl.SolrZkClientTimeout.SolrZkClientTimeout
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrClassLoader;
 
 /**
  * SolrJ client class to communicate with SolrCloud using Http2SolrClient. Instances of this class
@@ -138,6 +139,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
     private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
     private boolean canUseZkACLs = true;
+    private SolrClassLoader solrClassLoader;
 
     /**
      * Provide a series of Solr URLs to be used when configuring {@link CloudHttp2SolrClient}
@@ -394,6 +396,11 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       return this;
     }
 
+    public Builder withSolrClassLoader(SolrClassLoader solrClassLoader) {
+      this.solrClassLoader = solrClassLoader;
+      return this;
+    }
+
     /**
      * Sets the Zk client session timeout
      *
@@ -413,7 +420,8 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
               "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
         } else if (!zkHosts.isEmpty()) {
           stateProvider =
-              ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot, canUseZkACLs);
+              ClusterStateProvider.newZkClusterStateProvider(
+                  zkHosts, zkChroot, canUseZkACLs, solrClassLoader);
           if (stateProvider instanceof SolrZkClientTimeoutAware) {
             var timeoutAware = (SolrZkClientTimeoutAware) stateProvider;
             timeoutAware.setZkClientTimeout(zkClientTimeout);

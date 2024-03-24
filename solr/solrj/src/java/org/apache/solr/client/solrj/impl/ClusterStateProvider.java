@@ -25,20 +25,21 @@ import java.util.Set;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.common.params.CollectionAdminParams;
 
 /** Provides cluster state from some source */
 public interface ClusterStateProvider extends SolrCloseable {
 
-  static ClusterStateProvider newZkClusterStateProvider(
-      Collection<String> zkHosts, String zkChroot, boolean canUseZkACLs) {
+  static ClusterStateProvider newZkClusterStateProvider(Collection<String> zkHosts, String zkChroot, boolean canUseZkACLs,
+      SolrClassLoader solrClassLoader) {
     // instantiate via reflection so that we don't depend on ZK
     try {
       var constructor =
           Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider")
               .asSubclass(ClusterStateProvider.class)
-              .getConstructor(Collection.class, String.class, Boolean.TYPE);
-      return constructor.newInstance(zkHosts, zkChroot, canUseZkACLs);
+              .getConstructor(Collection.class, String.class, Boolean.TYPE, SolrClassLoader.class);
+      return constructor.newInstance(zkHosts, zkChroot, canUseZkACLs, solrClassLoader);
     } catch (InvocationTargetException e) {
       if (e.getCause() instanceof RuntimeException) {
         throw (RuntimeException) e.getCause();

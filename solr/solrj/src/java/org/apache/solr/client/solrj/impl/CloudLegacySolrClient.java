@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 
@@ -173,6 +174,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
     private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
     private boolean canUseZkACLs = true;
+    private SolrClassLoader solrClassLoader;
 
     /** Constructor for use by subclasses. This constructor was public prior to version 9.0 */
     protected Builder() {}
@@ -235,6 +237,12 @@ public class CloudLegacySolrClient extends CloudSolrClient {
     /** Whether or not to use the default ZK ACLs when building a ZK Client. */
     public Builder canUseZkACLs(boolean canUseZkACLs) {
       this.canUseZkACLs = canUseZkACLs;
+      return this;
+    }
+
+    /** Provides a {@link SolrClassLoader} for the builder to use when creating clients. */
+    public Builder withSolrClassLoader(SolrClassLoader solrClassLoader) {
+      this.solrClassLoader = solrClassLoader;
       return this;
     }
 
@@ -379,7 +387,7 @@ public class CloudLegacySolrClient extends CloudSolrClient {
               "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
         } else if (!zkHosts.isEmpty()) {
           this.stateProvider =
-              ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot, canUseZkACLs);
+              ClusterStateProvider.newZkClusterStateProvider(zkHosts, zkChroot, canUseZkACLs, solrClassLoader);
           if (stateProvider instanceof SolrZkClientTimeoutAware) {
             var timeoutAware = (SolrZkClientTimeoutAware) stateProvider;
             timeoutAware.setZkClientTimeout(zkClientTimeout);
