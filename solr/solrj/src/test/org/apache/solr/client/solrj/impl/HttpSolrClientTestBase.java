@@ -559,7 +559,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
                 + "</str></doc></result></response>");
         QueryRequest query =
             new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
-        query.setMethod(SolrRequest.METHOD.GET);
+        query.setMethod(method);
         listeners[i] = new DebugAsyncListener(cdl);
         client.asyncRequest(query, null, listeners[i]);
       }

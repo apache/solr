@@ -258,8 +258,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     assertTrue(response.isCancelled());
 
     // But we cannot guarantee the response will have been returned, or that "onFailure" was fired
-    // with
-    // a "CompletionException".  This depends on where we were when the cancellation hit.
+    // with a "CompletionException".  This depends on where we were when the cancellation hit.
   }
 
   @Test
