@@ -209,11 +209,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testAsyncPut() throws Exception {
-    super.testQueryAsync(SolrRequest.METHOD.GET);
-  }
-
-  @Test
   public void testAsyncException() throws Exception {
     DebugAsyncListener listener = super.testAsyncExceptionBase();
     assertTrue(listener.onFailureResult instanceof CompletionException);
