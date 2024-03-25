@@ -240,7 +240,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       cancelMe = client.asyncRequest(query, "collection1", listener);
       cancelMe.cancel();
 
-      // We are safe to unpause our client, having guaranteed that our cancel was before everything completed.
+      // We are safe to unpause our client, having guaranteed that our cancel was before everything
+      // completed.
       listener.unPause();
     }
 
@@ -256,7 +257,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     // have set "isCancelled".
     assertTrue(response.isCancelled());
 
-    // But we cannot guarantee the response will have been returned, or that "onFailure" was fired with
+    // But we cannot guarantee the response will have been returned, or that "onFailure" was fired
+    // with
     // a "CompletionException".  This depends on where we were when the cancellation hit.
   }
 

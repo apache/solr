@@ -23,7 +23,7 @@ package org.apache.solr.client.solrj.util;
 public interface Cancellable {
 
   /**
-   * Request to cancel the asynchronous request.  This may be a no-op in some situations, for instance, if the request failed or otherwise is finished.
+   * Request to cancel the asynchronous request.  This may be a no-op in some situations, for instance, if the request failed or otherwise is complete.
    */
   void cancel();
 }

@@ -26,9 +26,9 @@ public interface AsyncListener<T> {
   /** Callback method invoked before processing the request */
   default void onStart() {}
 
-  /** Callback method invoked when the request completes successfully  */
+  /** Callback method invoked when the request completes successfully */
   void onSuccess(T t);
 
-  /** Callback method invoked when the request completes in failure  */
+  /** Callback method invoked when the request completes in failure */
   void onFailure(Throwable throwable);
 }
