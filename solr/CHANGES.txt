@@ -145,11 +145,15 @@ Bug Fixes
 * SOLR-17198: AffinityPlacementFactory can fail if Shard leadership changes occur while it is collecting metrics.
   (Paul McArthur)
 
-* SOLR-17209: Fix NullPointerException in QueryComponent (Vincent Primault)
+* SOLR-14892: Queries with shards.info and shards.tolerant can yield multiple null keys in place of shard names
+  (Mathieu Marie, David Smiley)
+
+* SOLR-17209: Fix NullPointerException in QueryComponent (Vincent Primault via Eric Pugh)
 
 Dependency Upgrades
 ---------------------
-(No changes)
+
+* SOLR-17157: Upgrade Lucene to 9.10.0 (hossman, Christine Poerschke)
 
 Other Changes
 ---------------------
@@ -159,6 +163,13 @@ Other Changes
   it should make use of the client-level default collection/core. (Jason Gerlowski)
 
 * SOLR-17190: Replace org.apache.solr.util.LongSet with hppc LongHashSet (Michael Gibney)
+
+* SOLR-12089: Update FileBasedSpellChecker and IndexBasedSpellChecker to accept accuracy parameter
+  as float; deprecate `breakSugestionTieBreaker` parameter in favor of `breakSuggestionTieBreaker`
+  in WordBreakSolrSpellChecker (Andrey Bozhko via Eric Pugh)
+
+* SOLR-17201: Http2SolrClient and friends no longer marked as @lucene.experimental.
+  Krb5HttpClientBuilder and PreemptiveBasicAuthClientBuilderFactory no longer deprecated (janhoy)
 
 ==================  9.5.0 ==================
 New Features

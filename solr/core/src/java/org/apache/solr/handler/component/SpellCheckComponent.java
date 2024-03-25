@@ -760,7 +760,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   private boolean addSpellChecker(SolrCore core, boolean hasDefault, NamedList<?> spellchecker) {
     String className = (String) spellchecker.get("classname");
     if (className == null) className = (String) spellchecker.get("class");
-    // TODO: this is a little bit sneaky: warn if class isnt supplied
+    // TODO: this is a little bit sneaky: warn if class isn't supplied
     // so that it's mandatory in a future release?
     if (className == null) className = IndexBasedSpellChecker.class.getName();
     SolrResourceLoader loader = core.getResourceLoader();

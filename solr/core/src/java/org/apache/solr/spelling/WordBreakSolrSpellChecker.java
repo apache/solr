@@ -17,6 +17,7 @@
 package org.apache.solr.spelling;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -32,6 +33,8 @@ import org.apache.lucene.search.spell.WordBreakSpellChecker.BreakSuggestionSortM
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A spellchecker that breaks and combines words.
@@ -46,6 +49,9 @@ import org.apache.solr.search.SolrIndexSearcher;
  * properly sets these flags.
  */
 public class WordBreakSolrSpellChecker extends SolrSpellChecker {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /** Try to combine multiple words into one? [true|false] */
   public static final String PARAM_COMBINE_WORDS = "combineWords";
 
@@ -61,8 +67,16 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
   /** See {@link WordBreakSpellChecker#setMinBreakWordLength} */
   public static final String PARAM_MIN_BREAK_WORD_LENGTH = "minBreakLength";
 
+  /**
+   * See {@link BreakSuggestionTieBreaker} for options.
+   *
+   * @deprecated Only used for backwards compatibility. It will be removed in 10.x.
+   */
+  @Deprecated(since = "9.6")
+  private static final String PARAM_BREAK_SUGESTION_TIE_BREAKER = "breakSugestionTieBreaker";
+
   /** See {@link BreakSuggestionTieBreaker} for options. */
-  public static final String PARAM_BREAK_SUGGESTION_TIE_BREAKER = "breakSugestionTieBreaker";
+  public static final String PARAM_BREAK_SUGGESTION_TIE_BREAKER = "breakSuggestionTieBreaker";
 
   /** See {@link WordBreakSpellChecker#setMaxEvaluations} */
   public static final String PARAM_MAX_EVALUATIONS = "maxEvaluations";
@@ -70,7 +84,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
   /** See {@link WordBreakSpellChecker#setMinSuggestionFrequency} */
   public static final String PARAM_MIN_SUGGESTION_FREQUENCY = "minSuggestionFreq";
 
-  /** Specify a value on the "breakSugestionTieBreaker" parameter. The default is MAX_FREQ. */
+  /** Specify a value on the "breakSuggestionTieBreaker" parameter. The default is MAX_FREQ. */
   public enum BreakSuggestionTieBreaker {
     /** See {@link BreakSuggestionSortMethod#NUM_CHANGES_THEN_MAX_FREQUENCY} # */
     MAX_FREQ,
@@ -92,6 +106,17 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     breakWords = boolParam(config, PARAM_BREAK_WORDS);
     wbsp = new WordBreakSpellChecker();
     String bstb = strParam(config, PARAM_BREAK_SUGGESTION_TIE_BREAKER);
+    if (bstb == null) {
+      bstb = strParam(config, PARAM_BREAK_SUGESTION_TIE_BREAKER);
+      if (bstb != null && log.isWarnEnabled()) {
+        log.warn(
+            "Parameter '"
+                + PARAM_BREAK_SUGESTION_TIE_BREAKER
+                + "' is deprecated and will be removed in Solr 10.x. Please use '"
+                + PARAM_BREAK_SUGGESTION_TIE_BREAKER
+                + "' instead."); // nowarn
+      }
+    }
     if (bstb != null) {
       bstb = bstb.toUpperCase(Locale.ROOT);
       if (bstb.equals(BreakSuggestionTieBreaker.SUM_FREQ.name())) {
