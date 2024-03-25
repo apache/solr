@@ -231,16 +231,33 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     Cancellable cancelMe = null;
     try (HttpJdkSolrClient client = b.build()) {
       QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
+
+      // We are pausing in the "whenComplete" stage, in the unlikely event the http request
+      // finishes before the test calls "cancel".
       listener.pause();
+
+      // Make the request then immediately cancel it!
       cancelMe = client.asyncRequest(query, "collection1", listener);
       cancelMe.cancel();
+
+      // We are safe to unpause our client, having guaranteed that our cancel was before everything completed.
       listener.unPause();
     }
+
+    // "onStart" fires before the async call.  This part of the request cannot be cancelled.
     assertTrue(listener.onStartCalled);
+
+    // The client exposes the CompletableFuture to us via this inner class
     assertTrue(cancelMe instanceof HttpJdkSolrClient.HttpSolrClientCancellable);
     CompletableFuture<NamedList<Object>> response =
         ((HttpJdkSolrClient.HttpSolrClientCancellable) cancelMe).getResponse();
+
+    // Even if our cancel didn't happen until we were at "whenComplete", the CompletableFuture will
+    // have set "isCancelled".
     assertTrue(response.isCancelled());
+
+    // But we cannot guarantee the response will have been returned, or that "onFailure" was fired with
+    // a "CompletionException".  This depends on where we were when the cancellation hit.
   }
 
   @Test
