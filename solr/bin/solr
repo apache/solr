@@ -451,6 +451,8 @@ function print_usage() {
     echo "             -z zkHost          Optional Zookeeper connection string for all commands. If specified it"
     echo "                                  overrides the 'ZK_HOST=...'' defined in solr.in.sh."
     echo ""
+    echo "             -s solrUrl         Optional Solr URL to look up the correct zkHost connection string via."
+    echo ""
     echo "             -V/-verbose        Enable more verbose output for this script."
     echo ""
     echo "         upconfig uploads a configset from the local machine to Zookeeper."

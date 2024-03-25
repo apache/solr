@@ -298,7 +298,7 @@ IF "%SCRIPT_CMD%"=="stop" goto stop_usage
 IF "%SCRIPT_CMD%"=="healthcheck" goto run_solrcli
 IF "%SCRIPT_CMD%"=="create" goto run_solrcli
 IF "%SCRIPT_CMD%"=="delete" goto run_solrcli
-IF  "%SCRIPT_CMD%"=="zk" goto zk_usage
+IF "%SCRIPT_CMD%"=="zk" goto zk_usage
 IF "%SCRIPT_CMD%"=="auth" goto auth_usage
 IF "%SCRIPT_CMD%"=="status" goto run_solrcli
 IF "%SCRIPT_CMD%"=="postlogs" goto run_solrcli
@@ -392,6 +392,8 @@ echo         Be sure to check the Solr logs in case of errors.
 echo.
 echo             -z zkHost       Optional Zookeeper connection string for all commands. If specified it
 echo                             overrides the 'ZK_HOST=...'' defined in solr.in.cmd.
+echo.
+echo             -s solrUrl      Optional Solr URL to look up the correct zkHost connection string via.
 echo.
 echo             -V              Enable more verbose output.
 echo.
@@ -552,6 +554,8 @@ IF "%1"=="-port" goto set_port
 IF "%1"=="-z" goto set_zookeeper
 IF "%1"=="-zkhost" goto set_zookeeper
 IF "%1"=="-zkHost" goto set_zookeeper
+IF "%1"=="-s" goto set_solr_url
+IF "%1"=="-solrUrl" goto set_solr_url
 IF "%1"=="-a" goto set_addl_opts
 IF "%1"=="-addlopts" goto set_addl_opts
 IF "%1"=="-j" goto set_addl_jetty_config
@@ -769,6 +773,19 @@ IF "%firstChar%"=="-" (
 
 set "ZK_HOST=%~2"
 set "PASS_TO_RUN_EXAMPLE=-z %~2 !PASS_TO_RUN_EXAMPLE!"
+SHIFT
+SHIFT
+goto parse_args
+
+:set_solr_url
+
+set "arg=%~2"
+IF "%arg%"=="" (
+  set SCRIPT_ERROR=Solr url string is required!
+  goto invalid_cmd_line
+)
+
+set "ZK_SOLR_URL=%~2"
 SHIFT
 SHIFT
 goto parse_args
@@ -1480,9 +1497,13 @@ IF "!ZK_OP!"=="" (
   goto zk_short_usage
 )
 
-IF "!ZK_HOST!"=="" (
-  set "ERROR_MSG=Must specify -z zkHost"
-  goto zk_short_usage
+set CONNECTION_PARAMS=""
+
+IF "!ZK_OP!"=="" (
+  set CONNECTION_PARAMS="-solrUrl !ZK_SOLR_URL!"
+)
+ELSE (
+  set CONNECTION_PARAMS="-zkHost ZK_HOST!"
 )
 
 IF "!ZK_OP!"=="upconfig" (
@@ -1497,7 +1518,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -confname !CONFIGSET_NAME! -confdir !CONFIGSET_DIR! -zkHost !ZK_HOST! %ZK_VERBOSE%^
+  org.apache.solr.cli.SolrCLI !ZK_OP! -confname !CONFIGSET_NAME! -confdir !CONFIGSET_DIR! %CONNECTION_PARAMS% %ZK_VERBOSE%^
   -configsetsDir "%SOLR_TIP%/server/solr/configsets"
 ) ELSE IF "!ZK_OP!"=="downconfig" (
   IF "!CONFIGSET_NAME!"=="" (
