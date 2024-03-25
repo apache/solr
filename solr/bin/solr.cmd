@@ -472,12 +472,12 @@ IF NOT "!ERROR_MSG!"=="" (
   echo  ERROR: !ERROR_MSG!
   echo.
 )
-echo  Usage: solr zk upconfig^|downconfig -d ^<confdir^> -n ^<configName^> [-z zkHost]
-echo         solr zk cp [-r] ^<src^> ^<dest^> [-z zkHost]
-echo         solr zk rm [-r] ^<path^> [-z zkHost]
-echo         solr zk mv ^<src^> ^<dest^> [-z zkHost]
-echo         solr zk ls [-r] ^<path^> [-z zkHost]
-echo         solr zk mkroot ^<path^> [-z zkHost]
+echo  Usage: solr zk upconfig^|downconfig -d ^<confdir^> -n ^<configName^> [-z zkHost] [-s solrUrl]
+echo         solr zk cp [-r] ^<src^> ^<dest^> [-z zkHost] [-s solrUrl]
+echo         solr zk rm [-r] ^<path^> [-z zkHost] [-s solrUrl]
+echo         solr zk mv ^<src^> ^<dest^> [-z zkHost] [-s solrUrl]
+echo         solr zk ls [-r] ^<path^> [-z zkHost] [-s solrUrl]
+echo         solr zk mkroot ^<path^> [-z zkHost] [-s solrUrl]
 echo.
 IF "%ZK_FULL%"=="true" (
   goto zk_full_usage
