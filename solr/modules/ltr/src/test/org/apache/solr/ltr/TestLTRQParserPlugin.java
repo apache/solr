@@ -185,7 +185,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     final String solrQuery = "_query_:{!edismax qf='id' v='8^=10 9^=5 7^=3 6^=1'}";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
-    query.setFields("*", "score");
+    query.setFields("id", "score");
     query.setRows(4);
     query.setTimeAllowed(300);
     query.add("partialResults", "false");
@@ -210,7 +210,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     final String solrQuery = "_query_:{!edismax qf='id' v='8^=10 9^=5 7^=3 6^=1'}";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
-    query.setFields("*", "score");
+    query.setFields("id", "score");
     query.setRows(4);
     query.setTimeAllowed(5000);
     query.add("fv", "true");
@@ -225,7 +225,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
         "/response/docs/[1]/score==999.0",
         "/response/docs/[2]/id=='9'",
         "/response/docs/[2]/score==999.0",
-        "/response/docs/[3]/id=='6'",
+        "/response/docs/[3]/id=='6'", // original score for the 4th document due to reRankDocs=3 limit
         "/response/docs/[3]/score==1.0");
   }
 }
