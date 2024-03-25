@@ -151,7 +151,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     final String solrQuery = "_query_:{!edismax qf='id' v='8^=10 9^=5 7^=3 6^=1'}";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
-    query.setFields("*", "score");
+    query.setFields("id", "score");
     query.setRows(4);
     query.setTimeAllowed(300);
     query.add("fv", "true");
