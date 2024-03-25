@@ -1637,6 +1637,27 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         CommonParams.TIME_ALLOWED,
         1);
 
+    // Check rows=0 ngroups still work
+    rsp =
+        query(
+            "q",
+            "*:*",
+            "fq",
+            s1 + ":a",
+            "rows",
+            0,
+            "group",
+            "true",
+            "group.field",
+            i1,
+            "group.ngroups",
+            "true");
+    nl = (NamedList<?>) rsp.getResponse().get("grouped");
+    nl = (NamedList<?>) nl.get(i1);
+    assertEquals(rsp.toString(), 200, nl.get("matches"));
+    assertEquals(rsp.toString(), 2, nl.get("ngroups"));
+    assertEquals(rsp.toString(), 0, ((List<NamedList<?>>) nl.get("groups")).size());
+
     // Debug
     simpleQuery(
         "q",
