@@ -75,6 +75,8 @@ Dependency Upgrades
 
 * SOLR-17157: Upgrade Lucene to 9.10.0 (hossman, Christine Poerschke)
 
+* SOLR-17214: Update forbiddenapis to 3.7 (hossman)
+
 Other Changes
 ---------------------
 * SOLR-17126: Cut over System.getProperty to EnvUtils.getProperty (janhoy)
