@@ -65,7 +65,7 @@ public class ZkLsTool extends ToolBase {
     if (zkHost == null) {
       throw new IllegalStateException(
           "Solr at "
-              + cli.getOptionValue("zkHost")
+              + cli.getOptionValue("zk-host")
               + " is running in standalone server mode, 'zk ls' can only be used when running in SolrCloud mode.\n");
     }
 

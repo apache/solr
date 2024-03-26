@@ -233,7 +233,7 @@ public class CreateTool extends ToolBase {
           "No live nodes found! Cannot create a collection until "
               + "there is at least 1 live node in the cluster.");
 
-    String solrUrl = cli.getOptionValue("solrUrl");
+    String solrUrl = cli.getOptionValue("solr-url");
     if (solrUrl == null) {
       String firstLiveNode = liveNodes.iterator().next();
       solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
