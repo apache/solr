@@ -78,6 +78,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
@@ -499,10 +500,11 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     // Highlight each document
     NamedList<Object> fragments = new SimpleOrderedMap<>();
+    SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {
       int docId = iterator.nextDoc();
-      SolrDocument doc = searcher.getDocFetcher().solrDoc(docId, returnFields);
+      SolrDocument doc = docFetcher.solrDoc(docId, returnFields);
 
       NamedList<Object> docHighlights = new SimpleOrderedMap<>();
       // Highlight per-field

@@ -42,7 +42,6 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StoredValue;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
@@ -57,6 +56,7 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
@@ -114,9 +114,33 @@ public class SolrDocumentFetcher {
 
   private final Set<String> largeFields;
 
-  private Collection<String> storedHighlightFieldNames; // lazy populated; use getter
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private final Collection<String>[] storedHighlightFieldNames =
+      new Collection[1]; // lazy populated; use getter
 
-  private Collection<String> indexedFieldNames; // lazy populated; use getter
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  private final Collection<String>[] indexedFieldNames =
+      new Collection[1]; // lazy populated; use getter
+
+  private final StoredFields storedFields;
+
+  private SolrDocumentFetcher(SolrDocumentFetcher template, StoredFields storedFields) {
+    this.searcher = template.searcher;
+    this.nLeaves = template.nLeaves;
+    this.enableLazyFieldLoading = template.enableLazyFieldLoading;
+    this.documentCache = template.documentCache;
+    this.nonStoredDVsUsedAsStored = template.nonStoredDVsUsedAsStored;
+    this.allNonStoredDVs = template.allNonStoredDVs;
+    this.nonStoredDVsWithoutCopyTargets = template.nonStoredDVsWithoutCopyTargets;
+    this.largeFields = template.largeFields;
+    this.dvsCanSubstituteStored = template.dvsCanSubstituteStored;
+    this.allStored = template.allStored;
+    this.storedFields = storedFields;
+  }
+
+  public SolrDocumentFetcher createInstance() throws IOException {
+    return new SolrDocumentFetcher(this, searcher.getIndexReader().storedFields());
+  }
 
   @SuppressWarnings({"unchecked"})
   SolrDocumentFetcher(SolrIndexSearcher searcher, SolrConfig solrConfig, boolean cachingEnabled) {
@@ -172,6 +196,7 @@ public class SolrDocumentFetcher {
     this.largeFields = Collections.unmodifiableSet(storedLargeFields);
     this.dvsCanSubstituteStored = Collections.unmodifiableSet(dvsCanSubstituteStored);
     this.allStored = Collections.unmodifiableSet(allStoreds);
+    this.storedFields = null; // template docFetcher should throw NPE if used directly
   }
 
   // Does this field have both stored=true and docValues=true and is otherwise
@@ -203,9 +228,9 @@ public class SolrDocumentFetcher {
    * reader knows about.
    */
   public Collection<String> getStoredHighlightFieldNames() {
-    synchronized (this) {
-      if (storedHighlightFieldNames == null) {
-        storedHighlightFieldNames = new ArrayList<>();
+    synchronized (storedHighlightFieldNames) {
+      if (storedHighlightFieldNames[0] == null) {
+        Collection<String> storedHighlightFieldNames = new ArrayList<>();
         for (FieldInfo fieldInfo : searcher.getFieldInfos()) {
           final String fieldName = fieldInfo.name;
           try {
@@ -220,23 +245,25 @@ public class SolrDocumentFetcher {
             log.warn("Field [{}] found in index, but not defined in schema.", fieldName);
           }
         }
+        this.storedHighlightFieldNames[0] = storedHighlightFieldNames;
       }
-      return storedHighlightFieldNames;
+      return storedHighlightFieldNames[0];
     }
   }
 
   /** Returns a collection of the names of all indexed fields which the index reader knows about. */
   public Collection<String> getIndexedFieldNames() {
-    synchronized (this) {
-      if (indexedFieldNames == null) {
-        indexedFieldNames = new ArrayList<>();
+    synchronized (indexedFieldNames) {
+      if (indexedFieldNames[0] == null) {
+        Collection<String> indexedFieldNames = new ArrayList<>();
         for (FieldInfo fieldInfo : searcher.getFieldInfos()) {
           if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
             indexedFieldNames.add(fieldInfo.name);
           }
         }
+        this.indexedFieldNames[0] = indexedFieldNames;
       }
-      return indexedFieldNames;
+      return indexedFieldNames[0];
     }
   }
 
@@ -272,10 +299,9 @@ public class SolrDocumentFetcher {
   }
 
   private Document docNC(int i, Set<String> fields) throws IOException {
-    final DirectoryReader reader = searcher.getIndexReader();
     final SolrDocumentStoredFieldVisitor visitor =
-        new SolrDocumentStoredFieldVisitor(fields, reader, i);
-    reader.storedFields().document(i, visitor);
+        new SolrDocumentStoredFieldVisitor(fields, searcher.getIndexReader(), i);
+    storedFields.document(i, visitor);
     return visitor.getDocument();
   }
 
@@ -368,16 +394,14 @@ public class SolrDocumentFetcher {
     }
   }
 
-  /**
-   * @see SolrIndexSearcher#doc(int, StoredFieldVisitor)
-   */
+  /** Visit a document's fields using a {@link StoredFieldVisitor}. */
   public void doc(int docId, StoredFieldVisitor visitor) throws IOException {
     if (documentCache != null) {
       // get cached document or retrieve it including all fields (and cache it)
       Document cached = doc(docId);
       visitFromCached(cached, visitor);
     } else {
-      searcher.getIndexReader().storedFields().document(docId, visitor);
+      storedFields.document(docId, visitor);
     }
   }
 
@@ -493,36 +517,33 @@ public class SolrDocumentFetcher {
         return cachedBytes;
       } else {
         BytesRef bytesRef = new BytesRef();
-        searcher
-            .getIndexReader()
-            .storedFields()
-            .document(
-                docId,
-                new StoredFieldVisitor() {
-                  boolean done = false;
+        storedFields.document(
+            docId,
+            new StoredFieldVisitor() {
+              boolean done = false;
 
-                  @Override
-                  public Status needsField(FieldInfo fieldInfo) throws IOException {
-                    if (done) {
-                      return Status.STOP;
-                    }
-                    return fieldInfo.name.equals(name()) ? Status.YES : Status.NO;
-                  }
+              @Override
+              public Status needsField(FieldInfo fieldInfo) throws IOException {
+                if (done) {
+                  return Status.STOP;
+                }
+                return fieldInfo.name.equals(name()) ? Status.YES : Status.NO;
+              }
 
-                  @Override
-                  public void stringField(FieldInfo fieldInfo, String value) throws IOException {
-                    Objects.requireNonNull(value, "String value should not be null");
-                    bytesRef.bytes = value.getBytes(StandardCharsets.UTF_8);
-                    bytesRef.length = bytesRef.bytes.length;
-                    done = true;
-                  }
+              @Override
+              public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+                Objects.requireNonNull(value, "String value should not be null");
+                bytesRef.bytes = value.getBytes(StandardCharsets.UTF_8);
+                bytesRef.length = bytesRef.bytes.length;
+                done = true;
+              }
 
-                  @Override
-                  public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
-                    throw new UnsupportedOperationException(
-                        "'large' binary fields are not (yet) supported");
-                  }
-                });
+              @Override
+              public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
+                throw new UnsupportedOperationException(
+                    "'large' binary fields are not (yet) supported");
+              }
+            });
         if (bytesRef.length < largeValueLengthCacheThreshold) {
           return cachedBytes = bytesRef;
         } else {
