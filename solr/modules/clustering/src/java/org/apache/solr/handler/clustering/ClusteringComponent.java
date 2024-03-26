@@ -55,6 +55,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryLimits;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.carrot2.clustering.Cluster;
@@ -415,13 +416,14 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       docLanguage = (doc) -> requestParameters.language();
     }
 
+    SolrDocumentFetcher docFetcher = indexSearcher.getDocFetcher();
     List<InputDocument> result = new ArrayList<>();
     DocIterator it = responseBuilder.getResults().docList.iterator();
     while (it.hasNext()) {
       int docId = it.nextDoc();
 
       Map<String, String> docFieldValues = new LinkedHashMap<>();
-      for (IndexableField indexableField : indexSearcher.doc(docId, fieldsToLoad.keySet())) {
+      for (IndexableField indexableField : docFetcher.doc(docId, fieldsToLoad.keySet())) {
         String fieldName = indexableField.name();
         Function<IndexableField, String> toString = fieldsToLoad.get(fieldName);
         if (toString != null) {

@@ -347,10 +347,10 @@ public class RealTimeGetComponent extends SearchComponent {
 
         if (docid < 0) continue;
 
-        Document luceneDocument =
-            searcherInfo.getSearcher().doc(docid, rsp.getReturnFields().getLuceneFieldNames());
-        SolrDocument doc = toSolrDoc(luceneDocument, core.getLatestSchema());
         SolrDocumentFetcher docFetcher = searcherInfo.getSearcher().getDocFetcher();
+        Document luceneDocument =
+            docFetcher.doc(docid, rsp.getReturnFields().getLuceneFieldNames());
+        SolrDocument doc = toSolrDoc(luceneDocument, core.getLatestSchema());
         if (reuseDvIters == null) {
           reuseDvIters = new DocValuesIteratorCache(searcherInfo.getSearcher());
         }

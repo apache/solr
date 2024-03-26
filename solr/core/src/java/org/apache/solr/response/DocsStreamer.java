@@ -73,7 +73,7 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     this.docs = rctx.getDocList();
     transformer = rctx.getReturnFields().getTransformer();
     docIterator = this.docs.iterator();
-    docFetcher = rctx.getSearcher().getDocFetcher();
+    docFetcher = rctx.getDocFetcher();
     solrReturnFields = (SolrReturnFields) rctx.getReturnFields();
 
     if (transformer != null) transformer.setContext(rctx);
