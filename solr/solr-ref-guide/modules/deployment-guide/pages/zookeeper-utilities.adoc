@@ -34,6 +34,8 @@ The `zkcli.sh` provided by Solr is not the same as the https://zookeeper.apache.
 
 ZooKeeper's `zkCli.sh` provides a completely general, application-agnostic shell for manipulating data in ZooKeeper.
 Solr's `zkcli.sh` – discussed in this section – is specific to Solr, and has command line arguments specific to dealing with Solr data in ZooKeeper.
+
+`zkcli.sh` has been deprecated in favour of the `bin/solr` commands which should be used instead.
 ====
 
 == Using Solr's ZooKeeper CLI

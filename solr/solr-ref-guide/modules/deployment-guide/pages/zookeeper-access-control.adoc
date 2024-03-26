@@ -548,7 +548,7 @@ Then run the command below appropriate for your operating system:
 [.tab-label]**nix*
 [source,bash]
 ----
-$ ./server/scripts/cloud-scripts/zkcli.sh -cmd updateacls /zk-path
+$ bin/solr zk updateacls /zk-path
 ----
 ====
 
@@ -557,7 +557,7 @@ $ ./server/scripts/cloud-scripts/zkcli.sh -cmd updateacls /zk-path
 [.tab-label]*Windows*
 [source,powershell]
 ----
-C:\\ server\scripts\cloud-scripts\zkcli.bat cmd updateacls /zk-path
+$ bin/solr.cmd zk updateacls /zk-path
 ----
 ====
 --
