@@ -38,6 +38,7 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     configureCluster(1).configure();
     CollectionAdminRequest.createCollection(COLLECTION, 2, 1) // _default configset
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster
         .getZkStateReader()

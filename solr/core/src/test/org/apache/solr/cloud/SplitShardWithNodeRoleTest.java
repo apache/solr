@@ -72,7 +72,7 @@ public class SplitShardWithNodeRoleTest extends SolrCloudTestCase {
       throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
     CollectionAdminRequest.createCollection(collName, "conf", shard, nrtReplica, 0, pullReplica)
-        .setPerReplicaState(true)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collName, shard, nrtReplica + pullReplica);
     UpdateRequest ur = new UpdateRequest();

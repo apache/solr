@@ -72,6 +72,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         (CollectionAdminRequest.createCollection(COLLECTION, CONF, numShards, numReplicas)
                 .setProperties(
                     Collections.singletonMap(CoreAdminParams.CONFIG, "solrconfig-minimal.xml"))
+                .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
                 .process(cluster.getSolrClient()))
             .getStatus());
 

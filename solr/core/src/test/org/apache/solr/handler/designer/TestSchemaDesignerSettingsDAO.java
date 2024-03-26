@@ -68,6 +68,7 @@ public class TestSchemaDesignerSettingsDAO extends SolrCloudTestCase
 
     SolrResponse rsp =
         CollectionAdminRequest.createCollection(collection, configSet, 1, 1)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .process(cluster.getSolrClient());
     CollectionsHandler.waitForActiveCollection(collection, cc, rsp);
 

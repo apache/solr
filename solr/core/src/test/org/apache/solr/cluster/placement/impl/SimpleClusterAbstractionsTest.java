@@ -47,6 +47,7 @@ public class SimpleClusterAbstractionsTest extends SolrCloudTestCase {
     cloudManager =
         cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
   }
 
