@@ -88,7 +88,9 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static long docsSeed; // see indexDocs()
+  protected static final int NUM_NODES = 2;
   protected static final int NUM_SHARDS = 2; // granted we sometimes shard split to get more
+  protected static final int LARGE_NUM_SHARDS = 11; // Periodically chosen via randomization
   protected static final int REPL_FACTOR = 2;
   protected static final String BACKUPNAME_PREFIX = "mytestbackup";
   protected static final String BACKUP_REPO_NAME = "trackingBackupRepository";
@@ -129,10 +131,11 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     setTestSuffix("testbackupincsimple");
     final String backupCollectionName = getCollectionName();
     final String restoreCollectionName = backupCollectionName + "_restore";
+    final int randomizedNumShards = rarely() ? LARGE_NUM_SHARDS : NUM_SHARDS;
 
     CloudSolrClient solrClient = cluster.getSolrClient();
 
-    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", randomizedNumShards, 1)
         .process(solrClient);
     int totalIndexedDocs = indexDocs(backupCollectionName, true);
     String backupName = BACKUPNAME_PREFIX + testSuffix;
@@ -166,7 +169,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       log.info("Created backup with {} docs, took {}ms", numFound, timeTaken);
 
       t = System.nanoTime();
-      randomlyPrecreateRestoreCollection(restoreCollectionName, "conf1", NUM_SHARDS, 1);
+      randomlyPrecreateRestoreCollection(restoreCollectionName, "conf1", randomizedNumShards, 1);
       CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
           .setBackupId(0)
           .setLocation(backupLocation)
