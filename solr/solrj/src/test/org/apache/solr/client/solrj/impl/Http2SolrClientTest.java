@@ -270,7 +270,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testAsyncPost() throws Exception {
-    super.testQueryAsync(SolrRequest.METHOD.GET);
+    super.testQueryAsync(SolrRequest.METHOD.POST);
   }
 
   @Test

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -51,7 +50,7 @@ public class DebugServlet extends HttpServlet {
   public static String queryString = null;
   public static javax.servlet.http.Cookie[] cookies = null;
   public static List<String[]> responseHeaders = null;
-  public static Map<String, Object> responseBodyByQueryFragment = new LinkedHashMap<>();
+  public static Map<String, Object> responseBodyByQueryFragment = new ConcurrentHashMap<>();
   public static byte[] requestBody = null;
 
   public static void setErrorCode(Integer code) {
