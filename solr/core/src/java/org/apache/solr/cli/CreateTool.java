@@ -88,7 +88,7 @@ public class CreateTool extends ToolBase {
             .desc("Number of shards; default is 1.")
             .build(),
         Option.builder("rf")
-            .longOpt("replicationFactor")
+            .longOpt("replication-factor")
             .argName("#")
             .hasArg()
             .required(false)
@@ -112,8 +112,7 @@ public class CreateTool extends ToolBase {
             .required(false)
             .desc("Configuration name; default is the collection name.")
             .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
@@ -131,7 +130,7 @@ public class CreateTool extends ToolBase {
 
   protected void createCore(CommandLine cli, SolrClient solrClient) throws Exception {
     String coreName = cli.getOptionValue("name");
-    String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
+    String solrUrl = cli.getOptionValue("solr-url", SolrCLI.getDefaultSolrUrl());
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
     final String confDirName = cli.getOptionValue("confdir", SolrCLI.DEFAULT_CONFIG_SET);
@@ -234,7 +233,7 @@ public class CreateTool extends ToolBase {
           "No live nodes found! Cannot create a collection until "
               + "there is at least 1 live node in the cluster.");
 
-    String solrUrl = cli.getOptionValue("solrUrl");
+    String solrUrl = cli.getOptionValue("solr-url");
     if (solrUrl == null) {
       String firstLiveNode = liveNodes.iterator().next();
       solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
@@ -243,7 +242,7 @@ public class CreateTool extends ToolBase {
     // build a URL to create the collection
     int numShards = Integer.parseInt(cli.getOptionValue("shards", String.valueOf(1)));
     int replicationFactor =
-        Integer.parseInt(cli.getOptionValue("replicationFactor", String.valueOf(1)));
+        Integer.parseInt(cli.getOptionValue("replication-factor", String.valueOf(1)));
 
     boolean configExistsInZk =
         confName != null
@@ -261,7 +260,7 @@ public class CreateTool extends ToolBase {
         confName = collectionName;
       }
 
-      final Path configsetsDirPath = getConfigSetsDir(solrInstallDirPath);
+      final Path configsetsDirPath = SolrCLI.getConfigSetsDir(solrInstallDirPath);
       Path confPath = ConfigSetService.getConfigsetPath(confDir, configsetsDirPath.toString());
 
       echoIfVerbose(
@@ -325,13 +324,8 @@ public class CreateTool extends ToolBase {
     }
   }
 
-  private Path getConfigSetsDir(Path solrInstallDir) {
-    Path configSetsPath = Paths.get("server/solr/configsets/");
-    return solrInstallDir.resolve(configSetsPath);
-  }
-
   private Path getFullConfDir(Path solrInstallDir, Path confDirName) {
-    return getConfigSetsDir(solrInstallDir).resolve(confDirName);
+    return SolrCLI.getConfigSetsDir(solrInstallDir).resolve(confDirName);
   }
 
   private void ensureConfDirExists(Path solrInstallDir, Path confDirName) {
@@ -363,7 +357,7 @@ public class CreateTool extends ToolBase {
       final String configCommand =
           String.format(
               Locale.ROOT,
-              "bin/solr config -c %s -p 8983 -action set-user-property -property update.autoCreateFields -value false",
+              "bin/solr config -c %s -p 8983 --action set-user-property --property update.autoCreateFields --value false",
               collectionName);
       echo(
           "WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is");

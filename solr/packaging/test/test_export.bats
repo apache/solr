@@ -25,12 +25,12 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 @test "Check export command" {
   run solr start -c -e techproducts
-  run solr export -url "http://localhost:${SOLR_PORT}/solr/techproducts" -query "*:* -id:test" -out "${BATS_TEST_TMPDIR}/output"
+  run solr export --solr-collection-url "http://localhost:${SOLR_PORT}/solr/techproducts" -query "*:* -id:test" -out "${BATS_TEST_TMPDIR}/output"
 
   refute_output --partial 'Unrecognized option'
   assert_output --partial 'Export complete'

@@ -47,18 +47,19 @@ public class ConfigSetDownloadTool extends ToolBase {
     return List.of(
         Option.builder("confname")
             .argName("confname")
+            .longOpt("confname")
             .hasArg()
             .required(true)
             .desc("Configset name in ZooKeeper.")
             .build(),
         Option.builder("confdir")
             .argName("confdir")
+            .longOpt("confdir")
             .hasArg()
             .required(true)
             .desc("Local directory with configs.")
             .build(),
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_ZKHOST);
   }
 
   @Override
@@ -73,7 +74,7 @@ public class ConfigSetDownloadTool extends ToolBase {
     if (zkHost == null) {
       throw new IllegalStateException(
           "Solr at "
-              + cli.getOptionValue("solrUrl")
+              + cli.getOptionValue("solr-url")
               + " is running in standalone server mode, downconfig can only be used when running in SolrCloud mode.\n");
     }
 

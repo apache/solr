@@ -77,7 +77,7 @@ public class AssertTool extends ToolBase {
             .hasArg(true)
             .argName("url")
             .build(),
-        Option.builder("u")
+        Option.builder()
             .desc("Asserts that we run as same user that owns <directory>.")
             .longOpt("same-user")
             .hasArg(true)
@@ -126,14 +126,7 @@ public class AssertTool extends ToolBase {
             .desc("Return an exit code instead of printing error message on assert fail.")
             .longOpt("exitcode")
             .build(),
-        // u was taken, can we change that instead?
-        Option.builder("credentials")
-            .argName("credentials")
-            .hasArg()
-            .required(false)
-            .desc(
-                "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
-            .build());
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
@@ -196,8 +189,8 @@ public class AssertTool extends ToolBase {
     if (cli.hasOption("X")) {
       ret += assertFileNotExists(cli.getOptionValue("X"));
     }
-    if (cli.hasOption("u")) {
-      ret += sameUser(cli.getOptionValue("u"));
+    if (cli.hasOption("same-user")) {
+      ret += sameUser(cli.getOptionValue("same-user"));
     }
     if (cli.hasOption("s")) {
       ret +=

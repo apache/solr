@@ -38,7 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Emulates bin/solr start -e cloud -noprompt; bin/solr post -c gettingstarted
+ * Emulates bin/solr start -e cloud --noprompt; bin/solr post -c gettingstarted
  * example/exampledocs/*.xml; this test is useful for catching regressions in indexing the example
  * docs in collections that use data driven functionality and managed schema features of the default
  * configset (configsets/_default).
@@ -77,15 +77,13 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
           testCollectionName,
           "-shards",
           "2",
-          "-replicationFactor",
+          "--replication-factor",
           "2",
           "-confname",
           testCollectionName,
           "-confdir",
           "_default",
-          "-configsetsDir",
-          defaultConfigs.getParentFile().getParentFile().getAbsolutePath(),
-          "-solrUrl",
+          "--solr-url",
           solrUrl
         };
 
@@ -158,7 +156,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     String[] args =
         new String[] {
           "-name", testCollectionName,
-          "-zkHost", zkHost
+          "--zk-host", zkHost
         };
     HealthcheckTool tool = new HealthcheckTool();
     CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);
@@ -169,7 +167,7 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     String[] args =
         new String[] {
           "-name", testCollectionName,
-          "-solrUrl", solrUrl
+          "--solr-url", solrUrl
         };
     DeleteTool tool = new DeleteTool();
     CommandLine cli = SolrCLI.processCommandLineArgs(tool.getName(), tool.getOptions(), args);

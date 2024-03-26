@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.SocketException;
 import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -80,7 +82,7 @@ public class SolrCLI implements CLIO {
 
   public static final Option OPTION_ZKHOST =
       Option.builder("z")
-          .longOpt("zkHost")
+          .longOpt("zk-host")
           .argName("HOST")
           .hasArg()
           .required(false)
@@ -88,20 +90,27 @@ public class SolrCLI implements CLIO {
               "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
                   + ZK_HOST
                   + '.')
-          .longOpt("zkHost")
           .build();
   public static final Option OPTION_SOLRURL =
-      Option.builder("solrUrl")
+      Option.builder("url")
+          .longOpt("solr-url")
           .argName("HOST")
           .hasArg()
           .required(false)
           .desc(
-              "Base Solr URL, which can be used to determine the zkHost if that's not known; defaults to: "
+              "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
                   + getDefaultSolrUrl()
                   + '.')
           .build();
   public static final Option OPTION_VERBOSE =
-      Option.builder("verbose").required(false).desc("Enable more verbose command output.").build();
+      Option.builder("v")
+          .longOpt("verbose")
+          .argName("verbose")
+          .required(false)
+          .desc("Enable more verbose command output.")
+          .build();
+  public static final Option OPTION_HELP =
+      Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
 
   // should this be boolean or just an option?
   public static final Option OPTION_RECURSE =
@@ -270,7 +279,7 @@ public class SolrCLI implements CLIO {
 
   public static Options getToolOptions(Tool tool) {
     Options options = new Options();
-    options.addOption("help", false, "Print this message");
+    options.addOption(OPTION_HELP);
     options.addOption(OPTION_VERBOSE);
     List<Option> toolOpts = tool.getOptions();
     for (Option toolOpt : toolOpts) {
@@ -284,7 +293,7 @@ public class SolrCLI implements CLIO {
       String toolName, List<Option> customOptions, String[] args) {
     Options options = new Options();
 
-    options.addOption("help", false, "Print this message");
+    options.addOption(OPTION_HELP);
     options.addOption(OPTION_VERBOSE);
 
     if (customOptions != null) {
@@ -301,7 +310,7 @@ public class SolrCLI implements CLIO {
       boolean hasHelpArg = false;
       if (args != null) {
         for (String arg : args) {
-          if ("-h".equals(arg) || "-help".equals(arg)) {
+          if ("-h".equals(arg) || "--help".equals(arg)) {
             hasHelpArg = true;
             break;
           }
@@ -493,8 +502,8 @@ public class SolrCLI implements CLIO {
     print(
         "  Omit '-z localhost:2181' from the above command if you have defined ZK_HOST in solr.in.sh.");
     print("");
-    print("Pass -help or -h after any COMMAND to see command-specific usage information,");
-    print("such as:    ./solr start -help or ./solr stop -h");
+    print("Pass --help or -h after any COMMAND to see command-specific usage information,");
+    print("such as:    ./solr start --help or ./solr stop -h");
   }
 
   /**
@@ -524,18 +533,18 @@ public class SolrCLI implements CLIO {
   }
 
   /**
-   * Get the base URL of a live Solr instance from either the solrUrl command-line option or from
+   * Get the base URL of a live Solr instance from either the --solr-url command-line option or from
    * ZooKeeper.
    */
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
-    String solrUrl = cli.getOptionValue("solrUrl");
+    String solrUrl = cli.getOptionValue("solr-url");
     if (solrUrl == null) {
-      String zkHost = cli.getOptionValue("zkHost");
+      String zkHost = cli.getOptionValue("z");
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
         CLIO.getOutStream()
             .println(
-                "Neither -zkHost or -solrUrl parameters provided so assuming solrUrl is "
+                "Neither --zk-host or --solr-url parameters provided so assuming solrUrl is "
                     + solrUrl
                     + ".");
       } else {
@@ -559,12 +568,12 @@ public class SolrCLI implements CLIO {
   }
 
   /**
-   * Get the ZooKeeper connection string from either the zkHost command-line option or by looking it
-   * up from a running Solr instance based on the solrUrl option.
+   * Get the ZooKeeper connection string from either the zk-host command-line option or by looking
+   * it up from a running Solr instance based on the solr-url option.
    */
   public static String getZkHost(CommandLine cli) throws Exception {
 
-    String zkHost = cli.getOptionValue("zkHost");
+    String zkHost = cli.getOptionValue("zk-host");
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }
@@ -638,5 +647,10 @@ public class SolrCLI implements CLIO {
     NamedList<Object> systemInfo =
         solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
     return "solrcloud".equals(systemInfo.get("mode"));
+  }
+
+  public static Path getConfigSetsDir(Path solrInstallDir) {
+    Path configSetsPath = Paths.get("server/solr/configsets/");
+    return solrInstallDir.resolve(configSetsPath);
   }
 }

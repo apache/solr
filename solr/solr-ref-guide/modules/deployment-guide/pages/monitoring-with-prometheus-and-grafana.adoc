@@ -121,7 +121,7 @@ The Solr base URL (such as `\http://localhost:8983/solr`) when Solr is running i
 If you are running SolrCloud, do not specify this parameter.
 If neither the `-b` parameter nor the `-z` parameter are defined, the default is `-b \http://localhost:8983/solr`.
 
-`-z`, `--zkhost`, `$ZK_HOST`::
+`-z`, `--zk-host`, `$ZK_HOST`::
 +
 [%autowidth,frame=none]
 |===

@@ -168,7 +168,7 @@ public class PackageTool extends ToolBase {
                   String packageName = parsedVersion.first();
                   String version = parsedVersion.second();
                   boolean noprompt = cli.hasOption('y');
-                  boolean isUpdate = cli.hasOption("update") || cli.hasOption('u');
+                  boolean isUpdate = cli.hasOption("update");
                   String[] collections =
                       cli.hasOption("collections")
                           ? PackageUtils.validateCollections(
@@ -184,7 +184,7 @@ public class PackageTool extends ToolBase {
                       noprompt);
                 } else {
                   PackageUtils.printRed(
-                      "Either specify -cluster to deploy cluster level plugins or -collections <list-of-collections> to deploy collection level plugins");
+                      "Either specify --cluster to deploy cluster level plugins or --collections <list-of-collections> to deploy collection level plugins");
                 }
                 break;
               }
@@ -279,7 +279,7 @@ public class PackageTool extends ToolBase {
         "Uninstall an unused package with specified version from Solr. Both package name and version are required.");
     print("\n");
     print(
-        "Note: (a) Please add '-solrUrl http://host:port' parameter if needed (usually on Windows).");
+        "Note: (a) Please add '--solr-url http://host:port' parameter if needed (usually on Windows).");
     print(
         "      (b) Please make sure that all Solr nodes are started with '-Denable.packages=true' parameter.");
     print("\n");
@@ -309,14 +309,16 @@ public class PackageTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         SolrCLI.OPTION_SOLRURL,
-        Option.builder("collections")
+        Option.builder()
+            .longOpt("collections")
             .argName("COLLECTIONS")
             .hasArg()
             .required(false)
             .desc(
                 "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
             .build(),
-        Option.builder("cluster")
+        Option.builder()
+            .longOpt("cluster")
             .required(false)
             .desc("Specifies that this action should affect cluster-level plugins only.")
             .build(),
@@ -327,7 +329,7 @@ public class PackageTool extends ToolBase {
             .desc("List of parameters to be used with deploy command.")
             .longOpt("param")
             .build(),
-        Option.builder("u")
+        Option.builder()
             .required(false)
             .desc("If a deployment is an update over a previous deployment.")
             .longOpt("update")
@@ -342,13 +344,6 @@ public class PackageTool extends ToolBase {
             .desc("Don't prompt for input; accept all default choices, defaults to false.")
             .longOpt("noprompt")
             .build(),
-        // u was taken, can we change that instead?
-        Option.builder("credentials")
-            .argName("credentials")
-            .hasArg()
-            .required(false)
-            .desc(
-                "Credentials in the format username:password. Example: --credentials solr:SolrRocks")
-            .build());
+        SolrCLI.OPTION_CREDENTIALS);
   }
 }

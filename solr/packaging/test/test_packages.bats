@@ -25,7 +25,7 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 @test "package detects no running solr" {
@@ -40,7 +40,7 @@ teardown() {
   run solr package
   refute_output --partial "No Solr nodes are running."
 
-  run solr package -help
+  run solr package --help
   assert_output --partial "Add a repository to Solr"
 
   run solr package list-available

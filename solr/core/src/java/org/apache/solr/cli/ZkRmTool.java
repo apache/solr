@@ -51,8 +51,7 @@ public class ZkRmTool extends ToolBase {
             .desc("Path to remove.")
             .build(),
         SolrCLI.OPTION_RECURSE,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_ZKHOST);
   }
 
   @Override
@@ -68,7 +67,7 @@ public class ZkRmTool extends ToolBase {
     if (zkHost == null) {
       throw new IllegalStateException(
           "Solr at "
-              + cli.getOptionValue("zkHost")
+              + cli.getOptionValue("z")
               + " is running in standalone server mode, 'zk rm' can only be used when running in SolrCloud mode.\n");
     }
     String target = cli.getOptionValue("path");

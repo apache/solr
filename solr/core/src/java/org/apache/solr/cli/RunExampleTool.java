@@ -93,7 +93,8 @@ public class RunExampleTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("noprompt")
+        Option.builder("n")
+            .longOpt("noprompt")
             .required(false)
             .desc(
                 "Don't prompt for input; accept all defaults when running examples that accept user input.")
@@ -105,7 +106,8 @@ public class RunExampleTool extends ToolBase {
             .desc("Name of the example to launch, one of: cloud, techproducts, schemaless, films.")
             .longOpt("example")
             .build(),
-        Option.builder("script")
+        Option.builder("s")
+            .longOpt("script")
             .argName("PATH")
             .hasArg()
             .required(false)
@@ -118,18 +120,21 @@ public class RunExampleTool extends ToolBase {
             .desc("Path to the Solr server directory.")
             .longOpt("serverDir")
             .build(),
-        Option.builder("force")
+        Option.builder("f")
+            .longOpt("force")
             .argName("FORCE")
             .desc("Force option in case Solr is run as root.")
             .build(),
-        Option.builder("exampleDir")
+        Option.builder()
+            .longOpt("exampleDir")
             .argName("DIR")
             .hasArg()
             .required(false)
             .desc(
                 "Path to the Solr example directory; if not provided, ${serverDir}/../example is expected to exist.")
             .build(),
-        Option.builder("urlScheme")
+        Option.builder()
+            .longOpt("url-scheme")
             .argName("SCHEME")
             .hasArg()
             .required(false)
@@ -149,13 +154,7 @@ public class RunExampleTool extends ToolBase {
             .desc("Specify the hostname for this Solr instance.")
             .longOpt("host")
             .build(),
-        Option.builder("z")
-            .argName("ZKHOST")
-            .hasArg()
-            .required(false)
-            .desc("ZooKeeper connection string; only used when running in SolrCloud mode using -c.")
-            .longOpt("zkhost")
-            .build(),
+        SolrCLI.OPTION_ZKHOST,
         Option.builder("c")
             .required(false)
             .desc(
@@ -182,7 +181,7 @@ public class RunExampleTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    this.urlScheme = cli.getOptionValue("urlScheme", "http");
+    this.urlScheme = cli.getOptionValue("url-scheme", "http");
 
     serverDir = new File(cli.getOptionValue("serverDir"));
     if (!serverDir.isDirectory())
@@ -195,7 +194,7 @@ public class RunExampleTool extends ToolBase {
     if (script != null) {
       if (!(new File(script)).isFile())
         throw new IllegalArgumentException(
-            "Value of -script option is invalid! " + script + " not found");
+            "Value of --script option is invalid! " + script + " not found");
     } else {
       File scriptFile = new File(serverDir.getParentFile(), "bin/solr");
       if (scriptFile.isFile()) {
@@ -206,7 +205,7 @@ public class RunExampleTool extends ToolBase {
           script = scriptFile.getAbsolutePath();
         } else {
           throw new IllegalArgumentException(
-              "Cannot locate the bin/solr script! Please pass -script to this application.");
+              "Cannot locate the bin/solr script! Please pass --script to this application.");
         }
       }
     }
@@ -217,7 +216,7 @@ public class RunExampleTool extends ToolBase {
             : new File(serverDir.getParent(), "example");
     if (!exampleDir.isDirectory())
       throw new IllegalArgumentException(
-          "Value of -exampleDir option is invalid! "
+          "Value of --exampleDir option is invalid! "
               + exampleDir.getAbsolutePath()
               + " is not a directory!");
 
@@ -264,7 +263,7 @@ public class RunExampleTool extends ToolBase {
 
     String solrUrl = (String) nodeStatus.get("baseUrl");
 
-    // If the example already exists then let the user know they should delete it or
+    // If the example already exists then let the user know they should delete it, or
     // they may get unusual behaviors.
     boolean alreadyExists = false;
     boolean cloudMode = nodeStatus.get("cloud") != null;
@@ -301,11 +300,10 @@ public class RunExampleTool extends ToolBase {
           new String[] {
             "-name", collectionName,
             "-shards", "1",
-            "-replicationFactor", "1",
+            "--replication-factor", "1",
             "-confname", collectionName,
             "-confdir", configSet,
-            "-configsetsDir", configsetsDir.getAbsolutePath(),
-            "-solrUrl", solrUrl
+            "--solr-url", solrUrl
           };
       CreateTool createTool = new CreateTool(stdout);
       int createCode =
@@ -608,8 +606,8 @@ public class RunExampleTool extends ToolBase {
     String hostArg = (host != null && !"localhost".equals(host)) ? " -h " + host : "";
     String zkHostArg = (zkHost != null) ? " -z " + zkHost : "";
     String memArg = (memory != null) ? " -m " + memory : "";
-    String cloudModeArg = cloudMode ? "-cloud " : "";
-    String forceArg = cli.hasOption("force") ? " -force" : "";
+    String cloudModeArg = cloudMode ? "--cloud " : "";
+    String forceArg = cli.hasOption("force") ? " --force" : "";
     String verboseArg = verbose ? "-V" : "";
 
     String addlOpts = cli.getOptionValue('a');
@@ -856,11 +854,10 @@ public class RunExampleTool extends ToolBase {
         new String[] {
           "-name", collectionName,
           "-shards", String.valueOf(numShards),
-          "-replicationFactor", String.valueOf(replicationFactor),
+          "--replication-factor", String.valueOf(replicationFactor),
           "-confname", collectionName,
           "-confdir", cloudConfig,
-          "-configsetsDir", configsetsDir.getAbsolutePath(),
-          "-solrUrl", solrUrl
+          "--solr-url", solrUrl
         };
 
     CreateTool createTool = new CreateTool(stdout);

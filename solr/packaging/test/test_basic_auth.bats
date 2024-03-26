@@ -24,10 +24,10 @@ setup() {
   solr start -c -Denable.packages=true
   
   # The auth command exports some system variables that are injected as basic auth username and password, 
-  # however that defeats our test so fake that out via -solrIncludeFile param specifing a bogus path.
-  solr auth enable -type basicAuth -credentials name:password -solrIncludeFile /force/credentials/to/be/supplied
+  # however that defeats our test so fake that out via --solr-include-file param specifing a bogus path.
+  solr auth enable --type basicAuth --credentials name:password --solr-include-file /force/credentials/to/be/supplied
   
-  solr assert -credentials name:password --cloud http://localhost:${SOLR_PORT} --timeout 5000
+  solr assert --credentials name:password --cloud http://localhost:${SOLR_PORT} --timeout 5000
 }
 
 teardown() {
@@ -35,7 +35,7 @@ teardown() {
   save_home_on_failure
 
   run solr auth disable -z localhost:${ZK_PORT}
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 # Remaining commands that should support basic auth:
@@ -49,15 +49,15 @@ teardown() {
   assert_output --partial "Created collection 'COLL_NAME'"
   
   # Test config
-  run solr config -u name:password -c COLL_NAME -action set-property -property updateHandler.autoCommit.maxDocs -value 100 -solrUrl http://localhost:${SOLR_PORT}/solr
+  run solr config -u name:password -c COLL_NAME --action set-property -property updateHandler.autoCommit.maxDocs --value 100 --solr-url http://localhost:${SOLR_PORT}/solr
   assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
   
   # Test api
-  run solr api -u name:password -get "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=*:*" -verbose
+  run solr api -u name:password --solr-url "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=*:*" -verbose
   assert_output --partial '"numFound":0'
   
   # Test delete
-  run solr delete --credentials name:password -c COLL_NAME -zkHost localhost:${ZK_PORT} -verbose
+  run solr delete --credentials name:password -c COLL_NAME -z localhost:${ZK_PORT} -verbose
   assert_output --partial "Deleted collection 'COLL_NAME'"
   refute collection_exists "COLL_NAME"
   
@@ -69,22 +69,22 @@ run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
 
   # Test post
-  run solr post -u name:password -type application/xml -url http://localhost:${SOLR_PORT}/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post -u name:password -type application/xml --solr-update-url http://localhost:${SOLR_PORT}/solr/monitors/update ${SOLR_TIP}/example/exampledocs/monitor.xml
   assert_output --partial '1 files indexed.'
 
   # Test postlogs
-  run solr postlogs -u name:password -url http://localhost:${SOLR_PORT}/solr/COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
+  run solr postlogs -u name:password --solr-collection-url http://localhost:${SOLR_PORT}/solr/COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
   assert_output --partial 'Committed'
   
   # Test export
-  #run solr export -u name:password -url "http://localhost:${SOLR_PORT}/solr/COLL_NAME" -query "*:*" -out "${BATS_TEST_TMPDIR}/output"
+  #run solr export -u name:password --solr-collection-url "http://localhost:${SOLR_PORT}/solr/COLL_NAME" -query "*:*" -out "${BATS_TEST_TMPDIR}/output"
   #assert_output --partial 'Export complete'
   
 }
 
 @test "package with basic auth" {
   
-  run solr package deploy PACKAGE_NAME -credentials name:password -collections foo-1.2
+  run solr package deploy PACKAGE_NAME --credentials name:password --collections foo-1.2
   # verify that package tool is communicating with Solr via basic auth
   assert_output --partial "Collection(s) doesn't exist: [foo-1.2]"
   #assert_output --partial "Deployment successful"

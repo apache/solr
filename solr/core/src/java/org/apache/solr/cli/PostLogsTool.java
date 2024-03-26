@@ -65,7 +65,7 @@ public class PostLogsTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder("url")
-            .longOpt("url")
+            .longOpt("solr-collection-url")
             .argName("ADDRESS")
             .hasArg()
             .required(true)
@@ -85,7 +85,7 @@ public class PostLogsTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     String url = cli.getOptionValue("url");
     String rootDir = cli.getOptionValue("rootdir");
-    String credentials = cli.getOptionValue("credentials", null);
+    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
     runCommand(url, rootDir, credentials);
   }
 
