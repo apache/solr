@@ -56,6 +56,8 @@ Deprecation Removals
   end in "/solr").  Users may still specify a default collection through use of the `withDefaultCollection` method available
   on most SolrClient builders. (Jason Gerlowski, David Smiley, Eric Pugh)
 
+* SOLR-12089: Remove deprecated `breakSugestionTieBreaker` parameter in favor of `breakSuggestionTieBreaker`
+  in WordBreakSolrSpellChecker (Andrey Bozhko via Eric Pugh)
 
 Dependency Upgrades
 ---------------------
@@ -120,6 +122,8 @@ Improvements
 * SOLR-17172: Add QueryLimits termination to the existing heavy SearchComponent-s. This allows query limits (e.g. timeAllowed,
   cpuAllowed) to terminate expensive operations within components if limits are exceeded. (Andrzej Bialecki)
 
+* SOLR-17164: Add 2 arg variant of vectorSimilarity() function (Sanjay Dutt, hossman)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
@@ -143,9 +147,19 @@ Bug Fixes
 * SOLR-17198: AffinityPlacementFactory can fail if Shard leadership changes occur while it is collecting metrics.
   (Paul McArthur)
 
+* SOLR-14892: Queries with shards.info and shards.tolerant can yield multiple null keys in place of shard names
+  (Mathieu Marie, David Smiley)
+
+* SOLR-17209: Fix NullPointerException in QueryComponent (Vincent Primault via Eric Pugh)
+
+* SOLR-17113: Correct how `/replication?command=details` describes errors in backup operations.  (Przemyslaw Ciezkowski via Christine Poerschke and Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
-(No changes)
+
+* SOLR-17157: Upgrade Lucene to 9.10.0 (hossman, Christine Poerschke)
+
+* SOLR-17214: Update forbiddenapis to 3.7 (hossman)
 
 Other Changes
 ---------------------
@@ -155,6 +169,13 @@ Other Changes
   it should make use of the client-level default collection/core. (Jason Gerlowski)
 
 * SOLR-17190: Replace org.apache.solr.util.LongSet with hppc LongHashSet (Michael Gibney)
+
+* SOLR-12089: Update FileBasedSpellChecker and IndexBasedSpellChecker to accept accuracy parameter
+  as float; deprecate `breakSugestionTieBreaker` parameter in favor of `breakSuggestionTieBreaker`
+  in WordBreakSolrSpellChecker (Andrey Bozhko via Eric Pugh)
+
+* SOLR-17201: Http2SolrClient and friends no longer marked as @lucene.experimental.
+  Krb5HttpClientBuilder and PreemptiveBasicAuthClientBuilderFactory no longer deprecated (janhoy)
 
 * SOLR-16505: Switch internal replica recovery commands to Jetty HTTP2 (Sanjay Dutt, David Smiley)
 

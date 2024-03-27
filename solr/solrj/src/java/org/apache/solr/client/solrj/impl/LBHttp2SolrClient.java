@@ -95,7 +95,6 @@ import org.slf4j.MDC;
  * httpd with mod_proxy_balancer as a load balancer. See <a
  * href="http://en.wikipedia.org/wiki/Load_balancing_(computing)">Load balancing on Wikipedia</a>
  *
- * @lucene.experimental
  * @since solr 8.0
  */
 public class LBHttp2SolrClient extends LBSolrClient {
