@@ -152,6 +152,8 @@ Bug Fixes
 
 * SOLR-17209: Fix NullPointerException in QueryComponent (Vincent Primault via Eric Pugh)
 
+* SOLR-17113: Correct how `/replication?command=details` describes errors in backup operations.  (Przemyslaw Ciezkowski via Christine Poerschke and Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 
