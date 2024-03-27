@@ -2460,6 +2460,10 @@ public class CoreContainer {
     return status;
   }
 
+  public boolean isStatusLoadComplete() {
+    return LOAD_COMPLETE == (getStatus() & LOAD_COMPLETE);
+  }
+
   public boolean hideStackTrace() {
     return cfg.hideStackTraces();
   }
