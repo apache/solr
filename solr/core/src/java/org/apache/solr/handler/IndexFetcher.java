@@ -1788,14 +1788,13 @@ public class IndexFetcher {
       try {
         while (true) {
           int result;
-          try (FastInputStream is = getStream()) {
-            // fetch packets one by one in a single request
-            result = fetchPackets(is);
-            if (result == 0 || result == NO_CONTENT) {
-              return;
-            }
-            // if there is an error continue. But continue from the point where it got broken
+          // fetch packets one by one in a single request
+          result = fetchPackets();
+          if (result == 0 || result == NO_CONTENT) {
+            return;
           }
+          // if there is an error continue. But continue from the point where it got broken
+
         }
       } finally {
         cleanup();
@@ -1811,10 +1810,10 @@ public class IndexFetcher {
       }
     }
 
-    private int fetchPackets(FastInputStream fis) throws Exception {
+    private int fetchPackets() throws Exception {
       byte[] intbytes = new byte[4];
       byte[] longbytes = new byte[8];
-      try {
+      try (FastInputStream fis = getStream()) {
         while (true) {
           if (stop) {
             stop = false;
@@ -1950,7 +1949,7 @@ public class IndexFetcher {
     private FastInputStream getStream() throws IOException {
       ModifiableSolrParams params = new ModifiableSolrParams();
 
-      //the method is command=filecontent
+      // the method is command=filecontent
       params.set(COMMAND, CMD_GET_FILE);
       params.set(GENERATION, Long.toString(indexGen));
       params.set(CommonParams.QT, ReplicationHandler.PATH);
