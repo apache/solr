@@ -28,11 +28,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Set;
-import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ZkController;
@@ -52,12 +49,12 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   private boolean debug = log.isDebugEnabled();
 
   private String leaderUrl;
+  private final String leaderBaseUrl;
+  private final String coreName;
   private int nUpdates;
 
   private UpdateHandler uhandler;
   private UpdateLog ulog;
-  private SolrClient clientToLeader;
-
   private boolean doFingerprint;
 
   private SolrCore core;
@@ -74,23 +71,15 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   public PeerSyncWithLeader(SolrCore core, String leaderUrl, int nUpdates) {
     this.core = core;
     this.leaderUrl = leaderUrl;
+    this.leaderBaseUrl = URLUtil.extractBaseUrl(leaderUrl);
+    this.coreName = URLUtil.extractCoreFromCoreUrl(leaderUrl);
     this.nUpdates = nUpdates;
 
     this.doFingerprint = !"true".equals(System.getProperty("solr.disableFingerprint"));
     this.uhandler = core.getUpdateHandler();
     this.ulog = uhandler.getUpdateLog();
-    HttpClient httpClient = core.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
-
-    final var leaderBaseUrl = URLUtil.extractBaseUrl(leaderUrl);
-    final var coreName = URLUtil.extractCoreFromCoreUrl(leaderUrl);
-    this.clientToLeader =
-        new HttpSolrClient.Builder(leaderBaseUrl)
-            .withDefaultCollection(coreName)
-            .withHttpClient(httpClient)
-            .build();
 
     this.updater = new PeerSync.Updater(msg(), core);
-
     core.getCoreMetricManager()
         .registerMetricProducer(SolrInfoBean.Category.REPLICATION.toString(), this);
   }
@@ -200,11 +189,6 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     } finally {
       if (timerContext != null) {
         timerContext.close();
-      }
-      try {
-        clientToLeader.close();
-      } catch (IOException e) {
-        log.warn("{} unable to close client to leader", msg(), e);
       }
     }
   }
@@ -343,7 +327,12 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   private NamedList<Object> request(ModifiableSolrParams params, String onFail) {
     try {
-      QueryResponse rsp = new QueryRequest(params, SolrRequest.METHOD.POST).process(clientToLeader);
+      final QueryRequest req = new QueryRequest(params, SolrRequest.METHOD.POST);
+      req.setBasePath(leaderBaseUrl);
+      final QueryResponse rsp =
+          req.process(
+              core.getCoreContainer().getUpdateShardHandler().getDefaultHttp2SolrClient(),
+              coreName);
       Exception exception = rsp.getException();
       if (exception != null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, onFail);
