@@ -75,7 +75,7 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private final Http2SolrClient updateOnlyClient;
 
-  private final Http2SolrClient defaultHttp2SolrClient;
+  private final Http2SolrClient defaultHttpSolrClient;
 
   private final CloseableHttpClient recoveryOnlyClient;
 
@@ -150,8 +150,8 @@ public class UpdateShardHandler implements SolrInfoBean {
     updateOnlyClient = updateOnlyClientBuilder.build();
     updateOnlyClient.addListenerFactory(trackHttpSolrMetrics);
 
-    defaultHttp2SolrClient = defaultOnlyClientBuilder.build();
-    defaultHttp2SolrClient.addListenerFactory(trackHttpSolrMetrics);
+    defaultHttpSolrClient = defaultOnlyClientBuilder.build();
+    defaultHttpSolrClient.addListenerFactory(trackHttpSolrMetrics);
 
     ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
     if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
@@ -246,13 +246,15 @@ public class UpdateShardHandler implements SolrInfoBean {
     return solrMetricsContext;
   }
 
-  // if you are looking for a client to use, it's probably this one.
+  // please use getDefaultHttpSolrClient instead.
+  @Deprecated(since = "9.6")
   public HttpClient getDefaultHttpClient() {
     return defaultClient;
   }
 
-  public Http2SolrClient getDefaultHttp2SolrClient() {
-    return defaultHttp2SolrClient;
+  // if you are looking for a client to use, it's probably this one.
+  public Http2SolrClient getDefaultHttpSolrClient() {
+    return defaultHttpSolrClient;
   }
 
   // don't introduce a bug, this client is for sending updates only!
@@ -304,7 +306,7 @@ public class UpdateShardHandler implements SolrInfoBean {
         // do nothing
       }
       IOUtils.closeQuietly(updateOnlyClient);
-      IOUtils.closeQuietly(defaultHttp2SolrClient);
+      IOUtils.closeQuietly(defaultHttpSolrClient);
       HttpClientUtil.close(recoveryOnlyClient);
       HttpClientUtil.close(defaultClient);
       defaultConnectionManager.close();
@@ -324,6 +326,6 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   public void setSecurityBuilder(HttpClientBuilderPlugin builder) {
     builder.setup(updateOnlyClient);
-    builder.setup(defaultHttp2SolrClient);
+    builder.setup(defaultHttpSolrClient);
   }
 }
