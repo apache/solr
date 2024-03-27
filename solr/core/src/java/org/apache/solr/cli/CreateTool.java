@@ -73,6 +73,8 @@ public class CreateTool extends ToolBase {
     return List.of(
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_SOLRURL,
         Option.builder("c")
             .longOpt("name")
             .argName("NAME")

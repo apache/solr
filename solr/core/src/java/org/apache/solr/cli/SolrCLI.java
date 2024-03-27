@@ -46,6 +46,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
@@ -80,6 +81,24 @@ public class SolrCLI implements CLIO {
 
   public static final String ZK_HOST = "localhost:9983";
 
+  public static final Option OPTION_ZKHOST_DEPRECATED =
+      Option.builder("zkHost")
+          .longOpt("zkHost")
+          .deprecated(
+              DeprecatedAttributes.builder()
+                  .setForRemoval(true)
+                  .setSince("9.6")
+                  .setDescription("Use --zk-host instead")
+                  .get())
+          .argName("HOST")
+          .hasArg()
+          .required(false)
+          .desc(
+              "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
+                  + ZK_HOST
+                  + '.')
+          .build();
+
   public static final Option OPTION_ZKHOST =
       Option.builder("z")
           .longOpt("zk-host")
@@ -89,6 +108,23 @@ public class SolrCLI implements CLIO {
           .desc(
               "Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh; otherwise, defaults to "
                   + ZK_HOST
+                  + '.')
+          .build();
+  public static final Option OPTION_SOLRURL_DEPRECATED =
+      Option.builder("solrUrl")
+          .longOpt("solrUrl")
+          .deprecated(
+              DeprecatedAttributes.builder()
+                  .setForRemoval(true)
+                  .setSince("9.6")
+                  .setDescription("Use --solr-url instead")
+                  .get())
+          .argName("HOST")
+          .hasArg()
+          .required(false)
+          .desc(
+              "Base Solr URL, which can be used to determine the zk-host if that's not known; defaults to: "
+                  + getDefaultSolrUrl()
                   + '.')
           .build();
   public static final Option OPTION_SOLRURL =
@@ -544,7 +580,7 @@ public class SolrCLI implements CLIO {
         solrUrl = SolrCLI.getDefaultSolrUrl();
         CLIO.getOutStream()
             .println(
-                "Neither --zk-host or --solr-url parameters provided so assuming solrUrl is "
+                "Neither --zk-host or --solr-url parameters provided so assuming solr url is "
                     + solrUrl
                     + ".");
       } else {
