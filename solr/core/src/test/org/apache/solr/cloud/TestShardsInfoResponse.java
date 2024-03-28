@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -83,7 +82,6 @@ public class TestShardsInfoResponse extends SolrCloudTestCase {
 
     // The names of the shards in error are generated as unknown_shard_1 and unknown_shard_2 because
     // we could not get the real shard names.
-    MatcherAssert.assertThat(
-        (Iterable<String>) keys, hasItems("unknown_shard_1", "unknown_shard_2"));
+    assertThat((Iterable<String>) keys, hasItems("unknown_shard_1", "unknown_shard_2"));
   }
 }
