@@ -86,6 +86,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
     Path tmpDir = createTempDir();
     solrHome = exampleHome;
+    System.setProperty("solr.home", solrHome);
 
     originalSystemOut = System.out;
 
@@ -175,7 +176,6 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   @Test
   public void testPutCompressed() throws Exception {
     // test put compressed
-    System.setProperty("solr.home", solrHome);
     System.setProperty("minStateByteLenForCompression", "0");
 
     String data = "my data";
@@ -226,7 +226,6 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   @Test
   public void testPutFileCompressed() throws Exception {
     // test put file compressed
-    System.setProperty("solr.home", solrHome);
     System.setProperty("minStateByteLenForCompression", "0");
 
     String[] args =
@@ -443,7 +442,6 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetCompressed() throws Exception {
-    System.setProperty("solr.home", solrHome);
     System.setProperty("minStateByteLenForCompression", "0");
 
     String getNode = "/getNode";
