@@ -16,18 +16,29 @@
  */
 package org.apache.solr.core;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
+import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -44,6 +55,90 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
     String path;
     AtomicInteger refCnt = new AtomicInteger(0);
     Directory dir;
+  }
+
+  @Test
+  public void reorderingTest() throws Exception {
+    // failure: 58F920FAAE5904EF
+    Path tmpDir = LuceneTestCase.createTempDir();
+    Random r = random();
+    try (MMapDirectoryFactory df = new MMapDirectoryFactory()) {
+      df.init(new NamedList<>());
+      Path pathA = tmpDir.resolve("a");
+      Directory a = df.get(pathA.toString(), DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
+      @SuppressWarnings({"unchecked", "rawtypes"})
+      Map.Entry<String, Directory>[] subdirs = new Map.Entry[26];
+      BooleanSupplier removeAfter;
+      boolean alwaysBefore = false;
+      switch (r.nextInt(3)) {
+        case 0:
+          removeAfter = () -> true;
+          break;
+        case 1:
+          removeAfter = () -> false;
+          alwaysBefore = true;
+          break;
+        case 2:
+          removeAfter = r::nextBoolean;
+          break;
+        default:
+          throw new IllegalStateException();
+      }
+      int i = 0;
+      for (char c = 'a'; c <= 'z'; c++) {
+        String subpath = pathA.resolve(Character.toString(c)).toString();
+        Directory d = df.get(subpath, DirContext.DEFAULT, DirectoryFactory.LOCK_TYPE_SINGLE);
+        subdirs[i++] = new AbstractMap.SimpleImmutableEntry<>(subpath, d);
+      }
+      Set<String> deleteAfter = CollectionUtil.newHashSet(subdirs.length + 1);
+      String pathAString = pathA.toString();
+      df.remove(pathAString, addIfTrue(deleteAfter, pathAString, removeAfter.getAsBoolean()));
+      df.doneWithDirectory(a);
+      df.release(a);
+      assertTrue(pathA.toFile().exists()); // we know there are subdirs that should prevent removal
+      Collections.shuffle(Arrays.asList(subdirs), r);
+      for (Map.Entry<String, Directory> e : subdirs) {
+        boolean after = removeAfter.getAsBoolean();
+        String pathString = e.getKey();
+        Directory d = e.getValue();
+        df.remove(pathString, addIfTrue(deleteAfter, pathString, after));
+        df.doneWithDirectory(d);
+        df.release(d);
+        boolean exists = Path.of(pathString).toFile().exists();
+        if (after) {
+          assertTrue(exists);
+        } else {
+          assertFalse(exists);
+        }
+      }
+      if (alwaysBefore) {
+        assertTrue(deleteAfter.isEmpty());
+      }
+      if (deleteAfter.isEmpty()) {
+        assertTrue(PathUtils.isEmpty(tmpDir));
+      } else {
+        assertTrue(pathA.toFile().exists()); // parent must still be present
+        for (Map.Entry<String, Directory> e : subdirs) {
+          String pathString = e.getKey();
+          boolean exists = new File(pathString).exists();
+          if (deleteAfter.contains(pathString)) {
+            assertTrue(exists);
+          } else {
+            assertFalse(exists);
+          }
+        }
+      }
+    }
+    assertTrue(PathUtils.isEmpty(tmpDir));
+  }
+
+  private static boolean addIfTrue(Set<String> deleteAfter, String path, boolean after) {
+    if (after) {
+      deleteAfter.add(path);
+      return true;
+    } else {
+      return false;
+    }
   }
 
   @Test
