@@ -128,22 +128,26 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       }
 
       ScoreDoc[] mainScoreDocs = mainDocs.scoreDocs;
-      ScoreDoc[] mainScoreDocsClone =
-          (reRankScaler != null && reRankScaler.scaleScores())
-              ? deepCloneAndZeroOut(mainScoreDocs)
-              : null;
+      boolean zeroOutScores = reRankScaler != null && reRankScaler.scaleScores();
+      ScoreDoc[] mainScoreDocsClone = deepClone(mainScoreDocs, zeroOutScores);
       ScoreDoc[] reRankScoreDocs = new ScoreDoc[Math.min(mainScoreDocs.length, reRankDocs)];
       System.arraycopy(mainScoreDocs, 0, reRankScoreDocs, 0, reRankScoreDocs.length);
 
       mainDocs.scoreDocs = reRankScoreDocs;
 
       // If we're scaling scores use the replace rescorer because we just want the re-rank score.
-      TopDocs rescoredDocs =
-          reRankScaler != null && reRankScaler.scaleScores()
-              ? reRankScaler
-                  .getReplaceRescorer()
-                  .rescore(searcher, mainDocs, mainDocs.scoreDocs.length)
-              : reRankQueryRescorer.rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
+      TopDocs rescoredDocs;
+      try {
+        rescoredDocs =
+            zeroOutScores // previously zero-ed out scores are to be replaced
+                ? reRankScaler
+                    .getReplaceRescorer()
+                    .rescore(searcher, mainDocs, mainDocs.scoreDocs.length)
+                : reRankQueryRescorer.rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
+      } catch (IncompleteRerankingException ex) {
+        mainDocs.scoreDocs = mainScoreDocsClone;
+        rescoredDocs = mainDocs;
+      }
 
       // Lower howMany to return if we've collected fewer documents.
       howMany = Math.min(howMany, mainScoreDocs.length);
@@ -208,13 +212,15 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
     }
   }
 
-  private ScoreDoc[] deepCloneAndZeroOut(ScoreDoc[] scoreDocs) {
+  private ScoreDoc[] deepClone(ScoreDoc[] scoreDocs, boolean zeroOut) {
     ScoreDoc[] scoreDocs1 = new ScoreDoc[scoreDocs.length];
     for (int i = 0; i < scoreDocs.length; i++) {
       ScoreDoc scoreDoc = scoreDocs[i];
       if (scoreDoc != null) {
         scoreDocs1[i] = new ScoreDoc(scoreDoc.doc, scoreDoc.score);
-        scoreDoc.score = 0f;
+        if (zeroOut) {
+          scoreDoc.score = 0f;
+        }
       }
     }
     return scoreDocs1;
