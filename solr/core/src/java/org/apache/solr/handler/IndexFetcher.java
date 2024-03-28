@@ -84,7 +84,6 @@ import java.util.stream.Collectors;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 import java.util.zip.InflaterInputStream;
-import org.apache.http.client.HttpClient;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriter;
@@ -97,9 +96,9 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -133,7 +132,6 @@ import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.stats.InstrumentedHttpRequestExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -186,7 +184,7 @@ public class IndexFetcher {
 
   boolean fetchFromLeader = false;
 
-  private final HttpClient myHttpClient;
+  private final SolrClient solrClient;
 
   private Integer connTimeout;
 
@@ -261,22 +259,20 @@ public class IndexFetcher {
     }
   }
 
-  private static HttpClient createHttpClient(
-      SolrCore core,
-      String httpBasicAuthUser,
-      String httpBasicAuthPassword,
-      boolean useCompression) {
+  private SolrClient createSolrClient(
+      SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, String leaderBaseUrl) {
     final ModifiableSolrParams httpClientParams = new ModifiableSolrParams();
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
-    httpClientParams.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, useCompression);
-    // no metrics, just tracing
-    InstrumentedHttpRequestExecutor executor = new InstrumentedHttpRequestExecutor(null);
-    return HttpClientUtil.createClient(
-        httpClientParams,
-        core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyConnectionManager(),
-        true,
-        executor);
+    Http2SolrClient httpClient =
+        new Http2SolrClient.Builder(leaderBaseUrl)
+            .withHttpClient(
+                core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyHttpClient())
+            .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
+            .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
+            .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
+            .build();
+    return httpClient;
   }
 
   public IndexFetcher(
@@ -318,12 +314,10 @@ public class IndexFetcher {
     if (soTimeout == -1) {
       soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
     }
-
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
-    myHttpClient =
-        createHttpClient(
-            solrCore, httpBasicAuthUser, httpBasicAuthPassword, useExternalCompression);
+    solrClient =
+        createSolrClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, leaderBaseUrl);
   }
 
   private void setLeaderCoreUrl(String leaderCoreUrl) {
@@ -380,16 +374,10 @@ public class IndexFetcher {
     params.set(CommonParams.WT, JAVABIN);
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
-
+    req.setBasePath(leaderBaseUrl);
     // TODO modify to use shardhandler
-    try (SolrClient client =
-        new Builder(leaderBaseUrl)
-            .withHttpClient(myHttpClient)
-            .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
-            .build()) {
-
-      return client.request(req, leaderCoreName);
+    try {
+      return solrClient.request(req, leaderCoreName);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     }
@@ -407,15 +395,10 @@ public class IndexFetcher {
     params.set(CommonParams.WT, JAVABIN);
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
-
+    req.setBasePath(leaderBaseUrl);
     // TODO modify to use shardhandler
-    try (SolrClient client =
-        new HttpSolrClient.Builder(leaderBaseUrl)
-            .withHttpClient(myHttpClient)
-            .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
-            .build()) {
-      NamedList<?> response = client.request(req, leaderCoreName);
+    try {
+      NamedList<?> response = solrClient.request(req, leaderCoreName);
 
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
@@ -1805,14 +1788,13 @@ public class IndexFetcher {
       try {
         while (true) {
           int result;
-          try (FastInputStream is = getStream()) {
-            // fetch packets one by one in a single request
-            result = fetchPackets(is);
-            if (result == 0 || result == NO_CONTENT) {
-              return;
-            }
-            // if there is an error continue. But continue from the point where it got broken
+          // fetch packets one by one in a single request
+          result = fetchPackets();
+          if (result == 0 || result == NO_CONTENT) {
+            return;
           }
+          // if there is an error continue. But continue from the point where it got broken
+
         }
       } finally {
         cleanup();
@@ -1828,10 +1810,10 @@ public class IndexFetcher {
       }
     }
 
-    private int fetchPackets(FastInputStream fis) throws Exception {
+    private int fetchPackets() throws Exception {
       byte[] intbytes = new byte[4];
       byte[] longbytes = new byte[8];
-      try {
+      try (FastInputStream fis = getStream()) {
         while (true) {
           if (stop) {
             stop = false;
@@ -1967,7 +1949,7 @@ public class IndexFetcher {
     private FastInputStream getStream() throws IOException {
       ModifiableSolrParams params = new ModifiableSolrParams();
 
-      //    //the method is command=filecontent
+      // the method is command=filecontent
       params.set(COMMAND, CMD_GET_FILE);
       params.set(GENERATION, Long.toString(indexGen));
       params.set(CommonParams.QT, ReplicationHandler.PATH);
@@ -1990,17 +1972,13 @@ public class IndexFetcher {
 
       NamedList<?> response;
       InputStream is = null;
-
       // TODO use shardhandler
-      try (SolrClient client =
-          new Builder(leaderBaseUrl)
-              .withHttpClient(myHttpClient)
-              .withResponseParser(null)
-              .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
-              .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
-              .build()) {
+      try {
         QueryRequest req = new QueryRequest(params);
-        response = client.request(req, leaderCoreName);
+        req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
+        req.setBasePath(leaderBaseUrl);
+        if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
+        response = solrClient.request(req, leaderCoreName);
         is = (InputStream) response.get("stream");
         if (useInternalCompression) {
           is = new InflaterInputStream(is);
@@ -2124,21 +2102,15 @@ public class IndexFetcher {
     params.set("follower", false);
     params.set(CommonParams.QT, ReplicationHandler.PATH);
 
+    QueryRequest request = new QueryRequest(params);
+    request.setBasePath(leaderBaseUrl);
     // TODO use shardhandler
-    try (SolrClient client =
-        new HttpSolrClient.Builder(leaderBaseUrl)
-            .withHttpClient(myHttpClient)
-            .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(soTimeout, TimeUnit.MILLISECONDS)
-            .build()) {
-      QueryRequest request = new QueryRequest(params);
-      return client.request(request, leaderCoreName);
-    }
+    return solrClient.request(request, leaderCoreName);
   }
 
   public void destroy() {
     abortFetch();
-    HttpClientUtil.close(myHttpClient);
+    IOUtils.closeQuietly(solrClient);
   }
 
   String getLeaderCoreUrl() {

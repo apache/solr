@@ -181,6 +181,8 @@ Other Changes
 * SOLR-17201: Http2SolrClient and friends no longer marked as @lucene.experimental.
   Krb5HttpClientBuilder and PreemptiveBasicAuthClientBuilderFactory no longer deprecated (janhoy)
 
+* SOLR-16505: Switch internal replica recovery commands to Jetty HTTP2 (Sanjay Dutt, David Smiley)
+
 ==================  9.5.0 ==================
 New Features
 ---------------------
