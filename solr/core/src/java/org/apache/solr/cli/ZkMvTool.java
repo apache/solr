@@ -57,6 +57,7 @@ public class ZkMvTool extends ToolBase {
             .desc("Destination Znode to move to.")
             .build(),
         SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_VERBOSE);
   }
 
