@@ -101,6 +101,8 @@ Other Changes
 * SOLR-17201: Http2SolrClient and friends no longer marked as @lucene.experimental.
   Krb5HttpClientBuilder and PreemptiveBasicAuthClientBuilderFactory no longer deprecated (janhoy)
 
+* SOLR-17217: Simplify verbose MatcherAssert.assertThat usage in tests (hossman)
+
 ==================  9.5.0 ==================
 New Features
 ---------------------

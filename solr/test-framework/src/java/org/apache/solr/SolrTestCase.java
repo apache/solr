@@ -39,6 +39,8 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.StartupLoggingUtils;
+import org.hamcrest.Matcher;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -193,5 +195,23 @@ public class SolrTestCase extends LuceneTestCase {
     Object json2 = fromJSONString(actual);
     if (Objects.equals(json2, json1)) return;
     throw new ComparisonFailure("", expected, actual);
+  }
+
+  /**
+   * Hide deprecated inherited method with same signature
+   *
+   * @see MatcherAssert#assertThat
+   */
+  public static <T> void assertThat(T actual, Matcher<? super T> matcher) {
+    MatcherAssert.assertThat(actual, matcher);
+  }
+
+  /**
+   * Hide deprecated inherited method with same signature
+   *
+   * @see MatcherAssert#assertThat
+   */
+  public static <T> void assertThat(String message, T actual, Matcher<? super T> matcher) {
+    MatcherAssert.assertThat(message, actual, matcher);
   }
 }

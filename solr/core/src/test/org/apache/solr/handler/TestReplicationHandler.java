@@ -74,7 +74,6 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -1581,8 +1580,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
               followerClient.query(q);
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
-    MatcherAssert.assertThat(
-        thrown.getMessage(), containsString("Missing required parameter: command"));
+    assertThat(thrown.getMessage(), containsString("Missing required parameter: command"));
   }
 
   @Test
@@ -1596,8 +1594,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
               followerClient.query(q);
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
-    MatcherAssert.assertThat(
-        thrown.getMessage(), containsString("Missing required parameter: name"));
+    assertThat(thrown.getMessage(), containsString("Missing required parameter: name"));
   }
 
   @Test

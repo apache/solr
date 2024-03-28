@@ -39,7 +39,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -138,7 +137,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       } catch (RemoteSolrException e) {
         // solrClient.add would throw RemoteSolrException with code 500
         // or 404 if the bad replica has already been deleted
-        MatcherAssert.assertThat(e.code(), anyOf(is(500), is(404)));
+        assertThat(e.code(), anyOf(is(500), is(404)));
       } catch (AlreadyClosedException e) {
         // If giving up leadership, might be already closed/closing
       }
