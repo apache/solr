@@ -573,9 +573,9 @@ public class SolrCLI implements CLIO {
    * ZooKeeper.
    */
   public static String normalizeSolrUrl(CommandLine cli) throws Exception {
-    String solrUrl = cli.getOptionValue("solr-url");
+    String solrUrl = cli.hasOption("solr-url") ? cli.getOptionValue("solr-url") : cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
-      String zkHost = cli.getOptionValue("z");
+      String zkHost = cli.hasOption("z") ? cli.getOptionValue("z") : cli.getOptionValue("zkHost");
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
         CLIO.getOutStream()
