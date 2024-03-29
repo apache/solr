@@ -422,7 +422,10 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
           }
         } else if (!solrUrls.isEmpty()) {
           try {
-            stateProvider = new Http2ClusterStateProvider(solrUrls, httpClient);
+            if (this.internalClientBuilder != null) {
+              this.httpClient = internalClientBuilder.build();
+            }
+            stateProvider = new Http2ClusterStateProvider(solrUrls, this.httpClient);
           } catch (Exception e) {
             throw new RuntimeException(
                 "Couldn't initialize a HttpClusterStateProvider (is/are the "
