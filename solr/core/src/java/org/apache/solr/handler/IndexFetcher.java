@@ -1817,6 +1817,9 @@ public class IndexFetcher {
       boolean isContentReceived = false;
       try {
         while (true) {
+          if(fis.peek() == -1){
+            return NO_CONTENT;
+          }
           if (stop) {
             stop = false;
             aborted = true;
@@ -1825,13 +1828,11 @@ public class IndexFetcher {
           long checkSumServer = -1;
 
           fis.readFully(intbytes);
-
           // read the size of the packet
           int packetSize = readInt(intbytes);
           if (packetSize <= 0) {
-            fis.read(); // read till end-of-file
             if (!isContentReceived) log.warn("No content received for file: {}", fileName);
-            return NO_CONTENT;
+            continue;
           }
           isContentReceived = true;
           // TODO consider recoding the remaining logic to not use/need buf[]; instead use the
