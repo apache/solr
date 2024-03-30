@@ -1787,14 +1787,15 @@ public class IndexFetcher {
     private void fetch() throws Exception {
       try {
         while (true) {
-          int result;
-          // fetch packets one by one in a single request
-          result = fetchPackets();
-          if (result == 0 || result == NO_CONTENT) {
-            return;
+          try (FastInputStream fis = getStream()) {
+            int result;
+            // fetch packets one by one in a single request
+            result = fetchPackets(fis);
+            if (result == 0 || result == NO_CONTENT) {
+              return;
+            }
+            // if there is an error continue. But continue from the point where it got broken
           }
-          // if there is an error continue. But continue from the point where it got broken
-
         }
       } finally {
         cleanup();
@@ -1810,10 +1811,11 @@ public class IndexFetcher {
       }
     }
 
-    private int fetchPackets() throws Exception {
+    private int fetchPackets(FastInputStream fis) throws Exception {
       byte[] intbytes = new byte[4];
       byte[] longbytes = new byte[8];
-      try (FastInputStream fis = getStream()) {
+      boolean isContentReceived = false;
+      try {
         while (true) {
           if (stop) {
             stop = false;
@@ -1821,13 +1823,16 @@ public class IndexFetcher {
             throw new ReplicationHandlerException("User aborted replication");
           }
           long checkSumServer = -1;
+
           fis.readFully(intbytes);
+
           // read the size of the packet
           int packetSize = readInt(intbytes);
           if (packetSize <= 0) {
-            log.warn("No content received for file: {}", fileName);
+            if (!isContentReceived) log.warn("No content received for file: {}", fileName);
             return NO_CONTENT;
           }
+          isContentReceived = true;
           // TODO consider recoding the remaining logic to not use/need buf[]; instead use the
           // internal buffer of fis
           if (buf.length < packetSize) {
@@ -1860,7 +1865,6 @@ public class IndexFetcher {
           log.debug("Fetched and wrote {} bytes of file: {}", bytesDownloaded, fileName);
           // errorCount is always set to zero after a successful packet
           errorCount = 0;
-          if (bytesDownloaded >= size) return 0;
         }
       } catch (ReplicationHandlerException e) {
         throw e;
