@@ -1829,6 +1829,7 @@ public class IndexFetcher {
           // read the size of the packet
           int packetSize = readInt(intbytes);
           if (packetSize <= 0) {
+            fis.read(); // read till end-of-file
             if (!isContentReceived) log.warn("No content received for file: {}", fileName);
             return NO_CONTENT;
           }
