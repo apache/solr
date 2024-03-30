@@ -150,9 +150,15 @@ Bug Fixes
 * SOLR-14892: Queries with shards.info and shards.tolerant can yield multiple null keys in place of shard names
   (Mathieu Marie, David Smiley)
 
+* SOLR-17110: Fixed JacksonJsonWriter to properly quote uuid values in json query response (Andrey Bozhko via Eric Pugh)
+
 * SOLR-17209: Fix NullPointerException in QueryComponent (Vincent Primault via Eric Pugh)
 
 * SOLR-17113: Correct how `/replication?command=details` describes errors in backup operations.  (Przemyslaw Ciezkowski via Christine Poerschke and Jason Gerlowski)
+
+* SOLR-17200: Fix false positive race condition in `/health?requireHealthyCores=true` during core loading (hossman)
+
+* SOLR-17218: Fix indexFetcher logging to include MDC details (hossman)
 
 Dependency Upgrades
 ---------------------
@@ -176,6 +182,8 @@ Other Changes
 
 * SOLR-17201: Http2SolrClient and friends no longer marked as @lucene.experimental.
   Krb5HttpClientBuilder and PreemptiveBasicAuthClientBuilderFactory no longer deprecated (janhoy)
+
+* SOLR-17217: Simplify verbose MatcherAssert.assertThat usage in tests (hossman)
 
 * SOLR-16505: Switch internal replica recovery commands to Jetty HTTP2 (Sanjay Dutt, David Smiley)
 
