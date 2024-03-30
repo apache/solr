@@ -1,0 +1,192 @@
+/*
+ *
+ *  * Licensed to the Apache Software Foundation (ASF) under one or more
+ *  * contributor license agreements.  See the NOTICE file distributed with
+ *  * this work for additional information regarding copyright ownership.
+ *  * The ASF licenses this file to You under the Apache License, Version 2.0
+ *  * (the "License"); you may not use this file except in compliance with
+ *  * the License.  You may obtain a copy of the License at
+ *  *
+ *  *     http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS,
+ *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  * See the License for the specific language governing permissions and
+ *  * limitations under the License.
+ *
+ */
+
+package org.apache.solr.monitor.search;
+
+import static org.apache.solr.monitor.MonitorConstants.MONITOR_DOCUMENTS_KEY;
+import static org.apache.solr.monitor.MonitorConstants.MONITOR_DOCUMENT_KEY;
+import static org.apache.solr.monitor.MonitorConstants.MONITOR_OUTPUT_KEY;
+import static org.apache.solr.monitor.MonitorConstants.MONITOR_QUERIES_KEY;
+import static org.apache.solr.monitor.MonitorConstants.MONITOR_QUERIES_RUN;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.apache.lucene.monitor.MultiMatchingQueries;
+import org.apache.lucene.monitor.QueryMatch;
+import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+
+class QueryMatchResponseCodec {
+
+  @SuppressWarnings({"unchecked"})
+  static Map<String, Object> mergeResponses(
+      List<NamedList<Object>> responses, QueryMatchType type) {
+    Map<Integer, List<QueryMatchWrapper>> wrappedMerged = new HashMap<>();
+    int queriesRun = 0;
+    for (var response : responses) {
+      Object smq = response.get(MONITOR_OUTPUT_KEY);
+      if (!(smq instanceof Map)) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, MONITOR_OUTPUT_KEY + " must be a map");
+      }
+      Map<String, Object> singleMonitorOutput = (Map<String, Object>) smq;
+      decodeToWrappers(singleMonitorOutput, wrappedMerged, type);
+      var delta = singleMonitorOutput.get(MONITOR_QUERIES_RUN);
+      if (!(delta instanceof Integer)) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, MONITOR_QUERIES_RUN + " must be an integer");
+      }
+      queriesRun += (Integer) delta;
+    }
+
+    for (var mergedValues : wrappedMerged.values()) {
+      Collections.sort(mergedValues);
+    }
+    Map<Integer, Object> finalDocOutputs =
+        wrappedMerged.entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry -> encodeWrappers(entry.getValue().stream(), entry.getKey())));
+    Map<String, Object> output = new HashMap<>();
+    output.put(MONITOR_DOCUMENTS_KEY, finalDocOutputs);
+    output.put(MONITOR_QUERIES_RUN, queriesRun);
+    return output;
+  }
+
+  @SuppressWarnings({"unchecked"})
+  private static void decodeToWrappers(
+      Object object, Map<Integer, List<QueryMatchWrapper>> output, QueryMatchType type) {
+    if (!(object instanceof Map)) {
+      throw new IllegalArgumentException("input object should be a map");
+    }
+    Map<String, Object> docLevelMQResponse = (Map<String, Object>) object;
+    Object monitorDocumentsRaw = docLevelMQResponse.get(MONITOR_DOCUMENTS_KEY);
+    if (!(monitorDocumentsRaw instanceof Map)) {
+      throw new IllegalArgumentException(MONITOR_DOCUMENTS_KEY + " should be a map");
+    }
+    var monitorDocuments = (Map<Integer, Object>) monitorDocumentsRaw;
+    if (type == QueryMatchType.SIMPLE) {
+      for (var docEntryRaw : monitorDocuments.values()) {
+        if (!(docEntryRaw instanceof Map)) {
+          throw new IllegalArgumentException(MONITOR_DOCUMENTS_KEY + " should contain maps");
+        }
+        var docEntry = (Map<String, Object>) docEntryRaw;
+        Object docRaw = docEntry.get(MONITOR_DOCUMENT_KEY);
+        if (!(docRaw instanceof Integer)) {
+          throw new IllegalStateException(MONITOR_DOCUMENT_KEY + " needs to be an int");
+        }
+        Object monitorQueriesRaw = docEntry.get(MONITOR_QUERIES_KEY);
+        if (!(monitorQueriesRaw instanceof List)) {
+          throw new IllegalStateException(MONITOR_QUERIES_KEY + " needs to be an list");
+        }
+        int doc = (Integer) docRaw;
+        List<QueryMatchWrapper> wrappers = output.computeIfAbsent(doc, i -> new ArrayList<>());
+        List<Object> serializableFormMQs = (List<Object>) monitorQueriesRaw;
+        for (var serializableForm : serializableFormMQs) {
+          wrappers.add(SimpleQueryMatchWrapper.fromSerializableForm(serializableForm));
+        }
+      }
+    }
+  }
+
+  static void simpleEncode(
+      MultiMatchingQueries<QueryMatch> matchingQueries,
+      Map<String, Object> output,
+      int docBatchSize) {
+    encodeMultiMatchingQuery(
+        matchingQueries, output, docBatchSize, SimpleQueryMatchWrapper::fromQueryMatch);
+  }
+
+  private static <T extends QueryMatch> void encodeMultiMatchingQuery(
+      MultiMatchingQueries<T> matchingQueries,
+      Map<String, Object> output,
+      int docBatchSize,
+      Function<T, ? extends QueryMatchWrapper> wrappingFunction) {
+    if (matchingQueries.getBatchSize() != docBatchSize) {
+      throw new IllegalArgumentException("output size doesn't match document batch size");
+    }
+    Map<Integer, Object> docOutputs =
+        IntStream.range(0, matchingQueries.getBatchSize())
+            .mapToObj(
+                doc ->
+                    encodeWrappers(
+                        matchingQueries.getMatches(doc).stream().map(wrappingFunction), doc))
+            .collect(
+                Collectors.toMap(
+                    wrapper -> (Integer) wrapper.get(MONITOR_DOCUMENT_KEY), Function.identity()));
+    output.put(MONITOR_DOCUMENTS_KEY, docOutputs);
+    output.put(MONITOR_QUERIES_RUN, matchingQueries.getQueriesRun());
+  }
+
+  private static Map<String, Object> encodeWrappers(Stream<QueryMatchWrapper> matches, int doc) {
+    return Map.of(
+        MONITOR_DOCUMENT_KEY,
+        doc,
+        MONITOR_QUERIES_KEY,
+        matches.sorted().map(QueryMatchWrapper::toSerializableForm).collect(Collectors.toList()));
+  }
+
+  private interface QueryMatchWrapper extends Comparable<QueryMatchWrapper> {
+
+    Object toSerializableForm();
+  }
+
+  private static class SimpleQueryMatchWrapper implements QueryMatchWrapper {
+
+    private final BytesRef queryId;
+
+    private SimpleQueryMatchWrapper(BytesRef queryId) {
+      this.queryId = queryId;
+    }
+
+    @Override
+    public int compareTo(QueryMatchWrapper o) {
+      if (!(o instanceof SimpleQueryMatchWrapper)) {
+        throw new IllegalArgumentException(
+            "SimpleQueryMatchWrapper can only be compared to other SimpleQueryMatchWrappers");
+      }
+      return queryId.compareTo(((SimpleQueryMatchWrapper) o).queryId);
+    }
+
+    private static SimpleQueryMatchWrapper fromQueryMatch(QueryMatch queryMatch) {
+      return new SimpleQueryMatchWrapper(new BytesRef(queryMatch.getQueryId()));
+    }
+
+    private static SimpleQueryMatchWrapper fromSerializableForm(Object serializableForm) {
+      if (!(serializableForm instanceof String)) {
+        throw new IllegalArgumentException("only support decoding for String");
+      }
+      return new SimpleQueryMatchWrapper(new BytesRef((String) serializableForm));
+    }
+
+    @Override
+    public Object toSerializableForm() {
+      return queryId.utf8ToString();
+    }
+  }
+}
