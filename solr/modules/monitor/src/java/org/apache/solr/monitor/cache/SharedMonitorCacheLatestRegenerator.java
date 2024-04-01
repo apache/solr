@@ -25,6 +25,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.monitor.MonitorDataValues;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.solr.monitor.SolrMonitorQueryDecoder;
 import org.apache.solr.search.CacheRegenerator;
 import org.apache.solr.search.SolrCache;
@@ -53,10 +54,7 @@ public class SharedMonitorCacheLatestRegenerator implements CacheRegenerator {
     int batchSize = Math.min(MAX_BATCH_SIZE, cache.getInitialSize());
     var topDocs =
         new IndexSearcher(searcher.getTopReaderContext())
-            .search(
-                LongPoint.newRangeQuery(
-                    MonitorFields.VERSION, cache.versionHighWaterMark, Long.MAX_VALUE),
-                batchSize)
+            .search(versionRangeQuery(cache), batchSize)
             .scoreDocs;
     int batchesRemaining = cache.getInitialSize() / batchSize;
     while (topDocs.length > 0 && batchesRemaining > 0) {
@@ -81,14 +79,15 @@ public class SharedMonitorCacheLatestRegenerator implements CacheRegenerator {
       var scoreDoc = topDocs[topDocs.length - 1];
       topDocs =
           new IndexSearcher(searcher.getTopReaderContext())
-              .searchAfter(
-                  scoreDoc,
-                  LongPoint.newRangeQuery(
-                      MonitorFields.VERSION, cache.versionHighWaterMark, Long.MAX_VALUE),
-                  batchSize)
+              .searchAfter(scoreDoc, versionRangeQuery(cache), batchSize)
               .scoreDocs;
       batchesRemaining--;
     }
     return false;
+  }
+
+  private static Query versionRangeQuery(SharedMonitorCache cache) {
+    return LongPoint.newRangeQuery(
+        MonitorFields.VERSION, cache.versionHighWaterMark, Long.MAX_VALUE);
   }
 }
