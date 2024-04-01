@@ -42,7 +42,7 @@ public class RequestRateLimiter {
   private final RateLimiterConfig rateLimiterConfig;
   private final SlotMetadata guaranteedSlotMetadata;
   private final SlotMetadata borrowedSlotMetadata;
-  private static final SlotMetadata nullSlotMetadata = new SlotMetadata(null);
+  protected static final SlotMetadata nullSlotMetadata = new SlotMetadata(null);
 
   public RequestRateLimiter(RateLimiterConfig rateLimiterConfig) {
     this.rateLimiterConfig = rateLimiterConfig;
@@ -58,7 +58,7 @@ public class RequestRateLimiter {
    * Handles an incoming request. returns a metadata object representing the metadata for the
    * acquired slot, if acquired. If a slot is not acquired, returns a null metadata object.
    */
-  public SlotMetadata handleRequest() throws InterruptedException {
+  public SlotMetadata handleRequest(RequestWrapper request) throws InterruptedException {
 
     if (!rateLimiterConfig.isEnabled) {
       return nullSlotMetadata;
@@ -102,7 +102,7 @@ public class RequestRateLimiter {
 
   // Represents the metadata for a slot
   static class SlotMetadata {
-    private final Semaphore usedPool;
+    final Semaphore usedPool;
 
     public SlotMetadata(Semaphore usedPool) {
       this.usedPool = usedPool;
@@ -117,5 +117,11 @@ public class RequestRateLimiter {
     public boolean isReleasable() {
       return usedPool != null;
     }
+  }
+
+  public interface RequestWrapper {
+    String getParameter(String name);
+
+    String getHeader(String name);
   }
 }

@@ -175,6 +175,10 @@ public class CoreContainer {
 
   final SolrCores solrCores;
 
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
+
   public static class CoreLoadFailure {
 
     public final CoreDescriptor cd;

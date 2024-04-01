@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.request.beans;
 
+import java.util.List;
 import java.util.Objects;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -32,6 +33,7 @@ public class RateLimiterPayload implements ReflectMapWriter {
   @JsonProperty public Boolean slotBorrowingEnabled;
 
   @JsonProperty public Integer slotAcquisitionTimeoutInMS;
+  @JsonProperty public List<ReadBucketConfig> readBuckets;
 
   public RateLimiterPayload copy() {
     RateLimiterPayload result = new RateLimiterPayload();
@@ -41,7 +43,7 @@ public class RateLimiterPayload implements ReflectMapWriter {
     result.allowedRequests = allowedRequests;
     result.slotBorrowingEnabled = slotBorrowingEnabled;
     result.slotAcquisitionTimeoutInMS = slotAcquisitionTimeoutInMS;
-
+    result.readBuckets = readBuckets;
     return result;
   }
 
@@ -66,5 +68,16 @@ public class RateLimiterPayload implements ReflectMapWriter {
         allowedRequests,
         slotBorrowingEnabled,
         slotAcquisitionTimeoutInMS);
+  }
+
+  public static class ReadBucketConfig implements ReflectMapWriter {
+
+    @JsonProperty public String name;
+
+    @JsonProperty public Integer allowedRequests;
+
+    @JsonProperty public Integer slotAcquisitionTimeoutInMS;
+
+    @JsonProperty public List<Object> conditions;
   }
 }

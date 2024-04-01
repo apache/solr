@@ -201,7 +201,11 @@ public abstract class ServletUtils {
       throws ServletException, IOException {
     boolean accepted = false;
     try {
-      accepted = rateLimitManager.handleRequest(request);
+      if (rateLimitManager != null) {
+        accepted = rateLimitManager.handleRequest(request);
+      } else {
+        accepted = true;
+      }
       if (!accepted) {
         response.sendError(ErrorCode.TOO_MANY_REQUESTS.code, RateLimitManager.ERROR_MESSAGE);
         return;
@@ -214,7 +218,7 @@ public abstract class ServletUtils {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
     } finally {
       if (accepted) {
-        rateLimitManager.decrementActiveRequests(request);
+        if (rateLimitManager != null) rateLimitManager.decrementActiveRequests(request);
       }
     }
   }

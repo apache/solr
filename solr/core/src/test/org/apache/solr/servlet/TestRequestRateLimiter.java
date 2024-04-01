@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -220,10 +221,10 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     }
 
     @Override
-    public SlotMetadata handleRequest() throws InterruptedException {
+    public SlotMetadata handleRequest(RequestWrapper request) throws InterruptedException {
       incomingRequestCount.getAndIncrement();
 
-      SlotMetadata response = super.handleRequest();
+      SlotMetadata response = super.handleRequest(request);
 
       if (response != null) {
         acceptedNewRequestCount.getAndIncrement();
@@ -250,7 +251,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     private final RequestRateLimiter queryRequestRateLimiter;
     private final RequestRateLimiter indexRequestRateLimiter;
 
-    public MockBuilder(SolrZkClient zkClient, RequestRateLimiter queryRequestRateLimiter) {
+    public MockBuilder(
+        Supplier<SolrZkClient.NodeData> zkClient, RequestRateLimiter queryRequestRateLimiter) {
       super(zkClient);
 
       this.queryRequestRateLimiter = queryRequestRateLimiter;
@@ -258,7 +260,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     }
 
     public MockBuilder(
-        SolrZkClient zkClient,
+        Supplier<SolrZkClient.NodeData> zkClient,
         RequestRateLimiter queryRequestRateLimiter,
         RequestRateLimiter indexRequestRateLimiter) {
       super(zkClient);
