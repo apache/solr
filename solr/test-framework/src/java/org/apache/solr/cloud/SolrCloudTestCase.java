@@ -17,7 +17,12 @@
 
 package org.apache.solr.cloud;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -134,6 +139,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setPrsDefault() {
+    Class<?> target = RandomizedTest.getContext().getTargetClass();
+    if (target != null && target.isAnnotationPresent(NoPrs.class)) return;
     if (isPRS()) {
       System.setProperty("solr.prs.default", "true");
     }
@@ -151,6 +158,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void unsetPrsDefault() {
+    Class<?> target = RandomizedTest.getContext().getTargetClass();
+    if (target != null && target.isAnnotationPresent(NoPrs.class)) return;
     if (isPRS()) {
       System.clearProperty("solr.prs.default");
     }
@@ -418,4 +427,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
     return replicaTypeMap;
   }
+
+  /**
+   * A marker interface to Ignore PRS in tests. This is for debugging purposes to ensure that PRS is
+   * causing test failures
+   */
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface NoPrs {}
 }

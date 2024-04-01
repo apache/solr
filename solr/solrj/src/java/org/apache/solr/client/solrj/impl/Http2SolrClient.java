@@ -16,9 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.common.util.Utils.getObjectByPath;
-
-import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -27,21 +24,13 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
 import java.net.CookieStore;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
@@ -50,21 +39,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory.RequestResponseListener;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -73,7 +58,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.Utils;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpProxy;
@@ -97,7 +81,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
@@ -121,60 +104,31 @@ import org.slf4j.MDC;
  *       HttpSolrClient#getHttpClient()}, sharing connection pools should be done by {@link
  *       Http2SolrClient.Builder#withHttpClient(Http2SolrClient)}
  * </ul>
- *
- * @lucene.experimental
  */
-public class Http2SolrClient extends SolrClient {
+public class Http2SolrClient extends HttpSolrClientBase {
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
 
   private static volatile SSLConfig defaultSSLConfig;
-
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String AGENT = "Solr[" + Http2SolrClient.class.getName() + "] 2.0";
-  private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
-  private static final String DEFAULT_PATH = "/select";
-  private static final List<String> errPath = Arrays.asList("metadata", "error-class");
 
   private final HttpClient httpClient;
-  private final Set<String> urlParamNames;
-  private final long idleTimeoutMillis;
-  private final long requestTimeoutMillis;
 
-  // updating parser instance needs to go via the setter to ensure update of defaultParserMimeTypes
-  private ResponseParser parser = new BinaryResponseParser();
-  private Set<String> defaultParserMimeTypes;
+  private SSLConfig sslConfig;
 
-  protected RequestWriter requestWriter = new BinaryRequestWriter();
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private final AsyncTracker asyncTracker = new AsyncTracker();
-
-  /** The URL of the Solr server. */
-  private final String serverBaseUrl;
 
   private final boolean closeClient;
   private ExecutorService executor;
   private boolean shutdownExecutor;
 
-  final String basicAuthAuthorizationStr;
   private AuthenticationStoreHolder authenticationStore;
 
   private KeyStoreScanner scanner;
 
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
-    if (serverBaseUrl != null) {
-      if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
-        serverBaseUrl = serverBaseUrl.substring(0, serverBaseUrl.length() - 1);
-      }
-
-      if (serverBaseUrl.startsWith("//")) {
-        serverBaseUrl = serverBaseUrl.substring(1, serverBaseUrl.length());
-      }
-      this.serverBaseUrl = serverBaseUrl;
-    } else {
-      this.serverBaseUrl = null;
-    }
-
-    this.idleTimeoutMillis = builder.idleTimeoutMillis;
+    super(serverBaseUrl, builder);
 
     if (builder.httpClient != null) {
       this.httpClient = builder.httpClient;
@@ -183,26 +137,11 @@ public class Http2SolrClient extends SolrClient {
       this.httpClient = createHttpClient(builder);
       this.closeClient = true;
     }
-    this.basicAuthAuthorizationStr = builder.basicAuthAuthorizationStr;
-    if (builder.requestWriter != null) {
-      this.requestWriter = builder.requestWriter;
-    }
-    if (builder.responseParser != null) {
-      this.parser = builder.responseParser;
-    }
+
     updateDefaultMimeTypeForParser();
-    this.defaultCollection = builder.defaultCollection;
-    if (builder.requestTimeoutMillis != null) {
-      this.requestTimeoutMillis = builder.requestTimeoutMillis;
-    } else {
-      this.requestTimeoutMillis = -1;
-    }
+
     this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
-    if (builder.urlParamNames != null) {
-      this.urlParamNames = builder.urlParamNames;
-    } else {
-      this.urlParamNames = Set.of();
-    }
+
     assert ObjectReleaseTracker.track(this);
   }
 
@@ -376,14 +315,6 @@ public class Http2SolrClient extends SolrClient {
     this.authenticationStore.updateAuthenticationStore(authenticationStore);
   }
 
-  public boolean isV2ApiRequest(final SolrRequest<?> request) {
-    return request instanceof V2Request || request.getPath().contains("/____v2");
-  }
-
-  public long getIdleTimeout() {
-    return idleTimeoutMillis;
-  }
-
   public static class OutStream implements Closeable {
     private final String origCollection;
     private final ModifiableSolrParams origParams;
@@ -436,12 +367,8 @@ public class Http2SolrClient extends SolrClient {
       throws IOException {
     String contentType = requestWriter.getUpdateContentType();
     final ModifiableSolrParams origParams = new ModifiableSolrParams(updateRequest.getParams());
-
-    // The parser 'wt=' and 'version=' params are used instead of the
-    // original params
-    ModifiableSolrParams requestParams = new ModifiableSolrParams(origParams);
-    requestParams.set(CommonParams.WT, parser.getWriterType());
-    requestParams.set(CommonParams.VERSION, parser.getVersion());
+    ModifiableSolrParams requestParams =
+        initalizeSolrParams(updateRequest, responseParser(updateRequest));
 
     String basePath = baseUrl;
     if (collection != null) basePath += "/" + collection;
@@ -555,8 +482,9 @@ public class Http2SolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
-    if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest))
+    if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest)) {
       collection = defaultCollection;
+    }
     String url = getRequestPath(solrRequest, collection);
     Throwable abortCause = null;
     Request req = null;
@@ -609,8 +537,17 @@ public class Http2SolrClient extends SolrClient {
       mimeType = MimeTypes.getContentTypeWithoutCharset(contentType);
       encoding = MimeTypes.getCharsetFromContentType(contentType);
     }
+    String responseMethod = response.getRequest() == null ? "" : response.getRequest().getMethod();
     return processErrorsAndResponse(
-        response, parser, is, mimeType, encoding, isV2ApiRequest(solrRequest), urlExceptionMessage);
+        response.getStatus(),
+        response.getReason(),
+        responseMethod,
+        parser,
+        is,
+        mimeType,
+        encoding,
+        isV2ApiRequest(solrRequest),
+        urlExceptionMessage);
   }
 
   private void setBasicAuthHeader(SolrRequest<?> solrRequest, Request req) {
@@ -622,11 +559,6 @@ public class Http2SolrClient extends SolrClient {
     } else if (basicAuthAuthorizationStr != null) {
       req.headers(headers -> headers.put("Authorization", basicAuthAuthorizationStr));
     }
-  }
-
-  static String basicAuthCredentialsToAuthorizationString(String user, String pass) {
-    String userPass = user + ":" + pass;
-    return "Basic " + Base64.getEncoder().encodeToString(userPass.getBytes(FALLBACK_CHARSET));
   }
 
   private void decorateRequest(Request req, SolrRequest<?> solrRequest, boolean isAsync) {
@@ -663,53 +595,14 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
-  private String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
-    URL oldURL = new URL(basePath);
-    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
-    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
-  }
-
-  private String getRequestPath(SolrRequest<?> solrRequest, String collection)
-      throws MalformedURLException {
-    String basePath = solrRequest.getBasePath() == null ? serverBaseUrl : solrRequest.getBasePath();
-    if (collection != null) basePath += "/" + collection;
-
-    if (solrRequest instanceof V2Request) {
-      if (System.getProperty("solr.v2RealPath") == null) {
-        basePath = changeV2RequestEndpoint(basePath);
-      } else {
-        basePath = serverBaseUrl + "/____v2";
-      }
-    }
-    String path = requestWriter.getPath(solrRequest);
-    if (path == null || !path.startsWith("/")) {
-      path = DEFAULT_PATH;
-    }
-
-    return basePath + path;
-  }
-
   private Request makeRequestAndSend(
       SolrRequest<?> solrRequest, String url, InputStreamResponseListener listener, boolean isAsync)
       throws IOException, SolrServerException {
 
-    // TODO add invariantParams support
-    ResponseParser parser =
-        solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
-
-    // The parser 'wt=' and 'version=' params are used instead of the original
-    // params
-    ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
-    wparams.set(CommonParams.WT, parser.getWriterType());
-    wparams.set(CommonParams.VERSION, parser.getVersion());
+    ModifiableSolrParams wparams = initalizeSolrParams(solrRequest, responseParser(solrRequest));
 
     if (SolrRequest.METHOD.GET == solrRequest.getMethod()) {
-      RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
-      Collection<ContentStream> streams =
-          contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
-      if (contentWriter != null || streams != null) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
-      }
+      validateGetRequest(solrRequest);
       var r = httpClient.newRequest(url + wparams.toQueryString()).method(HttpMethod.GET);
       decorateRequest(r, solrRequest, isAsync);
       r.send(listener);
@@ -729,12 +622,7 @@ public class Http2SolrClient extends SolrClient {
       Collection<ContentStream> streams =
           contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
 
-      boolean isMultipart = false;
-      if (streams != null) {
-        boolean hasNullStreamName = false;
-        hasNullStreamName = streams.stream().anyMatch(cs -> cs.getName() == null);
-        isMultipart = !hasNullStreamName && streams.size() > 1;
-      }
+      boolean isMultipart = isMultipart(streams);
 
       HttpMethod method =
           SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;
@@ -760,7 +648,7 @@ public class Http2SolrClient extends SolrClient {
         return r;
 
       } else {
-        // It is has one stream, it is the post body, put the params in the URL
+        // If is has one stream, it is the post body, put the params in the URL
         ContentStream contentStream = streams.iterator().next();
         var content =
             new InputStreamRequestContent(
@@ -834,186 +722,38 @@ public class Http2SolrClient extends SolrClient {
     return req;
   }
 
-  private boolean wantStream(final ResponseParser processor) {
-    return processor == null || processor instanceof InputStreamResponseParser;
+  @Override
+  protected boolean isFollowRedirects() {
+    return httpClient.isFollowRedirects();
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private NamedList<Object> processErrorsAndResponse(
-      Response response,
-      final ResponseParser processor,
-      InputStream is,
-      String mimeType,
-      String encoding,
-      final boolean isV2Api,
-      String urlExceptionMessage)
-      throws SolrServerException {
-    boolean shouldClose = true;
-    try {
-      // handle some http level checks before trying to parse the response
-      int httpStatus = response.getStatus();
+  @Override
+  protected boolean processorAcceptsMimeType(
+      Collection<String> processorSupportedContentTypes, String mimeType) {
 
-      switch (httpStatus) {
-        case HttpStatus.OK_200:
-        case HttpStatus.BAD_REQUEST_400:
-        case HttpStatus.CONFLICT_409:
-          break;
-        case HttpStatus.MOVED_PERMANENTLY_301:
-        case HttpStatus.MOVED_TEMPORARILY_302:
-          if (!httpClient.isFollowRedirects()) {
-            throw new SolrServerException(
-                "Server at " + urlExceptionMessage + " sent back a redirect (" + httpStatus + ").");
-          }
-          break;
-        default:
-          if (processor == null || mimeType == null) {
-            throw new RemoteSolrException(
-                urlExceptionMessage,
-                httpStatus,
-                "non ok status: " + httpStatus + ", message:" + response.getReason(),
-                null);
-          }
-      }
-
-      if (wantStream(processor)) {
-        // no processor specified, return raw stream
-        NamedList<Object> rsp = new NamedList<>();
-        rsp.add("stream", is);
-        rsp.add("responseStatus", httpStatus);
-        // Only case where stream should not be closed
-        shouldClose = false;
-        return rsp;
-      }
-
-      checkContentType(processor, is, mimeType, encoding, httpStatus, urlExceptionMessage);
-
-      NamedList<Object> rsp;
-      try {
-        rsp = processor.processResponse(is, encoding);
-      } catch (Exception e) {
-        throw new RemoteSolrException(urlExceptionMessage, httpStatus, e.getMessage(), e);
-      }
-
-      Object error = rsp == null ? null : rsp.get("error");
-      if (rsp != null && error == null && processor instanceof NoOpResponseParser) {
-        error = rsp.get("response");
-      }
-      if (error != null
-          && (String.valueOf(getObjectByPath(error, true, errPath))
-              .endsWith("ExceptionWithErrObject"))) {
-        throw RemoteExecutionException.create(urlExceptionMessage, rsp);
-      }
-      if (httpStatus != HttpStatus.OK_200 && !isV2Api) {
-        NamedList<String> metadata = null;
-        String reason = null;
-        try {
-          if (error != null) {
-            reason = (String) Utils.getObjectByPath(error, false, Collections.singletonList("msg"));
-            if (reason == null) {
-              reason =
-                  (String) Utils.getObjectByPath(error, false, Collections.singletonList("trace"));
-            }
-            Object metadataObj =
-                Utils.getObjectByPath(error, false, Collections.singletonList("metadata"));
-            if (metadataObj instanceof NamedList) {
-              metadata = (NamedList<String>) metadataObj;
-            } else if (metadataObj instanceof List) {
-              // NamedList parsed as List convert to NamedList again
-              List<Object> list = (List<Object>) metadataObj;
-              metadata = new NamedList<>(list.size() / 2);
-              for (int i = 0; i < list.size(); i += 2) {
-                metadata.add((String) list.get(i), (String) list.get(i + 1));
-              }
-            } else if (metadataObj instanceof Map) {
-              metadata = new NamedList((Map) metadataObj);
-            }
-          }
-        } catch (Exception ex) {
-          /* Ignored */
-        }
-        if (reason == null) {
-          StringBuilder msg = new StringBuilder();
-          msg.append(response.getReason())
-              .append("\n")
-              .append("request: ")
-              .append(response.getRequest().getMethod());
-          if (error != null) {
-            msg.append("\n\nError returned:\n").append(error);
-          }
-          reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
-        }
-        RemoteSolrException rss =
-            new RemoteSolrException(urlExceptionMessage, httpStatus, reason, null);
-        if (metadata != null) rss.setMetadata(metadata);
-        throw rss;
-      }
-      return rsp;
-    } finally {
-      if (shouldClose) {
-        try {
-          is.close();
-        } catch (IOException e) {
-          // quitely
-        }
-      }
-    }
+    return processorSupportedContentTypes.stream()
+        .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim())
+        .anyMatch(mimeType::equalsIgnoreCase);
   }
 
-  /**
-   * Validates that the content type in the response can be processed by the Response Parser. Throws
-   * a {@code RemoteSolrException} if not.
-   */
-  private void checkContentType(
-      ResponseParser processor,
-      InputStream is,
-      String mimeType,
-      String encoding,
-      int httpStatus,
-      String urlExceptionMessage) {
-    if (mimeType == null
-        || (processor == this.parser && defaultParserMimeTypes.contains(mimeType))) {
-      // Shortcut the default scenario
-      return;
-    }
-    final Collection<String> processorSupportedContentTypes = processor.getContentTypes();
-    if (processorSupportedContentTypes != null && !processorSupportedContentTypes.isEmpty()) {
-      boolean processorAcceptsMimeType =
-          processorSupportedContentTypes.stream()
-              .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim())
-              .anyMatch(mimeType::equalsIgnoreCase);
-      if (!processorAcceptsMimeType) {
-        // unexpected mime type
-        final String allSupportedTypes =
-            processorSupportedContentTypes.stream()
-                .map(
-                    ct ->
-                        MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
-                .collect(Collectors.joining(", "));
-        String prefix =
-            "Expected mime type in [" + allSupportedTypes + "] but got " + mimeType + ". ";
-        String exceptionEncoding = encoding != null ? encoding : FALLBACK_CHARSET.name();
-        try {
-          ByteArrayOutputStream body = new ByteArrayOutputStream();
-          is.transferTo(body);
-          throw new RemoteSolrException(
-              urlExceptionMessage, httpStatus, prefix + body.toString(exceptionEncoding), null);
-        } catch (IOException e) {
-          throw new RemoteSolrException(
-              urlExceptionMessage,
-              httpStatus,
-              "Could not parse response with encoding " + exceptionEncoding,
-              e);
-        }
-      }
-    }
+  @Override
+  protected void updateDefaultMimeTypeForParser() {
+    defaultParserMimeTypes =
+        parser.getContentTypes().stream()
+            .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
+            .collect(Collectors.toSet());
+  }
+
+  @Override
+  protected String allProcessorSupportedContentTypesCommaDelimited(
+      Collection<String> processorSupportedContentTypes) {
+    return processorSupportedContentTypes.stream()
+        .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
+        .collect(Collectors.joining(", "));
   }
 
   protected RequestWriter getRequestWriter() {
     return requestWriter;
-  }
-
-  public String getBaseURL() {
-    return serverBaseUrl;
   }
 
   private static class AsyncTracker {
@@ -1057,31 +797,20 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
-  public static class Builder {
+  public static class Builder
+      extends HttpSolrClientBuilderBase<Http2SolrClient.Builder, Http2SolrClient> {
 
     private HttpClient httpClient;
-    private SSLConfig sslConfig = defaultSSLConfig;
-    private Long idleTimeoutMillis;
-    private Long connectionTimeoutMillis;
-    private Long requestTimeoutMillis;
-    private Integer maxConnectionsPerHost;
-    private String basicAuthAuthorizationStr;
-    private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
-    private Boolean followRedirects;
-    protected String baseSolrUrl;
-    private ExecutorService executor;
-    protected RequestWriter requestWriter;
-    protected ResponseParser responseParser;
-    protected String defaultCollection;
-    private Set<String> urlParamNames;
-    private CookieStore cookieStore = getDefaultCookieStore();
-    private String proxyHost;
-    private int proxyPort;
-    private boolean proxyIsSocks4;
-    private boolean proxyIsSecure;
-    private Long keyStoreReloadIntervalSecs;
 
-    public Builder() {}
+    protected CookieStore cookieStore;
+
+    private SSLConfig sslConfig;
+
+    protected Long keyStoreReloadIntervalSecs;
+
+    public Builder() {
+      super();
+    }
 
     /**
      * Initialize a Builder object, based on the provided Solr URL.
@@ -1099,10 +828,99 @@ public class Http2SolrClient extends SolrClient {
      *     created clients.
      */
     public Builder(String baseSolrUrl) {
+      super();
       this.baseSolrUrl = baseSolrUrl;
     }
 
+    public HttpSolrClientBuilderBase<Http2SolrClient.Builder, Http2SolrClient> withSSLConfig(
+        SSLConfig sslConfig) {
+      this.sslConfig = sslConfig;
+      return this;
+    }
+
+    /**
+     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
+     * to 4
+     *
+     * @deprecated Please use {@link #withMaxConnectionsPerHost(int)}
+     */
+    @Deprecated(since = "9.2")
+    public Http2SolrClient.Builder maxConnectionsPerHost(int max) {
+      withMaxConnectionsPerHost(max);
+      return this;
+    }
+
+    /**
+     * Set the scanning interval to check for updates in the Key Store used by this client. If the
+     * interval is unset, 0 or less, then the Key Store Scanner is not created, and the client will
+     * not attempt to update key stores. The minimum value between checks is 1 second.
+     *
+     * @param interval Interval between checks
+     * @param unit The unit for the interval
+     * @return This builder
+     */
+    public Http2SolrClient.Builder withKeyStoreReloadInterval(long interval, TimeUnit unit) {
+      this.keyStoreReloadIntervalSecs = unit.toSeconds(interval);
+      if (this.keyStoreReloadIntervalSecs == 0 && interval > 0) {
+        this.keyStoreReloadIntervalSecs = 1L;
+      }
+      return this;
+    }
+
+    /**
+     * @deprecated Please use {@link #withIdleTimeout(long, TimeUnit)}
+     */
+    @Deprecated(since = "9.2")
+    public Http2SolrClient.Builder idleTimeout(int idleConnectionTimeout) {
+      withIdleTimeout(idleConnectionTimeout, TimeUnit.MILLISECONDS);
+      return this;
+    }
+
+    /**
+     * @deprecated Please use {@link #withConnectionTimeout(long, TimeUnit)}
+     */
+    @Deprecated(since = "9.2")
+    public Http2SolrClient.Builder connectionTimeout(int connectionTimeout) {
+      withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS);
+      return this;
+    }
+
+    /**
+     * Set a timeout in milliseconds for requests issued by this client.
+     *
+     * @param requestTimeout The timeout in milliseconds
+     * @return this Builder.
+     * @deprecated Please use {@link #withRequestTimeout(long, TimeUnit)}
+     */
+    @Deprecated(since = "9.2")
+    public Http2SolrClient.Builder requestTimeout(int requestTimeout) {
+      withRequestTimeout(requestTimeout, TimeUnit.MILLISECONDS);
+      return this;
+    }
+
+    private CookieStore getDefaultCookieStore() {
+      if (Boolean.getBoolean("solr.http.disableCookies")) {
+        return new HttpCookieStore.Empty();
+      }
+      /*
+       * We could potentially have a Supplier<CookieStore> if we ever need further customization support,
+       * but for now it's only either Empty or default (in-memory).
+       */
+      return null;
+    }
+
+    protected <B extends HttpSolrClientBase> B build(Class<B> type) {
+      return type.cast(build());
+    }
+
+    @Override
     public Http2SolrClient build() {
+      if (sslConfig == null) {
+        sslConfig = Http2SolrClient.defaultSSLConfig;
+      }
+      if (cookieStore == null) {
+        cookieStore = getDefaultCookieStore();
+      }
       if (idleTimeoutMillis == null || idleTimeoutMillis <= 0) {
         idleTimeoutMillis = (long) HttpClientUtil.DEFAULT_SO_TIMEOUT;
       }
@@ -1158,17 +976,6 @@ public class Http2SolrClient extends SolrClient {
       }
     }
 
-    private static CookieStore getDefaultCookieStore() {
-      if (Boolean.getBoolean("solr.http.disableCookies")) {
-        return new HttpCookieStore.Empty();
-      }
-      /*
-       * We could potentially have a Supplier<CookieStore> if we ever need further customization support,
-       * but for now it's only either Empty or default (in-memory).
-       */
-      return null;
-    }
-
     /**
      * Provide a seed Http2SolrClient for the builder values, values can still be overridden by
      * using builder methods
@@ -1200,166 +1007,6 @@ public class Http2SolrClient extends SolrClient {
       return this;
     }
 
-    /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
-    public Builder withRequestWriter(RequestWriter requestWriter) {
-      this.requestWriter = requestWriter;
-      return this;
-    }
-
-    /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
-    public Builder withResponseParser(ResponseParser responseParser) {
-      this.responseParser = responseParser;
-      return this;
-    }
-
-    /** Sets a default for core or collection based requests. */
-    public Builder withDefaultCollection(String defaultCoreOrCollection) {
-      this.defaultCollection = defaultCoreOrCollection;
-      return this;
-    }
-
-    public Builder withFollowRedirects(boolean followRedirects) {
-      this.followRedirects = followRedirects;
-      return this;
-    }
-
-    public Builder withExecutor(ExecutorService executor) {
-      this.executor = executor;
-      return this;
-    }
-
-    public Builder withSSLConfig(SSLConfig sslConfig) {
-      this.sslConfig = sslConfig;
-      return this;
-    }
-
-    public Builder withBasicAuthCredentials(String user, String pass) {
-      if (user != null || pass != null) {
-        if (user == null || pass == null) {
-          throw new IllegalStateException(
-              "Invalid Authentication credentials. Either both username and password or none must be provided");
-        }
-      }
-      this.basicAuthAuthorizationStr = basicAuthCredentialsToAuthorizationString(user, pass);
-      return this;
-    }
-
-    /**
-     * Expert Method
-     *
-     * @param urlParamNames set of param keys that are only sent via the query string. Note that the
-     *     param will be sent as a query string if the key is part of this Set or the SolrRequest's
-     *     query params.
-     * @see org.apache.solr.client.solrj.SolrRequest#getQueryParams
-     */
-    public Builder withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
-      this.urlParamNames = urlParamNames;
-      return this;
-    }
-
-    /**
-     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
-     * to 4
-     *
-     * @deprecated Please use {@link #withMaxConnectionsPerHost(int)}
-     */
-    @Deprecated(since = "9.2")
-    public Builder maxConnectionsPerHost(int max) {
-      withMaxConnectionsPerHost(max);
-      return this;
-    }
-
-    /**
-     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
-     * to 4
-     */
-    public Builder withMaxConnectionsPerHost(int max) {
-      this.maxConnectionsPerHost = max;
-      return this;
-    }
-
-    /**
-     * Set the scanning interval to check for updates in the Key Store used by this client. If the
-     * interval is unset, 0 or less, then the Key Store Scanner is not created, and the client will
-     * not attempt to update key stores. The minimum value between checks is 1 second.
-     *
-     * @param interval Interval between checks
-     * @param unit The unit for the interval
-     * @return This builder
-     */
-    public Builder withKeyStoreReloadInterval(long interval, TimeUnit unit) {
-      this.keyStoreReloadIntervalSecs = unit.toSeconds(interval);
-      if (this.keyStoreReloadIntervalSecs == 0 && interval > 0) {
-        this.keyStoreReloadIntervalSecs = 1L;
-      }
-      return this;
-    }
-
-    /**
-     * @deprecated Please use {@link #withIdleTimeout(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Builder idleTimeout(int idleConnectionTimeout) {
-      withIdleTimeout(idleConnectionTimeout, TimeUnit.MILLISECONDS);
-      return this;
-    }
-
-    public Builder withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
-      this.idleTimeoutMillis = TimeUnit.MILLISECONDS.convert(idleConnectionTimeout, unit);
-      return this;
-    }
-
-    public Long getIdleTimeoutMillis() {
-      return idleTimeoutMillis;
-    }
-
-    public Builder useHttp1_1(boolean useHttp1_1) {
-      this.useHttp1_1 = useHttp1_1;
-      return this;
-    }
-
-    /**
-     * @deprecated Please use {@link #withConnectionTimeout(long, TimeUnit)}
-     */
-    @Deprecated(since = "9.2")
-    public Builder connectionTimeout(int connectionTimeout) {
-      withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS);
-      return this;
-    }
-
-    public Builder withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
-      this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
-      return this;
-    }
-
-    public Long getConnectionTimeout() {
-      return connectionTimeoutMillis;
-    }
-
-    /**
-     * Set a timeout in milliseconds for requests issued by this client.
-     *
-     * @deprecated Please use {@link #withRequestTimeout(long, TimeUnit)}
-     * @param requestTimeout The timeout in milliseconds
-     * @return this Builder.
-     */
-    @Deprecated(since = "9.2")
-    public Builder requestTimeout(int requestTimeout) {
-      withRequestTimeout(requestTimeout, TimeUnit.MILLISECONDS);
-      return this;
-    }
-
-    /**
-     * Set a timeout in milliseconds for requests issued by this client.
-     *
-     * @param requestTimeout The timeout in milliseconds
-     * @return this Builder.
-     */
-    public Builder withRequestTimeout(long requestTimeout, TimeUnit unit) {
-      this.requestTimeoutMillis = TimeUnit.MILLISECONDS.convert(requestTimeout, unit);
-      return this;
-    }
-
     /**
      * Set a cookieStore other than the default ({@code java.net.InMemoryCookieStore})
      *
@@ -1370,81 +1017,6 @@ public class Http2SolrClient extends SolrClient {
       this.cookieStore = cookieStore;
       return this;
     }
-
-    /**
-     * Setup a proxy
-     *
-     * @param host The proxy host
-     * @param port The proxy port
-     * @param isSocks4 If true creates an SOCKS 4 proxy, otherwise creates an HTTP proxy
-     * @param isSecure If true enables the secure flag on the proxy
-     * @return this Builder
-     */
-    public Builder withProxyConfiguration(
-        String host, int port, boolean isSocks4, boolean isSecure) {
-      this.proxyHost = host;
-      this.proxyPort = port;
-      this.proxyIsSocks4 = isSocks4;
-      this.proxyIsSecure = isSecure;
-      return this;
-    }
-
-    /**
-     * Setup basic authentication from a string formatted as username:password. If the string is
-     * Null then it doesn't do anything.
-     *
-     * @param credentials The username and password formatted as username:password
-     * @return this Builder
-     */
-    public Builder withOptionalBasicAuthCredentials(String credentials) {
-      if (credentials != null) {
-        if (credentials.indexOf(':') == -1) {
-          throw new IllegalStateException(
-              "Invalid Authentication credential formatting. Provide username and password in the 'username:password' format.");
-        }
-        String username = credentials.substring(0, credentials.indexOf(':'));
-        String password = credentials.substring(credentials.indexOf(':') + 1, credentials.length());
-        withBasicAuthCredentials(username, password);
-      }
-      return this;
-    }
-  }
-
-  public Set<String> getUrlParamNames() {
-    return urlParamNames;
-  }
-
-  private ModifiableSolrParams calculateQueryParams(
-      Set<String> queryParamNames, ModifiableSolrParams wparams) {
-    ModifiableSolrParams queryModParams = new ModifiableSolrParams();
-    if (queryParamNames != null) {
-      for (String param : queryParamNames) {
-        String[] value = wparams.getParams(param);
-        if (value != null) {
-          for (String v : value) {
-            queryModParams.add(param, v);
-          }
-          wparams.remove(param);
-        }
-      }
-    }
-    return queryModParams;
-  }
-
-  public ResponseParser getParser() {
-    return parser;
-  }
-
-  protected void setParser(ResponseParser parser) {
-    this.parser = parser;
-    updateDefaultMimeTypeForParser();
-  }
-
-  protected void updateDefaultMimeTypeForParser() {
-    defaultParserMimeTypes =
-        parser.getContentTypes().stream()
-            .map(ct -> MimeTypes.getContentTypeWithoutCharset(ct).trim().toLowerCase(Locale.ROOT))
-            .collect(Collectors.toSet());
   }
 
   public static void setDefaultSSLConfig(SSLConfig sslConfig) {
