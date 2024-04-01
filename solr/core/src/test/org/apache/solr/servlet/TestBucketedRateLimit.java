@@ -18,6 +18,9 @@ import org.apache.zookeeper.data.Stat;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/**
+ * A test for bucketed rate limiting
+ */
 public class TestBucketedRateLimit extends SolrCloudTestCase {
 
   @BeforeClass
