@@ -11,7 +11,6 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.RateLimiterConfig;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
@@ -112,67 +111,37 @@ public class BucketedQueryRateLimiter extends QueryRateLimiter implements SolrMe
     }
   }
 
-  static {
-    conditionImpls.put(ReqHeaderCondition.ID, ReqHeaderCondition.class);
-    conditionImpls.put(QueryParamCondition.ID, QueryParamCondition.class);
-  }
-
-  @SuppressWarnings("unchecked")
   public BucketedQueryRateLimiter(RateLimiterConfig rateLimiterConfig) {
     super(rateLimiterConfig);
 
     for (RateLimiterPayload.ReadBucketConfig bucketCfg : rateLimiterConfig.readBuckets) {
       Bucket b = new Bucket(bucketCfg);
       buckets.add(b);
-      if (bucketCfg.conditions == null || bucketCfg.conditions.isEmpty()) {
+      if (bucketCfg.header == null || bucketCfg.header.isEmpty()) {
         b.conditions.add(MatchAllCondition.INST);
         continue;
       }
-      for (Object c : bucketCfg.conditions) {
-        List<Object> conditionInfo = c instanceof List ? (List<Object>) c : List.of(c);
-        for (Object o : conditionInfo) {
-          Map<String, Object> info = (Map<String, Object>) o;
-          Condition condition = null;
-
-          for (Map.Entry<String, Class<? extends Condition>> e : conditionImpls.entrySet()) {
-            if (info.containsKey(e.getKey())) {
-              try {
-                condition = e.getValue().getDeclaredConstructor().newInstance().init(info);
-                break;
-              } catch (Exception ex) {
-                // unlikely
-                throw new RuntimeException(ex);
-              }
-            }
-          }
-          if (condition == null) {
-            throw new RuntimeException("Unknown condition : " + Utils.toJSONString(info));
-          }
-          b.conditions.add(condition);
-        }
-      }
+      String k = bucketCfg.header.keySet().iterator().next();
+      String v = bucketCfg.header.get(k);
+      b.conditions.add(new HeaderCondition(k, v));
     }
   }
 
-  public interface Condition {
+  interface Condition {
+
     boolean test(RequestWrapper req);
-
-    Condition init(Map<String, Object> config);
-
-    String identifier();
   }
 
-  public abstract static class KeyValCondition implements Condition {
-    protected String name;
-    protected Pattern valuePattern;
+  public static class HeaderCondition implements Condition {
+    public static final String ID = "headerPattern";
+    final String name, val;
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public Condition init(Map<String, Object> config) {
-      Map<String, String> kv = (Map<String, String>) config.get(identifier());
-      name = kv.keySet().iterator().next();
-      valuePattern = Pattern.compile(kv.values().iterator().next());
-      return this;
+    final Pattern valuePattern;
+
+    public HeaderCondition(String name, String val) {
+      this.name = name;
+      this.val = val;
+      valuePattern = Pattern.compile(val);
     }
 
     @Override
@@ -182,54 +151,17 @@ public class BucketedQueryRateLimiter extends QueryRateLimiter implements SolrMe
       return valuePattern.matcher(val).find();
     }
 
-    protected abstract String readVal(RequestWrapper req);
-  }
-
-  public static class ReqHeaderCondition extends KeyValCondition {
-    public static final String ID = "headerPattern";
-
-    @Override
-    public String identifier() {
-      return ID;
-    }
-
-    @Override
     protected String readVal(RequestWrapper req) {
       return req.getHeader(name);
     }
   }
 
-  public static class QueryParamCondition extends KeyValCondition {
-    public static final String ID = "queryParamPattern";
-
-    @Override
-    public String identifier() {
-      return ID;
-    }
-
-    @Override
-    protected String readVal(RequestWrapper req) {
-      return req.getParameter(name);
-    }
-  }
-
   public static class MatchAllCondition implements Condition {
-    public static final String ID = "";
     public static final MatchAllCondition INST = new MatchAllCondition();
 
     @Override
     public boolean test(RequestWrapper req) {
       return true;
-    }
-
-    @Override
-    public Condition init(Map<String, Object> config) {
-      return this;
-    }
-
-    @Override
-    public String identifier() {
-      return ID;
     }
   }
 }

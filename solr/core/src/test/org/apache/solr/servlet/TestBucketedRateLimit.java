@@ -3,10 +3,11 @@ package org.apache.solr.servlet;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -26,7 +27,6 @@ public class TestBucketedRateLimit extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void testPerf() throws Exception {
     String config =
         "{\n"
@@ -34,20 +34,13 @@ public class TestBucketedRateLimit extends SolrCloudTestCase {
             + "    \"readBuckets\": [\n"
             + "      {\n"
             + "        \"name\": \"test-bucket\",\n"
-            + "        \"conditions\": [{\n"
-            + "          \"queryParamPattern\": {\n"
-            + "            \"q-bucket\": \"test-bucket\"\n"
-            + "          }\n"
-            + "        }],\n"
+            + "        \"header\": {\"q-bucket\": \"test-bucket\"},\n"
             + "        \"allowedRequests\": 2,\n"
             + "        \"slotAcquisitionTimeoutInMS\": 100\n"
             + "      }\n"
-            + "\n"
             + "    ]\n"
             + "  }\n"
             + "}";
-    System.out.println(config);
-
     SolrZkClient zkClient = cluster.getZkClient();
     zkClient.atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> config.getBytes());
     JettySolrRunner jetty = cluster.getJettySolrRunners().get(0);
@@ -56,9 +49,15 @@ public class TestBucketedRateLimit extends SolrCloudTestCase {
     String COLLECTION_NAME = "rateLimitTest";
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 2)
         .process(cluster.getSolrClient());
-    cluster
-        .getSolrClient()
-        .query(COLLECTION_NAME, new SolrQuery("*:*").add("q-bucket", "test-bucket"));
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    GenericSolrRequest gsr =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/select", new MapSolrParams(Map.of("q", "*:*")))
+            .setRequiresCollection(true);
+    gsr.addHeader("q-bucket", "test-bucket");
+    gsr.addHeader("Solr-Request-Type", "QUERY");
+    SimpleSolrResponse r = gsr.process(solrClient, COLLECTION_NAME);
+
     NavigableObject rsp =
         cluster
             .getSolrClient()
@@ -117,34 +116,25 @@ public class TestBucketedRateLimit extends SolrCloudTestCase {
             + "    \"readBuckets\": [\n"
             + "      {\n"
             + "        \"name\": \"expensive\",\n"
-            + "        \"conditions\": [{\n"
-            + "          \"queryParamPattern\": {\n"
-            + "            \"q\": \".*multijoin.*\"\n"
-            + "          }\n"
-            + "        }],\n"
+            + "        \"header\": {\"solr_req_priority\": \"5\"},\n"
             + "        \"allowedRequests\": 5,\n"
             + "        \"slotAcquisitionTimeoutInMS\": 100\n"
             + "      },\n"
             + "      {\n"
             + "        \"name\": \"low\",\n"
-            + "        \"conditions\": [{\n"
-            + "          \"headerPattern\": {\n"
-            + "            \"solr_req_priority\": \"20\"\n"
-            + "          }\n"
-            + "        }],\n"
+            + "        \"header\": {\"solr_req_priority\": \"20\"},\n"
             + "        \"allowedRequests\": 20,\n"
             + "        \"slotAcquisitionTimeoutInMS\": 100\n"
             + "      },\n"
             + "      {\n"
             + "        \"name\": \"global\",\n"
-            + "        \"conditions\": [],\n"
+            + "        \"header\": null,\n"
             + "        \"allowedRequests\": 50,\n"
             + "        \"slotAcquisitionTimeoutInMS\": 100\n"
             + "      }\n"
             + "    ]\n"
             + "  }\n"
-            + "}\n"
-            + "\n";
+            + "}";
     RateLimitManager mgr =
         new RateLimitManager.Builder(
                 () ->
