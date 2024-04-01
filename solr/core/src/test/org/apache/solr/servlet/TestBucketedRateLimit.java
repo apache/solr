@@ -62,7 +62,7 @@ public class TestBucketedRateLimit extends SolrCloudTestCase {
             + "  }\n"
             + "}";
     SolrZkClient zkClient = cluster.getZkClient();
-    zkClient.atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> config.getBytes());
+    zkClient.atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> config.getBytes(StandardCharsets.UTF_8));
     JettySolrRunner jetty = cluster.getJettySolrRunners().get(0);
     jetty.stop();
     jetty.start(true);
