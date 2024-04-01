@@ -35,9 +35,7 @@ import org.apache.zookeeper.data.Stat;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * A test for bucketed rate limiting
- */
+/** A test for bucketed rate limiting */
 public class TestBucketedRateLimit extends SolrCloudTestCase {
 
   @BeforeClass
@@ -62,7 +60,8 @@ public class TestBucketedRateLimit extends SolrCloudTestCase {
             + "  }\n"
             + "}";
     SolrZkClient zkClient = cluster.getZkClient();
-    zkClient.atomicUpdate(ZkStateReader.CLUSTER_PROPS, bytes -> config.getBytes(StandardCharsets.UTF_8));
+    zkClient.atomicUpdate(
+        ZkStateReader.CLUSTER_PROPS, bytes -> config.getBytes(StandardCharsets.UTF_8));
     JettySolrRunner jetty = cluster.getJettySolrRunners().get(0);
     jetty.stop();
     jetty.start(true);

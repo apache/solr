@@ -36,9 +36,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * This implements a rate limiter with multiple named buckets
- */
+/** This implements a rate limiter with multiple named buckets */
 public class BucketedQueryRateLimiter extends QueryRateLimiter implements SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
