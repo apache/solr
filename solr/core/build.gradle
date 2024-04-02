@@ -153,6 +153,15 @@ dependencies {
   implementation 'org.apache.logging.log4j:log4j-core'
   runtimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
 
+  // Prometheus client
+  implementation 'io.prometheus:simpleclient'
+  implementation 'io.prometheus:simpleclient_common'
+  implementation 'io.prometheus:simpleclient_dropwizard'
+  implementation 'io.prometheus:prometheus-metrics-exposition-formats:1.1.0'
+  implementation 'io.prometheus:prometheus-metrics-simpleclient-bridge:1.1.0'
+  implementation 'io.prometheus:prometheus-metrics-core:1.1.0'
+  implementation 'io.prometheus:prometheus-metrics-instrumentation-jvm:1.1.0'
+
   // For faster XML processing than the JDK
   implementation 'org.codehaus.woodstox:stax2-api'
   implementation 'com.fasterxml.woodstox:woodstox-core'
