@@ -545,7 +545,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     ResponseParser rp = new XMLResponseParser();
     String url = getBaseUrl();
     HttpSolrClientBuilderBase<?, ?> b =
-            builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
     CountDownLatch cdl = new CountDownLatch(limit);
     DebugAsyncListener[] listeners = new DebugAsyncListener[limit];
@@ -555,7 +555,11 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       // ensure the collection is empty to start
       client.deleteByQuery(COLLECTION_1, "*:*");
       client.commit(COLLECTION_1);
-      QueryResponse qr = client.query(COLLECTION_1, new MapSolrParams(Collections.singletonMap("q", "*:*")), SolrRequest.METHOD.POST);
+      QueryResponse qr =
+          client.query(
+              COLLECTION_1,
+              new MapSolrParams(Collections.singletonMap("q", "*:*")),
+              SolrRequest.METHOD.POST);
       assertEquals(0, qr.getResults().getNumFound());
 
       for (int i = 0; i < limit; i++) {
@@ -569,10 +573,13 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       client.commit(COLLECTION_1);
 
       // check that the correct number of documents were added
-      qr = client.query(COLLECTION_1, new MapSolrParams(Collections.singletonMap("q", "*:*")), SolrRequest.METHOD.POST);
+      qr =
+          client.query(
+              COLLECTION_1,
+              new MapSolrParams(Collections.singletonMap("q", "*:*")),
+              SolrRequest.METHOD.POST);
       assertEquals(limit, qr.getResults().getNumFound());
     }
-
   }
 
   protected void testQueryAsync() throws Exception {

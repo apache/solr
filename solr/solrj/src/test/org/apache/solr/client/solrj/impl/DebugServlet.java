@@ -141,7 +141,8 @@ public class DebugServlet extends HttpServlet {
     qs = qs == null ? "" : qs;
     Object responseBody = null;
 
-    // Tests can set this up to return different response bodies based on substrings in the query string
+    // Tests can set this up to return different response bodies based on substrings in the query
+    // string
     for (Map.Entry<String, Object> entry : responseBodyByQueryFragment.entrySet()) {
       if (qs.contains(entry.getKey())) {
         responseBody = entry.getValue();
