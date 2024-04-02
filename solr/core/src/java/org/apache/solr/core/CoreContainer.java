@@ -52,6 +52,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -445,6 +447,17 @@ public class CoreContainer {
             cfg.getIndexSearcherExecutorThreads(), // thread count
             cfg.getIndexSearcherExecutorThreads(), // queue size
             new SolrNamedThreadFactory("searcherCollector"));
+    ((ExecutorUtil.MDCAwareThreadPoolExecutor) collectorExecutor).setRejectedExecutionHandler(new RejectedExecutionHandler() {
+      @Override
+      public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+        if (!executor.isShutdown()) {
+          try {
+            executor.getQueue().put(r);
+          } catch (InterruptedException e) {
+          }
+        }
+      }
+    });
   }
 
   @SuppressWarnings({"unchecked"})
