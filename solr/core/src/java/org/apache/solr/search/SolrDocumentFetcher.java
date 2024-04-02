@@ -114,10 +114,8 @@ public class SolrDocumentFetcher {
 
   private final Set<String> largeFields;
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private final Collection<String>[] storedHighlightFieldNames; // lazy populated; use getter
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private final Collection<String>[] indexedFieldNames; // lazy populated; use getter
 
   private final StoredFields storedFields;
@@ -142,7 +140,7 @@ public class SolrDocumentFetcher {
     return new SolrDocumentFetcher(this, searcher.getIndexReader().storedFields());
   }
 
-  @SuppressWarnings({"unchecked"})
+  @SuppressWarnings({"unchecked", "rawtypes"})
   SolrDocumentFetcher(SolrIndexSearcher searcher, SolrConfig solrConfig, boolean cachingEnabled) {
     this.searcher = searcher;
     this.nLeaves = searcher.getTopReaderContext().leaves().size();
