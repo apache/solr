@@ -282,7 +282,7 @@ public class HttpSolrCall {
               queryParams.get(COLLECTION_PROP, def)); // &collection= takes precedence
 
       if (core == null) {
-        //force update collection only if local clusterstate is outdated
+        // force update collection only if local clusterstate is outdated
         resolveDocCollection(collectionsList);
         // lookup core from collection, or route away if need to
         // route to 1st
