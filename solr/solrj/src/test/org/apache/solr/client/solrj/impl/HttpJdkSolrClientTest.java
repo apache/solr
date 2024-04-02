@@ -200,12 +200,12 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testAsyncGet() throws Exception {
-    super.testQueryAsync(SolrRequest.METHOD.GET);
+    super.testQueryAsync();
   }
 
   @Test
   public void testAsyncPost() throws Exception {
-    super.testQueryAsync(SolrRequest.METHOD.POST);
+    super.testUpdateAsync();
   }
 
   @Test

@@ -38,6 +38,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -59,6 +60,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   protected static final String DEBUG_SERVLET_REGEX = DEBUG_SERVLET_PATH + "/*";
   protected static final String REDIRECT_SERVLET_PATH = "/redirect";
   protected static final String REDIRECT_SERVLET_REGEX = REDIRECT_SERVLET_PATH + "/*";
+  protected static final String COLLECTION_1 = "collection1";
 
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -312,13 +314,13 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     try {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "collection");
-      baseUrlClient.add("collection1", doc);
-      baseUrlClient.commit("collection1");
+      baseUrlClient.add(COLLECTION_1, doc);
+      baseUrlClient.commit(COLLECTION_1);
 
       assertEquals(
           1,
           baseUrlClient
-              .query("collection1", new SolrQuery("id:collection"))
+              .query(COLLECTION_1, new SolrQuery("id:collection"))
               .getResults()
               .getNumFound());
 
@@ -539,7 +541,41 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         "No authorization headers expected. Headers: " + DebugServlet.headers, authorizationHeader);
   }
 
-  protected void testQueryAsync(SolrRequest.METHOD method) throws Exception {
+  protected void testUpdateAsync() throws Exception {
+    ResponseParser rp = new XMLResponseParser();
+    String url = getBaseUrl();
+    HttpSolrClientBuilderBase<?, ?> b =
+            builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+    int limit = 10;
+    CountDownLatch cdl = new CountDownLatch(limit);
+    DebugAsyncListener[] listeners = new DebugAsyncListener[limit];
+    Cancellable[] cancellables = new Cancellable[limit];
+    try (HttpSolrClientBase client = b.build()) {
+
+      // ensure the collection is empty to start
+      client.deleteByQuery(COLLECTION_1, "*:*");
+      client.commit(COLLECTION_1);
+      QueryResponse qr = client.query(COLLECTION_1, new MapSolrParams(Collections.singletonMap("q", "*:*")), SolrRequest.METHOD.POST);
+      assertEquals(0, qr.getResults().getNumFound());
+
+      for (int i = 0; i < limit; i++) {
+        listeners[i] = new DebugAsyncListener(cdl);
+        UpdateRequest ur = new UpdateRequest();
+        ur.add("id", "KEY-" + i);
+        ur.setMethod(SolrRequest.METHOD.POST);
+        client.asyncRequest(ur, COLLECTION_1, listeners[i]);
+      }
+      cdl.await(1, TimeUnit.MINUTES);
+      client.commit(COLLECTION_1);
+
+      // check that the correct number of documents were added
+      qr = client.query(COLLECTION_1, new MapSolrParams(Collections.singletonMap("q", "*:*")), SolrRequest.METHOD.POST);
+      assertEquals(limit, qr.getResults().getNumFound());
+    }
+
+  }
+
+  protected void testQueryAsync() throws Exception {
     ResponseParser rp = new XMLResponseParser();
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
@@ -559,7 +595,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
                 + "</str></doc></result></response>");
         QueryRequest query =
             new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
-        query.setMethod(method);
+        query.setMethod(SolrRequest.METHOD.GET);
         listeners[i] = new DebugAsyncListener(cdl);
         client.asyncRequest(query, null, listeners[i]);
       }
@@ -592,7 +628,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     DebugAsyncListener listener = new DebugAsyncListener(cdl);
     try (HttpSolrClientBase client = b.build()) {
       QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
-      client.asyncRequest(query, "collection1", listener);
+      client.asyncRequest(query, COLLECTION_1, listener);
       cdl.await(1, TimeUnit.MINUTES);
     }
 
