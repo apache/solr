@@ -17,6 +17,7 @@
 package org.apache.solr.response;
 
 import java.io.BufferedOutputStream;
+import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -75,16 +76,19 @@ public final class QueryResponseWriterUtil {
     return new FastWriter(writer);
   }
 
-  private static class NonFlushingStream extends OutputStream {
-    private final OutputStream outputStream;
-
+  private static class NonFlushingStream extends FilterOutputStream {
     public NonFlushingStream(OutputStream outputStream) {
-      this.outputStream = outputStream;
+      super(outputStream);
     }
 
     @Override
-    public void write(int b) throws IOException {
-      outputStream.write(b);
+    public void write(byte[] b) throws IOException {
+      out.write(b);
+    }
+
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException {
+      out.write(b, off, len);
     }
 
     @Override
