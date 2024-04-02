@@ -60,7 +60,6 @@ import org.apache.lucene.search.vectorhighlight.FieldQuery;
 import org.apache.lucene.search.vectorhighlight.FragListBuilder;
 import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
 import org.apache.lucene.util.AttributeSource.State;
-import org.apache.lucene.util.IOSupplier;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
@@ -484,19 +483,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     FvhContainer fvhContainer = new FvhContainer(null, null);
 
     IndexReader reader = req.getSearcher().getSlowAtomicReader();
-    IOSupplier<TermVectors> tvSupplier =
-        new IOSupplier<TermVectors>() {
-
-          private TermVectors termVectors;
-
-          @Override
-          public TermVectors get() throws IOException {
-            if (this.termVectors == null) {
-              this.termVectors = new ReusingTermVectors(reader.termVectors()); // SOLR-5855
-            }
-            return this.termVectors;
-          }
-        };
+    TermVectors termVectors = new ReusingTermVectors(reader); // SOLR-5855
 
     // Highlight each document
     NamedList<Object> fragments = new SimpleOrderedMap<>();
@@ -514,11 +501,11 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         Object fieldHighlights; // object type allows flexibility for subclassers
         fieldHighlights =
             doHighlightingOfField(
-                doc, docId, schemaField, fvhContainer, query, reader, tvSupplier, req, params);
+                doc, docId, schemaField, fvhContainer, query, reader, termVectors, req, params);
 
         if (fieldHighlights == null) {
           fieldHighlights =
-              alternateField(doc, docId, fieldName, fvhContainer, query, reader, tvSupplier, req);
+              alternateField(doc, docId, fieldName, fvhContainer, query, reader, termVectors, req);
         }
 
         if (fieldHighlights != null) {
@@ -537,7 +524,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       FvhContainer fvhContainer,
       Query query,
       IndexReader reader,
-      IOSupplier<TermVectors> tvSupplier,
+      TermVectors termVectors,
       SolrQueryRequest req,
       SolrParams params)
       throws IOException {
@@ -587,7 +574,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
           doHighlightingByFastVectorHighlighter(doc, docId, schemaField, fvhContainer, reader, req);
     } else { // standard/default highlighter
       fieldHighlights =
-          doHighlightingByHighlighter(doc, docId, schemaField, query, tvSupplier, req);
+          doHighlightingByHighlighter(doc, docId, schemaField, query, termVectors, req);
     }
     return fieldHighlights;
   }
@@ -673,7 +660,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       int docId,
       SchemaField schemaField,
       Query query,
-      IOSupplier<TermVectors> tvSupplier,
+      TermVectors termVectors,
       SolrQueryRequest req)
       throws IOException {
     final SolrParams params = req.getParams();
@@ -713,7 +700,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
     // Try term vectors, which is faster
     //  note: offsets are minimally sufficient for this HL.
-    final Fields tvFields = schemaField.storeTermOffsets() ? tvSupplier.get().get(docId) : null;
+    final Fields tvFields = schemaField.storeTermOffsets() ? termVectors.get(docId) : null;
     final TokenStream tvStream =
         TokenSources.getTermVectorTokenStreamOrNull(fieldName, tvFields, maxCharsToAnalyze - 1);
     //  We need to wrap in OffsetWindowTokenFilter if multi-valued
@@ -875,7 +862,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       FvhContainer fvhContainer,
       Query query,
       IndexReader reader,
-      IOSupplier<TermVectors> tvSupplier,
+      TermVectors termVectors,
       SolrQueryRequest req)
       throws IOException {
     IndexSchema schema = req.getSearcher().getSchema();
@@ -905,7 +892,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         req.setParams(SolrParams.wrapDefaults(new MapSolrParams(invariants), origParams));
         fieldHighlights =
             doHighlightingOfField(
-                doc, docId, schemaField, fvhContainer, query, reader, tvSupplier, req, params);
+                doc, docId, schemaField, fvhContainer, query, reader, termVectors, req, params);
         req.setParams(origParams);
         if (fieldHighlights != null) {
           return fieldHighlights;
@@ -1110,17 +1097,21 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    */
   static class ReusingTermVectors extends TermVectors {
 
-    private final TermVectors in;
+    private final IndexReader reader;
+    private TermVectors in;
     private int lastDocId = -1;
     private Fields tvFields;
 
-    public ReusingTermVectors(TermVectors in) {
-      this.in = in;
+    public ReusingTermVectors(IndexReader reader) {
+      this.reader = reader;
     }
 
     @Override
     public Fields get(int docID) throws IOException {
       if (docID != lastDocId) {
+        if (in == null) {
+          in = reader.termVectors();
+        }
         lastDocId = docID;
         tvFields = in.get(docID);
       }
