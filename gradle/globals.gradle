@@ -169,5 +169,9 @@ allprojects {
     // "CI": Github (https://docs.github.com/en/actions/learn-github-actions/environment-variables)
     // anything starting with "JENKINS_" or "HUDSON_": Jenkins/Hudson (https://jenkins.thetaphi.de/env-vars.html/)
     isCIBuild = System.getenv().keySet().any { it ==~ /(?i)((JENKINS|HUDSON)(_\w+)?|CI)/ }
+
+    // Assign different java version for client-side modules 'api' and 'solrj*'
+    var isSolrJ = project.name.matches("^(solrj.*|api)\$")
+    minJavaVersion = isSolrJ ? rootProject.minJavaVersionSolrJ : rootProject.minJavaVersionDefault
   }
 }
