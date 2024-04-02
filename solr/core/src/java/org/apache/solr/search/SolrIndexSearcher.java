@@ -115,7 +115,6 @@ import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.util.IOFunction;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -433,10 +432,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       return docFetcher.createInstance();
     } catch (IOException e) {
       // TODO: should we instead throw IOException?
-      throw new RuntimeIOException(e);
+      throw new RuntimeException(e);
     }
   }
 
+  /**
+   * Allows interrogation of {@link #docFetcher} template (checking field names, etc.) without
+   * forcing it to be cloned (as it would be if an instance were retrieved via {@link
+   * #getDocFetcher()}).
+   */
   public <T> T interrogateDocFetcher(Function<SolrDocumentFetcher, T> func) {
     return func.apply(docFetcher);
   }

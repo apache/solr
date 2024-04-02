@@ -115,12 +115,10 @@ public class SolrDocumentFetcher {
   private final Set<String> largeFields;
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private final Collection<String>[] storedHighlightFieldNames =
-      new Collection[1]; // lazy populated; use getter
+  private final Collection<String>[] storedHighlightFieldNames; // lazy populated; use getter
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private final Collection<String>[] indexedFieldNames =
-      new Collection[1]; // lazy populated; use getter
+  private final Collection<String>[] indexedFieldNames; // lazy populated; use getter
 
   private final StoredFields storedFields;
 
@@ -135,6 +133,8 @@ public class SolrDocumentFetcher {
     this.largeFields = template.largeFields;
     this.dvsCanSubstituteStored = template.dvsCanSubstituteStored;
     this.allStored = template.allStored;
+    this.storedHighlightFieldNames = template.indexedFieldNames;
+    this.indexedFieldNames = template.indexedFieldNames;
     this.storedFields = storedFields;
   }
 
@@ -197,6 +197,8 @@ public class SolrDocumentFetcher {
     this.dvsCanSubstituteStored = Collections.unmodifiableSet(dvsCanSubstituteStored);
     this.allStored = Collections.unmodifiableSet(allStoreds);
     this.storedFields = null; // template docFetcher should throw NPE if used directly
+    this.storedHighlightFieldNames = new Collection[1];
+    this.indexedFieldNames = new Collection[1];
   }
 
   // Does this field have both stored=true and docValues=true and is otherwise
