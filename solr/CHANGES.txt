@@ -189,6 +189,8 @@ Other Changes
 
 * SOLR-17217: Simplify verbose MatcherAssert.assertThat usage in tests (hossman)
 
+* SOLR-16503: Introduce new default Http2SolrClient in UpdateShardHandler and deprecated old default HttpClient
+
 ==================  9.5.0 ==================
 New Features
 ---------------------
