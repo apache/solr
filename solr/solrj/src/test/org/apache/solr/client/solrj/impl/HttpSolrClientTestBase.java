@@ -579,6 +579,10 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
               new MapSolrParams(Collections.singletonMap("q", "*:*")),
               SolrRequest.METHOD.POST);
       assertEquals(limit, qr.getResults().getNumFound());
+
+      // clean up
+      client.deleteByQuery(COLLECTION_1, "*:*");
+      client.commit(COLLECTION_1);
     }
   }
 
