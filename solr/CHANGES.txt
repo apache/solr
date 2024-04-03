@@ -42,6 +42,8 @@ Improvements
 
 * SOLR-17164: Add 2 arg variant of vectorSimilarity() function (Sanjay Dutt, hossman)
 
+* SOLR-17211: New SolrJ JDK client supports Async (James Dyer)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
