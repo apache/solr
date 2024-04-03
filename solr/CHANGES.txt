@@ -51,6 +51,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
+* SOLR-17153: CloudSolrClient could fail a request immediately following a collection creation.  Required double-checking the collection doesn’t exist. (Aparna Suresh via David Smiley)
+
 * SOLR-17152: Better alignment of Admin UI graph (janhoy)
 
 * SOLR-17148: Fixing Config API overlay property enabling or disabling the cache (Sanjay Dutt, hossman, Eric Pugh)
