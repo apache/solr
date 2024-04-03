@@ -47,12 +47,7 @@ import org.eclipse.jetty.client.util.SPNEGOAuthentication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Kerberos-enabled SolrHttpClientBuilder
- *
- * @deprecated Please consider alternatives involving the new Solr Http2Client
- */
-@Deprecated(since = "9.0")
+/** Kerberos-enabled SolrHttpClientBuilder */
 public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
 
   public static final String LOGIN_CONFIG_PROP = "java.security.auth.login.config";

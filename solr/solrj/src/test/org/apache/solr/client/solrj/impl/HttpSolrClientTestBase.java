@@ -41,7 +41,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 
 public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
@@ -435,7 +434,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     final var rsp = req.process(client);
     Object stream = rsp.getResponse().get("stream");
     assertNotNull(stream);
-    MatcherAssert.assertThat(stream, instanceOf(InputStream.class));
+    assertThat(stream, instanceOf(InputStream.class));
     InputStream is = (InputStream) stream;
     assertNotNull(is.readAllBytes()); // throws IOException if closed
     org.apache.solr.common.util.IOUtils.closeQuietly((InputStream) stream);

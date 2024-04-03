@@ -36,7 +36,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateShardRequestBody;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateShard} */
@@ -101,8 +100,7 @@ public class CreateShardAPITest extends SolrTestCaseJ4 {
             });
 
     assertEquals(400, thrown.code());
-    MatcherAssert.assertThat(
-        thrown.getMessage(), containsString("Invalid shard: [invalid$shard@name]"));
+    assertThat(thrown.getMessage(), containsString("Invalid shard: [invalid$shard@name]"));
   }
 
   @Test

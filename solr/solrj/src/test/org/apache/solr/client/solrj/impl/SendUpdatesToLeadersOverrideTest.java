@@ -41,7 +41,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.UpdateCommand;
 import org.apache.solr.update.processor.TrackingUpdateProcessorFactory;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -194,7 +193,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
 
     // post-distrib should never match any PULL replicas, regardless of request, if this fails
     // something is seriously wrong with our cluster
-    MatcherAssert.assertThat(
+    assertThat(
         "post-distrib should never be PULL replica",
         results.postDistribCores.keySet(),
         everyItem(not(isIn(PULL_REPLICA_CORE_NAMES))));
@@ -286,10 +285,10 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
           assertUpdateWithRecording(new UpdateRequest().add(sdoc("id", "hoss")), client);
 
       // single NRT leader is only core that should be involved at all
-      MatcherAssert.assertThat("add pre-distrib size", add.preDistribCores.keySet(), hasSize(1));
-      MatcherAssert.assertThat("add pre-distrib size", add.preDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat("add pre-distrib size", add.preDistribCommands, hasSize(1));
-      MatcherAssert.assertThat(
+      assertThat("add pre-distrib size", add.preDistribCores.keySet(), hasSize(1));
+      assertThat("add pre-distrib size", add.preDistribRequests.keySet(), hasSize(1));
+      assertThat("add pre-distrib size", add.preDistribCommands, hasSize(1));
+      assertThat(
           "add pre-distrib must be leader",
           add.preDistribCores.keySet(),
           everyItem(isIn(LEADER_CORE_NAMES)));
@@ -314,32 +313,31 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
           "add and del should have been routed the same",
           add.preDistribCores.keySet(),
           del.preDistribCores.keySet());
-      MatcherAssert.assertThat("del pre-distrib size", del.preDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat("del pre-distrib size", del.preDistribCommands, hasSize(1));
+      assertThat("del pre-distrib size", del.preDistribRequests.keySet(), hasSize(1));
+      assertThat("del pre-distrib size", del.preDistribCommands, hasSize(1));
     }
 
     { // DBQ should start on some leader, and then distrib to both leaders
       final RecordingResults record =
           assertUpdateWithRecording(new UpdateRequest().deleteByQuery("*:*"), client);
 
-      MatcherAssert.assertThat("dbq pre-distrib size", record.preDistribCores.keySet(), hasSize(1));
-      MatcherAssert.assertThat(
+      assertThat("dbq pre-distrib size", record.preDistribCores.keySet(), hasSize(1));
+      assertThat(
           "dbq pre-distrib must be leader",
           record.preDistribCores.keySet(),
           everyItem(isIn(LEADER_CORE_NAMES)));
-      MatcherAssert.assertThat(
-          "dbq pre-distrib size", record.preDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat("dbq pre-distrib size", record.preDistribCommands, hasSize(1));
+      assertThat("dbq pre-distrib size", record.preDistribRequests.keySet(), hasSize(1));
+      assertThat("dbq pre-distrib size", record.preDistribCommands, hasSize(1));
 
       assertEquals(
           "dbq post-distrib must be all leaders",
           LEADER_CORE_NAMES,
           record.postDistribCores.keySet());
-      MatcherAssert.assertThat(
+      assertThat(
           "dbq post-distrib size",
           record.postDistribRequests.keySet(),
           hasSize(LEADER_CORE_NAMES.size()));
-      MatcherAssert.assertThat(
+      assertThat(
           "dbq post-distrib size", record.postDistribCommands, hasSize(LEADER_CORE_NAMES.size()));
     }
 
@@ -353,16 +351,15 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
 
       // NOTE: Don't assume our docIds are spread across multi-shards...
       // ...but the original number of requests should all be diff leaders
-      MatcherAssert.assertThat(
+      assertThat(
           "multi pre-distrib must be leaders",
           record.preDistribCores.keySet(),
           everyItem(isIn(LEADER_CORE_NAMES)));
-      MatcherAssert.assertThat(
+      assertThat(
           "multi pre-distrib req != pre-distrib num cores",
           record.preDistribRequests.keySet(),
           hasSize(record.preDistribCores.keySet().size()));
-      MatcherAssert.assertThat(
-          "multi pre-distrib command size", record.preDistribCommands, hasSize(100 + 10));
+      assertThat("multi pre-distrib command size", record.preDistribCommands, hasSize(100 + 10));
 
       assertEquals(
           "multi post-distrib must be same leaders",
@@ -375,8 +372,7 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
           "multi post-distrib cores don't match pre-distrib cores",
           record.preDistribCores.keySet(),
           record.postDistribCores.keySet());
-      MatcherAssert.assertThat(
-          "multi post-distrib command size", record.postDistribCommands, hasSize(100 + 10));
+      assertThat("multi post-distrib command size", record.postDistribCommands, hasSize(100 + 10));
     }
   }
 
@@ -395,68 +391,65 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
           assertUpdateWithRecording(prefPull(new UpdateRequest().add(sdoc("id", "hoss"))), client);
 
       // ...should start on (some) PULL replica, since we asked nicely
-      MatcherAssert.assertThat("add pre-distrib size", add.preDistribCores.keySet(), hasSize(1));
-      MatcherAssert.assertThat(
+      assertThat("add pre-distrib size", add.preDistribCores.keySet(), hasSize(1));
+      assertThat(
           "add pre-distrib must be PULL",
           add.preDistribCores.keySet(),
           everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
-      MatcherAssert.assertThat("add pre-distrib size", add.preDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat("add pre-distrib size", add.preDistribCommands, hasSize(1));
+      assertThat("add pre-distrib size", add.preDistribRequests.keySet(), hasSize(1));
+      assertThat("add pre-distrib size", add.preDistribCommands, hasSize(1));
 
       // ...then be routed to single leader for this id
-      MatcherAssert.assertThat("add post-distrib size", add.postDistribCores.keySet(), hasSize(1));
-      MatcherAssert.assertThat(
+      assertThat("add post-distrib size", add.postDistribCores.keySet(), hasSize(1));
+      assertThat(
           "add post-distrib must be leader",
           add.postDistribCores.keySet(),
           everyItem(isIn(LEADER_CORE_NAMES)));
-      MatcherAssert.assertThat(
-          "add post-distrib size", add.postDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat("add post-distrib size", add.postDistribCommands, hasSize(1));
+      assertThat("add post-distrib size", add.postDistribRequests.keySet(), hasSize(1));
+      assertThat("add post-distrib size", add.postDistribCommands, hasSize(1));
 
       // A DBI should also start on (some) PULL replica,  since we asked nicely.
       //
       // then it should be distributed to whatever leader our add doc (for the same id) was sent to
       final RecordingResults del =
           assertUpdateWithRecording(prefPull(new UpdateRequest().deleteById("hoss")), client);
-      MatcherAssert.assertThat("del pre-distrib size", del.preDistribCores.keySet(), hasSize(1));
-      MatcherAssert.assertThat(
+      assertThat("del pre-distrib size", del.preDistribCores.keySet(), hasSize(1));
+      assertThat(
           "del pre-distrib must be PULL",
           del.preDistribCores.keySet(),
           everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
-      MatcherAssert.assertThat("del pre-distrib size", del.preDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat("del pre-distrib size", del.preDistribCommands, hasSize(1));
+      assertThat("del pre-distrib size", del.preDistribRequests.keySet(), hasSize(1));
+      assertThat("del pre-distrib size", del.preDistribCommands, hasSize(1));
 
       assertEquals(
           "add and del should have same post-distrib leader",
           add.postDistribCores.keySet(),
           del.postDistribCores.keySet());
-      MatcherAssert.assertThat(
-          "del post-distrib size", del.postDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat("del post-distrib size", del.postDistribCommands, hasSize(1));
+      assertThat("del post-distrib size", del.postDistribRequests.keySet(), hasSize(1));
+      assertThat("del post-distrib size", del.postDistribCommands, hasSize(1));
     }
 
     { // DBQ start on (some) PULL replica, since we asked nicely, then be routed to all leaders
       final RecordingResults record =
           assertUpdateWithRecording(prefPull(new UpdateRequest().deleteByQuery("*:*")), client);
 
-      MatcherAssert.assertThat("dbq pre-distrib size", record.preDistribCores.keySet(), hasSize(1));
-      MatcherAssert.assertThat(
+      assertThat("dbq pre-distrib size", record.preDistribCores.keySet(), hasSize(1));
+      assertThat(
           "dbq pre-distrib must be PULL",
           record.preDistribCores.keySet(),
           everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
-      MatcherAssert.assertThat(
-          "dbq pre-distrib size", record.preDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat("dbq pre-distrib size", record.preDistribCommands, hasSize(1));
+      assertThat("dbq pre-distrib size", record.preDistribRequests.keySet(), hasSize(1));
+      assertThat("dbq pre-distrib size", record.preDistribCommands, hasSize(1));
 
       assertEquals(
           "dbq post-distrib must be all leaders",
           LEADER_CORE_NAMES,
           record.postDistribCores.keySet());
-      MatcherAssert.assertThat(
+      assertThat(
           "dbq post-distrib size",
           record.postDistribRequests.keySet(),
           hasSize(LEADER_CORE_NAMES.size()));
-      MatcherAssert.assertThat(
+      assertThat(
           "dbq post-distrib size", record.postDistribCommands, hasSize(LEADER_CORE_NAMES.size()));
     }
 
@@ -467,16 +460,13 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       final RecordingResults record =
           assertUpdateWithRecording(prefPull(createMultiDirectUpdates(100, 10)), client);
 
-      MatcherAssert.assertThat(
-          "multi pre-distrib size", record.preDistribCores.keySet(), hasSize(1));
-      MatcherAssert.assertThat(
+      assertThat("multi pre-distrib size", record.preDistribCores.keySet(), hasSize(1));
+      assertThat(
           "multi pre-distrib must be PULL",
           record.preDistribCores.keySet(),
           everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
-      MatcherAssert.assertThat(
-          "multi pre-distrib req size", record.preDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat(
-          "multi pre-distrib command size", record.preDistribCommands, hasSize(100 + 10));
+      assertThat("multi pre-distrib req size", record.preDistribRequests.keySet(), hasSize(1));
+      assertThat("multi pre-distrib command size", record.preDistribCommands, hasSize(100 + 10));
 
       assertEquals(
           "multi post-distrib must be all leaders",
@@ -486,12 +476,11 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       //
       // We make no asertion about number of post-distrb requests
       // (distrib proc may batch differently then what we send)
-      MatcherAssert.assertThat(
+      assertThat(
           "multi post-distrib cores",
           record.postDistribCores.keySet(),
           everyItem(isIn(LEADER_CORE_NAMES)));
-      MatcherAssert.assertThat(
-          "multi post-distrib command size", record.postDistribCommands, hasSize(100 + 10));
+      assertThat("multi post-distrib command size", record.postDistribCommands, hasSize(100 + 10));
     }
   }
 
@@ -508,23 +497,22 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
               client);
 
       // ...should start on (some) PULL replica, since we asked nicely
-      MatcherAssert.assertThat("add pre-distrib size", add.preDistribCores.keySet(), hasSize(1));
-      MatcherAssert.assertThat(
+      assertThat("add pre-distrib size", add.preDistribCores.keySet(), hasSize(1));
+      assertThat(
           "add pre-distrib must be PULL",
           add.preDistribCores.keySet(),
           everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
-      MatcherAssert.assertThat("add pre-distrib size", add.preDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat("add pre-distrib size", add.preDistribCommands, hasSize(1));
+      assertThat("add pre-distrib size", add.preDistribRequests.keySet(), hasSize(1));
+      assertThat("add pre-distrib size", add.preDistribCommands, hasSize(1));
 
       // ...then be routed to single leader for this id
-      MatcherAssert.assertThat("add post-distrib size", add.postDistribCores.keySet(), hasSize(1));
-      MatcherAssert.assertThat(
+      assertThat("add post-distrib size", add.postDistribCores.keySet(), hasSize(1));
+      assertThat(
           "add post-distrib must be leader",
           add.postDistribCores.keySet(),
           everyItem(isIn(LEADER_CORE_NAMES)));
-      MatcherAssert.assertThat(
-          "add post-distrib size", add.postDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat("add post-distrib size", add.postDistribCommands, hasSize(1));
+      assertThat("add post-distrib size", add.postDistribRequests.keySet(), hasSize(1));
+      assertThat("add post-distrib size", add.postDistribCommands, hasSize(1));
 
       // A DBI should also start on (some) PULL replica,  since we asked nicely.
       //
@@ -532,21 +520,20 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       final RecordingResults del =
           assertUpdateWithRecording(
               prefPull(new UpdateRequest().deleteById("hoss")).setSendToLeaders(false), client);
-      MatcherAssert.assertThat("del pre-distrib size", del.preDistribCores.keySet(), hasSize(1));
-      MatcherAssert.assertThat(
+      assertThat("del pre-distrib size", del.preDistribCores.keySet(), hasSize(1));
+      assertThat(
           "del pre-distrib must be PULL",
           del.preDistribCores.keySet(),
           everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
-      MatcherAssert.assertThat("del pre-distrib size", del.preDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat("del pre-distrib size", del.preDistribCommands, hasSize(1));
+      assertThat("del pre-distrib size", del.preDistribRequests.keySet(), hasSize(1));
+      assertThat("del pre-distrib size", del.preDistribCommands, hasSize(1));
 
       assertEquals(
           "add and del should have same post-distrib leader",
           add.postDistribCores.keySet(),
           del.postDistribCores.keySet());
-      MatcherAssert.assertThat(
-          "del post-distrib size", del.postDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat("del post-distrib size", del.postDistribCommands, hasSize(1));
+      assertThat("del post-distrib size", del.postDistribRequests.keySet(), hasSize(1));
+      assertThat("del post-distrib size", del.postDistribCommands, hasSize(1));
     }
 
     { // DBQ start on (some) PULL replica, since we asked nicely, then be routed to all leaders
@@ -554,24 +541,23 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
           assertUpdateWithRecording(
               prefPull(new UpdateRequest().deleteByQuery("*:*")).setSendToLeaders(false), client);
 
-      MatcherAssert.assertThat("dbq pre-distrib size", record.preDistribCores.keySet(), hasSize(1));
-      MatcherAssert.assertThat(
+      assertThat("dbq pre-distrib size", record.preDistribCores.keySet(), hasSize(1));
+      assertThat(
           "dbq pre-distrib must be PULL",
           record.preDistribCores.keySet(),
           everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
-      MatcherAssert.assertThat(
-          "dbq pre-distrib size", record.preDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat("dbq pre-distrib size", record.preDistribCommands, hasSize(1));
+      assertThat("dbq pre-distrib size", record.preDistribRequests.keySet(), hasSize(1));
+      assertThat("dbq pre-distrib size", record.preDistribCommands, hasSize(1));
 
       assertEquals(
           "dbq post-distrib must be all leaders",
           LEADER_CORE_NAMES,
           record.postDistribCores.keySet());
-      MatcherAssert.assertThat(
+      assertThat(
           "dbq post-distrib size",
           record.postDistribRequests.keySet(),
           hasSize(LEADER_CORE_NAMES.size()));
-      MatcherAssert.assertThat(
+      assertThat(
           "dbq post-distrib size", record.postDistribCommands, hasSize(LEADER_CORE_NAMES.size()));
     }
 
@@ -583,16 +569,13 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
           assertUpdateWithRecording(
               prefPull(createMultiDirectUpdates(100, 10)).setSendToLeaders(false), client);
 
-      MatcherAssert.assertThat(
-          "multi pre-distrib size", record.preDistribCores.keySet(), hasSize(1));
-      MatcherAssert.assertThat(
+      assertThat("multi pre-distrib size", record.preDistribCores.keySet(), hasSize(1));
+      assertThat(
           "multi pre-distrib must be PULL",
           record.preDistribCores.keySet(),
           everyItem(isIn(PULL_REPLICA_CORE_NAMES)));
-      MatcherAssert.assertThat(
-          "multi pre-distrib req size", record.preDistribRequests.keySet(), hasSize(1));
-      MatcherAssert.assertThat(
-          "multi pre-distrib command size", record.preDistribCommands, hasSize(100 + 10));
+      assertThat("multi pre-distrib req size", record.preDistribRequests.keySet(), hasSize(1));
+      assertThat("multi pre-distrib command size", record.preDistribCommands, hasSize(100 + 10));
 
       assertEquals(
           "multi post-distrib must be all leaders",
@@ -602,12 +585,11 @@ public class SendUpdatesToLeadersOverrideTest extends SolrCloudTestCase {
       //
       // We make no asertion about number of post-distrb requests
       // (distrib proc may batch differently then what we send)
-      MatcherAssert.assertThat(
+      assertThat(
           "multi post-distrib cores",
           record.postDistribCores.keySet(),
           everyItem(isIn(LEADER_CORE_NAMES)));
-      MatcherAssert.assertThat(
-          "multi post-distrib command size", record.postDistribCommands, hasSize(100 + 10));
+      assertThat("multi post-distrib command size", record.postDistribCommands, hasSize(100 + 10));
     }
   }
 

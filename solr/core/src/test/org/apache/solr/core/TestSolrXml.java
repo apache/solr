@@ -40,7 +40,6 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.TestThinCache;
 import org.apache.solr.search.ThinCache;
 import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Ignore;
 
@@ -86,7 +85,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("core sorter class", "testCoreSorter", cfg.getCoreSorterClass());
     assertEquals("core load threads", 11, cfg.getCoreLoadThreadCount(false));
     assertEquals("replay update threads", 100, cfg.getReplayUpdatesThreads());
-    MatcherAssert.assertThat(
+    assertThat(
         "core root dir",
         cfg.getCoreRootDirectory().toString(),
         containsString("testCoreRootDirectory"));
@@ -177,7 +176,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     Files.copy(testSrcRoot.resolve("solr-50-all.xml"), solrHome.resolve("solr.xml"));
 
     NodeConfig cfg = SolrXmlConfig.fromSolrHome(solrHome, new Properties());
-    MatcherAssert.assertThat(cfg.getCoreRootDirectory().toString(), containsString("myCoreRoot"));
+    assertThat(cfg.getCoreRootDirectory().toString(), containsString("myCoreRoot"));
     assertEquals("solr host port", 8888, cfg.getCloudConfig().getSolrHostPort());
     assertFalse("schema cache", cfg.hasSchemaCache());
   }

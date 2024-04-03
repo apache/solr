@@ -54,7 +54,6 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -96,7 +95,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
             "j+Rflxi64tXdqosIhbusqi6GTwZq8znunC/dzwcWW0/dHlFGKDurOaE1Nz9FSPJuXbHkVLj638yZ0Lp1ssnoYA==");
         fail("should have failed because of wrong signature ");
       } catch (RemoteExecutionException e) {
-        MatcherAssert.assertThat(e.getMessage(), containsString("Signature does not match"));
+        assertThat(e.getMessage(), containsString("Signature does not match"));
       }
 
       postFile(

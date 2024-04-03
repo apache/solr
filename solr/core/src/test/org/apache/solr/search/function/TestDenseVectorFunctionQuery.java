@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.After;
@@ -199,5 +200,169 @@ public class TestDenseVectorFunctionQuery extends SolrTestCaseJ4 {
         "//result/doc[2]/float[@name='score'][.='0.7835356']",
         "//result/doc[3]/float[@name='score'][.='0.7002023']",
         "//result/doc[4]/float[@name='score'][.='0.7002023']");
+  }
+
+  @Test
+  public void testReportsErrorInvalidNumberOfArgs() {
+    assertQEx(
+        "vectorSimilarity test number of arguments failed!",
+        "Invalid number of arguments. Please provide either two or four arguments.",
+        req(CommonParams.Q, "{!func} vectorSimilarity()", "fq", "id:(1 2 3)", "fl", "id, score"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity test number of arguments failed!",
+        "Invalid number of arguments. Please provide either two or four arguments.",
+        req(
+            CommonParams.Q,
+            "{!func} vectorSimilarity(vector)",
+            "fq",
+            "id:(1 2 3)",
+            "fl",
+            "id, score"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity test number of arguments failed!",
+        "Invalid number of arguments. Please provide either two or four arguments.",
+        req(
+            CommonParams.Q,
+            "{!func} vectorSimilarity(vector,)",
+            "fq",
+            "id:(1 2 3)",
+            "fl",
+            "id, score"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void testReportsErrorInvalidArgs() {
+    assertQEx(
+        "vectorSimilarity 2arg: first arg non-vector field",
+        "undefined field: \"bogus\"",
+        req(CommonParams.Q, "{!func} vectorSimilarity(bogus, vector_byte_encoding)"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity 2arg: second arg non-vector field",
+        "undefined field: \"bogus\"",
+        req(CommonParams.Q, "{!func} vectorSimilarity(vector_byte_encoding, bogus)"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity 3+ args: 1st arg not valid encoding",
+        "Invalid argument: BOGUS is not a valid VectorEncoding. Expected one of [",
+        req(
+            CommonParams.Q,
+            "{!func} vectorSimilarity(BOGUS, DOT_PRODUCT, vector_byte_encoding, vector_byte_encoding)"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity 3+ args: 2nd arg not valid encoding",
+        "Invalid argument: BOGUS is not a valid VectorSimilarityFunction. Expected one of [",
+        req(
+            CommonParams.Q,
+            "{!func} vectorSimilarity(BYTE, BOGUS, vector_byte_encoding, vector_byte_encoding)"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity 3 args: first two are valid for 2 arg syntax",
+        "SyntaxError: Expected ')'",
+        req(CommonParams.Q, "{!func} vectorSimilarity(vector_byte_encoding,[1,2,3,3],BOGUS)"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity 3 args: first two are valid for 4 arg syntax, w/valid 3rd arg field",
+        "SyntaxError: Expected identifier",
+        req(CommonParams.Q, "{!func} vectorSimilarity(BYTE, DOT_PRODUCT, vector_byte_encoding)"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity 3 args: first two are valid for 4 arg syntax, w/valid 3rd arg const vector",
+        "SyntaxError: Expected identifier",
+        req(CommonParams.Q, "{!func} vectorSimilarity(BYTE, DOT_PRODUCT, [1,2,3,3])"),
+        SolrException.ErrorCode.BAD_REQUEST);
+    assertQEx(
+        "vectorSimilarity 5 args: valid 4 arg syntax with extra cruft",
+        "SyntaxError: Expected ')'",
+        req(
+            CommonParams.Q,
+            "{!func} vectorSimilarity(BYTE, DOT_PRODUCT, vector_byte_encoding, vector_byte_encoding, BOGUS)"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void test2ArgsByteFieldAndConstVector() throws Exception {
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!func} vectorSimilarity(vector_byte_encoding, [1,2,3,3])",
+            "fq",
+            "id:(1 2)",
+            "fl",
+            "id, score",
+            "rows",
+            "1"),
+        "//result[@numFound='" + 2 + "']",
+        "//result/doc[1]/str[@name='id'][.=1]");
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!func} vectorSimilarity(vector_byte_encoding, [3,3,2,1])",
+            "fq",
+            "id:(1 2)",
+            "fl",
+            "id, score",
+            "rows",
+            "1"),
+        "//result[@numFound='" + 2 + "']",
+        "//result/doc[1]/str[@name='id'][.=2]");
+  }
+
+  @Test
+  public void test2ArgsFloatFieldAndConstVector() throws Exception {
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!func} vectorSimilarity(vector, [1,2,3,3])",
+            "fq",
+            "id:(1 2 3)",
+            "fl",
+            "id, score"),
+        "//result[@numFound='" + 3 + "']",
+        "//result/doc[1]/str[@name='id'][.=2]",
+        "//result/doc[2]/str[@name='id'][.=3]",
+        "//result/doc[3]/str[@name='id'][.=1]");
+  }
+
+  @Test
+  public void test2ArgsFloatVectorField() throws Exception {
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!func} vectorSimilarity(vector, vector2)",
+            "fq",
+            "id:(1 2 3 4)",
+            "fl",
+            "id, score"),
+        "//result[@numFound='" + 4 + "']",
+        "//result/doc[1]/str[@name='id'][.=2]",
+        "//result/doc[2]/str[@name='id'][.=1]");
+  }
+
+  @Test
+  public void test2ArgsIfEitherFieldMissingValueDocScoreZero() {
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!func} vectorSimilarity(vector, vector2)",
+            "fq",
+            "id:(3)",
+            "fl",
+            "id, score"),
+        "//result[@numFound='" + 1 + "']",
+        "//result/doc[1]/float[@name='score'][.=0.0]");
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!func} vectorSimilarity(vector, vector2)",
+            "fq",
+            "id:(4)",
+            "fl",
+            "id, score"),
+        "//result[@numFound='" + 1 + "']",
+        "//result/doc[1]/float[@name='score'][.=0.0]");
   }
 }

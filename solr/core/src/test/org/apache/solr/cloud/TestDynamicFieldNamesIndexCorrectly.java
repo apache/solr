@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.core.IsEqual;
 import org.hamcrest.core.IsIterableContaining;
 import org.junit.Test;
@@ -97,7 +96,7 @@ public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTe
           .getFieldNames()
           .forEach(
               fieldName -> {
-                MatcherAssert.assertThat(
+                assertThat(
                     String.format(
                         Locale.ROOT,
                         "Doc %s does not have field %s, it has %s",

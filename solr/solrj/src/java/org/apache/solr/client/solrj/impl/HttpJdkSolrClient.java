@@ -410,13 +410,20 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
   @Override
   public void close() throws IOException {
+    // If used with Java 21+
+    if (httpClient instanceof AutoCloseable) {
+      try {
+        ((AutoCloseable) httpClient).close();
+      } catch (Exception e) {
+        log.warn("Could not close the http client.", e);
+      }
+    }
+    httpClient = null;
+
     if (shutdownExecutor) {
       ExecutorUtil.shutdownAndAwaitTermination(executor);
     }
     executor = null;
-
-    // TODO: Java 21 adds close/autoclosable to HttpClient.  We should use it.
-    httpClient = null;
 
     assert ObjectReleaseTracker.release(this);
   }

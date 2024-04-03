@@ -25,26 +25,34 @@ The basis for these suggestions can be terms in a field in Solr, externally crea
 === Define Spell Check in solrconfig.xml
 
 The first step is to specify the source of terms in `solrconfig.xml`.
-There are three approaches to spell checking in Solr, discussed below.
+There are a number of approaches to spell checking in Solr, discussed below.
 
 ==== IndexBasedSpellChecker
 
 The `IndexBasedSpellChecker` uses a Solr index as the basis for a parallel index used for spell checking.
 It requires defining a field as the basis for the index terms; a common practice is to copy terms from some fields (such as `title`, `body`, etc.) to another field created for spell checking.
-Here is a simple example of configuring `solrconfig.xml` with the `IndexBasedSpellChecker`:
+Here is an example of configuring `IndexBasedSpellChecker` in `solrconfig.xml`:
 
 [source,xml]
 ----
 <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
   <lst name="spellchecker">
     <str name="classname">solr.IndexBasedSpellChecker</str>
-    <str name="spellcheckIndexDir">./spellchecker</str>
+    <!-- required parameters -->
     <str name="field">content</str>
-    <str name="buildOnCommit">true</str>
-    <!-- optional elements with defaults
+    <!-- optional parameters for IndexBasedSpellChecker -->
+    <str name="sourceLocation">./folder/with/index/files</str>
+    <!-- optional parameters for all spellcheckers -->
+    <str name="spellcheckIndexDir">./spellcheckerDir</str>
+    <str name="name">default</str>
+    <str name="fieldType">content_ft</str>
+    <str name="queryAnalyzerFieldType">text_general</str>
     <str name="distanceMeasure">org.apache.lucene.search.spell.LevenshteinDistance</str>
-    <str name="accuracy">0.5</str>
-    -->
+    <str name="comparatorClass">score</str>
+    <float name="accuracy">0.5</float>
+    <float name="thresholdTokenFrequency">0.0</float>
+    <str name="buildOnCommit">true</str>
+    <str name="buildOnOptimize">false</str>
  </lst>
 </searchComponent>
 ----
@@ -53,47 +61,83 @@ The first element defines the `searchComponent` to use the `solr.SpellCheckCompo
 The `classname` is the specific implementation of the SpellCheckComponent, in this case `solr.IndexBasedSpellChecker`.
 Defining the `classname` is optional; if not defined, it will default to `IndexBasedSpellChecker`.
 
-The `spellcheckIndexDir` defines the location of the directory that holds the spellcheck index, while the `field` defines the source field (defined in the Schema) for spell check terms.
+The `spellcheckIndexDir` defines the location of the directory that holds the spellcheck index, while the `field` defines the source field (defined in the Schema) for spellcheck terms.
 When choosing a field for the spellcheck index, it's best to avoid a heavily processed field to get more accurate results.
 If the field has many word variations from processing synonyms and/or stemming, the dictionary will be created with those variations in addition to more valid spelling data.
 
-Finally, _buildOnCommit_ defines whether to build the spell check index at every commit (that is, every time new documents are added to the index).
-It is optional, and can be omitted if you would rather set it to `false`.
+By default, this spellchecker builds its dictionary from the Solr index.
+This can be changed by specifying `sourceLocation` - a folder with static Lucene index files to use instead of the Solr index.
+
+The spellchecker can be assigned a descriptive label, `name`, - which can be helpful if the search component defines
+multiple spellcheckers. With that, a spellcheck query can identify a subset of spellcheckers that should be consulted
+(see xref:spell-check-parameters[] for more details).
+
+The query analyzer for the `field` is used to tokenize the spellcheck query.
+If there's a need to override that behavior, configure a `fieldType` and the spellchecker
+will use the query analyzer for that field type instead.
+
+`queryAnalyzerFieldType` is a field type from Solr's schema, and works similarly to the `fieldType` parameter.
+The key difference is that Solr uses `field` or `fieldType` when it tokenizes the spellcheck query
+supplied via `spellcheck.q`, and uses `queryAnalyzerFieldType` when the query is instead provided via the `q` parameter.
+
+The field type specified by this parameter should do minimal transformations.
+It's usually a best practice to avoid types that aggressively stem or NGram, for instance, since those types of analysis can throw off spell checking.
+
+Common configuration parameters like `distanceMeasure`, `comparatorClass`, `accuracy`, and `thresholdTokenFrequency`
+provide control over the returned spellcheck suggestions.
+
+If the `distanceMeasure` is not specified, Solr will use the Levenshtein metric which is the default metric for other spellchecker implementations as well (except for `DirectSolrSpellChecker`).
+
+When `comparatorClass` is configured as "score", the suggestions with lower distance (i.e., higher similarity) scores are considered more relevant.
+The alternative value is "freq" - this prioritizes suggestions with higher document frequency.
+
+The `accuracy` setting defines the threshold for a valid suggestion, and the `thresholdTokenFrequency` setting allows
+skipping suggestions which have low document frequency in the index.
+
+Finally, `buildOnCommit` and `buildOnOptimize` define whether to build the spellcheck index at every commit (that is, every time new documents are added to the index)
+or at every optimize request.
+Both are optional, and can be omitted if you would rather set their values to `false`.
 
 ==== DirectSolrSpellChecker
 
 The `DirectSolrSpellChecker` uses terms from the Solr index without building a parallel index like the `IndexBasedSpellChecker`.
-This spell checker has the benefit of not having to be built regularly, meaning that the terms are always up-to-date with terms in the index.
-Here is how this might be configured in `solrconfig.xml`
+This spellchecker has the benefit of not having to be built regularly, meaning that the terms are always up-to-date with terms in the index.
+Here is how this might be configured in `solrconfig.xml`:
 
 [source,xml]
 ----
 <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
   <lst name="spellchecker">
-    <str name="name">default</str>
-    <str name="field">name</str>
     <str name="classname">solr.DirectSolrSpellChecker</str>
-    <str name="distanceMeasure">internal</str>
-    <float name="accuracy">0.5</float>
+    <!-- required parameters -->
+    <str name="field">name</str>
+    <!-- optional parameters for DirectSolrSpellChecker -->
     <int name="maxEdits">2</int>
     <int name="minPrefix">1</int>
     <int name="maxInspections">5</int>
     <int name="minQueryLength">4</int>
     <int name="maxQueryLength">40</int>
     <float name="maxQueryFrequency">0.01</float>
-    <float name="thresholdTokenFrequency">.01</float>
+    <!-- optional parameters for all spellcheckers -->
+    <str name="name">default</str>
+    <str name="fieldType">name</str>
+    <str name="queryAnalyzerFieldType">text_general</str>
+    <str name="distanceMeasure">internal</str>
+    <str name="comparatorClass">score</str>
+    <float name="accuracy">0.5</float>
+    <float name="thresholdTokenFrequency">0.0</float>
   </lst>
 </searchComponent>
 ----
 
-When choosing a `field` to query for this spell checker, you want one which has relatively little analysis performed on it (particularly analysis such as stemming).
+When choosing a `field` to query for this spellchecker, you want one which has relatively little analysis performed on it (particularly analysis such as stemming).
 Note that you need to specify a field to use for the suggestions, so like the `IndexBasedSpellChecker`, you may want to copy data from fields like `title`, `body`, etc., to a field dedicated to providing spelling suggestions.
 
-Many of the parameters relate to how this spell checker should query the index for term suggestions.
-The `distanceMeasure` defines the metric to use during the spell check query.
-The value "internal" uses the default Levenshtein metric, which is the same metric used with the other spell checker implementations.
+Many of the parameters relate to how this spellchecker should query the index for term suggestions.
+The `distanceMeasure` defines the metric to use during the spellcheck query - the default value for this spellchecker is "internal",
+which corresponds to the Damerau-Levenshtein metric.
 
-Because this spell checker is querying the main index, you may want to limit how often it queries the index to be sure to avoid any performance conflicts with user queries.
+Because this spellchecker is querying the main index, you may want to limit how often it queries the index to be sure to avoid any performance conflicts with user queries.
 The `accuracy` setting defines the threshold for a valid suggestion, while `maxEdits` defines the number of changes to the term to allow.
 Since most spelling mistakes are only 1 letter off, setting this to 1 will reduce the number of possible suggestions (the default, however, is 2); the value can only be 1 or 2.
 `minPrefix` defines the minimum number of characters the terms should share.
@@ -101,10 +145,10 @@ Setting this to 1 means that the spelling suggestions will all start with the sa
 
 The `maxInspections` parameter defines the maximum number of possible matches to review before returning results; the default is 5.
 `minQueryLength` defines how many characters must be in the query before suggestions are provided; the default is 4.
-`maxQueryLength` enables the spell checker to skip over very long query terms, which can avoid expensive operations or exceptions.
+`maxQueryLength` enables the spellchecker to skip over very long query terms, which can avoid expensive operations or exceptions.
 There is no limit to term length by default.
 
-At first, spellchecker analyses incoming query words by looking up them in the index.
+At first, spellchecker analyses incoming query words by looking them up in the index.
 Only query words which are absent from the index, or too rare (equal to or below `maxQueryFrequency`) are considered as misspelled and used for finding suggestions.
 Words which are more frequent than `maxQueryFrequency` bypass spellchecker unchanged.
 After suggestions for every misspelled word are found they are filtered for enough frequency with `thresholdTokenFrequency` as boundary value.
@@ -126,19 +170,31 @@ In `solrconfig.xml`, you would define the searchComponent as so:
 <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
   <lst name="spellchecker">
     <str name="classname">solr.FileBasedSpellChecker</str>
-    <str name="name">file</str>
+    <!-- required parameters -->
     <str name="sourceLocation">spellings.txt</str>
+    <!-- optional parameters for FileBasedSpellChecker -->
+    <str name="fieldType">text_general</str>
     <str name="characterEncoding">UTF-8</str>
-    <str name="spellcheckIndexDir">./spellcheckerFile</str>
-    <!-- optional elements with defaults
+    <!-- optional parameters for all spellcheckers -->
+    <str name="spellcheckIndexDir">./spellcheckerDir</str>
+    <str name="name">file</str>
+    <str name="queryAnalyzerFieldType">text_general</str>
     <str name="distanceMeasure">org.apache.lucene.search.spell.LevenshteinDistance</str>
-    <str name="accuracy">0.5</str>
-    -->
+    <str name="comparatorClass">score</str>
+    <float name="accuracy">0.5</float>
+    <float name="thresholdTokenFrequency">0.0</float>
+    <bool name="buildOnCommit">false</bool>
+    <bool name="buildOnOptimize">false</bool>
  </lst>
 </searchComponent>
 ----
 
-The differences here are the use of the `sourceLocation` to define the location of the file of terms and the use of `characterEncoding` to define the encoding of the terms file.
+The configuration is very similar to the `IndexBasedSpellChecker`, and the differences here are the use of the `sourceLocation` to define the location of the file of terms, and the use of `characterEncoding` to define the encoding of the terms file.
+
+If the `fieldType` parameter is specified and matches a type from the Solr schema, Solr will build the spellcheck index
+by first tokenizing each line from the external file using the `fieldType` index analyzer, and then adding each token to the index.
+
+If not, Solr will treat each line from the external file as an individual token, and add them to the spellcheck index as is.
 
 [TIP]
 ====
@@ -160,20 +216,45 @@ Here is how it might be configured in `solrconfig.xml`:
 ----
 <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
   <lst name="spellchecker">
-    <str name="name">wordbreak</str>
     <str name="classname">solr.WordBreakSolrSpellChecker</str>
+    <!-- required parameters -->
     <str name="field">lowerfilt</str>
+    <!-- optional parameters for WordBreakSpellChecker -->
     <str name="combineWords">true</str>
     <str name="breakWords">true</str>
-    <int name="maxChanges">10</int>
+    <str name="breakSuggestionTieBreaker">max_freq</str>
+    <int name="maxChanges">1</int>
+    <int name="maxCombinedLength">20</int>
+    <int name="minBreakLength">1</int>
+    <int name="maxEvaluations">1000</int>
+    <int name="minSuggestionFreq">1</int>
+    <!-- optional parameters for all spellcheckers -->
+    <str name="name">wordbreak</str>
+    <str name="fieldType">lowerfilt_ft</str>
+    <str name="queryAnalyzerFieldType">text_general</str>
   </lst>
 </searchComponent>
 ----
 
-Some of the parameters will be familiar from the discussion of the other spell checkers, such as `name`, `classname`, and `field`.
-New for this spell checker is `combineWords`, which defines whether words should be combined in a dictionary search (default is true); `breakWords`, which defines if words should be broken during a dictionary search (default is true); and `maxChanges`, an integer which defines how many times the spell checker should check collation possibilities against the index (default is 10).
+Some of the parameters should be familiar from the discussion of the other spellcheckers, such as `name`, `classname`, and `field`.
+New for this spellchecker is `combineWords`, which defines whether words should be combined in a dictionary search (default is true);
+and `breakWords`, which defines if words should be broken during a dictionary search (default is true).
 
-The spellchecker can be configured with a traditional checker (i.e., `DirectSolrSpellChecker`).
+`maxChanges` is an integer which defines how many times the spellchecker should check collation possibilities against the index.
+
+`maxCombinedLength` allows skipping over the suggestions which are too long.
+Similarly, `minBreakLength` instructs the spellchecker to not break the word into parts that are too short.
+
+`maxEvaluations` defines the maximum number of word combinations to evaluate - a higher value might improve
+the result quality, while a lower value might improve performance.
+
+`minSuggestionFreq` sets the minimum frequency a term must have to be included as part of a suggestion.
+
+Finally, the `breakSuggestionTieBreaker` setting ("max_freq" or "sum_freq") instructs Solr to
+sort the suggestions by the number of word breaks, and then by the maximum or by the sum of all the component term's
+frequencies, respectively.
+
+The spellchecker can be configured together with a traditional checker (i.e., `DirectSolrSpellChecker`).
 The results are combined and collations can contain a mix of corrections from both spellcheckers.
 
 === Add It to a Request Handler
@@ -277,19 +358,6 @@ This parameter specifies the maximum number of suggestions that the spellchecker
 If this parameter isn't set, the value defaults to `1`.
 If the parameter is set but not assigned a number, the value defaults to `5`.
 If the parameter is set to a positive integer, that number becomes the maximum number of suggestions returned by the spellchecker.
-
-`spellcheck.queryAnalyzerFieldType`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-A field type from Solr's schema.
-The analyzer configured for the provided field type is used by the QueryConverter to tokenize the value for `q` parameter.
-+
-The field type specified by this parameter should do minimal transformations.
-It's usually a best practice to avoid types that aggressively stem or NGram, for instance, since those types of analysis can throw off spell checking.
 
 `spellcheck.onlyMorePopular`::
 +
@@ -423,7 +491,7 @@ For example, even if your regular search results allow for loose matching of one
 |===
 +
 This parameter causes Solr to use the dictionary named in the parameter's argument.
-This parameter can be used to invoke a specific spellchecker on a per request basis.
+This parameter can be used to invoke a specific spellchecker on a per-request basis.
 
 `spellcheck.accuracy`::
 +
@@ -530,4 +598,4 @@ For example:
 http://localhost:8983/solr/techproducts/spell?spellcheck=true&spellcheck.build=true&spellcheck.q=toyata&shards.qt=/spell&shards=solr-shard1:8983/solr/techproducts,solr-shard2:8983/solr/techproducts
 
 In case of a distributed request to the SpellCheckComponent, the shards are requested for at least five suggestions even if the `spellcheck.count` parameter value is less than five.
-Once the suggestions are collected, they are ranked by the configured distance measure (Levenstein Distance by default) and then by aggregate frequency.
+Once the suggestions are collected, they are ranked by the configured distance measure (Levenshtein distance by default) and then by aggregate frequency.

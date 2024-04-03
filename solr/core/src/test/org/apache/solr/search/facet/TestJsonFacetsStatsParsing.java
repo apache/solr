@@ -26,7 +26,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.function.FieldNameValueSource;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.noggit.ObjectBuilder;
 
@@ -49,10 +48,10 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
         new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.asc),
         new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.asc));
     // negative assertions...
-    MatcherAssert.assertThat(
+    assertThat(
         new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.desc),
         not(new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.asc)));
-    MatcherAssert.assertThat(
+    assertThat(
         new FacetRequest.FacetSort("bar", FacetRequest.SortDirection.desc),
         not(new FacetRequest.FacetSort("foo", FacetRequest.SortDirection.desc)));
   }
@@ -95,16 +94,15 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
         final AggValueSource agg = entry.getValue();
 
         assertEquals("name of " + key, "min", agg.name());
-        MatcherAssert.assertThat("type of " + key, agg, instanceOf(SimpleAggValueSource.class));
+        assertThat("type of " + key, agg, instanceOf(SimpleAggValueSource.class));
         SimpleAggValueSource sagg = (SimpleAggValueSource) agg;
 
         if (key.startsWith("f")) { // value source as arg to min
-          MatcherAssert.assertThat("vs of " + key, sagg.getArg(), instanceOf(IntFieldSource.class));
+          assertThat("vs of " + key, sagg.getArg(), instanceOf(IntFieldSource.class));
           assertEquals("field of " + key, "foo_i", ((IntFieldSource) sagg.getArg()).getField());
           assertEquals(key + ".equals(f1)", agg, stats.get("f1"));
         } else if (key.startsWith("s")) { // field as arg to min
-          MatcherAssert.assertThat(
-              "vs of " + key, sagg.getArg(), instanceOf(FieldNameValueSource.class));
+          assertThat("vs of " + key, sagg.getArg(), instanceOf(FieldNameValueSource.class));
           assertEquals(
               "field of " + key, "foo_i", ((FieldNameValueSource) sagg.getArg()).getFieldName());
           assertEquals(key + ".equals(s1)", agg, stats.get("s1"));
@@ -134,7 +132,7 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
       assertEquals(1, stats.size());
       AggValueSource agg = stats.get("x");
       assertNotNull(agg);
-      MatcherAssert.assertThat(agg, instanceOf(DebugAgg.class));
+      assertThat(agg, instanceOf(DebugAgg.class));
 
       DebugAgg x = (DebugAgg) agg;
       assertEquals(new String[] {"abc", "xyz"}, x.localParams.getParams("foo"));

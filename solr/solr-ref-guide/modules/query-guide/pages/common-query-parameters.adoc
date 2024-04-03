@@ -38,48 +38,42 @@ The `defType` parameter selects the xref:query-syntax-and-parsers.adoc[query par
 |Optional |Default: `score desc`
 |===
 
-The `sort` parameter arranges search results in either ascending (`asc`) or descending (`desc`) order.
-The parameter can be used with either numerical or alphabetical content.
-The directions can be entered in either all lowercase or all uppercase letters (i.e., both `asc` and `ASC` are accepted).
+The `sort` parameter specifies the order of the returned documents.
 
-Solr can sort query responses according to:
-
-* Document scores
-* xref:function-queries.adoc#sort-by-function[Function results]
-* The value of any primitive field (numerics, string, boolean, dates, etc.) which has `docValues="true"` (or `multiValued="false"` and `indexed="true"`, in which case the indexed terms will be used to build DocValue like structures on the fly at runtime)
-* A SortableTextField which implicitly uses `docValues="true"` by default to allow sorting on the original input string regardless of the analyzers used for Searching.
-* A single-valued TextField that uses an analyzer (such as the KeywordTokenizer) that produces only a single term per document.
-TextField does not support `docValues="true"`, but a DocValue-like structure will be built on the fly at runtime.
-** *NOTE:* If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, xref:indexing-guide:copy-fields.adoc[use a `copyField` directive] in the Schema to clone the field.
-Then search on the field and sort on its clone.
-
-In the case of primitive fields, or SortableTextFields, that are `multiValued="true"` the representative value used for each doc when sorting depends on the sort direction: The minimum value in each document is used for ascending (`asc`) sorting, while the maximal value in each document is used for descending (`desc`) sorting.
-This default behavior is equivalent to explicitly sorting using the 2 argument xref:function-queries.adoc#field-function[`field()`] function: `sort=field(name,min) asc` and `sort=field(name,max) desc`
-
-The table below explains how Solr responds to various settings of the `sort` parameter.
+Here are some sample sort values:
 
 [%autowidth.stretch,options="header"]
 |===
-|Example |Result
-| |If the sort parameter is omitted, sorting is performed as though the parameter were set to `score desc`.
-|score desc |Sorts in descending order from the highest score to the lowest score.
-|price asc |Sorts in ascending order of the price field
-|div(popularity,price) desc |Sorts in descending order of the result of the function `popularity / price`
-|inStock desc, price asc |Sorts by the contents of the `inStock` field in descending order, then when multiple documents have the same value for the `inStock` field, those results are sorted in ascending order by the contents of the price field.
-|categories asc, price asc |Sorts by the lowest value of the (multivalued) `categories` field in ascending order, then when multiple documents have the same lowest `categories` value, those results are sorted in ascending order by the contents of the price field.
+| Example                      | Result
+| `score desc`                 | Sorts in descending order from the highest score to the lowest score.
+| `price asc`                  | Sorts in ascending order of the price field, from lowest to highest.
+| `div(popularity,price) desc` | Sorts in descending order of the result of the function `popularity / price`.
+| `inStock desc, price asc`    | Sorts by the contents of the `inStock` field in descending order, then when multiple documents have the same value for the `inStock` field, those results are sorted in ascending order by the contents of the `price` field.
+| `categories asc`             | Since `categories` is a multivalued field and we are sorting ascending, this sorts by the lowest value of the `categories` field in ascending order. This is equivalent to `field(categories,min) asc`
 |===
 
-Regarding the sort parameter's arguments:
+More specifically, Solr can sort query responses according to:
 
-* A sort ordering must include a field name (or `score` as a pseudo field), followed by whitespace (escaped as + or `%20` in URL strings), followed by a sort direction (`asc` or `desc`).
+* Document score
+* xref:function-queries.adoc#sort-by-function[Function results]
+* Single-valued primitive fields (numerics, string, boolean, dates, etc.) which have `docValues="true"` (or `indexed="true"`, in which case the indexed terms will be used to build DocValue like structures on the fly at runtime).
+* Single-valued SortableTextField which implicitly uses `docValues="true"` by default to allow sorting on the original input string regardless of the analyzers used for Searching.
+* Single-valued TextField which have an analyzer (such as the KeywordTokenizer) that produces only a single term per document.
+Since TextField does not support `docValues="true"`, a DocValue-like structure will be built on the fly at runtime.
+** *NOTE:* If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, xref:indexing-guide:copy-fields.adoc[use a `copyField` directive] in the Schema to clone the field.
+Then search on the field and sort on its clone.
+* Multi-valued primitive fields with `docValues="true"` or SortableTextFields. In this case, a representative value is used for each document, depending on the sort direction. When ascending, the minimum value is used. When descending, the maximum value is used. This is equivalent to explicitly sorting using the 2 argument xref:function-queries.adoc#field-function[`field()`] function: `sort=field(name,min) asc` and `sort=field(name,max) desc`.
 
-* Multiple sort orderings can be separated by a comma, using this syntax: `sort=<field name>+<direction>,<field name>+<direction>],...`
-** When more than one sort criteria is provided, the second entry will only be used if the first entry results in a tie.
-If there is a third entry, it will only be used if the first AND second entries are tied.
-And so on.
-** If documents tie in all of the explicit sort criteria, Solr uses each document's Lucene document ID as the final tie-breaker.
+You can specify multiple sort orderings by separating them with commas, e.g. `inStock desc, price asc`.
+When multiple sort criteria are provided, the second entry will only be used if the first entry results
+in a tie. If there is a third entry, it will only be used if the first AND second entries are tied. And
+so on.
+
+If documents tie in all of the explicit sort criteria, Solr uses each document's Lucene document ID as the final tie-breaker.
 This internal property is subject to change during segment merges and document updates, which can lead to unexpected result ordering changes.
 Users looking to avoid this behavior can define an additional sort criteria on a unique or rarely-shared field such as `id` to prevent ties from occurring (e.g., `price desc,id asc`).
+
+NOTE: A sort ordering must always include a field name (or `score` as a pseudo field), followed by whitespace (escaped as + or `%20` in URL strings), followed by a sort direction (`asc` or `desc`, case insensitive).
 
 == start Parameter
 

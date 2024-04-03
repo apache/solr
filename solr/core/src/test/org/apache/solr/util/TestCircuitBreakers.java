@@ -37,7 +37,6 @@ import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.circuitbreaker.LoadAverageCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -230,8 +229,7 @@ public class TestCircuitBreakers extends SolrTestCaseJ4 {
                   try {
                     h.query(req("name:\"john smith\""));
                   } catch (SolrException e) {
-                    MatcherAssert.assertThat(
-                        e.getMessage(), containsString("Circuit Breakers tripped"));
+                    assertThat(e.getMessage(), containsString("Circuit Breakers tripped"));
                     failureCount.incrementAndGet();
                   } catch (Exception e) {
                     throw new RuntimeException(e.getMessage());

@@ -28,7 +28,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -182,9 +181,8 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
                       + returnVal);
             });
     assertEquals(ex.toString(), SolrException.ErrorCode.INVALID_STATE.code, ex.code());
-    MatcherAssert.assertThat(
-        ex.getMessage(), containsString("should've been either ADD or UPDATE_INPLACE"));
-    MatcherAssert.assertThat(ex.getMessage(), containsString("looking for id=1"));
+    assertThat(ex.getMessage(), containsString("should've been either ADD or UPDATE_INPLACE"));
+    assertThat(ex.getMessage(), containsString("looking for id=1"));
   }
 
   @Test

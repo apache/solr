@@ -30,7 +30,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -147,7 +146,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
       final Map<String, ZookeeperReadAPI.AnnotatedStat> childStatsByPath =
           response.unknownProperties().get("/configs/_default");
       assertEquals(6, childStatsByPath.size());
-      MatcherAssert.assertThat(
+      assertThat(
           childStatsByPath.keySet(),
           containsInAnyOrder(
               "protwords.txt",

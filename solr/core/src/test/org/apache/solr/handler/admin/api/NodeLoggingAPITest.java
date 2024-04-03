@@ -32,7 +32,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LoggerInfo;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -65,8 +64,7 @@ public class NodeLoggingAPITest extends SolrTestCase {
     final var responseBody = new NodeLoggingAPI(mockCoreContainer).listAllLoggersAndLevels();
 
     assertEquals(5, responseBody.levels.size());
-    MatcherAssert.assertThat(
-        responseBody.levels, containsInAnyOrder("ERROR", "WARN", "INFO", "DEBUG", "TRACE"));
+    assertThat(responseBody.levels, containsInAnyOrder("ERROR", "WARN", "INFO", "DEBUG", "TRACE"));
 
     assertEquals(2, responseBody.loggers.size());
     final var firstLogger = responseBody.loggers.get(0);

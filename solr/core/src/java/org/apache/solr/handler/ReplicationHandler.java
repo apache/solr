@@ -1214,9 +1214,10 @@ public class ReplicationHandler extends RequestHandlerBase
       log.info(" No value set for 'pollInterval'. Timer Task not started.");
       return;
     }
-
+    final Map<String, String> context = MDC.getCopyOfContextMap();
     Runnable task =
         () -> {
+          MDC.setContextMap(context);
           if (pollDisabled.get()) {
             log.info("Poll disabled");
             return;

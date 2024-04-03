@@ -63,8 +63,8 @@ import org.apache.solr.common.util.SuppressForbidden;
  *   // ... some test code ...
  *
  *   // convinience method for only dealing with Message String of the LogEvent
- *   MatcherAssert.assertThat(secWarnLog.pollMessage(), containsString("hoss"));
- *   MatcherAssert.assertThat(secWarnLog.getQueue().isEmpty()); // no other WARNings matching PKI
+ *   assertThat(secWarnLog.pollMessage(), containsString("hoss"));
+ *   assertThat(secWarnLog.getQueue().isEmpty()); // no other WARNings matching PKI
  *
  *   // ... more test code ...
  *

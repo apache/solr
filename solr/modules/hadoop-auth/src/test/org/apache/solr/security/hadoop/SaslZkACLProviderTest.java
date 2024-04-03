@@ -242,6 +242,8 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
         kerberosTestServices
             .getKdc()
             .createPrincipal(keytabFile, zkClientPrincipal, zkServerPrincipal);
+      } catch (RuntimeException rex) {
+        throw rex;
       } catch (Exception ex) {
         throw new RuntimeException(ex);
       }

@@ -27,7 +27,6 @@ import java.util.Set;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 
 /**
@@ -55,12 +54,12 @@ public class TestSchemaCodecFactoryDefaults extends SolrTestCaseJ4 {
         "Someone broke test config so it declares a CodecFactory, making this test useless",
         h.getCore().getSolrConfig().getPluginInfo(CodecFactory.class.getName()));
 
-    MatcherAssert.assertThat(
+    assertThat(
         "WTF: SolrCore's implicit default Codec is literally same object as Lucene default?",
         h.getCore().getCodec(),
         not(sameInstance(LUCENE_DEFAULT_CODEC)));
 
-    MatcherAssert.assertThat(
+    assertThat(
         "WTF: SolrCore's Codec is literally same object as Lucene (test randomixed) default?",
         h.getCore().getCodec(),
         not(sameInstance(Codec.getDefault())));
@@ -68,14 +67,14 @@ public class TestSchemaCodecFactoryDefaults extends SolrTestCaseJ4 {
     // TODO: it would be nice if we could assert something like 'instanceOf(SchemaCodec.class)'
     // But making that kind of assertion would require refactoring SchemaCodecFactory
     // to return an instance of a concreate (named) class -- right now it's anonymous...
-    MatcherAssert.assertThat(
+    assertThat(
         "WTF: SolrCore's implicit default Codec is not anon impl from SchemaCodecFactory",
         h.getCore().getCodec().getClass().getName(),
         containsString(".SchemaCodecFactory$"));
   }
 
   public void testSubclass() {
-    MatcherAssert.assertThat(
+    assertThat(
         "SchemaCodec does not extend current default lucene codec",
         h.getCore().getCodec(),
         instanceOf(LUCENE_DEFAULT_CODEC.getClass()));

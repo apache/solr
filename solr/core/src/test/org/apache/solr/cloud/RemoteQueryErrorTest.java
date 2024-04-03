@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -51,7 +50,7 @@ public class RemoteQueryErrorTest extends SolrCloudTestCase {
                 () -> {
                   client.add("collection", new SolrInputDocument());
                 });
-        MatcherAssert.assertThat(
+        assertThat(
             e.getMessage(), containsString("Document is missing mandatory uniqueKey field: id"));
       }
     }

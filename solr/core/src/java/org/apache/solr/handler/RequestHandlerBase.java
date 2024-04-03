@@ -242,15 +242,15 @@ public abstract class RequestHandlerBase
         rsp.setHttpCaching(false);
       }
     } catch (Exception e) {
-      e = normalizeReceivedException(req, e);
-      processErrorMetricsOnException(e, metrics);
-      rsp.setException(e);
+      Exception normalized = normalizeReceivedException(req, e);
+      processErrorMetricsOnException(normalized, metrics);
+      rsp.setException(normalized);
     } finally {
       long elapsed = timer.stop();
       metrics.totalTime.inc(elapsed);
 
-      if (publishCpuTime) {
-        Optional<Long> cpuTime = threadCpuTimer.getCpuTimeMs();
+      if (publishCpuTime && threadCpuTimer != null) {
+        Optional<Long> cpuTime = threadCpuTimer.getElapsedCpuMs();
         if (cpuTime.isPresent()) {
           // add CPU_TIME if not already added by SearchHandler
           NamedList<Object> header = rsp.getResponseHeader();

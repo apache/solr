@@ -64,7 +64,6 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -818,7 +817,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
                 addDocAndGetVersion(
                     "id", 100, "inplace_updatable_float", map("set", "NOT_NUMBER")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+    assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
 
     // inc operation with invalid inc value
     e =
@@ -827,7 +826,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
             () ->
                 addDocAndGetVersion("id", 100, "inplace_updatable_int", map("inc", "NOT_NUMBER")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
+    assertThat(e.getMessage(), containsString("For input string: \"NOT_NUMBER\""));
 
     // RTG from tlog(s)
     for (SolrClient client : clients) {

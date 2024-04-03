@@ -26,7 +26,6 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
 import org.hamcrest.Matcher;
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -47,13 +46,13 @@ public class SSLCredentialProviderFactoryTest extends SolrTestCase {
   public void testGetProvidersOrder() {
     SSLCredentialProviderFactory sut = getSut("sysprop;env");
     List<SSLCredentialProvider> providers = sut.getProviders();
-    MatcherAssert.assertThat(providers.get(0), isA(SysPropSSLCredentialProvider.class));
-    MatcherAssert.assertThat(providers.get(1), isA(EnvSSLCredentialProvider.class));
+    assertThat(providers.get(0), isA(SysPropSSLCredentialProvider.class));
+    assertThat(providers.get(1), isA(EnvSSLCredentialProvider.class));
 
     sut = getSut("env;sysprop");
     providers = sut.getProviders();
-    MatcherAssert.assertThat(providers.get(0), isA(EnvSSLCredentialProvider.class));
-    MatcherAssert.assertThat(providers.get(1), isA(SysPropSSLCredentialProvider.class));
+    assertThat(providers.get(0), isA(EnvSSLCredentialProvider.class));
+    assertThat(providers.get(1), isA(SysPropSSLCredentialProvider.class));
   }
 
   @Test
@@ -61,9 +60,9 @@ public class SSLCredentialProviderFactoryTest extends SolrTestCase {
     SSLCredentialProviderFactory sut =
         getSut("sysprop;class://" + CustomSSLCredentialProvider.class.getName() + ";env");
     List<SSLCredentialProvider> providers = sut.getProviders();
-    MatcherAssert.assertThat(providers.get(0), isA(SysPropSSLCredentialProvider.class));
-    MatcherAssert.assertThat(providers.get(1), isA(CustomSSLCredentialProvider.class));
-    MatcherAssert.assertThat(providers.get(2), isA(EnvSSLCredentialProvider.class));
+    assertThat(providers.get(0), isA(SysPropSSLCredentialProvider.class));
+    assertThat(providers.get(1), isA(CustomSSLCredentialProvider.class));
+    assertThat(providers.get(2), isA(EnvSSLCredentialProvider.class));
   }
 
   @Test(expected = RuntimeException.class)
@@ -77,9 +76,9 @@ public class SSLCredentialProviderFactoryTest extends SolrTestCase {
     System.setProperty(SSLCredentialProviderFactory.PROVIDER_CHAIN_KEY, chain);
     SSLCredentialProviderFactory sut = new SSLCredentialProviderFactory();
     List<SSLCredentialProvider> providers = sut.getProviders();
-    MatcherAssert.assertThat(providers.get(0), isA(SysPropSSLCredentialProvider.class));
-    MatcherAssert.assertThat(providers.get(1), isA(CustomSSLCredentialProvider.class));
-    MatcherAssert.assertThat(providers.get(2), isA(EnvSSLCredentialProvider.class));
+    assertThat(providers.get(0), isA(SysPropSSLCredentialProvider.class));
+    assertThat(providers.get(1), isA(CustomSSLCredentialProvider.class));
+    assertThat(providers.get(2), isA(EnvSSLCredentialProvider.class));
   }
 
   private SSLCredentialProviderFactory getSut(String providerChain) {

@@ -32,7 +32,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -292,7 +291,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
 
     SolrException e = expectThrows(SolrException.class, () -> SOLR.query(solrParams));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(e.getMessage(), containsString("Invalid nullPolicy: " + nullPolicy));
+    assertThat(e.getMessage(), containsString("Invalid nullPolicy: " + nullPolicy));
 
     // valid nullPolicy
     assertQ(req("q", "*:*", "fq", "{!collapse field=id nullPolicy=" + randomNullPolicy() + "}"));

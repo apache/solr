@@ -34,7 +34,6 @@ import org.apache.solr.common.SolrException;
  * communicate with Zookeeper to discover Solr endpoints for SolrCloud collections, and then use the
  * {@link LBHttp2SolrClient} to issue requests.
  *
- * @lucene.experimental
  * @since solr 8.0
  */
 @SuppressWarnings("serial")
