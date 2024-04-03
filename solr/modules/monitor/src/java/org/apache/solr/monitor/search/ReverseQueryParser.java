@@ -36,8 +36,6 @@ import org.apache.solr.search.SyntaxError;
 
 public class ReverseQueryParser extends QParser {
 
-  private static final BiPredicate<String, BytesRef> ALL_TERM_ACCEPTOR = (__, ___) -> true;
-
   private final Presearcher presearcher;
 
   public ReverseQueryParser(
@@ -65,8 +63,12 @@ public class ReverseQueryParser extends QParser {
     var searcher = req.getSearcher();
     MonitorQueryCache cache = (MonitorQueryCache) searcher.getCache(SOLR_MONITOR_CACHE_NAME);
     if (cache == null) {
-      return ALL_TERM_ACCEPTOR;
+      return ReverseQueryParser::allTermAcceptor;
     }
     return cache::acceptTerm;
+  }
+
+  private static boolean allTermAcceptor(String __, BytesRef ___) {
+    return true;
   }
 }

@@ -33,6 +33,7 @@ public abstract class CollectingMatcherProxy<T extends QueryMatch> extends Colle
     super(searcher, scoreMode);
   }
 
+  @Override
   public void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) {
     try {
       super.matchQuery(queryId, matchQuery, metadata);
@@ -41,6 +42,7 @@ public abstract class CollectingMatcherProxy<T extends QueryMatch> extends Colle
     }
   }
 
+  @Override
   public MultiMatchingQueries<T> finish(int queryCount) {
     return super.finish(Long.MIN_VALUE, queryCount);
   }
@@ -51,6 +53,7 @@ public abstract class CollectingMatcherProxy<T extends QueryMatch> extends Colle
     }
   }
 
+  @Override
   public void setNextMatchConsumer(SingleMatchConsumer singleMatchConsumer) {
     this.singleMatchConsumer = singleMatchConsumer;
   }
