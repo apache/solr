@@ -588,49 +588,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     }
   }
 
-  protected void testQueryAsync() throws Exception {
-    ResponseParser rp = new XMLResponseParser();
-    DebugServlet.clear();
-    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    HttpSolrClientBuilderBase<?, ?> b =
-        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
-    int limit = 1;
-    CountDownLatch cdl = new CountDownLatch(limit);
-    DebugAsyncListener[] listeners = new DebugAsyncListener[limit];
-    Cancellable[] cancellables = new Cancellable[limit];
-    try (HttpSolrClientBase client = b.build()) {
-      for (int i = 0; i < limit; i++) {
-        DebugServlet.responseBodyByQueryFragment.put(
-            ("id=KEY-" + i),
-            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response><result name=\"response\" numFound=\"2\" start=\"1\" numFoundExact=\"true\"><doc><str name=\"id\">KEY-"
-                + i
-                + "</str></doc></result></response>");
-        QueryRequest query =
-            new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
-        query.setMethod(SolrRequest.METHOD.GET);
-        listeners[i] = new DebugAsyncListener(cdl);
-        client.asyncRequest(query, null, listeners[i]);
-      }
-      cdl.await(1, TimeUnit.MINUTES);
-    }
-
-    for (int i = 0; i < limit; i++) {
-      NamedList<Object> result = listeners[i].onSuccessResult;
-      SolrDocumentList sdl = (SolrDocumentList) result.get("response");
-      assertEquals(2, sdl.getNumFound());
-      assertEquals(1, sdl.getStart());
-      assertTrue(sdl.getNumFoundExact());
-      assertEquals(1, sdl.size());
-      assertEquals(1, sdl.iterator().next().size());
-      assertEquals("KEY-" + i, sdl.iterator().next().get("id"));
-
-      assertNull(listeners[i].onFailureResult);
-      assertTrue(listeners[i].onStartCalled);
-    }
-  }
-
-  protected void testQueryAsync1() throws Exception {
+  protected void testQueryAsync(boolean useDeprecatedApi) throws Exception {
     ResponseParser rp = new XMLResponseParser();
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
@@ -638,6 +596,11 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     HttpSolrClientBuilderBase<?, ?> b =
             builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 1;
+
+
+    CountDownLatch cdl = new CountDownLatch(limit); //Deprecated API use
+    DebugAsyncListener[] listeners = new DebugAsyncListener[limit]; //Deprecated API use
+    Cancellable[] cancellables = new Cancellable[limit]; //Deprecated API use
 
     List<CompletableFuture<NamedList<Object>>> futures = new ArrayList<>();
 
@@ -651,12 +614,25 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         QueryRequest query =
                 new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
         query.setMethod(SolrRequest.METHOD.GET);
-        futures.add(client.requestAsync(query));
+        if(useDeprecatedApi) {
+          listeners[i] = new DebugAsyncListener(cdl);
+          client.asyncRequest(query, null, listeners[i]);
+        } else {
+          futures.add(client.requestAsync(query));
+        }
+      }
+      if(useDeprecatedApi) {
+        cdl.await(1, TimeUnit.MINUTES);
       }
     }
 
     for (int i = 0; i < limit; i++) {
-      NamedList<Object> result = futures.get(i).get(1, TimeUnit.MINUTES);
+      NamedList<Object> result;
+      if(useDeprecatedApi) {
+        result = listeners[i].onSuccessResult;
+      } else {
+        result = futures.get(i).get(1, TimeUnit.MINUTES);
+      }
       SolrDocumentList sdl = (SolrDocumentList) result.get("response");
       assertEquals(2, sdl.getNumFound());
       assertEquals(1, sdl.getStart());
@@ -665,7 +641,12 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       assertEquals(1, sdl.iterator().next().size());
       assertEquals("KEY-" + i, sdl.iterator().next().get("id"));
 
-      assertFalse(futures.get(i).isCompletedExceptionally());
+      if (useDeprecatedApi) {
+        assertNull(listeners[i].onFailureResult);
+        assertTrue(listeners[i].onStartCalled);
+      } else {
+        assertFalse(futures.get(i).isCompletedExceptionally());
+      }
     }
   }
 
