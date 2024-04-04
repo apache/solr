@@ -32,6 +32,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -543,15 +544,19 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         "No authorization headers expected. Headers: " + DebugServlet.headers, authorizationHeader);
   }
 
-  protected void testUpdateAsync() throws Exception {
+  protected void testUpdateAsync(boolean useDeprecatedApi) throws Exception {
     ResponseParser rp = new XMLResponseParser();
     String url = getBaseUrl();
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
+
+    DebugAsyncListener[] listeners = new DebugAsyncListener[limit]; //Deprecated API use
+    Cancellable[] cancellables = new Cancellable[limit]; //Deprecated API use
+
     CountDownLatch cdl = new CountDownLatch(limit);
-    DebugAsyncListener[] listeners = new DebugAsyncListener[limit];
-    Cancellable[] cancellables = new Cancellable[limit];
+    List<CompletableFuture<NamedList<Object>>> futures = new ArrayList<>();
+
     try (HttpSolrClientBase client = b.build()) {
 
       // ensure the collection is empty to start
@@ -565,11 +570,17 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       assertEquals(0, qr.getResults().getNumFound());
 
       for (int i = 0; i < limit; i++) {
-        listeners[i] = new DebugAsyncListener(cdl);
         UpdateRequest ur = new UpdateRequest();
         ur.add("id", "KEY-" + i);
         ur.setMethod(SolrRequest.METHOD.POST);
-        client.asyncRequest(ur, COLLECTION_1, listeners[i]);
+
+        if(useDeprecatedApi) {
+          listeners[i] = new DebugAsyncListener(cdl);
+          client.asyncRequest(ur, COLLECTION_1, listeners[i]);
+        } else {
+          var future = client.requestAsync(ur, COLLECTION_1).whenComplete((nl, e) -> cdl.countDown());
+          futures.add(future);
+        }
       }
       cdl.await(1, TimeUnit.MINUTES);
       client.commit(COLLECTION_1);
@@ -595,8 +606,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     HttpSolrClientBuilderBase<?, ?> b =
             builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
-    int limit = 1;
-
+    int limit = 10;
 
     CountDownLatch cdl = new CountDownLatch(limit); //Deprecated API use
     DebugAsyncListener[] listeners = new DebugAsyncListener[limit]; //Deprecated API use
@@ -650,24 +660,44 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     }
   }
 
-  protected DebugAsyncListener testAsyncExceptionBase() throws Exception {
+  protected DebugAsyncListener testAsyncExceptionBase(boolean useDeprecatedApi) throws Exception {
     ResponseParser rp = new XMLResponseParser();
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "Wrong Content Type!");
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
-    CountDownLatch cdl = new CountDownLatch(1);
-    DebugAsyncListener listener = new DebugAsyncListener(cdl);
+
+    CompletableFuture<NamedList<Object>> future = null;
+
+    CountDownLatch cdl = new CountDownLatch(1); //Deprecated API use
+    DebugAsyncListener listener = new DebugAsyncListener(cdl); //Deprecated API use
+
     try (HttpSolrClientBase client = b.build()) {
       QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
-      client.asyncRequest(query, COLLECTION_1, listener);
-      cdl.await(1, TimeUnit.MINUTES);
+      if (useDeprecatedApi) {
+        client.asyncRequest(query, COLLECTION_1, listener);
+      } else {
+        future = client.requestAsync(query, COLLECTION_1);
+      }
+      if(useDeprecatedApi) {
+        cdl.await(1, TimeUnit.MINUTES);
+      } else {
+        try {
+          future.get(1, TimeUnit.MINUTES);
+          fail("Should have thrown ExecutionException");
+        } catch(ExecutionException ee) {
+          //ignore, expected
+        }
+      }
     }
-
-    assertNotNull(listener.onFailureResult);
-    assertTrue(listener.onStartCalled);
-    assertNull(listener.onSuccessResult);
+    if (useDeprecatedApi) {
+      assertNotNull(listener.onFailureResult);
+      assertTrue(listener.onStartCalled);
+      assertNull(listener.onSuccessResult);
+    } else {
+      assertTrue(future.isCompletedExceptionally());
+    }
     return listener;
   }
 }

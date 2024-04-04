@@ -205,12 +205,12 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testAsyncPost() throws Exception {
-    super.testUpdateAsync();
+    super.testUpdateAsync(true);
   }
 
   @Test
   public void testAsyncException() throws Exception {
-    DebugAsyncListener listener = super.testAsyncExceptionBase();
+    DebugAsyncListener listener = super.testAsyncExceptionBase(true);
     assertTrue(listener.onFailureResult instanceof CompletionException);
     CompletionException ce = (CompletionException) listener.onFailureResult;
     assertTrue(ce.getCause() instanceof BaseHttpSolrClient.RemoteSolrException);
