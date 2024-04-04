@@ -264,8 +264,13 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testAsyncGet() throws Exception {
+  public void testDeprecatedAsyncGet() throws Exception {
     super.testQueryAsync();
+  }
+
+  @Test
+  public void testAsyncGet() throws Exception {
+    super.testQueryAsync1();
   }
 
   @Test

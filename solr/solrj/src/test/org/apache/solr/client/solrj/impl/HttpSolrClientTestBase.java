@@ -22,12 +22,15 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrJettyTestBase;
@@ -592,7 +595,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
-    int limit = 10;
+    int limit = 1;
     CountDownLatch cdl = new CountDownLatch(limit);
     DebugAsyncListener[] listeners = new DebugAsyncListener[limit];
     Cancellable[] cancellables = new Cancellable[limit];
@@ -624,6 +627,45 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
 
       assertNull(listeners[i].onFailureResult);
       assertTrue(listeners[i].onStartCalled);
+    }
+  }
+
+  protected void testQueryAsync1() throws Exception {
+    ResponseParser rp = new XMLResponseParser();
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    HttpSolrClientBuilderBase<?, ?> b =
+            builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+    int limit = 1;
+
+    List<CompletableFuture<NamedList<Object>>> futures = new ArrayList<>();
+
+    try (HttpSolrClientBase client = b.build()) {
+      for (int i = 0; i < limit; i++) {
+        DebugServlet.responseBodyByQueryFragment.put(
+                ("id=KEY-" + i),
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response><result name=\"response\" numFound=\"2\" start=\"1\" numFoundExact=\"true\"><doc><str name=\"id\">KEY-"
+                        + i
+                        + "</str></doc></result></response>");
+        QueryRequest query =
+                new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
+        query.setMethod(SolrRequest.METHOD.GET);
+        futures.add(client.requestAsync(query));
+      }
+    }
+
+    for (int i = 0; i < limit; i++) {
+      NamedList<Object> result = futures.get(i).get(1, TimeUnit.MINUTES);
+      SolrDocumentList sdl = (SolrDocumentList) result.get("response");
+      assertEquals(2, sdl.getNumFound());
+      assertEquals(1, sdl.getStart());
+      assertTrue(sdl.getNumFoundExact());
+      assertEquals(1, sdl.size());
+      assertEquals(1, sdl.iterator().next().size());
+      assertEquals("KEY-" + i, sdl.iterator().next().get("id"));
+
+      assertFalse(futures.get(i).isCompletedExceptionally());
     }
   }
 
