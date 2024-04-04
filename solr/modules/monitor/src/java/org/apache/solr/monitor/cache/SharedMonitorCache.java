@@ -33,13 +33,13 @@ import java.util.function.BiPredicate;
 import org.apache.lucene.monitor.MonitorDataValues;
 import org.apache.lucene.monitor.MonitorQuery;
 import org.apache.lucene.monitor.QCEVisitor;
-import org.apache.lucene.monitor.QueryDecomposer;
 import org.apache.lucene.monitor.QueryTermFilterVisitor;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.monitor.MonitorConstants;
 import org.apache.solr.monitor.SolrMonitorQueryDecoder;
 import org.apache.solr.search.CacheRegenerator;
 import org.apache.solr.search.SolrCache;
@@ -54,7 +54,6 @@ public class SharedMonitorCache extends SolrCacheBase
 
   private static final long START_HIGH_WATER_MARK = -1;
 
-  private final QueryDecomposer queryDecomposer = new QueryDecomposer();
   private final AtomicReference<CurrentStats> currentStats =
       new AtomicReference<>(CurrentStats.init());
 
@@ -85,11 +84,6 @@ public class SharedMonitorCache extends SolrCacheBase
   @Override
   public boolean acceptTerm(String field, BytesRef value) {
     return termAcceptor.test(field, value);
-  }
-
-  @Override
-  public QueryDecomposer getDecomposer() {
-    return queryDecomposer;
   }
 
   private Map<String, VersionedQueryCacheEntry> mqCacheMap() {
@@ -271,7 +265,8 @@ public class SharedMonitorCache extends SolrCacheBase
       var version = dataValues.getVersion();
       if (prevEntry == null || version > prevEntry.version) {
         var monitorQuery = decoder.apply(dataValues);
-        QCEVisitor component = QCEVisitor.getComponent(monitorQuery, getDecomposer(), cacheId);
+        QCEVisitor component =
+            QCEVisitor.getComponent(monitorQuery, MonitorConstants.QUERY_DECOMPOSER, cacheId);
         currentStats.updateAndGet(CurrentStats::miss);
         return new VersionedQueryCacheEntry(component, version);
       }

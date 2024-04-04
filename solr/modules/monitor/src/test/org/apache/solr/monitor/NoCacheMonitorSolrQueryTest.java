@@ -17,17 +17,14 @@
  *
  */
 
-package org.apache.solr.monitor.cache;
+package org.apache.solr.monitor;
 
-import java.io.IOException;
-import org.apache.lucene.monitor.MonitorDataValues;
-import org.apache.lucene.util.BytesRef;
-import org.apache.solr.monitor.SolrMonitorQueryDecoder;
+import org.junit.BeforeClass;
 
-public interface MonitorQueryCache {
+public class NoCacheMonitorSolrQueryTest extends MonitorSolrQueryTest {
 
-  VersionedQueryCacheEntry computeIfStale(
-      MonitorDataValues dataValues, SolrMonitorQueryDecoder decoder) throws IOException;
-
-  boolean acceptTerm(String field, BytesRef value);
+  @BeforeClass
+  public static void beforeSuperClass() {
+    configString = "solrconfig-no-cache.xml";
+  }
 }

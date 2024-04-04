@@ -19,6 +19,8 @@
 
 package org.apache.solr.monitor;
 
+import org.apache.lucene.monitor.QueryDecomposer;
+
 public class MonitorConstants {
 
   private MonitorConstants() {}
@@ -34,4 +36,5 @@ public class MonitorConstants {
   public static final String MONITOR_OUTPUT_KEY = "monitor";
   public static final String WRITE_TO_DOC_LIST_KEY = "writeToDocList";
   public static final String HITS_KEY = "hits";
+  public static final QueryDecomposer QUERY_DECOMPOSER = new QueryDecomposer();
 }

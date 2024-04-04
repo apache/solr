@@ -26,9 +26,9 @@ import org.apache.lucene.monitor.MonitorDataValues;
 import org.apache.lucene.monitor.QCEVisitor;
 import org.apache.lucene.monitor.SingleMatchConsumer;
 import org.apache.lucene.search.ScoreMode;
+import org.apache.solr.monitor.MonitorConstants;
 import org.apache.solr.monitor.SolrMonitorQueryDecoder;
 import org.apache.solr.monitor.cache.MonitorQueryCache;
-import org.apache.solr.monitor.cache.VersionedQueryCacheEntry;
 import org.apache.solr.search.DelegatingCollector;
 
 class SolrMonitorQueryCollector extends DelegatingCollector {
@@ -53,24 +53,23 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
   @Override
   public void collect(int doc) throws IOException {
     dataValues.advanceTo(doc);
-    var versionedEntry = monitorQueryCache.computeIfStale(dataValues, queryDecoder);
-    var entry = getEntry(versionedEntry, dataValues);
+    var entry = getEntry(dataValues);
     var queryId = dataValues.getQueryId();
     var forwarder = docIdForwarder.apply(doc);
     matcherSink.matchQuery(queryId, entry.getMatchQuery(), entry.getMetadata(), forwarder);
   }
 
-  private QCEVisitor getEntry(VersionedQueryCacheEntry versionedEntry, MonitorDataValues dataValues)
-      throws IOException {
-    if (versionedEntry.version != dataValues.getVersion()) {
-      // The cache is more up-to-date than the index associated with this collector.
-      // For consistency, we parse the query from the earlier index state.
-      return QCEVisitor.getComponent(
-          queryDecoder.decode(dataValues),
-          monitorQueryCache.getDecomposer(),
-          dataValues.getCacheId());
-    }
-    return versionedEntry.entry;
+  private QCEVisitor getEntry(MonitorDataValues dataValues) throws IOException {
+    var versionedEntry =
+        monitorQueryCache == null
+            ? null
+            : monitorQueryCache.computeIfStale(dataValues, queryDecoder);
+    return (versionedEntry == null || versionedEntry.version != dataValues.getVersion())
+        ? QCEVisitor.getComponent(
+            queryDecoder.decode(dataValues),
+            MonitorConstants.QUERY_DECOMPOSER,
+            dataValues.getCacheId())
+        : versionedEntry.entry;
   }
 
   private void superCollect(int doc) throws IOException {
@@ -90,7 +89,7 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
 
   @Override
   public void complete() throws IOException {
-    super.complete();
+    super.finish();
     matcherSink.complete();
   }
 

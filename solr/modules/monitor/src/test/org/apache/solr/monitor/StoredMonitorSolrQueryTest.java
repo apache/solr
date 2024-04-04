@@ -30,7 +30,6 @@ public class StoredMonitorSolrQueryTest extends MonitorSolrQueryTest {
   }
 
   @Test
-  @ShardsFixed(num = 1)
   public void indexBigQueryTest() throws Exception {
     del("*:*");
     index(

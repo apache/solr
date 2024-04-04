@@ -167,7 +167,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   }
 
   @Test
-  @ShardsFixed(num = 1)
   public void testDefaultParser() throws Exception {
     del("*:*");
     index(id, Integer.toString(0), "_mq", "content_s:\"elevator stairs\"");
@@ -198,7 +197,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   }
 
   @Test
-  @ShardsFixed(num = 1)
+  @ShardsFixed(num = 2)
   public void testDisjunctionQuery() throws Exception {
     del("*:*");
     index(
@@ -239,7 +238,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   }
 
   @Test
-  @ShardsFixed(num = 1)
   public void testNoDanglingDecomposition() throws Exception {
     del("*:*");
     index(
@@ -288,7 +286,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   }
 
   @Test
-  @ShardsFixed(num = 1)
   public void testNotQuery() throws Exception {
     del("*:*");
     index(id, Integer.toString(0), "_mq", "*:* -content0_s:\"elevator stairs\"");
@@ -318,7 +315,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   }
 
   @Test
-  @ShardsFixed(num = 1)
   public void testWildCardQuery() throws Exception {
     del("*:*");
     index(id, Integer.toString(0), "_mq", "content_s:te*");
@@ -355,7 +351,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   }
 
   @Test
-  @ShardsFixed(num = 1)
   public void manySegmentsQuery() throws Exception {
     del("*:*");
     int count = 10_000;
@@ -526,7 +521,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   }
 
   @Test
-  @ShardsFixed(num = 1)
   public void testHighlightMatchType() throws Exception {
     del("*:*");
     index(id, Integer.toString(0), "_mq", "content0_s:\"elevator stairs\"");

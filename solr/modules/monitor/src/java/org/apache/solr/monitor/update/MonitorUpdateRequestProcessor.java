@@ -40,12 +40,12 @@ import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.MonitorQuery;
 import org.apache.lucene.monitor.Presearcher;
 import org.apache.lucene.monitor.QCEVisitor;
-import org.apache.lucene.monitor.QueryDecomposer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.monitor.MonitorConstants;
 import org.apache.solr.monitor.MonitorSchemaFields;
 import org.apache.solr.monitor.SimpleQueryParser;
 import org.apache.solr.schema.IndexSchema;
@@ -61,7 +61,6 @@ public class MonitorUpdateRequestProcessor extends UpdateRequestProcessor {
   private final IndexSchema indexSchema;
   private final Presearcher presearcher;
   private final MonitorSchemaFields monitorSchemaFields;
-  private final QueryDecomposer decomposer = new QueryDecomposer();
 
   public MonitorUpdateRequestProcessor(
       UpdateRequestProcessor next,
@@ -144,7 +143,7 @@ public class MonitorUpdateRequestProcessor extends UpdateRequestProcessor {
   }
 
   private Stream<Document> decompose(MonitorQuery monitorQuery, String payload) {
-    return QCEVisitor.decompose(monitorQuery, decomposer).stream()
+    return QCEVisitor.decompose(monitorQuery, MonitorConstants.QUERY_DECOMPOSER).stream()
         .map(
             qce -> {
               Document doc =
