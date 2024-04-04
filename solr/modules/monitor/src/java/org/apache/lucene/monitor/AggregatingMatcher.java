@@ -20,17 +20,21 @@ package org.apache.lucene.monitor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
 public class AggregatingMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
 
-  private final CandidateMatcher<T> collector;
+  private final BiFunction<T, T, T> resolver;
 
-  private AggregatingMatcher(List<CandidateMatcher<T>> matchers, CandidateMatcher<T> collector) {
-    super(collector.searcher);
-    this.collector = collector;
-    for (var matcher : matchers) {
-      MultiMatchingQueries<T> matches = matcher.finish(0, 0);
+  private AggregatingMatcher(
+      List<MultiMatchingQueries<T>> multiMatches,
+      IndexSearcher searcher,
+      BiFunction<T, T, T> resolver) {
+    super(searcher);
+    this.resolver = resolver;
+    for (var matches : multiMatches) {
       for (int doc = 0; doc < matches.getBatchSize(); doc++) {
         for (T match : matches.getMatches(doc)) {
           this.addMatch(match, doc);
@@ -53,11 +57,13 @@ public class AggregatingMatcher<T extends QueryMatch> extends CandidateMatcher<T
 
   @Override
   public T resolve(T match1, T match2) {
-    return collector.resolve(match1, match2);
+    return resolver.apply(match1, match2);
   }
 
   public static <T extends QueryMatch> AggregatingMatcher<T> build(
-      List<CandidateMatcher<T>> matchers, CandidateMatcher<T> collector) {
-    return new AggregatingMatcher<>(matchers, collector);
+      List<MultiMatchingQueries<T>> matchingQueries,
+      IndexSearcher searcher,
+      BiFunction<T, T, T> resolver) {
+    return new AggregatingMatcher<>(matchingQueries, searcher, resolver);
   }
 }

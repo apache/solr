@@ -1,0 +1,11 @@
+{
+  "params": {
+    "monitorDocuments": [
+      {
+        "id": "0",
+        "content0_s": "elevator stairs",
+        "content0_sds": ["test highlights", " on this multi-valued field"]
+      }
+    ]
+  }
+}

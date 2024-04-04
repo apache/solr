@@ -27,10 +27,10 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.lucene.monitor.AggregatingMatcher;
-import org.apache.lucene.monitor.CandidateMatcher;
 import org.apache.lucene.monitor.MatcherProxy;
 import org.apache.lucene.monitor.MultiMatchingQueries;
 import org.apache.lucene.monitor.QueryMatch;
@@ -40,7 +40,7 @@ import org.apache.lucene.search.Query;
 
 class ParallelSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
 
-  private final CompletionService<CandidateMatcher<T>> completionService;
+  private final CompletionService<MultiMatchingQueries<T>> completionService;
   private final Function<IndexSearcher, MatcherProxy<T>> matcherProxyFactory;
   private final IndexSearcher docBatchSearcher;
   private final Consumer<MultiMatchingQueries<T>> queriesConsumer;
@@ -67,18 +67,19 @@ class ParallelSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
         () -> {
           var matcherProxy = matcherProxyFactory.apply(docBatchSearcher);
           matcherProxy.matchQuery(queryId, matchQuery, metadata);
-          return matcherProxy.matcher();
+          matcherProxy.finish(1);
+          return matcherProxy.matches();
         });
     tasksLeft++;
   }
 
   @Override
   public void complete() throws IOException {
-    List<CandidateMatcher<T>> matchers = new ArrayList<>();
+    List<MultiMatchingQueries<T>> matchingQueries = new ArrayList<>();
     int queryCount = tasksLeft;
     while (tasksLeft-- > 0) {
       try {
-        matchers.add(completionService.take().get());
+        matchingQueries.add(completionService.take().get());
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new IOException(e);
@@ -87,8 +88,8 @@ class ParallelSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
             MatcherProxy.class.getSimpleName() + " should never throw an exception", e);
       }
     }
-    var aggregatingMatcher =
-        AggregatingMatcher.build(matchers, matcherProxyFactory.apply(docBatchSearcher).matcher());
+    BiFunction<T, T, T> resolver = matcherProxyFactory.apply(docBatchSearcher)::resolve;
+    var aggregatingMatcher = AggregatingMatcher.build(matchingQueries, docBatchSearcher, resolver);
     queriesConsumer.accept(aggregatingMatcher.finish(queryCount));
   }
 

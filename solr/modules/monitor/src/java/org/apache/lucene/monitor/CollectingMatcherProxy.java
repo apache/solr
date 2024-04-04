@@ -28,6 +28,7 @@ public abstract class CollectingMatcherProxy<T extends QueryMatch> extends Colle
     implements MatcherProxy<T> {
 
   private SingleMatchConsumer singleMatchConsumer;
+  private MultiMatchingQueries<T> cachedResult;
 
   public CollectingMatcherProxy(IndexSearcher searcher, ScoreMode scoreMode) {
     super(searcher, scoreMode);
@@ -44,7 +45,8 @@ public abstract class CollectingMatcherProxy<T extends QueryMatch> extends Colle
 
   @Override
   public MultiMatchingQueries<T> finish(int queryCount) {
-    return super.finish(Long.MIN_VALUE, queryCount);
+    cachedResult = super.finish(Long.MIN_VALUE, queryCount);
+    return cachedResult;
   }
 
   protected void consumeMatch(String queryId, int batchDocId) throws IOException {
@@ -59,7 +61,7 @@ public abstract class CollectingMatcherProxy<T extends QueryMatch> extends Colle
   }
 
   @Override
-  public CandidateMatcher<T> matcher() {
-    return this;
+  public MultiMatchingQueries<T> matches() {
+    return cachedResult;
   }
 }

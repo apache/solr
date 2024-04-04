@@ -22,6 +22,7 @@ package org.apache.solr.monitor.search;
 import static org.apache.solr.monitor.MonitorConstants.DOCUMENT_BATCH_KEY;
 import static org.apache.solr.monitor.MonitorConstants.MONITOR_DOCUMENTS_KEY;
 import static org.apache.solr.monitor.MonitorConstants.MONITOR_OUTPUT_KEY;
+import static org.apache.solr.monitor.MonitorConstants.QUERY_MATCH_TYPE_KEY;
 import static org.apache.solr.monitor.MonitorConstants.REVERSE_SEARCH_PARAM_NAME;
 import static org.apache.solr.monitor.MonitorConstants.SOLR_MONITOR_CACHE_NAME;
 import static org.apache.solr.monitor.MonitorConstants.WRITE_TO_DOC_LIST_KEY;
@@ -90,9 +91,10 @@ public class ReverseSearchComponent extends SearchComponent implements SolrCoreA
     boolean writeToDocList = Boolean.parseBoolean(writeToDocListRaw);
     List<Query> mutableFilters =
         Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
+    var matchType = QueryMatchType.fromString(req.getParams().get(QUERY_MATCH_TYPE_KEY));
     Map<String, Object> monitorResult = new HashMap<>();
-    var simpleMatcherSink = solrMatcherSinkFactory.buildSimple(documentBatch, monitorResult);
-    if (simpleMatcherSink.isParallel() && writeToDocList) {
+    var matcherSink = solrMatcherSinkFactory.build(matchType, documentBatch, monitorResult);
+    if (matcherSink.isParallel() && writeToDocList) {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
           "writeToDocList is not supported for parallel matcher. Consider adding more shards/cores instead of parallel matcher.");
@@ -108,9 +110,12 @@ public class ReverseSearchComponent extends SearchComponent implements SolrCoreA
       mutableFilters.add(
           new MonitorPostFilter(
               new SolrMonitorQueryCollector.CollectorContext(
-                  solrMonitorCache, queryDecoder, simpleMatcherSink, writeToDocList)));
+                  solrMonitorCache, queryDecoder, matcherSink, writeToDocList)));
       rb.setFilters(mutableFilters);
-      rb.rsp.add(MONITOR_OUTPUT_KEY, monitorResult);
+      rb.rsp.add(QUERY_MATCH_TYPE_KEY, matchType.name());
+      if (matchType != QueryMatchType.NONE) {
+        rb.rsp.add(MONITOR_OUTPUT_KEY, monitorResult);
+      }
     } catch (SyntaxError e) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Syntax error in query: " + e.getMessage());
@@ -157,8 +162,11 @@ public class ReverseSearchComponent extends SearchComponent implements SolrCoreA
             .map(shardResponse -> shardResponse.getSolrResponse().getResponse())
             .collect(Collectors.toList());
     rb.rsp.getValues().removeAll(MONITOR_OUTPUT_KEY);
-    var finalOutput = mergeResponses(responses, QueryMatchType.SIMPLE);
-    rb.rsp.add(MONITOR_OUTPUT_KEY, finalOutput);
+    var matchType = QueryMatchType.fromString(rb.req.getParams().get(QUERY_MATCH_TYPE_KEY));
+    if (matchType != QueryMatchType.NONE) {
+      var finalOutput = mergeResponses(responses, matchType);
+      rb.rsp.add(MONITOR_OUTPUT_KEY, finalOutput);
+    }
   }
 
   @Override

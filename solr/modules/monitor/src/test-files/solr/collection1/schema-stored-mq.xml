@@ -27,9 +27,10 @@
 
   <field name="date" type="pdate" indexed="true" stored="true" multiValued="false"
     required="false"/>
-  <dynamicField name="*_s" type="text" required="false" indexed="true" stored="true"/>
-  <dynamicField name="*_sds" type="string" indexed="true" stored="true" multiValued="true"
-    docValues="true"/>
+  <dynamicField name="*_s" type="text" indexed="true" stored="true"/>
+  <dynamicField name="*_sds" type="text" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_offset_s" type="text" indexed="true" storeOffsetsWithPositions="true"/>
+  <dynamicField name="*_offset_sds" type="text" indexed="true" multiValued="true" storeOffsetsWithPositions="true"/>
   <dynamicField name="*_i" type="pint" indexed="true" stored="true"/>
   <dynamicField name="*_is" type="pints" indexed="true" stored="true"/>
   <dynamicField name="*_tv" indexed="true" multiValued="true" required="false" stored="false"

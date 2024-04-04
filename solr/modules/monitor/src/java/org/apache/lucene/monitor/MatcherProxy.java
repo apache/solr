@@ -30,5 +30,7 @@ public interface MatcherProxy<T extends QueryMatch> {
 
   void setNextMatchConsumer(SingleMatchConsumer singleMatchConsumer);
 
-  CandidateMatcher<T> matcher();
+  MultiMatchingQueries<T> matches();
+
+  T resolve(T match1, T match2);
 }

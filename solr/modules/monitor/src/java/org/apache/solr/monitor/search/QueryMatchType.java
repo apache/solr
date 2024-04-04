@@ -20,5 +20,16 @@
 package org.apache.solr.monitor.search;
 
 public enum QueryMatchType {
-  SIMPLE
+  SIMPLE,
+  HIGHLIGHTS,
+  NONE;
+
+  static QueryMatchType fromString(String matchType) {
+    if (SIMPLE.name().equalsIgnoreCase(matchType)) {
+      return SIMPLE;
+    } else if (HIGHLIGHTS.name().equalsIgnoreCase(matchType)) {
+      return HIGHLIGHTS;
+    }
+    return NONE;
+  }
 }

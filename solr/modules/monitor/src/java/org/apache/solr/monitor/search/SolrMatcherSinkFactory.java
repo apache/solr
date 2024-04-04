@@ -22,7 +22,9 @@ package org.apache.solr.monitor.search;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.apache.lucene.monitor.DocumentBatchVisitor;
+import org.apache.lucene.monitor.HighlightMatcherProxy;
 import org.apache.lucene.monitor.MatcherProxy;
 import org.apache.lucene.monitor.MultiMatchingQueries;
 import org.apache.lucene.monitor.QueryMatch;
@@ -42,22 +44,45 @@ class SolrMatcherSinkFactory {
     this.executorService = executorService;
   }
 
-  SolrMatcherSink buildSimple(
-      DocumentBatchVisitor documentBatch, Map<String, Object> monitorResult) {
-    Consumer<MultiMatchingQueries<QueryMatch>> simpleEncoder =
-        matchingQueries ->
-            QueryMatchResponseCodec.simpleEncode(
-                matchingQueries, monitorResult, documentBatch.size());
-    var docBatchSearcher = new IndexSearcher(documentBatch.get());
-    if (executorService == null) {
-      return new SyncSolrMatcherSink<>(buildSimpleMatcherProxy(docBatchSearcher), simpleEncoder);
-    } else {
-      return new ParallelSolrMatcherSink<>(
-          executorService, this::buildSimpleMatcherProxy, docBatchSearcher, simpleEncoder);
+  SolrMatcherSink build(
+      QueryMatchType matchType,
+      DocumentBatchVisitor documentBatch,
+      Map<String, Object> monitorResult) {
+    if (matchType == QueryMatchType.SIMPLE) {
+      return buildSimple(
+          documentBatch,
+          matchingQueries ->
+              QueryMatchResponseCodec.simpleEncode(
+                  matchingQueries, monitorResult, documentBatch.size()));
+    } else if (matchType == QueryMatchType.HIGHLIGHTS) {
+      return build(
+          documentBatch,
+          HighlightMatcherProxy::new,
+          matchingQueries ->
+              QueryMatchResponseCodec.highlightEncode(
+                  matchingQueries, monitorResult, documentBatch.size()));
     }
+    return buildSimple(documentBatch, __ -> {});
   }
 
-  private MatcherProxy<QueryMatch> buildSimpleMatcherProxy(IndexSearcher docBatchSearcher) {
-    return new SimpleMatcherProxy(docBatchSearcher, ScoreMode.COMPLETE_NO_SCORES);
+  private SolrMatcherSink buildSimple(
+      DocumentBatchVisitor documentBatch, Consumer<MultiMatchingQueries<QueryMatch>> encoder) {
+    return build(
+        documentBatch,
+        searcher -> new SimpleMatcherProxy(searcher, ScoreMode.COMPLETE_NO_SCORES),
+        encoder);
+  }
+
+  private <T extends QueryMatch> SolrMatcherSink build(
+      DocumentBatchVisitor documentBatch,
+      Function<IndexSearcher, MatcherProxy<T>> matcherProxyFactory,
+      Consumer<MultiMatchingQueries<T>> encoder) {
+    var docBatchSearcher = new IndexSearcher(documentBatch.get());
+    if (executorService == null) {
+      return new SyncSolrMatcherSink<>(matcherProxyFactory.apply(docBatchSearcher), encoder);
+    } else {
+      return new ParallelSolrMatcherSink<>(
+          executorService, matcherProxyFactory, docBatchSearcher, encoder);
+    }
   }
 }
