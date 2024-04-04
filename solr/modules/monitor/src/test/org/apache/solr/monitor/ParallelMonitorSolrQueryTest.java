@@ -19,7 +19,16 @@
 
 package org.apache.solr.monitor;
 
+import static org.apache.solr.monitor.MonitorConstants.QUERY_MATCH_TYPE_KEY;
+import static org.apache.solr.monitor.MonitorConstants.REVERSE_SEARCH_PARAM_NAME;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.IntStream;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class ParallelMonitorSolrQueryTest extends MonitorSolrQueryTest {
 
@@ -31,5 +40,75 @@ public class ParallelMonitorSolrQueryTest extends MonitorSolrQueryTest {
   @Override
   protected boolean supportsWriteToDocList() {
     return false;
+  }
+
+  @Test
+  public void manySegmentsQuery() throws Exception {
+    del("*:*");
+    int count = 10_000;
+    IntStream.range(0, count)
+        .forEach(
+            i -> {
+              try {
+                index(id, Integer.toString(i), "_mq", "content_s:\"elevator stairs\"");
+              } catch (Exception e) {
+                throw new IllegalStateException(e);
+              }
+            });
+    commit();
+    handle.clear();
+    handle.put("responseHeader", SKIP);
+    handle.put("response", SKIP);
+
+    Object[] params =
+        new Object[] {
+          CommonParams.SORT,
+          id + " desc",
+          CommonParams.JSON,
+          read("/monitor/multi-doc-batch.json"),
+          REVERSE_SEARCH_PARAM_NAME,
+          true,
+          QUERY_MATCH_TYPE_KEY,
+          "simple"
+        };
+
+    QueryResponse response = query(params);
+    validate(response, 0, 0, "0");
+    assertEquals(count, ((Map) response.getResponse().get("monitor")).get("queriesRun"));
+    assertEquals(
+        count,
+        ((List)
+                ((Map)
+                        ((Map)
+                                ((Map) response.getResponse().get("monitor"))
+                                    .get("monitorDocuments"))
+                            .get(0))
+                    .get("queries"))
+            .size());
+
+    IntStream.range(count / 2, count)
+        .forEach(
+            i -> {
+              try {
+                index(id, Integer.toString(i), "_mq", "content_s:\"x y\"");
+              } catch (Exception e) {
+                throw new IllegalStateException(e);
+              }
+            });
+    commit();
+
+    response = query(params);
+    validate(response, 0, 0, "0");
+    assertEquals(count / 2, ((Map) response.getResponse().get("monitor")).get("queriesRun"));
+    assertEquals(
+        count / 2,
+        ((List)
+                ((Map)
+                        ((Map)
+                                ((Map) response.getResponse().get("monitor"))
+                                    .get("monitorDocuments"))
+                            .get(0))
+                    .get("queries"))
+            .size());
   }
 }

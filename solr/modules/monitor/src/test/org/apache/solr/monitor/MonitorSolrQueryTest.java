@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 import org.apache.lucene.monitor.HighlightsMatch;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -348,76 +347,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     System.out.println("Response = " + response);
     validate(response, 3, List.of("0", "1", "2"));
     validate(response, 4, List.of("0", "1", "2"));
-  }
-
-  @Test
-  public void manySegmentsQuery() throws Exception {
-    del("*:*");
-    int count = 10_000;
-    IntStream.range(0, count)
-        .forEach(
-            i -> {
-              try {
-                index(id, Integer.toString(i), "_mq", "content_s:\"elevator stairs\"");
-              } catch (Exception e) {
-                throw new IllegalStateException(e);
-              }
-            });
-    commit();
-    handle.clear();
-    handle.put("responseHeader", SKIP);
-    handle.put("response", SKIP);
-
-    Object[] params =
-        new Object[] {
-          CommonParams.SORT,
-          id + " desc",
-          CommonParams.JSON,
-          read("/monitor/multi-doc-batch.json"),
-          REVERSE_SEARCH_PARAM_NAME,
-          true,
-          QUERY_MATCH_TYPE_KEY,
-          "simple"
-        };
-
-    QueryResponse response = query(params);
-    validate(response, 0, 0, "0");
-    assertEquals(count, ((Map) response.getResponse().get("monitor")).get("queriesRun"));
-    assertEquals(
-        count,
-        ((List)
-                ((Map)
-                        ((Map)
-                                ((Map) response.getResponse().get("monitor"))
-                                    .get("monitorDocuments"))
-                            .get(0))
-                    .get("queries"))
-            .size());
-
-    IntStream.range(count / 2, count)
-        .forEach(
-            i -> {
-              try {
-                index(id, Integer.toString(i), "_mq", "content_s:\"x y\"");
-              } catch (Exception e) {
-                throw new IllegalStateException(e);
-              }
-            });
-    commit();
-
-    response = query(params);
-    validate(response, 0, 0, "0");
-    assertEquals(count / 2, ((Map) response.getResponse().get("monitor")).get("queriesRun"));
-    assertEquals(
-        count / 2,
-        ((List)
-                ((Map)
-                        ((Map)
-                                ((Map) response.getResponse().get("monitor"))
-                                    .get("monitorDocuments"))
-                            .get(0))
-                    .get("queries"))
-            .size());
   }
 
   @Test
