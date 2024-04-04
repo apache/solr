@@ -30,8 +30,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.apache.lucene.monitor.AggregatingMatcher;
 import org.apache.lucene.monitor.MatcherProxy;
+import org.apache.lucene.monitor.MatchesAggregator;
 import org.apache.lucene.monitor.MultiMatchingQueries;
 import org.apache.lucene.monitor.QueryMatch;
 import org.apache.lucene.monitor.SingleMatchConsumer;
@@ -89,8 +89,9 @@ class ParallelSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
       }
     }
     BiFunction<T, T, T> resolver = matcherProxyFactory.apply(docBatchSearcher)::resolve;
-    var aggregatingMatcher = AggregatingMatcher.build(matchingQueries, docBatchSearcher, resolver);
-    queriesConsumer.accept(aggregatingMatcher.finish(queryCount));
+    var aggregateMatches =
+        MatchesAggregator.aggregate(matchingQueries, docBatchSearcher, resolver, queryCount);
+    queriesConsumer.accept(aggregateMatches);
   }
 
   @Override

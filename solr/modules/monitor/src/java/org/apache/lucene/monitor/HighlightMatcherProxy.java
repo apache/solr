@@ -61,8 +61,8 @@ public class HighlightMatcherProxy implements MatcherProxy<HighlightsMatch> {
 
   @Override
   public MultiMatchingQueries<HighlightsMatch> finish(int queryCount) {
-    var aggregator = AggregatingMatcher.build(multiMatchingQueries, indexSearcher, this::resolve);
-    cachedResult = aggregator.finish(queryCount);
+    cachedResult =
+        MatchesAggregator.aggregate(multiMatchingQueries, indexSearcher, this::resolve, queryCount);
     return cachedResult;
   }
 

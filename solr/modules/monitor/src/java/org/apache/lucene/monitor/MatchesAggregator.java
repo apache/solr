@@ -24,11 +24,11 @@ import java.util.function.BiFunction;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
-public class AggregatingMatcher<T extends QueryMatch> extends CandidateMatcher<T> {
+public class MatchesAggregator<T extends QueryMatch> extends CandidateMatcher<T> {
 
   private final BiFunction<T, T, T> resolver;
 
-  private AggregatingMatcher(
+  private MatchesAggregator(
       List<MultiMatchingQueries<T>> multiMatches,
       IndexSearcher searcher,
       BiFunction<T, T, T> resolver) {
@@ -51,19 +51,17 @@ public class AggregatingMatcher<T extends QueryMatch> extends CandidateMatcher<T
     throw new UnsupportedOperationException("only use for aggregating other matchers");
   }
 
-  public MultiMatchingQueries<T> finish(int queryCount) {
-    return finish(Long.MIN_VALUE, queryCount);
-  }
-
   @Override
   public T resolve(T match1, T match2) {
     return resolver.apply(match1, match2);
   }
 
-  public static <T extends QueryMatch> AggregatingMatcher<T> build(
+  public static <T extends QueryMatch> MultiMatchingQueries<T> aggregate(
       List<MultiMatchingQueries<T>> matchingQueries,
       IndexSearcher searcher,
-      BiFunction<T, T, T> resolver) {
-    return new AggregatingMatcher<>(matchingQueries, searcher, resolver);
+      BiFunction<T, T, T> resolver,
+      int queryCount) {
+    return new MatchesAggregator<>(matchingQueries, searcher, resolver)
+        .finish(Long.MIN_VALUE, queryCount);
   }
 }
