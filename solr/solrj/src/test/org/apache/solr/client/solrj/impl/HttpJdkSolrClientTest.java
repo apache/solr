@@ -237,14 +237,14 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   public void testAsyncAndCancel() throws Exception {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     HttpJdkSolrClient.Builder b =
-            new HttpJdkSolrClient.Builder(url).withResponseParser(new XMLResponseParser());
+        new HttpJdkSolrClient.Builder(url).withResponseParser(new XMLResponseParser());
     try (PausableHttpJdkSolrClient client = new PausableHttpJdkSolrClient(url, b)) {
       super.testAsyncAndCancel(client);
     }
   }
 
   public static class PausableHttpJdkSolrClient extends HttpJdkSolrClient
-          implements PauseableHttpSolrClient {
+      implements PauseableHttpSolrClient {
 
     protected PausableHttpJdkSolrClient(String serverBaseUrl, Builder builder) {
       super(serverBaseUrl, builder);
@@ -252,28 +252,28 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
     @Override
     protected NamedList<Object> processErrorsAndResponse(
-            int httpStatus,
-            String responseReason,
-            String responseMethod,
-            ResponseParser processor,
-            InputStream is,
-            String mimeType,
-            String encoding,
-            boolean isV2Api,
-            String urlExceptionMessage)
-            throws SolrServerException {
+        int httpStatus,
+        String responseReason,
+        String responseMethod,
+        ResponseParser processor,
+        InputStream is,
+        String mimeType,
+        String encoding,
+        boolean isV2Api,
+        String urlExceptionMessage)
+        throws SolrServerException {
       pause();
       var nl =
-              super.processErrorsAndResponse(
-                      httpStatus,
-                      responseReason,
-                      responseMethod,
-                      processor,
-                      is,
-                      mimeType,
-                      encoding,
-                      isV2Api,
-                      urlExceptionMessage);
+          super.processErrorsAndResponse(
+              httpStatus,
+              responseReason,
+              responseMethod,
+              processor,
+              is,
+              mimeType,
+              encoding,
+              isV2Api,
+              urlExceptionMessage);
       unPause();
       return nl;
     }
