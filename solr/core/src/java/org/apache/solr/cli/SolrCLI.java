@@ -102,6 +102,7 @@ public class SolrCLI implements CLIO {
           .build();
   public static final Option OPTION_VERBOSE =
       Option.builder("verbose").required(false).desc("Enable more verbose command output.").build();
+  public static final Option OPTION_HELP = Option.builder("h").longOpt("help").required(false).desc("Print this message.").build();
 
   // should this be boolean or just an option?
   public static final Option OPTION_RECURSE =
@@ -276,7 +277,7 @@ public class SolrCLI implements CLIO {
 
   public static Options getToolOptions(Tool tool) {
     Options options = new Options();
-    options.addOption("help", false, "Print this message");
+    options.addOption(OPTION_HELP);
     options.addOption(OPTION_VERBOSE);
     List<Option> toolOpts = tool.getOptions();
     for (Option toolOpt : toolOpts) {
@@ -484,11 +485,11 @@ public class SolrCLI implements CLIO {
 
     print("Usage: solr COMMAND OPTIONS");
     print(
-            "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, delete, version, auth, assert, config, export, api, package, post, ");
+        "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, delete, version, auth, assert, config, export, api, package, post, ");
     print(
-            "                                zk ls, zk cp, zk rm , zk mv, zk mkroot, zk upconfig, zk downconfig,");
+        "                                zk ls, zk cp, zk rm , zk mv, zk mkroot, zk upconfig, zk downconfig,");
     print(
-            "                                snapshot-create, snapshot-list, snapshot-delete, snapshot-export, snapshot-prepare-export");
+        "                                snapshot-create, snapshot-list, snapshot-delete, snapshot-export, snapshot-prepare-export");
     print("");
     print("  Standalone server example (start Solr running in the background on port 8984):");
     print("");
