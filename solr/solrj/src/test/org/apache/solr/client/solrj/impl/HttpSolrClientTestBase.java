@@ -31,8 +31,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -669,10 +671,11 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
 
     CompletableFuture<NamedList<Object>> future = null;
+    ExecutionException ee = null;
 
     CountDownLatch cdl = new CountDownLatch(1); //Deprecated API use
     DebugAsyncListener listener = new DebugAsyncListener(cdl); //Deprecated API use
-
+    
     try (HttpSolrClientBase client = b.build()) {
       QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
       if (useDeprecatedApi) {
@@ -686,8 +689,8 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         try {
           future.get(1, TimeUnit.MINUTES);
           fail("Should have thrown ExecutionException");
-        } catch(ExecutionException ee) {
-          //ignore, expected
+        } catch(ExecutionException ee1) {
+          ee = ee1;
         }
       }
     }
@@ -697,7 +700,37 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       assertNull(listener.onSuccessResult);
     } else {
       assertTrue(future.isCompletedExceptionally());
+      assertTrue(ee.getCause() instanceof BaseHttpSolrClient.RemoteSolrException);
+      assertTrue(ee.getMessage(), ee.getMessage().contains("mime type"));
     }
     return listener;
+  }
+
+
+  protected void testAsyncAndCancel(PauseableHttpSolrClient client) throws Exception {
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
+    DebugServlet.responseBodyByQueryFragment.put(
+            "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    ResponseParser rp = new XMLResponseParser();
+    HttpSolrClientBuilderBase<?, ?> b =
+            builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+
+    QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
+
+    // We are using a version of the class under test that will wait for us before processing the response.
+    // This way we can ensure our test will always cancel the request before it finishes.
+    client.pause();
+
+    // Make the request then immediately cancel it!
+    CompletableFuture<NamedList<Object>> future = client.requestAsync(query, "collection1");
+    future.cancel(true);
+
+    // We are safe to unpause our client, having guaranteed that our cancel was before everything
+    // completed.
+    client.unPause();
+
+    assertTrue(future.isCancelled());
   }
 }

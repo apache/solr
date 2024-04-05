@@ -85,7 +85,11 @@ public abstract class HttpSolrClientBase extends SolrClient {
     } else {
       this.serverBaseUrl = null;
     }
-    this.idleTimeoutMillis = builder.idleTimeoutMillis;
+    if (builder.idleTimeoutMillis != null) {
+      this.idleTimeoutMillis = builder.idleTimeoutMillis;
+    } else {
+      this.idleTimeoutMillis = -1;
+    }
     this.basicAuthAuthorizationStr = builder.basicAuthAuthorizationStr;
     if (builder.requestWriter != null) {
       this.requestWriter = builder.requestWriter;
