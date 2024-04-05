@@ -20,8 +20,8 @@
 package org.apache.solr.monitor.cache;
 
 import java.io.IOException;
-import org.apache.lucene.monitor.MonitorDataValues;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.monitor.MonitorDataValues;
 import org.apache.solr.monitor.SolrMonitorQueryDecoder;
 
 public interface MonitorQueryCache {

@@ -20,21 +20,18 @@ package org.apache.lucene.monitor;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
 public class MatchesAggregator<T extends QueryMatch> extends CandidateMatcher<T> {
 
-  private final BiFunction<T, T, T> resolver;
+  private final CandidateMatcher<T> resolvingMatcher;
 
   private MatchesAggregator(
-      List<MultiMatchingQueries<T>> multiMatches,
-      IndexSearcher searcher,
-      BiFunction<T, T, T> resolver) {
-    super(searcher);
-    this.resolver = resolver;
-    for (var matches : multiMatches) {
+      List<CandidateMatcher<T>> matchers, CandidateMatcher<T> resolvingMatcher) {
+    super(resolvingMatcher.searcher);
+    this.resolvingMatcher = resolvingMatcher;
+    for (var matcher : matchers) {
+      var matches = matcher.finish(Long.MIN_VALUE, -1);
       for (int doc = 0; doc < matches.getBatchSize(); doc++) {
         for (T match : matches.getMatches(doc)) {
           this.addMatch(match, doc);
@@ -47,21 +44,17 @@ public class MatchesAggregator<T extends QueryMatch> extends CandidateMatcher<T>
   }
 
   @Override
-  protected void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) {
+  public void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) {
     throw new UnsupportedOperationException("only use for aggregating other matchers");
   }
 
   @Override
   public T resolve(T match1, T match2) {
-    return resolver.apply(match1, match2);
+    return resolvingMatcher.resolve(match1, match2);
   }
 
   public static <T extends QueryMatch> MultiMatchingQueries<T> aggregate(
-      List<MultiMatchingQueries<T>> matchingQueries,
-      IndexSearcher searcher,
-      BiFunction<T, T, T> resolver,
-      int queryCount) {
-    return new MatchesAggregator<>(matchingQueries, searcher, resolver)
-        .finish(Long.MIN_VALUE, queryCount);
+      List<CandidateMatcher<T>> matchers, CandidateMatcher<T> resolver, int queryCount) {
+    return new MatchesAggregator<>(matchers, resolver).finish(Long.MIN_VALUE, queryCount);
   }
 }

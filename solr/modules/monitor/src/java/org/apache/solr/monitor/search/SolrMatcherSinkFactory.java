@@ -23,14 +23,12 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.apache.lucene.monitor.CandidateMatcher;
 import org.apache.lucene.monitor.DocumentBatchVisitor;
-import org.apache.lucene.monitor.HighlightMatcherProxy;
-import org.apache.lucene.monitor.MatcherProxy;
+import org.apache.lucene.monitor.HighlightsMatch;
 import org.apache.lucene.monitor.MultiMatchingQueries;
 import org.apache.lucene.monitor.QueryMatch;
-import org.apache.lucene.monitor.SimpleMatcherProxy;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreMode;
 
 class SolrMatcherSinkFactory {
 
@@ -57,7 +55,7 @@ class SolrMatcherSinkFactory {
     } else if (matchType == QueryMatchType.HIGHLIGHTS) {
       return build(
           documentBatch,
-          HighlightMatcherProxy::new,
+          HighlightsMatch.MATCHER::createMatcher,
           matchingQueries ->
               QueryMatchResponseCodec.highlightEncode(
                   matchingQueries, monitorResult, documentBatch.size()));
@@ -67,22 +65,19 @@ class SolrMatcherSinkFactory {
 
   private SolrMatcherSink buildSimple(
       DocumentBatchVisitor documentBatch, Consumer<MultiMatchingQueries<QueryMatch>> encoder) {
-    return build(
-        documentBatch,
-        searcher -> new SimpleMatcherProxy(searcher, ScoreMode.COMPLETE_NO_SCORES),
-        encoder);
+    return build(documentBatch, QueryMatch.SIMPLE_MATCHER::createMatcher, encoder);
   }
 
   private <T extends QueryMatch> SolrMatcherSink build(
       DocumentBatchVisitor documentBatch,
-      Function<IndexSearcher, MatcherProxy<T>> matcherProxyFactory,
+      Function<IndexSearcher, CandidateMatcher<T>> matcherFactory,
       Consumer<MultiMatchingQueries<T>> encoder) {
     var docBatchSearcher = new IndexSearcher(documentBatch.get());
     if (executorService == null) {
-      return new SyncSolrMatcherSink<>(matcherProxyFactory.apply(docBatchSearcher), encoder);
+      return new SyncSolrMatcherSink<>(matcherFactory.apply(docBatchSearcher), encoder);
     } else {
       return new ParallelSolrMatcherSink<>(
-          executorService, matcherProxyFactory, docBatchSearcher, encoder);
+          executorService, matcherFactory, docBatchSearcher, encoder);
     }
   }
 }

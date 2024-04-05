@@ -17,20 +17,27 @@
  *
  */
 
-package org.apache.lucene.monitor;
+package org.apache.solr.monitor.search;
 
-import java.util.Map;
-import org.apache.lucene.search.Query;
+import java.io.IOException;
 
-public interface MatcherProxy<T extends QueryMatch> {
+@FunctionalInterface
+public interface UncheckRunnable<E extends Throwable> {
 
-  void matchQuery(String queryId, Query matchQuery, Map<String, String> metadata);
+  void run() throws E;
 
-  MultiMatchingQueries<T> finish(int queryCount);
+  static Runnable ioUncheckButThrow(UncheckRunnable<IOException> function) {
+    return () -> {
+      try {
+        function.run();
+      } catch (Throwable exception) {
+        throwAsUnchecked(exception);
+      }
+    };
+  }
 
-  void setNextMatchConsumer(SingleMatchConsumer singleMatchConsumer);
-
-  MultiMatchingQueries<T> matches();
-
-  T resolve(T match1, T match2);
+  @SuppressWarnings("unchecked")
+  private static <E extends Throwable> void throwAsUnchecked(Throwable throwable) throws E {
+    throw (E) throwable;
+  }
 }

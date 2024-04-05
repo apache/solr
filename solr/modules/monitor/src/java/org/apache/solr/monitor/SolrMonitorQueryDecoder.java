@@ -21,7 +21,6 @@ package org.apache.solr.monitor;
 
 import java.io.IOException;
 import java.util.Map;
-import org.apache.lucene.monitor.MonitorDataValues;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.MonitorQuery;
 import org.apache.solr.core.SolrCore;

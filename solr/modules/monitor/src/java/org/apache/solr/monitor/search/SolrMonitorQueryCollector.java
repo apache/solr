@@ -22,11 +22,10 @@ package org.apache.solr.monitor.search;
 import java.io.IOException;
 import java.util.function.Function;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.monitor.MonitorDataValues;
 import org.apache.lucene.monitor.QCEVisitor;
-import org.apache.lucene.monitor.SingleMatchConsumer;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.solr.monitor.MonitorConstants;
+import org.apache.solr.monitor.MonitorDataValues;
 import org.apache.solr.monitor.SolrMonitorQueryDecoder;
 import org.apache.solr.monitor.cache.MonitorQueryCache;
 import org.apache.solr.search.DelegatingCollector;
@@ -37,7 +36,7 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
   private final SolrMonitorQueryDecoder queryDecoder;
   private final SolrMatcherSink matcherSink;
   private final MonitorDataValues dataValues = new MonitorDataValues();
-  private final Function<Integer, SingleMatchConsumer> docIdForwarder;
+  private final Function<Integer, MatchingDocForwarder> docIdForwarder;
 
   SolrMonitorQueryCollector(CollectorContext collectorContext) {
     this.monitorQueryCache = collectorContext.queryCache;
@@ -56,7 +55,11 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
     var entry = getEntry(dataValues);
     var queryId = dataValues.getQueryId();
     var forwarder = docIdForwarder.apply(doc);
-    matcherSink.matchQuery(queryId, entry.getMatchQuery(), entry.getMetadata(), forwarder);
+    matcherSink.matchQuery(
+        queryId,
+        entry.getMatchQuery(),
+        entry.getMetadata(),
+        forwarder == null ? null : UncheckRunnable.ioUncheckButThrow(forwarder));
   }
 
   private QCEVisitor getEntry(MonitorDataValues dataValues) throws IOException {
@@ -112,7 +115,7 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
     }
   }
 
-  private class MatchingDocForwarder implements SingleMatchConsumer {
+  private class MatchingDocForwarder implements UncheckRunnable<IOException> {
 
     private final int doc;
     private boolean visited;
@@ -122,7 +125,7 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
     }
 
     @Override
-    public void accept(String __, int ___) throws IOException {
+    public void run() throws IOException {
       if (!visited) {
         superCollect(doc);
       }

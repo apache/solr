@@ -21,16 +21,13 @@ package org.apache.solr.monitor.search;
 
 import java.io.IOException;
 import java.util.Map;
-import org.apache.lucene.monitor.SingleMatchConsumer;
 import org.apache.lucene.search.Query;
 
 interface SolrMatcherSink {
 
   void matchQuery(
-      String queryId,
-      Query matchQuery,
-      Map<String, String> metadata,
-      SingleMatchConsumer singleMatchConsumer);
+      String queryId, Query matchQuery, Map<String, String> metadata, Runnable singleMatchConsumer)
+      throws IOException;
 
   void complete() throws IOException;
 

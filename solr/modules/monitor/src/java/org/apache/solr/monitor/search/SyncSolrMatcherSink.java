@@ -19,40 +19,40 @@
 
 package org.apache.solr.monitor.search;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.function.Consumer;
-import org.apache.lucene.monitor.MatcherProxy;
+import org.apache.lucene.monitor.CandidateMatcher;
 import org.apache.lucene.monitor.MultiMatchingQueries;
 import org.apache.lucene.monitor.QueryMatch;
-import org.apache.lucene.monitor.SingleMatchConsumer;
 import org.apache.lucene.search.Query;
 
 class SyncSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
 
-  private final MatcherProxy<T> matcherProxy;
+  private final CandidateMatcher<T> matcher;
   private final Consumer<MultiMatchingQueries<T>> queriesConsumer;
   private int queryCount;
 
   SyncSolrMatcherSink(
-      MatcherProxy<T> matcherProxy, Consumer<MultiMatchingQueries<T>> queriesConsumer) {
-    this.matcherProxy = matcherProxy;
+      CandidateMatcher<T> matcher, Consumer<MultiMatchingQueries<T>> queriesConsumer) {
+    this.matcher = matcher;
     this.queriesConsumer = queriesConsumer;
   }
 
   @Override
   public void matchQuery(
-      String queryId,
-      Query matchQuery,
-      Map<String, String> metadata,
-      SingleMatchConsumer singleMatchConsumer) {
+      String queryId, Query matchQuery, Map<String, String> metadata, Runnable singleMatchConsumer)
+      throws IOException {
     queryCount++;
-    matcherProxy.setNextMatchConsumer(singleMatchConsumer);
-    matcherProxy.matchQuery(queryId, matchQuery, metadata);
+    if (singleMatchConsumer != null) {
+      matcher.setMatchConsumer((__, ___) -> singleMatchConsumer.run());
+    }
+    matcher.matchQuery(queryId, matchQuery, metadata);
   }
 
   @Override
   public void complete() {
-    queriesConsumer.accept(matcherProxy.finish(queryCount));
+    queriesConsumer.accept(matcher.finish(Long.MIN_VALUE, queryCount));
   }
 
   @Override
