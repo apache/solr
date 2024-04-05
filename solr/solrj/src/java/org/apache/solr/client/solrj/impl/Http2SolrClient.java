@@ -431,57 +431,17 @@ public class Http2SolrClient extends HttpSolrClientBase {
       SolrRequest<?> solrRequest,
       String collection,
       AsyncListener<NamedList<Object>> asyncListener) {
-    MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
 
-    Request req;
-    try {
-      String url = getRequestPath(solrRequest, collection);
-      InputStreamResponseListener listener =
-          new InputStreamReleaseTrackingResponseListener() {
-            @Override
-            public void onHeaders(Response response) {
-              super.onHeaders(response);
-              executor.execute(
-                  () -> {
-                    InputStream is = getInputStream();
-                    try {
-                      NamedList<Object> body =
-                          processErrorsAndResponse(solrRequest, response, is, url);
-                      mdcCopyHelper.onBegin(null);
-                      log.debug("response processing success");
-                      asyncListener.onSuccess(body);
-                    } catch (RemoteSolrException e) {
-                      if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
-                        mdcCopyHelper.onBegin(null);
-                        log.debug("response processing failed", e);
-                        asyncListener.onFailure(e);
-                      }
-                    } catch (SolrServerException e) {
-                      mdcCopyHelper.onBegin(null);
-                      log.debug("response processing failed", e);
-                      asyncListener.onFailure(e);
-                    } finally {
-                      log.debug("response processing completed");
-                      mdcCopyHelper.onComplete(null);
-                    }
-                  });
-            }
-
-            @Override
-            public void onFailure(Response response, Throwable failure) {
-              super.onFailure(response, failure);
-              if (failure != CANCELLED_EXCEPTION) {
-                asyncListener.onFailure(new SolrServerException(failure.getMessage(), failure));
+    asyncListener.onStart();
+    CompletableFuture<NamedList<Object>> cf = requestAsync(solrRequest, collection).whenComplete(
+            (nl, t) -> {
+              if (t != null) {
+                asyncListener.onFailure(t);
+              } else {
+                asyncListener.onSuccess(nl);
               }
-            }
-          };
-      asyncListener.onStart();
-      req = makeRequestAndSend(solrRequest, url, listener, true);
-    } catch (SolrServerException | IOException e) {
-      asyncListener.onFailure(e);
-      return FAILED_MAKING_REQUEST_CANCELLABLE;
-    }
-    return () -> req.abort(CANCELLED_EXCEPTION);
+            });
+    return () -> cf.cancel(true);
   }
 
   @Override
