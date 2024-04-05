@@ -635,28 +635,28 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       if (useDeprecatedApi) {
         cdl.await(1, TimeUnit.MINUTES);
       }
-    }
 
-    for (int i = 0; i < limit; i++) {
-      NamedList<Object> result;
-      if (useDeprecatedApi) {
-        result = listeners[i].onSuccessResult;
-      } else {
-        result = futures.get(i).get(1, TimeUnit.MINUTES);
-      }
-      SolrDocumentList sdl = (SolrDocumentList) result.get("response");
-      assertEquals(2, sdl.getNumFound());
-      assertEquals(1, sdl.getStart());
-      assertTrue(sdl.getNumFoundExact());
-      assertEquals(1, sdl.size());
-      assertEquals(1, sdl.iterator().next().size());
-      assertEquals("KEY-" + i, sdl.iterator().next().get("id"));
+      for (int i = 0; i < limit; i++) {
+        NamedList<Object> result;
+        if (useDeprecatedApi) {
+          result = listeners[i].onSuccessResult;
+        } else {
+          result = futures.get(i).get(1, TimeUnit.MINUTES);
+        }
+        SolrDocumentList sdl = (SolrDocumentList) result.get("response");
+        assertEquals(2, sdl.getNumFound());
+        assertEquals(1, sdl.getStart());
+        assertTrue(sdl.getNumFoundExact());
+        assertEquals(1, sdl.size());
+        assertEquals(1, sdl.iterator().next().size());
+        assertEquals("KEY-" + i, sdl.iterator().next().get("id"));
 
-      if (useDeprecatedApi) {
-        assertNull(listeners[i].onFailureResult);
-        assertTrue(listeners[i].onStartCalled);
-      } else {
-        assertFalse(futures.get(i).isCompletedExceptionally());
+        if (useDeprecatedApi) {
+          assertNull(listeners[i].onFailureResult);
+          assertTrue(listeners[i].onStartCalled);
+        } else {
+          assertFalse(futures.get(i).isCompletedExceptionally());
+        }
       }
     }
   }
@@ -710,10 +710,6 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
     DebugServlet.responseBodyByQueryFragment.put(
         "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    ResponseParser rp = new XMLResponseParser();
-    HttpSolrClientBuilderBase<?, ?> b =
-        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
 
     QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
 
