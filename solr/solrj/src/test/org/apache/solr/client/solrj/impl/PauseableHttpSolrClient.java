@@ -25,7 +25,7 @@ import java.util.concurrent.Semaphore;
 
 public interface PauseableHttpSolrClient {
 
-    final Semaphore wait = new Semaphore(1);
+    Semaphore wait = new Semaphore(1);
 
     default public void pause() {
         try {
