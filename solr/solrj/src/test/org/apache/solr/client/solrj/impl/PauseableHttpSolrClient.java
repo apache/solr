@@ -17,28 +17,27 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Semaphore;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.util.NamedList;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Semaphore;
-
 public interface PauseableHttpSolrClient {
 
-    Semaphore wait = new Semaphore(1);
+  Semaphore wait = new Semaphore(1);
 
-    default public void pause() {
-        try {
-            wait.acquire();
-        } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-        }
+  public default void pause() {
+    try {
+      wait.acquire();
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
     }
+  }
 
-    default public void unPause() {
-        wait.release();
-    }
+  public default void unPause() {
+    wait.release();
+  }
 
-    public CompletableFuture<NamedList<Object>> requestAsync(final SolrRequest<?> solrRequest, String collection) ;
-
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      final SolrRequest<?> solrRequest, String collection);
 }

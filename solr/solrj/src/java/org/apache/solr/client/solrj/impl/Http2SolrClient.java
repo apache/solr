@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
 import java.net.CookieStore;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -51,7 +50,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -428,19 +426,22 @@ public class Http2SolrClient extends HttpSolrClientBase {
       AsyncListener<NamedList<Object>> asyncListener) {
 
     asyncListener.onStart();
-    CompletableFuture<NamedList<Object>> cf = requestAsync(solrRequest, collection).whenComplete(
-            (nl, t) -> {
-              if (t != null) {
-                asyncListener.onFailure(t);
-              } else {
-                asyncListener.onSuccess(nl);
-              }
-            });
+    CompletableFuture<NamedList<Object>> cf =
+        requestAsync(solrRequest, collection)
+            .whenComplete(
+                (nl, t) -> {
+                  if (t != null) {
+                    asyncListener.onFailure(t);
+                  } else {
+                    asyncListener.onSuccess(nl);
+                  }
+                });
     return () -> cf.cancel(true);
   }
 
   @Override
-  public CompletableFuture<NamedList<Object>> requestAsync(final SolrRequest<?> solrRequest, String collection) {
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      final SolrRequest<?> solrRequest, String collection) {
     if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest)) {
       collection = defaultCollection;
     }
@@ -448,53 +449,59 @@ public class Http2SolrClient extends HttpSolrClientBase {
     final MakeRequestReturnValue mrrv;
     final String url;
     try {
-      url  = getRequestPath(solrRequest, collection);
+      url = getRequestPath(solrRequest, collection);
       mrrv = makeRequest(solrRequest, url, true);
     } catch (SolrServerException | IOException e) {
       future.completeExceptionally(e);
       return future;
     }
-    final ResponseParser parser = solrRequest.getResponseParser() == null
-            ? this.parser: solrRequest.getResponseParser();
-    mrrv.request.onRequestQueued(asyncTracker.queuedListener)
-            .onComplete(asyncTracker.completeListener)
-            .send(new InputStreamResponseListener() {
+    final ResponseParser parser =
+        solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
+    mrrv.request
+        .onRequestQueued(asyncTracker.queuedListener)
+        .onComplete(asyncTracker.completeListener)
+        .send(
+            new InputStreamResponseListener() {
               @Override
               public void onHeaders(Response response) {
                 super.onHeaders(response);
                 InputStreamResponseListener listener = this;
-                executor.execute(() -> {
-                  InputStream is = listener.getInputStream();
+                executor.execute(
+                    () -> {
+                      InputStream is = listener.getInputStream();
 
-                  // TODO: Original PR had this, but we do not close the stream.
-                  // The legacy implementation did not track the input stream,
-                  // or close it.
-                  //assert ObjectReleaseTracker.track(is);
+                      // TODO: Original PR had this, but we do not close the stream.
+                      // The legacy implementation did not track the input stream,
+                      // or close it.
+                      // assert ObjectReleaseTracker.track(is);
 
-                  try {
-                    NamedList<Object> body = processErrorsAndResponse(solrRequest, response, is, url);
-                    future.complete(body);
-                  } catch (RemoteSolrException | SolrServerException e) {
-                    future.completeExceptionally(e);
-                  }
-                });
+                      try {
+                        NamedList<Object> body =
+                            processErrorsAndResponse(solrRequest, response, is, url);
+                        future.complete(body);
+                      } catch (RemoteSolrException | SolrServerException e) {
+                        future.completeExceptionally(e);
+                      }
+                    });
               }
 
               @Override
               public void onFailure(Response response, Throwable failure) {
                 super.onFailure(response, failure);
-                future.completeExceptionally(new SolrServerException(failure.getMessage(), failure));
+                future.completeExceptionally(
+                    new SolrServerException(failure.getMessage(), failure));
               }
             });
-    future.exceptionally((error) -> {
-      mrrv.request.abort(error);
-      return null;
-    });
+    future.exceptionally(
+        (error) -> {
+          mrrv.request.abort(error);
+          return null;
+        });
 
-    if(mrrv.contentWriter != null) {
+    if (mrrv.contentWriter != null) {
       try (var output = mrrv.requestContent.getOutputStream()) {
         mrrv.contentWriter.write(output);
-      } catch(IOException ioe) {
+      } catch (IOException ioe) {
         future.completeExceptionally(ioe);
       }
     }
@@ -622,11 +629,15 @@ public class Http2SolrClient extends HttpSolrClientBase {
     final RequestWriter.ContentWriter contentWriter;
     final OutputStreamRequestContent requestContent;
 
-    MakeRequestReturnValue(Request request,RequestWriter.ContentWriter contentWriter, OutputStreamRequestContent requestContent) {
+    MakeRequestReturnValue(
+        Request request,
+        RequestWriter.ContentWriter contentWriter,
+        OutputStreamRequestContent requestContent) {
       this.request = request;
       this.contentWriter = contentWriter;
       this.requestContent = requestContent;
     }
+
     MakeRequestReturnValue(Request request) {
       this.request = request;
       this.contentWriter = null;
@@ -635,12 +646,14 @@ public class Http2SolrClient extends HttpSolrClientBase {
   }
 
   private Request makeRequestAndSend(
-          SolrRequest<?> solrRequest, String url, InputStreamResponseListener listener, boolean isAsync)
-          throws IOException, SolrServerException {
+      SolrRequest<?> solrRequest, String url, InputStreamResponseListener listener, boolean isAsync)
+      throws IOException, SolrServerException {
     return sendRequest(makeRequest(solrRequest, url, isAsync), listener);
   }
 
-  private MakeRequestReturnValue makeRequest(SolrRequest<?> solrRequest, String url, boolean isAsync) throws IOException, SolrServerException {
+  private MakeRequestReturnValue makeRequest(
+      SolrRequest<?> solrRequest, String url, boolean isAsync)
+      throws IOException, SolrServerException {
     ModifiableSolrParams wparams = initalizeSolrParams(solrRequest, responseParser(solrRequest));
 
     if (SolrRequest.METHOD.GET == solrRequest.getMethod()) {
@@ -657,15 +670,15 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
 
     if (SolrRequest.METHOD.POST == solrRequest.getMethod()
-            || SolrRequest.METHOD.PUT == solrRequest.getMethod()) {
+        || SolrRequest.METHOD.PUT == solrRequest.getMethod()) {
       RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
       Collection<ContentStream> streams =
-              contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
+          contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
 
       boolean isMultipart = isMultipart(streams);
 
       HttpMethod method =
-              SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;
+          SolrRequest.METHOD.POST == solrRequest.getMethod() ? HttpMethod.POST : HttpMethod.PUT;
 
       if (contentWriter != null) {
         var content = new OutputStreamRequestContent(contentWriter.getContentType());
@@ -686,8 +699,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
         // If it has one stream, it is the post body, put the params in the URL
         ContentStream contentStream = streams.iterator().next();
         var content =
-                new InputStreamRequestContent(
-                        contentStream.getContentType(), contentStream.getStream());
+            new InputStreamRequestContent(
+                contentStream.getContentType(), contentStream.getStream());
         var r = httpClient.newRequest(url + wparams.toQueryString()).method(method).body(content);
         decorateRequest(r, solrRequest, isAsync);
         return new MakeRequestReturnValue(r);
@@ -697,12 +710,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
     throw new SolrServerException("Unsupported method: " + solrRequest.getMethod());
   }
 
-  private Request sendRequest(
-      MakeRequestReturnValue mrrv, InputStreamResponseListener listener)
+  private Request sendRequest(MakeRequestReturnValue mrrv, InputStreamResponseListener listener)
       throws IOException, SolrServerException {
     mrrv.request.send(listener);
 
-    if(mrrv.contentWriter != null) {
+    if (mrrv.contentWriter != null) {
       try (var output = mrrv.requestContent.getOutputStream()) {
         mrrv.contentWriter.write(output);
       }

@@ -19,13 +19,13 @@ package org.apache.solr.client.solrj.impl;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Assert;
 
-public class DebugAsyncListener implements AsyncListener<NamedList<Object>>, PauseableHttpSolrClient {
+public class DebugAsyncListener
+    implements AsyncListener<NamedList<Object>>, PauseableHttpSolrClient {
 
   private final CountDownLatch cdl;
 
@@ -71,7 +71,8 @@ public class DebugAsyncListener implements AsyncListener<NamedList<Object>>, Pau
   }
 
   @Override
-  public CompletableFuture<NamedList<Object>> requestAsync(SolrRequest<?> solrRequest, String collection) {
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      SolrRequest<?> solrRequest, String collection) {
     throw new UnsupportedOperationException();
   }
 }

@@ -22,7 +22,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -299,22 +298,44 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testAsyncAndCancel() throws Exception {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    Http2SolrClient.Builder b = new Http2SolrClient.Builder(url)
-            .withResponseParser(new XMLResponseParser());
+    Http2SolrClient.Builder b =
+        new Http2SolrClient.Builder(url).withResponseParser(new XMLResponseParser());
     try (PausableHttp2SolrClient client = new PausableHttp2SolrClient(url, b)) {
       super.testAsyncAndCancel(client);
     }
   }
 
-  public static class PausableHttp2SolrClient extends Http2SolrClient implements PauseableHttpSolrClient {
+  public static class PausableHttp2SolrClient extends Http2SolrClient
+      implements PauseableHttpSolrClient {
 
-   protected PausableHttp2SolrClient(String serverBaseUrl, Builder builder) {
+    protected PausableHttp2SolrClient(String serverBaseUrl, Builder builder) {
       super(serverBaseUrl, builder);
-   }
+    }
+
     @Override
-    protected NamedList<Object> processErrorsAndResponse(int httpStatus, String responseReason, String responseMethod, ResponseParser processor, InputStream is, String mimeType, String encoding, boolean isV2Api, String urlExceptionMessage) throws SolrServerException {
+    protected NamedList<Object> processErrorsAndResponse(
+        int httpStatus,
+        String responseReason,
+        String responseMethod,
+        ResponseParser processor,
+        InputStream is,
+        String mimeType,
+        String encoding,
+        boolean isV2Api,
+        String urlExceptionMessage)
+        throws SolrServerException {
       pause();
-      var nl = super.processErrorsAndResponse(httpStatus, responseReason, responseMethod, processor, is, mimeType, encoding, isV2Api, urlExceptionMessage);
+      var nl =
+          super.processErrorsAndResponse(
+              httpStatus,
+              responseReason,
+              responseMethod,
+              processor,
+              is,
+              mimeType,
+              encoding,
+              isV2Api,
+              urlExceptionMessage);
       unPause();
       return nl;
     }
