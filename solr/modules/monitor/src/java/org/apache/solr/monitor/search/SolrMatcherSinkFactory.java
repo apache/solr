@@ -74,7 +74,7 @@ class SolrMatcherSinkFactory {
       Consumer<MultiMatchingQueries<T>> encoder) {
     var docBatchSearcher = new IndexSearcher(documentBatch.get());
     if (executorService == null) {
-      return new SyncSolrMatcherSink<>(matcherFactory.apply(docBatchSearcher), encoder);
+      return new SyncSolrMatcherSink<>(matcherFactory, docBatchSearcher, encoder);
     } else {
       return new ParallelSolrMatcherSink<>(
           executorService, matcherFactory, docBatchSearcher, encoder);

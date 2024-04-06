@@ -20,7 +20,6 @@
 package org.apache.solr.monitor.search;
 
 import java.io.IOException;
-import java.util.function.Function;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.monitor.QCEVisitor;
 import org.apache.lucene.search.ScoreMode;
@@ -36,17 +35,13 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
   private final SolrMonitorQueryDecoder queryDecoder;
   private final SolrMatcherSink matcherSink;
   private final MonitorDataValues dataValues = new MonitorDataValues();
-  private final Function<Integer, MatchingDocForwarder> docIdForwarder;
+  private final boolean writeToDocList;
 
   SolrMonitorQueryCollector(CollectorContext collectorContext) {
     this.monitorQueryCache = collectorContext.queryCache;
     this.queryDecoder = collectorContext.queryDecoder;
     this.matcherSink = collectorContext.solrMatcherSink;
-    if (collectorContext.writeToDocList) {
-      this.docIdForwarder = MatchingDocForwarder::new;
-    } else {
-      this.docIdForwarder = __ -> null;
-    }
+    this.writeToDocList = collectorContext.writeToDocList;
   }
 
   @Override
@@ -54,12 +49,10 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
     dataValues.advanceTo(doc);
     var entry = getEntry(dataValues);
     var queryId = dataValues.getQueryId();
-    var forwarder = docIdForwarder.apply(doc);
-    matcherSink.matchQuery(
-        queryId,
-        entry.getMatchQuery(),
-        entry.getMetadata(),
-        forwarder == null ? null : UncheckRunnable.ioUncheckButThrow(forwarder));
+    boolean isMatch = matcherSink.matchQuery(queryId, entry.getMatchQuery(), entry.getMetadata());
+    if (isMatch && writeToDocList) {
+      super.collect(doc);
+    }
   }
 
   private QCEVisitor getEntry(MonitorDataValues dataValues) throws IOException {
@@ -73,10 +66,6 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
             MonitorConstants.QUERY_DECOMPOSER,
             dataValues.getCacheId())
         : versionedEntry.entry;
-  }
-
-  private void superCollect(int doc) throws IOException {
-    super.collect(doc);
   }
 
   @Override
@@ -112,24 +101,6 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
       this.queryDecoder = queryDecoder;
       this.solrMatcherSink = solrMatcherSink;
       this.writeToDocList = writeToDocList;
-    }
-  }
-
-  private class MatchingDocForwarder implements UncheckRunnable<IOException> {
-
-    private final int doc;
-    private boolean visited;
-
-    private MatchingDocForwarder(int doc) {
-      this.doc = doc;
-    }
-
-    @Override
-    public void run() throws IOException {
-      if (!visited) {
-        superCollect(doc);
-      }
-      visited = true;
     }
   }
 }

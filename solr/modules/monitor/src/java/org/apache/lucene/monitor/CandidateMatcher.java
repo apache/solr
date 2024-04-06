@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
@@ -37,7 +36,6 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
   private final List<MatchHolder<T>> matches;
 
   private long searchTime = System.nanoTime();
-  private BiConsumer<T, Integer> matchConsumer;
 
   private static class MatchHolder<T> {
     Map<String, T> matches = new HashMap<>();
@@ -75,9 +73,6 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
    * @param match a QueryMatch object
    */
   protected final void addMatch(T match, int doc) {
-    if (matchConsumer != null) {
-      matchConsumer.accept(match, doc);
-    }
     MatchHolder<T> docMatches = matches.get(doc);
     docMatches.matches.compute(
         match.getQueryId(),
@@ -102,10 +97,6 @@ public abstract class CandidateMatcher<T extends QueryMatch> {
   /** Called by the Monitor if running a query throws an Exception */
   void reportError(String queryId, Exception e) {
     this.errors.put(queryId, e);
-  }
-
-  public void setMatchConsumer(BiConsumer<T, Integer> matchConsumer) {
-    this.matchConsumer = matchConsumer;
   }
 
   /**

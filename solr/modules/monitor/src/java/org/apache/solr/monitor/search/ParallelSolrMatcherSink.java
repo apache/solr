@@ -56,11 +56,7 @@ class ParallelSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
   }
 
   @Override
-  public void matchQuery(
-      String queryId,
-      Query matchQuery,
-      Map<String, String> metadata,
-      Runnable singleMatchConsumer) {
+  public boolean matchQuery(String queryId, Query matchQuery, Map<String, String> metadata) {
     completionService.submit(
         () -> {
           var matcher = matcherFactory.apply(docBatchSearcher);
@@ -68,6 +64,7 @@ class ParallelSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
           return matcher;
         });
     tasksLeft++;
+    return false;
   }
 
   @Override

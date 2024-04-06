@@ -25,8 +25,7 @@ import org.apache.lucene.search.Query;
 
 interface SolrMatcherSink {
 
-  void matchQuery(
-      String queryId, Query matchQuery, Map<String, String> metadata, Runnable singleMatchConsumer)
+  boolean matchQuery(String queryId, Query matchQuery, Map<String, String> metadata)
       throws IOException;
 
   void complete() throws IOException;
