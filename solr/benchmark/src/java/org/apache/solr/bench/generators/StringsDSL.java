@@ -108,18 +108,17 @@ public class StringsDSL {
   }
 
   /**
-   * Realistic unicode realistic unicode generator builder.
+   * Realistic unicode generator builder. No whitespace.
    *
    * @param minLength the min length
    * @param maxLength the max length
    * @return the realistic unicode generator builder
    */
   public RealisticUnicodeGeneratorBuilder realisticUnicode(int minLength, int maxLength) {
-    return new RealisticUnicodeGeneratorBuilder(
-        new SolrGen<>() {
+    final var randomUnicodeGen =
+        new SolrGen<String>() {
           @Override
           public String generate(SolrRandomnessSource in) {
-
             int block =
                 integers()
                     .between(0, blockStarts.length - 1)
@@ -131,7 +130,33 @@ public class StringsDSL {
                 .describedAs("Realistic Unicode")
                 .generate(in);
           }
-        });
+        };
+    return new RealisticUnicodeGeneratorBuilder(noWhitespaceGen(randomUnicodeGen));
+  }
+
+  /** Filters out strings with whitespace. */
+  private static SolrGen<String> noWhitespaceGen(SolrGen<String> strings) {
+    return new SolrGen<>(String.class) {
+
+      {
+        describedAs("Remove whitespace");
+      }
+
+      @Override
+      public String generate(SolrRandomnessSource in) {
+        generate:
+        while (true) {
+          String str = strings.generate((in));
+          for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (Character.isWhitespace(c)) {
+              continue generate;
+            }
+          }
+          return str;
+        }
+      }
+    };
   }
 
   /**
