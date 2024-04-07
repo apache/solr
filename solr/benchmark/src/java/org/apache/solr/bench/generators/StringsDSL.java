@@ -130,33 +130,19 @@ public class StringsDSL {
                 .describedAs("Realistic Unicode")
                 .generate(in);
           }
-        };
-    return new RealisticUnicodeGeneratorBuilder(noWhitespaceGen(randomUnicodeGen));
-  }
-
-  /** Filters out strings with whitespace. */
-  private static SolrGen<String> noWhitespaceGen(SolrGen<String> strings) {
-    return new SolrGen<>(String.class) {
-
-      {
-        describedAs("Remove whitespace");
-      }
-
-      @Override
-      public String generate(SolrRandomnessSource in) {
-        generate:
-        while (true) {
-          String str = strings.generate((in));
-          for (int i = 0; i < str.length(); i++) {
-            char c = str.charAt(i);
-            if (Character.isWhitespace(c)) {
-              continue generate;
-            }
-          }
-          return str;
-        }
-      }
-    };
+        }.assuming(
+            str -> {
+              // The string must not have whitespace
+              for (int i = 0; i < str.length(); i++) {
+                char c = str.charAt(i);
+                if (Character.isWhitespace(c)) {
+                  return false;
+                }
+              }
+              return true;
+            });
+    return new RealisticUnicodeGeneratorBuilder(
+        new SolrDescribingGenerator<>(randomUnicodeGen, Objects::toString));
   }
 
   /**
