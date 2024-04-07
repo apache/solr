@@ -359,6 +359,9 @@ public class HttpSolrCall {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Solr not running in cloud mode ");
     }
+    if (collectionsList.isEmpty()) {
+      return null;
+    }
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     String collectionName = collectionsList.get(0);
     Supplier<DocCollection> logic =
