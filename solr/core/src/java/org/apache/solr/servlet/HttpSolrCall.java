@@ -282,8 +282,6 @@ public class HttpSolrCall {
               queryParams.get(COLLECTION_PROP, def)); // &collection= takes precedence
 
       if (core == null) {
-        // force update collection only if local clusterstate is outdated
-        resolveDocCollection(collectionsList);
         // lookup core from collection, or route away if need to
         // route to 1st
         String collectionName = collectionsList.isEmpty() ? null : collectionsList.get(0);
@@ -354,16 +352,15 @@ public class HttpSolrCall {
    * recursively try this all one more time while ensuring the alias and collection info is sync'ed
    * from ZK.
    */
-  protected DocCollection resolveDocCollection(List<String> collectionsList) {
+  protected DocCollection resolveDocCollection(String collectionName) {
     if (!cores.isZooKeeperAware()) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Solr not running in cloud mode ");
     }
-    if (collectionsList.isEmpty()) {
+    if (collectionName == null || collectionName.trim().isEmpty()) {
       return null;
     }
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
-    String collectionName = collectionsList.get(0);
     Supplier<DocCollection> logic =
         () -> zkStateReader.getClusterState().getCollectionOrNull(collectionName);
 
@@ -1069,18 +1066,17 @@ public class HttpSolrCall {
 
   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
-
     ClusterState clusterState = zkStateReader.getClusterState();
-    DocCollection collection = clusterState.getCollectionOrNull(collectionName, true);
+    DocCollection collection = resolveDocCollection(collectionName);
+    // the usage of getCoreByCollection assumes that if null is returned, collection is found, but replicas might not
+    // have been created. Hence returning null here would be misleading...
     if (collection == null) {
       return null;
     }
-
     Set<String> liveNodes = clusterState.getLiveNodes();
 
     if (isPreferLeader) {
-      List<Replica> leaderReplicas =
-          collection.getLeaderReplicas(cores.getZkController().getNodeName());
+      List<Replica> leaderReplicas = collection.getLeaderReplicas(cores.getZkController().getNodeName());
       SolrCore core = randomlyGetSolrCore(liveNodes, leaderReplicas);
       if (core != null) return core;
     }
