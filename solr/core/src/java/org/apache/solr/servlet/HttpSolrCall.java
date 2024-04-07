@@ -1068,7 +1068,8 @@ public class HttpSolrCall {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
     DocCollection collection = resolveDocCollection(collectionName);
-    // the usage of getCoreByCollection assumes that if null is returned, collection is found, but replicas might not
+    // the usage of getCoreByCollection assumes that if null is returned, collection is found, but
+    // replicas might not
     // have been created. Hence returning null here would be misleading...
     if (collection == null) {
       return null;
@@ -1076,7 +1077,8 @@ public class HttpSolrCall {
     Set<String> liveNodes = clusterState.getLiveNodes();
 
     if (isPreferLeader) {
-      List<Replica> leaderReplicas = collection.getLeaderReplicas(cores.getZkController().getNodeName());
+      List<Replica> leaderReplicas =
+          collection.getLeaderReplicas(cores.getZkController().getNodeName());
       SolrCore core = randomlyGetSolrCore(liveNodes, leaderReplicas);
       if (core != null) return core;
     }
