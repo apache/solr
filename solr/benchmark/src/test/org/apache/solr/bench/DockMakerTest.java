@@ -21,7 +21,6 @@ import static org.apache.solr.bench.generators.SourceDSL.booleans;
 import static org.apache.solr.bench.generators.SourceDSL.integers;
 import static org.apache.solr.bench.generators.SourceDSL.strings;
 
-import com.carrotsearch.randomizedtesting.RandomizedContext;
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -175,8 +174,6 @@ public class DockMakerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRealisticUnicode() throws Exception {
-    System.out.println(RandomizedContext.current().getRandomness().toString());
-
     Docs docs = docs();
 
     docs.field("unicode", strings().realisticUnicode(4, 12).multi(6));
