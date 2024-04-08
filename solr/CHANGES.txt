@@ -152,12 +152,9 @@ Bug Fixes
 
 * SOLR-17198: AffinityPlacementFactory can fail if Shard leadership changes occur while it is collecting metrics.
   (Paul McArthur)
-<<<<<<< HEAD
-=======
   
 * SOLR-17018: Add QueryLimits support to Learning To Rank rescoring.
     (Alessandro Benedetti)
->>>>>>> main
 
 * SOLR-14892: Queries with shards.info and shards.tolerant can yield multiple null keys in place of shard names
   (Mathieu Marie, David Smiley)
