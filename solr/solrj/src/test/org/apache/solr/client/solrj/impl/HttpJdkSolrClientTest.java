@@ -28,6 +28,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -42,11 +45,14 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -164,10 +170,11 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     DebugServlet.clear();
     if (rp instanceof XMLResponseParser) {
       DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-      DebugServlet.responseBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />";
+      DebugServlet.responseBodyByQueryFragment.put(
+          "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
     } else {
       DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
-      DebugServlet.responseBody = javabinResponse();
+      DebugServlet.responseBodyByQueryFragment.put("", javabinResponse());
     }
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
@@ -189,6 +196,69 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client = builder(getBaseUrl() + DEBUG_SERVLET_PATH).build()) {
       super.testGetById(client);
     }
+  }
+
+  @Test
+  public void testAsyncGet() throws Exception {
+    super.testQueryAsync();
+  }
+
+  @Test
+  public void testAsyncPost() throws Exception {
+    super.testUpdateAsync();
+  }
+
+  @Test
+  public void testAsyncException() throws Exception {
+    DebugAsyncListener listener = super.testAsyncExceptionBase();
+    assertTrue(listener.onFailureResult instanceof CompletionException);
+    CompletionException ce = (CompletionException) listener.onFailureResult;
+    assertTrue(ce.getCause() instanceof BaseHttpSolrClient.RemoteSolrException);
+    assertTrue(ce.getMessage(), ce.getMessage().contains("mime type"));
+  }
+
+  @Test
+  public void testAsyncAndCancel() throws Exception {
+    ResponseParser rp = new XMLResponseParser();
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
+    DebugServlet.responseBodyByQueryFragment.put(
+        "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    HttpJdkSolrClient.Builder b = builder(url).withResponseParser(rp);
+    CountDownLatch cdl = new CountDownLatch(0);
+    DebugAsyncListener listener = new DebugAsyncListener(cdl);
+    Cancellable cancelMe = null;
+    try (HttpJdkSolrClient client = b.build()) {
+      QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
+
+      // We are pausing in the "whenComplete" stage, in the unlikely event the http request
+      // finishes before the test calls "cancel".
+      listener.pause();
+
+      // Make the request then immediately cancel it!
+      cancelMe = client.asyncRequest(query, "collection1", listener);
+      cancelMe.cancel();
+
+      // We are safe to unpause our client, having guaranteed that our cancel was before everything
+      // completed.
+      listener.unPause();
+    }
+
+    // "onStart" fires before the async call.  This part of the request cannot be cancelled.
+    assertTrue(listener.onStartCalled);
+
+    // The client exposes the CompletableFuture to us via this inner class
+    assertTrue(cancelMe instanceof HttpJdkSolrClient.HttpSolrClientCancellable);
+    CompletableFuture<NamedList<Object>> response =
+        ((HttpJdkSolrClient.HttpSolrClientCancellable) cancelMe).getResponse();
+
+    // Even if our cancel didn't happen until we were at "whenComplete", the CompletableFuture will
+    // have set "isCancelled".
+    assertTrue(response.isCancelled());
+
+    // But we cannot guarantee the response will have been returned, or that "onFailure" was fired
+    // with a "CompletionException".  This depends on where we were when the cancellation hit.
   }
 
   @Test

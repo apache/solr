@@ -53,7 +53,7 @@ public interface ClusterStateProvider extends SolrCloseable {
   /**
    * Obtain the state of the collection (cluster status).
    *
-   * @return the collection state, or null is collection doesn't exist
+   * @return the collection state, or null only if collection doesn't exist
    */
   ClusterState.CollectionRef getState(String collection);
 
