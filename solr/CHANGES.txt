@@ -86,6 +86,8 @@ Other Changes
 
 * SOLR-14410: Switch from SysV init script to systemd service definition (Marius Ghita via janhoy)
 
+* SOLR-17205: De-couple SolrJ required Java version from server Java version (janhoy)
+
 ==================  9.6.0 ==================
 New Features
 ---------------------
@@ -124,6 +126,8 @@ Improvements
 
 * SOLR-17164: Add 2 arg variant of vectorSimilarity() function (Sanjay Dutt, hossman)
 
+* SOLR-17211: New SolrJ JDK client supports Async (James Dyer)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
@@ -133,6 +137,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
+* SOLR-17153: CloudSolrClient could fail a request immediately following a collection creation.  Required double-checking the collection doesn’t exist. (Aparna Suresh via David Smiley)
+
 * SOLR-17152: Better alignment of Admin UI graph (janhoy)
 
 * SOLR-17148: Fixing Config API overlay property enabling or disabling the cache (Sanjay Dutt, hossman, Eric Pugh)
@@ -146,6 +152,12 @@ Bug Fixes
 
 * SOLR-17198: AffinityPlacementFactory can fail if Shard leadership changes occur while it is collecting metrics.
   (Paul McArthur)
+<<<<<<< HEAD
+=======
+  
+* SOLR-17018: Add QueryLimits support to Learning To Rank rescoring.
+    (Alessandro Benedetti)
+>>>>>>> main
 
 * SOLR-14892: Queries with shards.info and shards.tolerant can yield multiple null keys in place of shard names
   (Mathieu Marie, David Smiley)

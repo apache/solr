@@ -99,7 +99,7 @@ public class MultiThreadedSearcher {
                     new DocSetCM(maxDoc));
         }
 
-        @SuppressWarnings({"unchecked"})
+        @SuppressWarnings({"unchecked", "rawtypes"})
         CollectorManager<Collector, Object>[] colls = collectors.toArray(new CollectorManager[0]);
         SolrMultiCollectorManager manager = new SolrMultiCollectorManager(colls);
         Object[] ret;
