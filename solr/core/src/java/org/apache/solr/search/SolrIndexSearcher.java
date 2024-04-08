@@ -26,13 +26,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -53,12 +51,10 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.CollectorManager;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldDoc;
@@ -67,7 +63,6 @@ import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiCollector;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.ScoreMode;
@@ -92,7 +87,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -114,7 +108,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.facet.UnInvertedField;
-import org.apache.solr.search.join.GraphQuery;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.search.stats.StatsSource;
 import org.apache.solr.uninverting.UninvertingReader;
@@ -1800,7 +1793,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * @param len the number of docs to return
    * @param cmd The Command whose properties should determine the type of TopDocsCollector to use.
    */
-  private TopDocsCollector<? extends ScoreDoc> buildTopDocsCollector(int len, QueryCommand cmd)
+  TopDocsCollector<? extends ScoreDoc> buildTopDocsCollector(int len, QueryCommand cmd)
       throws IOException {
     int minNumFound = cmd.getMinExactCount();
     Query q = cmd.getQuery();
@@ -1900,7 +1893,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
       final TopDocs topDocs;
       final ScoreMode scoreModeUsed;
-      if (!allowMT(pf.postFilter, cmd, query)) {
+      if (!MultiThreadedTSearcher.allowMT(pf.postFilter, cmd, query)) {
         if (log.isInfoEnabled()) {
           log.info("skipping collector manager");
         }
@@ -1925,7 +1918,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         if (log.isInfoEnabled()) {
           log.info("using CollectorManager");
         }
-        final SearchResult searchResult =
+        final MultiThreadedTSearcher.SearchResult searchResult = new MultiThreadedTSearcher(this).
             searchCollectorManagers(len, cmd, query, true, needScores, false);
         scoreModeUsed = searchResult.scoreMode;
 
@@ -1952,250 +1945,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int sliceLen = Math.min(lastDocRequested, nDocsReturned);
     if (sliceLen < 0) sliceLen = 0;
     qr.setDocList(new DocSlice(0, sliceLen, ids, scores, totalHits, maxScore, hitsRelation));
-  }
-
-  SearchResult searchCollectorManagers(
-      int len,
-      QueryCommand cmd,
-      Query query,
-      boolean needTopDocs,
-      boolean needMaxScore,
-      boolean needDocSet)
-      throws IOException {
-    Collection<CollectorManager<Collector, Object>> collectors = new ArrayList<>();
-
-    int firstCollectorsSize = 0;
-
-    final int firstTopDocsCollectorIndex;
-    if (needTopDocs) {
-      firstTopDocsCollectorIndex = firstCollectorsSize;
-      firstCollectorsSize++;
-    } else {
-      firstTopDocsCollectorIndex = -1;
-    }
-
-    final int firstMaxScoreCollectorIndex;
-    if (needMaxScore) {
-      firstMaxScoreCollectorIndex = firstCollectorsSize;
-      firstCollectorsSize++;
-    } else {
-      firstMaxScoreCollectorIndex = -1;
-    }
-
-    Collector[] firstCollectors = new Collector[firstCollectorsSize];
-
-    if (needTopDocs) {
-
-      collectors.add(
-          new CollectorManager<>() {
-            @Override
-            public Collector newCollector() throws IOException {
-              @SuppressWarnings("rawtypes")
-              TopDocsCollector collector = buildTopDocsCollector(len, cmd);
-              if (firstCollectors[firstTopDocsCollectorIndex] == null) {
-                firstCollectors[firstTopDocsCollectorIndex] = collector;
-              }
-              return collector;
-            }
-
-            @Override
-            @SuppressWarnings("rawtypes")
-            public Object reduce(Collection collectors) throws IOException {
-
-              TopDocs[] topDocs = new TopDocs[collectors.size()];
-
-              int totalHits = -1;
-              int i = 0;
-
-              Collector collector;
-              for (Object o : collectors) {
-                collector = (Collector) o;
-                if (collector instanceof TopDocsCollector) {
-                  TopDocs td = ((TopDocsCollector) collector).topDocs(0, len);
-                  assert td != null : Arrays.asList(topDocs);
-                  topDocs[i++] = td;
-                }
-              }
-
-              TopDocs mergedTopDocs = null;
-
-              if (topDocs.length > 0 && topDocs[0] != null) {
-                if (topDocs[0] instanceof TopFieldDocs) {
-                  TopFieldDocs[] topFieldDocs =
-                      Arrays.copyOf(topDocs, topDocs.length, TopFieldDocs[].class);
-                  mergedTopDocs = TopFieldDocs.merge(weightSort(cmd.getSort()), len, topFieldDocs);
-                } else {
-                  mergedTopDocs = TopDocs.merge(0, len, topDocs);
-                }
-                totalHits = (int) mergedTopDocs.totalHits.value;
-              }
-              return new TopDocsResult(mergedTopDocs, totalHits);
-            }
-          });
-    }
-    if (needMaxScore) {
-      collectors.add(
-          new CollectorManager<>() {
-            @Override
-            public Collector newCollector() throws IOException {
-              MaxScoreCollector collector = new MaxScoreCollector();
-              if (firstCollectors[firstMaxScoreCollectorIndex] == null) {
-                firstCollectors[firstMaxScoreCollectorIndex] = collector;
-              }
-              return collector;
-            }
-
-            @Override
-            @SuppressWarnings("rawtypes")
-            public Object reduce(Collection collectors) throws IOException {
-
-              MaxScoreCollector collector;
-              float maxScore = 0.0f;
-              for (Iterator var4 = collectors.iterator();
-                  var4.hasNext();
-                  maxScore = Math.max(maxScore, collector.getMaxScore())) {
-                collector = (MaxScoreCollector) var4.next();
-              }
-
-              return new MaxScoreResult(maxScore);
-            }
-          });
-    }
-    if (needDocSet) {
-      int maxDoc = rawReader.maxDoc();
-      log.error("raw read max={}", rawReader.maxDoc());
-
-      collectors.add(
-          new CollectorManager<>() {
-            @Override
-            public Collector newCollector() throws IOException {
-              // TODO: add to firstCollectors here? or if not have comment w.r.t. why not adding
-              return new FixedBitSetCollector(maxDoc);
-            }
-
-            @Override
-            @SuppressWarnings({"rawtypes"})
-            public Object reduce(Collection collectors) throws IOException {
-              final FixedBitSet reduced = new FixedBitSet(maxDoc);
-              for (Object collector : collectors) {
-                if (collector instanceof FixedBitSetCollector) {
-                  reduced.or(((FixedBitSetCollector) collector).bitSet);
-                }
-              }
-              return reduced;
-            }
-          });
-    }
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    CollectorManager<Collector, Object>[] colls = collectors.toArray(new CollectorManager[0]);
-    SolrMultiCollectorManager manager = new SolrMultiCollectorManager(colls);
-    Object[] ret;
-    try {
-      ret = super.search(query, manager);
-    } catch (Exception ex) {
-      if (ex instanceof RuntimeException
-          && ex.getCause() != null
-          && ex.getCause() instanceof ExecutionException
-          && ex.getCause().getCause() != null
-          && ex.getCause().getCause() instanceof RuntimeException) {
-        throw (RuntimeException) ex.getCause().getCause();
-      } else {
-        throw ex;
-      }
-    }
-
-    ScoreMode scoreMode = SolrMultiCollectorManager.scoreMode(firstCollectors);
-
-    return new SearchResult(scoreMode, ret);
-  }
-
-  static class FixedBitSetCollector extends SimpleCollector {
-    private final FixedBitSet bitSet;
-
-    private int docBase;
-
-    FixedBitSetCollector(int maxDoc) {
-      this.bitSet = new FixedBitSet(maxDoc);
-    }
-
-    @Override
-    protected void doSetNextReader(LeafReaderContext context) throws IOException {
-      this.docBase = context.docBase;
-    }
-
-    @Override
-    public void collect(int doc) throws IOException {
-      this.bitSet.set(this.docBase + doc);
-    }
-
-    @Override
-    public ScoreMode scoreMode() {
-      return ScoreMode.COMPLETE_NO_SCORES;
-    }
-
-    FixedBitSet bitSet() {
-      return this.bitSet;
-    }
-  }
-
-  static class TopDocsResult {
-    final TopDocs topDocs;
-    final int totalHits;
-
-    public TopDocsResult(TopDocs topDocs, int totalHits) {
-      this.topDocs = topDocs;
-      this.totalHits = totalHits;
-    }
-  }
-
-  static class MaxScoreResult {
-    final float maxScore;
-
-    public MaxScoreResult(float maxScore) {
-      this.maxScore = maxScore;
-    }
-  }
-
-  static class SearchResult {
-    final ScoreMode scoreMode;
-    private final Object[] result;
-
-    public SearchResult(ScoreMode scoreMode, Object[] result) {
-      this.scoreMode = scoreMode;
-      this.result = result;
-    }
-
-    public TopDocsResult getTopDocsResult() {
-      for (Object res : result) {
-        if (res instanceof TopDocsResult) {
-          return (TopDocsResult) res;
-        }
-      }
-      return null;
-    }
-
-    public float getMaxScore(int totalHits) {
-      if (totalHits > 0) {
-        for (Object res : result) {
-          if (res instanceof MaxScoreResult) {
-            return ((MaxScoreResult) res).maxScore;
-          }
-        }
-        return Float.NaN;
-      } else {
-        return 0.0f;
-      }
-    }
-
-    public FixedBitSet getFixedBitSet() {
-      for (Object res : result) {
-        if (res instanceof FixedBitSet) {
-          return (FixedBitSet) res;
-        }
-      }
-      return null;
-    }
   }
 
   // any DocSet returned is for the query only, without any filtering... that way it may
@@ -2268,7 +2017,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
     } else {
       final TopDocs topDocs;
-      if (!allowMT(pf.postFilter, cmd, query)) {
+      if (!MultiThreadedTSearcher.allowMT(pf.postFilter, cmd, query)) {
         @SuppressWarnings({"rawtypes"})
         final TopDocsCollector<? extends ScoreDoc> topCollector = buildTopDocsCollector(len, cmd);
         final DocSetCollector setCollector = new DocSetCollector(maxDoc);
@@ -2298,7 +2047,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         log.debug("using CollectorManager");
 
         boolean needMaxScore = needScores;
-        SearchResult searchResult =
+        MultiThreadedTSearcher.SearchResult searchResult = new MultiThreadedTSearcher(this).
             searchCollectorManagers(len, cmd, query, true, needMaxScore, true);
         TopDocsResult topDocsResult = searchResult.getTopDocsResult();
         totalHits = topDocsResult.totalHits;
@@ -2929,64 +2678,5 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   public long getWarmupTime() {
     return warmupTime;
-  }
-
-  private static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd, Query query) {
-    if (postFilter != null || cmd.getSegmentTerminateEarly() || cmd.getTimeAllowed() > 0) {
-      return false;
-    } else {
-      MTCollectorQueryCheck allowMT = new MTCollectorQueryCheck();
-      query.visit(allowMT);
-      return allowMT.allowed();
-    }
-  }
-
-  /**
-   * A {@link QueryVisitor} that recurses through the query tree, determining if all queries support
-   * multi-threaded collecting.
-   */
-  private static class MTCollectorQueryCheck extends QueryVisitor {
-
-    private QueryVisitor subVisitor = this;
-
-    private boolean allowMt(Query query) {
-      if (query instanceof RankQuery || query instanceof GraphQuery || query instanceof JoinQuery) {
-        return false;
-      }
-      return true;
-    }
-
-    @Override
-    public void consumeTerms(Query query, Term... terms) {
-      if (!allowMt(query)) {
-        subVisitor = EMPTY_VISITOR;
-      }
-    }
-
-    @Override
-    public void consumeTermsMatching(
-        Query query, String field, Supplier<ByteRunAutomaton> automaton) {
-      if (!allowMt(query)) {
-        subVisitor = EMPTY_VISITOR;
-      } else {
-        super.consumeTermsMatching(query, field, automaton);
-      }
-    }
-
-    @Override
-    public void visitLeaf(Query query) {
-      if (!allowMt(query)) {
-        subVisitor = EMPTY_VISITOR;
-      }
-    }
-
-    @Override
-    public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
-      return subVisitor;
-    }
-
-    public boolean allowed() {
-      return subVisitor != EMPTY_VISITOR;
-    }
   }
 }
