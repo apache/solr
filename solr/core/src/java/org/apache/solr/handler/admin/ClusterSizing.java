@@ -30,6 +30,7 @@ import static org.apache.solr.common.params.SizeParams.QUERY_RES_MAX_DOCS;
 import static org.apache.solr.common.params.SizeParams.SIZE;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -54,21 +55,30 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SizeParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.NumberUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** This class is used to produce sizing estimates for a cluster. */
 public class ClusterSizing {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private final ZkStateReader zkStateReader;
   private final SolrParams params;
   private final String sizeUnit; // size unit requested by the user
 
-  public ClusterSizing(ZkStateReader zkStateReader, SolrParams params) {
-    this.zkStateReader = zkStateReader;
+  private final CoreContainer coreContainer;
+
+  public ClusterSizing(CoreContainer coreContainer, SolrParams params) {
+    this.coreContainer = coreContainer;
+    this.zkStateReader = coreContainer.getZkController().getZkStateReader();
     this.params = params;
     this.sizeUnit = this.params.get(SizeParams.SIZE_UNIT);
   }
 
   public void populate(NamedList<Object> values) {
+
     ClusterState state = zkStateReader.getClusterState();
     Set<String> collections = new HashSet<>(state.getCollectionStates().keySet());
     List<String> collectionList = getParamAsList(COLLECTION_PROP);
@@ -101,8 +111,14 @@ public class ClusterSizing {
               String node = replica.getNodeName();
               QueryRequest req = new QueryRequest(sizeParams);
               req.setMethod(METHOD.POST);
-              HttpSolrClient.Builder httpBuilder = new HttpSolrClient.Builder(url);
-              try (HttpSolrClient solrClient = httpBuilder.build()) {
+              if (log.isDebugEnabled()) {
+                log.debug("Request size from '{}' with params: {}", url, sizeParams);
+              }
+              Http2SolrClient.Builder builder = new Http2SolrClient.Builder(url);
+              try (Http2SolrClient solrClient = builder.build()) {
+                if (coreContainer.getPkiAuthenticationSecurityBuilder() != null) {
+                  coreContainer.getPkiAuthenticationSecurityBuilder().setup(solrClient);
+                }
                 @SuppressWarnings("unchecked")
                 NamedList<Object> size = (NamedList<Object>) solrClient.request(req).get(SIZE);
                 sizePerReplica.add(replica.getName(), size);
@@ -193,6 +209,7 @@ public class ClusterSizing {
     }
   }
 
+  @SuppressWarnings("deprecation")
   private SolrParams buildSizeParams() {
     ModifiableSolrParams solrParams = new ModifiableSolrParams(params);
     solrParams.set(SIZE, true);

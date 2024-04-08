@@ -1211,9 +1211,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CLUSTERSIZING_OP(
         CLUSTERSIZING,
         (req, rsp, h) -> {
-          ClusterSizing sizing =
-              new ClusterSizing(
-                  h.coreContainer.getZkController().getZkStateReader(), req.getParams());
+          ClusterSizing sizing = new ClusterSizing(h.coreContainer, req.getParams());
           sizing.populate(rsp.getValues());
           return null;
         }),
