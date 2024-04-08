@@ -43,12 +43,12 @@ import java.util.Iterator;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
-public class MultiThreadedTSearcher {
+public class MultiThreadedSearcher {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
     final SolrIndexSearcher searcher;
 
-    public MultiThreadedTSearcher(SolrIndexSearcher searcher) {
+    public MultiThreadedSearcher(SolrIndexSearcher searcher) {
         this.searcher = searcher;
     }
 
@@ -374,6 +374,16 @@ public class MultiThreadedTSearcher {
                 totalHits = (int) mergedTopDocs.totalHits.value;
             }
             return new TopDocsResult(mergedTopDocs, totalHits);
+        }
+    }
+
+    static class TopDocsResult {
+        final TopDocs topDocs;
+        final int totalHits;
+
+        public TopDocsResult(TopDocs topDocs, int totalHits) {
+            this.topDocs = topDocs;
+            this.totalHits = totalHits;
         }
     }
 }
