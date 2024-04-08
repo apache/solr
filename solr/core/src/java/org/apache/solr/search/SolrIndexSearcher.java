@@ -1820,11 +1820,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     int last = len;
     if (last < 0 || last > maxDoc()) last = maxDoc();
     final int lastDocRequested = last;
-    final int nDocsReturned;
-    final int totalHits;
-    final float maxScore;
-    final int[] ids;
-    final float[] scores;
+    int nDocsReturned = 0;
+    int totalHits;
+    float maxScore;
+    int[] ids;
+    float[] scores;
 
     final boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
 
@@ -1879,7 +1879,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
-      nDocsReturned = 0;
       ids = new int[nDocsReturned];
       scores = new float[nDocsReturned];
       totalHits = numHits[0];
@@ -1918,9 +1917,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         if (log.isInfoEnabled()) {
           log.info("using CollectorManager");
         }
-        final MultiThreadedSearcher.SearchResult searchResult =
-            new MultiThreadedSearcher(this)
-                .searchCollectorManagers(len, cmd, query, true, needScores, false);
+        final MultiThreadedSearcher.SearchResult searchResult = new MultiThreadedSearcher(this).
+            searchCollectorManagers(len, cmd, query, true, needScores, false);
         scoreModeUsed = searchResult.scoreMode;
 
         MultiThreadedSearcher.TopDocsResult topDocsResult = searchResult.getTopDocsResult();
@@ -2030,7 +2028,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           collectors.add(maxScoreCollector);
         }
 
-        final Collector collector = MultiCollector.wrap(collectors);
+        Collector collector = MultiCollector.wrap(collectors);
 
         buildAndRunCollectorChain(qr, query, collector, cmd, pf.postFilter);
 
@@ -2048,9 +2046,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         log.debug("using CollectorManager");
 
         boolean needMaxScore = needScores;
-        MultiThreadedSearcher.SearchResult searchResult =
-            new MultiThreadedSearcher(this)
-                .searchCollectorManagers(len, cmd, query, true, needMaxScore, true);
+        MultiThreadedSearcher.SearchResult searchResult = new MultiThreadedSearcher(this).
+            searchCollectorManagers(len, cmd, query, true, needMaxScore, true);
         MultiThreadedSearcher.TopDocsResult topDocsResult = searchResult.getTopDocsResult();
         totalHits = topDocsResult.totalHits;
         topDocs = topDocsResult.topDocs;
