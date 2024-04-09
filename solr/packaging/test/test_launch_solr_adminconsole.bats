@@ -31,7 +31,6 @@ teardown() {
 @test "assert able to launch solr admin console" {
   run solr start -c
 
-  # Replace 'YOUR_ADMIN_CONSOLE_URL' with the actual admin console URL
   run curl -s -o /dev/null -w "%{http_code}" http://localhost:${SOLR_PORT}/solr/
 
   # Check if the HTTP response code is 200 (OK)
