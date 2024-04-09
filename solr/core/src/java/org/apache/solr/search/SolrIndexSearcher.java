@@ -1917,8 +1917,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         if (log.isInfoEnabled()) {
           log.info("using CollectorManager");
         }
-        final MultiThreadedSearcher.SearchResult searchResult = new MultiThreadedSearcher(this).
-            searchCollectorManagers(len, cmd, query, true, needScores, false);
+        final MultiThreadedSearcher.SearchResult searchResult =
+            new MultiThreadedSearcher(this)
+                .searchCollectorManagers(len, cmd, query, true, needScores, false);
         scoreModeUsed = searchResult.scoreMode;
 
         MultiThreadedSearcher.TopDocsResult topDocsResult = searchResult.getTopDocsResult();
@@ -2046,8 +2047,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         log.debug("using CollectorManager");
 
         boolean needMaxScore = needScores;
-        MultiThreadedSearcher.SearchResult searchResult = new MultiThreadedSearcher(this).
-            searchCollectorManagers(len, cmd, query, true, needMaxScore, true);
+        MultiThreadedSearcher.SearchResult searchResult =
+            new MultiThreadedSearcher(this)
+                .searchCollectorManagers(len, cmd, query, true, needMaxScore, true);
         MultiThreadedSearcher.TopDocsResult topDocsResult = searchResult.getTopDocsResult();
         totalHits = topDocsResult.totalHits;
         topDocs = topDocsResult.topDocs;
