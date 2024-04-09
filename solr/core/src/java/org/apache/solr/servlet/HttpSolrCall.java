@@ -347,12 +347,13 @@ public class HttpSolrCall {
   }
 
   /**
-   * Lookup the collection from the collection string (maybe comma delimited). Also sets {@link
-   * #collectionsList} by side-effect. if {@code secondTry} is false then we'll potentially
-   * recursively try this all one more time while ensuring the alias and collection info is sync'ed
-   * from ZK.
-   */
-  protected DocCollection resolveDocCollection(String collectionName) {
+   Resolves the specified collection name to a {@link DocCollection} object.
+   If Solr is not in cloud mode, a {@link SolrException} is thrown.
+   Returns null if the collection name is null or empty.
+   Retrieves the {@link DocCollection} using the {@link ZkStateReader} from {@link CoreContainer}.
+   If the collection is null, updates the state by refreshing aliases and forcing a collection update.
+*/
+   protected DocCollection resolveDocCollection(String collectionName) {
     if (!cores.isZooKeeperAware()) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Solr not running in cloud mode ");
@@ -1064,7 +1065,12 @@ public class HttpSolrCall {
     return result;
   }
 
-  protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
+  /**
+   * Retrieves a SolrCore instance associated with the specified collection name,
+   * with an option to prefer leader replicas.
+   * Makes a call to {@link #resolveDocCollection} which make an attempt to force update collection if it is not found in local cluster state
+   **/
+   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
     DocCollection collection = resolveDocCollection(collectionName);
