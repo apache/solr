@@ -19,12 +19,12 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.AddUpdateCommand;
@@ -101,7 +101,7 @@ public class NumFieldLimitingUpdateRequestProcessor extends UpdateRequestProcess
     // Is the document targeting our shard?
     final var targetSlice = getTargetSliceForDocument(zkController, collection, cmd);
     final String ourShardName = coreDesc.getCloudDescriptor().getShardId();
-    if (!StringUtils.equalsIgnoreCase(targetSlice.getName(), ourShardName)) {
+    if (!StrUtils.equalsIgnoreCase(targetSlice.getName(), ourShardName)) {
       return false;
     }
 
