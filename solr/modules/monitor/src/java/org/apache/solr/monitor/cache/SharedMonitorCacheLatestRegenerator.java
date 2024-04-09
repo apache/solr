@@ -56,12 +56,12 @@ public class SharedMonitorCacheLatestRegenerator implements CacheRegenerator {
         new IndexSearcher(searcher.getTopReaderContext())
             .search(versionRangeQuery(cache), batchSize)
             .scoreDocs;
-    int batchesRemaining = cache.getInitialSize() / batchSize;
+    int batchesRemaining = cache.getInitialSize() / batchSize - 1;
+    SolrMonitorQueryDecoder decoder = SolrMonitorQueryDecoder.fromCore(searcher.getCore());
+    MonitorDataValues dataValues = new MonitorDataValues();
     while (topDocs.length > 0 && batchesRemaining > 0) {
       int docIndex = 0;
-      SolrMonitorQueryDecoder decoder = SolrMonitorQueryDecoder.fromCore(searcher.getCore());
       for (LeafReaderContext ctx : reader.leaves()) {
-        MonitorDataValues dataValues = new MonitorDataValues();
         dataValues.update(ctx);
         int shiftedMax = ctx.reader().maxDoc() + ctx.docBase;
         while (docIndex < topDocs.length
