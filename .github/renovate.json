@@ -34,7 +34,7 @@
     },
     {
       "description": "Noisy, frequently updated dependencies checked less often",
-      "matchPackageNames": ["software.amazon.awssdk", "com.google.cloud"],
+      "matchPackagePrefixes": ["software.amazon.awssdk", "com.google.cloud"],
       "schedule": ["before 9am on the first day of the month"]
     },
     {
