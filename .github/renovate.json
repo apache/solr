@@ -30,12 +30,12 @@
     {
       "description": "Test-dependencies are checked less often than the shipped deps",
       "matchDepTypes": ["test"],
-      "extends": ["schedule:monthly"]
+      "schedule": ["before 9am on the first day of the month"]
     },
     {
       "description": "Noisy, frequently updated dependencies checked less often",
-      "matchPackagePrefixes": ["software.amazon.awssdk", "com.google.cloud"],
-      "extends": ["schedule:monthly"]
+      "matchPackageNames": ["software.amazon.awssdk", "com.google.cloud"],
+      "schedule": ["before 9am on the first day of the month"]
     },
     {
       "description": "Workaround for https://github.com/renovatebot/renovate/issues/19226",
@@ -46,6 +46,26 @@
       "description": "Lucene dependencies should be skipped",
       "matchPackageNames": ["org.apache.lucene"],
       "enabled": false
+    },
+    {
+      "description": "Changelog for commons-io",
+      "matchSourceUrls": ["https://gitbox.apache.org/repos/asf?p=commons-io.git"],
+      "customChangelogUrl": "https://commons.apache.org/proper/commons-io/changes-report.html"
+    },
+    {
+      "description": "Changelog for zookeeper",
+      "matchSourceUrls": ["https://gitbox.apache.org/repos/asf/zookeeper.git"],
+      "customChangelogUrl": "https://zookeeper.apache.org/releases.html"
+    },
+    {
+      "description": "Changelog for commons-compress",
+      "matchSourceUrls": ["https://gitbox.apache.org/repos/asf?p=commons-compress.git"],
+      "customChangelogUrl": "https://commons.apache.org/proper/commons-compress/changes-report.html"
+    },
+    {
+      "description": "Changelog for commons-configuration",
+      "matchSourceUrls": ["https://gitbox.apache.org/repos/asf?p=commons-configuration.git"],
+      "customChangelogUrl": "https://commons.apache.org/proper/commons-configuration/changes-report.html"
     }
   ],
   "schedule": [
