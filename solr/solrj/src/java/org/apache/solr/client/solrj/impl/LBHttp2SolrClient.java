@@ -24,6 +24,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -193,6 +194,55 @@ public class LBHttp2SolrClient extends LBSolrClient {
     };
   }
 
+  public CompletableFuture<Rsp> requestAsync(Req req) {
+    CompletableFuture<Rsp> apiFuture = new CompletableFuture<>();
+    Rsp rsp = new Rsp();
+    boolean isNonRetryable = req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
+    EndpointIterator it = new EndpointIterator(req, zombieServers);
+    AtomicReference<CompletableFuture<NamedList<Object>>> currentFuture = new AtomicReference<>();
+    RetryListener retryListener = new RetryListener() {
+
+      @Override
+      public void onSuccess(Rsp rsp) {
+        apiFuture.complete(rsp);
+      }
+
+      @Override
+      public void onFailure(Exception e, boolean retryReq) {
+        if (retryReq) {
+          Endpoint url;
+          try {
+            url = it.nextOrError(e);
+          } catch (SolrServerException ex) {
+            apiFuture.completeExceptionally(e);
+            return;
+          }
+          MDC.put("LBSolrClient.url", url.toString());
+          if (!apiFuture.isCancelled()) {
+            CompletableFuture<NamedList<Object>> future = doAsyncRequest(url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
+            currentFuture.set(future);
+          }
+        } else {
+          apiFuture.completeExceptionally(e);
+        }
+      }
+    };
+    try {
+      CompletableFuture<NamedList<Object>> future = doAsyncRequest(it.nextOrError(), req, rsp, isNonRetryable, it.isServingZombieServer(), retryListener);
+      currentFuture.set(future);
+    } catch (SolrServerException e) {
+      apiFuture.completeExceptionally(e);
+      return apiFuture;
+    }
+    apiFuture.exceptionally((error) -> {
+      if (apiFuture.isCancelled()) {
+        currentFuture.get().cancel(true);
+      }
+      return null;
+    });
+    return apiFuture;
+  }
+
   private interface RetryListener {
     void onSuccess(Rsp rsp);
 
@@ -266,6 +316,73 @@ public class LBHttp2SolrClient extends LBSolrClient {
                 }
               }
             });
+  }
+
+  private CompletableFuture<NamedList<Object>> doAsyncRequest(Endpoint endpoint, Req req, Rsp rsp, boolean isNonRetryable,
+                                                              boolean isZombie, RetryListener listener) {
+    String baseUrl = endpoint.toString();
+    rsp.server = baseUrl;
+    req.getRequest().setBasePath(baseUrl);
+    CompletableFuture<NamedList<Object>> future = getClient(endpoint).requestAsync(req.getRequest());
+    future.whenComplete((result, throwable) -> {
+      if (!future.isCompletedExceptionally()) {
+        onSuccessfulRequest(result, endpoint, rsp, isZombie, listener);
+      } else if (!future.isCancelled()) {
+        onFailedRequest(throwable, endpoint, isNonRetryable, isZombie, listener);
+      }
+    });
+    return future;
+  }
+
+  private void onSuccessfulRequest(NamedList<Object> result, Endpoint endpoint, Rsp rsp, boolean isZombie, RetryListener listener) {
+    rsp.rsp = result;
+    if (isZombie) {
+      zombieServers.remove(endpoint);
+    }
+    listener.onSuccess(rsp);
+  }
+
+  private void onFailedRequest(Throwable oe, Endpoint endpoint, boolean isNonRetryable, boolean isZombie, RetryListener listener) {
+    try {
+      throw (Exception) oe;
+    } catch (BaseHttpSolrClient.RemoteExecutionException e) {
+      listener.onFailure(e, false);
+    } catch (SolrException e) {
+      // we retry on 404 or 403 or 503 or 500
+      // unless it's an update - then we only retry on connect exception
+      if (!isNonRetryable && RETRY_CODES.contains(e.code())) {
+        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+      } else {
+        // Server is alive but the request was likely malformed or invalid
+        if (isZombie) {
+          zombieServers.remove(endpoint);
+        }
+        listener.onFailure(e, false);
+      }
+    } catch (SocketException e) {
+      if (!isNonRetryable || e instanceof ConnectException) {
+        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+      } else {
+        listener.onFailure(e, false);
+      }
+    } catch (SocketTimeoutException e) {
+      if (!isNonRetryable) {
+        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+      } else {
+        listener.onFailure(e, false);
+      }
+    } catch (SolrServerException e) {
+      Throwable rootCause = e.getRootCause();
+      if (!isNonRetryable && rootCause instanceof IOException) {
+        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+      } else if (isNonRetryable && rootCause instanceof ConnectException) {
+        listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
+      } else {
+        listener.onFailure(e, false);
+      }
+    } catch (Exception e) {
+      listener.onFailure(new SolrServerException(e), false);
+    }
   }
 
   public static class Builder {
