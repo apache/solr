@@ -449,17 +449,14 @@ public class CoreContainer {
             new SolrNamedThreadFactory("searcherCollector"));
     ((ExecutorUtil.MDCAwareThreadPoolExecutor) collectorExecutor)
         .setRejectedExecutionHandler(
-            new RejectedExecutionHandler() {
-              @Override
-              public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-                if (!executor.isShutdown()) {
-                  try {
-                    executor.getQueue().put(r);
-                  } catch (InterruptedException e) {
+                (r, executor) -> {
+                  if (!executor.isShutdown()) {
+                    try {
+                      executor.getQueue().put(r);
+                    } catch (InterruptedException e) {
+                    }
                   }
-                }
-              }
-            });
+                });
   }
 
   @SuppressWarnings({"unchecked"})
