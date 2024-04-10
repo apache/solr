@@ -445,6 +445,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest)) {
       collection = defaultCollection;
     }
+    MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
     CompletableFuture<NamedList<Object>> future = new CompletableFuture<>();
     final MakeRequestReturnValue mrrv;
     final String url;
@@ -478,9 +479,16 @@ public class Http2SolrClient extends HttpSolrClientBase {
                       try {
                         NamedList<Object> body =
                             processErrorsAndResponse(solrRequest, response, is, url);
+                        mdcCopyHelper.onBegin(null);
+                        log.debug("response processing success");
                         future.complete(body);
                       } catch (RemoteSolrException | SolrServerException e) {
+                        mdcCopyHelper.onBegin(null);
+                        log.debug("response processing failed", e);
                         future.completeExceptionally(e);
+                      } finally {
+                        log.debug("response processing completed");
+                        mdcCopyHelper.onComplete(null);
                       }
                     });
               }

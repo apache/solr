@@ -20,9 +20,12 @@ import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -109,8 +112,10 @@ public class TestHttpRequestId extends SolrJettyTestBase {
       }catch(InterruptedException ie) {
         Thread.currentThread().interrupt();
         fail("interrupted");
-      }catch(Exception e) {
-        throw new RuntimeException(e);
+      }catch(TimeoutException te) {
+        fail("timeout");
+      }catch(ExecutionException ee) {
+        //ignore
       }
 
       // expecting 2 events: success|failed, completed
