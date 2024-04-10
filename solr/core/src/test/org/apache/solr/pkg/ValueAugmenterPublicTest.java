@@ -14,18 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.pkg;
 
-package org.apache.solr.client.solrj.util;
+import org.apache.solr.response.transform.ValueAugmenterFactory;
+import org.junit.Test;
 
-/**
- * The return type for solrJ asynchronous requests, providing a mechanism whereby callers may
- * request cancellation.
- */
-public interface Cancellable {
+public class ValueAugmenterPublicTest {
 
-  /**
-   * Request to cancel the asynchronous request. This may be a no-op in some situations, for
-   * instance, if the request failed or otherwise is complete.
-   */
-  void cancel();
+  @Test
+  public void testValueAugmenterIsOpenForExtension() {
+    // this should compile from this package
+    new ValueAugmenterFactory.ValueAugmenter("bee_sI", new Object());
+  }
 }

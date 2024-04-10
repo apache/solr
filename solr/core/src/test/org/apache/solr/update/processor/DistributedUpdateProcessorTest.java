@@ -42,7 +42,6 @@ import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.update.TimedVersionBucket;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -108,11 +107,11 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         };
     int succeeded = runCommands(threads, 1000, req, versionAddFunc);
     // only one should succeed
-    MatcherAssert.assertThat(succeeded, is(1));
+    assertThat(succeeded, is(1));
 
     succeeded = runCommands(threads, -1, req, versionAddFunc);
     // all should succeed
-    MatcherAssert.assertThat(succeeded, is(threads));
+    assertThat(succeeded, is(threads));
   }
 
   @Test
@@ -133,11 +132,11 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
 
     int succeeded = runCommands(threads, 1000, req, versionDeleteFunc);
     // only one should succeed
-    MatcherAssert.assertThat(succeeded, is(1));
+    assertThat(succeeded, is(1));
 
     succeeded = runCommands(threads, -1, req, versionDeleteFunc);
     // all should succeed
-    MatcherAssert.assertThat(succeeded, is(threads));
+    assertThat(succeeded, is(threads));
   }
 
   @Test
