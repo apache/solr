@@ -240,11 +240,12 @@ public class NodeConfig {
     initModules(loader, null);
     nodeProperties = SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(nodeProperties);
 
+    // TODO NOCOMMIT - update this comment below to be clearer
     // TODO: Only job of this block is to
     //  delay starting a solr core to satisfy
     //  ZkFailoverTest test case...
     String zkHost = nodeProperties.getProperty(SolrXmlConfig.ZK_HOST);
-    if (StrUtils.isNotNullOrEmpty(zkHost)) {
+    if (StrUtils.isNotNullOrEmpty(zkHost) && System.getProperty("zkQuorumRun") == null) {
       int startUpZkTimeOut = 1000 * Integer.getInteger("waitForZk", 0);
       if (startUpZkTimeOut == 0) {
         startUpZkTimeOut = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
