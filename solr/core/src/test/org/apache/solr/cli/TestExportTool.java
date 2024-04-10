@@ -263,7 +263,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
     CloudSolrClient cloudSolrClient = cluster.getSolrClient();
 
-    CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 8, 1)
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 1)
         .setBasicAuthCredentials(USER, PASS)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 8, 8);
