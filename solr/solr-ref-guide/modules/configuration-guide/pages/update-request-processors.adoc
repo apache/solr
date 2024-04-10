@@ -337,6 +337,10 @@ Documents processed prior to the offender are indexed by Solr; documents followi
 +
 Alternatively, the processor offers a "permissive" mode (`permissiveMode=true`) which skips the offending document and logs a warning, but doesn't abort the remainder of the batch or return an error to users.
 
+{solr-javadocs}/core/org/apache/solr/update/processor/NumFieldLimitingUpdateRequestProcessorFactory.html[NumFieldLimitingUpdateRequestProcessorFactory]:: Fails update requests once a core has exceeded a configurable "maximum" number of fields.
++
+Solr performance can degrade and even become unstable if cores accumulate too many (e.g. more than 500) fields.  The "NumFieldLimiting" URP is offered as a safeguard that helps users notice potentially-dangerous schema design and/or mis-use of dynamic fields, before these performance and stability problems would manifest.
+
 {solr-javadocs}/core/org/apache/solr/update/processor/RegexpBoostProcessorFactory.html[RegexpBoostProcessorFactory]:: A processor which will match content of "inputField" against regular expressions found in "boostFilename", and if it matches will return the corresponding boost value from the file and output this to "boostField" as a double value.
 
 {solr-javadocs}/core/org/apache/solr/update/processor/SignatureUpdateProcessorFactory.html[SignatureUpdateProcessorFactory]:: Uses a defined set of fields to generate a hash "signature" for the document.

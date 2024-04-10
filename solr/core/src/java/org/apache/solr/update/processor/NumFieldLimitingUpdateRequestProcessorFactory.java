@@ -20,8 +20,39 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
+/**
+ * This factory generates an UpdateRequestProcessor which fails update requests once a core has
+ * exceeded a configurable maximum number of fields. Meant as a safeguard to help users notice
+ * potentially-dangerous schema design before performance and stability problems start to occur.
+ *
+ * <p>The URP uses the core's {@link SolrIndexSearcher} to judge the current number of fields.
+ * Accordingly, it undercounts the number of fields in the core - missing all fields added since the
+ * previous searcher was opened. As such, the URP's request-blocking is "best effort" - it cannot be
+ * relied on as a precise limit on the number of fields.
+ *
+ * <p>Additionally, the field-counting includes all documents present in the index, including any
+ * deleted docs that haven't yet been purged via segment merging. Note that this can differ
+ * significantly from the number of fields defined in managed-schema.xml - especially when dynamic
+ * fields are enabled. The only way to reduce this field count is to delete documents and wait until
+ * the deleted documents have been removed by segment merges. Users may of course speed up this
+ * process by tweaking Solr's segment-merging, triggering an "optimize" operation, etc.
+ *
+ * <p>{@link NumFieldLimitingUpdateRequestProcessorFactory} accepts two configuration parameters:
+ *
+ * <ul>
+ *   <li><code>maxFields</code> - (required) The maximum number of fields before update requests
+ *       should be aborted. Once this limit has been exceeded, additional update requests will fail
+ *       until fields have been removed or the "maxFields" is increased.
+ *   <li><code>warnOnly</code> - (optional) If <code>true</code> then the URP logs verbose warnings
+ *       about the limit being exceeded but doesn't abort update requests. Defaults to <code>false
+ *       </code> if not specified
+ * </ul>
+ *
+ * @since 9.6.0
+ */
 public class NumFieldLimitingUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory
     implements SolrCoreAware {
 
