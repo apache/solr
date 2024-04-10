@@ -25,7 +25,6 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -101,7 +100,10 @@ public class TestHttpRequestId extends SolrJettyTestBase {
               .withExecutor(commExecutor)
               .build()) {
         MDC.put(key, value);
-        cf = client.requestAsync(new SolrPing(), null).whenComplete((nl, e) -> assertEquals(value, MDC.get(key)));
+        cf =
+            client
+                .requestAsync(new SolrPing(), null)
+                .whenComplete((nl, e) -> assertEquals(value, MDC.get(key)));
       } finally {
         ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
         MDC.remove(key);
@@ -109,13 +111,13 @@ public class TestHttpRequestId extends SolrJettyTestBase {
 
       try {
         cf.get(1, TimeUnit.MINUTES);
-      }catch(InterruptedException ie) {
+      } catch (InterruptedException ie) {
         Thread.currentThread().interrupt();
         fail("interrupted");
-      }catch(TimeoutException te) {
+      } catch (TimeoutException te) {
         fail("timeout");
-      }catch(ExecutionException ee) {
-        //ignore
+      } catch (ExecutionException ee) {
+        // ignore
       }
 
       // expecting 2 events: success|failed, completed
