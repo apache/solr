@@ -347,13 +347,13 @@ public class HttpSolrCall {
   }
 
   /**
-   Resolves the specified collection name to a {@link DocCollection} object.
-   If Solr is not in cloud mode, a {@link SolrException} is thrown.
-   Returns null if the collection name is null or empty.
-   Retrieves the {@link DocCollection} using the {@link ZkStateReader} from {@link CoreContainer}.
-   If the collection is null, updates the state by refreshing aliases and forcing a collection update.
-*/
-   protected DocCollection resolveDocCollection(String collectionName) {
+   * Resolves the specified collection name to a {@link DocCollection} object. If Solr is not in
+   * cloud mode, a {@link SolrException} is thrown. Returns null if the collection name is null or
+   * empty. Retrieves the {@link DocCollection} using the {@link ZkStateReader} from {@link
+   * CoreContainer}. If the collection is null, updates the state by refreshing aliases and forcing
+   * a collection update.
+   */
+  protected DocCollection resolveDocCollection(String collectionName) {
     if (!cores.isZooKeeperAware()) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Solr not running in cloud mode ");
@@ -1066,11 +1066,11 @@ public class HttpSolrCall {
   }
 
   /**
-   * Retrieves a SolrCore instance associated with the specified collection name,
-   * with an option to prefer leader replicas.
-   * Makes a call to {@link #resolveDocCollection} which make an attempt to force update collection if it is not found in local cluster state
-   **/
-   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
+   * Retrieves a SolrCore instance associated with the specified collection name, with an option to
+   * prefer leader replicas. Makes a call to {@link #resolveDocCollection} which make an attempt to
+   * force update collection if it is not found in local cluster state
+   */
+  protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
     DocCollection collection = resolveDocCollection(collectionName);
