@@ -19,12 +19,12 @@
 
 allprojects {
   plugins.withType(JavaPlugin) {
-    sourceCompatibility = rootProject.minJavaVersion
-    targetCompatibility = rootProject.minJavaVersion
+    sourceCompatibility = project.minJavaVersion
+    targetCompatibility = project.minJavaVersion
 
     // Use 'release' flag instead of 'source' and 'target'
     tasks.withType(JavaCompile) {
-      options.compilerArgs += ["--release", rootProject.minJavaVersion.toString()]
+      options.compilerArgs += ["--release", project.minJavaVersion.toString()]
     }
 
     // Configure warnings.

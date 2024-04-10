@@ -44,4 +44,4 @@ Indexes can be sharded and replicated for performance and reliability, using eit
 One type of cluster requires no supporting infrastructure, and instances are managed directly by administrators. The second type uses https://zookeeper.apache.org/[Apache Zookeeper^TM^] to coordinate management activities across the cluster.
 
 Solr scaling and high availability features are so effective that some of the largest and most famous internet sites use Solr.
-A partial, typically self nominated, list of sites using Solr can be found at https://cwiki.apache.org/confluence/display/solr/PublicServers.
+A partial, typically self nominated, list of sites using Solr can be found at https://solr.apache.org/community.html#powered-by.

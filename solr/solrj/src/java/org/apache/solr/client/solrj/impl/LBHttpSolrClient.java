@@ -25,12 +25,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.URLUtil;
 
 /**
  * LBHttpSolrClient or "LoadBalanced HttpSolrClient" is a load balancing wrapper around {@link
- * HttpSolrClient}. This is useful when you have multiple Solr servers and the requests need to be
- * Load Balanced among them.
+ * HttpSolrClient}. This is useful when you have multiple Solr servers (also called endpoints) and
+ * requests need to be Load Balanced among them.
  *
  * <p>Do <b>NOT</b> use this class for indexing in leader/follower scenarios since documents must be
  * sent to the correct leader; no inter-node routing is done.
@@ -42,27 +41,48 @@ import org.apache.solr.common.util.URLUtil;
  * <p>It offers automatic failover when a server goes down and it detects when the server comes back
  * up.
  *
- * <p>Load balancing is done using a simple round-robin on the list of servers.
- *
- * <p>If a request to a server fails by an IOException due to a connection timeout or read timeout
- * then the host is taken off the list of live servers and moved to a 'dead server list' and the
- * request is resent to the next live server. This process is continued till it tries all the live
- * servers. If at least one server is alive, the request succeeds, and if not it fails.
+ * <p>Load balancing is done using a simple round-robin on the list of endpoints. Endpoint URLs are
+ * expected to point to the Solr "root" path (i.e. "/solr").
  *
  * <blockquote>
  *
  * <pre>
- * SolrClient lbHttpSolrClient = new LBHttpSolrClient("http://host1:8080/solr/", "http://host2:8080/solr", "http://host2:8080/solr");
- * //or if you wish to pass the HttpClient do as follows
- * httpClient httpClient = new HttpClient();
- * SolrClient lbHttpSolrClient = new LBHttpSolrClient(httpClient, "http://host1:8080/solr/", "http://host2:8080/solr", "http://host2:8080/solr");
+ * SolrClient lbHttpSolrClient = new LBHttpSolrClient.Builder()
+ *     .withBaseEndpoints("http://host1:8080/solr", "http://host2:8080/solr", "http://host3:8080/solr")
+ *     .build();
  * </pre>
  *
  * </blockquote>
  *
- * This detects if a dead server comes alive automatically. The check is done in fixed intervals in
- * a dedicated thread. This interval can be set using {@link
- * LBHttpSolrClient.Builder#setAliveCheckInterval(int)} , the default is set to one minute.
+ * Users who wish to balance traffic across a specific set of replicas or cores may specify each
+ * endpoint as a root-URL and core-name pair. For example:
+ *
+ * <blockquote>
+ *
+ * <pre>
+ * SolrClient lbHttpSolrClient = new LBHttpSolrClient.Builder()
+ *     .withCollectionEndpoint("http://host1:8080/solr", "coreA")
+ *     .withCollectionEndpoint("http://host2:8080/solr", "coreB")
+ *     .withCollectionEndpoint("http://host3:8080/solr", "coreC")
+ *     .build();
+ * // Or, if you wish to provide all endpoints together:
+ * lbHttpSolrClient = new LBHttpSolrClient.Builder()
+ *     .withCollectionEndpoints(
+ *         new LBSolrClient.Endpoint("http://host1:8080/solr", "coreA"),
+ *         new LBSolrClient.Endpoint("http://host2:8080/solr", "coreB"),
+ *         new LBSolrClient.Endpoint("http://host3:8080/solr", "coreC"))
+ *     .build();
+ * </pre>
+ *
+ * </blockquote>
+ *
+ * <p>If a request to an endpoint fails by an IOException due to a connection timeout or read
+ * timeout then the host is taken off the list of live endpoints and moved to a 'dead endpoint list'
+ * and the request is resent to the next live endpoint. This process is continued till it tries all
+ * the live endpoints. If at least one endpoint is alive, the request succeeds, and if not it fails.
+ *
+ * <p>Dead endpoints are periodically healthchecked on a fixed interval controlled by {@link
+ * LBHttpSolrClient.Builder#setAliveCheckInterval(int)}. The default is set to one minute.
  *
  * <p><b>When to use this?</b><br>
  * This can be used as a software load balancer when you do not wish to setup an external load
@@ -87,13 +107,11 @@ public class LBHttpSolrClient extends LBSolrClient {
 
   /** The provided httpClient should use a multi-threaded connection manager */
   protected LBHttpSolrClient(Builder builder) {
-    super(builder.baseSolrUrls);
+    super(builder.solrEndpoints);
     this.clientIsInternal = builder.httpClient == null;
     this.httpSolrClientBuilder = builder.httpSolrClientBuilder;
     this.httpClient =
-        builder.httpClient == null
-            ? constructClient(builder.baseSolrUrls.toArray(new String[0]))
-            : builder.httpClient;
+        builder.httpClient == null ? constructClient(builder.solrEndpoints) : builder.httpClient;
     this.defaultCollection = builder.defaultCollection;
     if (httpSolrClientBuilder != null && this.defaultCollection != null) {
       httpSolrClientBuilder.defaultCollection = this.defaultCollection;
@@ -102,14 +120,14 @@ public class LBHttpSolrClient extends LBSolrClient {
     this.soTimeoutMillis = builder.socketTimeoutMillis;
     this.parser = builder.responseParser;
     this.aliveCheckIntervalMillis = builder.aliveCheckInterval;
-    for (String baseUrl : builder.baseSolrUrls) {
-      urlToClient.put(baseUrl, makeSolrClient(baseUrl));
+    for (Endpoint endpoint : builder.solrEndpoints) {
+      urlToClient.put(endpoint.toString(), makeSolrClient(endpoint));
     }
   }
 
-  private HttpClient constructClient(String[] solrServerUrl) {
+  private HttpClient constructClient(List<Endpoint> solrEndpoints) {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    if (solrServerUrl != null && solrServerUrl.length > 1) {
+    if (solrEndpoints != null && solrEndpoints.size() > 1) {
       // we prefer retrying another server
       params.set(HttpClientUtil.PROP_USE_RETRY, false);
     } else {
@@ -118,12 +136,13 @@ public class LBHttpSolrClient extends LBSolrClient {
     return HttpClientUtil.createClient(params);
   }
 
-  protected HttpSolrClient makeSolrClient(String server) {
+  protected HttpSolrClient makeSolrClient(Endpoint server) {
     HttpSolrClient client;
     if (httpSolrClientBuilder != null) {
       synchronized (this) {
         httpSolrClientBuilder
-            .withBaseSolrUrl(server)
+            .withBaseSolrUrl(server.getBaseUrl())
+            .withDefaultCollection(server.getCore())
             .withHttpClient(httpClient)
             .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
             .withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
@@ -140,15 +159,12 @@ public class LBHttpSolrClient extends LBSolrClient {
       }
     } else {
       final var clientBuilder =
-          (URLUtil.isBaseUrl(server))
-              ? new HttpSolrClient.Builder(server)
-              : new HttpSolrClient.Builder(URLUtil.extractBaseUrl(server))
-                  .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(server));
-      clientBuilder
-          .withHttpClient(httpClient)
-          .withResponseParser(parser)
-          .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
-          .withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
+          new HttpSolrClient.Builder(server.getBaseUrl())
+              .withDefaultCollection(server.getCore())
+              .withHttpClient(httpClient)
+              .withResponseParser(parser)
+              .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
+              .withSocketTimeout(soTimeoutMillis, TimeUnit.MILLISECONDS);
       if (defaultCollection != null) {
         clientBuilder.withDefaultCollection(defaultCollection);
       }
@@ -165,18 +181,18 @@ public class LBHttpSolrClient extends LBSolrClient {
   }
 
   @Override
-  protected SolrClient getClient(String baseUrl) {
-    SolrClient client = urlToClient.get(baseUrl);
+  protected SolrClient getClient(Endpoint endpoint) {
+    SolrClient client = urlToClient.get(endpoint.toString());
     if (client == null) {
-      return makeSolrClient(baseUrl);
+      return makeSolrClient(endpoint);
     } else {
       return client;
     }
   }
 
   @Override
-  public String removeSolrServer(String server) {
-    urlToClient.remove(server);
+  public String removeSolrServer(Endpoint server) {
+    urlToClient.remove(server.toString());
     return super.removeSolrServer(server);
   }
 
@@ -197,12 +213,12 @@ public class LBHttpSolrClient extends LBSolrClient {
   public static class Builder extends SolrClientBuilder<Builder> {
 
     public static final int CHECK_INTERVAL = 60 * 1000; // 1 minute between checks
-    protected final List<String> baseSolrUrls;
+    protected final List<Endpoint> solrEndpoints;
     protected HttpSolrClient.Builder httpSolrClientBuilder;
     private int aliveCheckInterval = CHECK_INTERVAL;
 
     public Builder() {
-      this.baseSolrUrls = new ArrayList<>();
+      this.solrEndpoints = new ArrayList<>();
       this.responseParser = new BinaryResponseParser();
     }
 
@@ -211,70 +227,77 @@ public class LBHttpSolrClient extends LBSolrClient {
     }
 
     /**
-     * Provide a Solr endpoint to be used when configuring {@link LBHttpSolrClient} instances.
+     * Provide a "base" Solr URL to be used when configuring {@link LBHttpSolrClient} instances.
      *
-     * <p>Method may be called multiple times. All provided values will be used.
+     * <p>Method may be called multiple times. All provided values will be used. However, all
+     * endpoints must be of the same type: providing a mix of"base" endpoints via this method and
+     * core/collection endpoints via {@link #withCollectionEndpoint(String, String)} is prohibited.
      *
-     * <p>Two different paths can be specified as a part of the URL:
+     * <p>Users who use this method to provide base Solr URLs may specify a "default collection" for
+     * their requests using {@link #withDefaultCollection(String)} if they wish to avoid needing to
+     * specify a collection or core on relevant requests.
      *
-     * <p>1) A path pointing directly at a particular core
-     *
-     * <pre>
-     *   SolrClient client = builder.withBaseSolrUrl("http://my-solr-server:8983/solr/core1").build();
-     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
-     * </pre>
-     *
-     * Note that when a core is provided in the base URL, queries and other requests can be made
-     * without mentioning the core explicitly. However, the client can only send requests to that
-     * core.
-     *
-     * <p>2) The path of the root Solr path ("/solr")
-     *
-     * <pre>
-     *   SolrClient client = builder.withBaseSolrUrl("http://my-solr-server:8983/solr").build();
-     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
-     * </pre>
-     *
-     * In this case the client is more flexible and can be used to send requests to any cores. This
-     * flexibility though requires that the core is specified on all requests.
+     * @param baseSolrUrl the base URL for a Solr node, in the form "http[s]://hostname:port/solr"
      */
-    public Builder withBaseSolrUrl(String baseSolrUrl) {
-      this.baseSolrUrls.add(baseSolrUrl);
+    public Builder withBaseEndpoint(String baseSolrUrl) {
+      solrEndpoints.add(new Endpoint(baseSolrUrl));
       return this;
     }
 
     /**
-     * Provide Solr endpoints to be used when configuring {@link LBHttpSolrClient} instances.
+     * Provide multiple "base" Solr URLs to be used when configuring {@link LBHttpSolrClient}
+     * instances.
      *
-     * <p>Method may be called multiple times. All provided values will be used.
+     * <p>Method may be called multiple times. All provided values will be used. However, all
+     * endpoints must be of the same type: providing a mix of"base" endpoints via this method and
+     * core/collection endpoints via {@link #withCollectionEndpoint(String, String)} is prohibited.
      *
-     * <p>Two different paths can be specified as a part of each URL:
+     * <p>Users who use this method to provide base Solr URLs may specify a "default collection" for
+     * their requests using {@link #withDefaultCollection(String)} if they wish to avoid needing to
+     * specify a collection or core on relevant requests.
      *
-     * <p>1) A path pointing directly at a particular core
-     *
-     * <pre>
-     *   SolrClient client = builder.withBaseSolrUrls("http://my-solr-server:8983/solr/core1").build();
-     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
-     * </pre>
-     *
-     * Note that when a core is provided in the base URL, queries and other requests can be made
-     * without mentioning the core explicitly. However, the client can only send requests to that
-     * core.
-     *
-     * <p>2) The path of the root Solr path ("/solr")
-     *
-     * <pre>
-     *   SolrClient client = builder.withBaseSolrUrls("http://my-solr-server:8983/solr").build();
-     *   QueryResponse resp = client.query("core1", new SolrQuery("*:*"));
-     * </pre>
-     *
-     * In this case the client is more flexible and can be used to send requests to any cores. This
-     * flexibility though requires that the core is specified on all requests.
+     * @param baseSolrUrls Solr base URLs, in the form "http[s]://hostname:port/solr"
      */
-    public Builder withBaseSolrUrls(String... solrUrls) {
-      for (String baseSolrUrl : solrUrls) {
-        this.baseSolrUrls.add(baseSolrUrl);
+    public Builder withBaseEndpoints(String... baseSolrUrls) {
+      for (String baseSolrUrl : baseSolrUrls) {
+        solrEndpoints.add(new Endpoint(baseSolrUrl));
       }
+      return this;
+    }
+
+    /**
+     * Provide a core/collection Solr endpoint to be used when configuring {@link LBHttpSolrClient}
+     * instances.
+     *
+     * <p>Method may be called multiple times. All provided values will be used. However, all
+     * endpoints must be of the same type: providing a mix of "core" endpoints via this method and
+     * base endpoints via {@link #withBaseEndpoint(String)} is prohibited.
+     *
+     * @param baseSolrUrl the base URL for a Solr node, in the form "http[s]://hostname:port/solr"
+     * @param core the Solr core or collection to target
+     */
+    public Builder withCollectionEndpoint(String baseSolrUrl, String core) {
+      solrEndpoints.add(new Endpoint(baseSolrUrl, core));
+      return this;
+    }
+
+    /**
+     * Provide multiple core/collection endpoints to be used when configuring {@link
+     * LBHttpSolrClient} instances.
+     *
+     * <p>Method may be called multiple times. All provided values will be used. However, all
+     * endpoints must be of the same type: providing a mix of "core" endpoints via this method and
+     * base endpoints via {@link #withBaseEndpoint(String)} is prohibited.
+     *
+     * @param endpoints endpoint instances pointing to distinct cores/collections
+     */
+    public Builder withCollectionEndpoints(Endpoint... endpoints) {
+      if (endpoints != null) {
+        for (Endpoint e : endpoints) {
+          solrEndpoints.add(e);
+        }
+      }
+
       return this;
     }
 
@@ -302,7 +325,7 @@ public class LBHttpSolrClient extends LBSolrClient {
       return this;
     }
 
-    /** Create a {@link HttpSolrClient} based on provided configuration. */
+    /** Create a {@link LBHttpSolrClient} based on provided configuration. */
     public LBHttpSolrClient build() {
       return new LBHttpSolrClient(this);
     }

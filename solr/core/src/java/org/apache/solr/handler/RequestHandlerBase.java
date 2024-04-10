@@ -237,24 +237,20 @@ public abstract class RequestHandlerBase
       rsp.setHttpCaching(httpCaching);
       handleRequestBody(req, rsp);
       // count timeouts
-      NamedList<?> header = rsp.getResponseHeader();
-      if (header != null) {
-        if (Boolean.TRUE.equals(
-            header.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-          metrics.numTimeouts.mark();
-          rsp.setHttpCaching(false);
-        }
+      if (rsp.isPartialResults()) {
+        metrics.numTimeouts.mark();
+        rsp.setHttpCaching(false);
       }
     } catch (Exception e) {
-      e = normalizeReceivedException(req, e);
-      processErrorMetricsOnException(e, metrics);
-      rsp.setException(e);
+      Exception normalized = normalizeReceivedException(req, e);
+      processErrorMetricsOnException(normalized, metrics);
+      rsp.setException(normalized);
     } finally {
       long elapsed = timer.stop();
       metrics.totalTime.inc(elapsed);
 
-      if (publishCpuTime) {
-        Optional<Long> cpuTime = threadCpuTimer.getCpuTimeMs();
+      if (publishCpuTime && threadCpuTimer != null) {
+        Optional<Long> cpuTime = threadCpuTimer.getElapsedCpuMs();
         if (cpuTime.isPresent()) {
           // add CPU_TIME if not already added by SearchHandler
           NamedList<Object> header = rsp.getResponseHeader();

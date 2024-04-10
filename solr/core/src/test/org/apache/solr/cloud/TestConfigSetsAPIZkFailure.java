@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.ConfigSetService;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.Watcher;
@@ -86,7 +87,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
             1,
             testDir,
             MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML,
-            buildJettyConfig(),
+            JettyConfig.builder().build(),
             zkTestServer,
             true);
   }

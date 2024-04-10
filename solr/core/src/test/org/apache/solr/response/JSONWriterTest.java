@@ -346,4 +346,62 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     jsonEq(expected, buf.toString());
     req.close();
   }
+
+  @Test
+  public void testResponseValuesProperlyQuoted() throws Exception {
+    assertU(
+        adoc(
+            "id",
+            "1",
+            "name",
+            "John Doe",
+            "cat",
+            "foo\"b'ar",
+            "uuid",
+            "6e2fb55b-dd42-4e2d-84ca-71a599403aa3",
+            "bsto",
+            "true",
+            "isto",
+            "42",
+            "amount",
+            "100,USD",
+            "price",
+            "3.14",
+            "severity",
+            "High",
+            "dateRange",
+            "[2024-03-01 TO 2024-03-31]",
+            "timestamp",
+            "2024-03-20T12:34:56Z"));
+    assertU(commit());
+
+    String expected =
+        "{\n"
+            + "  \"response\":{\n"
+            + "    \"numFound\":1,\n"
+            + "    \"start\":0,\n"
+            + "    \"numFoundExact\":true,\n"
+            + "    \"docs\":[{\n"
+            + "      \"id\":\"1\",\n"
+            + "      \"name\":[\"John Doe\"],\n"
+            + "      \"cat\":[\"foo\\\"b'ar\"],\n"
+            + "      \"uuid\":[\"6e2fb55b-dd42-4e2d-84ca-71a599403aa3\"],\n"
+            + "      \"bsto\":[true],\n"
+            + "      \"isto\":[42],\n"
+            + "      \"amount\":\"100,USD\",\n"
+            + "      \"price\":3.14,\n"
+            + "      \"severity\":\"High\",\n"
+            + "      \"dateRange\":[\"[2024-03-01 TO 2024-03-31]\"],\n"
+            + "      \"timestamp\":\"2024-03-20T12:34:56Z\"\n"
+            + "    }]\n"
+            + "  }\n"
+            + "}";
+
+    String fl = "id,name,cat,uuid,bsto,isto,amount,price,severity,dateRange,timestamp";
+    var req = req("q", "id:*", "fl", fl, "wt", "json", "omitHeader", "true");
+    try (req) {
+      String response = h.query("/select", req);
+      jsonEq(expected, response);
+    }
+  }
 }
