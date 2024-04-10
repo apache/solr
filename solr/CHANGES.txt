@@ -169,6 +169,8 @@ Bug Fixes
 
 * SOLR-17218: Fix indexFetcher logging to include MDC details (hossman)
 
+* SOLR-17213: Fix spurious warnings about solr url format in Solr CLI when users aren't providing a deprecated solr url.  (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 
