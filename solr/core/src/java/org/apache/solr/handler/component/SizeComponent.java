@@ -179,23 +179,23 @@ public class SizeComponent extends SearchComponent {
       NamedList<Object> solrRamDetails = new NamedList<>();
 
       values.add(
-          "total-disk-size",
+          "totalDiskSize",
           sizeUnit == null
               ? NumberUtils.readableSize(totalDiskSize)
               : NumberUtils.normalizedSize(totalDiskSize, sizeUnit));
       values.add(
-          "total-lucene-RAM",
+          "totalLuceneRam",
           sizeUnit == null
               ? NumberUtils.readableSize(totalLuceneRam)
               : NumberUtils.normalizedSize(totalLuceneRam, sizeUnit));
       values.add(
-          "total-solr-RAM",
+          "totalSolrRam",
           sizeUnit == null
               ? NumberUtils.readableSize(totalSolrRam)
               : NumberUtils.normalizedSize(totalSolrRam, sizeUnit));
-      values.add("estimated-num-docs", totalNumDocs);
+      values.add("estimatedNumDocs", totalNumDocs);
       values.add(
-          "estimated-doc-size",
+          "estimatedDocSize",
           sizeUnit == null
               ? NumberUtils.readableSize(avgDocSize)
               : NumberUtils.normalizedSize(avgDocSize, sizeUnit));
@@ -220,7 +220,7 @@ public class SizeComponent extends SearchComponent {
           sizeUnit == null
               ? NumberUtils.readableSize(totalLuceneRam)
               : NumberUtils.normalizedSize(totalLuceneRam, sizeUnit));
-      values.add("solr-details", solrRamDetails);
+      values.add("solrDetails", solrRamDetails);
       return values;
     }
   }
