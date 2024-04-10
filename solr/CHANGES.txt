@@ -90,6 +90,8 @@ Bug Fixes
 
 * SOLR-17213: Fix spurious warnings about solr url format in Solr CLI when users aren't providing a deprecated solr url.  (Eric Pugh)
 
+* SOLR-17176: Fix log history V2 API serialization (Michael Gibney)
+
 Dependency Upgrades
 ---------------------
 
