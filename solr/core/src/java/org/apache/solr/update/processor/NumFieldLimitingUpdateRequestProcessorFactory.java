@@ -37,6 +37,7 @@ public class NumFieldLimitingUpdateRequestProcessorFactory extends UpdateRequest
     // register a commit callback for monitoring the number of fields in the schema
     numFieldsMonitor = new NumFieldsMonitor(core);
     core.getUpdateHandler().registerCommitCallback(numFieldsMonitor);
+    core.registerNewSearcherListener(numFieldsMonitor);
   }
 
   public void init(NamedList<?> args) {

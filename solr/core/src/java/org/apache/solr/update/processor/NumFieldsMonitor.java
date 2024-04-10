@@ -46,6 +46,11 @@ public class NumFieldsMonitor extends AbstractSolrEventListener {
     }
   }
 
+  @Override
+  public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
+    numFields = newSearcher.getFieldInfos().size();
+  }
+
   public int getCurrentNumFields() {
     return numFields;
   }
