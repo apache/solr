@@ -389,6 +389,7 @@ public class StrUtils {
     }
   }
 
+  @SuppressWarnings("ReferenceEquality")
   public static boolean equalsIgnoreCase(String left, String right) {
     if (left == right) {
       return true;
