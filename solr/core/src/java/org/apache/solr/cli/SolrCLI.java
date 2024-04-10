@@ -527,15 +527,29 @@ public class SolrCLI implements CLIO {
    * @return the solrUrl in the format that Solr expects to see internally.
    */
   public static String normalizeSolrUrl(String solrUrl) {
+    return normalizeSolrUrl(solrUrl, true);
+  }
+
+  /**
+   * Strips off the end of solrUrl any /solr when a legacy solrUrl like http://localhost:8983/solr
+   * is used, and optionally logs a warning. In the future we'll have urls ending with /api as well.
+   *
+   * @param solrUrl The user supplied url to Solr.
+   * @param logUrlFormatWarning If a warning message should be logged about the url format
+   * @return the solrUrl in the format that Solr expects to see internally.
+   */
+  public static String normalizeSolrUrl(String solrUrl, boolean logUrlFormatWarning) {
     if (solrUrl != null) {
       if (solrUrl.contains("/solr")) { //
         String newSolrUrl = solrUrl.substring(0, solrUrl.indexOf("/solr"));
-        CLIO.out(
-            "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
-                + solrUrl
-                + "] to ["
-                + newSolrUrl
-                + "].");
+        if (logUrlFormatWarning) {
+          CLIO.out(
+              "WARNING: URLs provided to this tool needn't include Solr's context-root (e.g. \"/solr\"). Such URLs are deprecated and support for them will be removed in a future release. Correcting from ["
+                  + solrUrl
+                  + "] to ["
+                  + newSolrUrl
+                  + "].");
+        }
         solrUrl = newSolrUrl;
       }
       if (solrUrl.endsWith("/")) {
@@ -572,6 +586,7 @@ public class SolrCLI implements CLIO {
 
           String firstLiveNode = liveNodes.iterator().next();
           solrUrl = ZkStateReader.from(cloudSolrClient).getBaseUrlForNodeName(firstLiveNode);
+          solrUrl = normalizeSolrUrl(solrUrl, false);
         }
       }
     }
