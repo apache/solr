@@ -115,6 +115,7 @@ import org.apache.solr.search.grouping.endresulttransformer.EndResultTransformer
 import org.apache.solr.search.grouping.endresulttransformer.GroupedEndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.MainEndResultTransformer;
 import org.apache.solr.search.grouping.endresulttransformer.SimpleEndResultTransformer;
+import org.apache.solr.search.stats.LocalStatsCache;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrResponseUtil;
@@ -146,6 +147,18 @@ public class QueryComponent extends SearchComponent {
         // Generate Query ID
         rb.queryID = generateQueryID(req);
       }
+      // set the flag for distributed stats
+      if (req.getSearcher().getStatsCache().getClass().equals(LocalStatsCache.class)) {
+        if (params.getPrimitiveBool(CommonParams.DISTRIB_STATS_CACHE)) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Explicitly set "
+                  + CommonParams.DISTRIB_STATS_CACHE
+                  + "=true is not supported with "
+                  + LocalStatsCache.class.getSimpleName());
+        }
+      }
+      rb.setDistribStatsDisabled(!params.getBool(CommonParams.DISTRIB_STATS_CACHE, true));
     }
 
     // Set field flags
@@ -167,9 +180,6 @@ public class QueryComponent extends SearchComponent {
       queryString = params.get(CommonParams.Q);
       rb.setQueryString(queryString);
     }
-
-    // set the flag for distributed stats
-    rb.setEnableDistribStats(params.getBool(CommonParams.DISTRIB_STATS_CACHE, true));
 
     try {
       QParser parser = QParser.getParser(rb.getQueryString(), defType, req);
@@ -368,7 +378,7 @@ public class QueryComponent extends SearchComponent {
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
     cmd.setMinExactCount(getMinExactCount(params));
-    cmd.setEnableDistribStats(rb.isEnableDistribStats());
+    cmd.setDistribStatsDisabled(rb.isDistribStatsDisabled());
 
     boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
 
@@ -740,7 +750,7 @@ public class QueryComponent extends SearchComponent {
 
   protected void createDistributedStats(ResponseBuilder rb) {
     StatsCache cache = rb.req.getSearcher().getStatsCache();
-    if (rb.isEnableDistribStats()
+    if (!rb.isDistribStatsDisabled()
         && ((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
             || rb.getSortSpec().includesScore())) {
       ShardRequest sreq = cache.retrieveStatsRequest(rb);
@@ -936,6 +946,7 @@ public class QueryComponent extends SearchComponent {
     Float maxScore = null;
     boolean thereArePartialResults = false;
     Boolean segmentTerminatedEarly = null;
+    int failedShardCount = 0;
     for (ShardResponse srsp : sreq.responses) {
       SolrDocumentList docs = null;
       NamedList<?> responseHeader = null;
@@ -945,8 +956,8 @@ public class QueryComponent extends SearchComponent {
 
         if (srsp.getException() != null) {
           Throwable t = srsp.getException();
-          if (t instanceof SolrServerException) {
-            t = ((SolrServerException) t).getCause();
+          if (t instanceof SolrServerException && t.getCause() != null) {
+            t = t.getCause();
           }
           nl.add("error", t.toString());
           if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
@@ -954,7 +965,7 @@ public class QueryComponent extends SearchComponent {
             t.printStackTrace(new PrintWriter(trace));
             nl.add("trace", trace.toString());
           }
-          if (srsp.getShardAddress() != null) {
+          if (!StrUtils.isNullOrEmpty(srsp.getShardAddress())) {
             nl.add("shardAddress", srsp.getShardAddress());
           }
         } else {
@@ -984,8 +995,13 @@ public class QueryComponent extends SearchComponent {
         if (srsp.getSolrResponse() != null) {
           nl.add("time", srsp.getSolrResponse().getElapsedTime());
         }
-
-        shardInfo.add(srsp.getShard(), nl);
+        // This ought to be better, but at least this ensures no duplicate keys in JSON result
+        String shard = srsp.getShard();
+        if (StrUtils.isNullOrEmpty(shard)) {
+          failedShardCount += 1;
+          shard = "unknown_shard_" + failedShardCount;
+        }
+        shardInfo.add(shard, nl);
       }
       // now that we've added the shard info, let's only proceed if we have no error.
       if (srsp.getException() != null) {
@@ -1361,10 +1377,9 @@ public class QueryComponent extends SearchComponent {
           if (Boolean.TRUE.equals(
               responseHeader.getBooleanArg(
                   SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-            rb.rsp
-                .getResponseHeader()
-                .asShallowMap()
-                .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+            rb.rsp.setPartialResults();
+            rb.rsp.addPartialResponseDetail(
+                responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY));
           }
         }
         SolrDocumentList docs =

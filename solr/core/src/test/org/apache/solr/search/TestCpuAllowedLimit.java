@@ -208,4 +208,11 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
     // System.err.println("rsp=" + rsp.jsonStr());
     assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
   }
+
+  @Test
+  public void testDistribLimit2() throws Exception {
+    // This looks silly, but it actually guards against:
+    // https://issues.apache.org/jira/browse/SOLR-17203
+    testDistribLimit();
+  }
 }
