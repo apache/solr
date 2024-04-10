@@ -135,7 +135,7 @@ A file containing the documents can be indexed as follows:
 ----
 $ curl -H "Content-Type: application/json" \
        -X POST \
-       -d @example/products.json \
+       -d @example/exampledocs/books.json \
        --url 'http://localhost:8983/api/collections/techproducts/update?commit=true'
 ----
 

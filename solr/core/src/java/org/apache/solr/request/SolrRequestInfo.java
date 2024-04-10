@@ -245,9 +245,10 @@ public class SolrRequestInfo {
   public QueryLimits getLimits() {
     // make sure the ThreadCpuTime is always initialized
     getThreadCpuTimer();
-    return req == null
+    return req == null || rsp == null
         ? QueryLimits.NONE
-        : (QueryLimits) req.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(req));
+        : (QueryLimits)
+            req.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(req, rsp));
   }
 
   /**

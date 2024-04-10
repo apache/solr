@@ -403,7 +403,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   }
 
   public void testTolerantSearch() throws SolrServerException, IOException {
-    String badShard = DEAD_HOST_1;
+    String badShard = DEAD_HOST_1 + "/solr/collection1";
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
     query.set("debug", "true");

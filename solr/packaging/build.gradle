@@ -122,7 +122,7 @@ distributions {
       filesMatching([
           "**/*.sh",
           "**/bin/solr",
-          "**/bin/init.d/solr",
+          "**/bin/systemd/solr.service",
       ]) { copy ->
         copy.setMode(0755)
       }
