@@ -57,9 +57,9 @@ public class NumFieldLimitingUpdateRequestProcessor extends UpdateRequestProcess
       if (coreExceedsFieldLimit()) {
         throwExceptionOrLog(cmd.getPrintableId());
       } else {
-        if (log.isInfoEnabled()) {
-          log.info(
-              "JEGERLOW Allowing document {}, since current core is under the max-field limit (numFields={}, maxThreshold={})",
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "Allowing document {}, since current core is under the max-field limit (numFields={}, maxThreshold={})",
               cmd.getPrintableId(),
               currentNumFields,
               fieldThreshold);
