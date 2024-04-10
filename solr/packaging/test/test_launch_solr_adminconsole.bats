@@ -34,5 +34,5 @@ teardown() {
   run curl -s -o /dev/null -w "%{http_code}" http://localhost:${SOLR_PORT}/solr/
 
   # Check if the HTTP response code is 200 (OK)
-  assert_output --partial "200"
+  assert_output "200"
 }
