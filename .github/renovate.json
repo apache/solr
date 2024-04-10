@@ -48,6 +48,12 @@
       "enabled": false
     },
     {
+      "description": "Skip major jetty upgrades - must be done manually",
+      "matchPackagePrefixes": ["org.eclipse.jetty"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "description": "Changelog for commons-io",
       "matchSourceUrls": ["https://gitbox.apache.org/repos/asf?p=commons-io.git"],
       "customChangelogUrl": "https://commons.apache.org/proper/commons-io/changes-report.html"
