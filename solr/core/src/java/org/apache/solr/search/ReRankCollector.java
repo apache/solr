@@ -127,7 +127,6 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
             .getResponseHeader()
             .asShallowMap()
             .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
-        
       }
 
       // Lower howMany to return if we've collected fewer documents.
