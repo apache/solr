@@ -370,6 +370,22 @@ public class ZkStateReader implements SolrCloseable {
 
   private static class StatefulCollectionWatch extends CollectionWatch<DocCollectionWatcher> {
     private DocCollection currentState;
+
+    /**
+     * The {@link StateWatcher} that is associated with this {@link StatefulCollectionWatch}. It is
+     * necessary to track this because of the way {@link StateWatcher} instances expire
+     * asynchronously: once registered with ZooKeeper, a {@link StateWatcher} cannot be removed, and
+     * its {@link StateWatcher#process(WatchedEvent)} method will be invoked upon node update.
+     * Because it is not possible to synchronously remove the {@link StateWatcher} as part of a
+     * transaction with {@link ZkStateReader#collectionWatches}, we keep track of a unique {@link
+     * StateWatcher} here, so that all other {@link StateWatcher}s may properly expire in a deferred
+     * way.
+     */
+    private volatile StateWatcher associatedWatcher;
+
+    private StatefulCollectionWatch(StateWatcher associatedWatcher) {
+      this.associatedWatcher = associatedWatcher;
+    }
   }
 
   public static final Set<String> KNOWN_CLUSTER_PROPS =
@@ -649,8 +665,10 @@ public class ZkStateReader implements SolrCloseable {
 
   /** Refresh collections. */
   private void refreshCollections() {
-    for (String coll : collectionWatches.watchedCollections()) {
-      new StateWatcher(coll).refreshAndWatch();
+    for (Entry<String, StatefulCollectionWatch> e : collectionWatches.watchedCollectionEntries()) {
+      StateWatcher newStateWatcher = new StateWatcher(e.getKey());
+      e.getValue().associatedWatcher = newStateWatcher;
+      newStateWatcher.refreshAndWatch();
     }
   }
 
@@ -1334,8 +1352,9 @@ public class ZkStateReader implements SolrCloseable {
         return;
       }
 
-      if (!collectionWatches.watchedCollections().contains(coll)) {
-        // This collection is no longer interesting, stop watching.
+      StatefulCollectionWatch scw = collectionWatches.statefulWatchesByCollectionName.get(coll);
+      if (scw == null || scw.associatedWatcher != this) {
+        // Collection no longer interesting, or we have been replaced by a different watcher.
         log.debug("Uninteresting collection {}", coll);
         return;
       }
@@ -1677,19 +1696,21 @@ public class ZkStateReader implements SolrCloseable {
    * @see ZkStateReader#unregisterCore(String)
    */
   public void registerCore(String collection) {
-    AtomicBoolean reconstructState = new AtomicBoolean(false);
+    AtomicReference<StateWatcher> newWatcherRef = new AtomicReference<>();
     collectionWatches.compute(
         collection,
         (k, v) -> {
           if (v == null) {
-            reconstructState.set(true);
-            v = new StatefulCollectionWatch();
+            StateWatcher stateWatcher = new StateWatcher(collection);
+            newWatcherRef.set(stateWatcher);
+            v = new StatefulCollectionWatch(stateWatcher);
           }
           v.coreRefCount++;
           return v;
         });
-    if (reconstructState.get()) {
-      new StateWatcher(collection).refreshAndWatch();
+    StateWatcher newWatcher = newWatcherRef.get();
+    if (newWatcher != null) {
+      newWatcher.refreshAndWatch();
     }
   }
 
@@ -1761,26 +1782,29 @@ public class ZkStateReader implements SolrCloseable {
    * <p>The Watcher will automatically be removed when it's <code>onStateChanged</code> returns
    * <code>true</code>
    */
-  public void registerDocCollectionWatcher(String collection, DocCollectionWatcher stateWatcher) {
-    AtomicBoolean watchSet = new AtomicBoolean(false);
+  public void registerDocCollectionWatcher(
+      String collection, DocCollectionWatcher docCollectionWatcher) {
+    AtomicReference<StateWatcher> newWatcherRef = new AtomicReference<>();
     collectionWatches.compute(
         collection,
         (k, v) -> {
           if (v == null) {
-            v = new StatefulCollectionWatch();
-            watchSet.set(true);
+            StateWatcher stateWatcher = new StateWatcher(collection);
+            newWatcherRef.set(stateWatcher);
+            v = new StatefulCollectionWatch(stateWatcher);
           }
-          v.stateWatchers.add(stateWatcher);
+          v.stateWatchers.add(docCollectionWatcher);
           return v;
         });
 
-    if (watchSet.get()) {
-      new StateWatcher(collection).refreshAndWatch();
+    StateWatcher newWatcher = newWatcherRef.get();
+    if (newWatcher != null) {
+      newWatcher.refreshAndWatch();
     }
 
     DocCollection state = clusterState.getCollectionOrNull(collection);
-    if (stateWatcher.onStateChanged(state) == true) {
-      removeDocCollectionWatcher(collection, stateWatcher);
+    if (docCollectionWatcher.onStateChanged(state) == true) {
+      removeDocCollectionWatcher(collection, docCollectionWatcher);
     }
   }
 
