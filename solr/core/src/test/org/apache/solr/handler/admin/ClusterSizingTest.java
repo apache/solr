@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.client.api.model.ClusterSizingResponse;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -32,12 +33,15 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +63,7 @@ public class ClusterSizingTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
     addDocs();
     coreContainer = cluster.getOpenOverseer().getCoreContainer();
+    assumeWorkingMockito();
   }
 
   @AfterClass
@@ -68,15 +73,19 @@ public class ClusterSizingTest extends SolrCloudTestCase {
 
   @SuppressWarnings("unchecked")
   @Test
-  public void testClusterSizingXml() throws Exception {
+  public void testClusterSizingV1() throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(SizeParams.SIZE_UNIT, NumberUtils.sizeUnit.bytes.toString());
     params.add(SizeParams.ESTIMATION_RATIO, "10.0");
     params.add(CommonParams.WT, "xml");
 
+    final SolrQueryRequest request = Mockito.mock(SolrQueryRequest.class);
+    Mockito.when(request.getParams()).thenReturn(params);
+    final SolrQueryResponse response = Mockito.mock(SolrQueryResponse.class);
+
     final NamedList<Object> values = new SimpleOrderedMap<>();
 
-    final ClusterSizing sizing = new ClusterSizing(coreContainer, params);
+    final ClusterSizing sizing = new ClusterSizing(coreContainer, request, response);
     sizing.populate(values);
 
     if (log.isInfoEnabled()) {
@@ -103,8 +112,40 @@ public class ClusterSizingTest extends SolrCloudTestCase {
     final String coreName = shardInfo.getName(0);
     final NamedList<Object> coreInfo = (NamedList<Object>) shardInfo.get(coreName);
     Assert.assertEquals(6, coreInfo.size());
-    final NamedList<Object> solrDetails = (NamedList<Object>) coreInfo.get("solr-details");
+    final NamedList<Object> solrDetails = (NamedList<Object>) coreInfo.get("solrDetails");
     Assert.assertEquals(4, solrDetails.size());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void testClusterSizingV2() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(SizeParams.SIZE_UNIT, NumberUtils.sizeUnit.bytes.toString());
+    params.add(SizeParams.ESTIMATION_RATIO, "10.0");
+
+    final SolrQueryRequest request = Mockito.mock(SolrQueryRequest.class);
+    Mockito.when(request.getParams()).thenReturn(params);
+
+    final SolrQueryResponse response = new SolrQueryResponse();
+
+    final ClusterSizing sizing = new ClusterSizing(coreContainer, request, response);
+    final ClusterSizingResponse sizingResponse =
+        sizing.estimateSize(
+            0, 0, null, null, null, null, null, 0.0, NumberUtils.sizeUnit.bytes.toString());
+
+    Assert.assertNotNull(sizingResponse);
+
+    Assert.assertTrue(response.getValues().size() > 0);
+    final NamedList<Object> values = response.getValues();
+    Assert.assertNotNull(values.get("cluster"));
+    final NamedList<Object> cluster = (NamedList<Object>) values.get("cluster");
+    Assert.assertNotNull(cluster.get("nodes"));
+    Assert.assertNotNull(cluster.get("collections"));
+
+    if (log.isInfoEnabled()) {
+      log.info("Response values: {}", response.getValues());
+      log.info("ClusterSizingResponse cluster: {}", sizingResponse.cluster);
+    }
   }
 
   private static void addDocs() throws Exception {

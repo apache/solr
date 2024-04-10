@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+// import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -28,7 +29,9 @@ import static org.apache.solr.common.params.SizeParams.NUM_DOCS;
 import static org.apache.solr.common.params.SizeParams.QUERY_RES_CACHE_MAX;
 import static org.apache.solr.common.params.SizeParams.QUERY_RES_MAX_DOCS;
 import static org.apache.solr.common.params.SizeParams.SIZE;
+// import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
@@ -41,7 +44,10 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.apache.solr.client.api.endpoint.ClusterSizingApi;
+import org.apache.solr.client.api.model.ClusterSizingResponse;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
+// import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -49,78 +55,85 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+// import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+// import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SizeParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.api.AdminAPIBase;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** This class is used to produce sizing estimates for a cluster. */
-public class ClusterSizing {
+public class ClusterSizing extends AdminAPIBase implements ClusterSizingApi {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final ZkStateReader zkStateReader;
   private final SolrParams params;
   private final String sizeUnit; // size unit requested by the user
 
-  private final CoreContainer coreContainer;
-
-  public ClusterSizing(CoreContainer coreContainer, SolrParams params) {
-    this.coreContainer = coreContainer;
+  @Inject
+  public ClusterSizing(
+      final CoreContainer coreContainer,
+      final SolrQueryRequest solrQueryRequest,
+      final SolrQueryResponse solrQueryResponse) {
+    super(coreContainer, solrQueryRequest, solrQueryResponse);
     this.zkStateReader = coreContainer.getZkController().getZkStateReader();
-    this.params = params;
+    this.params = solrQueryRequest.getParams();
     this.sizeUnit = this.params.get(SizeParams.SIZE_UNIT);
   }
 
   public void populate(NamedList<Object> values) {
-
-    ClusterState state = zkStateReader.getClusterState();
-    Set<String> collections = new HashSet<>(state.getCollectionStates().keySet());
-    List<String> collectionList = getParamAsList(COLLECTION_PROP);
+    final ClusterState state = zkStateReader.getClusterState();
+    final Set<String> collections = new HashSet<>(state.getCollectionStates().keySet());
+    final List<String> collectionList = getParamAsList(COLLECTION_PROP);
     if (!collectionList.isEmpty()) {
       collections.retainAll(collectionList);
     }
-    List<String> shardList = getParamAsList(SHARD_ID_PROP);
-    List<String> replicaList = getParamAsList(REPLICA_PROP);
-    SolrParams sizeParams = buildSizeParams();
-    NamedList<Object> sizePerCollection = new NamedList<>();
-    ConcurrentMap<String, Map<String, Long>> sizePerNode = new ConcurrentHashMap<>();
+    final List<String> shardList = getParamAsList(SHARD_ID_PROP);
+    final List<String> replicaList = getParamAsList(REPLICA_PROP);
+    final SolrParams sizeParams = buildSizeParams();
+    final NamedList<Object> sizePerCollection = new NamedList<>();
+    final ConcurrentMap<String, Map<String, Long>> sizePerNode = new ConcurrentHashMap<>();
 
     for (String colName : collections) {
-      DocCollection collection = state.getCollection(colName);
+      final DocCollection collection = state.getCollection(colName);
 
-      NamedList<Object> sizePerShard = new NamedList<>();
+      final NamedList<Object> sizePerShard = new NamedList<>();
       sizePerCollection.add(colName, sizePerShard);
-      Map<String, Slice> sliceMap = collection.getSlicesMap();
+      final Map<String, Slice> sliceMap = collection.getSlicesMap();
       for (Entry<String, Slice> sliceEntry : sliceMap.entrySet()) {
         if (shardList.isEmpty() || shardList.contains(sliceEntry.getKey())) {
-          Slice slice = sliceEntry.getValue();
+          final Slice slice = sliceEntry.getValue();
 
-          NamedList<Object> sizePerReplica = new NamedList<>();
+          final NamedList<Object> sizePerReplica = new NamedList<>();
           sizePerShard.add(slice.getName(), sizePerReplica);
-          Map<String, Replica> replicaMap = slice.getReplicasMap();
+          final Map<String, Replica> replicaMap = slice.getReplicasMap();
           for (Entry<String, Replica> replicaEntry : replicaMap.entrySet()) {
             if (replicaList.isEmpty() || replicaList.contains(replicaEntry.getKey())) {
-              Replica replica = replicaEntry.getValue();
-              String url = replica.getCoreUrl();
-              String node = replica.getNodeName();
-              QueryRequest req = new QueryRequest(sizeParams);
+              final Replica replica = replicaEntry.getValue();
+              final String url = replica.getCoreUrl();
+              final String node = replica.getNodeName();
+              final QueryRequest req = new QueryRequest(sizeParams);
               req.setMethod(METHOD.POST);
               if (log.isDebugEnabled()) {
                 log.debug("Request size from '{}' with params: {}", url, sizeParams);
               }
-              Http2SolrClient.Builder builder = new Http2SolrClient.Builder(url);
+              final Http2SolrClient.Builder builder = new Http2SolrClient.Builder(url);
               try (Http2SolrClient solrClient = builder.build()) {
                 if (coreContainer.getPkiAuthenticationSecurityBuilder() != null) {
                   coreContainer.getPkiAuthenticationSecurityBuilder().setup(solrClient);
                 }
                 @SuppressWarnings("unchecked")
-                NamedList<Object> size = (NamedList<Object>) solrClient.request(req).get(SIZE);
+                final NamedList<Object> size =
+                    (NamedList<Object>) solrClient.request(req).get(SIZE);
                 sizePerReplica.add(replica.getName(), size);
                 adjustNodeSize(sizePerNode, node, size);
               } catch (SolrServerException | IOException | ParseException e) {
@@ -132,7 +145,7 @@ public class ClusterSizing {
         }
       }
     }
-    NamedList<Object> cluster = new NamedList<>();
+    final NamedList<Object> cluster = new NamedList<>();
     cluster.add("nodes", nodesToNamedList(sizePerNode));
     cluster.add("collections", sizePerCollection);
     values.add("cluster", cluster);
@@ -227,5 +240,51 @@ public class ClusterSizing {
             SIZE,
             SizeParams.SIZE_UNIT,
             CommonParams.DISTRIB));
+  }
+
+  /** V2 API implementation. */
+  @Override
+  public ClusterSizingResponse estimateSize(
+      final long avgDocSize,
+      final long numDocs,
+      final Long deletedDocs,
+      final Long filterCacheMax,
+      final Long queryResultCacheMax,
+      final Long documentCacheMax,
+      final Long queryResultMaxDocsCached,
+      final double estimationRatio,
+      final String sizeUnit)
+      throws Exception {
+    final ClusterSizingResponse response = instantiateJerseyResponse(ClusterSizingResponse.class);
+    validateZooKeeperAwareCoreContainer(coreContainer);
+
+    // TODO: replace by a V2 implementation
+    populate(solrQueryResponse.getValues());
+
+    // Most V2 implementations call CollectionsHandler.submitCollectionApiCommand.
+    // This requires implementing a CollectionApiCommand in
+    // org.apache.solr.cloud.api.collections.CollApiCmds.CommandMap
+    // Clustersizing is not implemented as CollectionApiCommand, so OverseerCollectionMessageHandler
+    // throws
+    // SolrException: Unknown operation:clustersizing
+
+    //    final Map<String, Object> properties =
+    //        Map.of(QUEUE_OPERATION, CollectionAction.CLUSTERSIZING.toLower());
+    //    final ZkNodeProps zkNodeProps = new ZkNodeProps(properties);
+    //
+    //    final SolrResponse remoteResponse =
+    //        CollectionsHandler.submitCollectionApiCommand(
+    //            coreContainer,
+    //            coreContainer.getDistributedCollectionCommandRunner(),
+    //            zkNodeProps,
+    //            CollectionAction.CLUSTERSIZING,
+    //            DEFAULT_COLLECTION_OP_TIMEOUT);
+    //
+    //    if (remoteResponse.getException() != null) {
+    //      throw remoteResponse.getException();
+    //    }
+
+    //    disableResponseCaching();
+    return response;
   }
 }

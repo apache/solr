@@ -85,15 +85,15 @@ public class SizeComponentTest extends SolrTestCaseJ4 {
             SizeParams.SIZE,
             "true"),
         "//*[@numFound='6']",
-        "//lst[@name='size']/str[@name='total-disk-size'][contains(text(), 'KB')]",
-        "//lst[@name='size']/str[@name='total-lucene-RAM'][contains(text(), 'MB')]",
-        "//lst[@name='size']/str[@name='total-solr-RAM'][contains(text(), 'MB')]",
-        "//lst[@name='size']/long[@name='estimated-num-docs'][.='6']",
-        "//lst[@name='size']/str[@name='estimated-doc-size'][contains(text(), 'bytes')]",
-        "//lst[@name='size']/lst[@name='solr-details']/str[@name='filterCache'][contains(text(), 'KB')]",
-        "//lst[@name='size']/lst[@name='solr-details']/str[@name='queryResultCache'][contains(text(), 'KB')]",
-        "//lst[@name='size']/lst[@name='solr-details']/str[@name='documentCache'][contains(text(), 'KB')]",
-        "//lst[@name='size']/lst[@name='solr-details']/str[@name='luceneRam'][contains(text(), 'MB')]");
+        "//lst[@name='size']/str[@name='totalDiskSize'][contains(text(), 'KB')]",
+        "//lst[@name='size']/str[@name='totalLuceneRam'][contains(text(), 'MB')]",
+        "//lst[@name='size']/str[@name='totalSolrRam'][contains(text(), 'MB')]",
+        "//lst[@name='size']/long[@name='estimatedNumDocs'][.='6']",
+        "//lst[@name='size']/str[@name='estimatedDocSize'][contains(text(), 'bytes')]",
+        "//lst[@name='size']/lst[@name='solrDetails']/str[@name='filterCache'][contains(text(), 'KB')]",
+        "//lst[@name='size']/lst[@name='solrDetails']/str[@name='queryResultCache'][contains(text(), 'KB')]",
+        "//lst[@name='size']/lst[@name='solrDetails']/str[@name='documentCache'][contains(text(), 'KB')]",
+        "//lst[@name='size']/lst[@name='solrDetails']/str[@name='luceneRam'][contains(text(), 'MB')]");
   }
 
   @Test
@@ -112,15 +112,15 @@ public class SizeComponentTest extends SolrTestCaseJ4 {
             SizeParams.SIZE_UNIT,
             "GB"),
         "//*[@numFound='6']",
-        "//lst[@name='size']/double[@name='total-disk-size']",
-        "//lst[@name='size']/double[@name='total-lucene-RAM'][.>=0.01][.<10.0]",
-        "//lst[@name='size']/double[@name='total-solr-RAM'][.>=0.01][.<10.0]",
-        "//lst[@name='size']/long[@name='estimated-num-docs'][.='6']",
-        "//lst[@name='size']/double[@name='estimated-doc-size']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='filterCache']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='queryResultCache']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='documentCache']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='luceneRam'][.>=0.01][.<10.0]");
+        "//lst[@name='size']/double[@name='totalDiskSize']",
+        "//lst[@name='size']/double[@name='totalLuceneRam'][.>=0.01][.<10.0]",
+        "//lst[@name='size']/double[@name='totalSolrRam'][.>=0.01][.<10.0]",
+        "//lst[@name='size']/long[@name='estimatedNumDocs'][.='6']",
+        "//lst[@name='size']/double[@name='estimatedDocSize']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='filterCache']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='queryResultCache']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='documentCache']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='luceneRam'][.>=0.01][.<10.0]");
   }
 
   @Test
@@ -139,15 +139,15 @@ public class SizeComponentTest extends SolrTestCaseJ4 {
             SizeParams.SIZE_UNIT,
             "MB"),
         "//*[@numFound='6']",
-        "//lst[@name='size']/double[@name='total-disk-size']",
-        "//lst[@name='size']/double[@name='total-lucene-RAM'][.>=10.0][.<1000.0]",
-        "//lst[@name='size']/double[@name='total-solr-RAM'][.>=10.0][.<1000.0]",
-        "//lst[@name='size']/long[@name='estimated-num-docs'][.='6']",
-        "//lst[@name='size']/double[@name='estimated-doc-size']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='filterCache']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='queryResultCache']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='documentCache']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='luceneRam'][.>=10.0][.<1000.0]");
+        "//lst[@name='size']/double[@name='totalDiskSize']",
+        "//lst[@name='size']/double[@name='totalLuceneRam'][.>=10.0][.<1000.0]",
+        "//lst[@name='size']/double[@name='totalSolrRam'][.>=10.0][.<1000.0]",
+        "//lst[@name='size']/long[@name='estimatedNumDocs'][.='6']",
+        "//lst[@name='size']/double[@name='estimatedDocSize']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='filterCache']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='queryResultCache']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='documentCache']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='luceneRam'][.>=10.0][.<1000.0]");
   }
 
   @Test
@@ -166,15 +166,15 @@ public class SizeComponentTest extends SolrTestCaseJ4 {
             SizeParams.SIZE_UNIT,
             "KB"),
         "//*[@numFound='6']",
-        "//lst[@name='size']/double[@name='total-disk-size']",
-        "//lst[@name='size']/double[@name='total-lucene-RAM'][.>=1000.0]",
-        "//lst[@name='size']/double[@name='total-solr-RAM'][.>=1000.0]",
-        "//lst[@name='size']/long[@name='estimated-num-docs'][.='6']",
-        "//lst[@name='size']/double[@name='estimated-doc-size']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='filterCache']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='queryResultCache']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='documentCache']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='luceneRam'][.>=1000.0]");
+        "//lst[@name='size']/double[@name='totalDiskSize']",
+        "//lst[@name='size']/double[@name='totalLuceneRam'][.>=1000.0]",
+        "//lst[@name='size']/double[@name='totalSolrRam'][.>=1000.0]",
+        "//lst[@name='size']/long[@name='estimatedNumDocs'][.='6']",
+        "//lst[@name='size']/double[@name='estimatedDocSize']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='filterCache']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='queryResultCache']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='documentCache']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='luceneRam'][.>=1000.0]");
   }
 
   @Test
@@ -193,14 +193,14 @@ public class SizeComponentTest extends SolrTestCaseJ4 {
             SizeParams.SIZE_UNIT,
             "bytes"),
         "//*[@numFound='6']",
-        "//lst[@name='size']/double[@name='total-disk-size'][.>=1000.0]",
-        "//lst[@name='size']/double[@name='total-lucene-RAM'][contains(string(.),'E')]",
-        "//lst[@name='size']/double[@name='total-solr-RAM'][contains(string(.),'E')]",
-        "//lst[@name='size']/long[@name='estimated-num-docs'][.='6']",
-        "//lst[@name='size']/double[@name='estimated-doc-size']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='filterCache']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='queryResultCache']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='documentCache']",
-        "//lst[@name='size']/lst[@name='solr-details']/double[@name='luceneRam'][contains(string(.),'E')]");
+        "//lst[@name='size']/double[@name='totalDiskSize'][.>=1000.0]",
+        "//lst[@name='size']/double[@name='totalLuceneRam'][contains(string(.),'E')]",
+        "//lst[@name='size']/double[@name='totalSolrRam'][contains(string(.),'E')]",
+        "//lst[@name='size']/long[@name='estimatedNumDocs'][.='6']",
+        "//lst[@name='size']/double[@name='estimatedDocSize']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='filterCache']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='queryResultCache']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='documentCache']",
+        "//lst[@name='size']/lst[@name='solrDetails']/double[@name='luceneRam'][contains(string(.),'E')]");
   }
 }

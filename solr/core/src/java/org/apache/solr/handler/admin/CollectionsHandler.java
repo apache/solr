@@ -1211,7 +1211,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     CLUSTERSIZING_OP(
         CLUSTERSIZING,
         (req, rsp, h) -> {
-          ClusterSizing sizing = new ClusterSizing(h.coreContainer, req.getParams());
+          final ClusterSizing sizing = new ClusterSizing(h.coreContainer, req, rsp);
           sizing.populate(rsp.getValues());
           return null;
         }),
@@ -1395,7 +1395,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         AliasProperty.class,
         ListCollectionSnapshotsAPI.class,
         CreateCollectionSnapshot.class,
-        DeleteCollectionSnapshot.class);
+        DeleteCollectionSnapshot.class,
+        ClusterSizing.class);
   }
 
   @Override
