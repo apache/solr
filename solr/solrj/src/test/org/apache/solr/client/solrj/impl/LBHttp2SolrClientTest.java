@@ -26,7 +26,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -51,19 +50,19 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     urlParamNames.add("param1");
 
     try (Http2SolrClient http2SolrClient =
-                 new Http2SolrClient.Builder(url).withTheseParamNamesInTheUrl(urlParamNames).build();
-         LBHttp2SolrClient testClient =
-                 new LBHttp2SolrClient.Builder(http2SolrClient, new LBSolrClient.Endpoint(url))
-                         .build()) {
+            new Http2SolrClient.Builder(url).withTheseParamNamesInTheUrl(urlParamNames).build();
+        LBHttp2SolrClient testClient =
+            new LBHttp2SolrClient.Builder(http2SolrClient, new LBSolrClient.Endpoint(url))
+                .build()) {
 
       assertArrayEquals(
-              "Wrong urlParamNames found in lb client.",
-              urlParamNames.toArray(),
-              testClient.getUrlParamNames().toArray());
+          "Wrong urlParamNames found in lb client.",
+          urlParamNames.toArray(),
+          testClient.getUrlParamNames().toArray());
       assertArrayEquals(
-              "Wrong urlParamNames found in base client.",
-              urlParamNames.toArray(),
-              http2SolrClient.getUrlParamNames().toArray());
+          "Wrong urlParamNames found in base client.",
+          urlParamNames.toArray(),
+          http2SolrClient.getUrlParamNames().toArray());
     }
   }
 
@@ -84,19 +83,19 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     Http2SolrClient.Builder b = new Http2SolrClient.Builder("http://base.url");
     try (MockHttp2SolrClient client = new MockHttp2SolrClient("http://base.url", b);
-         LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
+        LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
 
       int limit = 10; // For simplicity use an even limit
-      int halfLimit = limit/2; // see TODO below
+      int halfLimit = limit / 2; // see TODO below
 
-      CountDownLatch cdl = new CountDownLatch(limit); //deprecated API use
-      List<LBTestAsyncListener> listeners = new ArrayList<>(); //deprecated API use
+      CountDownLatch cdl = new CountDownLatch(limit); // deprecated API use
+      List<LBTestAsyncListener> listeners = new ArrayList<>(); // deprecated API use
       List<CompletableFuture<LBSolrClient.Rsp>> responses = new ArrayList<>();
 
       for (int i = 0; i < limit; i++) {
         QueryRequest queryRequest = new QueryRequest(new MapSolrParams(Map.of("q", "" + i)));
         LBSolrClient.Req req = new LBSolrClient.Req(queryRequest, endpointList);
-        if(useDeprecatedApi) {
+        if (useDeprecatedApi) {
           LBTestAsyncListener listener = new LBTestAsyncListener(cdl);
           listeners.add(listener);
           testClient.asyncReq(req, listener);
@@ -105,7 +104,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         }
       }
 
-      if(useDeprecatedApi) {
+      if (useDeprecatedApi) {
         try {
           cdl.await(1, TimeUnit.MINUTES);
         } catch (InterruptedException ie) {
@@ -130,7 +129,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
           numEndpointTwo++;
         }
         NamedList<Object> lastResponse;
-        if(useDeprecatedApi) {
+        if (useDeprecatedApi) {
           LBTestAsyncListener lastAsyncListener = listeners.get(index);
           assertTrue(lastAsyncListener.onStartCalled);
           assertNull(lastAsyncListener.failure);
@@ -143,7 +142,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
           } catch (InterruptedException ie) {
             Thread.currentThread().interrupt();
             fail("interrupted");
-          } catch(ExecutionException ee) {
+          } catch (ExecutionException ee) {
             fail("Response " + index + " ended in failure: " + ee);
           }
           lastResponse = lastRsp.getResponse();
@@ -164,13 +163,12 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
       assertEquals(limit, client.lastSolrRequests.size());
       assertEquals(limit, client.lastCollections.size());
-      if(useDeprecatedApi) {
+      if (useDeprecatedApi) {
         assertEquals(limit, client.lastAsyncListeners.size());
         assertFalse(client.cancelled);
       }
     }
   }
-
 
   public static class LBTestAsyncListener implements AsyncListener<LBSolrClient.Rsp> {
     private final CountDownLatch cdl;
@@ -201,7 +199,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     }
 
     private void countdown() {
-      if(countDownCalled) {
+      if (countDownCalled) {
         throw new IllegalStateException("Already counted down.");
       }
       cdl.countDown();
@@ -213,13 +211,13 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     public List<SolrRequest<?>> lastSolrRequests = new ArrayList<>();
     public List<String> lastCollections = new ArrayList<>();
-    public List<AsyncListener<NamedList<Object>>> lastAsyncListeners  = new ArrayList<>();
+    public List<AsyncListener<NamedList<Object>>> lastAsyncListeners = new ArrayList<>();
     public boolean cancelled = false;
 
     public Exception failure = null;
 
     protected MockHttp2SolrClient(String serverBaseUrl, Builder builder) {
-      //TODO: Consider creating an interface for Http*SolrClient
+      // TODO: Consider creating an interface for Http*SolrClient
       // so mocks can Implement, not Extend, and not actually need to
       // build an (unused) client
       super(serverBaseUrl, builder);
@@ -227,15 +225,15 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     @Override
     public Cancellable asyncRequest(
-            SolrRequest<?> solrRequest,
-            String collection,
-            AsyncListener<NamedList<Object>> asyncListener) {
+        SolrRequest<?> solrRequest,
+        String collection,
+        AsyncListener<NamedList<Object>> asyncListener) {
       asyncListener.onStart();
       lastSolrRequests.add(solrRequest);
       lastCollections.add(collection);
       lastAsyncListeners.add(asyncListener);
 
-      if(failure == null) {
+      if (failure == null) {
         String id = solrRequest.getParams().get("q");
         asyncListener.onSuccess(generateResponse(solrRequest));
       } else {
@@ -246,11 +244,11 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     @Override
     public CompletableFuture<NamedList<Object>> requestAsync(
-            final SolrRequest<?> solrRequest, String collection) {
+        final SolrRequest<?> solrRequest, String collection) {
       CompletableFuture<NamedList<Object>> cf = new CompletableFuture<>();
       lastSolrRequests.add(solrRequest);
       lastCollections.add(collection);
-      if(failure == null) {
+      if (failure == null) {
         cf.complete(generateResponse(solrRequest));
       } else {
         cf.completeExceptionally(failure);
@@ -262,7 +260,5 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       String id = solrRequest.getParams().get("q");
       return new NamedList<>(Collections.singletonMap("response", id));
     }
-
-
   }
 }
