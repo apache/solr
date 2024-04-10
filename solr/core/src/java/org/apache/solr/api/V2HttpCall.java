@@ -41,7 +41,6 @@ import javax.servlet.http.HttpServletResponse;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.PathTrie;
@@ -141,7 +140,12 @@ public class V2HttpCall extends HttpSolrCall {
         String collectionStr = queryParams.get(COLLECTION_PROP, origCorename);
         collectionsList =
             resolveCollectionListOrAlias(collectionStr); // &collection= takes precedence
-        if (collectionsList.size() > 1) {
+        if (collectionsList.isEmpty()) {
+          if (!path.endsWith(CommonParams.INTROSPECT)) {
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST, "Resolved list of collections is empty");
+          }
+        } else if (collectionsList.size() > 1) {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
               "Request must be sent to a single collection "
@@ -150,29 +154,22 @@ public class V2HttpCall extends HttpSolrCall {
                   + collectionStr
                   + "' resolves to "
                   + this.collectionsList);
-        }
-        DocCollection collection = resolveDocCollection(collectionsList);
-        if (collection == null) {
-          if (!path.endsWith(CommonParams.INTROSPECT)) {
-            throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST, "no such collection or alias");
-          }
         } else {
+          String collectionName = collectionsList.get(0);
           // Certain HTTP methods are only used for admin APIs, check for those and short-circuit
           if (List.of("delete").contains(req.getMethod().toLowerCase(Locale.ROOT))) {
             initAdminRequest(path);
             return;
           }
           boolean isPreferLeader = (path.endsWith("/update") || path.contains("/update/"));
-          core = getCoreByCollection(collection.getName(), isPreferLeader);
+          core = getCoreByCollection(collectionName, isPreferLeader);
           if (core == null) {
             // this collection exists , but this node does not have a replica for that collection
-            extractRemotePath(collection.getName(), collection.getName());
+            extractRemotePath(collectionName, collectionName);
             if (action == REMOTEQUERY) {
               action = ADMIN_OR_REMOTEQUERY;
               coreUrl = coreUrl.replace("/solr/", "/solr/____v2/c/");
-              this.path =
-                  path = path.substring(prefix.length() + collection.getName().length() + 2);
+              this.path = path = path.substring(prefix.length() + collectionName.length() + 2);
               return;
             }
           }
