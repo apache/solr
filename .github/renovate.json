@@ -44,7 +44,7 @@
     },
     {
       "description": "Lucene dependencies should be skipped",
-      "matchPackageNames": ["org.apache.lucene"],
+      "matchPackagePrefixes": ["org.apache.lucene"],
       "enabled": false
     },
     {
