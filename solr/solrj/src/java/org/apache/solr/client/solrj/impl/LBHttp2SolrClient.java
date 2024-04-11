@@ -134,7 +134,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
    *        exception
    * @return Cancellable allowing the caller to attempt cancellation
    */
-  @Deprecated(forRemoval = true)
+  @Deprecated
   public Cancellable asyncReq(Req req, AsyncListener<Rsp> asyncListener) {
     asyncListener.onStart();
     CompletableFuture<Rsp> cf =
@@ -233,7 +233,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     rsp.server = baseUrl;
     req.getRequest().setBasePath(baseUrl);
     CompletableFuture<NamedList<Object>> future =
-        getClient(endpoint).requestAsync(req.getRequest());
+            ((Http2SolrClient) getClient(endpoint)).requestAsync(req.getRequest());
     future.whenComplete(
         (result, throwable) -> {
           if (!future.isCompletedExceptionally()) {
