@@ -32,8 +32,6 @@ import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.NoOpReplicaListTransformer;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
-import org.apache.solr.client.solrj.util.AsyncListener;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -156,29 +154,31 @@ public class HttpShardHandler extends ShardHandler {
       return;
     }
 
-
     long startTime = System.nanoTime();
-                SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
-                if (requestInfo != null) {
-                  req.setUserPrincipal(requestInfo.getReq().getUserPrincipal());
-              }
+    SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+    if (requestInfo != null) {
+      req.setUserPrincipal(requestInfo.getReq().getUserPrincipal());
+    }
 
     CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
-    future.whenComplete((rsp, throwable) -> {
-      if (!future.isCompletedExceptionally()) {
-                ssr.nl = rsp.getResponse();
-                srsp.setShardAddress(rsp.getServer());
-        ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
-                responses.add(srsp);
-      } else if (!future.isCancelled()) {
-        ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
-                srsp.setException(throwable);
-                if (throwable instanceof SolrException) {
-                  srsp.setResponseCode(((SolrException) throwable).code());
-                }
-                responses.add(srsp);
-              }
-    });
+    future.whenComplete(
+        (rsp, throwable) -> {
+          if (!future.isCompletedExceptionally()) {
+            ssr.nl = rsp.getResponse();
+            srsp.setShardAddress(rsp.getServer());
+            ssr.elapsedTime =
+                TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+            responses.add(srsp);
+          } else if (!future.isCancelled()) {
+            ssr.elapsedTime =
+                TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+            srsp.setException(throwable);
+            if (throwable instanceof SolrException) {
+              srsp.setResponseCode(((SolrException) throwable).code());
+            }
+            responses.add(srsp);
+          }
+        });
 
     responseFutureMap.put(srsp, future);
   }
