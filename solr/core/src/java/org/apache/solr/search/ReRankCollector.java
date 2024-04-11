@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
@@ -119,7 +121,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
       TopDocs rescoredDocs;
       try {
         rescoredDocs = reRankQueryRescorer.rescore(searcher, mainDocs, mainDocs.scoreDocs.length);
-      } catch (IncompleteRerankingException ex) {
+      } catch (IncompleteRerankingException | ExitableDirectoryReader.ExitingReaderException ex) {
         mainDocs.scoreDocs = mainScoreDocsClone;
         rescoredDocs = mainDocs;
         SolrRequestInfo.getRequestInfo()
@@ -127,6 +129,7 @@ public class ReRankCollector extends TopDocsCollector<ScoreDoc> {
             .getResponseHeader()
             .asShallowMap()
             .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+        SolrQueryTimeoutImpl.reset();
       }
 
       // Lower howMany to return if we've collected fewer documents.

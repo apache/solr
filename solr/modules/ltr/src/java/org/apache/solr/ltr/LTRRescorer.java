@@ -239,7 +239,6 @@ public class LTRRescorer extends Rescorer {
 
     if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled()
         && SolrQueryTimeoutImpl.getInstance().shouldExit()) {
-      SolrQueryTimeoutImpl.reset();
       throw new IncompleteRerankingException();
     }
 
