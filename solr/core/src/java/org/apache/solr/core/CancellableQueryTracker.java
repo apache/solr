@@ -22,14 +22,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CancellableCollector;
 
 /** Tracks metadata for active queries and provides methods for access */
 public class CancellableQueryTracker {
   // TODO: This needs to become a time aware storage model
-  private final Map<String, CancellableCollector> activeCancellableQueries = new ConcurrentHashMap<>();
+  private final Map<String, CancellableCollector> activeCancellableQueries =
+      new ConcurrentHashMap<>();
   private final Map<String, String> activeQueriesGenerated = new ConcurrentHashMap<>();
 
   /**

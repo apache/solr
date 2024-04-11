@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -128,70 +127,18 @@ public class LBHttp2SolrClient extends LBSolrClient {
   }
 
   public Cancellable asyncReq(Req req, AsyncListener<Rsp> asyncListener) {
-    Rsp rsp = new Rsp();
-    boolean isNonRetryable =
-        req.request instanceof IsUpdateRequest || ADMIN_PATHS.contains(req.request.getPath());
-    EndpointIterator it = new EndpointIterator(req, zombieServers);
     asyncListener.onStart();
-    final AtomicBoolean cancelled = new AtomicBoolean(false);
-    AtomicReference<Cancellable> currentCancellable = new AtomicReference<>();
-    RetryListener retryListener =
-        new RetryListener() {
-
-          @Override
-          public void onSuccess(Rsp rsp) {
-            asyncListener.onSuccess(rsp);
-          }
-
-          @Override
-          public void onFailure(Exception e, boolean retryReq) {
-            if (retryReq) {
-              Endpoint url;
-              try {
-                url = it.nextOrError(e);
-              } catch (SolrServerException ex) {
-                asyncListener.onFailure(e);
-                return;
-              }
-              try {
-                MDC.put("LBSolrClient.url", url.toString());
-                synchronized (cancelled) {
-                  if (cancelled.get()) {
-                    return;
+    CompletableFuture<Rsp> cf =
+        requestAsync(req)
+            .whenComplete(
+                (rsp, t) -> {
+                  if (t != null) {
+                    asyncListener.onFailure(t);
+                  } else {
+                    asyncListener.onSuccess(rsp);
                   }
-                  Cancellable cancellable =
-                      doRequest(url, req, rsp, isNonRetryable, it.isServingZombieServer(), this);
-                  currentCancellable.set(cancellable);
-                }
-              } finally {
-                MDC.remove("LBSolrClient.url");
-              }
-            } else {
-              asyncListener.onFailure(e);
-            }
-          }
-        };
-    try {
-      Cancellable cancellable =
-          doRequest(
-              it.nextOrError(),
-              req,
-              rsp,
-              isNonRetryable,
-              it.isServingZombieServer(),
-              retryListener);
-      currentCancellable.set(cancellable);
-    } catch (SolrServerException e) {
-      asyncListener.onFailure(e);
-    }
-    return () -> {
-      synchronized (cancelled) {
-        cancelled.set(true);
-        if (currentCancellable.get() != null) {
-          currentCancellable.get().cancel();
-        }
-      }
-    };
+                });
+    return () -> cf.cancel(true);
   }
 
   public CompletableFuture<Rsp> requestAsync(Req req) {
@@ -258,75 +205,6 @@ public class LBHttp2SolrClient extends LBSolrClient {
     void onSuccess(Rsp rsp);
 
     void onFailure(Exception e, boolean retryReq);
-  }
-
-  private Cancellable doRequest(
-      Endpoint endpoint,
-      Req req,
-      Rsp rsp,
-      boolean isNonRetryable,
-      boolean isZombie,
-      RetryListener listener) {
-    rsp.server = endpoint.toString();
-    req.getRequest().setBasePath(endpoint.toString());
-    return ((Http2SolrClient) getClient(endpoint))
-        .asyncRequest(
-            req.getRequest(),
-            null,
-            new AsyncListener<>() {
-              @Override
-              public void onSuccess(NamedList<Object> result) {
-                rsp.rsp = result;
-                if (isZombie) {
-                  zombieServers.remove(endpoint);
-                }
-                listener.onSuccess(rsp);
-              }
-
-              @Override
-              public void onFailure(Throwable oe) {
-                try {
-                  throw (Exception) oe;
-                } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-                  listener.onFailure(e, false);
-                } catch (SolrException e) {
-                  // we retry on 404 or 403 or 503 or 500
-                  // unless it's an update - then we only retry on connect exception
-                  if (!isNonRetryable && RETRY_CODES.contains(e.code())) {
-                    listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
-                  } else {
-                    // Server is alive but the request was likely malformed or invalid
-                    if (isZombie) {
-                      zombieServers.remove(endpoint);
-                    }
-                    listener.onFailure(e, false);
-                  }
-                } catch (SocketException e) {
-                  if (!isNonRetryable || e instanceof ConnectException) {
-                    listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
-                  } else {
-                    listener.onFailure(e, false);
-                  }
-                } catch (SocketTimeoutException e) {
-                  if (!isNonRetryable) {
-                    listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
-                  } else {
-                    listener.onFailure(e, false);
-                  }
-                } catch (SolrServerException e) {
-                  Throwable rootCause = e.getRootCause();
-                  if (!isNonRetryable && rootCause instanceof IOException) {
-                    listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
-                  } else if (isNonRetryable && rootCause instanceof ConnectException) {
-                    listener.onFailure((!isZombie) ? addZombie(endpoint, e) : e, true);
-                  } else {
-                    listener.onFailure(e, false);
-                  }
-                } catch (Exception e) {
-                  listener.onFailure(new SolrServerException(e), false);
-                }
-              }
-            });
   }
 
   private CompletableFuture<NamedList<Object>> doAsyncRequest(

@@ -106,6 +106,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
       if (useDeprecatedApi) {
         try {
+          // This is just a formality.  This is a single-threaded test.
           cdl.await(1, TimeUnit.MINUTES);
         } catch (InterruptedException ie) {
           Thread.currentThread().interrupt();
@@ -153,8 +154,9 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       }
 
       // TODO: LBHttp2SolrClient creates a new "endpoint iterator" per request, thus
-      //       all requests go to the first endpoint.  Maybe, we should be re-using the
-      //       logic from LBSolrClient#request to pick use (default) round-robin
+      //       all requests go to the first endpoint.  I am not sure whether this was
+      //       intended.  Maybe, we should be re-using the logic from
+      //       LBSolrClient#request to pick use (default) round-robin
       //       and retain the ability for users to override "pickServer".
       //
       // assertEquals("expected 1/2 requests to go to endpoint one.", halfLimit, numEndpointOne);
@@ -163,10 +165,6 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
       assertEquals(limit, client.lastSolrRequests.size());
       assertEquals(limit, client.lastCollections.size());
-      if (useDeprecatedApi) {
-        assertEquals(limit, client.lastAsyncListeners.size());
-        assertFalse(client.cancelled);
-      }
     }
   }
 
@@ -211,8 +209,6 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     public List<SolrRequest<?>> lastSolrRequests = new ArrayList<>();
     public List<String> lastCollections = new ArrayList<>();
-    public List<AsyncListener<NamedList<Object>>> lastAsyncListeners = new ArrayList<>();
-    public boolean cancelled = false;
 
     public Exception failure = null;
 
@@ -228,18 +224,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         SolrRequest<?> solrRequest,
         String collection,
         AsyncListener<NamedList<Object>> asyncListener) {
-      asyncListener.onStart();
-      lastSolrRequests.add(solrRequest);
-      lastCollections.add(collection);
-      lastAsyncListeners.add(asyncListener);
-
-      if (failure == null) {
-        String id = solrRequest.getParams().get("q");
-        asyncListener.onSuccess(generateResponse(solrRequest));
-      } else {
-        asyncListener.onFailure(failure);
-      }
-      return () -> this.cancelled = true;
+      throw new UnsupportedOperationException("do not use deprecated method.");
     }
 
     @Override
