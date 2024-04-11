@@ -34,6 +34,11 @@ public class PropertiesOutputStream extends OutputStream {
   }
 
   @Override
+  public void write(byte[] b, int off, int len) throws IOException {
+    out.writeBytes(b, off, len);
+  }
+
+  @Override
   public void close() throws IOException {
     super.close();
     out.close();
