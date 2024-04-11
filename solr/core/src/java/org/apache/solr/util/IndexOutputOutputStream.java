@@ -25,7 +25,7 @@ import org.apache.lucene.store.IndexOutput;
  */
 public class IndexOutputOutputStream extends OutputStream {
 
-  private IndexOutput out;
+  private final IndexOutput out;
 
   public IndexOutputOutputStream(IndexOutput out) {
     this.out = out;
