@@ -17,8 +17,10 @@
 package org.apache.solr.common.params;
 
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.request.RequestParamsSupplier;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.handler.component.HttpShardHandler;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.junit.Test;
 
 /**
@@ -59,7 +61,7 @@ public class ShardParamsTest extends SolrTestCase {
   }
 
   public void testRequireZkConnected() {
-    assertEquals(ShardParams.REQUIRE_ZK_CONNECTED, "requireZkConnected");
+    assertEquals(HttpShardHandler.REQUIRE_ZK_CONNECTED, "requireZkConnected");
   }
 
   public void testShardsPurpose() {
@@ -77,31 +79,31 @@ public class ShardParamsTest extends SolrTestCase {
   @Test
   public void testGetShardsTolerantAsBool() {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    RequestParamsSupplier paramsSupplier = () -> params;
+    SolrQueryRequest paramsSupplier = new SolrQueryRequestBase(null, params) {};
     // shards.tolerant param is not set; default should be false
-    assertFalse(ShardParams.getShardsTolerantAsBool(paramsSupplier));
+    assertFalse(HttpShardHandler.getShardsTolerantAsBool(paramsSupplier));
 
     // shards.tolerant boolean true param should return true
     for (String trueValue : new String[] {"true", "yes", "on"}) {
       params.set(ShardParams.SHARDS_TOLERANT, trueValue);
-      assertTrue(ShardParams.getShardsTolerantAsBool(paramsSupplier));
+      assertTrue(HttpShardHandler.getShardsTolerantAsBool(paramsSupplier));
     }
 
     // shards.tolerant boolean false param should return false
     for (String falseValue : new String[] {"false", "no", "off"}) {
       params.set(ShardParams.SHARDS_TOLERANT, falseValue);
-      assertFalse(ShardParams.getShardsTolerantAsBool(paramsSupplier));
+      assertFalse(HttpShardHandler.getShardsTolerantAsBool(paramsSupplier));
     }
 
     // shards.tolerant=requireZkConnected should return false
-    params.set(ShardParams.SHARDS_TOLERANT, ShardParams.REQUIRE_ZK_CONNECTED);
-    assertFalse(ShardParams.getShardsTolerantAsBool(paramsSupplier));
+    params.set(ShardParams.SHARDS_TOLERANT, HttpShardHandler.REQUIRE_ZK_CONNECTED);
+    assertFalse(HttpShardHandler.getShardsTolerantAsBool(paramsSupplier));
 
     // values that aren't "requireZkConnected" or boolean should throw an exception
     params.set(ShardParams.SHARDS_TOLERANT, "bogusValue");
     Exception exception =
         expectThrows(
-            SolrException.class, () -> ShardParams.getShardsTolerantAsBool(paramsSupplier));
+            SolrException.class, () -> HttpShardHandler.getShardsTolerantAsBool(paramsSupplier));
     assertTrue(
         exception.getMessage(), exception.getMessage().startsWith("invalid boolean value: "));
   }

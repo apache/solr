@@ -20,8 +20,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.Objects;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.response.SolrQueryResponse;
@@ -64,7 +64,7 @@ public class SolrResponseUtil {
         }
       }
     } catch (Exception ex) {
-      if (rb != null && ShardParams.getShardsTolerantAsBool(rb.req)) {
+      if (rb != null && HttpShardHandler.getShardsTolerantAsBool(rb.req)) {
         return null;
       } else {
         throw new SolrException(

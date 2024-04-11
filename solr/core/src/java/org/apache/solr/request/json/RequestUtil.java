@@ -16,7 +16,6 @@
  */
 package org.apache.solr.request.json;
 
-import static org.apache.solr.common.params.CommonParams.ALLOW_PARTIAL_RESULTS;
 import static org.apache.solr.common.params.CommonParams.FL;
 import static org.apache.solr.common.params.CommonParams.FQ;
 import static org.apache.solr.common.params.CommonParams.JSON;
@@ -238,8 +237,6 @@ public class RequestUtil {
           arr = true;
         } else if ("offset".equals(key)) {
           out = START;
-        } else if ("allowPartialResults".equals(key)) {
-          out = ALLOW_PARTIAL_RESULTS;
         } else if ("limit".equals(key)) {
           out = ROWS;
         } else if (SORT.equals(key)) {

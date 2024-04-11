@@ -124,7 +124,8 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     Map<?, ?> header = (Map<?, ?>) (res.get("responseHeader"));
     assertTrue(
         "Should have partial results",
-        (Boolean) (header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)));
+        Boolean.parseBoolean(
+            "" + header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)));
 
     assertEquals(
         "Should NOT have inserted partial results in the cache!",
@@ -186,7 +187,8 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
     assertTrue("Should have fewer docs than " + NUM_DOCS, (long) (body.get("numFound")) < NUM_DOCS);
     assertTrue(
         "Should have partial results",
-        (Boolean) (header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY)));
+        Boolean.parseBoolean(
+            "" + (header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))));
 
     response = JQ(req("q", q, "indent", "true", "timeAllowed", longTimeout));
 

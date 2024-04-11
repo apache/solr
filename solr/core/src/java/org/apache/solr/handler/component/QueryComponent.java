@@ -17,6 +17,9 @@
 package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
+import static org.apache.solr.request.SolrQueryRequest.shouldDiscardPartials;
+import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
+import static org.apache.solr.response.SolrQueryResponse.partialResultsStatus;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -1024,11 +1027,8 @@ public class QueryComponent extends SearchComponent {
                         rb, srsp, "responseHeader", false));
       }
 
-      final boolean thisResponseIsPartial;
-      thisResponseIsPartial =
-          Boolean.TRUE.equals(
-              responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-      thereArePartialResults |= thisResponseIsPartial;
+      final boolean thisResponseIsIncomplete = !haveCompleteResults(responseHeader);
+      thereArePartialResults |= thisResponseIsIncomplete;
 
       if (!Boolean.TRUE.equals(segmentTerminatedEarly)) {
         final Object ste =
@@ -1066,7 +1066,7 @@ public class QueryComponent extends SearchComponent {
       // if partial results are being returned from the shard, then skip merging the results for the
       // shard. This avoids an exception below. if the shard returned partial results but we don't
       // need to unmarshal (a normal scoring query), then merge what we got.
-      if (thisResponseIsPartial && sortFieldValues.size() == 0 && needsUnmarshalling) {
+      if (thisResponseIsIncomplete && sortFieldValues.size() == 0 && needsUnmarshalling) {
         continue;
       }
 
@@ -1150,11 +1150,12 @@ public class QueryComponent extends SearchComponent {
 
     populateNextCursorMarkFromMergedShards(rb);
 
-    if (thereArePartialResults && !rb.req.shouldDiscardPartials()) {
+    if (thereArePartialResults) {
+      Object partialResults = partialResultsStatus(shouldDiscardPartials(rb.req.getParams()));
       rb.rsp
           .getResponseHeader()
           .asShallowMap()
-          .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+          .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, partialResults);
     }
     if (segmentTerminatedEarly != null) {
       final Object existingSegmentTerminatedEarly =
@@ -1374,10 +1375,8 @@ public class QueryComponent extends SearchComponent {
                   (NamedList<?>)
                       SolrResponseUtil.getSubsectionFromShardResponse(
                           rb, srsp, "responseHeader", false));
-          if (Boolean.TRUE.equals(
-              responseHeader.getBooleanArg(
-                  SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-            rb.rsp.setPartialResults();
+          if (!haveCompleteResults(responseHeader)) { // partial or omitted partials
+            rb.rsp.setPartialResults(rb.req);
             rb.rsp.addPartialResponseDetail(
                 responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY));
           }

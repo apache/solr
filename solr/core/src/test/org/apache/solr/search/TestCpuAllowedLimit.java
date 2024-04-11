@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search;
 
-import static org.apache.solr.client.solrj.request.RequestParamsSupplier.SOLR_DISLIKE_PARTIAL_RESULTS;
+import static org.apache.solr.request.SolrQueryRequest.SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -41,7 +41,7 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
 
   @Rule
   public TestRule syspropRestore =
-      new TestRuleRestoreSystemProperties(SOLR_DISLIKE_PARTIAL_RESULTS);
+      new TestRuleRestoreSystemProperties(SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -250,11 +250,13 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 "prepare,process"));
     // System.err.println("rsp=" + rsp.jsonStr());
     assertEquals(rsp.getHeader().get("status"), 0);
+    assertNull(rsp.getHeader().get("partialResults"));
+    assertNotEquals(0, rsp.getResults().size());
     Number qtime = (Number) rsp.getHeader().get("QTime");
     assertTrue("QTime expected " + qtime + " >> " + sleepMs, qtime.longValue() > sleepMs);
     assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
 
-    // timeAllowed set, should return partial results
+    // timeAllowed set, but should not return partial results
     log.info("--- timeAllowed expires, but should not have partial results ---");
     rsp =
         solrClient.query(
@@ -272,8 +274,9 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 "prepare,process",
                 "timeAllowed",
                 "500"));
-    assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
     assertEquals(0, rsp.getResults().size());
+    assertEquals(
+        "should not have partial results", "omitted", rsp.getHeader().get("partialResults"));
 
     // cpuAllowed set with large value, should return full results
     log.info("--- cpuAllowed, full results ---");
@@ -295,8 +298,8 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 "1000"));
     assertNull("should have full results", rsp.getHeader().get("partialResults"));
 
-    // cpuAllowed set, should return partial results
-    log.info("--- cpuAllowed 1, partial results ---");
+    // cpuAllowed set, but should not return partial results
+    log.info("--- cpuAllowed 1, no partial results ---");
     rsp =
         solrClient.query(
             COLLECTION,
@@ -313,28 +316,8 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 "prepare,process",
                 "cpuAllowed",
                 "50"));
-    assertNull("should not have partial results", rsp.getHeader().get("partialResults"));
-    assertEquals(0, rsp.getResults().size());
-
-    // cpuAllowed set, should return partial results
-    log.info("--- cpuAllowed 2, partial results ---");
-    rsp =
-        solrClient.query(
-            COLLECTION,
-            params(
-                "q",
-                "id:*",
-                "allowPartialResults",
-                "false",
-                "sort",
-                "id desc",
-                ExpensiveSearchComponent.CPU_LOAD_COUNT_PARAM,
-                "10",
-                "stages",
-                "prepare,process",
-                "cpuAllowed",
-                "50"));
-    assertNull("should have partial results", rsp.getHeader().get("partialResults"));
+    assertEquals(
+        "should not have partial results", "omitted", rsp.getHeader().get("partialResults"));
     assertEquals(0, rsp.getResults().size());
   }
 }

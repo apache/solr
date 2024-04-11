@@ -16,12 +16,6 @@
  */
 package org.apache.solr.common.params;
 
-import static org.apache.solr.common.params.CommonParams.ALLOW_PARTIAL_RESULTS;
-
-import org.apache.solr.client.solrj.request.RequestParamsSupplier;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.StrUtils;
-
 /**
  * Parameters used for distributed search.
  *
@@ -63,7 +57,7 @@ public interface ShardParams {
   /** Request detailed match info for each shard (true/false) */
   String SHARDS_INFO = "shards.info";
 
-  /** Should things fail if there is an error? (true/false/{@value #REQUIRE_ZK_CONNECTED}) */
+  /** Should things fail if there is an error? (true/false/requireZkConnected) */
   String SHARDS_TOLERANT = "shards.tolerant";
 
   /** query purpose for shard requests */
@@ -106,43 +100,4 @@ public interface ShardParams {
 
   /** Force a single-pass distributed query? (true/false) */
   String DISTRIB_SINGLE_PASS = "distrib.singlePass";
-
-  /**
-   * Throw an error from search requests when the {@value #SHARDS_TOLERANT} param has this value and
-   * ZooKeeper is not connected.
-   *
-   * @see #getShardsTolerantAsBool(RequestParamsSupplier)
-   */
-  String REQUIRE_ZK_CONNECTED = "requireZkConnected";
-
-  /**
-   * Parse the {@value #SHARDS_TOLERANT} param from <code>params</code> as a boolean; accepts
-   * {@value #REQUIRE_ZK_CONNECTED} as a valid value indicating <code>false</code>.
-   *
-   * <p>By default, returns <code>false</code> when {@value #SHARDS_TOLERANT} is not set in <code>
-   * params</code>.
-   */
-  static boolean getShardsTolerantAsBool(RequestParamsSupplier req) {
-    String shardsTolerantValue = req.getParams().get(SHARDS_TOLERANT);
-    if (null == shardsTolerantValue || shardsTolerantValue.equals(REQUIRE_ZK_CONNECTED)) {
-      return false;
-    } else {
-      boolean tolerant = StrUtils.parseBool(shardsTolerantValue);
-      if (tolerant && req.shouldDiscardPartials()) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "Use of "
-                + SHARDS_TOLERANT
-                + " requires that "
-                + ALLOW_PARTIAL_RESULTS
-                + " is true. If "
-                + ALLOW_PARTIAL_RESULTS
-                + " is defaulted to true for this handler or system wide, explicitly"
-                + "passing "
-                + ALLOW_PARTIAL_RESULTS
-                + "=true will allow shards.tolerant to work");
-      }
-      return tolerant; // throw an exception if non-boolean
-    }
-  }
 }

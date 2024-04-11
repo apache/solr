@@ -16,7 +16,8 @@
  */
 package org.apache.solr.search;
 
-import static org.apache.solr.request.SolrRequestInfo.shouldKeepPartials;
+import static org.apache.solr.request.SolrRequestInfo.shouldDiscardPartials;
+import static org.apache.solr.response.SolrQueryResponse.partialResultsStatus;
 
 import com.codahale.metrics.Gauge;
 import java.io.Closeable;
@@ -279,7 +280,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         | ExitableDirectoryReader.ExitingReaderException
         | CancellableCollector.QueryCancelledException x) {
       log.warn("Query: [{}]; was timed out or canceled.", query, x);
-      qr.setPartialResults(shouldKeepPartials());
+      qr.setPartialResults(partialResultsStatus(shouldDiscardPartials()));
     } catch (EarlyTerminatingCollectorException etce) {
       if (collector instanceof DelegatingCollector) {
         ((DelegatingCollector) collector).complete();

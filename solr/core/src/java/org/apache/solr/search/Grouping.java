@@ -16,7 +16,8 @@
  */
 package org.apache.solr.search;
 
-import static org.apache.solr.request.SolrRequestInfo.shouldKeepPartials;
+import static org.apache.solr.request.SolrRequestInfo.shouldDiscardPartials;
+import static org.apache.solr.response.SolrQueryResponse.partialResultsStatus;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -463,7 +464,7 @@ public class Grouping {
       log.info("Query: {}; ", query);
       // to make WARN logged exception content more visible
       log.warn("Query: {}; ", query.getClass().getName(), x);
-      qr.setPartialResults(shouldKeepPartials());
+      qr.setPartialResults(partialResultsStatus(shouldDiscardPartials()));
     }
   }
 

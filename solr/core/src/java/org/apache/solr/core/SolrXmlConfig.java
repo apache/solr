@@ -384,6 +384,9 @@ public class SolrXmlConfig {
                 log.warn("solr.xml transientCacheSize -- transient cores is deprecated");
                 builder.setTransientCacheSize(it.intVal(-1));
                 break;
+              case "allowPartialResultsDefault":
+                builder.setAllowPartialResultsDefault(it.boolVal(true));
+                break;
               case "allowUrls":
                 builder.setAllowUrls(separateStrings(it.txt()));
                 break;

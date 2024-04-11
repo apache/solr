@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.http.HttpServletRequest;
-import org.apache.solr.client.solrj.request.RequestParamsSupplier;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -79,11 +78,11 @@ public class SolrRequestInfo {
   }
 
   public static boolean shouldDiscardPartials() {
-    return getRequest().map(RequestParamsSupplier::shouldDiscardPartials).orElse(false);
-  }
-
-  public static boolean shouldKeepPartials() {
-    return !shouldDiscardPartials();
+    return getRequest()
+        .map(
+            solrQueryRequest ->
+                SolrQueryRequest.shouldDiscardPartials(solrQueryRequest.getParams()))
+        .orElse(false);
   }
 
   /**
