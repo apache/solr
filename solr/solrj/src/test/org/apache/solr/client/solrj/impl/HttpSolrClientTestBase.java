@@ -555,7 +555,6 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     Cancellable[] cancellables = new Cancellable[limit]; // Deprecated API use
 
     CountDownLatch cdl = new CountDownLatch(limit);
-    List<CompletableFuture<NamedList<Object>>> futures = new ArrayList<>();
 
     try (HttpSolrClientBase client = b.build()) {
 
@@ -578,9 +577,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
           listeners[i] = new DebugAsyncListener(cdl);
           client.asyncRequest(ur, COLLECTION_1, listeners[i]);
         } else {
-          var future =
-              client.requestAsync(ur, COLLECTION_1).whenComplete((nl, e) -> cdl.countDown());
-          futures.add(future);
+          client.requestAsync(ur, COLLECTION_1).whenComplete((nl, e) -> cdl.countDown());
         }
       }
       cdl.await(1, TimeUnit.MINUTES);

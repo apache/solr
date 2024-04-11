@@ -27,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -82,7 +81,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
   @Test
   public void testAsyncWithFailures() {
 
-    //TODO: This demonstrates that the failing endpoint always gets retried, but
+    // TODO: This demonstrates that the failing endpoint always gets retried, but
     // I would expect it to be labelled as a "zombie" and be skipped with additional iterations.
 
     LBSolrClient.Endpoint ep1 = new LBSolrClient.Endpoint("http://endpoint.one");
@@ -91,50 +90,49 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     Http2SolrClient.Builder b = new Http2SolrClient.Builder("http://base.url");
     try (MockHttp2SolrClient client = new MockHttp2SolrClient("http://base.url", b);
-         LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
+        LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
 
-        for(int j=0 ; j<2 ; j++){
-          // j: first time Endpoint One will retrun error code 500.
-          // second time Endpoint One will be healthy
+      for (int j = 0; j < 2; j++) {
+        // j: first time Endpoint One will retrun error code 500.
+        // second time Endpoint One will be healthy
 
-          String basePathToSucceed;
-          if(j ==0) {
-            client.basePathToFail = ep1.getBaseUrl();
-            basePathToSucceed = ep2.getBaseUrl();
+        String basePathToSucceed;
+        if (j == 0) {
+          client.basePathToFail = ep1.getBaseUrl();
+          basePathToSucceed = ep2.getBaseUrl();
+        } else {
+          client.basePathToFail = ep2.getBaseUrl();
+          basePathToSucceed = ep1.getBaseUrl();
+        }
+
+        for (int i = 0; i < 10; i++) {
+          // i: we'll try 10 times to see if it behaves the same every time.
+
+          QueryRequest queryRequest = new QueryRequest(new MapSolrParams(Map.of("q", "" + i)));
+          LBSolrClient.Req req = new LBSolrClient.Req(queryRequest, endpointList);
+          String iterMessage = "iter j/i " + j + "/" + i;
+          try {
+            testClient.requestAsync(req).get(1, TimeUnit.MINUTES);
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            fail("interrupted");
+          } catch (TimeoutException | ExecutionException e) {
+            fail(iterMessage + " Response ended in failure: " + e);
+          }
+          if (j == 0) {
+            // The first endpoint gives an exception, so it retries.
+            assertEquals(iterMessage, 2, client.lastBasePaths.size());
+
+            String failedBasePath = client.lastBasePaths.remove(0);
+            assertEquals(iterMessage, client.basePathToFail, failedBasePath);
           } else {
-            client.basePathToFail = ep2.getBaseUrl();
-            basePathToSucceed = ep1.getBaseUrl();
+            // The first endpoint does not give the exception, it doesn't retry.
+            assertEquals(iterMessage, 1, client.lastBasePaths.size());
           }
-
-          for (int i = 0; i < 10; i++) {
-            // i: we'll try 10 times to see if it behaves the same every time.
-
-            QueryRequest queryRequest = new QueryRequest(new MapSolrParams(Map.of("q", "" + i)));
-            LBSolrClient.Req req = new LBSolrClient.Req(queryRequest, endpointList);
-            String iterMessage = "iter j/i " + j + "/" + i;
-            try {
-              testClient.requestAsync(req).get(1, TimeUnit.MINUTES);
-            } catch (InterruptedException ie) {
-              Thread.currentThread().interrupt();
-              fail("interrupted");
-            } catch (TimeoutException | ExecutionException e) {
-              fail(iterMessage + " Response ended in failure: " + e);
-            }
-            if(j==0) {
-              // The first endpoint gives an exception, so it retries.
-              assertEquals(iterMessage, 2, client.lastBasePaths.size());
-
-              String failedBasePath = client.lastBasePaths.remove(0);
-              assertEquals(iterMessage, client.basePathToFail, failedBasePath);
-            } else {
-              // The first endpoint does not give the exception, it doesn't retry.
-              assertEquals(iterMessage, 1, client.lastBasePaths.size());
-            }
-            String successBasePath = client.lastBasePaths.remove(0);
-            assertEquals(iterMessage, basePathToSucceed, successBasePath);
-          }
+          String successBasePath = client.lastBasePaths.remove(0);
+          assertEquals(iterMessage, basePathToSucceed, successBasePath);
+        }
       }
-
     }
   }
 
@@ -301,10 +299,10 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       lastBasePaths.add(solrRequest.getBasePath());
       lastCollections.add(collection);
       if (solrRequest.getBasePath().equals(basePathToFail)) {
-        cf.completeExceptionally(new SolrException(SolrException.ErrorCode.SERVER_ERROR, "We should retry this."));
+        cf.completeExceptionally(
+            new SolrException(SolrException.ErrorCode.SERVER_ERROR, "We should retry this."));
       } else {
         cf.complete(generateResponse(solrRequest));
-
       }
       return cf;
     }

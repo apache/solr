@@ -128,10 +128,9 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
   /**
    * @deprecated Use {@link #requestAsync(Req)}.
-   *
    * @param req the wrapped request to perform
    * @param asyncListener callers should provide an implementation to handle events: start, success,
-   *        exception
+   *     exception
    * @return Cancellable allowing the caller to attempt cancellation
    */
   @Deprecated
@@ -233,7 +232,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
     rsp.server = baseUrl;
     req.getRequest().setBasePath(baseUrl);
     CompletableFuture<NamedList<Object>> future =
-            ((Http2SolrClient) getClient(endpoint)).requestAsync(req.getRequest());
+        ((Http2SolrClient) getClient(endpoint)).requestAsync(req.getRequest());
     future.whenComplete(
         (result, throwable) -> {
           if (!future.isCompletedExceptionally()) {

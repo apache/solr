@@ -36,7 +36,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -379,8 +378,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
   protected abstract void updateDefaultMimeTypeForParser();
 
   /**
-   * @Deprecated use {@link #requestAsync(SolrRequest, String)}.
-   *
+   * @deprecated use {@link #requestAsync(SolrRequest, String)}.
    * @param solrRequest the request to perform
    * @param collection if null the default collection is used
    * @param asyncListener callers should provide an implementation to handle events: start, success,
@@ -394,7 +392,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
       AsyncListener<NamedList<Object>> asyncListener);
 
   /**
-   * <p>Execute an asynchronous request against a Solr server for a given collection.
+   * Execute an asynchronous request against a Solr server for a given collection.
    *
    * @param request the request to execute
    * @param collection the collection to execute the request against
@@ -407,10 +405,10 @@ public abstract class HttpSolrClientBase extends SolrClient {
    *     contain a {@link NamedList} with the response from the server.
    */
   public abstract CompletableFuture<NamedList<Object>> requestAsync(
-          final SolrRequest<?> request, String collection) ;
+      final SolrRequest<?> request, String collection);
 
   /**
-   * <p>Execute an asynchronous request against a Solr server using the default collection.
+   * Execute an asynchronous request against a Solr server using the default collection.
    *
    * @param request the request to execute
    * @return a {@link CompletableFuture} see {@link #requestAsync(SolrRequest, String)}.
