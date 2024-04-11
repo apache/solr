@@ -20,11 +20,14 @@ import java.io.IOException;
 import java.io.OutputStream;
 import org.apache.lucene.store.IndexOutput;
 
-public class PropertiesOutputStream extends OutputStream {
+/**
+ * Wraps an {@link IndexOutput} to expose it as an {@link OutputStream}.
+ */
+public class IndexOutputOutputStream extends OutputStream {
 
   private IndexOutput out;
 
-  public PropertiesOutputStream(IndexOutput out) {
+  public IndexOutputOutputStream(IndexOutput out) {
     this.out = out;
   }
 
@@ -40,7 +43,6 @@ public class PropertiesOutputStream extends OutputStream {
 
   @Override
   public void close() throws IOException {
-    super.close();
     out.close();
   }
 }

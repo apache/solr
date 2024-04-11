@@ -170,7 +170,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.IOFunction;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
-import org.apache.solr.util.PropertiesOutputStream;
+import org.apache.solr.util.IndexOutputOutputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
@@ -1514,7 +1514,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     Writer os = null;
     try {
       IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
-      os = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
+      os = new OutputStreamWriter(new IndexOutputOutputStream(out), StandardCharsets.UTF_8);
       p.store(os, IndexFetcher.INDEX_PROPERTIES);
       dir.sync(Collections.singleton(tmpFileName));
     } catch (Exception e) {
