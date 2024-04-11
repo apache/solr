@@ -238,7 +238,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
       RetryListener listener) {
     rsp.rsp = result;
     if (isZombie) {
-      zombieServers.remove(endpoint);
+      zombieServers.remove(endpoint.toString());
     }
     listener.onSuccess(rsp);
   }
@@ -261,7 +261,7 @@ public class LBHttp2SolrClient extends LBSolrClient {
       } else {
         // Server is alive but the request was likely malformed or invalid
         if (isZombie) {
-          zombieServers.remove(endpoint);
+          zombieServers.remove(endpoint.toString());
         }
         listener.onFailure(e, false);
       }
