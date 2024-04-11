@@ -18,9 +18,12 @@
 package org.apache.solr.client.solrj.util;
 
 /**
+ * @deprecated Use the async variants that return CompletableFuture.
+ *
  * The return type for solrJ asynchronous requests, providing a mechanism whereby callers may
  * request cancellation.
  */
+@Deprecated(forRemoval = true)
 public interface Cancellable {
 
   /**

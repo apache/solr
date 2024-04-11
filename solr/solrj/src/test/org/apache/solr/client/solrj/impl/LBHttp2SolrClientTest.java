@@ -230,6 +230,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     }
   }
 
+  @Deprecated(forRemoval = true)
   public static class LBTestAsyncListener implements AsyncListener<LBSolrClient.Rsp> {
     private final CountDownLatch cdl;
     private volatile boolean countDownCalled = false;

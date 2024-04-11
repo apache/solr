@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Assert;
 
+@Deprecated(forRemoval = true)
 public class DebugAsyncListener
     implements AsyncListener<NamedList<Object>>, PauseableHttpSolrClient {
 

@@ -375,7 +375,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
   protected abstract void updateDefaultMimeTypeForParser();
 
   /**
-   * Execute an asynchronous request to a Solr collection
+   * @Deprecated use {@link SolrClient#requestAsync(SolrRequest, String)}.
    *
    * @param solrRequest the request to perform
    * @param collection if null the default collection is used
@@ -383,6 +383,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
    *     exception
    * @return Cancellable allowing the caller to attempt cancellation
    */
+  @Deprecated(forRemoval = true)
   public abstract Cancellable asyncRequest(
       SolrRequest<?> solrRequest,
       String collection,

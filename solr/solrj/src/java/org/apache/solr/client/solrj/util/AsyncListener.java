@@ -18,10 +18,13 @@
 package org.apache.solr.client.solrj.util;
 
 /**
+ * @deprecated Use the async variants that return CompletableFuture.
+ *
  * Listener for async requests
  *
  * @param <T> The result type returned by the {@code onSuccess} method
  */
+@Deprecated
 public interface AsyncListener<T> {
   /** Callback method invoked before processing the request */
   default void onStart() {}
