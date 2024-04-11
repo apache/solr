@@ -20,9 +20,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import org.apache.lucene.store.IndexOutput;
 
-/**
- * Wraps an {@link IndexOutput} to expose it as an {@link OutputStream}.
- */
+/** Wraps an {@link IndexOutput} to expose it as an {@link OutputStream}. */
 public class IndexOutputOutputStream extends OutputStream {
 
   private final IndexOutput out;
