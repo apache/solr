@@ -51,8 +51,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -449,14 +447,14 @@ public class CoreContainer {
             new SolrNamedThreadFactory("searcherCollector"));
     ((ExecutorUtil.MDCAwareThreadPoolExecutor) collectorExecutor)
         .setRejectedExecutionHandler(
-                (r, executor) -> {
-                  if (!executor.isShutdown()) {
-                    try {
-                      executor.getQueue().put(r);
-                    } catch (InterruptedException e) {
-                    }
-                  }
-                });
+            (r, executor) -> {
+              if (!executor.isShutdown()) {
+                try {
+                  executor.getQueue().put(r);
+                } catch (InterruptedException e) {
+                }
+              }
+            });
   }
 
   @SuppressWarnings({"unchecked"})
