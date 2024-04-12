@@ -163,13 +163,13 @@ public class HttpShardHandler extends ShardHandler {
     CompletableFuture<LBSolrClient.Rsp> future = this.lbClient.requestAsync(lbReq);
     future.whenComplete(
         (rsp, throwable) -> {
-          if (!future.isCompletedExceptionally()) {
+          if (rsp != null) {
             ssr.nl = rsp.getResponse();
             srsp.setShardAddress(rsp.getServer());
             ssr.elapsedTime =
                 TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
             responses.add(srsp);
-          } else if (!future.isCancelled()) {
+          } else if (throwable != null) {
             ssr.elapsedTime =
                 TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
             srsp.setException(throwable);
