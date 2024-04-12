@@ -554,7 +554,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     DebugAsyncListener[] listeners = new DebugAsyncListener[limit]; // Deprecated API use
     Cancellable[] cancellables = new Cancellable[limit]; // Deprecated API use
 
-    CountDownLatch cdl = new CountDownLatch(limit);
+    CountDownLatch latch = new CountDownLatch(limit);
 
     try (HttpSolrClientBase client = b.build()) {
 
@@ -574,13 +574,13 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         ur.setMethod(SolrRequest.METHOD.POST);
 
         if (useDeprecatedApi) {
-          listeners[i] = new DebugAsyncListener(cdl);
+          listeners[i] = new DebugAsyncListener(latch);
           client.asyncRequest(ur, COLLECTION_1, listeners[i]);
         } else {
-          client.requestAsync(ur, COLLECTION_1).whenComplete((nl, e) -> cdl.countDown());
+          client.requestAsync(ur, COLLECTION_1).whenComplete((nl, e) -> latch.countDown());
         }
       }
-      cdl.await(1, TimeUnit.MINUTES);
+      latch.await(1, TimeUnit.MINUTES);
       client.commit(COLLECTION_1);
 
       // check that the correct number of documents were added
@@ -606,7 +606,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
 
-    CountDownLatch cdl = new CountDownLatch(limit); // Deprecated API use
+    CountDownLatch latch = new CountDownLatch(limit); // Deprecated API use
     DebugAsyncListener[] listeners = new DebugAsyncListener[limit]; // Deprecated API use
     Cancellable[] cancellables = new Cancellable[limit]; // Deprecated API use
 
@@ -623,14 +623,14 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
             new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
         query.setMethod(SolrRequest.METHOD.GET);
         if (useDeprecatedApi) {
-          listeners[i] = new DebugAsyncListener(cdl);
+          listeners[i] = new DebugAsyncListener(latch);
           client.asyncRequest(query, null, listeners[i]);
         } else {
           futures.add(client.requestAsync(query));
         }
       }
       if (useDeprecatedApi) {
-        cdl.await(1, TimeUnit.MINUTES);
+        latch.await(1, TimeUnit.MINUTES);
       }
 
       for (int i = 0; i < limit; i++) {
@@ -669,8 +669,8 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     CompletableFuture<NamedList<Object>> future = null;
     ExecutionException ee = null;
 
-    CountDownLatch cdl = new CountDownLatch(1); // Deprecated API use
-    DebugAsyncListener listener = new DebugAsyncListener(cdl); // Deprecated API use
+    CountDownLatch latch = new CountDownLatch(1); // Deprecated API use
+    DebugAsyncListener listener = new DebugAsyncListener(latch); // Deprecated API use
 
     try (HttpSolrClientBase client = b.build()) {
       QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
@@ -680,7 +680,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         future = client.requestAsync(query, COLLECTION_1);
       }
       if (useDeprecatedApi) {
-        cdl.await(1, TimeUnit.MINUTES);
+        latch.await(1, TimeUnit.MINUTES);
       } else {
         try {
           future.get(1, TimeUnit.MINUTES);

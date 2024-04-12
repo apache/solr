@@ -148,7 +148,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       int limit = 10; // For simplicity use an even limit
       int halfLimit = limit / 2; // see TODO below
 
-      CountDownLatch cdl = new CountDownLatch(limit); // deprecated API use
+      CountDownLatch latch = new CountDownLatch(limit); // deprecated API use
       List<LBTestAsyncListener> listeners = new ArrayList<>(); // deprecated API use
       List<CompletableFuture<LBSolrClient.Rsp>> responses = new ArrayList<>();
 
@@ -156,7 +156,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         QueryRequest queryRequest = new QueryRequest(new MapSolrParams(Map.of("q", "" + i)));
         LBSolrClient.Req req = new LBSolrClient.Req(queryRequest, endpointList);
         if (useDeprecatedApi) {
-          LBTestAsyncListener listener = new LBTestAsyncListener(cdl);
+          LBTestAsyncListener listener = new LBTestAsyncListener(latch);
           listeners.add(listener);
           testClient.asyncReq(req, listener);
         } else {
@@ -167,7 +167,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       if (useDeprecatedApi) {
         try {
           // This is just a formality.  This is a single-threaded test.
-          cdl.await(1, TimeUnit.MINUTES);
+          latch.await(1, TimeUnit.MINUTES);
         } catch (InterruptedException ie) {
           Thread.currentThread().interrupt();
           fail("interrupted");
@@ -230,14 +230,14 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
   @Deprecated(forRemoval = true)
   public static class LBTestAsyncListener implements AsyncListener<LBSolrClient.Rsp> {
-    private final CountDownLatch cdl;
+    private final CountDownLatch latch;
     private volatile boolean countDownCalled = false;
     public boolean onStartCalled = false;
     public LBSolrClient.Rsp success = null;
     public Throwable failure = null;
 
-    public LBTestAsyncListener(CountDownLatch cdl) {
-      this.cdl = cdl;
+    public LBTestAsyncListener(CountDownLatch latch) {
+      this.latch = latch;
     }
 
     @Override
@@ -261,7 +261,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       if (countDownCalled) {
         throw new IllegalStateException("Already counted down.");
       }
-      cdl.countDown();
+      latch.countDown();
       countDownCalled = true;
     }
   }

@@ -288,8 +288,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
         "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     HttpJdkSolrClient.Builder b = builder(url).withResponseParser(rp);
-    CountDownLatch cdl = new CountDownLatch(0);
-    DebugAsyncListener listener = new DebugAsyncListener(cdl);
+    CountDownLatch latch = new CountDownLatch(0);
+    DebugAsyncListener listener = new DebugAsyncListener(latch);
     Cancellable cancelMe = null;
     try (HttpJdkSolrClient client = b.build()) {
       QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));

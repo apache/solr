@@ -28,7 +28,7 @@ import org.junit.Assert;
 public class DebugAsyncListener
     implements AsyncListener<NamedList<Object>>, PauseableHttpSolrClient {
 
-  private final CountDownLatch cdl;
+  private final CountDownLatch latch;
 
   public volatile boolean onStartCalled;
 
@@ -38,8 +38,8 @@ public class DebugAsyncListener
 
   public volatile Throwable onFailureResult = null;
 
-  public DebugAsyncListener(CountDownLatch cdl) {
-    this.cdl = cdl;
+  public DebugAsyncListener(CountDownLatch latch) {
+    this.latch = latch;
   }
 
   @Override
@@ -54,7 +54,7 @@ public class DebugAsyncListener
     if (latchCounted) {
       Assert.fail("either 'onSuccess' or 'onFailure' should be called exactly once.");
     }
-    cdl.countDown();
+    latch.countDown();
     latchCounted = true;
     unPause();
   }
@@ -66,7 +66,7 @@ public class DebugAsyncListener
     if (latchCounted) {
       Assert.fail("either 'onSuccess' or 'onFailure' should be called exactly once.");
     }
-    cdl.countDown();
+    latch.countDown();
     latchCounted = true;
     unPause();
   }
