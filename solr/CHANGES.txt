@@ -152,7 +152,7 @@ Bug Fixes
 
 * SOLR-17198: AffinityPlacementFactory can fail if Shard leadership changes occur while it is collecting metrics.
   (Paul McArthur)
-  
+
 * SOLR-17018: Add QueryLimits support to Learning To Rank rescoring.
     (Alessandro Benedetti)
 
@@ -168,6 +168,15 @@ Bug Fixes
 * SOLR-17200: Fix false positive race condition in `/health?requireHealthyCores=true` during core loading (hossman)
 
 * SOLR-17218: Fix indexFetcher logging to include MDC details (hossman)
+
+* SOLR-17206: Eliminate the possibility of a -1 status code for SolrCloud update requests that are distributed.
+  (Paul McArthur)
+
+* SOLR-17213: Fix spurious warnings about solr url format in Solr CLI when users aren't providing a deprecated solr url.  (Eric Pugh)
+
+* SOLR-17176: Fix log history V2 API serialization (Michael Gibney)
+
+* SOLR-11535: Fix race condition in singleton-per-collection StateWatcher creation (Michael Gibney)
 
 Dependency Upgrades
 ---------------------
