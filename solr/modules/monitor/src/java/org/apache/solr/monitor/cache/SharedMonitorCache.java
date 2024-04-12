@@ -147,7 +147,7 @@ public class SharedMonitorCache extends SolrCacheBase
               try {
                 return mappingFunction.apply(_key);
               } catch (IOException e) {
-                throw new SolrException(ErrorCode.INVALID_STATE, "Could not update cache");
+                throw new SolrException(ErrorCode.INVALID_STATE, "Could not update cache", e);
               }
             });
   }

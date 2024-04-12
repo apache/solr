@@ -47,7 +47,7 @@ public class QCEVisitor {
         return qce;
       }
     }
-    throw new IllegalStateException("Corrupt monitorQuery value in index");
+    throw new IllegalArgumentException("Corrupt monitorQuery value in index");
   }
 
   public Query getMatchQuery() {

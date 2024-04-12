@@ -23,7 +23,6 @@ import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.search.Query;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -59,7 +58,7 @@ public class SimpleQueryParser implements SolrQueryRequest {
     try {
       return QParser.getParser(queryStr, new SimpleQueryParser(core)).parse();
     } catch (SyntaxError e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "could not parse query");
+      throw new IllegalStateException("could not parse query", e);
     }
   }
 

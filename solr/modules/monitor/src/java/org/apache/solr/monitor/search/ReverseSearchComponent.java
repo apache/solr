@@ -119,8 +119,7 @@ public class ReverseSearchComponent extends SearchComponent implements SolrCoreA
         rb.rsp.add(MONITOR_OUTPUT_KEY, monitorResult);
       }
     } catch (SyntaxError e) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "Syntax error in query: " + e.getMessage());
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Syntax error in query: ", e);
     }
   }
 
