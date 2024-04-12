@@ -38,6 +38,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.monitor.DocumentBatchVisitor;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.common.SolrException;
@@ -89,8 +90,6 @@ public class ReverseSearchComponent extends SearchComponent implements SolrCoreA
     req.getContext().put(DOCUMENT_BATCH_KEY, documentBatch);
     var writeToDocListRaw = req.getParams().get(WRITE_TO_DOC_LIST_KEY, "false");
     boolean writeToDocList = Boolean.parseBoolean(writeToDocListRaw);
-    List<Query> mutableFilters =
-        Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
     var matchType = QueryMatchType.fromString(req.getParams().get(QUERY_MATCH_TYPE_KEY));
     Map<String, Object> monitorResult = new HashMap<>();
     var matcherSink = solrMatcherSinkFactory.build(matchType, documentBatch, monitorResult);
@@ -102,7 +101,10 @@ public class ReverseSearchComponent extends SearchComponent implements SolrCoreA
     try {
       Query preFilterQuery =
           QParser.getParser("{!" + ReverseQueryParserPlugin.NAME + "}", req).parse();
-      rb.setQuery(preFilterQuery);
+      List<Query> mutableFilters =
+          Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
+      rb.setQuery(new MatchAllDocsQuery());
+      mutableFilters.add(preFilterQuery);
       var searcher = req.getSearcher();
       MonitorQueryCache solrMonitorCache =
           (SharedMonitorCache) searcher.getCache(SOLR_MONITOR_CACHE_NAME);
@@ -110,7 +112,7 @@ public class ReverseSearchComponent extends SearchComponent implements SolrCoreA
       mutableFilters.add(
           new MonitorPostFilter(
               new SolrMonitorQueryCollector.CollectorContext(
-                  solrMonitorCache, queryDecoder, matcherSink, writeToDocList)));
+                  solrMonitorCache, queryDecoder, matcherSink, writeToDocList, matchType)));
       rb.setFilters(mutableFilters);
       rb.rsp.add(QUERY_MATCH_TYPE_KEY, matchType.name());
       if (matchType != QueryMatchType.NONE) {

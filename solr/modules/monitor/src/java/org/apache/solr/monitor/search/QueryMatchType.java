@@ -24,6 +24,16 @@ public enum QueryMatchType {
   HIGHLIGHTS,
   NONE;
 
+  public final boolean needsScores;
+
+  QueryMatchType() {
+    this(false);
+  }
+
+  QueryMatchType(boolean needsScores) {
+    this.needsScores = needsScores;
+  }
+
   static QueryMatchType fromString(String matchType) {
     if (SIMPLE.name().equalsIgnoreCase(matchType)) {
       return SIMPLE;
