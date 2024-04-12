@@ -8,8 +8,6 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 
 New Features
 ---------------------
-* SOLR-16466: Admin UI - Make it optional to sort list of commandline args (Shawn Heisey, Vincenzo D'Amore via Christine Poerschke)
-
 * SOLR-14496: Solr CLI commands now can interact with a Solr secured using Basic Authentication.  (Eric Pugh)
 
 Improvements
@@ -98,6 +96,8 @@ New Features
 * SOLR-599: Add a new SolrJ client using the JDK’s built-in Http Client.  (James Dyer)
 
 * SOLR-16403: A new cluster singleton plugin to automatically remove inactive shards. (Paul McArthur, David Smiley)
+
+* SOLR-16466: Admin UI - Make it optional to sort list of commandline args (Shawn Heisey, Vincenzo D'Amore via Christine Poerschke)
 
 Improvements
 ---------------------
