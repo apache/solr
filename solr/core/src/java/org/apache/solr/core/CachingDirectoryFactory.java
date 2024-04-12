@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,6 +30,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
@@ -300,9 +300,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     }
     // here we reverse-sort entries by path, in order to trivially ensure that
     // subpaths are removed before parent paths.
-    CacheValue[] ret = vals.toArray(new CacheValue[0]);
-    Arrays.sort(ret, (a, b) -> b.path.compareTo(a.path));
-    return Arrays.asList(ret);
+    return vals.stream().sorted((a, b) -> b.path.compareTo(a.path)).collect(Collectors.toList());
   }
 
   private boolean maybeDeferClose(CacheValue maybeDefer) {
