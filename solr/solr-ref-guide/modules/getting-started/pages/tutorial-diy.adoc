@@ -20,7 +20,7 @@
 [[exercise-3]]
 == Exercise 3: Index Your Own Data
 
-For this last exercise, work with a dataset of your choice.
+For this exercise, work with a dataset of your choice.
 This can be files on your local hard drive, a set of data you have worked with before, or maybe a sample of the data you intend to index to Solr for your production application.
 
 This exercise is intended to get you thinking about what you will need to do for your application:
@@ -120,3 +120,5 @@ You can also modify the above to only delete documents that match a specific que
 At this point, you're ready to start working on your own.
 
 Jump ahead to the overall xref:solr-tutorial.adoc#wrapping-up[wrap up] when you're ready to stop Solr and remove all the examples you worked with and start fresh.
+
+Or if you'd like, you could work your way through the remaining exercises.

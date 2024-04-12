@@ -1043,10 +1043,6 @@ public class MiniSolrCloudCluster {
       this.baseDir = baseDir;
 
       jettyConfigBuilder = JettyConfig.builder();
-      if (SolrTestCaseJ4.sslConfig != null) {
-        jettyConfigBuilder =
-            jettyConfigBuilder.withSSLConfig(SolrTestCaseJ4.sslConfig.buildServerSSLConfig());
-      }
     }
 
     /** Use a JettyConfig.Builder to configure the cluster's jetty servers */

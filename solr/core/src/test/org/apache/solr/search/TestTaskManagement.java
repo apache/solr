@@ -41,7 +41,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.hamcrest.Matcher;
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -69,7 +68,6 @@ public class TestTaskManagement extends SolrCloudTestCase {
     super.setUp();
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
@@ -171,9 +169,9 @@ public class TestTaskManagement extends SolrCloudTestCase {
       presentQueryIDs.add(Integer.parseInt(entry.getKey()));
     }
 
-    MatcherAssert.assertThat(presentQueryIDs.size(), betweenInclusive(0, 50));
+    assertThat(presentQueryIDs.size(), betweenInclusive(0, 50));
     for (int value : presentQueryIDs) {
-      MatcherAssert.assertThat(value, betweenInclusive(0, 49));
+      assertThat(value, betweenInclusive(0, 49));
     }
   }
 

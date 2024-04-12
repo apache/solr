@@ -17,7 +17,12 @@
 
 package org.apache.solr.cloud;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.io.IOException;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,8 +53,10 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,8 +82,8 @@ import org.slf4j.LoggerFactory;
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final Boolean USE_PER_REPLICA_STATE =
-      Boolean.parseBoolean(System.getProperty("use.per-replica", "false"));
+
+  public static final String PRS_DEFAULT_PROP = System.getProperty("use.per-replica", null);
 
   // this is an important timeout for test stability - can't be too short
   public static final int DEFAULT_TIMEOUT = 45;
@@ -88,6 +95,13 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     ZkStateReader reader = cluster.getZkStateReader();
     if (reader == null) cluster.getSolrClient().connect();
     return cluster.getZkStateReader().getZkClient();
+  }
+
+  /** if the system property is not specified, use a random value */
+  public static boolean isPRS() {
+    return PRS_DEFAULT_PROP == null
+        ? random().nextBoolean()
+        : Boolean.parseBoolean(PRS_DEFAULT_PROP);
   }
 
   /**
@@ -120,6 +134,34 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       } finally {
         cluster = null;
       }
+    }
+  }
+
+  @BeforeClass
+  public static void setPrsDefault() {
+    Class<?> target = RandomizedTest.getContext().getTargetClass();
+    if (target != null && target.isAnnotationPresent(NoPrs.class)) return;
+    if (isPRS()) {
+      System.setProperty("solr.prs.default", "true");
+    }
+  }
+
+  @After
+  public void _unsetPrsDefault() {
+    unsetPrsDefault();
+  }
+
+  @Before
+  public void _setPrsDefault() {
+    setPrsDefault();
+  }
+
+  @AfterClass
+  public static void unsetPrsDefault() {
+    Class<?> target = RandomizedTest.getContext().getTargetClass();
+    if (target != null && target.isAnnotationPresent(NoPrs.class)) return;
+    if (isPRS()) {
+      System.clearProperty("solr.prs.default");
     }
   }
 
@@ -385,4 +427,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
     return replicaTypeMap;
   }
+
+  /**
+   * A marker interface to Ignore PRS in tests. This is for debugging purposes to ensure that PRS is
+   * causing test failures
+   */
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.TYPE)
+  public @interface NoPrs {}
 }

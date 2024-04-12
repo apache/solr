@@ -53,6 +53,7 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import net.jcip.annotations.ThreadSafe;
@@ -343,6 +344,40 @@ public class HttpSolrCall {
     log.debug("no handler or core retrieved for {}, follow through...", path);
 
     action = PASSTHROUGH;
+  }
+
+  /**
+   * Resolves the specified collection name to a {@link DocCollection} object. If Solr is not in
+   * cloud mode, a {@link SolrException} is thrown. Returns null if the collection name is null or
+   * empty. Retrieves the {@link DocCollection} using the {@link ZkStateReader} from {@link
+   * CoreContainer}. If the collection is null, updates the state by refreshing aliases and forcing
+   * a collection update.
+   */
+  protected DocCollection resolveDocCollection(String collectionName) {
+    if (!cores.isZooKeeperAware()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Solr not running in cloud mode ");
+    }
+    if (collectionName == null || collectionName.trim().isEmpty()) {
+      return null;
+    }
+    ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
+    Supplier<DocCollection> logic =
+        () -> zkStateReader.getClusterState().getCollectionOrNull(collectionName);
+
+    DocCollection docCollection = logic.get();
+    if (docCollection != null) {
+      return docCollection;
+    }
+    // ensure our view is up to date before trying again
+    try {
+      zkStateReader.aliasesManager.update();
+      zkStateReader.forceUpdateCollection(collectionName);
+    } catch (Exception e) {
+      log.error("Error trying to update state while resolving collection.", e);
+      // don't propagate exception on purpose
+    }
+    return logic.get();
   }
 
   protected void autoCreateSystemColl(String corename) throws Exception {
@@ -1030,15 +1065,21 @@ public class HttpSolrCall {
     return result;
   }
 
+  /**
+   * Retrieves a SolrCore instance associated with the specified collection name, with an option to
+   * prefer leader replicas. Makes a call to {@link #resolveDocCollection} which make an attempt to
+   * force update collection if it is not found in local cluster state
+   */
   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
-
     ClusterState clusterState = zkStateReader.getClusterState();
-    DocCollection collection = clusterState.getCollectionOrNull(collectionName, true);
+    DocCollection collection = resolveDocCollection(collectionName);
+    // the usage of getCoreByCollection assumes that if null is returned, collection is found, but
+    // replicas might not
+    // have been created. Hence returning null here would be misleading...
     if (collection == null) {
       return null;
     }
-
     Set<String> liveNodes = clusterState.getLiveNodes();
 
     if (isPreferLeader) {

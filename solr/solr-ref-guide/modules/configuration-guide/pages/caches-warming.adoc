@@ -170,6 +170,9 @@ The more fields you store in your documents, the higher the memory usage of this
                autowarmCount="0"/>
 ----
 
+[NOTE]
+Do not use the `maxRamMB` setting for the `documentCache`. The amount of memory required for the cached documents will not be calculated properly, which can lead to the cache using much more memory than anticipated.
+
 === User Defined Caches
 
 You can also define named caches for your own application code to use.
