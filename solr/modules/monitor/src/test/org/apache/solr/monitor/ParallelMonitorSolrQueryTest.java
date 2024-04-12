@@ -44,7 +44,6 @@ public class ParallelMonitorSolrQueryTest extends MonitorSolrQueryTest {
 
   @Test
   public void manySegmentsQuery() throws Exception {
-    del("*:*");
     int count = 10_000;
     IntStream.range(0, count)
         .forEach(

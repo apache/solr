@@ -31,7 +31,6 @@ public class StoredMonitorSolrQueryTest extends MonitorSolrQueryTest {
 
   @Test
   public void indexBigQueryTest() throws Exception {
-    del("*:*");
     index(
         id, Integer.toString(0), "_mq", "{!xmlparser}" + read("/monitor/BigDisjunctionQuery.xml"));
     commit();

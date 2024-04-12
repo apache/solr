@@ -50,7 +50,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   @Test
   @ShardsFixed(num = 3)
   public void testMonitorQuery() throws Exception {
-    del("*:*");
     index(id, Integer.toString(0), "_mq", "content_s:\"elevator music\"");
     index(
         id,
@@ -126,7 +125,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   @Test
   @ShardsFixed(num = 3)
   public void testNoDocListInResponse() throws Exception {
-    del("*:*");
     index(id, Integer.toString(0), "_mq", "content_s:\"elevator music\"");
     index(
         id,
@@ -167,7 +165,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
 
   @Test
   public void testDefaultParser() throws Exception {
-    del("*:*");
     index(id, Integer.toString(0), "_mq", "content_s:\"elevator stairs\"");
     index(id, Integer.toString(1), "_mq", "content_s:\"something else\"");
     commit();
@@ -198,7 +195,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   @Test
   @ShardsFixed(num = 2)
   public void testDisjunctionQuery() throws Exception {
-    del("*:*");
     index(
         id,
         Integer.toString(0),
@@ -238,7 +234,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
 
   @Test
   public void testNoDanglingDecomposition() throws Exception {
-    del("*:*");
     index(
         id,
         Integer.toString(0),
@@ -286,7 +281,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
 
   @Test
   public void testNotQuery() throws Exception {
-    del("*:*");
     index(id, Integer.toString(0), "_mq", "*:* -content0_s:\"elevator stairs\"");
     index(id, Integer.toString(1), "_mq", "*:* -content_s:\"candy canes\"");
     commit();
@@ -315,7 +309,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
 
   @Test
   public void testWildCardQuery() throws Exception {
-    del("*:*");
     index(id, Integer.toString(0), "_mq", "content_s:te*");
     index(id, Integer.toString(1), "_mq", "content_s:tes*");
     index(id, Integer.toString(2), "_mq", "content_s:test*");
@@ -352,7 +345,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   @Test
   @ShardsFixed(num = 2)
   public void testDefaultQueryMatchTypeIsNone() throws Exception {
-    del("*:*");
     index(id, Integer.toString(0), "_mq", "content_s:\"elevator stairs\"");
     index(id, Integer.toString(1), "_mq", "content_s:\"something else\"");
     commit();
@@ -383,7 +375,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   @Test
   @ShardsFixed(num = 2)
   public void testMultiDocHighlightMatchType() throws Exception {
-    del("*:*");
     index(id, Integer.toString(0), "_mq", "content0_offset_s:\"elevator stairs\"");
     index(
         id,
@@ -451,7 +442,6 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
 
   @Test
   public void testHighlightMatchType() throws Exception {
-    del("*:*");
     index(id, Integer.toString(0), "_mq", "content0_s:\"elevator stairs\"");
     index(
         id,
