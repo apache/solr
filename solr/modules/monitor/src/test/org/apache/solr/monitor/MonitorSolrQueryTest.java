@@ -497,6 +497,44 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     }
   }
 
+  @Test
+  public void testDeleteByQueryId() throws Exception {
+    index(
+        id,
+        Integer.toString(0),
+        "_mq",
+        "{!xmlparser}<DisjunctionMaxQuery><TermQuery fieldName=\"content0_s\">elevator</TermQuery><TermQuery fieldName=\"content1_s\">lift</TermQuery></DisjunctionMaxQuery>");
+    commit();
+    handle.clear();
+    handle.put("responseHeader", SKIP);
+    handle.put("response", SKIP);
+
+    Object[] params =
+        new Object[] {
+          CommonParams.SORT,
+          id + " desc",
+          CommonParams.JSON,
+          read("/monitor/dangling-test-single-doc-batch.json"),
+          REVERSE_SEARCH_PARAM_NAME,
+          true,
+          WRITE_TO_DOC_LIST_KEY,
+          supportsWriteToDocList(),
+          QUERY_MATCH_TYPE_KEY,
+          "simple"
+        };
+
+    QueryResponse response = query(params);
+    if (supportsWriteToDocList()) {
+      assertEquals(1, ((SolrDocumentList) response.getResponse().get("response")).size());
+    }
+    validate(response, 0, List.of("0"));
+
+    del(MonitorFields.QUERY_ID + ":0");
+    commit();
+    response = query(CommonParams.Q, "*:*");
+    assertEquals(0, ((SolrDocumentList) response.getResponse().get("response")).size());
+  }
+
   static Map<Object, Object> queryMatch(
       String queryId,
       String field1,
