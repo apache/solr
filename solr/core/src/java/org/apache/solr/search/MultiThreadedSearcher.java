@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import org.apache.lucene.index.LeafReaderContext;
@@ -186,22 +187,30 @@ public class MultiThreadedSearcher {
   }
 
   static class FixedBitSetCollector extends SimpleCollector {
-    private final FixedBitSet bitSet;
+    private final LinkedList<FixedBitSet> bitSets = new LinkedList<>();
+    private final LinkedList<Integer> skipBits = new LinkedList<>();
 
+    private final int maxDoc;
     private int docBase;
 
     FixedBitSetCollector(int maxDoc) {
-      this.bitSet = new FixedBitSet(maxDoc);
+      this.maxDoc = maxDoc;
     }
 
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
-      this.docBase = context.docBase;
+      if (this.bitSets.isEmpty() || this.docBase != context.docBase) {
+        this.docBase = context.docBase;
+        final int skipWords = 0; // TODO: this.docBase / 64;
+        final int skipBits = skipWords * 64;
+        this.skipBits.add(skipBits);
+        this.bitSets.add(new FixedBitSet(this.maxDoc - skipBits));
+      }
     }
 
     @Override
     public void collect(int doc) throws IOException {
-      this.bitSet.set(this.docBase + doc);
+      this.bitSets.getLast().set(this.docBase + doc - this.skipBits.getLast());
     }
 
     @Override
@@ -210,7 +219,12 @@ public class MultiThreadedSearcher {
     }
 
     FixedBitSet bitSet() {
-      return this.bitSet;
+      final FixedBitSet result = new FixedBitSet(this.maxDoc);
+      for (FixedBitSet bitSet : this.bitSets) {
+        // TODO: consider this.skipBits
+        result.or(bitSet);
+      }
+      return result;
     }
   }
 
