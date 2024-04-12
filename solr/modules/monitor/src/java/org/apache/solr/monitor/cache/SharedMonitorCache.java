@@ -93,7 +93,7 @@ public class SharedMonitorCache extends SolrCacheBase
   @Override
   public Object init(Map<String, String> args, Object persistence, CacheRegenerator regenerator) {
     super.init(args, regenerator);
-    String str = args.get(SIZE_PARAM);
+    String str = args.get(MAX_SIZE_PARAM);
     int maxSize = (str == null) ? 100_000 : Integer.parseInt(str);
     str = args.get(INITIAL_SIZE_PARAM);
     initialSize = Math.min((str == null) ? 10_000 : Integer.parseInt(str), maxSize);
