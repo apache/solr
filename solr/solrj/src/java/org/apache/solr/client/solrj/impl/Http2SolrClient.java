@@ -247,9 +247,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     this.authenticationStore = new AuthenticationStoreHolder();
     httpClient.setAuthenticationStore(this.authenticationStore);
 
-    if (builder.connectionTimeoutMillis != null) {
-      httpClient.setConnectTimeout(builder.connectionTimeoutMillis);
-    }
+    httpClient.setConnectTimeout(builder.connectionTimeoutMillis);
 
     setupProxy(builder, httpClient);
 

@@ -299,7 +299,9 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
   public void testAsyncAndCancel() throws Exception {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     Http2SolrClient.Builder b =
-        new Http2SolrClient.Builder(url).withResponseParser(new XMLResponseParser());
+        new Http2SolrClient.Builder(url)
+            .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+            .withResponseParser(new XMLResponseParser());
     try (PausableHttp2SolrClient client = new PausableHttp2SolrClient(url, b)) {
       super.testAsyncAndCancel(client);
     }
