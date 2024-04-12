@@ -468,12 +468,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
                 executor.execute(
                     () -> {
                       InputStream is = listener.getInputStream();
-
-                      // TODO: Original PR had this, but we do not close the stream.
-                      // The legacy implementation did not track the input stream,
-                      // or close it.
-                      // assert ObjectReleaseTracker.track(is);
-
                       try {
                         NamedList<Object> body =
                             processErrorsAndResponse(solrRequest, response, is, url);
