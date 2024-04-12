@@ -88,7 +88,9 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
     List<LBSolrClient.Endpoint> endpointList = List.of(ep1, ep2);
 
-    Http2SolrClient.Builder b = new Http2SolrClient.Builder("http://base.url");
+    Http2SolrClient.Builder b =
+        new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
+    ;
     try (MockHttp2SolrClient client = new MockHttp2SolrClient("http://base.url", b);
         LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
 
@@ -141,7 +143,8 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
     List<LBSolrClient.Endpoint> endpointList = List.of(ep1, ep2);
 
-    Http2SolrClient.Builder b = new Http2SolrClient.Builder("http://base.url");
+    Http2SolrClient.Builder b =
+        new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
     try (MockHttp2SolrClient client = new MockHttp2SolrClient("http://base.url", b);
         LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
 
