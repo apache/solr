@@ -69,6 +69,7 @@
       class="org.apache.solr.monitor.cache.SharedMonitorCache"
       async="false"
       regenerator="org.apache.solr.monitor.cache.SharedMonitorCacheLatestRegenerator"
+      maxSize="2"
       maxIdleTime="100000"/>
     <enableLazyFieldLoading>true</enableLazyFieldLoading>
     <queryResultWindowSize>20</queryResultWindowSize>

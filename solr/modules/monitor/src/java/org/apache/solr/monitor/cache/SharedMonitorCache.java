@@ -34,6 +34,7 @@ import org.apache.lucene.monitor.MonitorQuery;
 import org.apache.lucene.monitor.QCEVisitor;
 import org.apache.lucene.monitor.QueryTermFilterVisitor;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.metrics.MetricsMap;
@@ -71,6 +72,8 @@ public class SharedMonitorCache extends SolrCacheBase
   // only needs to be an approximation
   long versionHighWaterMark = START_HIGH_WATER_MARK;
   private int initialSize;
+  private int maxSize;
+  private int maxRamMB;
 
   @Override
   public VersionedQueryCacheEntry computeIfStale(
@@ -94,7 +97,9 @@ public class SharedMonitorCache extends SolrCacheBase
   public Object init(Map<String, String> args, Object persistence, CacheRegenerator regenerator) {
     super.init(args, regenerator);
     String str = args.get(MAX_SIZE_PARAM);
-    int maxSize = (str == null) ? 100_000 : Integer.parseInt(str);
+    maxSize = (str == null) ? 100_000 : Integer.parseInt(str);
+    str = args.get(MAX_RAM_MB_PARAM);
+    maxRamMB = (str == null) ? -1 : Integer.parseInt(str);
     str = args.get(INITIAL_SIZE_PARAM);
     initialSize = Math.min((str == null) ? 10_000 : Integer.parseInt(str), maxSize);
     str = args.get(MAX_IDLE_TIME_PARAM);
@@ -102,17 +107,27 @@ public class SharedMonitorCache extends SolrCacheBase
     if (str != null) {
       maxIdleTimeSec = Integer.parseInt(str);
     }
-    mqCache = buildCache(maxSize, maxIdleTimeSec);
+    mqCache = buildCache(maxIdleTimeSec);
     return persistence;
   }
 
-  private Cache<String, VersionedQueryCacheEntry> buildCache(int maxSize, int maxIdleTimeSec) {
+  private Cache<String, VersionedQueryCacheEntry> buildCache(int maxIdleTimeSec) {
     Caffeine<String, VersionedQueryCacheEntry> builder =
         Caffeine.newBuilder().initialCapacity(initialSize).removalListener(this).recordStats();
     if (maxIdleTimeSec > 0) {
       builder.expireAfterAccess(Duration.ofSeconds(maxIdleTimeSec));
     }
-    builder.maximumSize(maxSize);
+
+    if (maxRamMB >= 0) {
+      builder.maximumWeight(maxRamMB * 1024L * 1024L);
+      builder.weigher(
+          (k, v) ->
+              (int)
+                  (RamUsageEstimator.sizeOf(k)
+                      + RamUsageEstimator.sizeOf(v.entry.getMatchQuery())));
+    } else {
+      builder.maximumSize(maxSize);
+    }
     return builder.build();
   }
 
@@ -181,13 +196,13 @@ public class SharedMonitorCache extends SolrCacheBase
         cumulativeDocVisits = oldSharedMonitorCache.cumulativeDocVisits + docVisits;
       }
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "could not boostrap cache");
+      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "could not boostrap cache", e);
     }
   }
 
   @Override
   public int getMaxSize() {
-    return Integer.MAX_VALUE;
+    return maxSize;
   }
 
   @Override
@@ -197,7 +212,7 @@ public class SharedMonitorCache extends SolrCacheBase
 
   @Override
   public int getMaxRamMB() {
-    return -1;
+    return maxRamMB;
   }
 
   @Override
@@ -226,6 +241,8 @@ public class SharedMonitorCache extends SolrCacheBase
               map.put(HITS_PARAM, stats.hits);
               map.put(HIT_RATIO_PARAM, rate(stats.hits, stats.lookups));
               map.put(SIZE_PARAM, size());
+              map.put(MAX_RAM_MB_PARAM, getMaxRamMB());
+              map.put(MAX_SIZE_PARAM, getMaxSize());
               map.put("generation_time", generationTimeMs);
               map.put("doc_visits", docVisits);
               long cumulativeLookups = priorLookups + stats.lookups;
