@@ -18,9 +18,10 @@
 package org.apache.solr.client.solrj.util;
 
 /**
- * @deprecated Use the async variants that return CompletableFuture.
- *     <p>Listener for async requests
+ * Listener for async requests
+ *
  * @param <T> The result type returned by the {@code onSuccess} method
+ * @deprecated Use the async variants that return CompletableFuture.
  */
 @Deprecated
 public interface AsyncListener<T> {
