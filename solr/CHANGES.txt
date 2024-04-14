@@ -97,6 +97,8 @@ New Features
 
 * SOLR-16403: A new cluster singleton plugin to automatically remove inactive shards. (Paul McArthur, David Smiley)
 
+* SOLR-16466: Admin UI - Make it optional to sort list of commandline args (Shawn Heisey, Vincenzo D'Amore via Christine Poerschke)
+
 Improvements
 ---------------------
 * SOLR-17119: When registering or updating a ConfigurablePlugin through the `/cluster/plugin` API,
@@ -202,6 +204,9 @@ Other Changes
   Krb5HttpClientBuilder and PreemptiveBasicAuthClientBuilderFactory no longer deprecated (janhoy)
 
 * SOLR-17217: Simplify verbose MatcherAssert.assertThat usage in tests (hossman)
+
+* SOLR-17232: PropertiesOutputStream is renamed IndexOutputOutputStream and overrides write(byte[], int, int).
+  (Bruno Roustant)
 
 ==================  9.5.0 ==================
 New Features
