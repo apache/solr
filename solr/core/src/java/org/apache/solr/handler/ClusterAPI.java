@@ -253,6 +253,20 @@ public class ClusterAPI {
     collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
   }
 
+  /**
+   * V2 cluster sizing that just calls the V1 cluster sizing, with dependency on the SizeCompoment.
+   *
+   * @param req request
+   * @param rsp response
+   * @throws Exception If there is an error.
+   */
+  @EndPoint(method = GET, path = "/cluster/sizing", permission = COLL_READ_PERM)
+  public void getClusterSizing(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    final Map<String, Object> v1Params =
+        Map.of(CommonParams.ACTION, CollectionAction.CLUSTERSIZING.toLower());
+    collectionsHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
+  }
+
   private CoreContainer getCoreContainer() {
     return collectionsHandler.getCoreContainer();
   }
