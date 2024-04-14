@@ -19,7 +19,8 @@ package org.apache.solr.handler.admin;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.solr.client.api.model.ClusterSizingResponse;
+import org.apache.solr.client.api.model.ClusterSizingRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -116,35 +117,32 @@ public class ClusterSizingTest extends SolrCloudTestCase {
     Assert.assertEquals(4, solrDetails.size());
   }
 
-  @SuppressWarnings("unchecked")
   @Test
-  public void testClusterSizingV2() throws Exception {
+  public void testGetMetricsEstimate() throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(SizeParams.SIZE_UNIT, NumberUtils.sizeUnit.bytes.toString());
-    params.add(SizeParams.ESTIMATION_RATIO, "10.0");
 
     final SolrQueryRequest request = Mockito.mock(SolrQueryRequest.class);
     Mockito.when(request.getParams()).thenReturn(params);
 
+    final ClusterSizingRequestBody body =
+        new ClusterSizingRequestBody(
+            0L, 0L, null, null, null, null, null, 0.0, NumberUtils.sizeUnit.bytes.toString());
+
     final SolrQueryResponse response = new SolrQueryResponse();
 
     final ClusterSizing sizing = new ClusterSizing(coreContainer, request, response);
-    final ClusterSizingResponse sizingResponse =
-        sizing.estimateSize(
-            0, 0, null, null, null, null, null, 0.0, NumberUtils.sizeUnit.bytes.toString());
+
+    final SolrJerseyResponse sizingResponse = sizing.getMetricsEstimate(body);
 
     Assert.assertNotNull(sizingResponse);
 
     Assert.assertTrue(response.getValues().size() > 0);
     final NamedList<Object> values = response.getValues();
     Assert.assertNotNull(values.get("cluster"));
-    final NamedList<Object> cluster = (NamedList<Object>) values.get("cluster");
-    Assert.assertNotNull(cluster.get("nodes"));
-    Assert.assertNotNull(cluster.get("collections"));
 
     if (log.isInfoEnabled()) {
       log.info("Response values: {}", response.getValues());
-      log.info("ClusterSizingResponse cluster: {}", sizingResponse.cluster);
+      log.info("SolrJerseyResponse: {}", sizingResponse);
     }
   }
 

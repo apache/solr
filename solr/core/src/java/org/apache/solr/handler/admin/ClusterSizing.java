@@ -31,6 +31,8 @@ import static org.apache.solr.common.params.SizeParams.QUERY_RES_MAX_DOCS;
 import static org.apache.solr.common.params.SizeParams.SIZE;
 // import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -44,8 +46,11 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.solr.client.api.endpoint.ClusterSizingApi;
-import org.apache.solr.client.api.model.ClusterSizingResponse;
+import org.apache.solr.client.api.model.ClusterSizingRequestBody;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 // import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -63,11 +68,15 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SizeParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.MetricsHandler.MetricType;
 import org.apache.solr.handler.admin.api.AdminAPIBase;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.NumberUtils;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -242,49 +251,57 @@ public class ClusterSizing extends AdminAPIBase implements ClusterSizingApi {
             CommonParams.DISTRIB));
   }
 
-  /** V2 API implementation. */
-  @Override
-  public ClusterSizingResponse estimateSize(
-      final long avgDocSize,
-      final long numDocs,
-      final Long deletedDocs,
-      final Long filterCacheMax,
-      final Long queryResultCacheMax,
-      final Long documentCacheMax,
-      final Long queryResultMaxDocsCached,
-      final double estimationRatio,
-      final String sizeUnit)
+  public SolrJerseyResponse getMetricsEstimate(final ClusterSizingRequestBody request)
       throws Exception {
-    final ClusterSizingResponse response = instantiateJerseyResponse(ClusterSizingResponse.class);
+    final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     validateZooKeeperAwareCoreContainer(coreContainer);
 
-    // TODO: replace by a V2 implementation
-    populate(solrQueryResponse.getValues());
+    final NamedList<Object> map = new SimpleOrderedMap<>();
+    try (final MetricsHandler metricsHandler = new MetricsHandler(coreContainer)) {
+      // TODO: Which registries ?
+      final Set<String> registries = metricsHandler.parseRegistries(null, null);
 
-    // Most V2 implementations call CollectionsHandler.submitCollectionApiCommand.
-    // This requires implementing a CollectionApiCommand in
-    // org.apache.solr.cloud.api.collections.CollApiCmds.CommandMap
-    // Clustersizing is not implemented as CollectionApiCommand, so OverseerCollectionMessageHandler
-    // throws
-    // SolrException: Unknown operation:clustersizing
+      // TODO: Which metric types ? filters ?
+      final List<MetricType> metricTypes = List.of(MetricsHandler.MetricType.all);
+      final List<MetricFilter> metricFilters =
+          metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
+      final MetricFilter mustMatchFilter = MetricFilter.ALL;
+      final Predicate<CharSequence> propertyFilter = MetricUtils.ALL_PROPERTIES;
 
-    //    final Map<String, Object> properties =
-    //        Map.of(QUEUE_OPERATION, CollectionAction.CLUSTERSIZING.toLower());
-    //    final ZkNodeProps zkNodeProps = new ZkNodeProps(properties);
-    //
-    //    final SolrResponse remoteResponse =
-    //        CollectionsHandler.submitCollectionApiCommand(
-    //            coreContainer,
-    //            coreContainer.getDistributedCollectionCommandRunner(),
-    //            zkNodeProps,
-    //            CollectionAction.CLUSTERSIZING,
-    //            DEFAULT_COLLECTION_OP_TIMEOUT);
-    //
-    //    if (remoteResponse.getException() != null) {
-    //      throw remoteResponse.getException();
-    //    }
+      for (final String registryName : registries) {
+        final MetricRegistry registry = metricsHandler.metricManager.registry(registryName);
+        final SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
+        MetricUtils.toMaps(
+            registry,
+            metricFilters,
+            mustMatchFilter,
+            propertyFilter,
+            false,
+            false,
+            false,
+            false,
+            (k, v) -> result.add(k, v));
+        if (result.size() > 0) {
+          map.add(registryName, result);
+        }
+      }
+    } catch (IOException e) {
+      throw new ClusterSizingException("Error closing a resource: Metrics Handler", e);
+    }
 
-    //    disableResponseCaching();
+    // TODO : Calculate estimates with request params:  estimationRatio, numDocs, etc
+
+    solrQueryResponse.getValues().add("cluster", map);
+
+    V2ApiUtils.squashIntoSolrResponseWithHeader(solrQueryResponse, response);
+
     return response;
+  }
+
+  @SuppressWarnings("serial")
+  public class ClusterSizingException extends Exception {
+    public ClusterSizingException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
   }
 }
