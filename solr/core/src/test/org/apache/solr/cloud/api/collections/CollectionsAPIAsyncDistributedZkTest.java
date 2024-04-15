@@ -43,7 +43,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -282,7 +281,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
                   if (log.isInfoEnabled()) {
                     log.info("Exception during collection reloading, we were waiting for one: ", e);
                   }
-                  MatcherAssert.assertThat(
+                  assertThat(
                       e.getMessage(),
                       containsString("Task with the same requestid already exists. (repeatedId)"));
                   numFailure.incrementAndGet();

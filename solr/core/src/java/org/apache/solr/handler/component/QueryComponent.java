@@ -946,6 +946,7 @@ public class QueryComponent extends SearchComponent {
     Float maxScore = null;
     boolean thereArePartialResults = false;
     Boolean segmentTerminatedEarly = null;
+    int failedShardCount = 0;
     for (ShardResponse srsp : sreq.responses) {
       SolrDocumentList docs = null;
       NamedList<?> responseHeader = null;
@@ -955,8 +956,8 @@ public class QueryComponent extends SearchComponent {
 
         if (srsp.getException() != null) {
           Throwable t = srsp.getException();
-          if (t instanceof SolrServerException) {
-            t = ((SolrServerException) t).getCause();
+          if (t instanceof SolrServerException && t.getCause() != null) {
+            t = t.getCause();
           }
           nl.add("error", t.toString());
           if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
@@ -964,7 +965,7 @@ public class QueryComponent extends SearchComponent {
             t.printStackTrace(new PrintWriter(trace));
             nl.add("trace", trace.toString());
           }
-          if (srsp.getShardAddress() != null) {
+          if (!StrUtils.isNullOrEmpty(srsp.getShardAddress())) {
             nl.add("shardAddress", srsp.getShardAddress());
           }
         } else {
@@ -994,8 +995,13 @@ public class QueryComponent extends SearchComponent {
         if (srsp.getSolrResponse() != null) {
           nl.add("time", srsp.getSolrResponse().getElapsedTime());
         }
-
-        shardInfo.add(srsp.getShard(), nl);
+        // This ought to be better, but at least this ensures no duplicate keys in JSON result
+        String shard = srsp.getShard();
+        if (StrUtils.isNullOrEmpty(shard)) {
+          failedShardCount += 1;
+          shard = "unknown_shard_" + failedShardCount;
+        }
+        shardInfo.add(shard, nl);
       }
       // now that we've added the shard info, let's only proceed if we have no error.
       if (srsp.getException() != null) {

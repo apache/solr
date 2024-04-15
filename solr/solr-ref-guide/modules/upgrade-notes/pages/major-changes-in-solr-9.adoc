@@ -67,6 +67,10 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
+== Solr 9.6
+=== SolrJ
+* The suite of `Http2SolrClient`s, powered by the Jetty Http library are no longer marked as experimental.
+
 == Solr 9.5
 === Dependency Upgrades
 <<#solr-8-2,Solr 8.2 recommended using Zookeeper 3.5.5>> and now with Curator 5.5.0 requires https://curator.apache.org/docs/breaking-changes/[Zookeeper 3.5.x or higher]. This primarily affects users of `hadoop-auth`, but usage of Curator could affect other parts of Solr.
