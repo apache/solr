@@ -19,7 +19,7 @@
   -->
 
 <config>
-  <luceneMatchVersion>9.4</luceneMatchVersion>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
   <dataDir>${solr.data.dir:}</dataDir>
 
