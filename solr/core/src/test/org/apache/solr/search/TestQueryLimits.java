@@ -76,7 +76,17 @@ public class TestQueryLimits extends SolrCloudTestCase {
       rsp =
           solrClient.query(
               COLLECTION,
-              params("q", "id:*", "sort", "id asc", "facet", "true", "facet.field", "val_i"));
+              params(
+                  "q",
+                  "id:*",
+                  "sort",
+                  "id asc",
+                  "facet",
+                  "true",
+                  "facet.field",
+                  "val_i",
+                  "multithreaded",
+                  "false"));
       assertNotNull(
           "should have partial results for expr " + matchingExpr,
           rsp.getHeader().get("partialResults"));
