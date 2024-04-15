@@ -117,10 +117,6 @@ public class QueryLimits implements QueryTimeout {
    */
   public boolean maybeExitWithPartialResults(Supplier<String> label)
       throws QueryLimitsExceededException {
-    return maybeExitWithPartialResults(label.get());
-  }
-
-  public boolean maybeExitWithPartialResults(String label) throws QueryLimitsExceededException {
     if (isLimitsEnabled() && shouldExit()) {
       if (allowPartialResults) {
         if (rsp != null) {
@@ -134,16 +130,20 @@ public class QueryLimits implements QueryTimeout {
           if (rsp.getResponseHeader().get(RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY) == null) {
             // don't want to add duplicate keys. Although technically legal, there's a strong risk
             // that clients won't anticipate it and break.
-            rsp.addPartialResponseDetail(formatExceptionMessage(label));
+            rsp.addPartialResponseDetail(formatExceptionMessage(label.get()));
           }
         }
         return true;
       } else {
-        throw new QueryLimitsExceededException(formatExceptionMessage(label));
+        throw new QueryLimitsExceededException(formatExceptionMessage(label.get()));
       }
     } else {
       return false;
     }
+  }
+
+  public boolean maybeExitWithPartialResults(String label) throws QueryLimitsExceededException {
+    return maybeExitWithPartialResults(() -> label);
   }
 
   /**
