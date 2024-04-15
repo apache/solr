@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import org.apache.lucene.index.LeafReaderContext;
@@ -186,31 +187,58 @@ public class MultiThreadedSearcher {
   }
 
   static class FixedBitSetCollector extends SimpleCollector {
-    private final FixedBitSet bitSet;
+    private final LinkedList<FixedBitSet> bitSets = new LinkedList<>();
+    private final LinkedList<Integer> skipWords = new LinkedList<>();
+    private final LinkedList<Integer> skipBits = new LinkedList<>();
 
-    private int docBase;
-
-    FixedBitSetCollector(int maxDoc) {
-      this.bitSet = new FixedBitSet(maxDoc);
-    }
+    FixedBitSetCollector() {}
 
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
-      this.docBase = context.docBase;
+      this.bitSets.add(null); // lazy allocate when collecting document(s)
+      this.skipWords.add(context.docBase / 64);
+      this.skipBits.add(context.docBase % 64);
     }
 
     @Override
     public void collect(int doc) throws IOException {
-      this.bitSet.set(this.docBase + doc);
+      FixedBitSet bitSet = this.bitSets.getLast();
+      final int idx = this.skipBits.getLast() + doc;
+
+      final int numWords = FixedBitSet.bits2words(idx + 1); // +1 to ensure minimum 1 word
+
+      if (bitSet == null) {
+        this.bitSets.removeLast();
+        bitSet = new FixedBitSet(numWords * 64);
+        this.bitSets.addLast(bitSet);
+
+      } else if (bitSet.getBits().length < numWords) {
+        FixedBitSet smallerBitSet = this.bitSets.removeLast();
+        bitSet = new FixedBitSet(numWords * 64);
+        bitSet.xor(smallerBitSet);
+        this.bitSets.addLast(bitSet);
+      }
+
+      bitSet.set(idx);
+    }
+
+    void update(FixedBitSet allBitSet) {
+      final long[] allBits = allBitSet.getBits();
+      for (int bs_idx = 0; bs_idx < this.bitSets.size(); ++bs_idx) {
+        final FixedBitSet itBitSet = this.bitSets.get(bs_idx);
+        if (itBitSet != null) {
+          final int skipWords = this.skipWords.get(bs_idx);
+          final long[] itBits = itBitSet.getBits();
+          for (int idx = 0; idx < itBits.length; ++idx) {
+            allBits[skipWords + idx] ^= itBits[idx];
+          }
+        }
+      }
     }
 
     @Override
     public ScoreMode scoreMode() {
       return ScoreMode.COMPLETE_NO_SCORES;
-    }
-
-    FixedBitSet bitSet() {
-      return this.bitSet;
     }
   }
 
@@ -299,7 +327,7 @@ public class MultiThreadedSearcher {
     @Override
     public Collector newCollector() throws IOException {
       // TODO: add to firstCollectors here? or if not have comment w.r.t. why not adding
-      return new FixedBitSetCollector(maxDoc);
+      return new FixedBitSetCollector();
     }
 
     @Override
@@ -308,7 +336,8 @@ public class MultiThreadedSearcher {
       final FixedBitSet reduced = new FixedBitSet(maxDoc);
       for (Object collector : collectors) {
         if (collector instanceof FixedBitSetCollector) {
-          reduced.or(((FixedBitSetCollector) collector).bitSet());
+          FixedBitSetCollector fixedBitSetCollector = (FixedBitSetCollector) collector;
+          fixedBitSetCollector.update(reduced);
         }
       }
       return reduced;
