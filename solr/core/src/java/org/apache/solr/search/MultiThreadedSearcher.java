@@ -189,8 +189,10 @@ public class MultiThreadedSearcher {
   static class FixedBitSetCollector extends SimpleCollector {
     @SuppressWarnings("JdkObsolete")
     private final LinkedList<FixedBitSet> bitSets = new LinkedList<>();
+
     @SuppressWarnings("JdkObsolete")
     private final LinkedList<Integer> skipWords = new LinkedList<>();
+
     @SuppressWarnings("JdkObsolete")
     private final LinkedList<Integer> skipBits = new LinkedList<>();
 
