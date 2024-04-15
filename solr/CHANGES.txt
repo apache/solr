@@ -130,6 +130,8 @@ Improvements
 
 * SOLR-17211: New SolrJ JDK client supports Async (James Dyer)
 
+* SOLR-17204: REPLACENODE now supports the source node not being live (Vincent Primault)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
@@ -179,8 +181,6 @@ Bug Fixes
 * SOLR-17176: Fix log history V2 API serialization (Michael Gibney)
 
 * SOLR-11535: Fix race condition in singleton-per-collection StateWatcher creation (Michael Gibney)
-
-* SOLR-17204: REPLACENODE supports the source node not being live (Vincent Primault)
 
 Dependency Upgrades
 ---------------------
