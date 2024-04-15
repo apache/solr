@@ -479,8 +479,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
                         log.debug("response processing failed", e);
                         future.completeExceptionally(e);
                       } finally {
-                        mdcCopyHelper.onComplete(null);
                         log.debug("response processing completed");
+                        mdcCopyHelper.onComplete(null);
                       }
                     });
               }
