@@ -187,8 +187,11 @@ public class MultiThreadedSearcher {
   }
 
   static class FixedBitSetCollector extends SimpleCollector {
+    @SuppressWarnings("JdkObsolete")
     private final LinkedList<FixedBitSet> bitSets = new LinkedList<>();
+    @SuppressWarnings("JdkObsolete")
     private final LinkedList<Integer> skipWords = new LinkedList<>();
+    @SuppressWarnings("JdkObsolete")
     private final LinkedList<Integer> skipBits = new LinkedList<>();
 
     FixedBitSetCollector() {}
@@ -229,7 +232,7 @@ public class MultiThreadedSearcher {
         if (itBitSet != null) {
           final int skipWords = this.skipWords.get(bs_idx);
           final long[] itBits = itBitSet.getBits();
-          for (int idx = 0; idx < itBits.length; ++idx) {
+          for (int idx = 0; idx < itBits.length && skipWords + idx < allBits.length; ++idx) {
             allBits[skipWords + idx] ^= itBits[idx];
           }
         }
