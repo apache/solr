@@ -23,12 +23,23 @@ package org.apache.solr.client.solrj.util;
  * @param <T> The result type returned by the {@code onSuccess} method
  */
 public interface AsyncListener<T> {
-  /** Callback method invoked before processing the request */
+  /**
+   * Setup method invoked in the original thread before processing the request on a different
+   * thread.
+   */
   default void onStart() {}
 
-  /** Callback method invoked when the request completes successfully */
+  /**
+   * Callback method invoked in the async thread when the request completes successfully.
+   *
+   * @param t the key object for the async operation (i. e. the SolrRequest)
+   */
   void onSuccess(T t);
 
-  /** Callback method invoked when the request completes in failure */
+  /**
+   * Callback method invoked in the async thread when the request completes in failure.
+   *
+   * @param throwable the reason for the failure
+   */
   void onFailure(Throwable throwable);
 }

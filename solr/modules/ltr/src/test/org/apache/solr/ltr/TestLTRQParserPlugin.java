@@ -188,7 +188,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.setFields("id", "score");
     query.setRows(4);
     query.setTimeAllowed(300);
-    query.add("partialResults", "false");
+    query.add("allowPartialResults", "false");
     query.add("fv", "true");
     query.add("rq", "{!ltr model=slowModel reRankDocs=3}");
 

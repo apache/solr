@@ -34,6 +34,7 @@
   <str name="allowPaths">${solr.allowPaths:}</str>
   <str name="allowUrls">${solr.allowUrls:}</str>
   <str name="hideStackTrace">${solr.hideStackTrace:false}</str>
+  <bool name="allowPartialResultsDefault">${solr.allow.partial.results.default:true}</bool>
 
   <solrcloud>
 

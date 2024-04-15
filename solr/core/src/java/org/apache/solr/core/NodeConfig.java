@@ -123,6 +123,8 @@ public class NodeConfig {
 
   private final String defaultZkHost;
 
+  private final boolean allowPartialResultsDefault;
+
   private NodeConfig(
       String nodeName,
       Path coreRootDirectory,
@@ -158,6 +160,7 @@ public class NodeConfig {
       String defaultZkHost,
       Set<Path> allowPaths,
       List<String> allowUrls,
+      boolean allowPartialResultsDefault,
       boolean hideStackTraces,
       String configSetServiceClass,
       String modules,
@@ -197,6 +200,7 @@ public class NodeConfig {
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
+    this.allowPartialResultsDefault = allowPartialResultsDefault;
     this.hideStackTraces = hideStackTraces;
     this.configSetServiceClass = configSetServiceClass;
     this.modules = modules;
@@ -445,6 +449,10 @@ public class NodeConfig {
     return allowUrls;
   }
 
+  public boolean isAllowPartialResultsDefault() {
+    return allowPartialResultsDefault;
+  }
+
   public boolean hideStackTraces() {
     return hideStackTraces;
   }
@@ -609,6 +617,7 @@ public class NodeConfig {
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
+    private boolean allowPartialResultsDefault;
     private boolean hideStackTrace = Boolean.getBoolean("solr.hideStackTrace");
 
     private final Path solrHome;
@@ -818,6 +827,10 @@ public class NodeConfig {
       return this;
     }
 
+    public void setAllowPartialResultsDefault(boolean b) {
+      this.allowPartialResultsDefault = b;
+    }
+
     public NodeConfigBuilder setHideStackTrace(boolean hide) {
       this.hideStackTrace = hide;
       return this;
@@ -918,6 +931,7 @@ public class NodeConfig {
           defaultZkHost,
           allowPaths,
           allowUrls,
+          allowPartialResultsDefault,
           hideStackTrace,
           configSetServiceClass,
           modules,

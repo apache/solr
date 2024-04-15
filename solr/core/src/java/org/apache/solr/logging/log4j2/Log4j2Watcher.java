@@ -289,7 +289,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
     doc.setField("logger", event.getLoggerName());
     Message message = event.getMessage();
     doc.setField("message", message.getFormattedMessage());
-    Throwable t = message.getThrowable();
+    Throwable t = event.getThrown(); // more reliable than getting it off the message.
     if (t != null) {
       StringWriter trace = new StringWriter();
       t.printStackTrace(new PrintWriter(trace));

@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import static org.apache.solr.core.RequestParams.USEPARAM;
+import static org.apache.solr.response.SolrQueryResponse.haveCompleteResults;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
@@ -237,7 +238,8 @@ public abstract class RequestHandlerBase
       rsp.setHttpCaching(httpCaching);
       handleRequestBody(req, rsp);
       // count timeouts
-      if (rsp.isPartialResults()) {
+
+      if (!haveCompleteResults(rsp.getResponseHeader())) {
         metrics.numTimeouts.mark();
         rsp.setHttpCaching(false);
       }

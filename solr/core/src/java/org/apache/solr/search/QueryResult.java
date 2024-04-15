@@ -19,7 +19,8 @@ package org.apache.solr.search;
 /** The result of a search. */
 public class QueryResult {
 
-  private boolean partialResults;
+  // Object for back compatibility so that we render true not "true" in json
+  private Object partialResults;
   private Boolean segmentTerminatedEarly;
   private DocListAndSet docListAndSet;
   private CursorMark nextCursorMark;
@@ -49,10 +50,15 @@ public class QueryResult {
   }
 
   public boolean isPartialResults() {
-    return partialResults;
+    // omitted is equivalent to false/empty for java logic
+    return Boolean.parseBoolean(String.valueOf(partialResults));
   }
 
-  public void setPartialResults(boolean partialResults) {
+  public boolean isPartialResultOmitted() {
+    return "omitted".equals(partialResults);
+  }
+
+  public void setPartialResults(Object partialResults) {
     this.partialResults = partialResults;
   }
 
