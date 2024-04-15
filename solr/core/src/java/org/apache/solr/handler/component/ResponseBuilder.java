@@ -122,13 +122,13 @@ public class ResponseBuilder {
    * public static final String LOCAL_SHARD = "local"; public static final String DOC_QUERY = "dq";
    * *
    */
-  public static int STAGE_START = 0;
+  public static final int STAGE_START = 0;
 
-  public static int STAGE_PARSE_QUERY = 1000;
-  public static int STAGE_TOP_GROUPS = 1500;
-  public static int STAGE_EXECUTE_QUERY = 2000;
-  public static int STAGE_GET_FIELDS = 3000;
-  public static int STAGE_DONE = Integer.MAX_VALUE;
+  public static final int STAGE_PARSE_QUERY = 1000;
+  public static final int STAGE_TOP_GROUPS = 1500;
+  public static final int STAGE_EXECUTE_QUERY = 2000;
+  public static final int STAGE_GET_FIELDS = 3000;
+  public static final int STAGE_DONE = Integer.MAX_VALUE;
 
   public int stage; // What stage is this current request at?
 
