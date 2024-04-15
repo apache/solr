@@ -81,8 +81,8 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
   @Test
   public void testAsyncWithFailures() {
 
-    // TODO: This demonstrates that the failing endpoint always gets retried, but
-    // I would expect it to be labelled as a "zombie" and be skipped with additional iterations.
+    // This demonstrates that the failing endpoint always gets retried, and it is up to the user
+    // to remove any failing nodes if desired.
 
     LBSolrClient.Endpoint ep1 = new LBSolrClient.Endpoint("http://endpoint.one");
     LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
@@ -149,7 +149,6 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
 
       int limit = 10; // For simplicity use an even limit
-      int halfLimit = limit / 2; // see TODO below
 
       CountDownLatch latch = new CountDownLatch(limit); // deprecated API use
       List<LBTestAsyncListener> listeners = new ArrayList<>(); // deprecated API use
@@ -179,7 +178,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
       QueryRequest[] queryRequests = new QueryRequest[limit];
       int numEndpointOne = 0;
-      int numEndpointTwo = 0; // see TODO below
+      int numEndpointTwo = 0;
       for (int i = 0; i < limit; i++) {
         SolrRequest<?> lastSolrReq = client.lastSolrRequests.get(i);
         assertTrue(lastSolrReq instanceof QueryRequest);
@@ -216,15 +215,11 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         assertEquals("" + index, lastResponse.get("response"));
       }
 
-      // TODO: LBHttp2SolrClient creates a new "endpoint iterator" per request, thus
-      //       all requests go to the first endpoint.  I am not sure whether this was
-      //       intended.  Maybe, we should be re-using the logic from
-      //       LBSolrClient#request to pick use (default) round-robin
-      //       and retain the ability for users to override "pickServer".
-      //
-      // assertEquals("expected 1/2 requests to go to endpoint one.", halfLimit, numEndpointOne);
-      // assertEquals("expected 1/2 requests to go to endpoint two.", halfLimit, numEndpointTwo);
+      // It is the user's responsibility to shuffle the endpoints when using
+      // async.  LB Http Solr Client always will try the passed-in endpoints
+      // in order.  In this case, endpoint 1 gets all the requests!
       assertEquals(limit, numEndpointOne);
+      assertEquals(0, numEndpointTwo);
 
       assertEquals(limit, client.lastSolrRequests.size());
       assertEquals(limit, client.lastCollections.size());
