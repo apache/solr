@@ -121,10 +121,13 @@ public class MultiThreadedSearcher {
   }
 
   static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd, Query query) {
-    boolean multithreaded =
-        SolrRequestInfo.getRequestInfo().getReq().getParams().getBool("multithreaded", true);
-    if (!multithreaded) {
-      return false;
+    if (SolrRequestInfo.getRequestInfo() != null
+        && SolrRequestInfo.getRequestInfo().getReq() != null) {
+      boolean multithreaded =
+          SolrRequestInfo.getRequestInfo().getReq().getParams().getBool("multithreaded", true);
+      if (!multithreaded) {
+        return false;
+      }
     }
     if (postFilter != null || cmd.getSegmentTerminateEarly() || cmd.getTimeAllowed() > 0) {
       return false;
