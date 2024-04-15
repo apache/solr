@@ -670,7 +670,7 @@ public class SearchHandler extends RequestHandlerBase
 
         for (SearchComponent c : components) {
           if (checkLimitsBefore(
-              c, "finish stage:" + stageInEngilish(nextStage), rb.req, rb.rsp, components)) {
+              c, "finish stage:" + stageInEnglish(nextStage), rb.req, rb.rsp, components)) {
             return;
           }
           c.finishStage(rb);
@@ -686,15 +686,8 @@ public class SearchHandler extends RequestHandlerBase
     }
   }
 
-  private static String stageInEngilish(int nextStage) {
+  private static String stageInEnglish(int nextStage) {
     // This should probably be a enum, but that change should be its own ticket.
-    //    public static int STAGE_START = 0;
-    //
-    //    public static int STAGE_PARSE_QUERY = 1000;
-    //    public static int STAGE_TOP_GROUPS = 1500;
-    //    public static int STAGE_EXECUTE_QUERY = 2000;
-    //    public static int STAGE_GET_FIELDS = 3000;
-    //    public static int STAGE_DONE = Integer.MAX_VALUE;
     switch (nextStage) {
       case STAGE_START:
         return "START";
