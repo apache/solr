@@ -133,7 +133,6 @@ public class LBHttp2SolrClient extends LBSolrClient {
    * @param asyncListener callers should provide an implementation to handle events: start, success,
    *     exception
    * @return Cancellable allowing the caller to attempt cancellation
-   *
    * @deprecated Use {@link #requestAsync(Req)}.
    */
   @Deprecated
@@ -153,9 +152,11 @@ public class LBHttp2SolrClient extends LBSolrClient {
   }
 
   /**
-   * Execute an asynchronous request against one or more hosts for a given collection.  The passed-in Req object includes a List of Endpoints.
-   * This method always begins with the first Endpoint in the list and if unsuccessful tries each in turn until the request is successful.
-   * Consequently, this method does not actually Load Balance.  It is up to the caller to shuffle the List of Endpoints if Load Balancing is desired.
+   * Execute an asynchronous request against one or more hosts for a given collection. The passed-in
+   * Req object includes a List of Endpoints. This method always begins with the first Endpoint in
+   * the list and if unsuccessful tries each in turn until the request is successful. Consequently,
+   * this method does not actually Load Balance. It is up to the caller to shuffle the List of
+   * Endpoints if Load Balancing is desired.
    *
    * @param req the wrapped request to perform
    * @return a {@link CompletableFuture} that tracks the progress of the async request.
