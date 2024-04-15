@@ -59,7 +59,6 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
 
   @Test
   public void reorderingTest() throws Exception {
-    // failure: 58F920FAAE5904EF
     Path tmpDir = LuceneTestCase.createTempDir();
     Random r = random();
     try (MMapDirectoryFactory df = new MMapDirectoryFactory()) {
