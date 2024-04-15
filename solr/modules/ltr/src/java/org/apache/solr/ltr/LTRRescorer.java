@@ -31,7 +31,9 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
+import org.apache.solr.search.IncompleteRerankingException;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrQueryTimeoutImpl;
 
 /**
  * Implements the rescoring logic. The top documents returned by solr with their original scores,
@@ -234,6 +236,12 @@ public class LTRRescorer extends Rescorer {
 
     scorer.getDocInfo().setOriginalDocScore(hit.score);
     hit.score = scorer.score();
+
+    if (SolrQueryTimeoutImpl.getInstance().isTimeoutEnabled()
+        && SolrQueryTimeoutImpl.getInstance().shouldExit()) {
+      throw new IncompleteRerankingException();
+    }
+
     if (hitUpto < topN) {
       reranked[hitUpto] = hit;
       // if the heap is not full, maybe I want to log the features for this

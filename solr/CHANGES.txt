@@ -7,7 +7,8 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 ==================  9.1.2 ==================
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-17018: Query limit timeout is now supported by Learning To Rank rescoring. (Alessandro Benedetti)
 
 ==================  9.1.1 ==================
 
