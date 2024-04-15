@@ -14,28 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.search;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import org.apache.lucene.store.IndexOutput;
+public class IncompleteRerankingException extends RuntimeException {
 
-public class PropertiesOutputStream extends OutputStream {
-
-  private IndexOutput out;
-
-  public PropertiesOutputStream(IndexOutput out) {
-    this.out = out;
-  }
-
-  @Override
-  public void write(int b) throws IOException {
-    out.writeByte((byte) b);
-  }
-
-  @Override
-  public void close() throws IOException {
-    super.close();
-    out.close();
+  public IncompleteRerankingException() {
+    super();
   }
 }
