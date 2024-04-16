@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.Socket;
@@ -199,18 +200,28 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
+  public void testDeprecatedAsyncGet() throws Exception {
+    super.testQueryAsync(true);
+  }
+
+  @Test
   public void testAsyncGet() throws Exception {
-    super.testQueryAsync();
+    super.testQueryAsync(false);
+  }
+
+  @Test
+  public void testDeprecatedAsyncPost() throws Exception {
+    super.testUpdateAsync(true);
   }
 
   @Test
   public void testAsyncPost() throws Exception {
-    super.testUpdateAsync();
+    super.testUpdateAsync(false);
   }
 
   @Test
-  public void testAsyncException() throws Exception {
-    DebugAsyncListener listener = super.testAsyncExceptionBase();
+  public void testDeprecatedAsyncException() throws Exception {
+    DebugAsyncListener listener = super.testAsyncExceptionBase(true);
     assertTrue(listener.onFailureResult instanceof CompletionException);
     CompletionException ce = (CompletionException) listener.onFailureResult;
     assertTrue(ce.getCause() instanceof BaseHttpSolrClient.RemoteSolrException);
@@ -218,7 +229,58 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
+  public void testAsyncException() throws Exception {
+    super.testAsyncExceptionBase(false);
+  }
+
+  @Test
   public void testAsyncAndCancel() throws Exception {
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    HttpJdkSolrClient.Builder b =
+        new HttpJdkSolrClient.Builder(url).withResponseParser(new XMLResponseParser());
+    try (PausableHttpJdkSolrClient client = new PausableHttpJdkSolrClient(url, b)) {
+      super.testAsyncAndCancel(client);
+    }
+  }
+
+  public static class PausableHttpJdkSolrClient extends HttpJdkSolrClient
+      implements PauseableHttpSolrClient {
+
+    protected PausableHttpJdkSolrClient(String serverBaseUrl, Builder builder) {
+      super(serverBaseUrl, builder);
+    }
+
+    @Override
+    protected NamedList<Object> processErrorsAndResponse(
+        int httpStatus,
+        String responseReason,
+        String responseMethod,
+        ResponseParser processor,
+        InputStream is,
+        String mimeType,
+        String encoding,
+        boolean isV2Api,
+        String urlExceptionMessage)
+        throws SolrServerException {
+      pause();
+      var nl =
+          super.processErrorsAndResponse(
+              httpStatus,
+              responseReason,
+              responseMethod,
+              processor,
+              is,
+              mimeType,
+              encoding,
+              isV2Api,
+              urlExceptionMessage);
+      unPause();
+      return nl;
+    }
+  }
+
+  @Test
+  public void testDeprecatedAsyncAndCancel() throws Exception {
     ResponseParser rp = new XMLResponseParser();
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
@@ -226,8 +288,8 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
         "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     HttpJdkSolrClient.Builder b = builder(url).withResponseParser(rp);
-    CountDownLatch cdl = new CountDownLatch(0);
-    DebugAsyncListener listener = new DebugAsyncListener(cdl);
+    CountDownLatch latch = new CountDownLatch(0);
+    DebugAsyncListener listener = new DebugAsyncListener(latch);
     Cancellable cancelMe = null;
     try (HttpJdkSolrClient client = b.build()) {
       QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
