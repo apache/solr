@@ -217,7 +217,10 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     assertThrows(Exception.class, () -> urlConnectionWithoutAuth.getInputStream());
     final URLConnection urlConnection = node.openConnection();
     String basicAuth =
-        "Basic " + new String(Base64.getEncoder().encode((USER + ":" + PASS).getBytes()));
+        "Basic "
+            + new String(
+                Base64.getEncoder().encode((USER + ":" + PASS).getBytes(StandardCharsets.UTF_8)),
+                StandardCharsets.UTF_8);
     urlConnection.setRequestProperty("Authorization", basicAuth);
 
     try (final InputStream jsonResponse = urlConnection.getInputStream()) {
