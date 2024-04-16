@@ -22,13 +22,17 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -540,15 +544,18 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         "No authorization headers expected. Headers: " + DebugServlet.headers, authorizationHeader);
   }
 
-  protected void testUpdateAsync() throws Exception {
+  protected void testUpdateAsync(boolean useDeprecatedApi) throws Exception {
     ResponseParser rp = new XMLResponseParser();
     String url = getBaseUrl();
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
-    CountDownLatch cdl = new CountDownLatch(limit);
-    DebugAsyncListener[] listeners = new DebugAsyncListener[limit];
-    Cancellable[] cancellables = new Cancellable[limit];
+
+    DebugAsyncListener[] listeners = new DebugAsyncListener[limit]; // Deprecated API use
+    Cancellable[] cancellables = new Cancellable[limit]; // Deprecated API use
+
+    CountDownLatch latch = new CountDownLatch(limit);
+
     try (HttpSolrClientBase client = b.build()) {
 
       // ensure the collection is empty to start
@@ -562,13 +569,18 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       assertEquals(0, qr.getResults().getNumFound());
 
       for (int i = 0; i < limit; i++) {
-        listeners[i] = new DebugAsyncListener(cdl);
         UpdateRequest ur = new UpdateRequest();
         ur.add("id", "KEY-" + i);
         ur.setMethod(SolrRequest.METHOD.POST);
-        client.asyncRequest(ur, COLLECTION_1, listeners[i]);
+
+        if (useDeprecatedApi) {
+          listeners[i] = new DebugAsyncListener(latch);
+          client.asyncRequest(ur, COLLECTION_1, listeners[i]);
+        } else {
+          client.requestAsync(ur, COLLECTION_1).whenComplete((nl, e) -> latch.countDown());
+        }
       }
-      cdl.await(1, TimeUnit.MINUTES);
+      latch.await(1, TimeUnit.MINUTES);
       client.commit(COLLECTION_1);
 
       // check that the correct number of documents were added
@@ -585,7 +597,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     }
   }
 
-  protected void testQueryAsync() throws Exception {
+  protected void testQueryAsync(boolean useDeprecatedApi) throws Exception {
     ResponseParser rp = new XMLResponseParser();
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
@@ -593,9 +605,13 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
-    CountDownLatch cdl = new CountDownLatch(limit);
-    DebugAsyncListener[] listeners = new DebugAsyncListener[limit];
-    Cancellable[] cancellables = new Cancellable[limit];
+
+    CountDownLatch latch = new CountDownLatch(limit); // Deprecated API use
+    DebugAsyncListener[] listeners = new DebugAsyncListener[limit]; // Deprecated API use
+    Cancellable[] cancellables = new Cancellable[limit]; // Deprecated API use
+
+    List<CompletableFuture<NamedList<Object>>> futures = new ArrayList<>();
+
     try (HttpSolrClientBase client = b.build()) {
       for (int i = 0; i < limit; i++) {
         DebugServlet.responseBodyByQueryFragment.put(
@@ -606,45 +622,107 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         QueryRequest query =
             new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
         query.setMethod(SolrRequest.METHOD.GET);
-        listeners[i] = new DebugAsyncListener(cdl);
-        client.asyncRequest(query, null, listeners[i]);
+        if (useDeprecatedApi) {
+          listeners[i] = new DebugAsyncListener(latch);
+          client.asyncRequest(query, null, listeners[i]);
+        } else {
+          futures.add(client.requestAsync(query));
+        }
       }
-      cdl.await(1, TimeUnit.MINUTES);
-    }
+      if (useDeprecatedApi) {
+        latch.await(1, TimeUnit.MINUTES);
+      }
 
-    for (int i = 0; i < limit; i++) {
-      NamedList<Object> result = listeners[i].onSuccessResult;
-      SolrDocumentList sdl = (SolrDocumentList) result.get("response");
-      assertEquals(2, sdl.getNumFound());
-      assertEquals(1, sdl.getStart());
-      assertTrue(sdl.getNumFoundExact());
-      assertEquals(1, sdl.size());
-      assertEquals(1, sdl.iterator().next().size());
-      assertEquals("KEY-" + i, sdl.iterator().next().get("id"));
+      for (int i = 0; i < limit; i++) {
+        NamedList<Object> result;
+        if (useDeprecatedApi) {
+          result = listeners[i].onSuccessResult;
+        } else {
+          result = futures.get(i).get(1, TimeUnit.MINUTES);
+        }
+        SolrDocumentList sdl = (SolrDocumentList) result.get("response");
+        assertEquals(2, sdl.getNumFound());
+        assertEquals(1, sdl.getStart());
+        assertTrue(sdl.getNumFoundExact());
+        assertEquals(1, sdl.size());
+        assertEquals(1, sdl.iterator().next().size());
+        assertEquals("KEY-" + i, sdl.iterator().next().get("id"));
 
-      assertNull(listeners[i].onFailureResult);
-      assertTrue(listeners[i].onStartCalled);
+        if (useDeprecatedApi) {
+          assertNull(listeners[i].onFailureResult);
+          assertTrue(listeners[i].onStartCalled);
+        } else {
+          assertFalse(futures.get(i).isCompletedExceptionally());
+        }
+      }
     }
   }
 
-  protected DebugAsyncListener testAsyncExceptionBase() throws Exception {
+  protected DebugAsyncListener testAsyncExceptionBase(boolean useDeprecatedApi) throws Exception {
     ResponseParser rp = new XMLResponseParser();
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "Wrong Content Type!");
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
-    CountDownLatch cdl = new CountDownLatch(1);
-    DebugAsyncListener listener = new DebugAsyncListener(cdl);
+
+    CompletableFuture<NamedList<Object>> future = null;
+    ExecutionException ee = null;
+
+    CountDownLatch latch = new CountDownLatch(1); // Deprecated API use
+    DebugAsyncListener listener = new DebugAsyncListener(latch); // Deprecated API use
+
     try (HttpSolrClientBase client = b.build()) {
       QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
-      client.asyncRequest(query, COLLECTION_1, listener);
-      cdl.await(1, TimeUnit.MINUTES);
+      if (useDeprecatedApi) {
+        client.asyncRequest(query, COLLECTION_1, listener);
+      } else {
+        future = client.requestAsync(query, COLLECTION_1);
+      }
+      if (useDeprecatedApi) {
+        latch.await(1, TimeUnit.MINUTES);
+      } else {
+        try {
+          future.get(1, TimeUnit.MINUTES);
+          fail("Should have thrown ExecutionException");
+        } catch (ExecutionException ee1) {
+          ee = ee1;
+        }
+      }
     }
-
-    assertNotNull(listener.onFailureResult);
-    assertTrue(listener.onStartCalled);
-    assertNull(listener.onSuccessResult);
+    if (useDeprecatedApi) {
+      assertNotNull(listener.onFailureResult);
+      assertTrue(listener.onStartCalled);
+      assertNull(listener.onSuccessResult);
+    } else {
+      assertTrue(future.isCompletedExceptionally());
+      assertTrue(ee.getCause() instanceof BaseHttpSolrClient.RemoteSolrException);
+      assertTrue(ee.getMessage(), ee.getMessage().contains("mime type"));
+    }
     return listener;
+  }
+
+  protected void testAsyncAndCancel(PauseableHttpSolrClient client) throws Exception {
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
+    DebugServlet.responseBodyByQueryFragment.put(
+        "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
+
+    QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
+
+    // We are using a version of the class under test that will wait for us before processing the
+    // response.
+    // This way we can ensure our test will always cancel the request before it finishes.
+    client.pause();
+
+    // Make the request then immediately cancel it!
+    CompletableFuture<NamedList<Object>> future = client.requestAsync(query, "collection1");
+    future.cancel(true);
+
+    // We are safe to unpause our client, having guaranteed that our cancel was before everything
+    // completed.
+    client.unPause();
+
+    assertTrue(future.isCancelled());
   }
 }

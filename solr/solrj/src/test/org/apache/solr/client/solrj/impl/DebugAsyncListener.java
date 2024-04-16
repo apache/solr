@@ -17,17 +17,18 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Semaphore;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Assert;
 
-public class DebugAsyncListener implements AsyncListener<NamedList<Object>> {
+@Deprecated
+public class DebugAsyncListener
+    implements AsyncListener<NamedList<Object>>, PauseableHttpSolrClient {
 
-  private final CountDownLatch cdl;
-
-  private final Semaphore wait = new Semaphore(1);
+  private final CountDownLatch latch;
 
   public volatile boolean onStartCalled;
 
@@ -37,25 +38,13 @@ public class DebugAsyncListener implements AsyncListener<NamedList<Object>> {
 
   public volatile Throwable onFailureResult = null;
 
-  public DebugAsyncListener(CountDownLatch cdl) {
-    this.cdl = cdl;
+  public DebugAsyncListener(CountDownLatch latch) {
+    this.latch = latch;
   }
 
   @Override
   public void onStart() {
     onStartCalled = true;
-  }
-
-  public void pause() {
-    try {
-      wait.acquire();
-    } catch (InterruptedException ie) {
-      Thread.currentThread().interrupt();
-    }
-  }
-
-  public void unPause() {
-    wait.release();
   }
 
   @Override
@@ -65,7 +54,7 @@ public class DebugAsyncListener implements AsyncListener<NamedList<Object>> {
     if (latchCounted) {
       Assert.fail("either 'onSuccess' or 'onFailure' should be called exactly once.");
     }
-    cdl.countDown();
+    latch.countDown();
     latchCounted = true;
     unPause();
   }
@@ -77,8 +66,14 @@ public class DebugAsyncListener implements AsyncListener<NamedList<Object>> {
     if (latchCounted) {
       Assert.fail("either 'onSuccess' or 'onFailure' should be called exactly once.");
     }
-    cdl.countDown();
+    latch.countDown();
     latchCounted = true;
     unPause();
+  }
+
+  @Override
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      SolrRequest<?> solrRequest, String collection) {
+    throw new UnsupportedOperationException();
   }
 }
