@@ -36,8 +36,7 @@ public class NumFieldsMonitor extends AbstractSolrEventListener {
     try {
       indexSearcher = getCore().getSearcher();
       // Get the number of fields directly from the IndexReader instead of the Schema object to also
-      // include the
-      // fields that are missing from the Schema file (dynamic/deleted etc.)
+      // include the fields that are missing from the Schema file (dynamic/deleted etc.)
       numFields = indexSearcher.get().getFieldInfos().size();
     } finally {
       if (indexSearcher != null) {

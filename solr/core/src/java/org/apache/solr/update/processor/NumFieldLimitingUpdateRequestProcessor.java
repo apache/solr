@@ -59,7 +59,7 @@ public class NumFieldLimitingUpdateRequestProcessor extends UpdateRequestProcess
       } else {
         if (log.isDebugEnabled()) {
           log.debug(
-              "Allowing document {}, since current core is under the max-field limit (numFields={}, maxThreshold={})",
+              "Allowing document {}, since current core is under the 'maxFields' limit (numFields={}, maxFields={})",
               cmd.getPrintableId(),
               currentNumFields,
               fieldThreshold);

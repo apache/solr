@@ -29,7 +29,6 @@ import org.junit.Test;
 
 public class NumFieldLimitingUpdateRequestProcessorIntegrationTest extends SolrCloudTestCase {
 
-  private static long ADMIN_OPERATION_TIMEOUT = 15 * 1000;
   private static String SINGLE_SHARD_COLL_NAME = "singleShardColl";
   private static String FIELD_LIMITING_CS_NAME = "fieldLimitingConfig";
 
