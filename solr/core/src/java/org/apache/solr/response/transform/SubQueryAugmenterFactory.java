@@ -16,6 +16,7 @@
  */
 package org.apache.solr.response.transform;
 
+import java.security.Principal;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -25,6 +26,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -113,7 +115,9 @@ public class SubQueryAugmenterFactory extends TransformerFactory {
         field,
         field,
         subParams,
-        params.get(TermsQParserPlugin.SEPARATOR, ","));
+        params.get(TermsQParserPlugin.SEPARATOR, ","),
+        req.getUserPrincipal()
+    );
   }
 
   @SuppressWarnings("unchecked")
@@ -303,6 +307,7 @@ class SubQueryAugmenter extends DocTransformer {
   private final String separator;
   private final SolrClient server;
   private final String coreName;
+  private final Principal principal;
 
   public SubQueryAugmenter(
       SolrClient server,
@@ -310,13 +315,15 @@ class SubQueryAugmenter extends DocTransformer {
       String name,
       String prefix,
       SolrParams baseSubParams,
-      String separator) {
+      String separator,
+      Principal principal) {
     this.name = name;
     this.prefix = prefix;
     this.baseSubParams = baseSubParams;
     this.separator = separator;
     this.server = server;
     this.coreName = coreName;
+    this.principal = principal;
   }
 
   @Override
@@ -340,7 +347,9 @@ class SubQueryAugmenter extends DocTransformer {
     final SolrParams docWithDeprefixed =
         SolrParams.wrapDefaults(new DocRowParams(doc, prefix, separator), baseSubParams);
     try {
-      QueryResponse rsp = server.query(coreName, docWithDeprefixed);
+      QueryRequest req = new QueryRequest(docWithDeprefixed);
+      req.setUserPrincipal(principal);
+      QueryResponse rsp = req.process(server, coreName);
       SolrDocumentList docList = rsp.getResults();
       doc.setField(getName(), new Result(docList));
     } catch (Exception e) {
