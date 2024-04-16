@@ -116,8 +116,7 @@ public class SubQueryAugmenterFactory extends TransformerFactory {
         field,
         subParams,
         params.get(TermsQParserPlugin.SEPARATOR, ","),
-        req.getUserPrincipal()
-    );
+        req.getUserPrincipal());
   }
 
   @SuppressWarnings("unchecked")

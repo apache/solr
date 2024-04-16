@@ -168,7 +168,8 @@ public class SolrRequestParsers {
     ArrayList<ContentStream> streams = new ArrayList<>(1);
     SolrParams params = parser.parseParamsAndFillStreams(req, streams);
 
-    SolrQueryRequest sreq = buildRequestFrom(core, params, streams, getRequestTimer(req), req, null);
+    SolrQueryRequest sreq =
+        buildRequestFrom(core, params, streams, getRequestTimer(req), req, null);
 
     // Handlers and login will want to know the path. If it contains a ':'
     // the handler could use it for RESTful URLs
@@ -188,7 +189,8 @@ public class SolrRequestParsers {
   }
 
   public SolrQueryRequest buildRequestFrom(
-    SolrCore core, SolrParams params, Collection<ContentStream> streams, Principal principal) throws Exception {
+      SolrCore core, SolrParams params, Collection<ContentStream> streams, Principal principal)
+      throws Exception {
     return buildRequestFrom(core, params, streams, new RTimerTree(), null, principal);
   }
 

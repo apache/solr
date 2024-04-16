@@ -16,6 +16,10 @@
  */
 package org.apache.solr.response.transform;
 
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,10 +55,6 @@ import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
-
 @org.apache.solr.SolrTestCaseJ4.SuppressSSL()
 public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
 
@@ -77,43 +77,49 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     int nodeCount = 5;
 
     final String SECURITY_JSON =
-      Utils.toJSONString(
-        Map.of(
-          "authorization",
-          Map.of(
-            "class",
-            RuleBasedAuthorizationPlugin.class.getName(),
-            "user-role",
-            singletonMap(USER, "admin"),
-            "permissions",
-            singletonList(Map.of("name", "all", "role", "admin"))),
-          "authentication",
-          Map.of(
-            "class",
-            BasicAuthPlugin.class.getName(),
-            "blockUnknown",
-            true,
-            "credentials",
-            singletonMap(USER, getSaltedHashedValue(PASS)),
-            "forwardCredentials", // must be true in manual deployment but seems not to matter in this testing context
-            true)));
+        Utils.toJSONString(
+            Map.of(
+                "authorization",
+                Map.of(
+                    "class",
+                    RuleBasedAuthorizationPlugin.class.getName(),
+                    "user-role",
+                    singletonMap(USER, "admin"),
+                    "permissions",
+                    singletonList(Map.of("name", "all", "role", "admin"))),
+                "authentication",
+                Map.of(
+                    "class",
+                    BasicAuthPlugin.class.getName(),
+                    "blockUnknown",
+                    true,
+                    "credentials",
+                    singletonMap(USER, getSaltedHashedValue(PASS)),
+                    "forwardCredentials", // must be true in manual deployment but seems not to
+                    // matter in this testing context
+                    true)));
 
-    configureCluster(nodeCount).addConfig(configName, configDir).withSecurityJson(SECURITY_JSON).configure();
+    configureCluster(nodeCount)
+        .addConfig(configName, configDir)
+        .withSecurityJson(SECURITY_JSON)
+        .configure();
 
     int shards = 2;
     int replicas = 2;
-    withBasicAuth(CollectionAdminRequest.createCollection(people, configName, shards, replicas)
-        .withProperty("config", "solrconfig-doctransformers.xml")
-        .withProperty("schema", "schema-docValuesJoin.xml"))
+    withBasicAuth(
+            CollectionAdminRequest.createCollection(people, configName, shards, replicas)
+                .withProperty("config", "solrconfig-doctransformers.xml")
+                .withProperty("schema", "schema-docValuesJoin.xml"))
         .process(cluster.getSolrClient());
 
-    withBasicAuth(CollectionAdminRequest.createCollection(depts, configName, shards, replicas)
-        .withProperty("config", "solrconfig-doctransformers.xml")
-        .withProperty(
-            "schema",
-            differentUniqueId
-                ? "schema-minimal-with-another-uniqkey.xml"
-                : "schema-docValuesJoin.xml"))
+    withBasicAuth(
+            CollectionAdminRequest.createCollection(depts, configName, shards, replicas)
+                .withProperty("config", "solrconfig-doctransformers.xml")
+                .withProperty(
+                    "schema",
+                    differentUniqueId
+                        ? "schema-minimal-with-another-uniqkey.xml"
+                        : "schema-docValuesJoin.xml"))
         .process(cluster.getSolrClient());
 
     CloudSolrClient client = cluster.getSolrClient();
@@ -210,7 +216,8 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     final URLConnection urlConnectionWithoutAuth = node.openConnection();
     assertThrows(Exception.class, () -> urlConnectionWithoutAuth.getInputStream());
     final URLConnection urlConnection = node.openConnection();
-    String basicAuth = "Basic " + new String(Base64.getEncoder().encode((USER + ":" + PASS).getBytes()));
+    String basicAuth =
+        "Basic " + new String(Base64.getEncoder().encode((USER + ":" + PASS).getBytes()));
     urlConnection.setRequestProperty("Authorization", basicAuth);
 
     try (final InputStream jsonResponse = urlConnection.getInputStream()) {
