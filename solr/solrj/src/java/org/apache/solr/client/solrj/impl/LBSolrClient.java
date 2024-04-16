@@ -494,6 +494,7 @@ public abstract class LBSolrClient extends SolrClient {
       req.getRequest().setBasePath(baseUrl);
       rsp.rsp = getClient(baseUrl).request(req.getRequest(), (String) null);
       if (isZombie) {
+        // TODO: zombieServers key is String not Endpoint.
         zombieServers.remove(baseUrl);
       }
     } catch (BaseHttpSolrClient.RemoteExecutionException e) {
