@@ -32,6 +32,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Phaser;
@@ -51,7 +52,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -419,66 +419,92 @@ public class Http2SolrClient extends HttpSolrClientBase {
     outStream.flush();
   }
 
-  @SuppressWarnings("StaticAssignmentOfThrowable")
-  private static final Exception CANCELLED_EXCEPTION = new Exception();
-
-  private static final Cancellable FAILED_MAKING_REQUEST_CANCELLABLE = () -> {};
-
   @Override
   public Cancellable asyncRequest(
       SolrRequest<?> solrReq, String collection, AsyncListener<NamedList<Object>> asyncListener) {
-    MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
-    SolrRequest<?> solrRequest = unwrapV2Request(solrReq);
+    asyncListener.onStart();
+    CompletableFuture<NamedList<Object>> cf =
+        requestAsync(solrReq, collection)
+            .whenComplete(
+                (nl, t) -> {
+                  if (t != null) {
+                    asyncListener.onFailure(t);
+                  } else {
+                    asyncListener.onSuccess(nl);
+                  }
+                });
+    return () -> cf.cancel(true);
+  }
 
-    Request req;
+  @Override
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      final SolrRequest<?> solrRequest, String collection) {
+    if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest)) {
+      collection = defaultCollection;
+    }
+    MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
+    CompletableFuture<NamedList<Object>> future = new CompletableFuture<>();
+    final MakeRequestReturnValue mrrv;
+    final String url;
     try {
-      String url = getRequestPath(solrRequest, collection);
-      InputStreamResponseListener listener =
-          new InputStreamReleaseTrackingResponseListener() {
-            @Override
-            public void onHeaders(Response response) {
-              super.onHeaders(response);
-              executor.execute(
-                  () -> {
-                    InputStream is = getInputStream();
-                    try {
-                      NamedList<Object> body =
-                          processErrorsAndResponse(solrRequest, response, is, url);
-                      mdcCopyHelper.onBegin(null);
-                      log.debug("response processing success");
-                      asyncListener.onSuccess(body);
-                    } catch (RemoteSolrException e) {
-                      if (SolrException.getRootCause(e) != CANCELLED_EXCEPTION) {
+      url = getRequestPath(solrRequest, collection);
+      mrrv = makeRequest(solrRequest, url, true);
+    } catch (SolrServerException | IOException e) {
+      future.completeExceptionally(e);
+      return future;
+    }
+    final ResponseParser parser =
+        solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
+    mrrv.request
+        .onRequestQueued(asyncTracker.queuedListener)
+        .onComplete(asyncTracker.completeListener)
+        .send(
+            new InputStreamResponseListener() {
+              @Override
+              public void onHeaders(Response response) {
+                super.onHeaders(response);
+                InputStreamResponseListener listener = this;
+                executor.execute(
+                    () -> {
+                      InputStream is = listener.getInputStream();
+                      try {
+                        NamedList<Object> body =
+                            processErrorsAndResponse(solrRequest, response, is, url);
+                        mdcCopyHelper.onBegin(null);
+                        log.debug("response processing success");
+                        future.complete(body);
+                      } catch (RemoteSolrException | SolrServerException e) {
                         mdcCopyHelper.onBegin(null);
                         log.debug("response processing failed", e);
-                        asyncListener.onFailure(e);
+                        future.completeExceptionally(e);
+                      } finally {
+                        log.debug("response processing completed");
+                        mdcCopyHelper.onComplete(null);
                       }
-                    } catch (SolrServerException e) {
-                      mdcCopyHelper.onBegin(null);
-                      log.debug("response processing failed", e);
-                      asyncListener.onFailure(e);
-                    } finally {
-                      log.debug("response processing completed");
-                      mdcCopyHelper.onComplete(null);
-                    }
-                  });
-            }
-
-            @Override
-            public void onFailure(Response response, Throwable failure) {
-              super.onFailure(response, failure);
-              if (failure != CANCELLED_EXCEPTION) {
-                asyncListener.onFailure(new SolrServerException(failure.getMessage(), failure));
+                    });
               }
-            }
-          };
-      asyncListener.onStart();
-      req = makeRequestAndSend(solrRequest, url, listener, true);
-    } catch (SolrServerException | IOException e) {
-      asyncListener.onFailure(e);
-      return FAILED_MAKING_REQUEST_CANCELLABLE;
+
+              @Override
+              public void onFailure(Response response, Throwable failure) {
+                super.onFailure(response, failure);
+                future.completeExceptionally(
+                    new SolrServerException(failure.getMessage(), failure));
+              }
+            });
+    future.exceptionally(
+        (error) -> {
+          mrrv.request.abort(error);
+          return null;
+        });
+
+    if (mrrv.contentWriter != null) {
+      try (var output = mrrv.requestContent.getOutputStream()) {
+        mrrv.contentWriter.write(output);
+      } catch (IOException ioe) {
+        future.completeExceptionally(ioe);
+      }
     }
-    return () -> req.abort(CANCELLED_EXCEPTION);
+    return future;
   }
 
   @Override
@@ -609,25 +635,49 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
   }
 
+  private static class MakeRequestReturnValue {
+    final Request request;
+    final RequestWriter.ContentWriter contentWriter;
+    final OutputStreamRequestContent requestContent;
+
+    MakeRequestReturnValue(
+        Request request,
+        RequestWriter.ContentWriter contentWriter,
+        OutputStreamRequestContent requestContent) {
+      this.request = request;
+      this.contentWriter = contentWriter;
+      this.requestContent = requestContent;
+    }
+
+    MakeRequestReturnValue(Request request) {
+      this.request = request;
+      this.contentWriter = null;
+      this.requestContent = null;
+    }
+  }
+
   private Request makeRequestAndSend(
       SolrRequest<?> solrRequest, String url, InputStreamResponseListener listener, boolean isAsync)
       throws IOException, SolrServerException {
+    return sendRequest(makeRequest(solrRequest, url, isAsync), listener);
+  }
 
+  private MakeRequestReturnValue makeRequest(
+      SolrRequest<?> solrRequest, String url, boolean isAsync)
+      throws IOException, SolrServerException {
     ModifiableSolrParams wparams = initalizeSolrParams(solrRequest, responseParser(solrRequest));
 
     if (SolrRequest.METHOD.GET == solrRequest.getMethod()) {
       validateGetRequest(solrRequest);
       var r = httpClient.newRequest(url + wparams.toQueryString()).method(HttpMethod.GET);
       decorateRequest(r, solrRequest, isAsync);
-      r.send(listener);
-      return r;
+      return new MakeRequestReturnValue(r);
     }
 
     if (SolrRequest.METHOD.DELETE == solrRequest.getMethod()) {
       var r = httpClient.newRequest(url + wparams.toQueryString()).method(HttpMethod.DELETE);
       decorateRequest(r, solrRequest, isAsync);
-      r.send(listener);
-      return r;
+      return new MakeRequestReturnValue(r);
     }
 
     if (SolrRequest.METHOD.POST == solrRequest.getMethod()
@@ -645,11 +695,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
         var content = new OutputStreamRequestContent(contentWriter.getContentType());
         var r = httpClient.newRequest(url + wparams.toQueryString()).method(method).body(content);
         decorateRequest(r, solrRequest, isAsync);
-        r.send(listener);
-        try (var output = content.getOutputStream()) {
-          contentWriter.write(output);
-        }
-        return r;
+        return new MakeRequestReturnValue(r, contentWriter, content);
 
       } else if (streams == null || isMultipart) {
         // send server list and request list as query string params
@@ -658,23 +704,33 @@ public class Http2SolrClient extends HttpSolrClientBase {
         Request req = httpClient.newRequest(url + queryParams.toQueryString()).method(method);
         var r = fillContentStream(req, streams, wparams, isMultipart);
         decorateRequest(r, solrRequest, isAsync);
-        r.send(listener);
-        return r;
+        return new MakeRequestReturnValue(r);
 
       } else {
-        // If is has one stream, it is the post body, put the params in the URL
+        // If it has one stream, it is the post body, put the params in the URL
         ContentStream contentStream = streams.iterator().next();
         var content =
             new InputStreamRequestContent(
                 contentStream.getContentType(), contentStream.getStream());
         var r = httpClient.newRequest(url + wparams.toQueryString()).method(method).body(content);
         decorateRequest(r, solrRequest, isAsync);
-        r.send(listener);
-        return r;
+        return new MakeRequestReturnValue(r);
       }
     }
 
     throw new SolrServerException("Unsupported method: " + solrRequest.getMethod());
+  }
+
+  private Request sendRequest(MakeRequestReturnValue mrrv, InputStreamResponseListener listener)
+      throws IOException, SolrServerException {
+    mrrv.request.send(listener);
+
+    if (mrrv.contentWriter != null) {
+      try (var output = mrrv.requestContent.getOutputStream()) {
+        mrrv.contentWriter.write(output);
+      }
+    }
+    return mrrv.request;
   }
 
   private Request fillContentStream(

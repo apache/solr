@@ -15,20 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.util;
+package org.apache.solr.client.solrj.impl;
 
-/**
- * The return type for solrJ asynchronous requests, providing a mechanism whereby callers may
- * request cancellation.
- *
- * @deprecated Use the async variants that return CompletableFuture.
- */
-@Deprecated
-public interface Cancellable {
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Semaphore;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.util.NamedList;
 
-  /**
-   * Request to cancel the asynchronous request. This may be a no-op in some situations, for
-   * instance, if the request failed or otherwise is complete.
-   */
-  void cancel();
+public interface PauseableHttpSolrClient {
+
+  Semaphore wait = new Semaphore(1);
+
+  public default void pause() {
+    try {
+      wait.acquire();
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  public default void unPause() {
+    wait.release();
+  }
+
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      final SolrRequest<?> solrRequest, String collection);
 }
