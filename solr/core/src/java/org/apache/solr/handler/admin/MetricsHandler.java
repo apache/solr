@@ -38,8 +38,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -121,18 +119,16 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   }
 
   private void handleRequest(SolrParams params, BiConsumer<String, Object> consumer)
-          throws Exception {
+      throws Exception {
     NamedList<Object> response;
 
     if (!enabled) {
       consumer.accept("error", "metrics collection is disabled");
       return;
     }
-    boolean compact = params.getBool(COMPACT_PARAM, true);
 
-    Set<String> requestedRegistries = parseRegistries(params);
     if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
-      response = handlePrometheusRegistry(params, requestedRegistries);
+      response = handlePrometheusRegistry(params);
       consumer.accept("metrics", response);
       return;
     }
@@ -147,20 +143,19 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       return;
     }
 
-    response = handleDropwizardRegistry(params, requestedRegistries);
+    response = handleDropwizardRegistry(params);
 
     consumer.accept("metrics", response);
-
   }
 
-  private NamedList<Object> handleDropwizardRegistry(SolrParams params, Set<String> requestedRegistries) {
+  private NamedList<Object> handleDropwizardRegistry(SolrParams params) {
     boolean compact = params.getBool(COMPACT_PARAM, true);
     MetricFilter mustMatchFilter = parseMustMatchFilter(params);
     Predicate<CharSequence> propertyFilter = parsePropertyFilter(params);
     List<MetricType> metricTypes = parseMetricTypes(params);
     List<MetricFilter> metricFilters =
-            metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
-    metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
+        metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
+    Set<String> requestedRegistries = parseRegistries(params);
 
     NamedList<Object> response = new SimpleOrderedMap<>();
     for (String registryName : requestedRegistries) {
@@ -168,15 +163,15 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
 
       MetricUtils.toMaps(
-              registry,
-              metricFilters,
-              mustMatchFilter,
-              propertyFilter,
-              false,
-              false,
-              compact,
-              false,
-              (k, v) -> result.add(k, v));
+          registry,
+          metricFilters,
+          mustMatchFilter,
+          propertyFilter,
+          false,
+          false,
+          compact,
+          false,
+          (k, v) -> result.add(k, v));
       if (result.size() > 0) {
         response.add(registryName, result);
       }
@@ -184,54 +179,33 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return response;
   }
 
-  private NamedList<Object> handlePrometheusRegistry(SolrParams params, Set<String> requestedRegistries) {
+  private NamedList<Object> handlePrometheusRegistry(SolrParams params) {
     NamedList<Object> response = new SimpleOrderedMap<>();
     boolean compact = params.getBool(COMPACT_PARAM, true);
     MetricFilter mustMatchFilter = parseMustMatchFilter(params);
     Predicate<CharSequence> propertyFilter = parsePropertyFilter(params);
     List<MetricType> metricTypes = parseMetricTypes(params);
     List<MetricFilter> metricFilters =
-            metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
+        metricTypes.stream().map(MetricType::asMetricFilter).collect(Collectors.toList());
+    Set<String> requestedRegistries = parseRegistries(params);
+
     for (String registryName : requestedRegistries) {
       MetricRegistry dropWizardRegistry = metricManager.registry(registryName);
-      SimpleOrderedMap<Object> result = new SimpleOrderedMap<>();
-      PrometheusRegistry prometheusRegistry = new PrometheusRegistry();
-      if(registryName.equals("solr.core.demo")){
-        MetricUtils.toMaps(
-                dropWizardRegistry,
-                metricFilters,
-                mustMatchFilter,
-                propertyFilter,
-                false,
-                false,
-                compact,
-                false,
-                (k, v) -> {
-                  result.add(k, v);
-                });
+      // Currently only export Solr Core registries
+      if (registryName.startsWith("solr.core")) {
+        MetricUtils.toPrometheusRegistry(
+            dropWizardRegistry,
+            registryName,
+            metricFilters,
+            mustMatchFilter,
+            propertyFilter,
+            false,
+            false,
+            compact,
+            (registry) -> {
+              response.add(registryName, registry);
+            });
       }
-      Map<String, Object> registryMap = result.asShallowMap();
-      String[] splitRegistryName = registryName.split("\\.");
-      String coreName;
-      if (splitRegistryName.length == 3) {
-        coreName = splitRegistryName[2];
-      } else if (splitRegistryName.length == 5) {
-        coreName = "NoCoreNameFound";
-      } else {
-        coreName = "NoCoreNameFound";
-      }
-      io.prometheus.metrics.core.metrics.Counter requestsTotal = io.prometheus.metrics.core.metrics.Counter.builder().name("solr_metrics_core_requests_total").help("Total number of requests to Solr").labelNames("category", "handler", "collection").register(prometheusRegistry);
-      for (Map.Entry<String, Object> entry : registryMap.entrySet()) {
-        String key = entry.getKey();
-        Object value = entry.getValue();
-        if (key.endsWith("requests")) {
-          String[] splitString = key.split("\\.");
-          if( value instanceof Long ) {
-            requestsTotal.labelValues(splitString[0], splitString[1], coreName).inc((long) value);
-          }
-        }
-      }
-      response.add(registryName, prometheusRegistry);
     }
     return response;
   }

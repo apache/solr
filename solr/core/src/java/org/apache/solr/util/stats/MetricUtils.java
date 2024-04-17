@@ -26,6 +26,7 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -35,6 +36,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.PlatformManagedObject;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -53,6 +57,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,6 +168,55 @@ public class MetricUtils {
           }
           consumer.accept(doc);
         });
+  }
+
+  public static void toPrometheusRegistry(
+      MetricRegistry registry,
+      String registryName,
+      List<MetricFilter> shouldMatchFilters,
+      MetricFilter mustMatchFilter,
+      Predicate<CharSequence> propertyFilter,
+      boolean skipHistograms,
+      boolean skipAggregateValues,
+      boolean compact,
+      Consumer<PrometheusRegistry> consumer) {
+    String coreName;
+    boolean cloudMode = false;
+    Map<String, Metric> dropwizardMetrics = registry.getMetrics();
+    String[] rawParsedRegistry = registryName.split("\\.");
+    List<String> parsedRegistry = new ArrayList<>(Arrays.asList(rawParsedRegistry));
+
+    if (parsedRegistry.size() == 3) {
+      coreName = parsedRegistry.get(2);
+    } else if (parsedRegistry.size() == 5) {
+      coreName = parsedRegistry.stream().skip(1).collect(Collectors.joining("_"));
+      cloudMode = true;
+    } else {
+      coreName = registryName;
+    }
+
+    SolrPrometheusCoreRegistry solrPrometheusCoreMetrics =
+        new SolrPrometheusCoreRegistry(new PrometheusRegistry(), coreName, cloudMode);
+
+    toMaps(
+        registry,
+        shouldMatchFilters,
+        mustMatchFilter,
+        propertyFilter,
+        skipHistograms,
+        skipAggregateValues,
+        compact,
+        false,
+        (metricName, metric) -> {
+          try {
+            Metric dropwizardMetric = dropwizardMetrics.get(metricName);
+            solrPrometheusCoreMetrics.exportDropwizardMetric(metricName, dropwizardMetric);
+          } catch (Exception e) {
+            // Do not fail entirely for metrics exporting. Log and try to export next metric
+            log.warn("Error occurred exporting Dropwizard Metric to Prometheus", e);
+          }
+        });
+    consumer.accept(solrPrometheusCoreMetrics.getPrometheusRegistry());
   }
 
   /**
