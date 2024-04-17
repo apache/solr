@@ -48,7 +48,7 @@ public class SolrPrometheusCoreRegistry extends SolrPrometheusRegistry {
     this.cloudMode = cloudMode;
   }
 
-  public void exportDropwizardMetric( Metric dropwizardMetric, String metricName) {
+  public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {
     SolrCoreMetric solrCoreMetric = categorizeCoreMetric(dropwizardMetric, metricName);
     solrCoreMetric.parseLabels().toPrometheus(this);
   }
