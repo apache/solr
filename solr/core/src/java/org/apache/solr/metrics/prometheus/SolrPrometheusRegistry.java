@@ -73,7 +73,7 @@ public abstract class SolrPrometheusRegistry {
 
   public void exportTimer(
       Timer dropwizardMetric, String prometheusMetricName, Map<String, String> labelsMap) {
-    if (!metricCounters.containsKey(prometheusMetricName)) {
+    if (!metricGauges.containsKey(prometheusMetricName)) {
       ArrayList<String> labels = new ArrayList<>(labelsMap.keySet());
       registerGauge(prometheusMetricName, labels.toArray(String[]::new));
     }
