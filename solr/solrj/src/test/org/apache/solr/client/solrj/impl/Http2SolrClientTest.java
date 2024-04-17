@@ -266,33 +266,18 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testDeprecatedAsyncGet() throws Exception {
-    super.testQueryAsync(true);
-  }
-
-  @Test
   public void testAsyncGet() throws Exception {
-    super.testQueryAsync(false);
-  }
-
-  @Test
-  public void testDeprecatedAsyncPost() throws Exception {
-    super.testUpdateAsync(true);
+    super.testQueryAsync();
   }
 
   @Test
   public void testAsyncPost() throws Exception {
-    super.testUpdateAsync(false);
-  }
-
-  @Test
-  public void testDeprecatedAsyncException() throws Exception {
-    super.testAsyncExceptionBase(true);
+    super.testUpdateAsync();
   }
 
   @Test
   public void testAsyncException() throws Exception {
-    super.testAsyncExceptionBase(false);
+    super.testAsyncExceptionBase();
   }
 
   @Test
