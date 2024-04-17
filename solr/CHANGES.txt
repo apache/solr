@@ -59,6 +59,10 @@ Deprecation Removals
 * SOLR-12089: Remove deprecated `breakSugestionTieBreaker` parameter in favor of `breakSuggestionTieBreaker`
   in WordBreakSolrSpellChecker (Andrey Bozhko via Eric Pugh)
 
+* SOLR-14763: Remove deprecated asynchronous request methods from `Http2SolrClient`, `HttpJdkSolrClient` and `LBHttp2SolrClient`
+  in favor of the new CompletableFuture based methods.  Remove the related deprecated interfaces `AsyncListener` and ``Cancellable`
+  (James Dyer)
+
 Dependency Upgrades
 ---------------------
 (No changes)
