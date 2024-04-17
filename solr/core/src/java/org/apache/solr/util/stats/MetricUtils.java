@@ -210,7 +210,7 @@ public class MetricUtils {
         (metricName, metric) -> {
           try {
             Metric dropwizardMetric = dropwizardMetrics.get(metricName);
-            solrPrometheusCoreMetrics.exportDropwizardMetric(metricName, dropwizardMetric);
+            solrPrometheusCoreMetrics.exportDropwizardMetric(dropwizardMetric, metricName);
           } catch (Exception e) {
             // Do not fail entirely for metrics exporting. Log and try to export next metric
             log.warn("Error occurred exporting Dropwizard Metric to Prometheus", e);
