@@ -52,8 +52,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.util.AsyncListener;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -134,26 +132,6 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     updateDefaultMimeTypeForParser();
 
     assert ObjectReleaseTracker.track(this);
-  }
-
-  @Override
-  public Cancellable asyncRequest(
-      SolrRequest<?> solrRequest,
-      String collection,
-      AsyncListener<NamedList<Object>> asyncListener) {
-    asyncListener.onStart();
-    CompletableFuture<NamedList<Object>> cf =
-        requestAsync(solrRequest, collection)
-            .whenComplete(
-                (nl, t) -> {
-                  if (t != null) {
-                    asyncListener.onFailure(t);
-                  } else {
-                    asyncListener.onSuccess(nl);
-                  }
-                });
-
-    return new HttpSolrClientCancellable(cf);
   }
 
   @Override
@@ -537,23 +515,6 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
         .filter(Objects::nonNull)
         .map(s -> s.toLowerCase(Locale.ROOT).trim())
         .collect(Collectors.joining(", "));
-  }
-
-  protected static class HttpSolrClientCancellable implements Cancellable {
-    private final CompletableFuture<NamedList<Object>> response;
-
-    protected HttpSolrClientCancellable(CompletableFuture<NamedList<Object>> response) {
-      this.response = response;
-    }
-
-    @Override
-    public void cancel() {
-      response.cancel(true);
-    }
-
-    protected CompletableFuture<NamedList<Object>> getResponse() {
-      return response;
-    }
   }
 
   public static class Builder

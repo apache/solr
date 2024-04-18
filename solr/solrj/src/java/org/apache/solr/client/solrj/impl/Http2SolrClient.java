@@ -47,8 +47,6 @@ import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory.RequestResponseListener;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.util.AsyncListener;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -415,26 +413,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
       }
     }
     outStream.flush();
-  }
-
-  @Override
-  public Cancellable asyncRequest(
-      SolrRequest<?> solrRequest,
-      String collection,
-      AsyncListener<NamedList<Object>> asyncListener) {
-
-    asyncListener.onStart();
-    CompletableFuture<NamedList<Object>> cf =
-        requestAsync(solrRequest, collection)
-            .whenComplete(
-                (nl, t) -> {
-                  if (t != null) {
-                    asyncListener.onFailure(t);
-                  } else {
-                    asyncListener.onSuccess(nl);
-                  }
-                });
-    return () -> cf.cancel(true);
   }
 
   @Override
