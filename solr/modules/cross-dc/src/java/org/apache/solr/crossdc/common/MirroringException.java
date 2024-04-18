@@ -16,23 +16,21 @@
  */
 package org.apache.solr.crossdc.common;
 
-/**
- * Exception thrown during cross-dc mirroring
- */
+/** Exception thrown during cross-dc mirroring */
 public class MirroringException extends Exception {
-    public MirroringException() {
-        super();
-    }
+  public MirroringException() {
+    super();
+  }
 
-    public MirroringException(String message) {
-        super(message);
-    }
+  public MirroringException(String message) {
+    super(message);
+  }
 
-    public MirroringException(String message, Throwable cause) {
-        super(message, cause);
-    }
+  public MirroringException(String message, Throwable cause) {
+    super(message, cause);
+  }
 
-    public MirroringException(Throwable cause) {
-        super(cause);
-    }
+  public MirroringException(Throwable cause) {
+    super(cause);
+  }
 }

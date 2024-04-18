@@ -19,13 +19,13 @@ package org.apache.solr.crossdc.common;
 import org.apache.solr.common.SolrException;
 
 public class SolrExceptionUtil {
-    public static SolrException asSolrException(final Exception e) {
-        SolrException solrException = null;
-        if (e.getCause() instanceof SolrException) {
-            solrException = (SolrException) e.getCause();
-        } else if (e instanceof SolrException) {
-            solrException = (SolrException) e;
-        }
-        return solrException;
+  public static SolrException asSolrException(final Exception e) {
+    SolrException solrException = null;
+    if (e.getCause() instanceof SolrException) {
+      solrException = (SolrException) e.getCause();
+    } else if (e instanceof SolrException) {
+      solrException = (SolrException) e;
     }
+    return solrException;
+  }
 }

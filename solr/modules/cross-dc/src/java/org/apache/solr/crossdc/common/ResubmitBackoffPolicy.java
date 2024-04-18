@@ -17,5 +17,5 @@
 package org.apache.solr.crossdc.common;
 
 public interface ResubmitBackoffPolicy {
-  long getBackoffTimeMs(MirroredSolrRequest resubmitRequest);
+  long getBackoffTimeMs(MirroredSolrRequest<?> resubmitRequest);
 }

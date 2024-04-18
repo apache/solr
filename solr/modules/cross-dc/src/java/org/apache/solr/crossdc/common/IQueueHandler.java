@@ -17,58 +17,58 @@
 package org.apache.solr.crossdc.common;
 
 public interface IQueueHandler<T> {
-    enum ResultStatus {
-        /** Item was successfully processed */
-        HANDLED,
+  enum ResultStatus {
+    /** Item was successfully processed */
+    HANDLED,
 
-        /** Item was not processed, and the consumer should shutdown */
-        NOT_HANDLED_SHUTDOWN,
+    /** Item was not processed, and the consumer should shutdown */
+    NOT_HANDLED_SHUTDOWN,
 
-        /** Item processing failed, and the item should be retried immediately */
-        FAILED_RETRY,
+    /** Item processing failed, and the item should be retried immediately */
+    FAILED_RETRY,
 
-        /** Item processing failed, and the item should not be retried (unsuccessfully processed) */
-        FAILED_NO_RETRY,
+    /** Item processing failed, and the item should not be retried (unsuccessfully processed) */
+    FAILED_NO_RETRY,
 
-        /** Item processing failed, and the item should be re-queued */
-        FAILED_RESUBMIT
+    /** Item processing failed, and the item should be re-queued */
+    FAILED_RESUBMIT
+  }
+
+  class Result<T> {
+    private final ResultStatus _status;
+    private final Throwable _throwable;
+    private final T _item;
+
+    public Result(final ResultStatus status) {
+      _status = status;
+      _throwable = null;
+      _item = null;
     }
 
-    class Result<T> {
-        private final ResultStatus _status;
-        private final Throwable _throwable;
-        private final T _item;
-
-        public Result(final ResultStatus status) {
-            _status = status;
-            _throwable = null;
-            _item = null;
-        }
-
-        public Result(final ResultStatus status, final Throwable throwable) {
-            _status = status;
-            _throwable = throwable;
-            _item = null;
-        }
-
-        public Result(final ResultStatus status, final Throwable throwable, final T newItem) {
-            _status = status;
-            _throwable = throwable;
-            _item = newItem;
-        }
-
-        public ResultStatus status() {
-            return _status;
-        }
-
-        public Throwable throwable() {
-            return _throwable;
-        }
-
-        public T getItem() {
-            return _item;
-        }
+    public Result(final ResultStatus status, final Throwable throwable) {
+      _status = status;
+      _throwable = throwable;
+      _item = null;
     }
 
-    Result<T> handleItem(T item);
+    public Result(final ResultStatus status, final Throwable throwable, final T newItem) {
+      _status = status;
+      _throwable = throwable;
+      _item = newItem;
+    }
+
+    public ResultStatus status() {
+      return _status;
+    }
+
+    public Throwable throwable() {
+      return _throwable;
+    }
+
+    public T getItem() {
+      return _item;
+    }
+  }
+
+  Result<T> handleItem(T item);
 }

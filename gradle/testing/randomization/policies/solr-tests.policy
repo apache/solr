@@ -89,6 +89,11 @@ grant {
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.description.type";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.dynamic.loading";
   permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.utility";
+  // Allow execution of 'java.exe' anywhere on the system for Windows
+  permission java.io.FilePermission "C:\Users\mark\.jdks\openjdk-19.0.1\bin\java.exe", "execute";
+   // Allow execution of 'java' anywhere on the system for Linux
+  permission java.io.FilePermission "<<ALL FILES>>/java", "execute";
+
   // needed by mockito
   permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";
   permission java.lang.RuntimePermission "reflectionFactoryAccess";

@@ -17,6 +17,12 @@
 package org.apache.solr.crossdc.handler;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ContentStream;
@@ -32,13 +38,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 
 public class MirroringConfigSetsHandler extends ConfigSetsHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -91,7 +90,8 @@ public class MirroringConfigSetsHandler extends ConfigSetsHandler {
     if (req.getContentStreams() != null) {
       contentStreams = new ArrayList<>();
       for (ContentStream cs : req.getContentStreams()) {
-        MirroredSolrRequest.ExposedByteArrayContentStream stream = MirroredSolrRequest.ExposedByteArrayContentStream.of(cs);
+        MirroredSolrRequest.ExposedByteArrayContentStream stream =
+            MirroredSolrRequest.ExposedByteArrayContentStream.of(cs);
         contentStreams.add(stream);
       }
       localReq.setContentStreams(contentStreams);
@@ -105,9 +105,11 @@ public class MirroringConfigSetsHandler extends ConfigSetsHandler {
     if (sink == null) {
       return;
     }
-    SolrRequest.METHOD method = SolrRequest.METHOD.valueOf(req.getHttpMethod().toUpperCase(Locale.ROOT));
-    MirroredSolrRequest.MirroredConfigSetRequest configSetRequest = new MirroredSolrRequest.MirroredConfigSetRequest(method, req.getParams(), contentStreams);
-    sink.submit(new MirroredSolrRequest(MirroredSolrRequest.Type.CONFIGSET, configSetRequest));
+    SolrRequest.METHOD method =
+        SolrRequest.METHOD.valueOf(req.getHttpMethod().toUpperCase(Locale.ROOT));
+    MirroredSolrRequest.MirroredConfigSetRequest configSetRequest =
+        new MirroredSolrRequest.MirroredConfigSetRequest(method, req.getParams(), contentStreams);
+    sink.submit(new MirroredSolrRequest<>(MirroredSolrRequest.Type.CONFIGSET, configSetRequest));
   }
 
   @VisibleForTesting

@@ -16,23 +16,21 @@
  */
 package org.apache.solr.crossdc.update.processor;
 
-/**
- * Wrapper class for Mirroring exceptions.
- */
+/** Wrapper class for Mirroring exceptions. */
 public class MirroringException extends Exception {
-    public MirroringException() {
-        super();
-    }
+  public MirroringException() {
+    super();
+  }
 
-    public MirroringException(String message) {
-        super(message);
-    }
+  public MirroringException(String message) {
+    super(message);
+  }
 
-    public MirroringException(String message, Throwable cause) {
-        super(message, cause);
-    }
+  public MirroringException(String message, Throwable cause) {
+    super(message, cause);
+  }
 
-    public MirroringException(Throwable cause) {
-        super(cause);
-    }
+  public MirroringException(Throwable cause) {
+    super(cause);
+  }
 }

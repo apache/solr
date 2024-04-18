@@ -16,6 +16,19 @@
  */
 package org.apache.solr.crossdc.manager.messageprocessor;
 
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Map;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -33,103 +46,99 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Map;
-
-import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.*;
-
 public class TestMessageProcessor {
-    static final String VERSION_FIELD = "_version_";
+  static final String VERSION_FIELD = "_version_";
 
-    @Mock
-    private CloudSolrClient solrClient;
-    private SolrMessageProcessor processor;
+  @Mock private CloudSolrClient solrClient;
+  private SolrMessageProcessor processor;
 
-    private ResubmitBackoffPolicy backoffPolicy = spy(new ResubmitBackoffPolicy() {
-        @Override
-        public long getBackoffTimeMs(MirroredSolrRequest resubmitRequest) {
-            return 0;
-        }
-    });
-
-    @BeforeClass
-    public static void ensureWorkingMockito() {
-        assumeWorkingMockito();
-    }
-
-    @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
-
-        processor = Mockito.spy(new SolrMessageProcessor(solrClient,
-                backoffPolicy));
-        Mockito.doNothing().when(processor).uncheckedSleep(anyLong());
-    }
-
-    @Test
-    public void testDocumentSanitization() {
-        UpdateRequest request = spy(new UpdateRequest());
-
-        // Add docs with and without version
-        request.add(new SolrInputDocument() {
-            {
-                setField("id", 1);
-                setField(VERSION_FIELD, 1);
+  private final ResubmitBackoffPolicy backoffPolicy =
+      spy(
+          new ResubmitBackoffPolicy() {
+            @Override
+            public long getBackoffTimeMs(MirroredSolrRequest<?> resubmitRequest) {
+              return 0;
             }
+          });
+
+  @BeforeClass
+  public static void ensureWorkingMockito() {
+    assumeWorkingMockito();
+  }
+
+  @Before
+  public void setUp() {
+    MockitoAnnotations.initMocks(this);
+
+    processor = Mockito.spy(new SolrMessageProcessor(solrClient, backoffPolicy));
+    Mockito.doNothing().when(processor).uncheckedSleep(anyLong());
+  }
+
+  @Test
+  public void testDocumentSanitization() {
+    UpdateRequest request = spy(new UpdateRequest());
+
+    // Add docs with and without version
+    request.add(
+        new SolrInputDocument() {
+          {
+            setField("id", 1);
+            setField(VERSION_FIELD, 1);
+          }
         });
-        request.add(new SolrInputDocument() {
-            {
-                setField("id", 2);
-            }
+    request.add(
+        new SolrInputDocument() {
+          {
+            setField("id", 2);
+          }
         });
 
-        // Delete by id with and without version
-        request.deleteById("1");
-        request.deleteById("2", 10L);
+    // Delete by id with and without version
+    request.deleteById("1");
+    request.deleteById("2", 10L);
 
-        request.setParam("shouldMirror", "true");
-        // The response is irrelevant, but it will fail because mocked server returns null when processing
-        processor.handleItem(new MirroredSolrRequest(request));
+    request.setParam("shouldMirror", "true");
+    // The response is irrelevant, but it will fail because mocked server returns null when
+    // processing
+    processor.handleItem(new MirroredSolrRequest<>(request));
 
-        // After processing, check that all version fields are stripped
-        for (SolrInputDocument doc : request.getDocuments()) {
-            assertNull("Doc still has version", doc.getField(VERSION_FIELD));
-        }
-
-        // Check versions in delete by id
-        for (Map<String, Object> idParams : request.getDeleteByIdMap().values()) {
-            if (idParams != null) {
-                idParams.put(UpdateRequest.VER, null);
-                assertNull("Delete still has version", idParams.get(UpdateRequest.VER));
-            }
-        }
+    // After processing, check that all version fields are stripped
+    for (SolrInputDocument doc : request.getDocuments()) {
+      assertNull("Doc still has version", doc.getField(VERSION_FIELD));
     }
 
-    @Test
-    @Ignore // needs to be modified to fully support request.process
-    public void testSuccessNoBackoff() throws Exception {
-        final UpdateRequest request = spy(new UpdateRequest());
-
-        when(solrClient.request(eq(request), anyString())).thenReturn(new NamedList<>());
-
-        when(request.process(eq(solrClient))).thenReturn(new UpdateResponse());
-
-        processor.handleItem(new MirroredSolrRequest(request));
-
-        verify(backoffPolicy, times(0)).getBackoffTimeMs(any());
+    // Check versions in delete by id
+    for (Map<String, Object> idParams : request.getDeleteByIdMap().values()) {
+      if (idParams != null) {
+        idParams.put(UpdateRequest.VER, null);
+        assertNull("Delete still has version", idParams.get(UpdateRequest.VER));
+      }
     }
+  }
 
-    @Test
-    public void testClientErrorNoRetries() throws Exception {
-        final UpdateRequest request = new UpdateRequest();
-        request.setParam("shouldMirror", "true");
-        when(solrClient.request(eq(request), anyString())).thenThrow(
-                new SolrException(
-                        SolrException.ErrorCode.BAD_REQUEST, "err msg"));
+  @Test
+  @Ignore // needs to be modified to fully support request.process
+  public void testSuccessNoBackoff() throws Exception {
+    final UpdateRequest request = spy(new UpdateRequest());
 
-        IQueueHandler.Result<MirroredSolrRequest> result = processor.handleItem(new MirroredSolrRequest(request));
-        assertEquals(IQueueHandler.ResultStatus.FAILED_RESUBMIT, result.status());
-    }
+    when(solrClient.request(eq(request), anyString())).thenReturn(new NamedList<>());
+
+    when(request.process(eq(solrClient))).thenReturn(new UpdateResponse());
+
+    processor.handleItem(new MirroredSolrRequest<>(request));
+
+    verify(backoffPolicy, times(0)).getBackoffTimeMs(any());
+  }
+
+  @Test
+  public void testClientErrorNoRetries() throws Exception {
+    final UpdateRequest request = new UpdateRequest();
+    request.setParam("shouldMirror", "true");
+    when(solrClient.request(eq(request), anyString()))
+        .thenThrow(new SolrException(SolrException.ErrorCode.BAD_REQUEST, "err msg"));
+
+    IQueueHandler.Result<MirroredSolrRequest<?>> result =
+        processor.handleItem(new MirroredSolrRequest<>(request));
+    assertEquals(IQueueHandler.ResultStatus.FAILED_RESUBMIT, result.status());
+  }
 }
