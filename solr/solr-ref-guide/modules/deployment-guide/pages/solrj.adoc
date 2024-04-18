@@ -119,13 +119,13 @@ Most `SolrClient` implementations (except for `CloudSolrClient` and `Http2SolrCl
 The path users include on the base URL they provide has an effect on the behavior of the created client from that point on.
 
 . A URL with a path pointing to a specific core or collection (e.g., `\http://hostname:8983/solr/core1`).
-When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection.
-However, the client is limited to sending requests to  that core/collection, and can not send requests to any others.
-. A URL pointing to the root Solr path (e.g., `\http://hostname:8983/solr`).
-When no core or collection is specified in the base URL, requests can be made to any core/collection, but the affected core/collection must be specified on all requests.
-
-Generally speaking, if your `SolrClient` will only be used on a single core/collection, including that entity in the path is the most convenient.
-Where more flexibility is required, the collection/core should be excluded.
+When a core or collection is specified in the base URL, subsequent requests made with that client are not required to re-specify the affected collection on each request.
+However, clients that use this form of URL can only be used to send requests to the core or collection included in the URL.
+"Admin" (i.e. non-core) requests, or requests made to other indices using the client will fail.
+Because of these limitations, usage of this type of path is deprecated and will be removed in Solr 10.
+Users are encouraged to instead provide a "root" base URL when creating their client (see below), and specify the core using the `withDefaultCollection(String)` method available on the relevant `SolrClient` Builder object.
+. A URL pointing to the root Solr path (e.g. `http://hostname:8983/solr`).
+Users who wish to specify a default collection may do so using the `withDefaultCOllection(String)` method available on the relevant `SolrClient` Builder object.
 
 ==== Base URLs of Http2SolrClient
 The `Http2SolrClient` manages connections to different nodes efficiently.
@@ -136,7 +136,7 @@ If not an `IllegalArgumentException` will be thrown.
 
 ==== Base URLs of CloudSolrClient
 
-It is also possible to specify base URLs for `CloudSolrClient`, but URLs are expected to point to the root Solr path (e.g., `\http://hostname:8983/solr`).
+It is also possible to specify base URLs for `CloudSolrClient`, but URLs must point to the root Solr path (e.g., `\http://hostname:8983/solr`).
 They should not include any collections, cores, or other path components.
 
 [source,java,indent=0]
