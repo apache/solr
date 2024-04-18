@@ -86,6 +86,8 @@ Other Changes
 
 * SOLR-14410: Switch from SysV init script to systemd service definition (Marius Ghita via janhoy)
 
+* SOLR-17205: De-couple SolrJ required Java version from server Java version (janhoy)
+
 ==================  9.6.0 ==================
 New Features
 ---------------------
@@ -94,6 +96,8 @@ New Features
 * SOLR-599: Add a new SolrJ client using the JDK’s built-in Http Client.  (James Dyer)
 
 * SOLR-16403: A new cluster singleton plugin to automatically remove inactive shards. (Paul McArthur, David Smiley)
+
+* SOLR-16466: Admin UI - Make it optional to sort list of commandline args (Shawn Heisey, Vincenzo D'Amore via Christine Poerschke)
 
 Improvements
 ---------------------
@@ -124,6 +128,13 @@ Improvements
 
 * SOLR-17164: Add 2 arg variant of vectorSimilarity() function (Sanjay Dutt, hossman)
 
+* SOLR-17211: New SolrJ JDK client supports Async (James Dyer)
+
+* SOLR-17204: REPLACENODE now supports the source node not being live (Vincent Primault)
+
+* SOLR-14763: Add a CompletableFuture based asynchronous API to Http2SolrClient, HttpJdkSolrClient and LBHttp2SolrClient.
+  The previous asynchronous API is deprecated. (Rishi Sankar, James Dyer)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
@@ -133,6 +144,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
+* SOLR-17153: CloudSolrClient could fail a request immediately following a collection creation.  Required double-checking the collection doesn’t exist. (Aparna Suresh via David Smiley)
+
 * SOLR-17152: Better alignment of Admin UI graph (janhoy)
 
 * SOLR-17148: Fixing Config API overlay property enabling or disabling the cache (Sanjay Dutt, hossman, Eric Pugh)
@@ -147,6 +160,9 @@ Bug Fixes
 * SOLR-17198: AffinityPlacementFactory can fail if Shard leadership changes occur while it is collecting metrics.
   (Paul McArthur)
 
+* SOLR-17018: Add QueryLimits support to Learning To Rank rescoring.
+    (Alessandro Benedetti)
+
 * SOLR-14892: Queries with shards.info and shards.tolerant can yield multiple null keys in place of shard names
   (Mathieu Marie, David Smiley)
 
@@ -159,6 +175,15 @@ Bug Fixes
 * SOLR-17200: Fix false positive race condition in `/health?requireHealthyCores=true` during core loading (hossman)
 
 * SOLR-17218: Fix indexFetcher logging to include MDC details (hossman)
+
+* SOLR-17206: Eliminate the possibility of a -1 status code for SolrCloud update requests that are distributed.
+  (Paul McArthur)
+
+* SOLR-17213: Fix spurious warnings about solr url format in Solr CLI when users aren't providing a deprecated solr url.  (Eric Pugh)
+
+* SOLR-17176: Fix log history V2 API serialization (Michael Gibney)
+
+* SOLR-11535: Fix race condition in singleton-per-collection StateWatcher creation (Michael Gibney)
 
 Dependency Upgrades
 ---------------------
@@ -184,6 +209,9 @@ Other Changes
   Krb5HttpClientBuilder and PreemptiveBasicAuthClientBuilderFactory no longer deprecated (janhoy)
 
 * SOLR-17217: Simplify verbose MatcherAssert.assertThat usage in tests (hossman)
+
+* SOLR-17232: PropertiesOutputStream is renamed IndexOutputOutputStream and overrides write(byte[], int, int).
+  (Bruno Roustant)
 
 * SOLR-16505: Switch internal replica recovery commands to Jetty HTTP2 (Sanjay Dutt, David Smiley)
 

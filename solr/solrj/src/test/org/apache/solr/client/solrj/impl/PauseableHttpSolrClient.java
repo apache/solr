@@ -14,28 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import org.apache.lucene.store.IndexOutput;
+package org.apache.solr.client.solrj.impl;
 
-public class PropertiesOutputStream extends OutputStream {
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Semaphore;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.util.NamedList;
 
-  private IndexOutput out;
+public interface PauseableHttpSolrClient {
 
-  public PropertiesOutputStream(IndexOutput out) {
-    this.out = out;
+  Semaphore wait = new Semaphore(1);
+
+  public default void pause() {
+    try {
+      wait.acquire();
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+    }
   }
 
-  @Override
-  public void write(int b) throws IOException {
-    out.writeByte((byte) b);
+  public default void unPause() {
+    wait.release();
   }
 
-  @Override
-  public void close() throws IOException {
-    super.close();
-    out.close();
-  }
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      final SolrRequest<?> solrRequest, String collection);
 }

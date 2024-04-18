@@ -17,12 +17,20 @@
 
 package org.apache.solr.client.solrj.util;
 
-/** Listener for async requests */
+/**
+ * Listener for async requests
+ *
+ * @param <T> The result type returned by the {@code onSuccess} method
+ * @deprecated Use the async variants that return CompletableFuture.
+ */
+@Deprecated
 public interface AsyncListener<T> {
   /** Callback method invoked before processing the request */
   default void onStart() {}
 
+  /** Callback method invoked when the request completes successfully */
   void onSuccess(T t);
 
+  /** Callback method invoked when the request completes in failure */
   void onFailure(Throwable throwable);
 }
