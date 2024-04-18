@@ -108,6 +108,8 @@ Dependency Upgrades
 
 * SOLR-17214: Update forbiddenapis to 3.7 (hossman)
 
+* GITHUB#2408: Update commons-cli to 1.7 (Eric Pugh)
+
 Other Changes
 ---------------------
 * SOLR-17126: Cut over System.getProperty to EnvUtils.getProperty (janhoy)
