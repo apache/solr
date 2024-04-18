@@ -1817,7 +1817,7 @@ public class IndexFetcher {
       boolean isContentReceived = false;
       try {
         while (true) {
-          if(fis.peek() == -1){
+          if (fis.peek() == -1) {
             return NO_CONTENT;
           }
           if (stop) {
