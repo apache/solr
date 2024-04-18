@@ -158,8 +158,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
   }
 
   private HttpClient createHttpClient(Builder builder) {
-    HttpClient httpClient;
-
     executor = builder.executor;
     if (executor == null) {
       BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
@@ -214,10 +212,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
       }
 
       transport = new HttpClientTransportOverHTTP(clientConnector);
-      httpClient = new HttpClient(transport);
-      if (builder.maxConnectionsPerHost != null) {
-        httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
-      }
     } else {
       if (log.isDebugEnabled()) {
         log.debug("Create Http2SolrClient with HTTP/2 transport");
@@ -225,8 +219,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
       HTTP2Client http2client = new HTTP2Client(clientConnector);
       transport = new HttpClientTransportOverHTTP2(http2client);
-      httpClient = new HttpClient(transport);
-      httpClient.setMaxConnectionsPerDestination(4);
+    }
+
+    HttpClient httpClient = new HttpClient(transport);
+    if (builder.maxConnectionsPerHost != null) {
+      httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
     }
 
     httpClient.setExecutor(this.executor);

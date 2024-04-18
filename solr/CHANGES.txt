@@ -139,6 +139,9 @@ Improvements
 * SOLR-14763: Add a CompletableFuture based asynchronous API to Http2SolrClient, HttpJdkSolrClient and LBHttp2SolrClient.
   The previous asynchronous API is deprecated. (Rishi Sankar, James Dyer)
 
+* SOLR-17240: Use the same logic for "maxConnectionsPerDestination" between http1 and http2 in the Http2SolrClient.
+  Http2 is no longer hardcoded to use 4 connections. (Houston Putman, Mark Miller)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
