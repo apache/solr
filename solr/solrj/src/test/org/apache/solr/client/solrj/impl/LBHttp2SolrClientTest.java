@@ -23,15 +23,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.util.AsyncListener;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -66,16 +63,6 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
           urlParamNames.toArray(),
           http2SolrClient.getUrlParamNames().toArray());
     }
-  }
-
-  @Test
-  public void testAsyncDeprecated() {
-    testAsync(true);
-  }
-
-  @Test
-  public void testAsync() {
-    testAsync(false);
   }
 
   @Test
@@ -138,7 +125,8 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     }
   }
 
-  private void testAsync(boolean useDeprecatedApi) {
+  @Test
+  public void testAsync() {
     LBSolrClient.Endpoint ep1 = new LBSolrClient.Endpoint("http://endpoint.one");
     LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
     List<LBSolrClient.Endpoint> endpointList = List.of(ep1, ep2);
@@ -149,31 +137,12 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         LBHttp2SolrClient testClient = new LBHttp2SolrClient.Builder(client, ep1, ep2).build()) {
 
       int limit = 10; // For simplicity use an even limit
-
-      CountDownLatch latch = new CountDownLatch(limit); // deprecated API use
-      List<LBTestAsyncListener> listeners = new ArrayList<>(); // deprecated API use
       List<CompletableFuture<LBSolrClient.Rsp>> responses = new ArrayList<>();
 
       for (int i = 0; i < limit; i++) {
         QueryRequest queryRequest = new QueryRequest(new MapSolrParams(Map.of("q", "" + i)));
         LBSolrClient.Req req = new LBSolrClient.Req(queryRequest, endpointList);
-        if (useDeprecatedApi) {
-          LBTestAsyncListener listener = new LBTestAsyncListener(latch);
-          listeners.add(listener);
-          testClient.asyncReq(req, listener);
-        } else {
-          responses.add(testClient.requestAsync(req));
-        }
-      }
-
-      if (useDeprecatedApi) {
-        try {
-          // This is just a formality.  This is a single-threaded test.
-          latch.await(1, TimeUnit.MINUTES);
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-          fail("interrupted");
-        }
+        responses.add(testClient.requestAsync(req));
       }
 
       QueryRequest[] queryRequests = new QueryRequest[limit];
@@ -191,25 +160,17 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
         } else if (lastQueryReq.getBasePath().equals(ep2.toString())) {
           numEndpointTwo++;
         }
-        NamedList<Object> lastResponse;
-        if (useDeprecatedApi) {
-          LBTestAsyncListener lastAsyncListener = listeners.get(index);
-          assertTrue(lastAsyncListener.onStartCalled);
-          assertNull(lastAsyncListener.failure);
-          assertNotNull(lastAsyncListener.success);
-          lastResponse = lastAsyncListener.success.getResponse();
-        } else {
-          LBSolrClient.Rsp lastRsp = null;
-          try {
-            lastRsp = responses.get(index).get();
-          } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            fail("interrupted");
-          } catch (ExecutionException ee) {
-            fail("Response " + index + " ended in failure: " + ee);
-          }
-          lastResponse = lastRsp.getResponse();
+
+        LBSolrClient.Rsp lastRsp = null;
+        try {
+          lastRsp = responses.get(index).get();
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          fail("interrupted");
+        } catch (ExecutionException ee) {
+          fail("Response " + index + " ended in failure: " + ee);
         }
+        NamedList<Object> lastResponse = lastRsp.getResponse();
 
         // The Mock will return {"response": index}.
         assertEquals("" + index, lastResponse.get("response"));
@@ -223,44 +184,6 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
       assertEquals(limit, client.lastSolrRequests.size());
       assertEquals(limit, client.lastCollections.size());
-    }
-  }
-
-  @Deprecated(forRemoval = true)
-  public static class LBTestAsyncListener implements AsyncListener<LBSolrClient.Rsp> {
-    private final CountDownLatch latch;
-    private volatile boolean countDownCalled = false;
-    public boolean onStartCalled = false;
-    public LBSolrClient.Rsp success = null;
-    public Throwable failure = null;
-
-    public LBTestAsyncListener(CountDownLatch latch) {
-      this.latch = latch;
-    }
-
-    @Override
-    public void onStart() {
-      onStartCalled = true;
-    }
-
-    @Override
-    public void onSuccess(LBSolrClient.Rsp entries) {
-      success = entries;
-      countdown();
-    }
-
-    @Override
-    public void onFailure(Throwable throwable) {
-      failure = throwable;
-      countdown();
-    }
-
-    private void countdown() {
-      if (countDownCalled) {
-        throw new IllegalStateException("Already counted down.");
-      }
-      latch.countDown();
-      countDownCalled = true;
     }
   }
 
@@ -279,14 +202,6 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
       // so mocks can Implement, not Extend, and not actually need to
       // build an (unused) client
       super(serverBaseUrl, builder);
-    }
-
-    @Override
-    public Cancellable asyncRequest(
-        SolrRequest<?> solrRequest,
-        String collection,
-        AsyncListener<NamedList<Object>> asyncListener) {
-      throw new UnsupportedOperationException("do not use deprecated method.");
     }
 
     @Override
