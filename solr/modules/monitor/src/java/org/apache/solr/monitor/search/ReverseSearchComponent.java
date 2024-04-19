@@ -170,10 +170,6 @@ public class ReverseSearchComponent extends SearchComponent implements SolrCoreA
     }
   }
 
-  @Override
-  public void finishStage(ResponseBuilder rb) {
-    super.finishStage(rb);
-  }
 
   @Override
   public String getDescription() {
