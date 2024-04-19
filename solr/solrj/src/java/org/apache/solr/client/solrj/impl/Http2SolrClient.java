@@ -206,6 +206,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
     clientConnector.setSelectors(2);
 
     HttpClientTransport transport;
+    int maxConnectionsPerHost =
+        builder.maxConnectionsPerHost != null ? builder.maxConnectionsPerHost : 0;
     if (builder.useHttp1_1) {
       if (log.isDebugEnabled()) {
         log.debug("Create Http2SolrClient with HTTP/1.1 transport");
@@ -219,11 +221,17 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
       HTTP2Client http2client = new HTTP2Client(clientConnector);
       transport = new HttpClientTransportOverHTTP2(http2client);
+      // For HTTP2, which supports multiplexing requests over a single connection, we should reduce
+      // the maxConnectionsPerHost to account for the max multiplexing factor.
+      if (maxConnectionsPerHost > 0) {
+        maxConnectionsPerHost =
+            ((maxConnectionsPerHost - 1) / http2client.getMaxConcurrentPushedStreams()) + 1;
+      }
     }
 
     HttpClient httpClient = new HttpClient(transport);
-    if (builder.maxConnectionsPerHost != null) {
-      httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
+    if (maxConnectionsPerHost > 0) {
+      httpClient.setMaxConnectionsPerDestination(maxConnectionsPerHost);
     }
 
     httpClient.setExecutor(this.executor);
