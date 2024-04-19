@@ -131,6 +131,8 @@ Other Changes
 * SOLR-17232: PropertiesOutputStream is renamed IndexOutputOutputStream and overrides write(byte[], int, int).
   (Bruno Roustant)
 
+* SOLR-17222: QueryResponseWriterUtil.NonFlushingStream should support bulk write methods (Michael Gibney)
+
 ==================  9.5.0 ==================
 New Features
 ---------------------
