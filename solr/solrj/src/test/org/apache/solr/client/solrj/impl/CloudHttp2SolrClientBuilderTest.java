@@ -196,15 +196,15 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
   public void testHttpClientPreservedInHttp2ClusterStateProvider() throws IOException {
     List<String> solrUrls = List.of(cluster.getJettySolrRunner(0).getBaseUrl().toString());
 
-    // No httClient - No internalClientBuilder
+    // No httpClient - No internalClientBuilder
     testHttpClientConsistency(solrUrls, null, null);
 
-    // httClient - No internalClientBuilder
+    // httpClient - No internalClientBuilder
     try (Http2SolrClient httpClient = new Http2SolrClient.Builder().build()) {
       testHttpClientConsistency(solrUrls, httpClient, null);
     }
 
-    // No httClient - internalClientBuilder
+    // No httpClient - internalClientBuilder
     Http2SolrClient.Builder internalClientBuilder = new Http2SolrClient.Builder();
     testHttpClientConsistency(solrUrls, null, internalClientBuilder);
   }

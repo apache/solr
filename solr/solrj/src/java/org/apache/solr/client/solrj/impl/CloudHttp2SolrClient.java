@@ -80,11 +80,13 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
   }
 
   private Http2SolrClient createOrGetHttpClientFromBuilder(Builder builder) {
-    return builder.httpClient != null
-        ? builder.httpClient
-        : builder.internalClientBuilder != null
-            ? builder.internalClientBuilder.build()
-            : new Http2SolrClient.Builder().build();
+    if (builder.httpClient != null) {
+      return builder.httpClient;
+    } else if (builder.internalClientBuilder != null) {
+      return builder.internalClientBuilder.build();
+    } else {
+      return new Http2SolrClient.Builder().build();
+    }
   }
 
   private ClusterStateProvider createZkClusterStateProvider(Builder builder) {
