@@ -189,6 +189,8 @@ Bug Fixes
 
 * SOLR-11535: Fix race condition in singleton-per-collection StateWatcher creation (Michael Gibney)
 
+* SOLR-16866: Reorder nested directory deletions to avoid logging spurious NoSuchFileException (Michael Gibney)
+
 Dependency Upgrades
 ---------------------
 
