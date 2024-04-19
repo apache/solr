@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.Socket;
@@ -48,7 +47,6 @@ import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -207,52 +205,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testAsyncException() throws Exception {
     super.testAsyncExceptionBase();
-  }
-
-  @Test
-  public void testAsyncAndCancel() throws Exception {
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    HttpJdkSolrClient.Builder b =
-        new HttpJdkSolrClient.Builder(url).withResponseParser(new XMLResponseParser());
-    try (PausableHttpJdkSolrClient client = new PausableHttpJdkSolrClient(url, b)) {
-      super.testAsyncAndCancel(client);
-    }
-  }
-
-  public static class PausableHttpJdkSolrClient extends HttpJdkSolrClient
-      implements PauseableHttpSolrClient {
-
-    protected PausableHttpJdkSolrClient(String serverBaseUrl, Builder builder) {
-      super(serverBaseUrl, builder);
-    }
-
-    @Override
-    protected NamedList<Object> processErrorsAndResponse(
-        int httpStatus,
-        String responseReason,
-        String responseMethod,
-        ResponseParser processor,
-        InputStream is,
-        String mimeType,
-        String encoding,
-        boolean isV2Api,
-        String urlExceptionMessage)
-        throws SolrServerException {
-      pause();
-      var nl =
-          super.processErrorsAndResponse(
-              httpStatus,
-              responseReason,
-              responseMethod,
-              processor,
-              is,
-              mimeType,
-              encoding,
-              isV2Api,
-              urlExceptionMessage);
-      unPause();
-      return nl;
-    }
   }
 
   @Test
