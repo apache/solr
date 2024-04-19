@@ -17,7 +17,6 @@
 package org.apache.solr.response;
 
 import java.io.BufferedOutputStream;
-import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -76,27 +75,34 @@ public final class QueryResponseWriterUtil {
     return new FastWriter(writer);
   }
 
-  private static class NonFlushingStream extends FilterOutputStream {
+  /**
+   * Delegates write methods to an underlying {@link OutputStream}, but does not delegate {@link
+   * OutputStream#flush()}, (nor {@link OutputStream#close()}). This allows code writing to this
+   * stream to flush internal buffers without flushing the response. If we were to flush the
+   * response early, that would trigger chunked encoding.
+   *
+   * <p>See SOLR-8669.
+   */
+  private static class NonFlushingStream extends OutputStream {
+    private final OutputStream outputStream;
+
     public NonFlushingStream(OutputStream outputStream) {
-      super(outputStream);
+      this.outputStream = outputStream;
+    }
+
+    @Override
+    public void write(int b) throws IOException {
+      outputStream.write(b);
     }
 
     @Override
     public void write(byte[] b) throws IOException {
-      out.write(b);
+      outputStream.write(b);
     }
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-      out.write(b, off, len);
-    }
-
-    @Override
-    public void flush() throws IOException {
-      // We don't flush here, which allows us to flush below
-      // and only flush internal buffers, not the response.
-      // If we flush the response early, we trigger chunked encoding.
-      // See SOLR-8669.
+      outputStream.write(b, off, len);
     }
   }
 }
