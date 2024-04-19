@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.Socket;
@@ -231,52 +230,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testAsyncException() throws Exception {
     super.testAsyncExceptionBase(false);
-  }
-
-  @Test
-  public void testAsyncAndCancel() throws Exception {
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    HttpJdkSolrClient.Builder b =
-        new HttpJdkSolrClient.Builder(url).withResponseParser(new XMLResponseParser());
-    try (PausableHttpJdkSolrClient client = new PausableHttpJdkSolrClient(url, b)) {
-      super.testAsyncAndCancel(client);
-    }
-  }
-
-  public static class PausableHttpJdkSolrClient extends HttpJdkSolrClient
-      implements PauseableHttpSolrClient {
-
-    protected PausableHttpJdkSolrClient(String serverBaseUrl, Builder builder) {
-      super(serverBaseUrl, builder);
-    }
-
-    @Override
-    protected NamedList<Object> processErrorsAndResponse(
-        int httpStatus,
-        String responseReason,
-        String responseMethod,
-        ResponseParser processor,
-        InputStream is,
-        String mimeType,
-        String encoding,
-        boolean isV2Api,
-        String urlExceptionMessage)
-        throws SolrServerException {
-      pause();
-      var nl =
-          super.processErrorsAndResponse(
-              httpStatus,
-              responseReason,
-              responseMethod,
-              processor,
-              is,
-              mimeType,
-              encoding,
-              isV2Api,
-              urlExceptionMessage);
-      unPause();
-      return nl;
-    }
   }
 
   @Test

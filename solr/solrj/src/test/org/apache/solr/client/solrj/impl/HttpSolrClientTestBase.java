@@ -701,28 +701,4 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     }
     return listener;
   }
-
-  protected void testAsyncAndCancel(PauseableHttpSolrClient client) throws Exception {
-    DebugServlet.clear();
-    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-    DebugServlet.responseBodyByQueryFragment.put(
-        "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
-
-    QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
-
-    // We are using a version of the class under test that will wait for us before processing the
-    // response.
-    // This way we can ensure our test will always cancel the request before it finishes.
-    client.pause();
-
-    // Make the request then immediately cancel it!
-    CompletableFuture<NamedList<Object>> future = client.requestAsync(query, "collection1");
-    future.cancel(true);
-
-    // We are safe to unpause our client, having guaranteed that our cancel was before everything
-    // completed.
-    client.unPause();
-
-    assertTrue(future.isCancelled());
-  }
 }

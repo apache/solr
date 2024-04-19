@@ -17,18 +17,17 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import org.apache.solr.client.solrj.SolrRequest;
+import java.util.concurrent.Semaphore;
 import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Assert;
 
-@Deprecated
-public class DebugAsyncListener
-    implements AsyncListener<NamedList<Object>>, PauseableHttpSolrClient {
+public class DebugAsyncListener implements AsyncListener<NamedList<Object>> {
 
-  private final CountDownLatch latch;
+  private final CountDownLatch cdl;
+
+  private final Semaphore wait = new Semaphore(1);
 
   public volatile boolean onStartCalled;
 
@@ -38,13 +37,25 @@ public class DebugAsyncListener
 
   public volatile Throwable onFailureResult = null;
 
-  public DebugAsyncListener(CountDownLatch latch) {
-    this.latch = latch;
+  public DebugAsyncListener(CountDownLatch cdl) {
+    this.cdl = cdl;
   }
 
   @Override
   public void onStart() {
     onStartCalled = true;
+  }
+
+  public void pause() {
+    try {
+      wait.acquire();
+    } catch (InterruptedException ie) {
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  public void unPause() {
+    wait.release();
   }
 
   @Override
@@ -54,7 +65,7 @@ public class DebugAsyncListener
     if (latchCounted) {
       Assert.fail("either 'onSuccess' or 'onFailure' should be called exactly once.");
     }
-    latch.countDown();
+    cdl.countDown();
     latchCounted = true;
     unPause();
   }
@@ -66,14 +77,8 @@ public class DebugAsyncListener
     if (latchCounted) {
       Assert.fail("either 'onSuccess' or 'onFailure' should be called exactly once.");
     }
-    latch.countDown();
+    cdl.countDown();
     latchCounted = true;
     unPause();
-  }
-
-  @Override
-  public CompletableFuture<NamedList<Object>> requestAsync(
-      SolrRequest<?> solrRequest, String collection) {
-    throw new UnsupportedOperationException();
   }
 }
