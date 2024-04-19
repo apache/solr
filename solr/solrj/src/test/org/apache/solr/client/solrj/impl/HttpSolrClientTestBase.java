@@ -22,12 +22,18 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -36,12 +42,15 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 
 public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
@@ -53,6 +62,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   protected static final String DEBUG_SERVLET_REGEX = DEBUG_SERVLET_PATH + "/*";
   protected static final String REDIRECT_SERVLET_PATH = "/redirect";
   protected static final String REDIRECT_SERVLET_REGEX = REDIRECT_SERVLET_PATH + "/*";
+  protected static final String COLLECTION_1 = "collection1";
 
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -306,13 +316,13 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     try {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "collection");
-      baseUrlClient.add("collection1", doc);
-      baseUrlClient.commit("collection1");
+      baseUrlClient.add(COLLECTION_1, doc);
+      baseUrlClient.commit(COLLECTION_1);
 
       assertEquals(
           1,
           baseUrlClient
-              .query("collection1", new SolrQuery("id:collection"))
+              .query(COLLECTION_1, new SolrQuery("id:collection"))
               .getResults()
               .getNumFound());
 
@@ -435,7 +445,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     final var rsp = req.process(client);
     Object stream = rsp.getResponse().get("stream");
     assertNotNull(stream);
-    MatcherAssert.assertThat(stream, instanceOf(InputStream.class));
+    assertThat(stream, instanceOf(InputStream.class));
     InputStream is = (InputStream) stream;
     assertNotNull(is.readAllBytes()); // throws IOException if closed
     org.apache.solr.common.util.IOUtils.closeQuietly((InputStream) stream);
@@ -531,5 +541,111 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     String authorizationHeader = DebugServlet.headers.get("authorization");
     assertNull(
         "No authorization headers expected. Headers: " + DebugServlet.headers, authorizationHeader);
+  }
+
+  protected void testUpdateAsync() throws Exception {
+    ResponseParser rp = new XMLResponseParser();
+    String url = getBaseUrl();
+    HttpSolrClientBuilderBase<?, ?> b =
+        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+    int limit = 10;
+    CountDownLatch latch = new CountDownLatch(limit);
+
+    try (HttpSolrClientBase client = b.build()) {
+
+      // ensure the collection is empty to start
+      client.deleteByQuery(COLLECTION_1, "*:*");
+      client.commit(COLLECTION_1);
+      QueryResponse qr =
+          client.query(
+              COLLECTION_1,
+              new MapSolrParams(Collections.singletonMap("q", "*:*")),
+              SolrRequest.METHOD.POST);
+      assertEquals(0, qr.getResults().getNumFound());
+
+      for (int i = 0; i < limit; i++) {
+        UpdateRequest ur = new UpdateRequest();
+        ur.add("id", "KEY-" + i);
+        ur.setMethod(SolrRequest.METHOD.POST);
+
+        client.requestAsync(ur, COLLECTION_1).whenComplete((nl, e) -> latch.countDown());
+      }
+      latch.await(1, TimeUnit.MINUTES);
+      client.commit(COLLECTION_1);
+
+      // check that the correct number of documents were added
+      qr =
+          client.query(
+              COLLECTION_1,
+              new MapSolrParams(Collections.singletonMap("q", "*:*")),
+              SolrRequest.METHOD.POST);
+      assertEquals(limit, qr.getResults().getNumFound());
+
+      // clean up
+      client.deleteByQuery(COLLECTION_1, "*:*");
+      client.commit(COLLECTION_1);
+    }
+  }
+
+  protected void testQueryAsync() throws Exception {
+    ResponseParser rp = new XMLResponseParser();
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    HttpSolrClientBuilderBase<?, ?> b =
+        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+    int limit = 10;
+
+    List<CompletableFuture<NamedList<Object>>> futures = new ArrayList<>();
+
+    try (HttpSolrClientBase client = b.build()) {
+      for (int i = 0; i < limit; i++) {
+        DebugServlet.responseBodyByQueryFragment.put(
+            ("id=KEY-" + i),
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response><result name=\"response\" numFound=\"2\" start=\"1\" numFoundExact=\"true\"><doc><str name=\"id\">KEY-"
+                + i
+                + "</str></doc></result></response>");
+        QueryRequest query =
+            new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
+        query.setMethod(SolrRequest.METHOD.GET);
+        futures.add(client.requestAsync(query));
+      }
+
+      for (int i = 0; i < limit; i++) {
+        NamedList<Object> result = futures.get(i).get(1, TimeUnit.MINUTES);
+        SolrDocumentList sdl = (SolrDocumentList) result.get("response");
+        assertEquals(2, sdl.getNumFound());
+        assertEquals(1, sdl.getStart());
+        assertTrue(sdl.getNumFoundExact());
+        assertEquals(1, sdl.size());
+        assertEquals(1, sdl.iterator().next().size());
+        assertEquals("KEY-" + i, sdl.iterator().next().get("id"));
+        assertFalse(futures.get(i).isCompletedExceptionally());
+      }
+    }
+  }
+
+  protected void testAsyncExceptionBase() throws Exception {
+    ResponseParser rp = new XMLResponseParser();
+    DebugServlet.clear();
+    DebugServlet.addResponseHeader("Content-Type", "Wrong Content Type!");
+    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    HttpSolrClientBuilderBase<?, ?> b =
+        builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
+
+    try (HttpSolrClientBase client = b.build()) {
+      QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
+      CompletableFuture<NamedList<Object>> future = client.requestAsync(query, COLLECTION_1);
+      ExecutionException ee = null;
+      try {
+        future.get(1, TimeUnit.MINUTES);
+        fail("Should have thrown ExecutionException");
+      } catch (ExecutionException ee1) {
+        ee = ee1;
+      }
+      assertTrue(future.isCompletedExceptionally());
+      assertTrue(ee.getCause() instanceof BaseHttpSolrClient.RemoteSolrException);
+      assertTrue(ee.getMessage(), ee.getMessage().contains("mime type"));
+    }
   }
 }

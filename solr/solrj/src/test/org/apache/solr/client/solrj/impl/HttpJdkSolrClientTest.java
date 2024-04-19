@@ -24,9 +24,13 @@ import java.net.Socket;
 import java.net.http.HttpClient;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -73,6 +77,16 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   @After
   public void workaroundToReleaseThreads_noClosableUntilJava21() {
+    Thread[] threads = new Thread[Thread.currentThread().getThreadGroup().activeCount()];
+    Thread.currentThread().getThreadGroup().enumerate(threads);
+    Set<Thread> tSet =
+        Arrays.stream(threads)
+            .filter(Objects::nonNull)
+            .filter(t -> t.getName().startsWith("HttpClient-"))
+            .collect(Collectors.toSet());
+    for (Thread t : tSet) {
+      t.interrupt();
+    }
     System.gc();
   }
 
@@ -150,10 +164,11 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     DebugServlet.clear();
     if (rp instanceof XMLResponseParser) {
       DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-      DebugServlet.responseBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />";
+      DebugServlet.responseBodyByQueryFragment.put(
+          "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
     } else {
       DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
-      DebugServlet.responseBody = javabinResponse();
+      DebugServlet.responseBodyByQueryFragment.put("", javabinResponse());
     }
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
@@ -175,6 +190,21 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client = builder(getBaseUrl() + DEBUG_SERVLET_PATH).build()) {
       super.testGetById(client);
     }
+  }
+
+  @Test
+  public void testAsyncGet() throws Exception {
+    super.testQueryAsync();
+  }
+
+  @Test
+  public void testAsyncPost() throws Exception {
+    super.testUpdateAsync();
+  }
+
+  @Test
+  public void testAsyncException() throws Exception {
+    super.testAsyncExceptionBase();
   }
 
   @Test

@@ -2327,9 +2327,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
                 + " , f3:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'percentile(${sparse_num_d},50)'}  }} "
                 + "}"),
         "facets=={ 'count':6, "
-            + "  f1:{  'buckets':[{ val:'A', count:2, n1:3.0 }, { val:'B', count:3, n1:-5.0}]}"
-            + ", f2:{  'buckets':[{ val:'B', count:3, n1:-5.0}, { val:'A', count:2, n1:3.0 }]}"
-            + ", f3:{  'buckets':[{ val:'A', count:2, n1:1.0}, { val:'B', count:3}]}"
+            + "  f1:{  'buckets':[{ val:'A', count:2, n1:4.0 }, { val:'B', count:3, n1:-5.0}]}"
+            + ", f2:{  'buckets':[{ val:'B', count:3, n1:-5.0}, { val:'A', count:2, n1:4.0 }]}"
+            + ", f3:{  'buckets':[{ val:'A', count:2, n1:6.0}, { val:'B', count:3}]}"
             + "}");
 
     // test sorting by multiple percentiles (sort is by first)
@@ -2342,8 +2342,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "{f1:{terms:{${terms} field:${cat_s}, sort:'n1 desc', facet:{n1:'percentile(${num_d},50,0,100)'}  }}"
                 + " , f2:{terms:{${terms} field:${cat_s}, sort:'n1 asc', facet:{n1:'percentile(${num_d},50,0,100)'}  }} }"),
         "facets=={ 'count':6, "
-            + "  f1:{  'buckets':[{ val:'A', count:2, n1:[3.0,2.0,4.0] }, { val:'B', count:3, n1:[-5.0,-9.0,11.0] }]}"
-            + ", f2:{  'buckets':[{ val:'B', count:3, n1:[-5.0,-9.0,11.0]}, { val:'A', count:2, n1:[3.0,2.0,4.0] }]} }");
+            + "  f1:{  'buckets':[{ val:'A', count:2, n1:[4.0,2.0,4.0] }, { val:'B', count:3, n1:[-5.0,-9.0,11.0] }]}"
+            + ", f2:{  'buckets':[{ val:'B', count:3, n1:[-5.0,-9.0,11.0]}, { val:'A', count:2, n1:[4.0,2.0,4.0] }]} }");
 
     // test sorting by count/index order
     client.testJQ(
@@ -2812,7 +2812,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
         "facets=={ 'count':6, "
             + "sum1:0.0, sumsq1:51.5, avg1:0.0, mind:-5.0, maxd:3.0"
             + ", mini:-5, maxi:3, mins:'a', maxs:'b'"
-            + ", stddev:2.712405363721075, variance:7.3571428571, median:0.0, perc:[-5.0,2.25,3.0], maxss:'b'"
+            + ", stddev:2.712405363721075, variance:7.3571428571, median:0.0, perc:[-5.0,3.0,3.0], maxss:'b'"
             + "}");
 
     // test sorting by multi-valued
@@ -2840,8 +2840,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "{f1:{terms:{${terms} field:'${cat_s}', sort:'n1 asc', facet:{n1:'percentile(${num_is}, 50)'}  }}"
                 + " , f2:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'percentile(${num_is}, 50)'}  }} }"),
         "facets=={ 'count':6, "
-            + "  f1:{  'buckets':[{ val:'B', count:3, n1: -0.50}, { val:'A', count:2, n1:1.0}]}"
-            + ", f2:{  'buckets':[{ val:'A', count:2, n1:1.0}, { val:'B', count:3, n1:-0.50 }]} }");
+            + "  f1:{  'buckets':[{ val:'B', count:3, n1: 0.0}, { val:'A', count:2, n1:2.0}]}"
+            + ", f2:{  'buckets':[{ val:'A', count:2, n1:2.0}, { val:'B', count:3, n1:0.0 }]} }");
 
     // test sorting by multi-valued field with domain query
     client.testJQ(

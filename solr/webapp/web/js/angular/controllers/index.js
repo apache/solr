@@ -72,11 +72,26 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
         data.system.totalSwapSpaceSize && data.system.freeSwapSpaceSize &&
         data.system.openFileDescriptorCount && data.system.maxFileDescriptorCount);
 
-      // command line args:
-      $scope.commandLineArgs = data.jvm.jmx.commandLineArgs.sort();
-    });
+      // save a copy of the original commandline args
+      $scope.commandLineArgsUnsorted = [...data.jvm.jmx.commandLineArgs];
+      // get commandline args latest orderby or defaults to "Unsorted"
+      $scope.commandLineOrderBy = sessionStorage.getItem("commandline.orderby") || "Unsorted";
+      $scope.showCommandLineArgs();
+      });
   };
-  $scope.reload();
+  $scope.toggleCommandLineOrder = function() {
+    $scope.commandLineOrderBy = ($scope.commandLineOrderBy=="Sorted") ? "Unsorted":"Sorted";
+    sessionStorage.setItem("commandline.orderby", $scope.commandLineOrderBy);
+    $scope.showCommandLineArgs();
+  }
+  $scope.showCommandLineArgs = function() {
+    if ($scope.commandLineOrderBy == "Sorted") {
+      $scope.commandLineArgs = [...$scope.commandLineArgsUnsorted].sort();
+    } else {
+      $scope.commandLineArgs = $scope.commandLineArgsUnsorted;
+    }
+  }
+$scope.reload();
 });
 
 var parse_memory_value = function( value ) {

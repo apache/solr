@@ -264,6 +264,21 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
+  public void testAsyncGet() throws Exception {
+    super.testQueryAsync();
+  }
+
+  @Test
+  public void testAsyncPost() throws Exception {
+    super.testUpdateAsync();
+  }
+
+  @Test
+  public void testAsyncException() throws Exception {
+    super.testAsyncExceptionBase();
+  }
+
+  @Test
   public void testFollowRedirect() throws Exception {
     final String clientUrl = getBaseUrl() + REDIRECT_SERVLET_PATH;
     try (Http2SolrClient client =

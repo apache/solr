@@ -38,6 +38,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -80,7 +81,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
   private boolean forceHttp11;
 
-  private boolean shutdownExecutor;
+  private final boolean shutdownExecutor;
 
   protected HttpJdkSolrClient(String serverBaseUrl, HttpJdkSolrClient.Builder builder) {
     super(serverBaseUrl, builder);
@@ -134,7 +135,64 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   }
 
   @Override
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      final SolrRequest<?> solrRequest, String collection) {
+    try {
+      PreparedRequest pReq = prepareRequest(solrRequest, collection);
+      return httpClient
+          .sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream())
+          .thenApply(
+              httpResponse -> {
+                try {
+                  return processErrorsAndResponse(
+                      solrRequest, pReq.parserToUse, httpResponse, pReq.url);
+                } catch (SolrServerException e) {
+                  throw new RuntimeException(e);
+                }
+              });
+    } catch (Exception e) {
+      CompletableFuture<NamedList<Object>> cf = new CompletableFuture<>();
+      cf.completeExceptionally(e);
+      return cf;
+    }
+  }
+
+  @Override
   public NamedList<Object> request(SolrRequest<?> solrRequest, String collection)
+      throws SolrServerException, IOException {
+    PreparedRequest pReq = prepareRequest(solrRequest, collection);
+    HttpResponse<InputStream> response = null;
+    try {
+      response = httpClient.send(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
+      return processErrorsAndResponse(solrRequest, pReq.parserToUse, response, pReq.url);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
+    } catch (HttpTimeoutException e) {
+      throw new SolrServerException(
+          "Timeout occurred while waiting response from server at: " + pReq.url, e);
+    } catch (SolrException se) {
+      throw se;
+    } catch (RuntimeException re) {
+      throw new SolrServerException(re);
+    } finally {
+      if (pReq.contentWritingFuture != null) {
+        pReq.contentWritingFuture.cancel(true);
+      }
+
+      // See
+      // https://docs.oracle.com/en/java/javase/17/docs/api/java.net.http/java/net/http/HttpResponse.BodySubscribers.html#ofInputStream()
+      if (!wantStream(pReq.parserToUse)) {
+        try {
+          response.body().close();
+        } catch (Exception e1) {
+          // ignore
+        }
+      }
+    }
+  }
+
+  private PreparedRequest prepareRequest(SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
     checkClosed();
     if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest)) {
@@ -143,19 +201,19 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     String url = getRequestPath(solrRequest, collection);
     ResponseParser parserToUse = responseParser(solrRequest);
     ModifiableSolrParams queryParams = initalizeSolrParams(solrRequest, parserToUse);
-    HttpResponse<InputStream> resp = null;
+    var reqb = HttpRequest.newBuilder();
+    PreparedRequest pReq = null;
     try {
-      var reqb = HttpRequest.newBuilder();
       switch (solrRequest.getMethod()) {
         case GET:
           {
-            resp = doGet(url, reqb, solrRequest, queryParams);
+            pReq = prepareGet(url, reqb, solrRequest, queryParams);
             break;
           }
         case POST:
         case PUT:
           {
-            resp = doPutOrPost(url, solrRequest.getMethod(), reqb, solrRequest, queryParams);
+            pReq = preparePutOrPost(url, solrRequest.getMethod(), reqb, solrRequest, queryParams);
             break;
           }
         default:
@@ -163,50 +221,34 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
             throw new IllegalStateException("Unsupported method: " + solrRequest.getMethod());
           }
       }
-      return processErrorsAndResponse(solrRequest, parserToUse, resp, url);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new RuntimeException(e);
-    } catch (HttpTimeoutException e) {
-      throw new SolrServerException(
-          "Timeout occurred while waiting response from server at: " + url, e);
-    } catch (SolrException se) {
-      throw se;
     } catch (URISyntaxException | RuntimeException re) {
       throw new SolrServerException(re);
-    } finally {
-      // See
-      // https://docs.oracle.com/en/java/javase/17/docs/api/java.net.http/java/net/http/HttpResponse.BodySubscribers.html#ofInputStream()
-      if (!wantStream(parserToUse)) {
-        try {
-          resp.body().close();
-        } catch (Exception e1) {
-          // ignore
-        }
-      }
     }
+    pReq.parserToUse = parserToUse;
+    pReq.url = url;
+    return pReq;
   }
 
-  private HttpResponse<InputStream> doGet(
+  private PreparedRequest prepareGet(
       String url,
       HttpRequest.Builder reqb,
       SolrRequest<?> solrRequest,
       ModifiableSolrParams queryParams)
-      throws IOException, InterruptedException, URISyntaxException {
+      throws IOException, URISyntaxException {
     validateGetRequest(solrRequest);
     reqb.GET();
     decorateRequest(reqb, solrRequest);
     reqb.uri(new URI(url + "?" + queryParams));
-    return httpClient.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
+    return new PreparedRequest(reqb, null);
   }
 
-  private HttpResponse<InputStream> doPutOrPost(
+  private PreparedRequest preparePutOrPost(
       String url,
       SolrRequest.METHOD method,
       HttpRequest.Builder reqb,
       SolrRequest<?> solrRequest,
       ModifiableSolrParams queryParams)
-      throws IOException, InterruptedException, URISyntaxException {
+      throws IOException, URISyntaxException {
 
     final RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
 
@@ -274,15 +316,21 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     URI uriWithQueryParams = new URI(url + "?" + queryParams);
     reqb.uri(uriWithQueryParams);
 
-    HttpResponse<InputStream> response;
-    try {
-      response = httpClient.send(reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
-    } finally {
-      if (contentWritingFuture != null) {
-        contentWritingFuture.cancel(true);
-      }
+    return new PreparedRequest(reqb, contentWritingFuture);
+  }
+
+  private static class PreparedRequest {
+    Future<?> contentWritingFuture;
+    HttpRequest.Builder reqb;
+
+    ResponseParser parserToUse;
+
+    String url;
+
+    PreparedRequest(HttpRequest.Builder reqb, Future<?> contentWritingFuture) {
+      this.reqb = reqb;
+      this.contentWritingFuture = contentWritingFuture;
     }
-    return response;
   }
 
   /**
@@ -355,7 +403,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {
     if (requestTimeoutMillis > 0) {
       reqb.timeout(Duration.of(requestTimeoutMillis, ChronoUnit.MILLIS));
-    } else {
+    } else if (idleTimeoutMillis > 0) {
       reqb.timeout(Duration.of(idleTimeoutMillis, ChronoUnit.MILLIS));
     }
     reqb.header("User-Agent", USER_AGENT);
@@ -410,13 +458,20 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
   @Override
   public void close() throws IOException {
+    // If used with Java 21+
+    if (httpClient instanceof AutoCloseable) {
+      try {
+        ((AutoCloseable) httpClient).close();
+      } catch (Exception e) {
+        log.warn("Could not close the http client.", e);
+      }
+    }
+    httpClient = null;
+
     if (shutdownExecutor) {
       ExecutorUtil.shutdownAndAwaitTermination(executor);
     }
     executor = null;
-
-    // TODO: Java 21 adds close/autoclosable to HttpClient.  We should use it.
-    httpClient = null;
 
     assert ObjectReleaseTracker.release(this);
   }
