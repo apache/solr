@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -39,7 +40,7 @@ public class DebugServlet extends HttpServlet {
     queryString = null;
     cookies = null;
     responseHeaders = null;
-    responseBody = null;
+    responseBodyByQueryFragment = new ConcurrentHashMap<>();
   }
 
   public static Integer errorCode = null;
@@ -49,7 +50,7 @@ public class DebugServlet extends HttpServlet {
   public static String queryString = null;
   public static javax.servlet.http.Cookie[] cookies = null;
   public static List<String[]> responseHeaders = null;
-  public static Object responseBody = null;
+  public static Map<String, Object> responseBodyByQueryFragment = new ConcurrentHashMap<>();
   public static byte[] requestBody = null;
 
   public static void setErrorCode(Integer code) {
@@ -136,6 +137,19 @@ public class DebugServlet extends HttpServlet {
         resp.addHeader(h[0], h[1]);
       }
     }
+    String qs = req.getQueryString();
+    qs = qs == null ? "" : qs;
+    Object responseBody = null;
+
+    // Tests can set this up to return different response bodies based on substrings in the query
+    // string
+    for (Map.Entry<String, Object> entry : responseBodyByQueryFragment.entrySet()) {
+      if (qs.contains(entry.getKey())) {
+        responseBody = entry.getValue();
+        break;
+      }
+    }
+
     if (responseBody != null) {
       try {
         if (responseBody instanceof String) {
