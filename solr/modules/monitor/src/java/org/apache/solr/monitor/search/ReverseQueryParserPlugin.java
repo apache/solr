@@ -19,21 +19,33 @@
 
 package org.apache.solr.monitor.search;
 
+import static org.apache.solr.monitor.search.PresearcherFactory.PresearcherParameters;
+
 import java.io.IOException;
+import java.util.Optional;
 import org.apache.lucene.monitor.Presearcher;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.monitor.PresearcherFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 
-public class ReverseQueryParserPlugin extends QParserPlugin {
+public class ReverseQueryParserPlugin extends QParserPlugin implements ResourceLoaderAware {
 
   public static final String NAME = "reverse";
 
-  // TODO parameterize this
-  private Presearcher presearcher = PresearcherFactory.build(PresearcherFactory.TERM_FILTERED);
+  // The default prefix is long because we don't want it to clash
+  // with a user-defined name pattern and the longest one wins.
+  // {@link
+  // https://cwiki.apache.org/confluence/display/solr/SchemaXml#Dynamic_fields:~:text=Longer%20patterns%20will%20be%20matched%20first}
+  // In the worst case this can be overridden by the user but ideally this never comes up.
+  private static final String DEFAULT_ALIAS_PREFIX =
+      "________________________________monitor_alias_";
+
+  private Presearcher presearcher;
+  private PresearcherParameters presearcherParameters;
 
   @Override
   public QParser createParser(
@@ -49,5 +61,45 @@ public class ReverseQueryParserPlugin extends QParserPlugin {
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
+    String presearcherType = (String) args.get("presearcherType");
+    String termWeightorType = (String) args.get("termWeightorType");
+    boolean applyFieldNameAlias =
+        resolveProperty(args, "applyFieldNameAlias", Boolean.class, false);
+    int numberOfPasses = resolveProperty(args, "numberOfPasses", Integer.class, 0);
+    float minWeight = resolveProperty(args, "minWeight", Float.class, 0f);
+    String aliasPrefix =
+        Optional.ofNullable((String) args.get("aliasPrefix")).orElse(DEFAULT_ALIAS_PREFIX);
+    presearcherParameters =
+        new PresearcherParameters(
+            presearcherType,
+            termWeightorType,
+            applyFieldNameAlias,
+            numberOfPasses,
+            minWeight,
+            aliasPrefix);
+  }
+
+  // TODO is there a better pattern for this? NamedList::get(String key, T default) can't be called
+  // on NamedList<?>
+  @SuppressWarnings("unchecked")
+  private <T> T resolveProperty(
+      NamedList<?> args, String propertyName, Class<T> clazz, T defaultVal) {
+    Object obj = args.get(propertyName);
+    if (obj == null) {
+      return defaultVal;
+    }
+    if (clazz.isInstance(obj)) {
+      return (T) obj;
+    }
+    throw new IllegalArgumentException(propertyName + " must be a " + clazz.getSimpleName());
+  }
+
+  @Override
+  public void inform(ResourceLoader loader) throws IOException {
+    presearcher = PresearcherFactory.build(loader, presearcherParameters);
+  }
+
+  public Presearcher getPresearcher() {
+    return presearcher;
   }
 }

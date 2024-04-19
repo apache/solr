@@ -172,9 +172,7 @@
   <updateRequestProcessorChain>
     <processor class="solr.LogUpdateProcessorFactory"/>
     <processor class="solr.DistributedUpdateProcessorFactory"/>
-    <processor class="org.apache.solr.monitor.update.MonitorUpdateProcessorFactory">
-      <str name="presearcherType">TermFilteredPresearcher</str>
-    </processor>
+    <processor class="org.apache.solr.monitor.update.MonitorUpdateProcessorFactory"/>
     <processor class="solr.RunUpdateProcessorFactory"/>
   </updateRequestProcessorChain>
   <queryResponseWriter name="json" class="solr.JSONResponseWriter">
@@ -188,5 +186,9 @@
   </queryResponseWriter>
   <queryParser name="xmlparser" class="solr.XmlQParserPlugin"/>
   <queryParser name="reverse"
-    class="org.apache.solr.monitor.search.ReverseQueryParserPlugin"/>
+               class="org.apache.solr.monitor.search.ReverseQueryParserPlugin">
+    <str name="presearcherType">MultipassTermFilteredPresearcher</str>
+    <bool name="applyFieldNameAlias">true</bool>
+    <int name="numberOfPasses">4</int>
+  </queryParser>
 </config>

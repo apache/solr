@@ -69,8 +69,9 @@ public class SharedMonitorCacheLatestRegenerator implements CacheRegenerator {
             && topDocs[docIndex].doc < shiftedMax) {
           int doc = topDocs[docIndex].doc - ctx.docBase;
           docIndex++;
-          dataValues.advanceTo(doc);
-          cache.computeIfStale(dataValues, decoder);
+          if (dataValues.advanceTo(doc)) {
+            cache.computeIfStale(dataValues, decoder);
+          }
           cache.versionHighWaterMark =
               Math.max(cache.versionHighWaterMark, dataValues.getVersion());
           cache.docVisits++;

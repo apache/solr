@@ -22,15 +22,18 @@ package org.apache.solr.monitor.update;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.Presearcher;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.monitor.PresearcherFactory;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.monitor.search.ReverseQueryParserPlugin;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.plugin.SolrCoreAware;
 
-public class MonitorUpdateProcessorFactory extends UpdateRequestProcessorFactory {
+public class MonitorUpdateProcessorFactory extends UpdateRequestProcessorFactory
+    implements SolrCoreAware {
 
-  private Presearcher presearcher = PresearcherFactory.build();
+  private Presearcher presearcher;
   private String queryFieldNameOverride;
   private String payloadFieldNameOverride;
 
@@ -48,9 +51,14 @@ public class MonitorUpdateProcessorFactory extends UpdateRequestProcessorFactory
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
-    Object presearcherType = args.get("presearcherType");
-    presearcher = PresearcherFactory.build(presearcherType);
     queryFieldNameOverride = (String) args.get("queryFieldName");
     payloadFieldNameOverride = (String) args.get("payloadFieldName");
+  }
+
+  @Override
+  public void inform(SolrCore core) {
+    presearcher =
+        ((ReverseQueryParserPlugin) core.getQueryPlugin(ReverseQueryParserPlugin.NAME))
+            .getPresearcher();
   }
 }

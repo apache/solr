@@ -26,5 +26,6 @@ public class NoCacheMonitorSolrQueryTest extends MonitorSolrQueryTest {
   @BeforeClass
   public static void beforeSuperClass() {
     configString = "solrconfig-no-cache.xml";
+    schemaString = "schema-aliasing.xml";
   }
 }

@@ -47,8 +47,9 @@ public class MonitorDataValues {
     currentDoc = DocIdSetIterator.NO_MORE_DOCS;
   }
 
-  public void advanceTo(int doc) {
+  public boolean advanceTo(int doc) throws IOException {
     currentDoc = doc;
+    return cacheIdIt.advanceExact(currentDoc);
   }
 
   public String getQueryId() throws IOException {
@@ -57,7 +58,6 @@ public class MonitorDataValues {
   }
 
   public String getCacheId() throws IOException {
-    cacheIdIt.advanceExact(currentDoc);
     return cacheIdIt.lookupOrd(cacheIdIt.ordValue()).utf8ToString();
   }
 

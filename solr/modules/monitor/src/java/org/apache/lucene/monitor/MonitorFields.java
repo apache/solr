@@ -28,7 +28,8 @@ public class MonitorFields {
   public static final String MONITOR_QUERY = QueryIndex.FIELDS.mq;
   public static final String PAYLOAD = QueryIndex.FIELDS.mq + "_payload";
   public static final String VERSION = "_version_";
+  public static final String ANYTOKEN_FIELD = TermFilteredPresearcher.ANYTOKEN_FIELD;
 
   public static final Set<String> RESERVED_MONITOR_FIELDS =
-      Set.of(QUERY_ID, CACHE_ID, MONITOR_QUERY, PAYLOAD, VERSION);
+      Set.of(QUERY_ID, CACHE_ID, MONITOR_QUERY, PAYLOAD, VERSION, ANYTOKEN_FIELD);
 }
