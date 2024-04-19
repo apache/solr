@@ -108,8 +108,13 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
           } catch (TimeoutException | ExecutionException e) {
             fail(iterMessage + " Response ended in failure: " + e);
           }
-          if (j == 0) {
-            // The first endpoint gives an exception, so it retries.
+          if (i == 0) {
+            // When j=0, "endpoint one" fails.  The first time around (i) it tries the first, then
+            // the second.
+            // With j=0 and i>0, it only tries "endpoint two".
+            // When j=1 and i=0, "endpoint two" starts failing. So it tried both it and "endpoint
+            // one"
+            // With j=1 and i>0, it only tries "endpoint one".
             assertEquals(iterMessage, 2, client.lastBasePaths.size());
 
             String failedBasePath = client.lastBasePaths.remove(0);
