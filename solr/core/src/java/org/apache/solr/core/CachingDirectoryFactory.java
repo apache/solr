@@ -30,6 +30,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
@@ -70,13 +71,9 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     public boolean closeCacheValueCalled = false;
     public boolean doneWithDir = false;
     private boolean deleteAfterCoreClose = false;
-    public Set<CacheValue> removeEntries = new HashSet<>();
     public Set<CacheValue> closeEntries = new HashSet<>();
 
     public void setDeleteOnClose(boolean deleteOnClose, boolean deleteAfterCoreClose) {
-      if (deleteOnClose) {
-        removeEntries.add(this);
-      }
       this.deleteOnClose = deleteOnClose;
       this.deleteAfterCoreClose = deleteAfterCoreClose;
     }
@@ -210,7 +207,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         }
       }
 
-      for (CacheValue val : removeEntries) {
+      for (CacheValue val : sorted(removeEntries)) {
         log.debug("Removing directory after core close: {}", val.path);
         try {
           removeDirectory(val);
@@ -246,47 +243,42 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
     }
     cacheValue.closeCacheValueCalled = true;
-    if (cacheValue.deleteOnClose) {
-      // see if we are a subpath
-      Collection<CacheValue> values = byPathCache.values();
-
-      Collection<CacheValue> cacheValues = new ArrayList<>(values);
-      cacheValues.remove(cacheValue);
-      for (CacheValue otherCacheValue : cacheValues) {
-        // if we are a parent path and a sub path is not already closed, get a sub path to close us
-        // later
-        if (isSubPath(cacheValue, otherCacheValue) && !otherCacheValue.closeCacheValueCalled) {
-          // we let the sub dir remove and close us
-          if (!otherCacheValue.deleteAfterCoreClose && cacheValue.deleteAfterCoreClose) {
-            otherCacheValue.deleteAfterCoreClose = true;
-          }
-          otherCacheValue.removeEntries.addAll(cacheValue.removeEntries);
-          otherCacheValue.closeEntries.addAll(cacheValue.closeEntries);
-          cacheValue.closeEntries.clear();
-          cacheValue.removeEntries.clear();
-          return false;
-        }
-      }
+    if (cacheValue.deleteOnClose && maybeDeferClose(cacheValue)) {
+      // we will be closed by a child path
+      return false;
     }
 
     boolean cl = false;
-    for (CacheValue val : cacheValue.closeEntries) {
-      close(val);
+    for (CacheValue val : sorted(cacheValue.closeEntries)) {
+      if (!val.deleteOnClose) {
+        // just a simple close, do it unconditionally
+        close(val);
+      } else {
+        if (maybeDeferClose(val)) {
+          // parent path must have been arbitrarily associated with one of multiple
+          // subpaths; so, assuming this one of the subpaths, we now delegate to
+          // another live subpath.
+          assert val != cacheValue; // else would already have been deferred
+          continue;
+        }
+        close(val);
+        if (!val.deleteAfterCoreClose) {
+          log.debug("Removing directory before core close: {}", val.path);
+          try {
+            removeDirectory(val);
+          } catch (Exception e) {
+            log.error("Error removing directory {} before core close", val.path, e);
+          }
+        } else {
+          removeEntries.add(val);
+        }
+      }
       if (val == cacheValue) {
         cl = true;
-      }
-    }
-
-    for (CacheValue val : cacheValue.removeEntries) {
-      if (!val.deleteAfterCoreClose) {
-        log.debug("Removing directory before core close: {}", val.path);
-        try {
-          removeDirectory(val);
-        } catch (Exception e) {
-          log.error("Error removing directory {} before core close", val.path, e);
-        }
       } else {
-        removeEntries.add(val);
+        // this was a deferred close, so it's our responsibility to remove it from cache
+        assert val.closeEntries.isEmpty();
+        removeFromCache(val);
       }
     }
 
@@ -300,6 +292,51 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       }
     }
     return cl;
+  }
+
+  private static Iterable<CacheValue> sorted(Set<CacheValue> vals) {
+    if (vals.size() < 2) {
+      return vals;
+    }
+    // here we reverse-sort entries by path, in order to trivially ensure that
+    // subpaths are removed before parent paths.
+    return vals.stream().sorted((a, b) -> b.path.compareTo(a.path)).collect(Collectors.toList());
+  }
+
+  private boolean maybeDeferClose(CacheValue maybeDefer) {
+    assert maybeDefer.deleteOnClose;
+    for (CacheValue maybeChildPath : byPathCache.values()) {
+      // if we are a parent path and a sub path is not already closed, get a sub path to close us
+      // later
+      if (maybeDefer != maybeChildPath
+          && isSubPath(maybeDefer, maybeChildPath)
+          && !maybeChildPath.closeCacheValueCalled) {
+        // we let the sub dir remove and close us
+        if (maybeChildPath.deleteAfterCoreClose && !maybeDefer.deleteAfterCoreClose) {
+          // if we need to hold onto the child path until after core close, then don't allow
+          // the parent path to be deleted before!
+          maybeDefer.deleteAfterCoreClose = true;
+        }
+        if (maybeDefer.closeEntries.isEmpty()) {
+          // we've already been deferred
+          maybeChildPath.closeEntries.add(maybeDefer);
+        } else {
+          maybeChildPath.closeEntries.addAll(maybeDefer.closeEntries);
+          maybeDefer.closeEntries.clear();
+        }
+        return true;
+      }
+    }
+    if (!maybeDefer.deleteAfterCoreClose) {
+      // check whether we need to order ourselves after potential subpath `deleteAfterCoreClose`
+      for (CacheValue maybeChildPath : removeEntries) {
+        if (isSubPath(maybeDefer, maybeChildPath)) {
+          maybeDefer.deleteAfterCoreClose = true;
+          break;
+        }
+      }
+    }
+    return false;
   }
 
   private void close(CacheValue val) {
@@ -324,7 +361,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     }
   }
 
-  private boolean isSubPath(CacheValue cacheValue, CacheValue otherCacheValue) {
+  private static boolean isSubPath(CacheValue cacheValue, CacheValue otherCacheValue) {
     int one = cacheValue.path.lastIndexOf('/');
     int two = otherCacheValue.path.lastIndexOf('/');
 
