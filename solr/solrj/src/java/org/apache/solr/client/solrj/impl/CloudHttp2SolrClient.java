@@ -447,19 +447,14 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       return this;
     }
 
-    /** Validates that either zkHosts or solrUrls is specified, but not both. */
-    private void ensureValidZkHostsSolrUrlsParams() {
+    /** Create a {@link CloudHttp2SolrClient} based on the provided configuration. */
+    public CloudHttp2SolrClient build() {
       if (!zkHosts.isEmpty() && !solrUrls.isEmpty()) {
         throw new IllegalArgumentException(
             "Both zkHost(s) & solrUrl(s) have been specified. Only specify one.");
       } else if (zkHosts.isEmpty() && solrUrls.isEmpty()) {
         throw new IllegalArgumentException("Both zkHosts and solrUrl cannot be null.");
       }
-    }
-
-    /** Create a {@link CloudHttp2SolrClient} based on the provided configuration. */
-    public CloudHttp2SolrClient build() {
-      ensureValidZkHostsSolrUrlsParams();
       return new CloudHttp2SolrClient(this);
     }
   }
