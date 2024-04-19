@@ -52,7 +52,7 @@ public class ReverseQueryParser extends QParser {
   public Query parse() throws SyntaxError {
     var obj = req.getContext().get(DOCUMENT_BATCH_KEY);
     if (!(obj instanceof DocumentBatchVisitor)) {
-      throw new SyntaxError("Document Batch is of unexpected type");
+      throw new SyntaxError(DOCUMENT_BATCH_KEY + " is absent or of unexpected type: " + obj);
     }
     var documentBatch = (DocumentBatchVisitor) obj;
     LeafReader queryIndexReader = documentBatch.get();
