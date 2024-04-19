@@ -14,9 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.search;
 
-package org.apache.solr.client.solrj.util;
+public class IncompleteRerankingException extends RuntimeException {
 
-public interface Cancellable {
-  void cancel();
+  public IncompleteRerankingException() {
+    super();
+  }
 }
