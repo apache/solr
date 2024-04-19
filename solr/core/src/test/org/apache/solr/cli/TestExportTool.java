@@ -38,7 +38,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -261,27 +260,29 @@ public class TestExportTool extends SolrCloudTestCase {
         .withSecurityJson(SECURITY_JSON)
         .configure();
 
-    CloudSolrClient cloudSolrClient = cluster.getSolrClient();
+    try {
+      CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 1)
+          .setBasicAuthCredentials(USER, PASS)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
-    CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 1)
-        .setBasicAuthCredentials(USER, PASS)
-        .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
+      File outFile = File.createTempFile("output", ".json");
 
-    File outFile = File.createTempFile("output", ".json");
+      String[] args = {
+        "export",
+        "-url",
+        cluster.getJettySolrRunner(0).getBaseUrl() + "/" + COLLECTION_NAME,
+        "-credentials",
+        USER + ":" + PASS,
+        "-out",
+        outFile.getAbsolutePath(),
+        "-verbose"
+      };
 
-    String[] args = {
-      "export",
-      "-url",
-      cluster.getJettySolrRunner(0).getBaseUrl() + "/" + COLLECTION_NAME,
-      "-credentials",
-      USER + ":" + PASS,
-      "-out",
-      outFile.getAbsolutePath(),
-      "-verbose"
-    };
-
-    assertEquals(0, runTool(args));
+      assertEquals(0, runTool(args));
+    } finally {
+      cluster.shutdown();
+    }
   }
 
   private int runTool(String[] args) throws Exception {

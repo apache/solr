@@ -57,9 +57,9 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     this.clientIsInternal = builder.httpClient == null;
     this.myClient = createOrGetHttpClientFromBuilder(builder);
     this.stateProvider =
-        !builder.zkHosts.isEmpty()
-            ? createZkClusterStateProvider(builder)
-            : createHttp2ClusterStateProvider(builder.solrUrls, myClient);
+        builder.zkHosts.isEmpty()
+            ? createHttp2ClusterStateProvider(builder.solrUrls, myClient)
+            : createZkClusterStateProvider(builder);
     this.retryExpiryTimeNano = builder.retryExpiryTimeNano;
     this.defaultCollection = builder.defaultCollection;
     if (builder.requestWriter != null) {

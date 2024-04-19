@@ -166,6 +166,8 @@ Bug Fixes
 
 * SOLR-17218: Fix indexFetcher logging to include MDC details (hossman)
 
+* SOLR-17194: Fix CloudHttp2SolrClient doesn't preserve the passed httpClient to Http2ClusterStateProvider when using the internalClientBuilder (Eric Pugh, Lamine Idjeraoui, Houston Putman, Anshum Gupta)
+
 Dependency Upgrades
 ---------------------
 
