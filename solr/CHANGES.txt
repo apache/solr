@@ -63,8 +63,6 @@ Deprecation Removals
   in favor of the new CompletableFuture based methods.  Remove the related deprecated interfaces `AsyncListener` and ``Cancellable`
   (James Dyer)
 
-* SOLR-17194: Fix CloudHttp2SolrClient doesn't preserve the passed httpClient to Http2ClusterStateProvider when using the internalClientBuilder (Eric Pugh, Lamine Idjeraoui, Houston Putman, Anshum Gupta)
-
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -192,6 +190,8 @@ Bug Fixes
 * SOLR-11535: Fix race condition in singleton-per-collection StateWatcher creation (Michael Gibney)
 
 * SOLR-16866: Reorder nested directory deletions to avoid logging spurious NoSuchFileException (Michael Gibney)
+
+* SOLR-17194: Fix CloudHttp2SolrClient doesn't preserve the passed httpClient to Http2ClusterStateProvider when using the internalClientBuilder (Eric Pugh, Lamine Idjeraoui, Houston Putman, Anshum Gupta)
 
 Dependency Upgrades
 ---------------------
