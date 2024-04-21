@@ -195,7 +195,6 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
-
 * SOLR-17157: Upgrade Lucene to 9.10.0 (hossman, Christine Poerschke)
 
 * SOLR-17214: Update forbiddenapis to 3.7 (hossman)
@@ -204,6 +203,7 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
+
 * SOLR-17126: Cut over System.getProperty to EnvUtils.getProperty (janhoy)
 
 * SOLR-17066: GenericSolrRequest now has a `setRequiresCollection` setter that allows it to specify whether

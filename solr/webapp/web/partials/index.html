@@ -214,7 +214,10 @@ limitations under the License.
                 <dt><span>Args</span></dt>
                 <dd ng-repeat="arg in commandLineArgs track by $index" ng-class="{'odd':$odd}">{{arg}}</dd>
               </dl></li>
-            
+              <li>
+                <div id="sort-command-line" ng-click="toggleCommandLineOrder()"><a ng-class="{on: commandLineOrderBy=='Sorted'}">Sort JVM Command line Args</a></div>
+              </li>
+
             </ul>
 
           </div>

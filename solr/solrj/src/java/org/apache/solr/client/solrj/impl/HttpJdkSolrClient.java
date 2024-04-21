@@ -52,8 +52,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.util.AsyncListener;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -137,37 +135,25 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   }
 
   @Override
-  public Cancellable asyncRequest(
-      SolrRequest<?> solrRequest,
-      String collection,
-      AsyncListener<NamedList<Object>> asyncListener) {
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      final SolrRequest<?> solrRequest, String collection) {
     try {
       PreparedRequest pReq = prepareRequest(solrRequest, collection);
-      asyncListener.onStart();
-      CompletableFuture<NamedList<Object>> response =
-          httpClient
-              .sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream())
-              .thenApply(
-                  httpResponse -> {
-                    try {
-                      return processErrorsAndResponse(
-                          solrRequest, pReq.parserToUse, httpResponse, pReq.url);
-                    } catch (SolrServerException e) {
-                      throw new RuntimeException(e);
-                    }
-                  })
-              .whenComplete(
-                  (nl, t) -> {
-                    if (t != null) {
-                      asyncListener.onFailure(t);
-                    } else {
-                      asyncListener.onSuccess(nl);
-                    }
-                  });
-      return new HttpSolrClientCancellable(response);
+      return httpClient
+          .sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream())
+          .thenApply(
+              httpResponse -> {
+                try {
+                  return processErrorsAndResponse(
+                      solrRequest, pReq.parserToUse, httpResponse, pReq.url);
+                } catch (SolrServerException e) {
+                  throw new RuntimeException(e);
+                }
+              });
     } catch (Exception e) {
-      asyncListener.onFailure(e);
-      return () -> {};
+      CompletableFuture<NamedList<Object>> cf = new CompletableFuture<>();
+      cf.completeExceptionally(e);
+      return cf;
     }
   }
 
@@ -417,7 +403,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   private void decorateRequest(HttpRequest.Builder reqb, SolrRequest<?> solrRequest) {
     if (requestTimeoutMillis > 0) {
       reqb.timeout(Duration.of(requestTimeoutMillis, ChronoUnit.MILLIS));
-    } else {
+    } else if (idleTimeoutMillis > 0) {
       reqb.timeout(Duration.of(idleTimeoutMillis, ChronoUnit.MILLIS));
     }
     reqb.header("User-Agent", USER_AGENT);
@@ -529,23 +515,6 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
         .filter(Objects::nonNull)
         .map(s -> s.toLowerCase(Locale.ROOT).trim())
         .collect(Collectors.joining(", "));
-  }
-
-  protected static class HttpSolrClientCancellable implements Cancellable {
-    private final CompletableFuture<NamedList<Object>> response;
-
-    protected HttpSolrClientCancellable(CompletableFuture<NamedList<Object>> response) {
-      this.response = response;
-    }
-
-    @Override
-    public void cancel() {
-      response.cancel(true);
-    }
-
-    protected CompletableFuture<NamedList<Object>> getResponse() {
-      return response;
-    }
   }
 
   public static class Builder

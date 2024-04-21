@@ -1182,7 +1182,7 @@ public abstract class SolrClient implements Serializable, Closeable {
       throws SolrServerException, IOException;
 
   /**
-   * Execute a request against a Solr server
+   * Execute a request against a Solr server using the default collection
    *
    * @param request the request to execute
    * @return a {@link NamedList} containing the response from the server
