@@ -75,6 +75,7 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.LogListener;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -928,6 +929,31 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     assertNotNull("There must be a deletes parameter", deletesObject);
     NamedList<?> deletes = (NamedList<?>) deletesObject;
     assertEquals("There must be 1 version", 1, deletes.size());
+  }
+
+  @Test
+  @LogLevel("org.eclipse.jetty.server=DEBUG")
+  public void testWithExplicitUrl() throws Exception {
+    String COLLECTION = getSaferTestName();
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+
+    QueryRequest req = new QueryRequest(params("q", "*:*"));
+    var solrClient = getRandomClient();
+    req.process(solrClient, COLLECTION); // doesn't throw exception; a sanity check
+    assertNull(req.getBasePath());
+
+    // for each node, send a request explicitly to it using setBasePath
+    for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+      try (LogListener serverLog =
+          LogListener.debug(org.eclipse.jetty.server.Server.class).substring("REQUEST")) {
+        req.setBasePath(runner.getBaseUrl().toString());
+        req.process(solrClient, COLLECTION); // doesn't throw exception
+        assertThat(serverLog.pollMessage(), Matchers.containsString(req.getBasePath()));
+
+        serverLog.pollMessage(); // there will be another log when forwarded
+      }
+    }
   }
 
   @Test

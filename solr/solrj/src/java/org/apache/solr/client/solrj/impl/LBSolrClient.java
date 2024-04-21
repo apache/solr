@@ -482,6 +482,9 @@ public abstract class LBSolrClient extends SolrClient {
   protected Exception doRequest(
       Endpoint baseUrl, Req req, Rsp rsp, boolean isNonRetryable, boolean isZombie)
       throws SolrServerException, IOException {
+    if (req.getRequest().getBasePath() != null) {
+      throw new IllegalArgumentException("BasePath is not supported here");
+    }
     Exception ex = null;
     try {
       rsp.server = baseUrl.toString();
@@ -528,6 +531,8 @@ public abstract class LBSolrClient extends SolrClient {
       }
     } catch (Exception e) {
       throw new SolrServerException(e);
+    } finally {
+      req.getRequest().setBasePath(null);
     }
 
     return ex;
@@ -664,6 +669,9 @@ public abstract class LBSolrClient extends SolrClient {
   public NamedList<Object> request(
       final SolrRequest<?> request, String collection, final Integer numServersToTry)
       throws SolrServerException, IOException {
+    if (request.getBasePath() != null) {
+      throw new IllegalArgumentException("BasePath is not supported here");
+    }
     Exception ex = null;
     EndpointWrapper[] serverList = aliveServerList;
 
@@ -705,6 +713,8 @@ public abstract class LBSolrClient extends SolrClient {
         }
       } catch (Exception e) {
         throw new SolrServerException(e);
+      } finally {
+        request.setBasePath(null);
       }
     }
 
@@ -740,6 +750,8 @@ public abstract class LBSolrClient extends SolrClient {
         }
       } catch (Exception e) {
         throw new SolrServerException(e);
+      } finally {
+        request.setBasePath(null);
       }
     }
 

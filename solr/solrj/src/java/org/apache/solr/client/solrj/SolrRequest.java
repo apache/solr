@@ -31,9 +31,15 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 
 /**
- * @since solr 1.3
+ * Base class for a SolrJ request to Solr. A common way to send it is via {@link
+ * #process(SolrClient)}.
+ *
+ * <p>Not thread-safe; in fact {@link org.apache.solr.client.solrj.impl.LBSolrClient} will
+ * temporarily modify {@link #setBasePath(String)} during request processing.
  */
 public abstract class SolrRequest<T extends SolrResponse> implements Serializable {
+  // TODO remove usage of setBasePath during processing
+
   // This user principal is typically used by Auth plugins during distributed/sharded search
   private Principal userPrincipal;
 
@@ -132,6 +138,10 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     return path;
   }
 
+  /**
+   * The path of this request following the core or collection (if applicable). Sometimes called the
+   * "handler path". Example: {@code /select}
+   */
   public void setPath(String path) {
     this.path = path;
   }
@@ -248,8 +258,12 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     return getParams() == null ? null : getParams().get("collection");
   }
 
+  /**
+   * The base URL to which this request should be executed. Generally it points to the Solr root URL
+   * on a node. Example: {@code http://localhost:8983/solr}
+   */
   public void setBasePath(String path) {
-    if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
+    if (path != null && path.endsWith("/")) path = path.substring(0, path.length() - 1);
 
     this.basePath = path;
   }

@@ -52,6 +52,7 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.LBSolrClient.Endpoint;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -86,6 +87,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+/**
+ * SolrCloud-aware implementation of {@link SolrClient}. It's able to route requests to the ideal
+ * node, knowing where the collection and it's replicas are hosted. It will even break up an update
+ * request with a batch of documents knowing where each document goes (assuming there is more than
+ * one shard). It will do some retries and fail-over to alternative replicas in an attempt to proces
+ * the request successfully, using {@link LBSolrClient}.
+ *
+ * <p>If the request contains {@link SolrRequest#getBasePath()} (a URL) then the logic in this
+ * client will be skipped, and it will be processed via an HTTP SolrClient.
+ */
 public abstract class CloudSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -757,6 +768,12 @@ public abstract class CloudSolrClient extends SolrClient {
       collection = requestCollection;
     } else if (collection == null) {
       collection = defaultCollection;
+    }
+
+    // The request specifies a specific URL, so bypass CloudSolrClient & LBSolrClient.
+    if (request.getBasePath() != null) {
+      var httpSolrClient = getLbClient().getClient(new Endpoint(request.getBasePath()));
+      return httpSolrClient.request(request, collection);
     }
 
     List<String> inputCollections =
