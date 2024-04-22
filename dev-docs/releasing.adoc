@@ -27,7 +27,8 @@ The release wizard is meant to be used from any working copy you like, with the 
 === How to run the release wizard
 
 1. Make sure you have python 3.4+ installed (if a higher version becomes required, the wizard should complain and tell you what it is)
-2. Run the command you see documented at /solr/dev-tools/scripts/README.md using --dry-run initially is fine.
+2. Install dependencies with `pip3 install -r requirements.txt`, from the `dev-tools/scripts` folder.
+3. Run the command you see documented at `dev-tools/scripts/README.md` using `--dry-run` initially is fine.
 
 NOTE: `--dry-run` does still create `~/.solr_releases` and `~/.solrrc` files and record the release version you intend for future reference so one might say it's really better described as a "slightly damp" run :) it should however not execute other commands. (in theory)
 
