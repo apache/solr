@@ -14,18 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.search;
 
-package org.apache.solr.client.solrj.util;
+public class IncompleteRerankingException extends RuntimeException {
 
-/**
- * The return type for solrJ asynchronous requests, providing a mechanism whereby callers may
- * request cancellation.
- */
-public interface Cancellable {
-
-  /**
-   * Request to cancel the asynchronous request. This may be a no-op in some situations, for
-   * instance, if the request failed or otherwise is complete.
-   */
-  void cancel();
+  public IncompleteRerankingException() {
+    super();
+  }
 }
