@@ -27,7 +27,7 @@ The release wizard is meant to be used from any working copy you like, with the 
 === How to run the release wizard
 
 1. Make sure you have python 3.4+ installed (if a higher version becomes required, the wizard should complain and tell you what it is)
-2. Run the command you see documented at /solr/dev-tools/scripts/README.md using --dry-run initiall is fine.
+2. Run the command you see documented at /solr/dev-tools/scripts/README.md using --dry-run initially is fine.
 
 NOTE: `--dry-run` does still create `~/.solr_releases` and `~/.solrrc` files and record the release version you intend for future reference so one might say it's really better described as a "slightly damp" run :) it should however not execute other commands. (in theory)
 
@@ -38,7 +38,7 @@ The release wizard is organized into checklists and the first two checklists are
 
 == Step 3 - Propose the release
 
-Mail dev@solr.apache.org and wax poetic about the wonderful features and awful bugs that are fixed but not yet released and volunteer to do the release. If you are sufficiently inspiring most of the PMC will quietly say to themselves "Whew! I don't have to do it" and then respond with a +1. Then at the last minute right before the time you proposed to start the release 1-4 people will suddenly mail the list saying something like "Can we wait for X amount of time so I can get SOLR-XXXXXX in?"... Let the community discuss, and give them some time because you knew this would happen (because you read this guide!)
+Mail dev@solr.apache.org with a subject like `[DISCUSS] Solr X.Y release` and wax poetic about the wonderful features and awful bugs that are fixed but not yet released and volunteer to do the release. If you are sufficiently inspiring most of the PMC will quietly say to themselves "Whew! I don't have to do it" and then respond with a +1. Then at the last minute right before the time you proposed to start the release 1-4 people will suddenly mail the list saying something like "Can we wait for X amount of time so I can get SOLR-XXXXXX in?"... Let the community discuss, and give them some time because you knew this would happen (because you read this guide!)
 
 == Step 4 - Continue following the release wizard
 
