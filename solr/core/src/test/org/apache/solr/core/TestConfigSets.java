@@ -30,7 +30,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -61,14 +60,14 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     NodeConfig config =
         SolrXmlConfig.fromString(
             solrHome, "<solr><str name=\"configSetBaseDir\">configsets</str></solr>");
-    MatcherAssert.assertThat(
+    assertThat(
         config.getConfigSetBaseDirectory().toAbsolutePath(),
         is(Paths.get("/path/to/solr/home/configsets").toAbsolutePath()));
 
     NodeConfig absConfig =
         SolrXmlConfig.fromString(
             solrHome, "<solr><str name=\"configSetBaseDir\">/path/to/configsets</str></solr>");
-    MatcherAssert.assertThat(
+    assertThat(
         absConfig.getConfigSetBaseDirectory().toAbsolutePath(),
         is(Paths.get("/path/to/configsets").toAbsolutePath()));
   }
@@ -81,8 +80,8 @@ public class TestConfigSets extends SolrTestCaseJ4 {
       Path solrHome = Paths.get(container.getSolrHome());
 
       SolrCore core1 = container.create("core1", Map.of("configSet", "configset-2"));
-      MatcherAssert.assertThat(core1.getCoreDescriptor().getName(), is("core1"));
-      MatcherAssert.assertThat(
+      assertThat(core1.getCoreDescriptor().getName(), is("core1"));
+      assertThat(
           Paths.get(core1.getDataDir()).toString(),
           is(solrHome.resolve("core1").resolve("data").toString()));
     } finally {
@@ -102,7 +101,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
                 container.create("core1", Map.of("configSet", "nonexistent"));
               });
       Throwable wrappedException = getWrappedException(thrown);
-      MatcherAssert.assertThat(wrappedException.getMessage(), containsString("nonexistent"));
+      assertThat(wrappedException.getMessage(), containsString("nonexistent"));
     } finally {
       if (container != null) container.shutdown();
     }
@@ -123,7 +122,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
     // We initially don't have a /dump handler defined
     SolrCore core = container.create("core1", Map.of("configSet", "configset-2"));
-    MatcherAssert.assertThat(
+    assertThat(
         "No /dump handler should be defined in the initial configuration",
         core.getRequestHandler("/dump"),
         is(nullValue()));
@@ -136,7 +135,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     container.reload("core1");
 
     core = container.getCore("core1");
-    MatcherAssert.assertThat(
+    assertThat(
         "A /dump handler should be defined in the reloaded configuration",
         core.getRequestHandler("/dump"),
         is(notNullValue()));
