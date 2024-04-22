@@ -1,0 +1,52 @@
+
+= Releasing Solr
+:toc: left
+
+== Motiviated?
+So you're of the opinion that there are unreleased features or bugfixes commited to the solr repository that the world needs?
+Are you so convinced of this that you are willing to volunteer to make it happen?
+Good! This document tells you how to get started.
+
+== Step 0 - Become a committer
+To do a release you must become a https://community.apache.org/contributors/becomingacommitter.html[commiter] on the project. Additionally, if you are not on the PMC you will also need to take special steps, and you will need to partner with a PMC member for at least one step. See https://www.apache.org/legal/release-policy.html#upload-ci
+
+== Step 1 - Run the release wizard!
+
+But wait, don't I need community approval? (you exclaim)
+
+Yes! But there are some details to take care of that don't require anyone's approval, and getting comfortable with the release wizard will make it smoother so you should run through the early sections of the release wizard first.
+
+=== Where to find the release wizard
+
+The release wizard is found in a checkout of solr at `/solr/devtools/scripts/releaseWizard.py`
+
+=== What working copy to use
+
+The release wizard is meant to be used from any working copy you like, with the expectation that you will check out the PARENT branch. The wizard will (eventually) guide you into creating a fresh, clean checkout, but you don't need that at the start.
+
+=== How to run the release wizard
+
+1. Make sure you have python 3.4+ installed (if a higher version becomes required, the wizard should complain and tell you what it is)
+2. Run the command you see documented at /solr/dev-tools/scripts/README.md using --dry-run initiall is fine.
+
+NOTE: `--dry-run` does still create `~/.solr_releases` and `~/.solrrc` files and record the release version you intend for future reference so one might say it's really better described as a "slightly damp" run :) it should however not execute other commands. (in theory)
+
+
+== Step 2 - Complete the first 2 checklists
+
+The release wizard is organized into checklists and the first two checklists are preparation/planning related, and are good to complete before proposing the release
+
+== Step 3 - Propose the release
+
+Mail dev@solr.apache.org and wax poetic about the wonderful features and awful bugs that are fixed but not yet released and volunteer to do the release. If you are sufficiently inspiring most of the PMC will quietly say to themselves "Whew! I don't have to do it" and then respond with a +1. Then at the last minute right before the time you proposed to start the release 1-4 people will suddenly mail the list saying something like "Can we wait for X amount of time so I can get SOLR-XXXXXX in?"... Let the community discuss, and give them some time because you knew this would happen (because you read this guide!)
+
+== Step 4 - Continue following the release wizard
+
+It's supposed to tell you all you need from here...
+
+== Step 5 - Complete the after release steps in the wizard too.
+
+There are some things that need to be done after the release is officially published. The wizard will guide you through that (things like updating Jira etc)
+
+
+
