@@ -18,7 +18,7 @@ Yes! But there are some details to take care of that don't require anyone's appr
 
 === Where to find the release wizard
 
-The release wizard is found in a checkout of solr at `/solr/devtools/scripts/releaseWizard.py`
+The release wizard is found in a checkout of solr at `dev-tools/scripts/releaseWizard.py`
 
 === What working copy to use
 
