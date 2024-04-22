@@ -94,7 +94,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     try {
       ClusterStateProvider stateProvider =
           ClusterStateProvider.newZkClusterStateProvider(
-              builder.zkHosts, builder.zkChroot, builder.canUseZkACLs);
+              builder.zkHosts, builder.zkChroot, builder.canUseZkACLs, builder.solrClassLoader);
       if (stateProvider instanceof SolrZkClientTimeoutAware) {
         var timeoutAware = (SolrZkClientTimeoutAware) stateProvider;
         timeoutAware.setZkClientTimeout(builder.zkClientTimeout);
