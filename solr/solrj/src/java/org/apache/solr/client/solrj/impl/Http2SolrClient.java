@@ -117,6 +117,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
   private SSLConfig sslConfig;
 
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
+
+  public List<HttpListenerFactory> getListenerFactory() {
+    return listenerFactory;
+  }
+
   private final AsyncTracker asyncTracker = new AsyncTracker();
 
   private final boolean closeClient;
@@ -869,6 +874,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     protected Long keyStoreReloadIntervalSecs;
 
+    public Http2SolrClient.Builder withListenerFactory(List<HttpListenerFactory> listenerFactory) {
+      this.listenerFactory = listenerFactory;
+      return this;
+    }
+
     private List<HttpListenerFactory> listenerFactory;
 
     public Builder() {
@@ -1066,9 +1076,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
       }
       if (this.urlParamNames == null) {
         this.urlParamNames = http2SolrClient.urlParamNames;
-      }
-      if (this.listenerFactory == null) {
-        this.listenerFactory = http2SolrClient.listenerFactory;
       }
       return this;
     }

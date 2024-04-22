@@ -127,6 +127,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.IndexOutputOutputStream;
 import org.apache.solr.util.RTimer;
@@ -259,15 +260,17 @@ public class IndexFetcher {
     }
   }
 
+  // It's crucial not to remove the authentication credentials as they are essential for User
+  // managed replication.
+  // GitHub PR #2276
   private SolrClient createSolrClient(
       SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, String leaderBaseUrl) {
-    final ModifiableSolrParams httpClientParams = new ModifiableSolrParams();
-    httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
-    httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
+    final UpdateShardHandler updateShardHandler = core.getCoreContainer().getUpdateShardHandler();
     Http2SolrClient httpClient =
         new Http2SolrClient.Builder(leaderBaseUrl)
-            .withHttpClient(
-                core.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyHttpClient())
+            .withHttpClient(updateShardHandler.getRecoveryOnlyHttpClient())
+            .withListenerFactory(
+                updateShardHandler.getRecoveryOnlyHttpClient().getListenerFactory())
             .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
             .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
@@ -1814,10 +1817,12 @@ public class IndexFetcher {
     private int fetchPackets(FastInputStream fis) throws Exception {
       byte[] intbytes = new byte[4];
       byte[] longbytes = new byte[8];
-      boolean isContentReceived = false;
       try {
         while (true) {
           if (fis.peek() == -1) {
+            if (bytesDownloaded == 0) {
+              log.warn("No content received for file: {}", fileName);
+            }
             return NO_CONTENT;
           }
           if (stop) {
@@ -1831,10 +1836,8 @@ public class IndexFetcher {
           // read the size of the packet
           int packetSize = readInt(intbytes);
           if (packetSize <= 0) {
-            if (!isContentReceived) log.warn("No content received for file: {}", fileName);
             continue;
           }
-          isContentReceived = true;
           // TODO consider recoding the remaining logic to not use/need buf[]; instead use the
           // internal buffer of fis
           if (buf.length < packetSize) {
