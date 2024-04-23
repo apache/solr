@@ -35,7 +35,7 @@ NOTE: `--dry-run` does still create `~/.solr_releases` and `~/.solrrc` files and
 
 == Step 2 - Complete the first 2 checklists
 
-The release wizard is organized into checklists and the first two checklists are preparation/planning related, and are good to complete before proposing the release
+The release wizard is organized into checklists and the first two checklists are preparation/planning related, and are good to complete before proposing the release.
 
 == Step 3 - Propose the release
 
