@@ -22,13 +22,17 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -39,7 +43,6 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -546,9 +549,8 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
-    CountDownLatch cdl = new CountDownLatch(limit);
-    DebugAsyncListener[] listeners = new DebugAsyncListener[limit];
-    Cancellable[] cancellables = new Cancellable[limit];
+    CountDownLatch latch = new CountDownLatch(limit);
+
     try (HttpSolrClientBase client = b.build()) {
 
       // ensure the collection is empty to start
@@ -562,13 +564,13 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       assertEquals(0, qr.getResults().getNumFound());
 
       for (int i = 0; i < limit; i++) {
-        listeners[i] = new DebugAsyncListener(cdl);
         UpdateRequest ur = new UpdateRequest();
         ur.add("id", "KEY-" + i);
         ur.setMethod(SolrRequest.METHOD.POST);
-        client.asyncRequest(ur, COLLECTION_1, listeners[i]);
+
+        client.requestAsync(ur, COLLECTION_1).whenComplete((nl, e) -> latch.countDown());
       }
-      cdl.await(1, TimeUnit.MINUTES);
+      latch.await(1, TimeUnit.MINUTES);
       client.commit(COLLECTION_1);
 
       // check that the correct number of documents were added
@@ -593,9 +595,9 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
-    CountDownLatch cdl = new CountDownLatch(limit);
-    DebugAsyncListener[] listeners = new DebugAsyncListener[limit];
-    Cancellable[] cancellables = new Cancellable[limit];
+
+    List<CompletableFuture<NamedList<Object>>> futures = new ArrayList<>();
+
     try (HttpSolrClientBase client = b.build()) {
       for (int i = 0; i < limit; i++) {
         DebugServlet.responseBodyByQueryFragment.put(
@@ -606,45 +608,44 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         QueryRequest query =
             new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "KEY-" + i)));
         query.setMethod(SolrRequest.METHOD.GET);
-        listeners[i] = new DebugAsyncListener(cdl);
-        client.asyncRequest(query, null, listeners[i]);
+        futures.add(client.requestAsync(query));
       }
-      cdl.await(1, TimeUnit.MINUTES);
-    }
 
-    for (int i = 0; i < limit; i++) {
-      NamedList<Object> result = listeners[i].onSuccessResult;
-      SolrDocumentList sdl = (SolrDocumentList) result.get("response");
-      assertEquals(2, sdl.getNumFound());
-      assertEquals(1, sdl.getStart());
-      assertTrue(sdl.getNumFoundExact());
-      assertEquals(1, sdl.size());
-      assertEquals(1, sdl.iterator().next().size());
-      assertEquals("KEY-" + i, sdl.iterator().next().get("id"));
-
-      assertNull(listeners[i].onFailureResult);
-      assertTrue(listeners[i].onStartCalled);
+      for (int i = 0; i < limit; i++) {
+        NamedList<Object> result = futures.get(i).get(1, TimeUnit.MINUTES);
+        SolrDocumentList sdl = (SolrDocumentList) result.get("response");
+        assertEquals(2, sdl.getNumFound());
+        assertEquals(1, sdl.getStart());
+        assertTrue(sdl.getNumFoundExact());
+        assertEquals(1, sdl.size());
+        assertEquals(1, sdl.iterator().next().size());
+        assertEquals("KEY-" + i, sdl.iterator().next().get("id"));
+        assertFalse(futures.get(i).isCompletedExceptionally());
+      }
     }
   }
 
-  protected DebugAsyncListener testAsyncExceptionBase() throws Exception {
+  protected void testAsyncExceptionBase() throws Exception {
     ResponseParser rp = new XMLResponseParser();
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "Wrong Content Type!");
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
-    CountDownLatch cdl = new CountDownLatch(1);
-    DebugAsyncListener listener = new DebugAsyncListener(cdl);
+
     try (HttpSolrClientBase client = b.build()) {
       QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
-      client.asyncRequest(query, COLLECTION_1, listener);
-      cdl.await(1, TimeUnit.MINUTES);
+      CompletableFuture<NamedList<Object>> future = client.requestAsync(query, COLLECTION_1);
+      ExecutionException ee = null;
+      try {
+        future.get(1, TimeUnit.MINUTES);
+        fail("Should have thrown ExecutionException");
+      } catch (ExecutionException ee1) {
+        ee = ee1;
+      }
+      assertTrue(future.isCompletedExceptionally());
+      assertTrue(ee.getCause() instanceof BaseHttpSolrClient.RemoteSolrException);
+      assertTrue(ee.getMessage(), ee.getMessage().contains("mime type"));
     }
-
-    assertNotNull(listener.onFailureResult);
-    assertTrue(listener.onStartCalled);
-    assertNull(listener.onSuccessResult);
-    return listener;
   }
 }
