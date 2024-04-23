@@ -8,7 +8,7 @@ Are you so convinced of this that you are willing to volunteer to make it happen
 Good! This document tells you how to get started.
 
 == Step 0 - Become a committer
-To do a release you must become a https://community.apache.org/contributors/becomingacommitter.html[committer] on the project. Additionally, if you are not on the PMC you will also need to take special steps, and you will need to partner with a PMC member for at least one step. See https://www.apache.org/legal/release-policy.html#upload-ci
+To do a release you must become a https://community.apache.org/contributors/becomingacommitter.html[committer] on the project. Additionally, if you are not on the https://apache.org/foundation/how-it-works/#pmc[Project Management Committee (PMC)]  you will also need to take special steps, and you will need to partner with a PMC member for at least one step. See https://www.apache.org/legal/release-policy.html#upload-ci
 
 == Step 1 - Run the release wizard!
 
