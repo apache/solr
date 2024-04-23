@@ -14,8 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.cloud;
 
-// TODO: Move here the VM specific tests from the super class?
-public class VMParamsZkACLAndCredentialsProvidersTest
-    extends AbstractDigestZkACLAndCredentialsProvidersTestBase {}
+/** AWS Secret provider classes for ZK ACL credentials */
+package org.apache.solr.secret.zk;
