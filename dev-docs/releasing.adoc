@@ -3,7 +3,7 @@
 :toc: left
 
 == Motivated?
-So you're of the opinion that there are unreleased features or bugfixes commited to the solr repository that the world needs?
+So you're of the opinion that there are unreleased features or bugfixes committed to the Solr repository that the world needs?
 Are you so convinced of this that you are willing to volunteer to make it happen?
 Good! This document tells you how to get started.
 
