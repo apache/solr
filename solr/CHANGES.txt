@@ -105,6 +105,42 @@ Bug Fixes
 
 Dependency Upgrades
 ---------------------
+* PR#2266: Update dependency commons-codec:commons-codec to v1.16.1 (solrbot)
+
+* PR#2399: Update dependency org.semver4j:semver4j to v5.2.3 (solrbot)
+
+* PR#2209: Update io.netty:* to v4.1.108.Final (solrbot)
+
+* PR#2343: Update dependency org.apache.commons:commons-configuration2 to v2.10.1 (solrbot)
+
+* PR#2049: Update dependency commons-io:commons-io to v2.15.1 (solrbot)
+
+* PR#2136: Update dependency com.tdunning:t-digest to v3.3 (solrbot)
+
+* PR#2342: Update dependency org.bitbucket.b_c:jose4j to v0.9.6 (solrbot)
+
+* PR#2064: Update dependency io.swagger.core.v3:swagger-annotations-jakarta to v2.2.20 (solrbot)
+
+* PR#2325: Update org.mockito:mockito* to v5.11.0 (solrbot)
+
+* PR#2137: Update dependency io.opentelemetry:opentelemetry-bom to v1.35.0 (solrbot)
+
+* PR#2267: Update org.eclipse.jetty*:* to v10.0.20 (solrbot)
+
+* PR#2132: Update io.dropwizard.metrics:* to v4.2.25 (solrbot)
+
+* PR#2133: Update io.grpc:grpc-* to v1.61.1 (solrbot)
+
+* PR#2307: Update dependency org.immutables:value-annotations to v2.10.1 (solrbot)
+
+* PR#2195: Update org.slf4j:* to v2.0.12 (solrbot)
+
+* PR#2181: Update dependency org.apache.commons:commons-exec to v1.4.0 (solrbot)
+
+* PR#2222: Update dependency com.jayway.jsonpath:json-path to v2.9.0 (solrbot)
+
+* PR#2306: Update dependency org.bitbucket.b_c:jose4j to v0.9.5 (solrbot)
+
 
 * SOLR-17157: Upgrade Lucene to 9.10.0 (hossman, Christine Poerschke)
 
