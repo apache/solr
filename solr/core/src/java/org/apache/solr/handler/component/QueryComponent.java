@@ -372,10 +372,13 @@ public class QueryComponent extends SearchComponent {
       return;
     }
 
+    final boolean multiThreaded = params.getBool("multiThreaded", false);
+
     // -1 as flag if not set.
     long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
 
     QueryCommand cmd = rb.createQueryCommand();
+    cmd.setMultiThreaded(multiThreaded);
     cmd.setTimeAllowed(timeAllowed);
     cmd.setMinExactCount(getMinExactCount(params));
     cmd.setDistribStatsDisabled(rb.isDistribStatsDisabled());

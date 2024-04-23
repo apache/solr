@@ -39,7 +39,6 @@ import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.join.GraphQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,15 +120,10 @@ public class MultiThreadedSearcher {
   }
 
   static boolean allowMT(DelegatingCollector postFilter, QueryCommand cmd, Query query) {
-    if (SolrRequestInfo.getRequestInfo() != null
-        && SolrRequestInfo.getRequestInfo().getReq() != null) {
-      boolean multithreaded =
-          SolrRequestInfo.getRequestInfo().getReq().getParams().getBool("multithreaded", true);
-      if (!multithreaded) {
-        return false;
-      }
-    }
-    if (postFilter != null || cmd.getSegmentTerminateEarly() || cmd.getTimeAllowed() > 0) {
+    if (postFilter != null
+        || cmd.getSegmentTerminateEarly()
+        || cmd.getTimeAllowed() > 0
+        || !cmd.getMultiThreaded()) {
       return false;
     } else {
       MTCollectorQueryCheck allowMT = new MTCollectorQueryCheck();

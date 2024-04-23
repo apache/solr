@@ -186,7 +186,7 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 "prepare,process",
                 "cpuAllowed",
                 "50",
-                "multithreaded",
+                "multiThreaded",
                 "false"));
     // System.err.println("rsp=" + rsp.jsonStr());
     assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));
@@ -207,7 +207,7 @@ public class TestCpuAllowedLimit extends SolrCloudTestCase {
                 "prepare,process",
                 "cpuAllowed",
                 "50",
-                "multithreaded",
+                "multiThreaded",
                 "false"));
     // System.err.println("rsp=" + rsp.jsonStr());
     assertNotNull("should have partial results", rsp.getHeader().get("partialResults"));

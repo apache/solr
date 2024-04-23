@@ -85,7 +85,7 @@ public class TestQueryLimits extends SolrCloudTestCase {
                   "true",
                   "facet.field",
                   "val_i",
-                  "multithreaded",
+                  "multiThreaded",
                   "false"));
       assertNotNull(
           "should have partial results for expr " + matchingExpr,
