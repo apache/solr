@@ -19,6 +19,7 @@
 
 package org.apache.solr.monitor;
 
+import org.apache.lucene.monitor.MonitorFields;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,7 +33,10 @@ public class StoredMonitorSolrQueryTest extends MonitorSolrQueryTest {
   @Test
   public void indexBigQueryTest() throws Exception {
     index(
-        id, Integer.toString(0), "_mq", "{!xmlparser}" + read("/monitor/BigDisjunctionQuery.xml"));
+        id,
+        Integer.toString(0),
+        MonitorFields.MONITOR_QUERY,
+        "{!xmlparser}" + read("/monitor/BigDisjunctionQuery.xml"));
     commit();
   }
 }

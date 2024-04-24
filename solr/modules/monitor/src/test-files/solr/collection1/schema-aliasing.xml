@@ -89,15 +89,15 @@
   </fieldType>
 
   <field name="_root_" type="string" indexed="true" stored="false" docValues="false"/>
-  <field name="_query_id" type="string" indexed="true" stored="false" docValues="true"
+  <field name="_query_id_" type="string" indexed="true" stored="false" docValues="true"
     useDocValuesAsStored="true"/>
-  <field name="_cache_id" type="string" indexed="true" stored="false" docValues="true"
+  <field name="_cache_id_" type="string" indexed="true" stored="false" docValues="true"
     useDocValuesAsStored="true"/>
-  <field name="_monitor_checksum" type="string" indexed="true" stored="false" docValues="true"
+  <field name="_monitor_checksum_" type="string" indexed="true" stored="false" docValues="true"
     useDocValuesAsStored="true"/>
-  <field name="_mq" type="string" indexed="true" stored="false" docValues="true"
+  <field name="_mq_" type="string" indexed="true" stored="false" docValues="true"
     useDocValuesAsStored="true"/>
-  <field name="_mq_payload" type="string" indexed="true" stored="false" docValues="true"
+  <field name="_mq_payload_" type="string" indexed="true" stored="false" docValues="true"
     useDocValuesAsStored="true"/>
   <field name="__anytokenfield" type="string" indexed="true" stored="false" docValues="false" multiValued="true"/>
   <dynamicField name="________________________________monitor_alias_*" type="text" multiValued="true"/>

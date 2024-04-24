@@ -23,10 +23,10 @@ import java.util.Set;
 
 public class MonitorFields {
 
-  public static final String QUERY_ID = QueryIndex.FIELDS.query_id;
-  public static final String CACHE_ID = QueryIndex.FIELDS.cache_id;
-  public static final String MONITOR_QUERY = QueryIndex.FIELDS.mq;
-  public static final String PAYLOAD = QueryIndex.FIELDS.mq + "_payload";
+  public static final String QUERY_ID = QueryIndex.FIELDS.query_id + "_";
+  public static final String CACHE_ID = QueryIndex.FIELDS.cache_id + "_";
+  public static final String MONITOR_QUERY = QueryIndex.FIELDS.mq + "_";
+  public static final String PAYLOAD = QueryIndex.FIELDS.mq + "_payload_";
   public static final String VERSION = "_version_";
   public static final String ANYTOKEN_FIELD = TermFilteredPresearcher.ANYTOKEN_FIELD;
 

@@ -19,9 +19,7 @@
 
 package org.apache.solr.monitor.update;
 
-import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.Presearcher;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.monitor.search.ReverseQueryParserPlugin;
 import org.apache.solr.request.SolrQueryRequest;
@@ -34,25 +32,11 @@ public class MonitorUpdateProcessorFactory extends UpdateRequestProcessorFactory
     implements SolrCoreAware {
 
   private Presearcher presearcher;
-  private String queryFieldNameOverride;
-  private String payloadFieldNameOverride;
 
   @Override
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    String queryFieldName =
-        queryFieldNameOverride == null ? MonitorFields.MONITOR_QUERY : queryFieldNameOverride;
-    String payloadFieldName =
-        payloadFieldNameOverride == null ? MonitorFields.PAYLOAD : payloadFieldNameOverride;
-    return new MonitorUpdateRequestProcessor(
-        next, queryFieldName, req.getCore(), presearcher, payloadFieldName);
-  }
-
-  @Override
-  public void init(NamedList<?> args) {
-    super.init(args);
-    queryFieldNameOverride = (String) args.get("queryFieldName");
-    payloadFieldNameOverride = (String) args.get("payloadFieldName");
+    return new MonitorUpdateRequestProcessor(next, req.getCore(), presearcher);
   }
 
   @Override

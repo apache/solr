@@ -25,6 +25,7 @@ import static org.apache.solr.monitor.MonitorConstants.REVERSE_SEARCH_PARAM_NAME
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
+import org.apache.lucene.monitor.MonitorFields;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
@@ -46,7 +47,11 @@ public class ParallelMonitorSolrQueryTest extends MonitorSolrQueryTest {
         .forEach(
             i -> {
               try {
-                index(id, Integer.toString(i), "_mq", "content_s:\"elevator stairs\"");
+                index(
+                    id,
+                    Integer.toString(i),
+                    MonitorFields.MONITOR_QUERY,
+                    "content_s:\"elevator stairs\"");
               } catch (Exception e) {
                 throw new IllegalStateException(e);
               }
@@ -86,7 +91,7 @@ public class ParallelMonitorSolrQueryTest extends MonitorSolrQueryTest {
         .forEach(
             i -> {
               try {
-                index(id, Integer.toString(i), "_mq", "content_s:\"x y\"");
+                index(id, Integer.toString(i), MonitorFields.MONITOR_QUERY, "content_s:\"x y\"");
               } catch (Exception e) {
                 throw new IllegalStateException(e);
               }
@@ -117,7 +122,7 @@ public class ParallelMonitorSolrQueryTest extends MonitorSolrQueryTest {
         "________________________________monitor_alias_content_s_0",
         "some more unremarkable content");
     commit();
-    index(id, "2", "_mq", "content_s:test");
+    index(id, "2", MonitorFields.MONITOR_QUERY, "content_s:test");
     commit();
     handle.clear();
     handle.put("responseHeader", SKIP);
@@ -142,10 +147,10 @@ public class ParallelMonitorSolrQueryTest extends MonitorSolrQueryTest {
   @Test
   @SuppressWarnings("unchecked")
   public void multiPassPresearcherTest() throws Exception {
-    index(id, "0", "_mq", "content0_s:\"elevator stairs and escalator\"");
-    index(id, "1", "_mq", "content0_s:\"elevator test\"");
-    index(id, "2", "_mq", "content0_s:\"stairs test\"");
-    index(id, "3", "_mq", "content0_s:\"elevator stairs\"");
+    index(id, "0", MonitorFields.MONITOR_QUERY, "content0_s:\"elevator stairs and escalator\"");
+    index(id, "1", MonitorFields.MONITOR_QUERY, "content0_s:\"elevator test\"");
+    index(id, "2", MonitorFields.MONITOR_QUERY, "content0_s:\"stairs test\"");
+    index(id, "3", MonitorFields.MONITOR_QUERY, "content0_s:\"elevator stairs\"");
     commit();
     handle.clear();
     handle.put("responseHeader", SKIP);

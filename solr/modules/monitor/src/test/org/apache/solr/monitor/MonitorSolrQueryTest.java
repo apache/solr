@@ -50,18 +50,24 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   @Test
   @ShardsFixed(num = 3)
   public void testMonitorQuery() throws Exception {
-    index(id, Integer.toString(0), "_mq", "content_s:\"elevator music\"");
+    index(id, Integer.toString(0), MonitorFields.MONITOR_QUERY, "content_s:\"elevator music\"");
     index(
         id,
         Integer.toString(1),
-        "_mq",
+        MonitorFields.MONITOR_QUERY,
         "{!xmlparser}<SpanOrTerms slop=\"3\" fieldName=\"content_s\">steep stairs</SpanOrTerms>");
-    index(id, Integer.toString(2), "_mq", "content_s:\"elevator sounds\"");
-    index(id, Integer.toString(3), "_mq", "content_s:\"elevator drop\"");
-    index(id, Integer.toString(4), "_mq", "content_s:\"elevator stairs\"");
-    index(id, Integer.toString(5), "_mq", "other_content_s:\"solr is cool\"");
-    index(id, Integer.toString(6), "_mq", "other_content_s:\"solr is lame\"");
-    index(id, Integer.toString(7), "_mq", "content_s:something", "_mq_payload", "some metadata");
+    index(id, Integer.toString(2), MonitorFields.MONITOR_QUERY, "content_s:\"elevator sounds\"");
+    index(id, Integer.toString(3), MonitorFields.MONITOR_QUERY, "content_s:\"elevator drop\"");
+    index(id, Integer.toString(4), MonitorFields.MONITOR_QUERY, "content_s:\"elevator stairs\"");
+    index(id, Integer.toString(5), MonitorFields.MONITOR_QUERY, "other_content_s:\"solr is cool\"");
+    index(id, Integer.toString(6), MonitorFields.MONITOR_QUERY, "other_content_s:\"solr is lame\"");
+    index(
+        id,
+        Integer.toString(7),
+        MonitorFields.MONITOR_QUERY,
+        "content_s:something",
+        MonitorFields.PAYLOAD,
+        "some metadata");
     commit();
     handle.clear();
     handle.put("responseHeader", SKIP);
@@ -70,7 +76,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     Object[] params =
         new Object[] {
           CommonParams.SORT,
-          "_query_id desc",
+          MonitorFields.QUERY_ID + " desc",
           CommonParams.JSON,
           read("/monitor/multi-doc-batch.json"),
           REVERSE_SEARCH_PARAM_NAME,
@@ -85,14 +91,14 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     validate(response, 2, List.of("5"));
     assertEquals(0, ((SolrDocumentList) response.getResponse().get("response")).size());
 
-    index(id, Integer.toString(5), "_mq", "other_content_s:\"solr is lame\"");
-    index(id, Integer.toString(6), "_mq", "other_content_s:\"solr is cool\"");
+    index(id, Integer.toString(5), MonitorFields.MONITOR_QUERY, "other_content_s:\"solr is lame\"");
+    index(id, Integer.toString(6), MonitorFields.MONITOR_QUERY, "other_content_s:\"solr is cool\"");
     index(
         id,
         Integer.toString(1),
-        "_mq",
+        MonitorFields.MONITOR_QUERY,
         "{!xmlparser}<SpanOrTerms slop=\"3\" fieldName=\"content_s\">steep hill</SpanOrTerms>");
-    index(id, Integer.toString(2), "_mq", "content_s:elevator");
+    index(id, Integer.toString(2), MonitorFields.MONITOR_QUERY, "content_s:elevator");
     commit();
     handle.clear();
     handle.put("responseHeader", SKIP);
@@ -125,18 +131,18 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   @Test
   @ShardsFixed(num = 3)
   public void testNoDocListInResponse() throws Exception {
-    index(id, Integer.toString(0), "_mq", "content_s:\"elevator music\"");
+    index(id, Integer.toString(0), MonitorFields.MONITOR_QUERY, "content_s:\"elevator music\"");
     index(
         id,
         Integer.toString(1),
-        "_mq",
+        MonitorFields.MONITOR_QUERY,
         "{!xmlparser}<SpanOrTerms slop=\"3\" fieldName=\"content_s\">steep stairs</SpanOrTerms>");
-    index(id, Integer.toString(2), "_mq", "content_s:\"elevator sounds\"");
-    index(id, Integer.toString(3), "_mq", "content_s:\"elevator drop\"");
-    index(id, Integer.toString(4), "_mq", "content_s:\"elevator stairs\"");
-    index(id, Integer.toString(5), "_mq", "other_content_s:\"solr is cool\"");
-    index(id, Integer.toString(6), "_mq", "other_content_s:\"solr is lame\"");
-    index(id, Integer.toString(7), "_mq", "content_s:something");
+    index(id, Integer.toString(2), MonitorFields.MONITOR_QUERY, "content_s:\"elevator sounds\"");
+    index(id, Integer.toString(3), MonitorFields.MONITOR_QUERY, "content_s:\"elevator drop\"");
+    index(id, Integer.toString(4), MonitorFields.MONITOR_QUERY, "content_s:\"elevator stairs\"");
+    index(id, Integer.toString(5), MonitorFields.MONITOR_QUERY, "other_content_s:\"solr is cool\"");
+    index(id, Integer.toString(6), MonitorFields.MONITOR_QUERY, "other_content_s:\"solr is lame\"");
+    index(id, Integer.toString(7), MonitorFields.MONITOR_QUERY, "content_s:something");
     commit();
     handle.clear();
     handle.put("responseHeader", SKIP);
@@ -145,7 +151,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     Object[] params =
         new Object[] {
           CommonParams.SORT,
-          "_query_id desc",
+          MonitorFields.QUERY_ID + "  desc",
           CommonParams.JSON,
           read("/monitor/multi-doc-batch.json"),
           REVERSE_SEARCH_PARAM_NAME,
@@ -165,8 +171,8 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
 
   @Test
   public void testDefaultParser() throws Exception {
-    index(id, Integer.toString(0), "_mq", "content_s:\"elevator stairs\"");
-    index(id, Integer.toString(1), "_mq", "content_s:\"something else\"");
+    index(id, Integer.toString(0), MonitorFields.MONITOR_QUERY, "content_s:\"elevator stairs\"");
+    index(id, Integer.toString(1), MonitorFields.MONITOR_QUERY, "content_s:\"something else\"");
     commit();
     handle.clear();
     handle.put("responseHeader", SKIP);
@@ -198,12 +204,12 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     index(
         id,
         Integer.toString(0),
-        "_mq",
+        MonitorFields.MONITOR_QUERY,
         "{!xmlparser}<DisjunctionMaxQuery><TermQuery fieldName=\"content0_s\">elevator</TermQuery><TermQuery fieldName=\"content1_s\">winda</TermQuery><TermQuery fieldName=\"content2_s\">stufen</TermQuery></DisjunctionMaxQuery>");
     index(
         id,
         Integer.toString(1),
-        "_mq",
+        MonitorFields.MONITOR_QUERY,
         "{!xmlparser}<DisjunctionMaxQuery><TermQuery fieldName=\"content0_s\">not</TermQuery><TermQuery fieldName=\"content1_s\">these</TermQuery><TermQuery fieldName=\"content2_s\">terms</TermQuery></DisjunctionMaxQuery>");
     commit();
     handle.clear();
@@ -237,7 +243,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     index(
         id,
         Integer.toString(0),
-        "_mq",
+        MonitorFields.MONITOR_QUERY,
         "{!xmlparser}<DisjunctionMaxQuery><TermQuery fieldName=\"content0_s\">elevator</TermQuery><TermQuery fieldName=\"content1_s\">lift</TermQuery></DisjunctionMaxQuery>");
     commit();
     handle.clear();
@@ -268,7 +274,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     index(
         id,
         Integer.toString(0),
-        "_mq",
+        MonitorFields.MONITOR_QUERY,
         "{!xmlparser}<DisjunctionMaxQuery><TermQuery fieldName=\"content0_s\">elevator</TermQuery></DisjunctionMaxQuery>");
     commit();
     response = query(params);
@@ -281,8 +287,12 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
 
   @Test
   public void testNotQuery() throws Exception {
-    index(id, Integer.toString(0), "_mq", "*:* -content0_s:\"elevator stairs\"");
-    index(id, Integer.toString(1), "_mq", "*:* -content_s:\"candy canes\"");
+    index(
+        id,
+        Integer.toString(0),
+        MonitorFields.MONITOR_QUERY,
+        "*:* -content0_s:\"elevator stairs\"");
+    index(id, Integer.toString(1), MonitorFields.MONITOR_QUERY, "*:* -content_s:\"candy canes\"");
     commit();
     handle.clear();
     handle.put("responseHeader", SKIP);
@@ -309,11 +319,11 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
 
   @Test
   public void testWildCardQuery() throws Exception {
-    index(id, Integer.toString(0), "_mq", "content_s:te*");
-    index(id, Integer.toString(1), "_mq", "content_s:tes*");
-    index(id, Integer.toString(2), "_mq", "content_s:test*");
-    index(id, Integer.toString(3), "_mq", "content_s:tex*");
-    index(id, Integer.toString(4), "_mq", "content_s:tests*");
+    index(id, Integer.toString(0), MonitorFields.MONITOR_QUERY, "content_s:te*");
+    index(id, Integer.toString(1), MonitorFields.MONITOR_QUERY, "content_s:tes*");
+    index(id, Integer.toString(2), MonitorFields.MONITOR_QUERY, "content_s:test*");
+    index(id, Integer.toString(3), MonitorFields.MONITOR_QUERY, "content_s:tex*");
+    index(id, Integer.toString(4), MonitorFields.MONITOR_QUERY, "content_s:tests*");
     commit();
     handle.clear();
     handle.put("responseHeader", SKIP);
@@ -345,8 +355,8 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   @Test
   @ShardsFixed(num = 2)
   public void testDefaultQueryMatchTypeIsNone() throws Exception {
-    index(id, Integer.toString(0), "_mq", "content_s:\"elevator stairs\"");
-    index(id, Integer.toString(1), "_mq", "content_s:\"something else\"");
+    index(id, Integer.toString(0), MonitorFields.MONITOR_QUERY, "content_s:\"elevator stairs\"");
+    index(id, Integer.toString(1), MonitorFields.MONITOR_QUERY, "content_s:\"something else\"");
     commit();
     handle.clear();
     handle.put("responseHeader", SKIP);
@@ -375,23 +385,27 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
   @Test
   @ShardsFixed(num = 2)
   public void testMultiDocHighlightMatchType() throws Exception {
-    index(id, Integer.toString(0), "_mq", "content0_offset_s:\"elevator stairs\"");
+    index(
+        id,
+        Integer.toString(0),
+        MonitorFields.MONITOR_QUERY,
+        "content0_offset_s:\"elevator stairs\"");
     index(
         id,
         Integer.toString(1),
-        "_mq",
+        MonitorFields.MONITOR_QUERY,
         "content0_offset_sds:highlights && content0_offset_sds:field && content0_offset_s:elevator");
     index(
         id,
         Integer.toString(2),
-        "_mq",
+        MonitorFields.MONITOR_QUERY,
         "content0_offset_sds:ignore && content0_offset_sds:field && content0_offset_s:elevator");
     index(
         id,
         Integer.toString(3),
-        "_mq",
+        MonitorFields.MONITOR_QUERY,
         "content0_offset_sds:highlights && content0_offset_sds:ignore && content0_offset_s:elevator");
-    index(id, Integer.toString(4), "_mq", "content0_offset_s:elevator");
+    index(id, Integer.toString(4), MonitorFields.MONITOR_QUERY, "content0_offset_s:elevator");
     commit();
     handle.clear();
     handle.put("responseHeader", SKIP);
@@ -442,16 +456,16 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
 
   @Test
   public void testHighlightMatchType() throws Exception {
-    index(id, Integer.toString(0), "_mq", "content0_s:\"elevator stairs\"");
+    index(id, Integer.toString(0), MonitorFields.MONITOR_QUERY, "content0_s:\"elevator stairs\"");
     index(
         id,
         Integer.toString(1),
-        "_mq",
+        MonitorFields.MONITOR_QUERY,
         "content0_sds:highlights || content0_sds:field || content0_s:elevator");
     index(
         id,
         Integer.toString(2),
-        "_mq",
+        MonitorFields.MONITOR_QUERY,
         "content0_sds:ignore && content0_sds:field && content0_s:elevator");
     commit();
     handle.clear();
@@ -502,7 +516,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     index(
         id,
         Integer.toString(0),
-        "_mq",
+        MonitorFields.MONITOR_QUERY,
         "{!xmlparser}<DisjunctionMaxQuery><TermQuery fieldName=\"content0_s\">elevator</TermQuery><TermQuery fieldName=\"content1_s\">lift</TermQuery></DisjunctionMaxQuery>");
     commit();
     handle.clear();

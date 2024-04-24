@@ -55,22 +55,14 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 
 public class MonitorUpdateRequestProcessor extends UpdateRequestProcessor {
 
-  private final String queryFieldName;
-  private final String payloadFieldName;
   private final SolrCore core;
   private final IndexSchema indexSchema;
   private final Presearcher presearcher;
   private final MonitorSchemaFields monitorSchemaFields;
 
   public MonitorUpdateRequestProcessor(
-      UpdateRequestProcessor next,
-      String queryFieldName,
-      SolrCore core,
-      Presearcher presearcher,
-      String payloadFieldName) {
+      UpdateRequestProcessor next, SolrCore core, Presearcher presearcher) {
     super(next);
-    this.queryFieldName = queryFieldName;
-    this.payloadFieldName = payloadFieldName;
     this.core = core;
     this.indexSchema = core.getLatestSchema();
     this.presearcher = presearcher;
@@ -82,10 +74,10 @@ public class MonitorUpdateRequestProcessor extends UpdateRequestProcessor {
     var solrInputDocument = cmd.getSolrInputDocument();
     var queryId =
         (String) solrInputDocument.getFieldValue(indexSchema.getUniqueKeyField().getName());
-    var queryFieldValue = solrInputDocument.getFieldValue(queryFieldName);
+    var queryFieldValue = solrInputDocument.getFieldValue(MonitorFields.MONITOR_QUERY);
     if (queryFieldValue != null) {
       var payload =
-          Optional.ofNullable(solrInputDocument.getFieldValue(payloadFieldName))
+          Optional.ofNullable(solrInputDocument.getFieldValue(MonitorFields.PAYLOAD))
               .map(Object::toString)
               .orElse(null);
       List<SolrInputDocument> children =

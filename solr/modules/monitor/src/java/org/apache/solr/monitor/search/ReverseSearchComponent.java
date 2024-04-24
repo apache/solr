@@ -170,7 +170,6 @@ public class ReverseSearchComponent extends SearchComponent implements SolrCoreA
     }
   }
 
-
   @Override
   public String getDescription() {
     return "Component that integrates with lucene monitor for reverse search.";
