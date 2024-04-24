@@ -17,14 +17,12 @@
 
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.util.Utils.fromJSONString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,7 +31,6 @@ import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.core.CoreContainer;
 
 public class TestCoreAdminApis extends SolrTestCaseJ4 {
@@ -49,14 +46,6 @@ public class TestCoreAdminApis extends SolrTestCaseJ4 {
         apiBag.register(api, Collections.emptyMap());
       }
     }
-    TestCollectionAPIs.makeCall(
-        apiBag,
-        "/cores",
-        SolrRequest.METHOD.POST,
-        "{create:{name: hello, instanceDir : someDir, schema: 'schema.xml'}}");
-    Object[] params = calls.get("create");
-    assertEquals("hello", params[0]);
-    assertEquals(fromJSONString("{schema : schema.xml}"), params[2]);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -65,13 +54,6 @@ public class TestCoreAdminApis extends SolrTestCaseJ4 {
     assumeWorkingMockito();
 
     CoreContainer mockCC = mock(CoreContainer.class);
-    when(mockCC.create(any(String.class), any(Path.class), any(Map.class), anyBoolean()))
-        .thenAnswer(
-            invocationOnMock -> {
-              in.put("create", invocationOnMock.getArguments());
-              return null;
-            });
-
     doAnswer(
             invocationOnMock -> {
               in.put("rename", invocationOnMock.getArguments());

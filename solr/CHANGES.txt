@@ -101,6 +101,9 @@ Improvements
 ---------------------
 (No changes)
 
+* SOLR-16397: The v2 endpoint for creating core is updated to be more REST-ful.
+  Now available at `POST /api/cores/coreName/create` (Sanjay Dutt via Jason Gerlowski)
+
 Optimizations
 ---------------------
 (No changes)
