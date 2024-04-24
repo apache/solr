@@ -64,6 +64,10 @@ public class AliasingPresearcher extends Presearcher {
     return alias(document);
   }
 
+  public String getPrefix() {
+    return prefix;
+  }
+
   private Document alias(Document in) {
     Document out = new Document();
     for (var field : in) {

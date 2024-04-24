@@ -19,8 +19,10 @@
 
 package org.apache.solr.monitor.update;
 
+import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.Presearcher;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.monitor.AliasingPresearcher;
 import org.apache.solr.monitor.search.ReverseQueryParserPlugin;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -44,5 +46,21 @@ public class MonitorUpdateProcessorFactory extends UpdateRequestProcessorFactory
     presearcher =
         ((ReverseQueryParserPlugin) core.getQueryPlugin(ReverseQueryParserPlugin.NAME))
             .getPresearcher();
+    var schema = core.getLatestSchema();
+    if (presearcher instanceof AliasingPresearcher) {
+      var fieldType =
+          schema.getDynamicFieldType(((AliasingPresearcher) presearcher).getPrefix() + "*");
+      if (!fieldType.isTokenized()) {
+        throw new IllegalStateException("presearcher dynamic field type needs to be tokenized.");
+      }
+    }
+
+    for (String fieldName : MonitorFields.RESERVED_MONITOR_FIELDS) {
+      var field = schema.getFieldOrNull(fieldName);
+      if (field == null) {
+        throw new IllegalStateException(
+            fieldName + " needs to be defined in schema for saved search to work.");
+      }
+    }
   }
 }
