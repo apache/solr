@@ -157,13 +157,15 @@ if [ "$cygwin" = "true" -o "$msys" = "true" ] ; then
 fi
 
 GRADLE_WRAPPER_JAR="$APP_HOME/gradle/wrapper/gradle-wrapper.jar"
-"$JAVACMD" $JAVA_OPTS --source 11 "$APP_HOME/buildSrc/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java" "$GRADLE_WRAPPER_JAR"
-WRAPPER_STATUS=$?
-if [ "$WRAPPER_STATUS" -eq 1 ]; then
-    echo "ERROR: Something went wrong. Make sure you're using Java version between 11 and 21."
-    exit $WRAPPER_STATUS
-elif [ "$WRAPPER_STATUS" -ne 0 ]; then
-    exit $WRAPPER_STATUS
+if [ ! -e "$GRADLE_WRAPPER_JAR" ]; then
+    "$JAVACMD" $JAVA_OPTS --source 11 "$APP_HOME/buildSrc/src/main/java/org/apache/lucene/gradle/WrapperDownloader.java" "$GRADLE_WRAPPER_JAR"
+    WRAPPER_STATUS=$?
+    if [ "$WRAPPER_STATUS" -eq 1 ]; then
+        echo "ERROR: Something went wrong. Make sure you're using Java version between 11 and 21."
+        exit $WRAPPER_STATUS
+    elif [ "$WRAPPER_STATUS" -ne 0 ]; then
+        exit $WRAPPER_STATUS
+    fi
 fi
 
 CLASSPATH=$GRADLE_WRAPPER_JAR
