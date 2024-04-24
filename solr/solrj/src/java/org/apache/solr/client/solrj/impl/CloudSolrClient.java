@@ -91,8 +91,8 @@ import org.slf4j.MDC;
  * SolrCloud-aware implementation of {@link SolrClient}. It's able to route requests to the ideal
  * node, knowing where the collection and it's replicas are hosted. It will even break up an update
  * request with a batch of documents knowing where each document goes (assuming there is more than
- * one shard). It will do some retries and fail-over to alternative replicas in an attempt to proces
- * the request successfully, using {@link LBSolrClient}.
+ * one shard). It will do some retries and fail-over to alternative replicas in an attempt to
+ * process the request successfully, using {@link LBSolrClient}.
  *
  * <p>If the request contains {@link SolrRequest#getBasePath()} (a URL) then the logic in this
  * client will be skipped, and it will be processed via an HTTP SolrClient.

@@ -139,8 +139,11 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   }
 
   /**
-   * The path of this request following the core or collection (if applicable). Sometimes called the
-   * "handler path". Example: {@code /select}
+   * The HTTP path suffix used when sending this request; sometimes called the handler path. The
+   * full path is basically {@link #getBasePath()} + {@link #getCollection()} + {@link #getPath()},
+   * albeit sometimes there is no core/collection component. A typical handler path for a
+   * core/collection is "/select" or "/update". Other handlers are "node handlers"; an example is
+   * "/admin/info/health".
    */
   public void setPath(String path) {
     this.path = path;
