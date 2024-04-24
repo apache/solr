@@ -74,6 +74,18 @@
     -->
     <!-- <lib dir="${solr.install.dir:../../../..}/modules/ltr/lib" regex=".*\.jar" /> -->
 
+  <lib dir="${solr.install.dir:../../../..}/modules/monitor/lib/" regex=".*\.jar" />
+
+  <queryParser name="reverse" class="org.apache.solr.monitor.search.NaiveReverseQueryParserPlugin"/>
+
+  <searchComponent name="reverseSearch" class="org.apache.solr.monitor.search.NaiveReverseSearchComponent"/>
+
+  <requestHandler name="/reverse_select" class="solr.SearchHandler">
+    <arr name="components">
+      <str>reverseSearch</str>
+    </arr>
+  </requestHandler>
+
   <!-- an exact 'path' can be used instead of a 'dir' to specify a
        specific jar file.  This will cause a serious error to be logged
        if it can't be loaded.
@@ -943,6 +955,7 @@
            processor="uuid,remove-blank,field-name-mutating,parse-boolean,parse-long,parse-double,parse-date,add-schema-fields">
     <processor class="solr.LogUpdateProcessorFactory"/>
     <processor class="solr.DistributedUpdateProcessorFactory"/>
+    <processor class="org.apache.solr.monitor.update.NaiveMonitorUpdateProcessorFactory"/>
     <processor class="solr.RunUpdateProcessorFactory"/>
   </updateRequestProcessorChain>
 
