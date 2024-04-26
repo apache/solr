@@ -95,8 +95,11 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
                     true,
                     "credentials",
                     singletonMap(USER, getSaltedHashedValue(PASS)),
-                    "forwardCredentials", // must be true in manual deployment but seems not to
-                    // matter in this testing context
+                    "forwardCredentials", // forward basic auth credentials during internode
+                    // requests instead of relying on PKI authentication; the test should pass
+                    // regardless of the setting here, but "true" is the more interesting case that
+                    // demonstrates that basic auth credentials are being properly handled in the
+                    // context of a distributed subquery
                     true)));
 
     configureCluster(nodeCount)
