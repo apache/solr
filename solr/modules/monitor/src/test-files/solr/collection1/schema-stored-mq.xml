@@ -95,6 +95,6 @@
     useDocValuesAsStored="true"/>
   <field name="_mq_" type="string" indexed="false" stored="true" docValues="false"/>
   <field name="_mq_payload_" type="string" indexed="false" stored="true" docValues="false"/>
-  <field name="__anytokenfield" type="string" indexed="true" stored="false" docValues="false"/>
+  <field name="__anytokenfield" type="text" indexed="true" stored="false" docValues="false" multiValued="true"/>
 
 </schema>

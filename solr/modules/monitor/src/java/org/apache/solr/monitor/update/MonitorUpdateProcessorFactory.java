@@ -50,17 +50,24 @@ public class MonitorUpdateProcessorFactory extends UpdateRequestProcessorFactory
     if (presearcher instanceof AliasingPresearcher) {
       var fieldType =
           schema.getDynamicFieldType(((AliasingPresearcher) presearcher).getPrefix() + "*");
-      if (!fieldType.isTokenized()) {
-        throw new IllegalStateException("presearcher dynamic field type needs to be tokenized.");
+      if (!fieldType.isTokenized() || !fieldType.isMultiValued()) {
+        throw new IllegalStateException(
+            "presearcher-aliased field must be tokenized and multi-valued.");
       }
     }
 
-    for (String fieldName : MonitorFields.RESERVED_MONITOR_FIELDS) {
+    for (String fieldName : MonitorFields.REQUIRED_MONITOR_FIELDS) {
       var field = schema.getFieldOrNull(fieldName);
       if (field == null) {
         throw new IllegalStateException(
-            fieldName + " needs to be defined in schema for saved search to work.");
+            fieldName + " must be defined in schema for saved search to work.");
       }
+    }
+
+    var anyTokenField = schema.getField(MonitorFields.ANYTOKEN_FIELD);
+    if (!anyTokenField.tokenized() || !anyTokenField.multiValued()) {
+      throw new IllegalStateException(
+          MonitorFields.ANYTOKEN_FIELD + " field must be tokenized and multi-valued.");
     }
   }
 }

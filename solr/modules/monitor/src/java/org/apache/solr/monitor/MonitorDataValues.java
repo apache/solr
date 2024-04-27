@@ -79,7 +79,9 @@ public class MonitorDataValues {
   }
 
   public long getVersion() throws IOException {
-    versionIt.advanceExact(currentDoc);
-    return versionIt.longValue();
+    if (versionIt != null && versionIt.advanceExact(currentDoc)) {
+      return versionIt.longValue();
+    }
+    return 0;
   }
 }

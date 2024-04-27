@@ -32,4 +32,7 @@ public class MonitorFields {
 
   public static final Set<String> RESERVED_MONITOR_FIELDS =
       Set.of(QUERY_ID, CACHE_ID, MONITOR_QUERY, PAYLOAD, VERSION, ANYTOKEN_FIELD);
+
+  public static final Set<String> REQUIRED_MONITOR_FIELDS =
+      Set.of(QUERY_ID, CACHE_ID, MONITOR_QUERY, ANYTOKEN_FIELD);
 }
