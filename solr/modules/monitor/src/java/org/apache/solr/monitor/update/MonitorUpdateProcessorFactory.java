@@ -21,6 +21,7 @@ package org.apache.solr.monitor.update;
 
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.Presearcher;
+import org.apache.lucene.monitor.TermFilteredPresearcher;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.monitor.AliasingPresearcher;
 import org.apache.solr.monitor.search.ReverseQueryParserPlugin;
@@ -64,10 +65,13 @@ public class MonitorUpdateProcessorFactory extends UpdateRequestProcessorFactory
       }
     }
 
-    var anyTokenField = schema.getField(MonitorFields.ANYTOKEN_FIELD);
-    if (!anyTokenField.tokenized() || !anyTokenField.multiValued()) {
-      throw new IllegalStateException(
-          MonitorFields.ANYTOKEN_FIELD + " field must be tokenized and multi-valued.");
+    if (presearcher instanceof TermFilteredPresearcher
+        || presearcher instanceof AliasingPresearcher) {
+      var anyTokenField = schema.getFieldOrNull(MonitorFields.ANYTOKEN_FIELD);
+      if (anyTokenField == null || !anyTokenField.tokenized() || !anyTokenField.multiValued()) {
+        throw new IllegalStateException(
+            MonitorFields.ANYTOKEN_FIELD + " field must be tokenized and multi-valued.");
+      }
     }
   }
 }
