@@ -107,7 +107,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
 
 Dependency Upgrades
 ---------------------
