@@ -73,15 +73,15 @@ Lucene is upgraded to 9.10.0 and a variety of library dependencies have been upg
 
 === SolrJ
 * The `Http2SolrClient` classes powered by the Jetty Http library are no longer marked as experimental.
-* Solrj now offers a lightweight client based on java.net.http.HttpClient: `HttpJdkSolrClient` (SOLR-599)
-* SolrJ now offers an improved async request API (SOLR-14763)
-
-=== Admin
-* Inactive shards will now be cleaned up periodically (SOLR1-16403)
+* Solrj now offers a lightweight client based on java.net.http.HttpClient: `HttpJdkSolrClient`
+* SolrJ now offers an improved async request API
 
 === Queries
-* Distributed stats can be disabled via request parameter (SOLR-17058)
-* Query timeouts (limits) may now be based on either CPU time as well as wall clock (SOLR-17141)
+* Distributed stats can be disabled via request parameter
+* Query timeouts (limits) may now be based on either CPU time as well as wall clock
+
+=== Other
+* Inactive shards will now be cleaned up periodically
 
 == Solr 9.5
 === Dependency Upgrades
