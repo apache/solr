@@ -59,6 +59,10 @@ Deprecation Removals
 * SOLR-12089: Remove deprecated `breakSugestionTieBreaker` parameter in favor of `breakSuggestionTieBreaker`
   in WordBreakSolrSpellChecker (Andrey Bozhko via Eric Pugh)
 
+* SOLR-14763: Remove deprecated asynchronous request methods from `Http2SolrClient`, `HttpJdkSolrClient` and `LBHttp2SolrClient`
+  in favor of the new CompletableFuture based methods.  Remove the related deprecated interfaces `AsyncListener` and ``Cancellable`
+  (James Dyer)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -87,6 +91,31 @@ Other Changes
 * SOLR-14410: Switch from SysV init script to systemd service definition (Marius Ghita via janhoy)
 
 * SOLR-17205: De-couple SolrJ required Java version from server Java version (janhoy)
+
+==================  9.7.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
 
 ==================  9.6.0 ==================
 New Features
@@ -185,15 +214,21 @@ Bug Fixes
 
 * SOLR-11535: Fix race condition in singleton-per-collection StateWatcher creation (Michael Gibney)
 
+* SOLR-16866: Reorder nested directory deletions to avoid logging spurious NoSuchFileException (Michael Gibney)
+
+* SOLR-17194: Fix CloudHttp2SolrClient doesn't preserve the passed httpClient to Http2ClusterStateProvider when using the internalClientBuilder (Eric Pugh, Lamine Idjeraoui, Houston Putman, Anshum Gupta)
+
 Dependency Upgrades
 ---------------------
-
 * SOLR-17157: Upgrade Lucene to 9.10.0 (hossman, Christine Poerschke)
 
 * SOLR-17214: Update forbiddenapis to 3.7 (hossman)
 
+* GITHUB#2408: Update commons-cli to 1.7 (Eric Pugh)
+
 Other Changes
 ---------------------
+
 * SOLR-17126: Cut over System.getProperty to EnvUtils.getProperty (janhoy)
 
 * SOLR-17066: GenericSolrRequest now has a `setRequiresCollection` setter that allows it to specify whether
@@ -212,6 +247,8 @@ Other Changes
 
 * SOLR-17232: PropertiesOutputStream is renamed IndexOutputOutputStream and overrides write(byte[], int, int).
   (Bruno Roustant)
+
+* SOLR-17222: QueryResponseWriterUtil.NonFlushingStream should support bulk write methods (Michael Gibney)
 
 ==================  9.5.0 ==================
 New Features

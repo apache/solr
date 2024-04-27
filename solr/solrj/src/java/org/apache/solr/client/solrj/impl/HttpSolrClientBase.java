@@ -42,8 +42,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.util.AsyncListener;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -376,20 +374,6 @@ public abstract class HttpSolrClientBase extends SolrClient {
   }
 
   protected abstract void updateDefaultMimeTypeForParser();
-
-  /**
-   * @deprecated use {@link #requestAsync(SolrRequest, String)}.
-   * @param solrRequest the request to perform
-   * @param collection if null the default collection is used
-   * @param asyncListener callers should provide an implementation to handle events: start, success,
-   *     exception
-   * @return Cancellable allowing the caller to attempt cancellation
-   */
-  @Deprecated
-  public abstract Cancellable asyncRequest(
-      SolrRequest<?> solrRequest,
-      String collection,
-      AsyncListener<NamedList<Object>> asyncListener);
 
   /**
    * Execute an asynchronous request against a Solr server for a given collection.
