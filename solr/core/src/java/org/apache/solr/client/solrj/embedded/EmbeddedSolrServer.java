@@ -159,7 +159,7 @@ public class EmbeddedSolrServer extends SolrClient {
     if (path == null || !path.startsWith("/")) {
       path = "/select";
     }
-    
+
     SolrRequestHandler handler = coreContainer.getRequestHandler(path);
     if (handler != null) {
       try {
