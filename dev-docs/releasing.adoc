@@ -7,10 +7,30 @@ So you're of the opinion that there are unreleased features or bugfixes committe
 Are you so convinced of this that you are willing to volunteer to make it happen?
 Good! This document tells you how to get started.
 
-== Step 0 - Become a committer
+== Overview
+The following is an overview of the artifacts you will be publishing. Although the release wizard should be your primary guide, having a picture of what's going on may help you understand and validate what the release wizard is asking you to do.
+
+There are four major parts of a release. They all become available to the public in slightly different ways, and it helps to understand these differences.
+
+IMPORTANT: All of these publications experience a time delay while background infrastructure detects and propagates your changes. There will be points in the release process when you just need to wait.
+
+=== Source Code and Binaries (downloads.apache.org)
+
+The distribution of a specific version of the source code is the theoretical center of any release by the Apache Software Foundation. As a convenience, precompiled binaries are also provided on downloads.apache.org. The mechanics of this process start with an SVN commit. The result of that commit is automatically synced to the downloads server (~5m?), and then on a longer time frame (6h?) anything on downloads is synced to archives.apache.org.
+
+=== Maven Artifacts (repository.apache.org)
+The compiled jar files, source jars, javadoc and pom need to be distributed to the maven ecosystem. This happens via repository.apache.org which is then automatically synced into maven central (~2h, upto 24h for maven central search). If you have released software to maven central via Sonatype, you will see that Apache uses the same repository manager software (Nexus), and this interface will look familiar to you.
+
+=== The Web Site (solr.apache.org)
+Our website must be updated with each release. It is based on the content of the solr-site git repository and checking in changes to the `main` branch there will automatically become available for preview within a few minutes at https://solr.staged.apache.org/[https://solr.staged.apache.org/]. Merging main into a branch named `production` publishes your updates to the live website also within a few minutes. Note that it is normal for the staging site links to javadocs and ref guide to return 404 because these are published by a different process.
+
+=== The Reference Guide (solr.apache.org/guide)
+The ref guide is published once every 24h by a Jenkins build found at https://ci-builds.apache.org/job/Solr/job/solr-reference-guide-official/[https://ci-builds.apache.org/job/Solr/job/solr-reference-guide-official/]. This is a complicated process that has been automated for you. It is primarily influenced by the publication of an `antora.yaml` file during the steps the release wizard will guide you through. If the Jenkins build runs while there is a branch, but no updated antora.yaml file, an `M.N-beta` reference may be seen on the live ref guide, but there will be no `M.N-beta` ref guide pages and selecting it will merely browse the latest. After the Jenkins build runs, it takes several hours for the new version to become visible in a browser (possibly due to a caching layer?). There's a window of 6-30h after the release where this is not of concern, so don't panic. You can check the above jenkins job while you wait to estimate when the changes will be expected to become visible.
+
+== Step 0 - Become a Committer
 To do a release you must become a https://community.apache.org/contributors/becomingacommitter.html[committer] on the project. Additionally, if you are not on the https://apache.org/foundation/how-it-works/#pmc[Project Management Committee (PMC)]  you will also need to take special steps, and you will need to partner with a PMC member for at least one step. See https://www.apache.org/legal/release-policy.html#upload-ci
 
-== Step 1 - Run the release wizard!
+== Step 1 - Run the Release Wizard!
 
 But wait! don't I need community approval?! (you exclaim)
 
@@ -22,7 +42,7 @@ The release wizard is found in a checkout of solr at `dev-tools/scripts/releaseW
 
 === What working copy to use
 
-The release wizard is meant to be used from any working copy you like, with the expectation that you will check out the PARENT branch. The wizard will (eventually) guide you into creating a fresh, clean checkout, but you don't need that at the start.
+The release wizard is meant to be used from any working copy you like, with the expectation that you will check out the PARENT branch. In other words you should check out main to publish M.0.0 and branch_Mx to publish M.N.0, and branch M.N.x-1 for M.N.x. The wizard will (eventually) guide you into creating a fresh, clean checkout where your intended release is built, but you don't need that at the start.
 
 === How to run the release wizard
 
@@ -30,24 +50,24 @@ The release wizard is meant to be used from any working copy you like, with the 
 2. Install dependencies with `pip3 install -r requirements.txt`, from the `dev-tools/scripts` folder.
 3. Run the command you see documented at `dev-tools/scripts/README.md`. Using `--dry-run` initially is fine.
 
-NOTE: `--dry-run` does still create `~/.solr_releases` and `~/.solrrc` files and record the release version you intend for future reference so one might say it's really better described as a "slightly damp" run :) it should however not execute other commands. (in theory). Also checklist elements approved are also remembered, but this may change, see https://issues.apache.org/jira/browse/SOLR-17246[SOLR-17246]
+NOTE: `--dry-run` does still create `~/.solr_releases` and `~/.solrrc` files and record the release version you intend for future reference so one might say it's really better described as a "slightly damp" run :) it should however not execute other commands. (in theory). Also, checklist elements approved are also remembered, but this may change, see https://issues.apache.org/jira/browse/SOLR-17246[SOLR-17246]
 
 
-== Step 2 - Complete the first 2 checklists
+== Step 2 - Complete the First two Checklists
 
 The release wizard is organized into checklists and the first two checklists are preparation/planning related, and are good to complete before proposing the release.
 
-== Step 3 - Propose the release
+== Step 3 - Propose the Release
 
 Mail dev@solr.apache.org with a subject like `[DISCUSS] Solr X.Y release` and wax poetic about the wonderful features and awful bugs that are fixed but not yet released and volunteer to do the release. If you are sufficiently inspiring most of the PMC will quietly say to themselves "Whew! I don't have to do it" and then some of them will respond with a +1. Then at the last minute right before the time you proposed to start the release 1-4 people will suddenly mail the list saying something like "Can we wait for X amount of time so that I can get SOLR-XXXXXX in?" Let the community discuss it, and give them some time because you knew this would happen (because you read this guide!)
 
-== Step 4 - Continue following the release wizard
+== Step 4 - Continue Following the Release Wizard
 
 It's supposed to tell you all you need from here... Mail the list if you have questions, and file Jira issues for things that could be improved for the next person (please set component to `release-scripts`).
 
-== Step 5 - Complete the after release steps in the wizard too.
+== Step 5 - Complete the After Release Steps in the Wizard too.
 
-There are some things that need to be done after the release is officially published. The wizard will guide you through that (things like updating Jira etc)
+There are some things that need to be done after the release is officially published and announced. The wizard will guide you through that (things like updating Jira etc.)
 
 
 
