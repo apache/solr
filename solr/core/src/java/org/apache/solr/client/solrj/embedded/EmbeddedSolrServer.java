@@ -159,12 +159,13 @@ public class EmbeddedSolrServer extends SolrClient {
     if (path == null || !path.startsWith("/")) {
       path = "/select";
     }
-
+    
     SolrRequestHandler handler = coreContainer.getRequestHandler(path);
     if (handler != null) {
       try {
         SolrQueryRequest req =
-            _parser.buildRequestFrom(null, request.getParams(), getContentStreams(request));
+            _parser.buildRequestFrom(
+                null, request.getParams(), getContentStreams(request), request.getUserPrincipal());
         req.getContext().put("httpMethod", request.getMethod().name());
         req.getContext().put(PATH, path);
         SolrQueryResponse resp = new SolrQueryResponse();
