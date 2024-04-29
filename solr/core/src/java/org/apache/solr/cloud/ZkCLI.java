@@ -315,7 +315,8 @@ public class ZkCLI implements CLIO {
               .withConnTimeOut(
                   SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT, TimeUnit.MILLISECONDS)
               .withReconnectListener(() -> {})
-              .withCompressor(compressor)
+              // .withCompressor(compressor)
+              .withStateFileCompression(minStateByteLenForCompression, compressor)
               .build()) {
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {
           if (!line.hasOption(SOLRHOME)) {
@@ -418,7 +419,7 @@ public class ZkCLI implements CLIO {
           byte[] data = arglist.get(1).getBytes(StandardCharsets.UTF_8);
           if (shouldCompressData(data, path, minStateByteLenForCompression)) {
             // state.json should be compressed before being put to ZK
-            data = compressor.compressBytes(data, data.length / 10);
+            // data = compressor.compressBytes(data, data.length / 10);
           }
           if (zkClient.exists(path, true)) {
             zkClient.setData(path, data, true);
@@ -439,7 +440,7 @@ public class ZkCLI implements CLIO {
           byte[] data = Files.readAllBytes(Path.of(arglist.get(1)));
           if (shouldCompressData(data, path, minStateByteLenForCompression)) {
             // state.json should be compressed before being put to ZK
-            data = compressor.compressBytes(data, data.length / 10);
+            // data = compressor.compressBytes(data, data.length / 10);
           }
           if (zkClient.exists(path, true)) {
             zkClient.setData(path, data, true);

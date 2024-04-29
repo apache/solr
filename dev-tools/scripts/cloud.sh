@@ -61,6 +61,9 @@
 #           switch between testing setups and to test vs alternate versions
 #           of zookeeper if desired.
 #
+#           An option is:
+#           docker run --name my-zookeeper -p 2181:2181 -d zookeeper
+#
 # SETUP: 1. Place this script in a directory intended to hold all your
 #           testing installations of solr.
 #        2. Edit DEFAULT_VCS_WORKSPACE if the present value does not suit
@@ -80,7 +83,7 @@
 #
 #   ./cloud.sh stop
 #
-# Compile and push new code to a running cluster (incl bounce the cluster)
+# Compile and push new code to a running cluster (including bounce the cluster)
 #
 #   ./cloud.sh restart -r
 #
@@ -311,13 +314,8 @@ start(){
   findSolr
 
   echo "SOLR=$SOLR"
-  SOLR_ROOT=$("${SOLR}/server/scripts/cloud-scripts/zkcli.sh" -zkhost localhost:${ZK_PORT} -cmd getfile "/solr_${SAFE_DEST}" /dev/stdout);
-  if [[ -z ${SOLR_ROOT} ]]; then
-    # Need a fresh root in zookeeper...
-    "${SOLR}/server/scripts/cloud-scripts/zkcli.sh" -zkhost localhost:${ZK_PORT} -cmd makepath "/solr_${SAFE_DEST}";
-    "${SOLR}/server/scripts/cloud-scripts/zkcli.sh" -zkhost localhost:${ZK_PORT} -cmd put "/solr_${SAFE_DEST}" "created by cloud.sh"; # so we can test for existence next time
-    "${SOLR}/server/scripts/cloud-scripts/zkcli.sh" -zkhost localhost:${ZK_PORT} -cmd putfile "/solr_${SAFE_DEST}/solr.xml" "${SOLR}/server/solr/solr.xml";
-  fi
+  # Create the root if it doesn't already exist
+  ${SOLR}/bin/solr zk mkroot "/solr_${SAFE_DEST}" -z localhost:${ZK_PORT}
 
   ACTUAL_NUM_NODES=$(ls -1 -d ${CLUSTER_WD}/n* | wc -l )
   if [[ "$NUM_NODES" -eq 0 ]]; then
