@@ -117,7 +117,7 @@ public class SearchHandler extends RequestHandlerBase
   private SolrCore core;
 
   protected List<String> getDefaultComponents() {
-    ArrayList<String> names = new ArrayList<>(8);
+    ArrayList<String> names = new ArrayList<>(9);
     names.add(QueryComponent.COMPONENT_NAME);
     names.add(FacetComponent.COMPONENT_NAME);
     names.add(FacetModule.COMPONENT_NAME);
@@ -497,10 +497,7 @@ public class SearchHandler extends RequestHandlerBase
           debug.add("explain", new NamedList<>());
           rb.rsp.add("debug", debug);
         }
-        rb.rsp
-            .getResponseHeader()
-            .asShallowMap()
-            .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+        rb.rsp.setPartialResults();
       }
     } else {
       // a distributed request
@@ -593,9 +590,7 @@ public class SearchHandler extends RequestHandlerBase
                 if (allShardsFailed) {
                   throwSolrException(srsp.getException());
                 } else {
-                  rsp.getResponseHeader()
-                      .asShallowMap()
-                      .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+                  rsp.setPartialResults();
                 }
               }
             }

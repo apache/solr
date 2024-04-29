@@ -314,15 +314,19 @@ public class ExecutorUtil {
               if (t instanceof OutOfMemoryError) {
                 throw t;
               }
-              if (enableSubmitterStackTrace) {
-                log.error(
-                    "Uncaught exception {} thrown by thread: {}",
-                    t,
-                    currentThread.getName(),
-                    submitterStackTrace);
-              } else {
-                log.error("Uncaught exception {} thrown by thread: {}", t, currentThread.getName());
+              // Flip around the exception cause tree, because it is in reverse order
+              Throwable baseCause = t;
+              Throwable nextCause = submitterStackTrace;
+              while (nextCause != null) {
+                baseCause = new Exception(nextCause.getMessage(), baseCause);
+                baseCause.setStackTrace(nextCause.getStackTrace());
+                nextCause = nextCause.getCause();
               }
+              log.error(
+                  "Uncaught exception {} thrown by thread: {}",
+                  t,
+                  currentThread.getName(),
+                  baseCause);
               throw t;
             } finally {
               isServerPool.remove();

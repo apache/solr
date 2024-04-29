@@ -34,7 +34,6 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -178,7 +177,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
             () -> {
               sendRequest(duplicateRequestIdParams);
             });
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(), containsString("Task with the same requestid already exists. (1002)"));
   }
 

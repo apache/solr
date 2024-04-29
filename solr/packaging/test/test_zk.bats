@@ -36,6 +36,11 @@ teardown() {
   save_home_on_failure
 }
 
+@test "running subcommands with zk is prevented" {
+ run solr ls / -z localhost:${ZK_PORT}
+ assert_output --partial "You must invoke this subcommand using the zk command"
+}
+
 @test "listing out files" {
   sleep 1
   run solr zk ls / -z localhost:${ZK_PORT}
@@ -50,8 +55,8 @@ teardown() {
 
 @test "copying files around" {
   touch myfile.txt
-  # Umm, what is solr cp?  It's like bin/solr zk cp but not?
-  run solr cp -src myfile.txt -dst zk:/myfile.txt -z localhost:${ZK_PORT}
+
+  run solr zk cp myfile.txt zk:/myfile.txt -z localhost:${ZK_PORT}
   assert_output --partial "Copying from 'myfile.txt' to 'zk:/myfile.txt'. ZooKeeper at localhost:${ZK_PORT}"
   sleep 1
   run solr zk ls / -z localhost:${ZK_PORT}

@@ -31,6 +31,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -169,7 +170,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testPingInClusterWithNoHealthCheck() throws Exception {
 
     MiniSolrCloudCluster miniCluster =
-        new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig());
+        new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), JettyConfig.builder().build());
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 

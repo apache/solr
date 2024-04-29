@@ -41,9 +41,29 @@ import org.slf4j.LoggerFactory;
 @State(Scope.Benchmark)
 public class BaseBenchState {
 
-  private static final long RANDOM_SEED = System.nanoTime();
+  public static final long RANDOM_SEED;
 
-  private static final SplittableRandom random = new SplittableRandom(getInitRandomSeed());
+  static {
+    Long seed = Long.getLong("solr.bench.seed");
+
+    if (seed == null) {
+      String prop = System.getProperty("tests.seed"); // RandomizedTesting framework
+      if (prop != null) {
+        // if there is a test failure we remain reproducible based on the test seed:
+        prop = prop.split(":")[0]; // main seed
+        seed = Long.parseUnsignedLong(prop, 16);
+      } else {
+        seed = System.nanoTime();
+      }
+    }
+
+    log("");
+    log("benchmark random seed: " + seed);
+
+    RANDOM_SEED = seed;
+  }
+
+  private static final SplittableRandom random = new SplittableRandom(RANDOM_SEED);
 
   /**
    * Gets random seed.
@@ -133,18 +153,5 @@ public class BaseBenchState {
         mxBean.dumpHeap(dumpFile.toAbsolutePath().toString(), true);
       }
     }
-  }
-
-  private static Long getInitRandomSeed() {
-    Long seed = Long.getLong("solr.bench.seed");
-
-    if (seed == null) {
-      seed = RANDOM_SEED;
-    }
-
-    log("");
-    log("benchmark random seed: " + seed);
-
-    return seed;
   }
 }
