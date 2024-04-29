@@ -214,9 +214,6 @@ set HADOOP_CREDSTORE_PASSWORD="credStorePass123"
 
 === Configure ZooKeeper
 
-NOTE: ZooKeeper does not support encrypted communication with clients like Solr.
-There are several related JIRA tickets where SSL support is being planned/worked on: https://issues.apache.org/jira/browse/ZOOKEEPER-235[ZOOKEEPER-235]; https://issues.apache.org/jira/browse/ZOOKEEPER-236[ZOOKEEPER-236]; https://issues.apache.org/jira/browse/ZOOKEEPER-1000[ZOOKEEPER-1000]; and https://issues.apache.org/jira/browse/ZOOKEEPER-2120[ZOOKEEPER-2120].
-
 After creating the keystore described above and before you start any SolrCloud nodes, you must configure your Solr cluster properties in ZooKeeper so that Solr nodes know to communicate via SSL.
 
 This section assumes you have created and started an external ZooKeeper.

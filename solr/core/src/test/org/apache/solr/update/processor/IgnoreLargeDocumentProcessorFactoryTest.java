@@ -31,7 +31,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.LogListener;
-import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 
 public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
@@ -68,7 +67,7 @@ public class IgnoreLargeDocumentProcessorFactoryTest extends SolrTestCase {
     try (LogListener listener = LogListener.warn(IgnoreLargeDocumentProcessorFactory.class)) {
       processor.processAdd(getUpdate(1024));
 
-      MatcherAssert.assertThat(
+      assertThat(
           listener.pollMessage(),
           containsString("Skipping doc because estimated size exceeds limit"));
     }

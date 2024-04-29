@@ -121,7 +121,8 @@ public class TermsQParserPlugin extends QParserPlugin {
     docValuesTermsFilterPerSegment {
       @Override
       Query makeFilter(String fname, BytesRef[] byteRefs) {
-        return disableCacheByDefault(SortedSetDocValuesField.newSlowSetQuery(fname, byteRefs));
+        return disableCacheByDefault(
+            SortedSetDocValuesField.newSlowSetQuery(fname, Arrays.asList(byteRefs)));
       }
     };
 
