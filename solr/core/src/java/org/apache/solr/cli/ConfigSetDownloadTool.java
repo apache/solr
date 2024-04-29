@@ -60,6 +60,7 @@ public class ConfigSetDownloadTool extends ToolBase {
             .desc("Local directory with configs.")
             .build(),
         SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_VERBOSE);
   }
 

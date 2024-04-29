@@ -56,6 +56,7 @@ public class ZkMkrootTool extends ToolBase {
             .desc("Raise an error if the root exists.  Defaults to false.")
             .build(),
         SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_VERBOSE);
   }
 
