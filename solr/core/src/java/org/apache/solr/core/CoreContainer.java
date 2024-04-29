@@ -377,7 +377,11 @@ public class CoreContainer {
   }
 
   public CoreContainer(NodeConfig config, boolean asyncSolrCoreLoad) {
-    this(config, new CorePropertiesLocator(config.getCoreRootDirectory()), asyncSolrCoreLoad);
+    this(
+        config,
+        new CorePropertiesLocator(
+            config.getCoreRootDirectory(), config.getCoreRootIgnoredDirectories()),
+        asyncSolrCoreLoad);
   }
 
   /**

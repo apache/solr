@@ -51,8 +51,15 @@ public class CorePropertiesLocator implements CoresLocator {
 
   private final Path rootDirectory;
 
+  private final Set<Path> ignoredDirectories;
+
   public CorePropertiesLocator(Path coreDiscoveryRoot) {
+    this(coreDiscoveryRoot, null);
+  }
+
+  public CorePropertiesLocator(Path coreDiscoveryRoot, Set<Path> ignoredDirectories) {
     this.rootDirectory = coreDiscoveryRoot;
+    this.ignoredDirectories = ignoredDirectories;
     log.debug("Config-defined core root directory: {}", this.rootDirectory);
   }
 
@@ -145,6 +152,19 @@ public class CorePropertiesLocator implements CoresLocator {
           options,
           maxDepth,
           new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attr)
+                throws IOException {
+              if (ignoredDirectories != null) {
+                for (Path i : ignoredDirectories) {
+                  if (dir.startsWith(i)) {
+                    return FileVisitResult.SKIP_SUBTREE;
+                  }
+                }
+              }
+              return FileVisitResult.CONTINUE;
+            }
+
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
                 throws IOException {

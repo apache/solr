@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +56,8 @@ public class NodeConfig {
   private final String nodeName;
 
   private final Path coreRootDirectory;
+
+  private final Set<Path> coreRootIgnoredDirectories;
 
   private final Path solrDataHome;
 
@@ -120,6 +123,7 @@ public class NodeConfig {
   private NodeConfig(
       String nodeName,
       Path coreRootDirectory,
+      Set<Path> coreRootIgnoredDirectories,
       Path solrDataHome,
       Integer booleanQueryMaxClauseCount,
       Path configSetBaseDirectory,
@@ -155,6 +159,7 @@ public class NodeConfig {
     // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
+    this.coreRootIgnoredDirectories = coreRootIgnoredDirectories;
     this.solrDataHome = solrDataHome;
     this.booleanQueryMaxClauseCount = booleanQueryMaxClauseCount;
     this.configSetBaseDirectory = configSetBaseDirectory;
@@ -260,6 +265,10 @@ public class NodeConfig {
   /** Absolute. */
   public Path getCoreRootDirectory() {
     return coreRootDirectory;
+  }
+
+  public Set<Path> getCoreRootIgnoredDirectories() {
+    return coreRootIgnoredDirectories;
   }
 
   /** Absolute. */
@@ -575,6 +584,7 @@ public class NodeConfig {
     // all Path fields here are absolute and normalized.
     private SolrResourceLoader loader;
     private Path coreRootDirectory;
+    private Set<Path> coreRootIgnoredDirectories;
     private Path solrDataHome;
     private Integer booleanQueryMaxClauseCount;
     private Path configSetBaseDirectory;
@@ -649,6 +659,12 @@ public class NodeConfig {
 
     public NodeConfigBuilder setCoreRootDirectory(String coreRootDirectory) {
       this.coreRootDirectory = solrHome.resolve(coreRootDirectory).normalize();
+      return this;
+    }
+
+    public NodeConfigBuilder setCoreRootIgnoredDirectories(Set<Path> coreRootIgnoredDirectories) {
+      this.coreRootIgnoredDirectories = new HashSet<>();
+      this.coreRootIgnoredDirectories.addAll(coreRootIgnoredDirectories);
       return this;
     }
 
@@ -857,6 +873,7 @@ public class NodeConfig {
       return new NodeConfig(
           nodeName,
           coreRootDirectory,
+          coreRootIgnoredDirectories,
           solrDataHome,
           booleanQueryMaxClauseCount,
           configSetBaseDirectory,
