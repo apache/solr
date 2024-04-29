@@ -16,6 +16,7 @@
  */
 package org.apache.solr.metrics.prometheus;
 
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import org.apache.solr.metrics.prometheus.core.SolrCoreCacheMetric;
@@ -27,6 +28,7 @@ import org.apache.solr.metrics.prometheus.core.SolrCoreNoOpMetric;
 import org.apache.solr.metrics.prometheus.core.SolrCoreSearcherMetric;
 import org.apache.solr.metrics.prometheus.core.SolrCoreTlogMetric;
 
+/** This class maintains a {@link PrometheusRegistry} specific to solr.core Dropwizard metrics */
 public class SolrPrometheusCoreRegistry extends SolrPrometheusRegistry {
   public final String coreName;
   public final boolean cloudMode;
@@ -48,6 +50,13 @@ public class SolrPrometheusCoreRegistry extends SolrPrometheusRegistry {
     this.cloudMode = cloudMode;
   }
 
+  /**
+   * Export {@link Meter} to {@link io.prometheus.metrics.core.metrics.Metric} and register to
+   * {@link PrometheusRegistry}.
+   *
+   * @param dropwizardMetric the {@link Meter} to be exported
+   * @param metricName Dropwizard metric name
+   */
   public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {
     SolrCoreMetric solrCoreMetric = categorizeCoreMetric(dropwizardMetric, metricName);
     solrCoreMetric.parseLabels().toPrometheus(this);

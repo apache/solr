@@ -170,6 +170,22 @@ public class MetricUtils {
         });
   }
 
+  /**
+   * Provides a representation of the given Dropwizard metric registry as {@link
+   * SolrPrometheusCoreRegistry}-s. Only those metrics are converted which match at least one of the
+   * given MetricFilter instances.
+   *
+   * @param registry the {@link MetricRegistry} to be converted
+   * @param shouldMatchFilters a list of {@link MetricFilter} instances. A metric must match <em>any
+   *     one</em> of the filters from this list to be included in the output
+   * @param mustMatchFilter a {@link MetricFilter}. A metric <em>must</em> match this filter to be
+   *     included in the output.
+   * @param propertyFilter limit what properties of a metric are returned
+   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
+   * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
+   * @param compact use compact representation for counters and gauges.
+   * @param consumer consumer that accepts produced {@link SolrPrometheusCoreRegistry}-s
+   */
   public static void toPrometheusRegistry(
       MetricRegistry registry,
       String registryName,

@@ -21,6 +21,10 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
 
+/**
+ * Base class is a wrapper to export {@link com.codahale.metrics.Metric} to {@link
+ * io.prometheus.metrics.core.metrics.Metric} and register to a {@link SolrPrometheusCoreRegistry}
+ */
 public abstract class SolrCoreMetric {
   public Metric dropwizardMetric;
   public String coreName;

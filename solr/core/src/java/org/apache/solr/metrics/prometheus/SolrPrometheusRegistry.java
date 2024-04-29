@@ -25,6 +25,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Base class for all {@link SolrPrometheusRegistry} holding {@link PrometheusRegistry}. Can export
+ * {@link Meter} to {@link io.prometheus.metrics.core.metrics.Metric}
+ */
 public abstract class SolrPrometheusRegistry {
   PrometheusRegistry prometheusRegistry;
   String registryName;
@@ -45,6 +49,14 @@ public abstract class SolrPrometheusRegistry {
     return registryName;
   }
 
+  /**
+   * Export {@link Meter} to {@link Counter}. Registers new {@link Counter} to {@link
+   * PrometheusRegistry} metric name does not exist
+   *
+   * @param dropwizardMetric the {@link Meter} to be exported
+   * @param prometheusMetricName name of prometheus metric
+   * @param labelsMap label names and values to register with {@link Counter}
+   */
   public void exportMeter(
       Meter dropwizardMetric, String prometheusMetricName, Map<String, String> labelsMap) {
     if (!metricCounters.containsKey(prometheusMetricName)) {
@@ -57,6 +69,14 @@ public abstract class SolrPrometheusRegistry {
         .inc(dropwizardMetric.getCount());
   }
 
+  /**
+   * Export {@link com.codahale.metrics.Counter} to {@link Counter}. Registers new {@link Counter}
+   * to {@link PrometheusRegistry} metric name does not exist
+   *
+   * @param dropwizardMetric the {@link com.codahale.metrics.Counter} to be exported
+   * @param prometheusMetricName name of prometheus metric
+   * @param labelsMap label names and values to record with {@link Counter}
+   */
   public void exportCounter(
       com.codahale.metrics.Counter dropwizardMetric,
       String prometheusMetricName,
@@ -71,6 +91,14 @@ public abstract class SolrPrometheusRegistry {
         .inc(dropwizardMetric.getCount());
   }
 
+  /**
+   * Export {@link Timer} to {@link Gauge}. Registers new {@link Gauge} to {@link
+   * PrometheusRegistry} metric name does not exist
+   *
+   * @param dropwizardMetric the {@link Timer} to be exported
+   * @param prometheusMetricName name of prometheus metric
+   * @param labelsMap label names and values to record with {@link Gauge}
+   */
   public void exportTimer(
       Timer dropwizardMetric, String prometheusMetricName, Map<String, String> labelsMap) {
     if (!metricGauges.containsKey(prometheusMetricName)) {
@@ -83,6 +111,14 @@ public abstract class SolrPrometheusRegistry {
         .set(dropwizardMetric.getMeanRate());
   }
 
+  /**
+   * Export {@link Timer} to {@link Gauge}. Registers new {@link Gauge} to {@link
+   * PrometheusRegistry} metric name does not exist
+   *
+   * @param dropwizardMetricRaw the {@link com.codahale.metrics.Gauge} to be exported
+   * @param prometheusMetricName name of prometheus metric
+   * @param labelsMap label names and values to record with {@link Gauge}
+   */
   public void exportGauge(
       com.codahale.metrics.Gauge<?> dropwizardMetricRaw,
       String prometheusMetricName,
