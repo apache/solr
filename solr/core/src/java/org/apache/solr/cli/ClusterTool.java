@@ -14,68 +14,71 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.cli;
 
+import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/** Supports zk mkroot command in the bin/solr script. */
-public class ZkMkrootTool extends ToolBase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+/**
+ * Supports cluster command in the bin/solr script.
+ *
+ * <p>Set cluster properties by directly manipulating ZooKeeper.
+ */
+public class ClusterTool extends ToolBase {
+  // It is a shame this tool doesn't more closely mimic how the ConfigTool works.
 
-  public ZkMkrootTool() {
+  public ClusterTool() {
     this(CLIO.getOutStream());
   }
 
-  public ZkMkrootTool(PrintStream stdout) {
+  public ClusterTool(PrintStream stdout) {
     super(stdout);
+  }
+
+  @Override
+  public String getName() {
+    return "cluster";
   }
 
   @Override
   public List<Option> getOptions() {
     return List.of(
         Option.builder()
-            .longOpt("path")
-            .argName("PATH")
+            .longOpt("property")
+            .argName("PROP")
             .hasArg()
             .required(true)
-            .desc("Path to create.")
+            .desc("Name of the Cluster property to apply the action to, such as: 'urlScheme'.")
             .build(),
         Option.builder()
-            .longOpt("fail-on-exists")
+            .longOpt("value")
+            .argName("VALUE")
             .hasArg()
             .required(false)
-            .desc("Raise an error if the root exists.  Defaults to false.")
+            .desc("Set the property to this value.")
             .build(),
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_VERBOSE);
-  }
-
-  @Override
-  public String getName() {
-    return "mkroot";
+        SolrCLI.OPTION_ZKHOST);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String zkHost = SolrCLI.getZkHost(cli);
-    boolean failOnExists = cli.hasOption("fail-on-exists");
 
-    if (zkHost == null) {
+    String propertyName = cli.getOptionValue("property");
+    String propertyValue = cli.getOptionValue("value");
+    String zkHost = SolrCLI.getZkHost(cli);
+
+    if (!ZkController.checkChrootPath(zkHost, true)) {
       throw new IllegalStateException(
-          "Solr at "
-              + cli.getOptionValue("zkHost")
-              + " is running in standalone server mode, 'zk mkroot' can only be used when running in SolrCloud mode.\n");
+          "A chroot was specified in zkHost but the znode doesn't exist.");
     }
 
     try (SolrZkClient zkClient =
@@ -83,14 +86,15 @@ public class ZkMkrootTool extends ToolBase {
             .withUrl(zkHost)
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
-      String znode = cli.getOptionValue("path");
-      echo("Creating ZooKeeper path " + znode + " on ZooKeeper at " + zkHost);
-      zkClient.makePath(znode, failOnExists, true);
-    } catch (Exception e) {
-      log.error("Could not complete mkroot operation for reason: ", e);
-      throw (e);
+      ClusterProperties props = new ClusterProperties(zkClient);
+      try {
+        props.setClusterProperty(propertyName, propertyValue);
+      } catch (IOException ex) {
+        throw new Exception(
+            "Unable to set the cluster property due to following error : "
+                + ex.getLocalizedMessage());
+      }
     }
   }
 }

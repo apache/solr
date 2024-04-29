@@ -101,6 +101,8 @@ Improvements
 ---------------------
 * SOLR-16921: use -solrUrl to derive the zk host connection for bin/solr zk subcommands (Eric Pugh)
 
+* SOLR-14115: Add linkconfig, cluster, and updateacls as commands to SolrCLI.  Allow bin/solr commands to have parity with zkcli.sh commands. (Eric Pugh)
+
 Optimizations
 ---------------------
 (No changes)
