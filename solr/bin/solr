@@ -593,6 +593,8 @@ function print_usage() {
     echo "             -z zkHost          Optional Zookeeper connection string for all commands. If specified it"
     echo "                                  overrides the 'ZK_HOST=...'' defined in solr.in.sh."
     echo ""
+    echo "             -s solrUrl         Optional Solr URL to look up the correct zkHost connection string via."
+    echo ""
     echo "             -V/-verbose        Enable more verbose output for this script."
     echo ""
     echo "         upconfig uploads a configset from the local machine to Zookeeper. (Backcompat: -upconfig)"
@@ -725,12 +727,12 @@ function print_short_zk_usage() {
     echo -e "\nERROR: $1\n"
   fi
 
-  echo "  Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost]"
-  echo "         solr zk cp [-r] <src> <dest> [-z zkHost]"
-  echo "         solr zk rm [-r] <path> [-z zkHost]"
-  echo "         solr zk mv <src> <dest> [-z zkHost]"
-  echo "         solr zk ls [-r] <path> [-z zkHost]"
-  echo "         solr zk mkroot <path> [-z zkHost]"
+  echo "  Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost] [-s solrUrl]"
+  echo "         solr zk cp [-r] <src> <dest> [-z zkHost] [-s solrUrl]"
+  echo "         solr zk rm [-r] <path> [-z zkHost] [-s solrUrl]"
+  echo "         solr zk mv <src> <dest> [-z zkHost] [-s solrUrl]"
+  echo "         solr zk ls [-r] <path> [-z zkHost] [-s solrUrl]"
+  echo "         solr zk mkroot <path> [-z zkHost] [-s solrUrl]"
   echo ""
 
   if [ "$1" == "" ]; then
@@ -1366,6 +1368,7 @@ ZK_RECURSE=false
 if [[ "$SCRIPT_CMD" == "zk" ]]; then
 
   VERBOSE=""
+  ZK_SOLR_URL=""
 
   if [ $# -gt 0 ]; then
     while true; do
@@ -1386,6 +1389,13 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
             ZK_HOST="$2"
             shift 2
         ;;
+        -s|-solrUrl)
+            if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+              print_short_zk_usage "$SCRIPT_CMD" "Solr Url is required when using the $1 option!"
+            fi
+            ZK_SOLR_URL="$2"
+            shift 2
+        ;;        
         -n|-confname)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_short_zk_usage "$SCRIPT_CMD" "Configuration name is required when using the $1 option!"
@@ -1438,11 +1448,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
   if [ -z "$ZK_OP" ]; then
     print_short_zk_usage "Zookeeper operation (one of 'upconfig', 'downconfig', 'rm', 'mv', 'cp', 'ls', 'mkroot') is required!"
   fi
-
-  if [ -z "$ZK_HOST" ]; then
-    print_short_zk_usage "Zookeeper address (-z) argument is required or ZK_HOST must be specified in the solr.in.sh file."
-  fi
-
+  
   if [[ "$ZK_OP" == "upconfig" ||  "$ZK_OP" == "downconfig" ]]; then
     if [ -z "$CONFIGSET_CONFDIR" ]; then
       print_short_zk_usage "Local directory of the configset (-d) argument is required!"
@@ -1468,37 +1474,44 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
     fi
   fi
 
+  CONNECTION_PARAMS=""
+  
+  if [[ -z "$ZK_HOST" ]]; then
+    CONNECTION_PARAMS="-solrUrl ${ZK_SOLR_URL}"
+  else
+    CONNECTION_PARAMS="-zkHost ${ZK_HOST}"
+  fi 
 
   case "$ZK_OP" in
     upconfig)
-      run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" -zkHost "$ZK_HOST" -configsetsDir "$SOLR_TIP/server/solr/configsets" $VERBOSE
+      run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" $CONNECTION_PARAMS -configsetsDir "$SOLR_TIP/server/solr/configsets" $VERBOSE
     ;;
     downconfig)
-      run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" -zkHost "$ZK_HOST" $VERBOSE
+      run_tool "$ZK_OP" -confname "$CONFIGSET_CONFNAME" -confdir "$CONFIGSET_CONFDIR" $CONNECTION_PARAMS $VERBOSE
     ;;
     rm)
       if [ -z "$ZK_SRC" ]; then
         print_short_zk_usage "Zookeeper path to remove must be specified when using the 'rm' command"
       fi
-      run_tool "$ZK_OP" -path "$ZK_SRC" -zkHost "$ZK_HOST" -recurse "$ZK_RECURSE" $VERBOSE
+      run_tool "$ZK_OP" -path "$ZK_SRC" $CONNECTION_PARAMS -recurse "$ZK_RECURSE" $VERBOSE
     ;;
     mv)
-      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" -zkHost "$ZK_HOST" $VERBOSE
+      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" $CONNECTION_PARAMS $VERBOSE
     ;;
     cp)
-      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" -zkHost "$ZK_HOST" -recurse "$ZK_RECURSE" $VERBOSE
+      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" $CONNECTION_PARAMS -recurse "$ZK_RECURSE" $VERBOSE
     ;;
     ls)
       if [ -z "$ZK_SRC" ]; then
         print_short_zk_usage "Zookeeper path to list must be specified when using the 'ls' command"
       fi
-      run_tool "$ZK_OP" -path "$ZK_SRC" -recurse "$ZK_RECURSE" -zkHost "$ZK_HOST" $VERBOSE
+      run_tool "$ZK_OP" -path "$ZK_SRC" -recurse "$ZK_RECURSE" $CONNECTION_PARAMS $VERBOSE
     ;;
     mkroot)
       if [ -z "$ZK_SRC" ]; then
         print_short_zk_usage "Zookeeper path to list must be specified when using the 'mkroot' command"
       fi
-      run_tool "$ZK_OP" -path "$ZK_SRC" -zkHost "$ZK_HOST" $VERBOSE
+      run_tool "$ZK_OP" -path "$ZK_SRC" $CONNECTION_PARAMS $VERBOSE
     ;;
     *)
       print_short_zk_usage "Unrecognized Zookeeper operation $ZK_OP"

@@ -11,7 +11,7 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-16921: use -solrUrl to derive the zk host connection for bin/solr zk subcommands (Eric Pugh)
 
 Optimizations
 ---------------------

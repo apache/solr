@@ -188,7 +188,7 @@ If you want to accept all of the defaults, you can simply add the `-noprompt` op
 +
 Specify the port to start the Solr HTTP listener on; with the classic default port for Solr being 8983.
 The specified port (SOLR_PORT) will also be used to determine the stop port.
-The stop port is defined as STOP_PORT=($SOLR_PORT-1000) and JMX RMI listen port is defined as RMI_PORT=($SOLR_PORT+10000). 
+The stop port is defined as STOP_PORT=($SOLR_PORT-1000) and JMX RMI listen port is defined as RMI_PORT=($SOLR_PORT+10000).
 For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985.
 If this is not specified, `8983` will be used.
 +
@@ -208,7 +208,7 @@ If set, the specified directory should contain a solr.xml file, unless solr.xml 
 +
 This parameter is ignored when running examples (`-e`), as the `solr.solr.home` depends on which example is run.
 +
-The default value is `server/solr`. 
+The default value is `server/solr`.
 If passed relative dir, validation with current dir will be done, before trying default `server/<dir>`.
 +
 *Example*: `bin/solr start -s newHome`
@@ -641,9 +641,9 @@ The `bin/solr` script can also help you create new collections or cores, or dele
 
 === Create a Core or Collection
 
-The `create` command creates a core or collection depending on whether Solr is running in standalone (core) or SolrCloud mode (collection). 
+The `create` command creates a core or collection depending on whether Solr is running in standalone (core) or SolrCloud mode (collection).
 In other words, this action detects which mode Solr is running in, and then takes the appropriate action (either `create_core` or `create_collection`).
-  
+
 `bin/solr create [options]`
 
 `bin/solr create -help`
@@ -738,8 +738,8 @@ It is possible to override this warning with the -force parameter.
 
 === Create a Collection
 
-The `create_collection` command creates a collection, and is only available when running in SolrCloud mode. 
-  
+The `create_collection` command creates a collection, and is only available when running in SolrCloud mode.
+
 `bin/solr create_collection [options]`
 
 `bin/solr create_collection -help`
@@ -776,7 +776,7 @@ Alternatively, you can pass the path to your own configuration directory instead
 +
 *Example*: `bin/solr create_collection -c mycoll -d /tmp/myconfig`
 +
-By default the script will upload the specified confdir directory into Zookeeper using the same name as the collection (-c) option. 
+By default the script will upload the specified confdir directory into Zookeeper using the same name as the collection (-c) option.
 Alternatively, if you want to reuse an existing directory or create a confdir in Zookeeper that can be shared by multiple collections, use the -n option
 +
 
@@ -844,8 +844,8 @@ It is possible to override this warning with the -force parameter.
 
 === Create a Core
 
-The `create_core` command creates a core and is only available when running in user-managed (single-node) mode. 
-  
+The `create_core` command creates a core and is only available when running in user-managed (single-node) mode.
+
 `bin/solr create_core [options]`
 
 `bin/solr create_core -help`
@@ -1003,10 +1003,10 @@ This option is useful if you are running multiple Solr instances on the same hos
 
 The `bin/solr` script allows enabling or disabling Authentication, allowing you to configure authentication from the command line.
 
-Currently this command is only available when using SolrCloud mode and must be run on the machine hosting Solr.  
+Currently this command is only available when using SolrCloud mode and must be run on the machine hosting Solr.
 
 For Basic Authentication the script provides https://github.com/apache/solr/blob/main/solr/core/resources/security.json[user roles and permission mappings], and maps the created user to the `superadmin` role.
-For Kerberos it only enables the security.json, it doesn't set up any users or role mappings.  
+For Kerberos it only enables the security.json, it doesn't set up any users or role mappings.
 
 
 === Enabling Basic Authentication
@@ -1051,7 +1051,7 @@ The command takes the following parameters:
 |Optional |Default: none
 |===
 +
-The username and password in the format of `username:password` of the initial user.  
+The username and password in the format of `username:password` of the initial user.
 Applicable for basicAuth only.
 +
 If you prefer not to pass the username and password as an argument to the script, you can choose the `-prompt` option.
@@ -1270,12 +1270,12 @@ The basic usage of bin/solr zk is:
 [source,plain]
 ----
 $ bin/solr zk -h
-Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost]
-         solr zk cp [-r] <src> <dest> [-z zkHost]
-         solr zk rm [-r] <path> [-z zkHost]
-         solr zk mv <src> <dest> [-z zkHost]
-         solr zk ls [-r] <path> [-z zkHost]
-         solr zk mkroot <path> [-z zkHost]
+Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost] [-s solrUrl]
+         solr zk cp [-r] <src> <dest> [-z zkHost] [-s solrUrl]
+         solr zk rm [-r] <path> [-z zkHost] [-s solrUrl]
+         solr zk mv <src> <dest> [-z zkHost] [-s solrUrl]
+         solr zk ls [-r] <path> [-z zkHost] [-s solrUrl]
+         solr zk mkroot <path> [-z zkHost] [-s solrUrl]
 ----
 
 NOTE: Solr should have been started at least once before issuing these commands to initialize ZooKeeper with the znodes Solr expects.
@@ -1335,6 +1335,15 @@ The ZooKeeper connection string.
 Is not required if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
+
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
 An example of this command with all of the parameters is:
 
@@ -1398,6 +1407,15 @@ The ZooKeeper connection string.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
+
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
 An example of this command with all parameters is:
 
@@ -1474,10 +1492,19 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-When `<src>` is a zk resource, `<dest>` may be '.'. 
-If `<dest>` ends with '/', then `<dest>` will be a local folder or parent znode and the last element of the <src> path will be appended unless `<src>` also ends in a slash. 
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
+
+When `<src>` is a zk resource, `<dest>` may be '.'.
+If `<dest>` ends with '/', then `<dest>` will be a local folder or parent znode and the last element of the <src> path will be appended unless `<src>` also ends in a slash.
 `<dest>` may be `zk:`, which may be useful when using the `cp -r` form to backup/restore the entire zk state.
-You must enclose local paths that end in a wildcard in quotes or just end the local path in a slash. 
+You must enclose local paths that end in a wildcard in quotes or just end the local path in a slash.
 That is, `bin/solr zk cp -r /some/dir/ zk:/ -z localhost:2181` is equivalent to `bin/solr zk cp -r "/some/dir/*" zk:/ -z localhost:2181` but `bin/solr zk cp -r /some/dir/\* zk:/ -z localhost:2181` will throw an error.
 
 Here's an example of backup/restore for a ZK configuration:
@@ -1548,6 +1575,15 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
+
 Examples of this command with the parameters are:
 
 `bin/solr zk rm -r /configs`
@@ -1601,6 +1637,15 @@ An example of this command is:
 
 `bin/solr zk mv /configs/oldconfigset /configs/newconfigset`
 
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
+
 
 === List a ZooKeeper znode's Children
 
@@ -1643,11 +1688,20 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
+
 An example of this command with the parameters is:
 
 `bin/solr zk ls -r /collections/mycollection`
 
-`bin/solr zk ls /collections`
+`bin/solr zk ls /collections -s http://localhost:8983`
 
 
 === Create a znode (supports chroot)
@@ -1682,6 +1736,15 @@ The ZooKeeper connection string.
 Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
+
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
 Examples of this command:
 
