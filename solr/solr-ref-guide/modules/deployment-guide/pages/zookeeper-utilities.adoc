@@ -24,17 +24,7 @@ TIP: See the section xref:cloud-screens.adoc[] for more information about using 
 
 The ZooKeeper specific commands are provided by the xref:solr-control-script-reference.adoc[Solr Control Script].
 
-.Solr's zkcli.sh vs ZooKeeper's zkCli.sh
-[IMPORTANT]
-====
-The deprecated `zkcli.sh` provided by Solr is not the same as the https://zookeeper.apache.org/doc/current/zookeeperStarted.html#sc_ConnectingToZooKeeper[`zkCli.sh` included in ZooKeeper distributions].
-
-ZooKeeper's `zkCli.sh` provides a completely general, application-agnostic shell for manipulating data in ZooKeeper.
-
-`zkcli.sh` has been deprecated in favour of the `bin/solr` equivalent commands which should be used instead.   It is no longer referenced in the Reference Guide.
-====
-
-== Using Solr's ZooKeeper CLI
+== Using Solr's CLI with ZooKeeper
 
 Use the `help` option to get a list of available ZooKeeper specifc commands from the script itself, as in `bin/solr zk -h`.
 

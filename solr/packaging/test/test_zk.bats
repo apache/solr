@@ -94,24 +94,6 @@ teardown() {
 
 }
 
-@test "zkcli.sh gets 'solrhome' from 'solr.home' system property" {
-  sleep 1
-  run "${SOLR_TIP}/server/scripts/cloud-scripts/zkcli.sh" -v
-  local extracted_solrhome=$(echo "$output" | grep -oE "solrhome=[^ ]+")
-  # remove 'solrhome='
-  local path_value=${extracted_solrhome#*=}
-  [[ $path_value == *"/server/scripts/cloud-scripts/../../solr" ]] || [[ $path_value == *"/server/solr" ]]
-}
-
-@test "zkcli.sh gets 'solrhome' from 'solrhome' command line option" {
-  sleep 1
-  run "${SOLR_TIP}/server/scripts/cloud-scripts/zkcli.sh" -v -s /path/to/solr/home
-  local extracted_solrhome=$(echo "$output" | grep -oE "solrhome=[^ ]+")
-  # remove 'solrhome='
-  local path_value=${extracted_solrhome#*=}
-  [[ $path_value == "/path/to/solr/home" ]]
-}
-
 
 @test "bin/solr zk cp gets 'solrhome' from '--solr-home' command line option" {
   touch afile.txt
@@ -123,7 +105,6 @@ teardown() {
   # The -DminStateByteLenForCompression variable substitution on solr start is not seen
   # by the ZkCpTool.java, so therefore we do not have compression unless solr.xml is directly edited.
   #assert_output --partial 'Compression of state.json has been enabled'
-  
-  
+    
   rm afile.txt
 }
