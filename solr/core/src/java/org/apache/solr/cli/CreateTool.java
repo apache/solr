@@ -99,7 +99,7 @@ public class CreateTool extends ToolBase {
             .build(),
         Option.builder("d")
             .longOpt("confdir")
-            .argName("NAME")
+            .argName("DIR")
             .hasArg()
             .required(false)
             .desc(

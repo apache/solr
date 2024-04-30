@@ -68,7 +68,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.apache.solr.util.RefCounted;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -328,7 +327,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
     SolrException thrown =
         assertThrows(SolrException.class, () -> indexSolrInputDocumentsDirectly(document1));
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         containsString("Anonymous child docs can only hang from others or the root"));
   }

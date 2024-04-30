@@ -85,7 +85,7 @@ public class PostLogsTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     String url = cli.getOptionValue("url");
     String rootDir = cli.getOptionValue("rootdir");
-    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
+    String credentials = cli.getOptionValue("credentials");
     runCommand(url, rootDir, credentials);
   }
 

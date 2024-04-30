@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+echo "WARNING: The zkcli.sh script has been deprecated in favour of the bin/solr equivalent commands."
+
 # You can override pass the following parameters to this script:
 #
 
@@ -25,4 +27,3 @@ solr_home="$sdir/../../solr"
 #...
 PATH=$JAVA_HOME/bin:$PATH $JVM $SOLR_ZK_CREDS_AND_ACLS $ZKCLI_JVM_FLAGS -Dlog4j.configurationFile=$log4j_config -Dsolr.home=$solr_home \
 -classpath "$sdir/../../solr-webapp/webapp/WEB-INF/lib/*:$sdir/../../lib/ext/*:$sdir/../../lib/*" org.apache.solr.cloud.ZkCLI ${1+"$@"}
-
