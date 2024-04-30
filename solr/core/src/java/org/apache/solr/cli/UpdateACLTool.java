@@ -14,61 +14,61 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.cli;
 
 import java.io.PrintStream;
-import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/** Supports zk ls command in the bin/solr script. */
-public class ZkLsTool extends ToolBase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+/**
+ * Supports updating ACL for a path in ZK
+ *
+ * <p>Set ACL properties by directly manipulating ZooKeeper.
+ */
+public class UpdateACLTool extends ToolBase {
+  // It is a shame this tool doesn't more closely mimic how the ConfigTool works.
 
-  public ZkLsTool() {
+  public UpdateACLTool() {
     this(CLIO.getOutStream());
   }
 
-  public ZkLsTool(PrintStream stdout) {
+  public UpdateACLTool(PrintStream stdout) {
     super(stdout);
+  }
+
+  @Override
+  public String getName() {
+    return "updateacls";
   }
 
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("path")
-            .argName("path")
+        Option.builder()
+            .longOpt("path")
+            .argName("PATH")
             .hasArg()
             .required(true)
-            .desc("Path to list.")
+            .desc("The path to update.")
             .build(),
-        SolrCLI.OPTION_RECURSE,
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_VERBOSE);
-  }
-
-  @Override
-  public String getName() {
-    return "ls";
+        SolrCLI.OPTION_ZKHOST);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
+
+    String path = cli.getOptionValue("path");
     String zkHost = SolrCLI.getZkHost(cli);
 
-    if (zkHost == null) {
+    if (!ZkController.checkChrootPath(zkHost, true)) {
       throw new IllegalStateException(
-          "Solr at "
-              + cli.getOptionValue("zkHost")
-              + " is running in standalone server mode, 'zk ls' can only be used when running in SolrCloud mode.\n");
+          "A chroot was specified in zkHost but the znode doesn't exist.");
     }
 
     try (SolrZkClient zkClient =
@@ -76,22 +76,8 @@ public class ZkLsTool extends ToolBase {
             .withUrl(zkHost)
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
-      String znode = cli.getOptionValue("path");
-      Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
-      echoIfVerbose(
-          "Getting listing for ZooKeeper node "
-              + znode
-              + " from ZooKeeper at "
-              + zkHost
-              + " recurse: "
-              + recurse,
-          cli);
-      stdout.print(zkClient.listZnode(znode, recurse));
-    } catch (Exception e) {
-      log.error("Could not complete ls operation for reason: ", e);
-      throw (e);
+      zkClient.updateACLs(path);
     }
   }
 }
