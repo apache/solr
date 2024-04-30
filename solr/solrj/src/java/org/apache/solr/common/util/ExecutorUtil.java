@@ -106,10 +106,34 @@ public class ExecutorUtil {
     }
   }
 
+  /**
+   * Shutdown the {@link ExecutorService} and wait for 60 seconds for the threads to complete. More
+   * detail on the waiting can be found in {@link #awaitTermination(ExecutorService)}.
+   *
+   * @param pool The ExecutorService to shutdown and wait on
+   */
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
     if (pool == null) return;
     pool.shutdown(); // Disable new tasks from being submitted
     awaitTermination(pool);
+  }
+
+  /**
+   * Shutdown the {@link ExecutorService} and wait forever for the threads to complete. More detail
+   * on the waiting can be found in {@link #awaitTerminationForever(ExecutorService)}.
+   *
+   * <p>This should likely not be used in {@code close()} methods, as we want to timebound when
+   * shutting down. However, sometimes {@link ExecutorService}s are used to submit a list of tasks
+   * and awaiting termination is akin to waiting on the list of {@link Future}s to complete. In that
+   * case, this method should be used as there is no inherent time bound to waiting on those tasks
+   * to complete.
+   *
+   * @param pool The ExecutorService to shutdown and wait on
+   */
+  public static void shutdownAndAwaitTerminationForever(ExecutorService pool) {
+    if (pool == null) return;
+    pool.shutdown(); // Disable new tasks from being submitted
+    awaitTerminationForever(pool);
   }
 
   public static void shutdownNowAndAwaitTermination(ExecutorService pool) {
@@ -118,6 +142,12 @@ public class ExecutorUtil {
     awaitTermination(pool);
   }
 
+  /**
+   * Await the termination of an {@link ExecutorService} for a default of 60 seconds, then force
+   * shutdown the remaining threads and wait another 60 seconds.
+   *
+   * @param pool the ExecutorService to wait on
+   */
   public static void awaitTermination(ExecutorService pool) {
     awaitTermination(pool, 60, TimeUnit.SECONDS);
   }
@@ -140,6 +170,37 @@ public class ExecutorUtil {
       pool.shutdownNow();
       // Preserve interrupt status
       Thread.currentThread().interrupt();
+    }
+  }
+
+  /**
+   * Await the termination of an {@link ExecutorService} until all threads are complete, or until we
+   * are interrupted, at which point the {@link ExecutorService} will be interrupted as well.
+   *
+   * @param pool the ExecutorService to wait on
+   */
+  public static void awaitTerminationForever(ExecutorService pool) {
+    boolean shutdown = false;
+    while (!shutdown) {
+      try {
+        try {
+          // Wait a while for existing tasks to terminate
+          shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
+        } catch (InterruptedException ie) {
+          // Force cancel if current thread also interrupted
+          pool.shutdownNow();
+          // Preserve interrupt status
+          Thread.currentThread().interrupt();
+          if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
+            // there was an issue shutting down the threads, so throw a RuntimeException,
+            // using the original InterruptedException as a cause
+            throw ie;
+          }
+        }
+      } catch (InterruptedException e) {
+        log.error("Threads from pool {} did not forcefully stop.", pool);
+        throw new RuntimeException("Timeout waiting for pool " + pool + " to shutdown.", e);
+      }
     }
   }
 
