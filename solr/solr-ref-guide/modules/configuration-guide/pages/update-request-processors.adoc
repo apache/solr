@@ -340,6 +340,8 @@ Alternatively, the processor offers a "permissive" mode (`permissiveMode=true`) 
 {solr-javadocs}/core/org/apache/solr/update/processor/NumFieldLimitingUpdateRequestProcessorFactory.html[NumFieldLimitingUpdateRequestProcessorFactory]:: Fails update requests once a core has exceeded a configurable "maximum" number of fields.
 +
 Solr performance can degrade and even become unstable if cores accumulate too many (e.g. more than 500) fields.  The "NumFieldLimiting" URP is offered as a safeguard that helps users notice potentially-dangerous schema design and/or mis-use of dynamic fields, before these performance and stability problems would manifest.
+Note that the field count an index reports can be influenced by deleted (but not yet purged) documents, and may vary from replica to replica.
+In order to avoid these sort of discrepancies between replicas, use of this URP should almost always precede DistributedUpdateProcessor in when running in SolrCloud mode.
 
 {solr-javadocs}/core/org/apache/solr/update/processor/RegexpBoostProcessorFactory.html[RegexpBoostProcessorFactory]:: A processor which will match content of "inputField" against regular expressions found in "boostFilename", and if it matches will return the corresponding boost value from the file and output this to "boostField" as a double value.
 
