@@ -1822,8 +1822,9 @@ public class IndexFetcher {
           if (fis.peek() == -1) {
             if (bytesDownloaded == 0) {
               log.warn("No content received for file: {}", fileName);
+              return NO_CONTENT;
             }
-            return NO_CONTENT;
+            return 0;
           }
           if (stop) {
             stop = false;
