@@ -1078,7 +1078,12 @@ groups:
           comment: Add the new slim distribution Dockerfile to the repo
           logfile: solr_docker_add_dockerfile_slim.log
         - !Command
-          cmd: 'git add {{ docker_version }}/Dockerfile {{ docker_version }}-slim/Dockerfile && git commit -m "Apache Solr release {{ release_version }}"'
+          comment: Mark docker image version N.M-2 as not supported (if applicable)
+          cmd: "{% if get_docker_version_to_remove %}rm -rf {{ get_docker_version_to_remove }} && rm -rf {{ get_docker_version_to_remove }}-slim{% else %}echo Nothing to delete{% endif %}"
+          cwd: solr-docker
+          logfile: solr_remove_old_docker_images.log
+        - !Command
+          cmd: 'git add . && git commit -m "Apache Solr release {{ release_version }}"'
           cwd: solr-docker
           comment: Commit the new Dockerfile
           logfile: solr_docker_commit.log
