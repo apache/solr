@@ -63,6 +63,9 @@ Deprecation Removals
   in favor of the new CompletableFuture based methods.  Remove the related deprecated interfaces `AsyncListener` and ``Cancellable`
   (James Dyer)
 
+* SOLR-14115: Remove deprecated zkcli script in favour of equivalent bin/solr sub commmands. (Eric Pugh)
+
+
 Dependency Upgrades
 ---------------------
 (No changes)
