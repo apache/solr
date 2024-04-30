@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.Socket;
@@ -29,9 +28,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -46,14 +42,11 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -200,127 +193,18 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
-  public void testDeprecatedAsyncGet() throws Exception {
-    super.testQueryAsync(true);
-  }
-
-  @Test
   public void testAsyncGet() throws Exception {
-    super.testQueryAsync(false);
-  }
-
-  @Test
-  public void testDeprecatedAsyncPost() throws Exception {
-    super.testUpdateAsync(true);
+    super.testQueryAsync();
   }
 
   @Test
   public void testAsyncPost() throws Exception {
-    super.testUpdateAsync(false);
-  }
-
-  @Test
-  public void testDeprecatedAsyncException() throws Exception {
-    DebugAsyncListener listener = super.testAsyncExceptionBase(true);
-    assertTrue(listener.onFailureResult instanceof CompletionException);
-    CompletionException ce = (CompletionException) listener.onFailureResult;
-    assertTrue(ce.getCause() instanceof BaseHttpSolrClient.RemoteSolrException);
-    assertTrue(ce.getMessage(), ce.getMessage().contains("mime type"));
+    super.testUpdateAsync();
   }
 
   @Test
   public void testAsyncException() throws Exception {
-    super.testAsyncExceptionBase(false);
-  }
-
-  @Test
-  public void testAsyncAndCancel() throws Exception {
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    HttpJdkSolrClient.Builder b =
-        new HttpJdkSolrClient.Builder(url).withResponseParser(new XMLResponseParser());
-    try (PausableHttpJdkSolrClient client = new PausableHttpJdkSolrClient(url, b)) {
-      super.testAsyncAndCancel(client);
-    }
-  }
-
-  public static class PausableHttpJdkSolrClient extends HttpJdkSolrClient
-      implements PauseableHttpSolrClient {
-
-    protected PausableHttpJdkSolrClient(String serverBaseUrl, Builder builder) {
-      super(serverBaseUrl, builder);
-    }
-
-    @Override
-    protected NamedList<Object> processErrorsAndResponse(
-        int httpStatus,
-        String responseReason,
-        String responseMethod,
-        ResponseParser processor,
-        InputStream is,
-        String mimeType,
-        String encoding,
-        boolean isV2Api,
-        String urlExceptionMessage)
-        throws SolrServerException {
-      pause();
-      var nl =
-          super.processErrorsAndResponse(
-              httpStatus,
-              responseReason,
-              responseMethod,
-              processor,
-              is,
-              mimeType,
-              encoding,
-              isV2Api,
-              urlExceptionMessage);
-      unPause();
-      return nl;
-    }
-  }
-
-  @Test
-  public void testDeprecatedAsyncAndCancel() throws Exception {
-    ResponseParser rp = new XMLResponseParser();
-    DebugServlet.clear();
-    DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-    DebugServlet.responseBodyByQueryFragment.put(
-        "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
-    HttpJdkSolrClient.Builder b = builder(url).withResponseParser(rp);
-    CountDownLatch latch = new CountDownLatch(0);
-    DebugAsyncListener listener = new DebugAsyncListener(latch);
-    Cancellable cancelMe = null;
-    try (HttpJdkSolrClient client = b.build()) {
-      QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
-
-      // We are pausing in the "whenComplete" stage, in the unlikely event the http request
-      // finishes before the test calls "cancel".
-      listener.pause();
-
-      // Make the request then immediately cancel it!
-      cancelMe = client.asyncRequest(query, "collection1", listener);
-      cancelMe.cancel();
-
-      // We are safe to unpause our client, having guaranteed that our cancel was before everything
-      // completed.
-      listener.unPause();
-    }
-
-    // "onStart" fires before the async call.  This part of the request cannot be cancelled.
-    assertTrue(listener.onStartCalled);
-
-    // The client exposes the CompletableFuture to us via this inner class
-    assertTrue(cancelMe instanceof HttpJdkSolrClient.HttpSolrClientCancellable);
-    CompletableFuture<NamedList<Object>> response =
-        ((HttpJdkSolrClient.HttpSolrClientCancellable) cancelMe).getResponse();
-
-    // Even if our cancel didn't happen until we were at "whenComplete", the CompletableFuture will
-    // have set "isCancelled".
-    assertTrue(response.isCancelled());
-
-    // But we cannot guarantee the response will have been returned, or that "onFailure" was fired
-    // with a "CompletionException".  This depends on where we were when the cancellation hit.
+    super.testAsyncExceptionBase();
   }
 
   @Test

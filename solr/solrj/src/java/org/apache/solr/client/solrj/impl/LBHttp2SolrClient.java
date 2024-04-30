@@ -32,8 +32,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.util.AsyncListener;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.MDC;
@@ -124,31 +122,6 @@ public class LBHttp2SolrClient extends LBSolrClient {
 
   public Set<String> getUrlParamNames() {
     return solrClient.getUrlParamNames();
-  }
-
-  /**
-   * Execute an asynchronous request against a one or more hosts for a given collection.
-   *
-   * @param req the wrapped request to perform
-   * @param asyncListener callers should provide an implementation to handle events: start, success,
-   *     exception
-   * @return Cancellable allowing the caller to attempt cancellation
-   * @deprecated Use {@link #requestAsync(Req)}.
-   */
-  @Deprecated
-  public Cancellable asyncReq(Req req, AsyncListener<Rsp> asyncListener) {
-    asyncListener.onStart();
-    CompletableFuture<Rsp> cf =
-        requestAsync(req)
-            .whenComplete(
-                (rsp, t) -> {
-                  if (t != null) {
-                    asyncListener.onFailure(t);
-                  } else {
-                    asyncListener.onSuccess(rsp);
-                  }
-                });
-    return () -> cf.cancel(true);
   }
 
   /**
