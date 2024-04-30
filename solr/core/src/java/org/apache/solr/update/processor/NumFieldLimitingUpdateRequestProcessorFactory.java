@@ -96,6 +96,8 @@ public class NumFieldLimitingUpdateRequestProcessorFactory extends UpdateRequest
   @Override
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+
+    // TODO Should we skip to the next URP if running in SolrCloud and *not* a leader?
     return new NumFieldLimitingUpdateRequestProcessor(
         req, next, maximumFields, numFieldsMonitor.getCurrentNumFields(), warnOnly);
   }

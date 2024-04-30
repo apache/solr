@@ -19,13 +19,7 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
-import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.AddUpdateCommand;
 import org.slf4j.Logger;
@@ -53,17 +47,15 @@ public class NumFieldLimitingUpdateRequestProcessor extends UpdateRequestProcess
   }
 
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    if (!isCloudMode() || /* implicit isCloudMode==true */ isLeaderThatOwnsTheDoc(cmd)) {
-      if (coreExceedsFieldLimit()) {
-        throwExceptionOrLog(cmd.getPrintableId());
-      } else {
-        if (log.isDebugEnabled()) {
-          log.debug(
-              "Allowing document {}, since current core is under the 'maxFields' limit (numFields={}, maxFields={})",
-              cmd.getPrintableId(),
-              currentNumFields,
-              fieldThreshold);
-        }
+    if (coreExceedsFieldLimit()) {
+      throwExceptionOrLog(cmd.getPrintableId());
+    } else {
+      if (log.isDebugEnabled()) {
+        log.debug(
+            "Allowing document {}, since current core is under the 'maxFields' limit (numFields={}, maxFields={})",
+            cmd.getPrintableId(),
+            currentNumFields,
+            fieldThreshold);
       }
     }
     super.processAdd(cmd);
@@ -87,54 +79,5 @@ public class NumFieldLimitingUpdateRequestProcessor extends UpdateRequestProcess
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
     }
-  }
-
-  private boolean isCloudMode() {
-    return req.getCore().getCoreContainer().isZooKeeperAware();
-  }
-
-  private boolean isLeaderThatOwnsTheDoc(AddUpdateCommand cmd) {
-    CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
-    ZkController zkController = req.getCore().getCoreContainer().getZkController();
-    String collection = coreDesc.getCollectionName();
-
-    // Is the document targeting our shard?
-    final var targetSlice = getTargetSliceForDocument(zkController, collection, cmd);
-    final String ourShardName = coreDesc.getCloudDescriptor().getShardId();
-    if (!StrUtils.equalsIgnoreCase(targetSlice.getName(), ourShardName)) {
-      return false;
-    }
-
-    // The document targets the shard this core represents, but are we the leader?
-    return isLeaderForShard(
-        zkController, coreDesc.getCloudDescriptor(), collection, targetSlice.getName());
-  }
-
-  private Slice getTargetSliceForDocument(
-      ZkController zkController, String collectionName, AddUpdateCommand cmd) {
-    final var coll = zkController.getClusterState().getCollection(collectionName);
-    return coll.getRouter()
-        .getTargetSlice(
-            cmd.getPrintableId(),
-            cmd.getSolrInputDocument(),
-            cmd.getRoute(),
-            req.getParams(),
-            coll);
-  }
-
-  private boolean isLeaderForShard(
-      ZkController zkController,
-      CloudDescriptor cloudDescriptor,
-      String collection,
-      String targetShardName) {
-    try {
-      Replica leaderReplica =
-          zkController.getZkStateReader().getLeaderRetry(collection, targetShardName);
-      return leaderReplica.getName().equals(cloudDescriptor.getCoreNodeName());
-    } catch (InterruptedException e) {
-      log.error("getLeaderRetry failed", e);
-      Thread.currentThread().interrupt();
-    }
-    return false;
   }
 }
