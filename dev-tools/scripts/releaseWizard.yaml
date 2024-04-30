@@ -1078,9 +1078,9 @@ groups:
           comment: Add the new slim distribution Dockerfile to the repo
           logfile: solr_docker_add_dockerfile_slim.log
         - !Command
-          cmd: "{% if get_docker_version_to_remove %}rm -rf {{ get_docker_version_to_remove }} && rm -rf {{ get_docker_version_to_remove }}-slim{% else %}echo Nothing to delete{% endif %}"
+          cmd: "{% if docker_version_to_remove %}rm -rf {{ docker_version_to_remove }} {{ docker_version_to_remove }}-slim{% else %}echo Nothing to delete{% endif %}"
           cwd: solr-docker
-          comment: "{% if get_docker_version_to_remove %}Mark docker image version {{ get_docker_version_to_remove }} as not supported{% else %}N/A - No docker versions to delete for this release{% endif %}"
+          comment: "{% if docker_version_to_remove %}Mark docker image version {{ docker_version_to_remove }} as not supported{% else %}N/A - No docker versions to delete for this release{% endif %}"
           logfile: solr_remove_old_docker_images.log
         - !Command
           cmd: 'git add . && git commit -m "Apache Solr release {{ release_version }}"'
