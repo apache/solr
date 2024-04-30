@@ -106,8 +106,7 @@ dependencies {
 
   implementation 'commons-codec:commons-codec'
 
-  //, version: '0.7-SNAPSHOT'
-  implementation files('/Users/epugh/Documents/projects/commons-cli/target/commons-cli-1.7.0-SNAPSHOT.jar')
+  implementation 'commons-cli:commons-cli'
 
   implementation 'org.locationtech.spatial4j:spatial4j'
 
