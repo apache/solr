@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.SocketException;
 import java.net.URL;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -67,9 +66,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
@@ -625,7 +621,6 @@ public class SolrCLI implements CLIO {
     return new SolrZkClient.Builder()
         .withUrl(zkHost)
         .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-        .withSolrClassLoader(getSolrResourceLoader())
         .build();
   }
 
@@ -636,19 +631,8 @@ public class SolrCLI implements CLIO {
   public static CloudHttp2SolrClient getCloudHttp2SolrClient(
       String zkHost, Http2SolrClient.Builder builder) {
     return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-        .withSolrClassLoader(getSolrResourceLoader())
         .withInternalClientBuilder(builder)
         .build();
-  }
-
-  private static SolrResourceLoader getSolrResourceLoader() {
-    String dir = System.getProperty("solr.solr.home");
-    if (StrUtils.isNullOrEmpty(dir)) {
-      dir = System.getProperty("solr.install.dir");
-    }
-    final SolrResourceLoader loader = new SolrResourceLoader(Paths.get(dir));
-    NodeConfig.initModules(loader, null);
-    return loader;
   }
 
   public static boolean safeCheckCollectionExists(

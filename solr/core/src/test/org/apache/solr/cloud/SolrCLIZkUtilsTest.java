@@ -70,7 +70,6 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
       zkClient = null;
     }
     zkAddr = null;
-    System.clearProperty("solr.solr.home");
   }
 
   private static String zkAddr;

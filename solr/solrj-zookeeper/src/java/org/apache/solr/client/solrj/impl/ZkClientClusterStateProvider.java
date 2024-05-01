@@ -31,7 +31,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
-import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -53,7 +52,6 @@ public class ZkClientClusterStateProvider
   private final boolean canUseZkACLs;
   private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
   private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
-  private SolrClassLoader solrClassLoader;
 
   private volatile boolean isClosed = false;
 
@@ -73,17 +71,13 @@ public class ZkClientClusterStateProvider
   }
 
   public ZkClientClusterStateProvider(Collection<String> zkHosts, String chroot) {
-    this(zkHosts, chroot, true, null);
+    this(zkHosts, chroot, true);
   }
 
   public ZkClientClusterStateProvider(
-      Collection<String> zkHosts,
-      String chroot,
-      boolean canUseZkACLs,
-      SolrClassLoader solrClassLoader) {
+      Collection<String> zkHosts, String chroot, boolean canUseZkACLs) {
     zkHost = buildZkHostString(zkHosts, chroot);
     this.canUseZkACLs = canUseZkACLs;
-    this.solrClassLoader = solrClassLoader;
   }
 
   public ZkClientClusterStateProvider(String zkHost) {
@@ -246,9 +240,7 @@ public class ZkClientClusterStateProvider
         if (zkStateReader == null) {
           ZkStateReader zk = null;
           try {
-            zk =
-                new ZkStateReader(
-                    zkHost, zkClientTimeout, zkConnectTimeout, canUseZkACLs, solrClassLoader);
+            zk = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout, canUseZkACLs);
             zk.createClusterStateWatchersAndUpdate();
             log.info("Cluster at {} ready", zkHost);
             zkStateReader = zk;
