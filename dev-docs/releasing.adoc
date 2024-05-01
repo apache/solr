@@ -10,16 +10,19 @@ Good! This document tells you how to get started.
 == Overview
 The following is an overview of the artifacts you will be publishing. Although the release wizard should be your primary guide, having a picture of what's going on may help you understand and validate what the release wizard is asking you to do.
 
-There are four major parts of a release. They all become available to the public in slightly different ways, and it helps to understand these differences.
+There are five major parts of a release. They all become available to the public in slightly different ways, and it helps to understand these differences.
 
 IMPORTANT: All of these publications experience a time delay while background infrastructure detects and propagates your changes. There will be points in the release process when you just need to wait.
 
 === Source Code and Binaries (downloads.apache.org)
 
-The distribution of a specific version of the source code is the theoretical center of any release by the Apache Software Foundation. As a convenience, precompiled binaries are also provided on downloads.apache.org. The mechanics of this process start with an SVN commit. The result of that commit is automatically synced to the downloads server (~5m?), and then on a longer time frame (6h?) anything on downloads is synced to archives.apache.org.
+The distribution of a specific version of the source code is the theoretical center of any release by the Apache Software Foundation. As a convenience, precompiled binaries are also provided on downloads.apache.org. The mechanics of this process start with an SVN commit. The result of that commit is automatically synced to the downloads server (~5m?), and then on a longer time frame (6h?) anything on downloads is synced to archives.apache.org. See https://infra.apache.org/release-publishing.html#timeline for more detail
 
 === Maven Artifacts (repository.apache.org)
 The compiled jar files, source jars, javadoc and pom need to be distributed to the maven ecosystem. This happens via repository.apache.org which is then automatically synced into maven central (~2h, upto 24h for maven central search). If you have released software to maven central via Sonatype, you will see that Apache uses the same repository manager software (Nexus), and this interface will look familiar to you.
+
+=== The Docker Image (hub.docker.com/_/solr)
+The official solr docker image will be published for use by the world. The latency for this publication is unknown to me, (it went smoothly, and I forgot to make a note of it) but someone who figures that out can update this section.
 
 === The Web Site (solr.apache.org)
 Our website must be updated with each release. It is based on the content of the solr-site git repository and checking in changes to the `main` branch there will automatically become available for preview within a few minutes at https://solr.staged.apache.org/[https://solr.staged.apache.org/]. Merging main into a branch named `production` publishes your updates to the live website also within a few minutes. Note that it is normal for the staging site links to javadocs and ref guide to return 404 because these are published by a different process.
@@ -50,10 +53,11 @@ The release wizard is meant to be used from any working copy you like, with the 
 2. Install dependencies with `pip3 install -r requirements.txt`, from the `dev-tools/scripts` folder.
 3. Run the command you see documented at `dev-tools/scripts/README.md`. Using `--dry-run` initially is fine.
 
-NOTE: `--dry-run` does still create `~/.solr_releases` and `~/.solrrc` files and record the release version you intend for future reference so one might say it's really better described as a "slightly damp" run :) it should however not execute other commands. (in theory). Also, checklist elements approved are also remembered, but this may change, see https://issues.apache.org/jira/browse/SOLR-17246[SOLR-17246]
+NOTE: `--dry-run` does still create `~/.solr_releases` and `~/.solrrc` files and record the release version you intend for future reference so one might say it's really better described as a "slightly damp" run :).  It should however not execute other commands (in theory). Also, checklist elements approved during a dry run are remembered, but this may change, see https://issues.apache.org/jira/browse/SOLR-17246[SOLR-17246]
 
 
 == Step 2 - Complete the First two Checklists
+CAUTION: The release wizard is software, it may have bugs or not cover every situation. You need to think about the commands you are given. Some of the known pitfalls can be found with https://issues.apache.org/jira/issues/?jql=project%20%3D%20SOLR%20AND%20resolution%20%3D%20Unresolved%20AND%20component%20%3D%20release-scripts%20ORDER%20BY%20priority%20DESC%2C%20updated%20DESC[this jira search].
 
 The release wizard is organized into checklists and the first two checklists are preparation/planning related, and are good to complete before proposing the release.
 
@@ -63,11 +67,16 @@ Mail dev@solr.apache.org with a subject like `[DISCUSS] Solr X.Y release` and wa
 
 == Step 4 - Continue Following the Release Wizard
 
-It's supposed to tell you all you need from here... Mail the list if you have questions, and file Jira issues for things that could be improved for the next person (please set component to `release-scripts`).
+It's supposed to tell you all you need from here... Mail the list or post on `#solr-dev` Slack if you have questions, and file Jira issues for things that could be improved for the next person (please set component to `release-scripts`).
 
 == Step 5 - Complete the After Release Steps in the Wizard too.
 
 There are some things that need to be done after the release is officially published and announced. The wizard will guide you through that (things like updating Jira etc.)
 
+== Dive deeper
+
+The https://infra.apache.org/release-publishing.html[Release Creation Process] we page gives more in-depth explanation of an Apache release.
+
+The origins of the ReleaseWizard is described in https://www.linkedin.com/pulse/releasing-lucene-just-61-steps-jan-h%C3%B8ydahl/[this blog post] from 2019. The same tool is currently used by Lucene, Solr and Solr-Operator.
 
 
