@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -197,13 +198,13 @@ public class ClusterState implements MapWriter {
     for (CollectionRef ref : states) {
       DocCollection coll = ref.get();
       if (coll == null) continue; // this collection got removed in between, skip
-      for (Replica replica : coll.getReplicas(nodeName)) {
-        // TODO: for really large clusters, we could 'index' on this
-        String rcore = replica.getStr(ReplicaStateProps.CORE_NAME);
-        if (coreName.equals(rcore)) {
-          return replica.getShard();
-        }
-      }
+      // TODO: for really large clusters, we could 'index' on this
+      return Optional.ofNullable(coll.getReplicas(nodeName)).stream()
+          .flatMap(List::stream)
+          .filter(r -> coreName.equals(r.getStr(ReplicaStateProps.CORE_NAME)))
+          .map(Replica::getShard)
+          .findAny()
+          .orElse(null);
     }
     return null;
   }

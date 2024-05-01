@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1111,10 +1112,12 @@ public class ZkController implements Closeable {
           (collectionState) -> {
             if (collectionState == null) return false;
             boolean allStatesCorrect =
-                collectionState.getReplicas(nodeName).stream()
+                Optional.ofNullable(collectionState.getReplicas(nodeName)).stream()
+                    .flatMap(List::stream)
                     .allMatch(replica -> replica.getState() == Replica.State.DOWN);
 
-            if (allStatesCorrect && collectionsWithLocalReplica.remove(collectionWithLocalReplica)) {
+            if (allStatesCorrect
+                && collectionsWithLocalReplica.remove(collectionWithLocalReplica)) {
               latch.countDown();
             }
             return allStatesCorrect;
