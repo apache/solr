@@ -125,6 +125,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
     assertEquals(1, DebugServlet.parameters.get("a").length);
     assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
+    assertEquals("{!terms f=myfield}value1,value2", DebugServlet.parameters.get("fq")[0]);
     assertEquals(expectedUserAgent(), DebugServlet.headers.get("user-agent"));
     assertEquals("application/x-www-form-urlencoded", DebugServlet.headers.get("content-type"));
   }
