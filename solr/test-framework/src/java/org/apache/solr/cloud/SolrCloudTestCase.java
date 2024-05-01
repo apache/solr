@@ -104,7 +104,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * beforeClass method.
    */
   public static boolean isPRS() {
-    return Boolean.parseBoolean(System.getProperty(PRS_DEFAULT_PROP, "false"));
+    return EnvUtils.getEnvAsBool(PRS_DEFAULT_PROP, false);
   }
 
   /**
