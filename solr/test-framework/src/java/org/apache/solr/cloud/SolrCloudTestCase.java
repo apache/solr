@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.api.collections.CreateCollectionCmd.PRS_DEFAULT_PROP;
+
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.io.IOException;
 import java.lang.annotation.ElementType;
@@ -51,9 +53,9 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -83,7 +85,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String PRS_DEFAULT_PROP = "solr.prs.default";
+  public static final String SAVED_PRS_DEFAULT_PROP = "_.saved.solr.prs.default";
 
   // this is an important timeout for test stability - can't be too short
   public static final int DEFAULT_TIMEOUT = 45;
@@ -97,7 +99,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return cluster.getZkStateReader().getZkClient();
   }
 
-  /** if the system property is not specified, default to false. The SystemProperty will be set in a beforeClass method. */
+  /**
+   * if the system property is not specified, default to false. The SystemProperty will be set in a
+   * beforeClass method.
+   */
   public static boolean isPRS() {
     return Boolean.parseBoolean(System.getProperty(PRS_DEFAULT_PROP, "false"));
   }
@@ -138,18 +143,30 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setPrsDefault() {
     Class<?> target = RandomizedTest.getContext().getTargetClass();
-    boolean prsDefault;
+    String existingPrsDefault = EnvUtils.getProperty(PRS_DEFAULT_PROP);
+    String newPrsDefault;
     if (target != null && target.isAnnotationPresent(NoPrs.class)) {
-      prsDefault = false;
+      if (existingPrsDefault != null) {
+        System.setProperty(SAVED_PRS_DEFAULT_PROP, existingPrsDefault);
+      }
+      newPrsDefault = "false";
+    } else if (existingPrsDefault != null) {
+      newPrsDefault = existingPrsDefault;
     } else {
-      prsDefault = random().nextBoolean();
+      newPrsDefault = Boolean.toString(random().nextBoolean());
     }
-    System.setProperty(PRS_DEFAULT_PROP, Boolean.toString(prsDefault));
+    System.setProperty(PRS_DEFAULT_PROP, newPrsDefault);
   }
 
   @AfterClass
   public static void unsetPrsDefault() {
-    System.clearProperty(PRS_DEFAULT_PROP);
+    String savedPrsDefault = System.getProperty(SAVED_PRS_DEFAULT_PROP);
+    System.clearProperty(SAVED_PRS_DEFAULT_PROP);
+    if (savedPrsDefault != null) {
+      System.setProperty(PRS_DEFAULT_PROP, savedPrsDefault);
+    } else {
+      System.clearProperty(PRS_DEFAULT_PROP);
+    }
   }
 
   @Before
