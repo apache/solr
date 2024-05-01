@@ -83,7 +83,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String PRS_DEFAULT_PROP = System.getProperty("use.per-replica", null);
+  public static final String PRS_DEFAULT_PROP = "solr.prs.default";
 
   // this is an important timeout for test stability - can't be too short
   public static final int DEFAULT_TIMEOUT = 45;
@@ -97,11 +97,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return cluster.getZkStateReader().getZkClient();
   }
 
-  /** if the system property is not specified, use a random value */
+  /** if the system property is not specified, default to false. The SystemProperty will be set in a beforeClass method. */
   public static boolean isPRS() {
-    return PRS_DEFAULT_PROP == null
-        ? random().nextBoolean()
-        : Boolean.parseBoolean(PRS_DEFAULT_PROP);
+    return Boolean.parseBoolean(System.getProperty(PRS_DEFAULT_PROP, "false"));
   }
 
   /**
@@ -140,29 +138,18 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setPrsDefault() {
     Class<?> target = RandomizedTest.getContext().getTargetClass();
-    if (target != null && target.isAnnotationPresent(NoPrs.class)) return;
-    if (isPRS()) {
-      System.setProperty("solr.prs.default", "true");
+    boolean prsDefault;
+    if (target != null && target.isAnnotationPresent(NoPrs.class)) {
+      prsDefault = false;
+    } else {
+      prsDefault = random().nextBoolean();
     }
-  }
-
-  @After
-  public void _unsetPrsDefault() {
-    unsetPrsDefault();
-  }
-
-  @Before
-  public void _setPrsDefault() {
-    setPrsDefault();
+    System.setProperty(PRS_DEFAULT_PROP, Boolean.toString(prsDefault));
   }
 
   @AfterClass
   public static void unsetPrsDefault() {
-    Class<?> target = RandomizedTest.getContext().getTargetClass();
-    if (target != null && target.isAnnotationPresent(NoPrs.class)) return;
-    if (isPRS()) {
-      System.clearProperty("solr.prs.default");
-    }
+    System.clearProperty(PRS_DEFAULT_PROP);
   }
 
   @Before
