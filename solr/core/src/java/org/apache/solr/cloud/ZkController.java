@@ -94,6 +94,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -1104,6 +1105,7 @@ public class ZkController implements Closeable {
     final String nodeName = getNodeName();
 
     Collection<String> collectionsWithLocalReplica = publishNodeAsDown(nodeName);
+    Map<String, Boolean> collectionsAlreadyVerified = new ConcurrentHashMap<>(collectionsWithLocalReplica.size());
 
     CountDownLatch latch = new CountDownLatch(collectionsWithLocalReplica.size());
     for (String collectionWithLocalReplica : collectionsWithLocalReplica) {
@@ -1117,7 +1119,7 @@ public class ZkController implements Closeable {
                     .allMatch(replica -> replica.getState() == Replica.State.DOWN);
 
             if (allStatesCorrect
-                && collectionsWithLocalReplica.remove(collectionWithLocalReplica)) {
+                && collectionsAlreadyVerified.putIfAbsent(collectionWithLocalReplica, true) == null) {
               latch.countDown();
             }
             return allStatesCorrect;
