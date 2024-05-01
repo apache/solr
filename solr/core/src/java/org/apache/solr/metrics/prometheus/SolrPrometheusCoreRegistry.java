@@ -52,7 +52,7 @@ public class SolrPrometheusCoreRegistry extends SolrPrometheusRegistry {
   }
 
   /**
-   * Export {@link Meter} to {@link io.prometheus.metrics.model.snapshots.MetricSnapshot} and
+   * Export {@link Metric} to {@link io.prometheus.metrics.model.snapshots.MetricSnapshot} and
    * registers the Snapshot
    *
    * @param dropwizardMetric the {@link Meter} to be exported

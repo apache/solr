@@ -154,7 +154,6 @@ dependencies {
   runtimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
 
   // Prometheus client
-  implementation 'io.prometheus:prometheus-metrics-core:1.1.0'
   implementation 'io.prometheus:prometheus-metrics-model:1.1.0'
   implementation 'io.prometheus:prometheus-metrics-exposition-formats:1.1.0'
 
