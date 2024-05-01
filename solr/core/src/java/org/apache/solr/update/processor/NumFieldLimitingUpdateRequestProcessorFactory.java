@@ -71,6 +71,7 @@ public class NumFieldLimitingUpdateRequestProcessorFactory extends UpdateRequest
     core.registerNewSearcherListener(numFieldsMonitor);
   }
 
+  @Override
   public void init(NamedList<?> args) {
     warnOnly = args.indexOf(WARN_ONLY_PARAM, 0) > 0 ? args.getBooleanArg(WARN_ONLY_PARAM) : false;
 
