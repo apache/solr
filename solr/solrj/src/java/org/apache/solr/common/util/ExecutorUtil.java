@@ -181,26 +181,16 @@ public class ExecutorUtil {
    */
   public static void awaitTerminationForever(ExecutorService pool) {
     boolean shutdown = false;
-    while (!shutdown) {
-      try {
-        try {
-          // Wait a while for existing tasks to terminate
-          shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
-        } catch (InterruptedException ie) {
-          // Force cancel if current thread also interrupted
-          pool.shutdownNow();
-          // Preserve interrupt status
-          Thread.currentThread().interrupt();
-          if (!pool.awaitTermination(60, TimeUnit.SECONDS)) {
-            // there was an issue shutting down the threads, so throw a RuntimeException,
-            // using the original InterruptedException as a cause
-            throw ie;
-          }
-        }
-      } catch (InterruptedException e) {
-        log.error("Threads from pool {} did not forcefully stop.", pool);
-        throw new RuntimeException("Timeout waiting for pool " + pool + " to shutdown.", e);
+    try {
+      while (!shutdown) {
+        // Wait a while for existing tasks to terminate
+        shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
       }
+    } catch (InterruptedException e) {
+      // Force cancel if current thread also interrupted
+      pool.shutdownNow();
+      // Preserve interrupt status
+      Thread.currentThread().interrupt();
     }
   }
 
