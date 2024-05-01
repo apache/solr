@@ -18,163 +18,154 @@ package org.apache.solr.metrics.prometheus;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import io.prometheus.metrics.core.metrics.Counter;
 import io.prometheus.metrics.core.metrics.Gauge;
-import io.prometheus.metrics.model.registry.PrometheusRegistry;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.Labels;
+import io.prometheus.metrics.model.snapshots.MetricMetadata;
+import io.prometheus.metrics.model.snapshots.MetricSnapshot;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Base class for all {@link SolrPrometheusRegistry} holding {@link PrometheusRegistry}. Can export
- * {@link Meter} to {@link io.prometheus.metrics.core.metrics.Metric}
+ * Base class for all {@link SolrPrometheusRegistry} holding {@link MetricSnapshot}s. Can export
+ * {@link Meter} to {@link MetricSnapshot} to be outputted for {@link
+ * org.apache.solr.response.PrometheusResponseWriter}
  */
 public abstract class SolrPrometheusRegistry {
-  PrometheusRegistry prometheusRegistry;
-  String registryName;
-  private final Map<String, Counter> metricCounters;
-  private final Map<String, Gauge> metricGauges;
+  private final Map<String, List<CounterSnapshot.CounterDataPointSnapshot>> metricCounters;
+  private final Map<String, List<GaugeSnapshot.GaugeDataPointSnapshot>> metricGauges;
 
-  public SolrPrometheusRegistry(PrometheusRegistry prometheusRegistry) {
-    this.prometheusRegistry = prometheusRegistry;
+  public SolrPrometheusRegistry() {
     this.metricCounters = new HashMap<>();
     this.metricGauges = new HashMap<>();
   }
 
-  public PrometheusRegistry getPrometheusRegistry() {
-    return prometheusRegistry;
-  }
-
-  public String getRegistryName() {
-    return registryName;
-  }
-
   /**
-   * Export {@link Meter} to {@link Counter}. Registers new {@link Counter} to {@link
-   * PrometheusRegistry} metric name does not exist
+   * Export {@link Meter} to {@link CounterSnapshot}. Registers new Prometheus Metric and {@link
+   * io.prometheus.metrics.model.snapshots.CounterSnapshot.CounterDataPointSnapshot} if metric does
+   * not exist
    *
-   * @param dropwizardMetric the {@link Meter} to be exported
    * @param prometheusMetricName name of prometheus metric
-   * @param labelsMap label names and values to register with {@link Counter}
+   * @param dropwizardMetric the {@link Meter} to be exported
+   * @param labels label names and values to register with {@link CounterSnapshot}
    */
   public void exportMeter(
-      Meter dropwizardMetric, String prometheusMetricName, Map<String, String> labelsMap) {
+      String prometheusMetricName, Meter dropwizardMetric, Map<String, String> labels) {
+    CounterSnapshot.CounterDataPointSnapshot dataPointBuilder =
+        CounterSnapshot.CounterDataPointSnapshot.builder()
+            .value(dropwizardMetric.getCount())
+            .labels(Labels.of(new ArrayList<>(labels.keySet()), new ArrayList<>(labels.values())))
+            .build();
     if (!metricCounters.containsKey(prometheusMetricName)) {
-      ArrayList<String> labels = new ArrayList<>(labelsMap.keySet());
-      registerCounter(prometheusMetricName, labels.toArray(String[]::new));
+      metricCounters.put(prometheusMetricName, new ArrayList<>());
     }
-    ArrayList<String> labelValues = new ArrayList<>(labelsMap.values());
-    getMetricCounter(prometheusMetricName)
-        .labelValues(labelValues.toArray(String[]::new))
-        .inc(dropwizardMetric.getCount());
+    metricCounters.get(prometheusMetricName).add(dataPointBuilder);
   }
 
   /**
-   * Export {@link com.codahale.metrics.Counter} to {@link Counter}. Registers new {@link Counter}
-   * to {@link PrometheusRegistry} metric name does not exist
+   * Export {@link com.codahale.metrics.Counter} to {@link CounterSnapshot}. Registers new
+   * Prometheus Metric and {@link
+   * io.prometheus.metrics.model.snapshots.CounterSnapshot.CounterDataPointSnapshot} if metric does
+   * not exist
    *
-   * @param dropwizardMetric the {@link com.codahale.metrics.Counter} to be exported
    * @param prometheusMetricName name of prometheus metric
-   * @param labelsMap label names and values to record with {@link Counter}
+   * @param dropwizardMetric the {@link com.codahale.metrics.Counter} to be exported
+   * @param labels label names and values to record with {@link CounterSnapshot}
    */
   public void exportCounter(
-      com.codahale.metrics.Counter dropwizardMetric,
       String prometheusMetricName,
-      Map<String, String> labelsMap) {
+      com.codahale.metrics.Counter dropwizardMetric,
+      Map<String, String> labels) {
+    CounterSnapshot.CounterDataPointSnapshot dataPointBuilder =
+        CounterSnapshot.CounterDataPointSnapshot.builder()
+            .value(dropwizardMetric.getCount())
+            .labels(Labels.of(new ArrayList<>(labels.keySet()), new ArrayList<>(labels.values())))
+            .build();
     if (!metricCounters.containsKey(prometheusMetricName)) {
-      ArrayList<String> labels = new ArrayList<>(labelsMap.keySet());
-      registerCounter(prometheusMetricName, labels.toArray(String[]::new));
+      metricCounters.put(prometheusMetricName, new ArrayList<>());
     }
-    ArrayList<String> labelValues = new ArrayList<>(labelsMap.values());
-    getMetricCounter(prometheusMetricName)
-        .labelValues(labelValues.toArray(String[]::new))
-        .inc(dropwizardMetric.getCount());
+    metricCounters.get(prometheusMetricName).add(dataPointBuilder);
   }
 
   /**
-   * Export {@link Timer} to {@link Gauge}. Registers new {@link Gauge} to {@link
-   * PrometheusRegistry} metric name does not exist
+   * Export {@link Timer} to {@link GaugeSnapshot}. Registers new Prometheus Metric and {@link
+   * io.prometheus.metrics.model.snapshots.GaugeSnapshot.GaugeDataPointSnapshot} if metric does not
+   * exist
    *
-   * @param dropwizardMetric the {@link Timer} to be exported
    * @param prometheusMetricName name of prometheus metric
-   * @param labelsMap label names and values to record with {@link Gauge}
+   * @param dropwizardMetric the {@link Timer} to be exported
+   * @param labels label names and values to record with {@link GaugeSnapshot}
    */
   public void exportTimer(
-      Timer dropwizardMetric, String prometheusMetricName, Map<String, String> labelsMap) {
+      String prometheusMetricName, Timer dropwizardMetric, Map<String, String> labels) {
+    GaugeSnapshot.GaugeDataPointSnapshot dataPointBuilder =
+        GaugeSnapshot.GaugeDataPointSnapshot.builder()
+            .value(dropwizardMetric.getCount())
+            .labels(Labels.of(new ArrayList<>(labels.keySet()), new ArrayList<>(labels.values())))
+            .build();
     if (!metricGauges.containsKey(prometheusMetricName)) {
-      ArrayList<String> labels = new ArrayList<>(labelsMap.keySet());
-      registerGauge(prometheusMetricName, labels.toArray(String[]::new));
+      metricGauges.put(prometheusMetricName, new ArrayList<>());
     }
-    ArrayList<String> labelValues = new ArrayList<>(labelsMap.values());
-    getMetricGauge(prometheusMetricName)
-        .labelValues(labelValues.toArray(String[]::new))
-        .set(dropwizardMetric.getMeanRate());
+    metricGauges.get(prometheusMetricName).add(dataPointBuilder);
   }
 
   /**
-   * Export {@link Timer} to {@link Gauge}. Registers new {@link Gauge} to {@link
-   * PrometheusRegistry} metric name does not exist
+   * Export {@link com.codahale.metrics.Gauge} to {@link GaugeSnapshot}. Registers new Prometheus
+   * Metric and {@link io.prometheus.metrics.model.snapshots.GaugeSnapshot.GaugeDataPointSnapshot}
+   * if metric does not exist
    *
-   * @param dropwizardMetricRaw the {@link com.codahale.metrics.Gauge} to be exported
    * @param prometheusMetricName name of prometheus metric
+   * @param dropwizardMetricRaw the {@link com.codahale.metrics.Gauge} to be exported
    * @param labelsMap label names and values to record with {@link Gauge}
    */
   public void exportGauge(
-      com.codahale.metrics.Gauge<?> dropwizardMetricRaw,
       String prometheusMetricName,
+      com.codahale.metrics.Gauge<?> dropwizardMetricRaw,
       Map<String, String> labelsMap) {
     Object dropwizardMetric = (dropwizardMetricRaw).getValue();
     if (!metricGauges.containsKey(prometheusMetricName)) {
-      ArrayList<String> labels = new ArrayList<>(labelsMap.keySet());
-      if (dropwizardMetric instanceof HashMap) {
-        labels.add("item");
-      }
-      registerGauge(prometheusMetricName, labels.toArray(String[]::new));
+      metricGauges.put(prometheusMetricName, new ArrayList<>());
     }
-    ArrayList<String> labelValues = new ArrayList<>(labelsMap.values());
-    String[] labels = labelValues.toArray(String[]::new);
     if (dropwizardMetric instanceof Number) {
-      getMetricGauge(prometheusMetricName)
-          .labelValues(labels)
-          .set(((Number) dropwizardMetric).doubleValue());
+      GaugeSnapshot.GaugeDataPointSnapshot dataPointBuilder =
+          GaugeSnapshot.GaugeDataPointSnapshot.builder()
+              .value(((Number) dropwizardMetric).doubleValue())
+              .labels(
+                  Labels.of(
+                      new ArrayList<>(labelsMap.keySet()), new ArrayList<>(labelsMap.values())))
+              .build();
+      metricGauges.get(prometheusMetricName).add(dataPointBuilder);
     } else if (dropwizardMetric instanceof HashMap) {
       HashMap<?, ?> itemsMap = (HashMap<?, ?>) dropwizardMetric;
       for (Object item : itemsMap.keySet()) {
         if (itemsMap.get(item) instanceof Number) {
-          String[] newLabels = new String[labels.length + 1];
-          System.arraycopy(labels, 0, newLabels, 0, labels.length);
-          newLabels[labels.length] = (String) item;
-          getMetricGauge(prometheusMetricName)
-              .labelValues(newLabels)
-              .set(((Number) itemsMap.get(item)).doubleValue());
+          List<String> labelKeys = new ArrayList<>(labelsMap.keySet());
+          labelKeys.add("item");
+          List<String> labelValues = new ArrayList<>(labelsMap.values());
+          labelValues.add((String) item);
+          GaugeSnapshot.GaugeDataPointSnapshot dataPointBuilder =
+              GaugeSnapshot.GaugeDataPointSnapshot.builder()
+                  .value(((Number) itemsMap.get(item)).doubleValue())
+                  .labels(Labels.of(labelKeys, labelValues))
+                  .build();
+          metricGauges.get(prometheusMetricName).add(dataPointBuilder);
         }
       }
     }
   }
 
-  private Counter getMetricCounter(String metricName) {
-    return metricCounters.get(metricName);
-  }
-
-  private Gauge getMetricGauge(String metricName) {
-    return metricGauges.get(metricName);
-  }
-
-  private void registerCounter(String metricName, String... labelNames) {
-    Counter counter =
-        io.prometheus.metrics.core.metrics.Counter.builder()
-            .name(metricName)
-            .labelNames(labelNames)
-            .register(prometheusRegistry);
-    metricCounters.put(metricName, counter);
-  }
-
-  private void registerGauge(String metricName, String... labelNames) {
-    Gauge gauge =
-        io.prometheus.metrics.core.metrics.Gauge.builder()
-            .name(metricName)
-            .labelNames(labelNames)
-            .register(prometheusRegistry);
-    metricGauges.put(metricName, gauge);
+  public MetricSnapshots collect() {
+    ArrayList<MetricSnapshot> snapshots = new ArrayList<>();
+    for (String names : metricCounters.keySet()) {
+      snapshots.add(new CounterSnapshot(new MetricMetadata(names), metricCounters.get(names)));
+    }
+    for (String names : metricGauges.keySet()) {
+      snapshots.add(new GaugeSnapshot(new MetricMetadata(names), metricGauges.get(names)));
+    }
+    return new MetricSnapshots(snapshots);
   }
 }

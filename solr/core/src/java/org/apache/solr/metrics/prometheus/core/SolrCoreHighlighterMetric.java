@@ -42,7 +42,7 @@ public class SolrCoreHighlighterMetric extends SolrCoreMetric {
   public void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry) {
     if (dropwizardMetric instanceof Counter) {
       solrPrometheusCoreRegistry.exportCounter(
-          (Counter) dropwizardMetric, CORE_HIGHLIGHER_METRICS, labels);
+          CORE_HIGHLIGHER_METRICS, (Counter) dropwizardMetric, labels);
     }
   }
 }

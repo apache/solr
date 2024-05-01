@@ -42,7 +42,7 @@ public class SolrCoreCacheMetric extends SolrCoreMetric {
   public void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry) {
     if (dropwizardMetric instanceof Gauge) {
       solrPrometheusCoreRegistry.exportGauge(
-          (Gauge<?>) dropwizardMetric, CORE_CACHE_SEARCHER_METRICS, labels);
+          CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, labels);
     }
   }
 }

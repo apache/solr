@@ -38,7 +38,7 @@ public class SolrCoreIndexMetric extends SolrCoreMetric {
     if (dropwizardMetric instanceof Gauge) {
       if (metricName.endsWith("sizeInBytes")) {
         solrPrometheusCoreRegistry.exportGauge(
-            (Gauge<?>) dropwizardMetric, CORE_INDEX_METRICS, labels);
+            CORE_INDEX_METRICS, (Gauge<?>) dropwizardMetric, labels);
       }
     }
   }

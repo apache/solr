@@ -17,6 +17,6 @@
 
 /**
  * The {@link org.apache.solr.metrics.prometheus.core.SolrCoreMetric} is a wrapper to export {@link
- * com.codahale.metrics.Metric} to {@link io.prometheus.metrics.core.metrics.Metric}
+ * com.codahale.metrics.Metric} to {@link io.prometheus.metrics.model.snapshots.MetricSnapshot}
  */
 package org.apache.solr.metrics.prometheus.core;

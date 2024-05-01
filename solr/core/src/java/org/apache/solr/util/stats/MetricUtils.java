@@ -26,7 +26,6 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
-import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -195,7 +194,7 @@ public class MetricUtils {
       boolean skipHistograms,
       boolean skipAggregateValues,
       boolean compact,
-      Consumer<PrometheusRegistry> consumer) {
+      Consumer<SolrPrometheusCoreRegistry> consumer) {
     String coreName;
     boolean cloudMode = false;
     Map<String, Metric> dropwizardMetrics = registry.getMetrics();
@@ -212,7 +211,7 @@ public class MetricUtils {
     }
 
     SolrPrometheusCoreRegistry solrPrometheusCoreMetrics =
-        new SolrPrometheusCoreRegistry(new PrometheusRegistry(), coreName, cloudMode);
+        new SolrPrometheusCoreRegistry(coreName, cloudMode);
 
     toMaps(
         registry,
@@ -232,7 +231,7 @@ public class MetricUtils {
             log.warn("Error occurred exporting Dropwizard Metric to Prometheus", e);
           }
         });
-    consumer.accept(solrPrometheusCoreMetrics.getPrometheusRegistry());
+    consumer.accept(solrPrometheusCoreMetrics);
   }
 
   /**

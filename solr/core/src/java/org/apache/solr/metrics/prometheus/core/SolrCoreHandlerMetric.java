@@ -42,29 +42,33 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
     String type = parsedMetric[2];
     labels.put("category", category);
     labels.put("type", type);
-    if (!(dropwizardMetric instanceof Gauge)) {
-      labels.put("handler", handler);
-    }
+    labels.put("handler", handler);
     return this;
   }
 
   @Override
   public void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry) {
     if (dropwizardMetric instanceof Meter) {
-      solrPrometheusCoreRegistry.exportMeter((Meter) dropwizardMetric, CORE_REQUESTS_TOTAL, labels);
+      solrPrometheusCoreRegistry.exportMeter(CORE_REQUESTS_TOTAL, (Meter) dropwizardMetric, labels);
     } else if (dropwizardMetric instanceof Counter) {
       if (metricName.endsWith("requests")) {
         solrPrometheusCoreRegistry.exportCounter(
-            (Counter) dropwizardMetric, CORE_REQUESTS_TOTAL, labels);
+            CORE_REQUESTS_TOTAL, (Counter) dropwizardMetric, labels);
       } else if (metricName.endsWith("totalTime")) {
+        // Do not need type label for total time
+        labels.remove("type");
         solrPrometheusCoreRegistry.exportCounter(
-            (Counter) dropwizardMetric, CORE_REQUESTS_TOTAL_TIME, labels);
+            CORE_REQUESTS_TOTAL_TIME, (Counter) dropwizardMetric, labels);
       }
     } else if (dropwizardMetric instanceof Gauge) {
-      solrPrometheusCoreRegistry.exportGauge(
-          (Gauge<?>) dropwizardMetric, CORE_REQUESTS_UPDATE_HANDLER, labels);
+      if (!metricName.endsWith("handlerStart")) {
+        solrPrometheusCoreRegistry.exportGauge(
+            CORE_REQUESTS_UPDATE_HANDLER, (Gauge<?>) dropwizardMetric, labels);
+      }
     } else if (dropwizardMetric instanceof Timer) {
-      solrPrometheusCoreRegistry.exportTimer((Timer) dropwizardMetric, CORE_REQUEST_TIMES, labels);
+      // Do not need type label for request times
+      labels.remove("type");
+      solrPrometheusCoreRegistry.exportTimer(CORE_REQUEST_TIMES, (Timer) dropwizardMetric, labels);
     }
   }
 }

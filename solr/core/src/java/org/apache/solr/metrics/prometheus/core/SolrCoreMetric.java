@@ -24,6 +24,9 @@ import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
 /**
  * Base class is a wrapper to export {@link com.codahale.metrics.Metric} to {@link
  * io.prometheus.metrics.core.metrics.Metric} and register to a {@link SolrPrometheusCoreRegistry}
+ * {@link com.codahale.metrics.MetricRegistry} does not support tags unlike prometheus. Metrics
+ * registered to the registry need to be parsed out from the metric name and exported to {@link
+ * io.prometheus.metrics.model.snapshots.MetricSnapshot} be output to Prometheus
  */
 public abstract class SolrCoreMetric {
   public Metric dropwizardMetric;

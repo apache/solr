@@ -18,6 +18,7 @@ package org.apache.solr.metrics.prometheus.core;
 
 import static org.apache.solr.metrics.prometheus.core.SolrCoreCacheMetric.CORE_CACHE_SEARCHER_METRICS;
 
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
@@ -35,7 +36,7 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
   @Override
   public SolrCoreMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
-    if (dropwizardMetric instanceof Gauge) {
+    if (!(dropwizardMetric instanceof Counter)) {
       String type = parsedMetric[2];
       labels.put("type", type);
     }
@@ -47,13 +48,13 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
     if (dropwizardMetric instanceof Gauge) {
       if (metricName.endsWith("liveDocsCache")) {
         solrPrometheusCoreRegistry.exportGauge(
-            (Gauge<?>) dropwizardMetric, CORE_CACHE_SEARCHER_METRICS, labels);
+            CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, labels);
       } else {
         solrPrometheusCoreRegistry.exportGauge(
-            (Gauge<?>) dropwizardMetric, CORE_SEARCHER_METRICS, labels);
+            CORE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, labels);
       }
     } else if (dropwizardMetric instanceof Timer) {
-      solrPrometheusCoreRegistry.exportTimer((Timer) dropwizardMetric, CORE_SEARCHER_TIMES, labels);
+      solrPrometheusCoreRegistry.exportTimer(CORE_SEARCHER_TIMES, (Timer) dropwizardMetric, labels);
     }
   }
 }
