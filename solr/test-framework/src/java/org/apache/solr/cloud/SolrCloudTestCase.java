@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -58,7 +59,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +87,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String SAVED_PRS_DEFAULT_PROP = "_.saved.solr.prs.default";
+  @ClassRule
+  public static TestRule syspropRestore = new TestRuleRestoreSystemProperties(PRS_DEFAULT_PROP);
 
   // this is an important timeout for test stability - can't be too short
   public static final int DEFAULT_TIMEOUT = 45;
@@ -119,7 +122,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     // By default the MiniSolrCloudCluster being built will randomly (seed based) decide which
     // collection API strategy to use (distributed or Overseer based) and which cluster update
     // strategy to use (distributed if collection API is distributed, but Overseer based or
-    // distributed randomly chosen if Collection API is Overseer based)
+    // distributed randomly chosen if Collection API is Overseer based), and whether to use PRS
+
+    configurePrsDefault();
 
     boolean useDistributedCollectionConfigSetExecution = LuceneTestCase.random().nextInt(2) == 0;
     boolean useDistributedClusterStateUpdate =
@@ -127,6 +132,17 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return new MiniSolrCloudCluster.Builder(nodeCount, createTempDir())
         .withDistributedClusterStateUpdates(
             useDistributedCollectionConfigSetExecution, useDistributedClusterStateUpdate);
+  }
+
+  public static void configurePrsDefault() {
+    Class<?> target = RandomizedTest.getContext().getTargetClass();
+    boolean usePrs;
+    if (target != null && target.isAnnotationPresent(NoPrs.class)) {
+      usePrs = false;
+    } else {
+      usePrs = EnvUtils.getEnvAsBool(PRS_DEFAULT_PROP, LuceneTestCase.random().nextBoolean());
+    }
+    System.setProperty(PRS_DEFAULT_PROP, usePrs ? "true" : "false");
   }
 
   @AfterClass
@@ -137,35 +153,6 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       } finally {
         cluster = null;
       }
-    }
-  }
-
-  @BeforeClass
-  public static void setPrsDefault() {
-    Class<?> target = RandomizedTest.getContext().getTargetClass();
-    String existingPrsDefault = EnvUtils.getProperty(PRS_DEFAULT_PROP);
-    String newPrsDefault;
-    if (target != null && target.isAnnotationPresent(NoPrs.class)) {
-      if (existingPrsDefault != null) {
-        System.setProperty(SAVED_PRS_DEFAULT_PROP, existingPrsDefault);
-      }
-      newPrsDefault = "false";
-    } else if (existingPrsDefault != null) {
-      newPrsDefault = existingPrsDefault;
-    } else {
-      newPrsDefault = Boolean.toString(random().nextBoolean());
-    }
-    System.setProperty(PRS_DEFAULT_PROP, newPrsDefault);
-  }
-
-  @AfterClass
-  public static void unsetPrsDefault() {
-    String savedPrsDefault = System.getProperty(SAVED_PRS_DEFAULT_PROP);
-    System.clearProperty(SAVED_PRS_DEFAULT_PROP);
-    if (savedPrsDefault != null) {
-      System.setProperty(PRS_DEFAULT_PROP, savedPrsDefault);
-    } else {
-      System.clearProperty(PRS_DEFAULT_PROP);
     }
   }
 
