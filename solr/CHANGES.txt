@@ -17,7 +17,8 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+* SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
+  cluster metrics.  AttributeFetcherImpl was improved accordingly.  (Yohann Callea)
 
 Bug Fixes
 ---------------------
