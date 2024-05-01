@@ -2842,7 +2842,7 @@ public class ZkController implements Closeable {
   public Collection<String> publishNodeAsDown(String nodeName) {
     log.info("Publish node={} as DOWN", nodeName);
 
-    ClusterState clusterState = cc.getZkController().getClusterState();
+    ClusterState clusterState = getClusterState();
     Map<String, List<Replica>> replicasPerCollectionOnNode =
         clusterState.getReplicaNamesPerCollectionOnNode(nodeName);
     if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
