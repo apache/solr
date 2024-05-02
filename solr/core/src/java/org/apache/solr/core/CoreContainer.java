@@ -1083,9 +1083,9 @@ public class CoreContainer {
     } finally {
       if (asyncSolrCoreLoad) {
         coreContainerWorkExecutor.submit(
-            () -> ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor));
+            () -> ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor));
       } else {
-        ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor);
+        ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor);
       }
     }
 
