@@ -162,6 +162,7 @@ public class MiniSolrCloudCluster {
   private final Path baseDir;
   private CloudSolrClient solrClient;
   private final JettyConfig jettyConfig;
+  private final String solrXml;
   private final boolean trackJettyMetrics;
 
   private final AtomicInteger nodeIds = new AtomicInteger();
@@ -276,6 +277,7 @@ public class MiniSolrCloudCluster {
     Objects.requireNonNull(securityJson);
     this.baseDir = Objects.requireNonNull(baseDir);
     this.jettyConfig = Objects.requireNonNull(jettyConfig);
+    this.solrXml = solrXml == null ? DEFAULT_CLOUD_SOLR_XML : solrXml;
     this.trackJettyMetrics = trackJettyMetrics;
 
     log.info("Starting cluster of {} servers in {}", numServers, baseDir);
@@ -483,7 +485,6 @@ public class MiniSolrCloudCluster {
    */
   public JettySolrRunner startJettySolrRunner(String name, JettyConfig config, String solrXml)
       throws Exception {
-    // tell solr node to look in zookeeper for solr.xml
     final Properties nodeProps = new Properties();
     nodeProps.setProperty("zkHost", zkServer.getZkAddress());
 
@@ -511,7 +512,7 @@ public class MiniSolrCloudCluster {
    * @return a JettySolrRunner
    */
   public JettySolrRunner startJettySolrRunner() throws Exception {
-    return startJettySolrRunner(newNodeName(), jettyConfig, null);
+    return startJettySolrRunner(newNodeName(), jettyConfig, solrXml);
   }
 
   /**
