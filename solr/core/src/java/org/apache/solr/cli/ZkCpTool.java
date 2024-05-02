@@ -147,7 +147,7 @@ public class ZkCpTool extends ToolBase {
         } catch (SolrException e) {
           // Failed to load solr.xml
           throw new IllegalStateException(
-              "Failed to load solr.xml from ZK or SolrHome, put/get operations on compressed data will use data as is. If your intention is to read and de-compress data or compress and write data, then solr.xml must be accessible.");
+              "Failed to load solr.xml, put/get operations on compressed data will use data as is. If your intention is to read and de-compress data or compress and write data, then solr.xml must be accessible.");
         } catch (ClassNotFoundException
             | NoSuchMethodException
             | InstantiationException
