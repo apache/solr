@@ -7,11 +7,12 @@ https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-not
 ==================  9.6.1 ==================
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-17261: Remove unintended timeout of 60 seconds for core loading. (Houston Putman)
 
 Dependency Upgrades
 ---------------------
 (No changes)
+
 
 ==================  9.6.0 ==================
 New Features
