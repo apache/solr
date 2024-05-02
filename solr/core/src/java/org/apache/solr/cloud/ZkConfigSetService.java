@@ -69,6 +69,20 @@ public class ZkConfigSetService extends ConfigSetService {
     this.zkClient = zkClient;
   }
 
+  /**
+   * Do not perform Zk operations if configSetName is provided.
+   *
+   * <p>This is only used by {@link org.apache.solr.core.SyntheticSolrCore}, which is not registered
+   * with Zookeeper
+   */
+  @Override
+  protected SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd, String configSetName) {
+    return configSetName != null
+        ? new ZkSolrResourceLoader(
+            cd.getInstanceDir(), configSetName, parentLoader.getClassLoader(), zkController)
+        : createCoreResourceLoader(cd);
+  }
+
   @Override
   public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
     final String colName = cd.getCollectionName();
