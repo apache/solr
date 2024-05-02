@@ -17,14 +17,12 @@
 package org.apache.solr.cloud;
 
 import static org.apache.solr.cloud.SolrCloudTestCase.configurePrsDefault;
-import static org.apache.solr.cloud.api.collections.CreateCollectionCmd.PRS_DEFAULT_PROP;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -42,9 +40,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.BackupStatusChecker;
 import org.apache.solr.handler.ReplicationHandler;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things work as
@@ -57,10 +53,6 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
   private static final String SHARD1 = "shard1";
   private static final String ONE_NODE_COLLECTION = "onenodecollection";
   private final boolean onlyLeaderIndexes = random().nextBoolean();
-
-  @ClassRule
-  public static TestRule syspropRestore =
-      new TestRuleRestoreSystemProperties(NUMERIC_DOCVALUES_SYSPROP, PRS_DEFAULT_PROP);
 
   public AbstractBasicDistributedZk2TestBase() {
     super();
