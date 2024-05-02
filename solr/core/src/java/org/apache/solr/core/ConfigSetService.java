@@ -416,6 +416,7 @@ public abstract class ConfigSetService {
   protected SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd, String configSetName) {
     return createCoreResourceLoader(cd);
   }
+
   /**
    * Return a name for the ConfigSet for a core to be used for printing/diagnostic purposes.
    *
