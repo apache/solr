@@ -115,6 +115,8 @@ Bug Fixes
 ---------------------
 * SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
 
+* SOLR-17261: Remove unintended timeout of 60 seconds for core loading. (Houston Putman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
