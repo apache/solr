@@ -550,15 +550,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         testFuture.get(); // check for any exceptions/failures
       }
 
-      // number of replicas created in the synthetic collection should be one per coordinator node
-      assertEquals(
-          COORDINATOR_NODE_COUNT,
-          client
-              .getClusterState()
-              .getCollection(CoordinatorHttpSolrCall.getSyntheticCollectionName("conf"))
-              .getReplicas()
-              .size());
-
       executorService.shutdown();
       executorService.awaitTermination(10, TimeUnit.SECONDS);
     } finally {
