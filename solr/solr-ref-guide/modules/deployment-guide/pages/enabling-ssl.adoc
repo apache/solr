@@ -229,7 +229,7 @@ The examples below use the `zkcli` tool that comes with Solr to do this.
 [.tab-label]**nix Command*
 [source,terminal]
 ----
-$ server/scripts/cloud-scripts/zkcli.sh -zkhost server1:2181,server2:2181,server3:2181 -cmd clusterprop -name urlScheme -val https
+$ bin/solr cluster -property urlSchema -value https -z server1:2181,server2:2181,server3:2181
 ----
 ====
 
@@ -238,7 +238,7 @@ $ server/scripts/cloud-scripts/zkcli.sh -zkhost server1:2181,server2:2181,server
 [.tab-label]*Windows Command*
 [source,powershell]
 ----
-C:\> server\scripts\cloud-scripts\zkcli.bat -zkhost server1:2181,server2:2181,server3:2181 -cmd clusterprop -name urlScheme -val https
+C:\> bin/solr.cmd -property urlSchema -value https -z server1:2181,server2:2181,server3:2181
 ----
 =====
 --

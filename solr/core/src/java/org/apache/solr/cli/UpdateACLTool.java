@@ -14,27 +14,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.cli;
 
 import java.io.PrintStream;
-import java.lang.invoke.MethodHandles;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-/** Supports zk mkroot command in the bin/solr script. */
-public class ZkMkrootTool extends ToolBase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+/**
+ * Supports updating ACL for a path in ZK
+ *
+ * <p>Set ACL properties by directly manipulating ZooKeeper.
+ */
+public class UpdateACLTool extends ToolBase {
+  // It is a shame this tool doesn't more closely mimic how the ConfigTool works.
 
-  public ZkMkrootTool() {
+  public UpdateACLTool() {
     this(CLIO.getOutStream());
   }
 
-  public ZkMkrootTool(PrintStream stdout) {
+  public UpdateACLTool(PrintStream stdout) {
     super(stdout);
+  }
+
+  @Override
+  public String getName() {
+    return "updateacls";
   }
 
   @Override
@@ -45,39 +55,29 @@ public class ZkMkrootTool extends ToolBase {
             .argName("PATH")
             .hasArg()
             .required(true)
-            .desc("Path to create.")
+            .desc("The path to update.")
             .build(),
-        Option.builder()
-            .longOpt("fail-on-exists")
-            .hasArg()
-            .required(false)
-            .desc("Raise an error if the root exists.  Defaults to false.")
-            .build(),
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_VERBOSE);
-  }
-
-  @Override
-  public String getName() {
-    return "mkroot";
+        SolrCLI.OPTION_ZKHOST);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
+
+    String path = cli.getOptionValue("path");
     String zkHost = SolrCLI.getZkHost(cli);
-    boolean failOnExists = cli.hasOption("fail-on-exists");
 
-    try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+    if (!ZkController.checkChrootPath(zkHost, true)) {
+      throw new IllegalStateException(
+          "A chroot was specified in zkHost but the znode doesn't exist.");
+    }
 
-      String znode = cli.getOptionValue("path");
-      echo("Creating ZooKeeper path " + znode + " on ZooKeeper at " + zkHost);
-      zkClient.makePath(znode, failOnExists, true);
-    } catch (Exception e) {
-      log.error("Could not complete mkroot operation for reason: ", e);
-      throw (e);
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkHost)
+            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
+
+      zkClient.updateACLs(path);
     }
   }
 }

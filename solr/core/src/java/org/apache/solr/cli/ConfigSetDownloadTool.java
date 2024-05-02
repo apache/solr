@@ -43,19 +43,22 @@ public class ConfigSetDownloadTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("confname")
-            .argName("confname")
+        Option.builder("n")
+            .longOpt("confname")
+            .argName("NAME")
             .hasArg()
             .required(true)
             .desc("Configset name in ZooKeeper.")
             .build(),
-        Option.builder("confdir")
-            .argName("confdir")
+        Option.builder("d")
+            .longOpt("confdir")
+            .argName("DIR")
             .hasArg()
             .required(true)
             .desc("Local directory with configs.")
             .build(),
         SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_VERBOSE);
   }
 

@@ -63,6 +63,9 @@ Deprecation Removals
   in favor of the new CompletableFuture based methods.  Remove the related deprecated interfaces `AsyncListener` and ``Cancellable`
   (James Dyer)
 
+* SOLR-14115: Remove deprecated zkcli script in favour of equivalent bin/solr sub commmands. (Eric Pugh)
+
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -91,6 +94,36 @@ Other Changes
 * SOLR-14410: Switch from SysV init script to systemd service definition (Marius Ghita via janhoy)
 
 * SOLR-17205: De-couple SolrJ required Java version from server Java version (janhoy)
+
+==================  9.7.0 ==================
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+* SOLR-16921: use -solrUrl to derive the zk host connection for bin/solr zk subcommands (Eric Pugh)
+
+* SOLR-14115: Add linkconfig, cluster, and updateacls as commands to SolrCLI.  Allow bin/solr commands to have parity with zkcli.sh commands. (Eric Pugh)
+
+Optimizations
+---------------------
+* SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
+  cluster metrics.  AttributeFetcherImpl was improved accordingly.  (Yohann Callea)
+
+Bug Fixes
+---------------------
+* SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
+
+* SOLR-17261: Remove unintended timeout of 60 seconds for core loading. (Houston Putman)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
 
 ==================  9.6.0 ==================
 New Features

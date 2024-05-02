@@ -75,7 +75,7 @@
     }
   ],
   "schedule": [
-    "* * * * *"
+    "* * * * 0"
   ],
   "prConcurrentLimit": 50,
   "prHourlyLimit": 10,
