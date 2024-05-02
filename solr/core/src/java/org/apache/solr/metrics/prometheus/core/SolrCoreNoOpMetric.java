@@ -17,7 +17,7 @@
 package org.apache.solr.metrics.prometheus.core;
 
 import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
+import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
 
 public class SolrCoreNoOpMetric extends SolrCoreMetric {
 
@@ -32,5 +32,5 @@ public class SolrCoreNoOpMetric extends SolrCoreMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry) {}
+  public void toPrometheus(SolrPrometheusCoreExporter solrPrometheusCoreRegistry) {}
 }

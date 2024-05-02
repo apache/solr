@@ -31,7 +31,7 @@ import org.apache.solr.metrics.prometheus.core.SolrCoreTlogMetric;
  * This class maintains a {@link io.prometheus.metrics.model.snapshots.MetricSnapshot}s exported
  * from solr.core {@link com.codahale.metrics.MetricRegistry}
  */
-public class SolrPrometheusCoreRegistry extends SolrPrometheusRegistry {
+public class SolrPrometheusCoreExporter extends SolrPrometheusExporter {
   public final String coreName;
   public final boolean cloudMode;
   public static final String ADMIN = "ADMIN";
@@ -45,7 +45,7 @@ public class SolrPrometheusCoreRegistry extends SolrPrometheusRegistry {
   public static final String INDEX = "INDEX";
   public static final String CORE = "CORE";
 
-  public SolrPrometheusCoreRegistry(String coreName, boolean cloudMode) {
+  public SolrPrometheusCoreExporter(String coreName, boolean cloudMode) {
     super();
     this.coreName = coreName;
     this.cloudMode = cloudMode;
@@ -58,6 +58,7 @@ public class SolrPrometheusCoreRegistry extends SolrPrometheusRegistry {
    * @param dropwizardMetric the {@link Meter} to be exported
    * @param metricName Dropwizard metric name
    */
+  @Override
   public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {
     SolrCoreMetric solrCoreMetric = categorizeCoreMetric(dropwizardMetric, metricName);
     solrCoreMetric.parseLabels().toPrometheus(this);

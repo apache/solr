@@ -38,7 +38,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.metrics.prometheus.SolrPrometheusRegistry;
+import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -703,7 +703,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     NamedList<?> values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList<?>) values.get("metrics");
-    SolrPrometheusRegistry registry = (SolrPrometheusRegistry) values.get("solr.core.collection1");
+    SolrPrometheusExporter registry = (SolrPrometheusExporter) values.get("solr.core.collection1");
     assertNotNull(registry);
     MetricSnapshots actualSnapshots = registry.collect();
     assertNotNull(actualSnapshots);

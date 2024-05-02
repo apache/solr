@@ -22,7 +22,9 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
+import io.prometheus.metrics.model.snapshots.Labels;
+import java.util.ArrayList;
+import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
 
 /** Dropwizard metrics of name SEARCHER.* */
 public class SolrCoreSearcherMetric extends SolrCoreMetric {
@@ -45,17 +47,24 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusCoreRegistry solrPrometheusCoreRegistry) {
+  public void toPrometheus(SolrPrometheusCoreExporter solrPrometheusCoreRegistry) {
     if (dropwizardMetric instanceof Gauge) {
       if (metricName.endsWith("liveDocsCache")) {
         solrPrometheusCoreRegistry.exportGauge(
-            CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, labels);
+            CORE_CACHE_SEARCHER_METRICS,
+            (Gauge<?>) dropwizardMetric,
+            Labels.of(new ArrayList<>(labels.keySet()), new ArrayList<>(labels.values())));
       } else {
         solrPrometheusCoreRegistry.exportGauge(
-            CORE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, labels);
+            CORE_SEARCHER_METRICS,
+            (Gauge<?>) dropwizardMetric,
+            Labels.of(new ArrayList<>(labels.keySet()), new ArrayList<>(labels.values())));
       }
     } else if (dropwizardMetric instanceof Timer) {
-      solrPrometheusCoreRegistry.exportTimer(CORE_SEARCHER_TIMES, (Timer) dropwizardMetric, labels);
+      solrPrometheusCoreRegistry.exportTimer(
+          CORE_SEARCHER_TIMES,
+          (Timer) dropwizardMetric,
+          Labels.of(new ArrayList<>(labels.keySet()), new ArrayList<>(labels.values())));
     }
   }
 }

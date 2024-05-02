@@ -56,7 +56,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
+import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,7 +171,7 @@ public class MetricUtils {
 
   /**
    * Provides a representation of the given Dropwizard metric registry as {@link
-   * SolrPrometheusCoreRegistry}-s. Only those metrics are converted which match at least one of the
+   * SolrPrometheusCoreExporter}-s. Only those metrics are converted which match at least one of the
    * given MetricFilter instances.
    *
    * @param registry the {@link MetricRegistry} to be converted
@@ -183,7 +183,7 @@ public class MetricUtils {
    * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
    * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
    * @param compact use compact representation for counters and gauges.
-   * @param consumer consumer that accepts produced {@link SolrPrometheusCoreRegistry}-s
+   * @param consumer consumer that accepts produced {@link SolrPrometheusCoreExporter}-s
    */
   public static void toPrometheusRegistry(
       MetricRegistry registry,
@@ -194,7 +194,7 @@ public class MetricUtils {
       boolean skipHistograms,
       boolean skipAggregateValues,
       boolean compact,
-      Consumer<SolrPrometheusCoreRegistry> consumer) {
+      Consumer<SolrPrometheusCoreExporter> consumer) {
     String coreName;
     boolean cloudMode = false;
     Map<String, Metric> dropwizardMetrics = registry.getMetrics();
@@ -210,8 +210,8 @@ public class MetricUtils {
       coreName = registryName;
     }
 
-    SolrPrometheusCoreRegistry solrPrometheusCoreMetrics =
-        new SolrPrometheusCoreRegistry(coreName, cloudMode);
+    SolrPrometheusCoreExporter solrPrometheusCoreExporter =
+        new SolrPrometheusCoreExporter(coreName, cloudMode);
 
     toMaps(
         registry,
@@ -225,13 +225,13 @@ public class MetricUtils {
         (metricName, metric) -> {
           try {
             Metric dropwizardMetric = dropwizardMetrics.get(metricName);
-            solrPrometheusCoreMetrics.exportDropwizardMetric(dropwizardMetric, metricName);
+            solrPrometheusCoreExporter.exportDropwizardMetric(dropwizardMetric, metricName);
           } catch (Exception e) {
             // Do not fail entirely for metrics exporting. Log and try to export next metric
             log.warn("Error occurred exporting Dropwizard Metric to Prometheus", e);
           }
         });
-    consumer.accept(solrPrometheusCoreMetrics);
+    consumer.accept(solrPrometheusCoreExporter);
   }
 
   /**

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
+import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
 import org.apache.solr.request.SolrQueryRequest;
 
 @SuppressWarnings(value = "unchecked")
@@ -29,7 +29,6 @@ public class PrometheusResponseWriter extends RawResponseWriter {
   @Override
   public void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
       throws IOException {
-
     NamedList<Object> prometheusRegistries =
         (NamedList<Object>) response.getValues().get("metrics");
     Map<String, Object> registryMap = prometheusRegistries.asShallowMap();
@@ -37,7 +36,7 @@ public class PrometheusResponseWriter extends RawResponseWriter {
     registryMap.forEach(
         (name, registry) -> {
           try {
-            SolrPrometheusCoreRegistry prometheusRegistry = (SolrPrometheusCoreRegistry) registry;
+            SolrPrometheusCoreExporter prometheusRegistry = (SolrPrometheusCoreExporter) registry;
             prometheusTextFormatWriter.write(out, prometheusRegistry.collect());
           } catch (IOException e) {
             throw new RuntimeException(e);
