@@ -21,6 +21,7 @@ import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -43,7 +44,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
     PrometheusResponseWriter w = new PrometheusResponseWriter();
     NamedList<Object> registries = new SimpleOrderedMap<>();
-    ByteArrayOutputStream actual = new ByteArrayOutputStream();
+    ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
     Labels expectedLabels = Labels.of("test", "test-value");
 
     SolrPrometheusCoreExporter registry = new SolrPrometheusCoreExporter("collection1", false);
@@ -56,11 +57,11 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     registries.add("solr.core.collection1", registry);
     rsp.add("metrics", registries);
 
-    w.write(actual, req, rsp);
-    String test = actual.toString();
+    w.write(byteOut, req, rsp);
+    String actual = byteOut.toString(StandardCharsets.UTF_8);
     assertEquals(
         "# TYPE test_counter_metric_name_total counter\ntest_counter_metric_name_total{test=\"test-value\"} 1.234\n# TYPE test_gauge_metric_name gauge\ntest_gauge_metric_name{test=\"test-value\"} 9.876\n",
-        actual.toString());
+        actual);
     req.close();
   }
 }
