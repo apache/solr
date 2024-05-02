@@ -22,12 +22,11 @@ import java.util.Map;
 import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
 
 /**
- * Base class is a wrapper to export {@link com.codahale.metrics.Metric} to {@link
- * io.prometheus.metrics.model.snapshots.MetricSnapshot} and register to a {@link
- * SolrPrometheusCoreRegistry} {@link com.codahale.metrics.MetricRegistry} does not support tags
+ * Base class is a wrapper to categorize and export {@link com.codahale.metrics.Metric} to {@link
+ * io.prometheus.metrics.model.snapshots.DataPointSnapshot} and register to a {@link
+ * SolrPrometheusCoreRegistry}. {@link com.codahale.metrics.MetricRegistry} does not support tags
  * unlike prometheus. Metrics registered to the registry need to be parsed out from the metric name
- * and exported to {@link io.prometheus.metrics.model.snapshots.MetricSnapshot} be output to
- * Prometheus
+ * to be exported to {@link io.prometheus.metrics.model.snapshots.DataPointSnapshot}
  */
 public abstract class SolrCoreMetric {
   public Metric dropwizardMetric;

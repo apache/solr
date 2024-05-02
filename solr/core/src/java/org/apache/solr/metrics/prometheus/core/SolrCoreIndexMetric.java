@@ -20,6 +20,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
 
+/** Dropwizard metrics of name INDEX.* */
 public class SolrCoreIndexMetric extends SolrCoreMetric {
   public static final String CORE_INDEX_METRICS = "solr_metrics_core_index_size_bytes";
 

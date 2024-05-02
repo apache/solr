@@ -23,6 +23,7 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
 import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
 
+/** Dropwizard metrics of name ADMIN/QUERY/UPDATE/REPLICATION.* */
 public class SolrCoreHandlerMetric extends SolrCoreMetric {
   public static final String CORE_REQUESTS_TOTAL = "solr_metrics_core_requests";
   public static final String CORE_REQUESTS_UPDATE_HANDLER = "solr_metrics_core_update_handler";

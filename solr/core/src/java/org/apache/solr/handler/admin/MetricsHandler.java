@@ -181,7 +181,6 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
   private NamedList<Object> handlePrometheusRegistry(SolrParams params) {
     NamedList<Object> response = new SimpleOrderedMap<>();
-    boolean compact = params.getBool(COMPACT_PARAM, false);
     MetricFilter mustMatchFilter = parseMustMatchFilter(params);
     Predicate<CharSequence> propertyFilter = parsePropertyFilter(params);
     List<MetricType> metricTypes = parseMetricTypes(params);
@@ -201,7 +200,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
             propertyFilter,
             false,
             false,
-            compact,
+            true,
             (registry) -> {
               response.add(registryName, registry);
             });

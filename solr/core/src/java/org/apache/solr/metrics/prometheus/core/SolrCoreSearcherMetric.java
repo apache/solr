@@ -24,6 +24,7 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
 import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
 
+/** Dropwizard metrics of name SEARCHER.* */
 public class SolrCoreSearcherMetric extends SolrCoreMetric {
   public static final String CORE_SEARCHER_METRICS = "solr_metrics_core_searcher_documents";
   public static final String CORE_SEARCHER_TIMES = "solr_metrics_core_average_searcher_warmup_time";

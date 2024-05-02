@@ -20,6 +20,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusCoreRegistry;
 
+/** Dropwizard metrics of name CACHE.* */
 public class SolrCoreCacheMetric extends SolrCoreMetric {
   public static final String CORE_CACHE_SEARCHER_METRICS = "solr_metrics_core_cache";
 
