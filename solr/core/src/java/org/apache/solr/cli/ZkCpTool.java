@@ -88,86 +88,85 @@ public class ZkCpTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
 
-    try (SolrZkClient zkClient =
-                 new SolrZkClient.Builder()
-                         .withUrl(zkHost)
-                         .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+    echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
+    String src = cli.getOptionValue("src");
+    String dst = cli.getOptionValue("dst");
+    Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
+    echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
 
-                         .build()) {
-    try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
-      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-      String src = cli.getOptionValue("src");
-      String dst = cli.getOptionValue("dst");
-      Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
-      echo("Copying from '" + src + "' to '" + dst + "'. ZooKeeper at " + zkHost);
+    boolean srcIsZk = src.toLowerCase(Locale.ROOT).startsWith("zk:");
+    boolean dstIsZk = dst.toLowerCase(Locale.ROOT).startsWith("zk:");
 
-      boolean srcIsZk = src.toLowerCase(Locale.ROOT).startsWith("zk:");
-      boolean dstIsZk = dst.toLowerCase(Locale.ROOT).startsWith("zk:");
+    String srcName = src;
+    if (srcIsZk) {
+      srcName = src.substring(3);
+    } else if (srcName.toLowerCase(Locale.ROOT).startsWith("file:")) {
+      srcName = srcName.substring(5);
+    }
 
-      String srcName = src;
-      if (srcIsZk) {
-        srcName = src.substring(3);
-      } else if (srcName.toLowerCase(Locale.ROOT).startsWith("file:")) {
-        srcName = srcName.substring(5);
+    String dstName = dst;
+    if (dstIsZk) {
+      dstName = dst.substring(3);
+      if (!dstName.startsWith("/")) {
+        dstName = "/" + dstName;
+      }
+    } else {
+      if (dstName.toLowerCase(Locale.ROOT).startsWith("file:")) {
+        dstName = dstName.substring(5);
+      }
+    }
+
+    int minStateByteLenForCompression = -1;
+    Compressor compressor = new ZLibCompressor();
+
+    if (dstIsZk) {
+      String solrHome = cli.getOptionValue("solr-home");
+      if (StrUtils.isNullOrEmpty(solrHome)) {
+        solrHome = System.getProperty("solr.home");
       }
 
-      String dstName = dst;
-      if (dstIsZk) {
-        dstName = dst.substring(3);
-        if (!dstName.startsWith("/")) {
-          dstName = "/" + dstName;
-        }
-      } else {
-        if (dstName.toLowerCase(Locale.ROOT).startsWith("file:")) {
-          dstName = dstName.substring(5);
-        }
-      }
-
-      int minStateByteLenForCompression = -1;
-      Compressor compressor = new ZLibCompressor();
-
-      if (dstIsZk) {
-        String solrHome = cli.getOptionValue("solr-home");
-        if (StrUtils.isNullOrEmpty(solrHome)) {
-          solrHome = System.getProperty("solr.home");
-        }
-
-        if (solrHome != null) {
-          echoIfVerbose("Using SolrHome: " + solrHome, cli);
-          try {
-            // Be aware that if you start Solr and pass in some variables via -D like
-            // solr start -DminStateByteLenForCompression=0 -c, this logic will not
-            // know about the -DminStateByteLenForCompression and only return the
-            // version set in the solr.xml.  So you must edit solr.xml directly.
-            Path solrHomePath = Paths.get(solrHome);
-            Properties props = new Properties();
-            props.put(SolrXmlConfig.ZK_HOST, zkHost);
-            NodeConfig nodeConfig = NodeConfig.loadNodeConfig(solrHomePath, props);
-            minStateByteLenForCompression =
-                nodeConfig.getCloudConfig().getMinStateByteLenForCompression();
-            String stateCompressorClass = nodeConfig.getCloudConfig().getStateCompressorClass();
-            if (StrUtils.isNotNullOrEmpty(stateCompressorClass)) {
-              Class<? extends Compressor> compressionClass =
-                  Class.forName(stateCompressorClass).asSubclass(Compressor.class);
-              compressor = compressionClass.getDeclaredConstructor().newInstance();
-            }
-          } catch (SolrException e) {
-            // Failed to load solr.xml
-            throw new IllegalStateException(
-                "Failed to load solr.xml from ZK or SolrHome, put/get operations on compressed data will use data as is. If your intention is to read and de-compress data or compress and write data, then solr.xml must be accessible.");
-          } catch (ClassNotFoundException
-              | NoSuchMethodException
-              | InstantiationException
-              | IllegalAccessException
-              | InvocationTargetException e) {
-            throw new IllegalStateException(
-                "Unable to find or instantiate compression class: " + e.getMessage());
+      if (solrHome != null) {
+        echoIfVerbose("Using SolrHome: " + solrHome, cli);
+        try {
+          // Be aware that if you start Solr and pass in some variables via -D like
+          // solr start -DminStateByteLenForCompression=0 -c, this logic will not
+          // know about the -DminStateByteLenForCompression and only return the
+          // version set in the solr.xml.  So you must edit solr.xml directly.
+          Path solrHomePath = Paths.get(solrHome);
+          Properties props = new Properties();
+          props.put(SolrXmlConfig.ZK_HOST, zkHost);
+          NodeConfig nodeConfig = NodeConfig.loadNodeConfig(solrHomePath, props);
+          minStateByteLenForCompression =
+              nodeConfig.getCloudConfig().getMinStateByteLenForCompression();
+          String stateCompressorClass = nodeConfig.getCloudConfig().getStateCompressorClass();
+          if (StrUtils.isNotNullOrEmpty(stateCompressorClass)) {
+            Class<? extends Compressor> compressionClass =
+                Class.forName(stateCompressorClass).asSubclass(Compressor.class);
+            compressor = compressionClass.getDeclaredConstructor().newInstance();
           }
+        } catch (SolrException e) {
+          // Failed to load solr.xml
+          throw new IllegalStateException(
+              "Failed to load solr.xml from ZK or SolrHome, put/get operations on compressed data will use data as is. If your intention is to read and de-compress data or compress and write data, then solr.xml must be accessible.");
+        } catch (ClassNotFoundException
+            | NoSuchMethodException
+            | InstantiationException
+            | IllegalAccessException
+            | InvocationTargetException e) {
+          throw new IllegalStateException(
+              "Unable to find or instantiate compression class: " + e.getMessage());
         }
       }
-      if (minStateByteLenForCompression > -1) {
-        echoIfVerbose("Compression of state.json has been enabled", cli);
-      }
+    }
+    if (minStateByteLenForCompression > -1) {
+      echoIfVerbose("Compression of state.json has been enabled", cli);
+    }
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkHost)
+            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+            .withStateFileCompression(minStateByteLenForCompression, compressor)
+            .build()) {
 
       zkClient.zkTransfer(srcName, srcIsZk, dstName, dstIsZk, recurse);
 
