@@ -730,7 +730,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
                                     "core",
                                     "collection1",
                                     "handler",
-                                    "/select")))
+                                    "/select[shard]")))
                 .findAny();
     assertTrue(actualGaugeDataPoint.isPresent());
     assertEquals(0, actualGaugeDataPoint.get().getValue(), 0);
@@ -753,7 +753,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
                                     "core",
                                     "collection1",
                                     "handler",
-                                    "/select",
+                                    "/select[shard]",
                                     "type",
                                     "requests")))
                 .findAny();
