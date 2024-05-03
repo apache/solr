@@ -88,8 +88,7 @@ public class ReverseSearchComponent extends SearchComponent implements SolrCoreA
     var req = rb.req;
     var documentBatch = documentBatch(req);
     req.getContext().put(DOCUMENT_BATCH_KEY, documentBatch);
-    var writeToDocListRaw = req.getParams().get(WRITE_TO_DOC_LIST_KEY, "false");
-    boolean writeToDocList = Boolean.parseBoolean(writeToDocListRaw);
+    boolean writeToDocList = req.getParams().getBool(WRITE_TO_DOC_LIST_KEY, false);
     var matchType = QueryMatchType.fromString(req.getParams().get(QUERY_MATCH_TYPE_KEY));
     Map<String, Object> monitorResult = new HashMap<>();
     var matcherSink = solrMatcherSinkFactory.build(matchType, documentBatch, monitorResult);
