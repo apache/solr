@@ -480,7 +480,8 @@ public class MiniSolrCloudCluster {
    *
    * @param name the instance name
    * @param config a JettyConfig for the instance's {@link org.apache.solr.embedded.JettySolrRunner}
-   * @param solrXml the string content of the solr.xml file to use, or null to just use default
+   * @param solrXml the string content of the solr.xml file to use, or null to just use the
+   *     cluster's default
    * @return a JettySolrRunner
    */
   public JettySolrRunner startJettySolrRunner(String name, JettyConfig config, String solrXml)
@@ -490,7 +491,7 @@ public class MiniSolrCloudCluster {
 
     Path runnerPath = createInstancePath(name);
     if (solrXml == null) {
-      solrXml = DEFAULT_CLOUD_SOLR_XML;
+      solrXml = this.solrXml;
     }
     Files.write(runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
     JettyConfig newConfig = JettyConfig.builder(config).build();
@@ -512,7 +513,7 @@ public class MiniSolrCloudCluster {
    * @return a JettySolrRunner
    */
   public JettySolrRunner startJettySolrRunner() throws Exception {
-    return startJettySolrRunner(newNodeName(), jettyConfig, solrXml);
+    return startJettySolrRunner(newNodeName(), jettyConfig, null);
   }
 
   /**
