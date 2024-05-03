@@ -33,13 +33,11 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.lucene.util.Constants;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
@@ -203,12 +201,7 @@ public class AuthTool extends ToolBase {
 
           // check if security is already enabled or not
           if (!zkInaccessible) {
-            try (SolrZkClient zkClient =
-                new SolrZkClient.Builder()
-                    .withUrl(zkHost)
-                    .withTimeout(
-                        SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-                    .build()) {
+            try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
               checkSecurityJsonExists(zkClient);
             } catch (Exception ex) {
               CLIO.out(
@@ -223,12 +216,7 @@ public class AuthTool extends ToolBase {
         if (!updateIncludeFileOnly) {
           if (!zkInaccessible) {
             echoIfVerbose("Uploading following security.json: " + securityJson, cli);
-            try (SolrZkClient zkClient =
-                new SolrZkClient.Builder()
-                    .withUrl(zkHost)
-                    .withTimeout(
-                        SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-                    .build()) {
+            try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
               zkClient.setData(
                   "/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
             } catch (Exception ex) {
@@ -339,11 +327,7 @@ public class AuthTool extends ToolBase {
           }
 
           // check if security is already enabled or not
-          try (SolrZkClient zkClient =
-              new SolrZkClient.Builder()
-                  .withUrl(zkHost)
-                  .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-                  .build()) {
+          try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
             checkSecurityJsonExists(zkClient);
           }
         }
@@ -391,11 +375,7 @@ public class AuthTool extends ToolBase {
 
         if (!updateIncludeFileOnly) {
           echoIfVerbose("Uploading following security.json: " + securityJson, cli);
-          try (SolrZkClient zkClient =
-              new SolrZkClient.Builder()
-                  .withUrl(zkHost)
-                  .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-                  .build()) {
+          try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
             zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
           }
         }
@@ -486,11 +466,7 @@ public class AuthTool extends ToolBase {
 
       echoIfVerbose("Uploading following security.json: {}", cli);
 
-      try (SolrZkClient zkClient =
-          new SolrZkClient.Builder()
-              .withUrl(zkHost)
-              .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-              .build()) {
+      try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
         zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
       }
     }
