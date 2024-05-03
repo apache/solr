@@ -123,7 +123,7 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-17248: Refactor ZK related SolrCli tools to separate SolrZkClient and CloudSolrClient instantiation/usage (Lamine Idjeraoui via Eric Pugh)
 
 ==================  9.6.0 ==================
 New Features
