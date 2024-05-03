@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
 
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,7 +31,6 @@ import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
@@ -109,15 +107,15 @@ public class DeleteTool extends ToolBase {
   }
 
   protected void deleteCollection(CommandLine cli) throws Exception {
+    Http2SolrClient.Builder builder =
+        new Http2SolrClient.Builder()
+            .withIdleTimeout(30, TimeUnit.SECONDS)
+            .withConnectionTimeout(15, TimeUnit.SECONDS)
+            .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
+            .withOptionalBasicAuthCredentials(cli.getOptionValue(("credentials")));
+
     String zkHost = SolrCLI.getZkHost(cli);
-    try (CloudSolrClient cloudSolrClient =
-        new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-            .withInternalClientBuilder(
-                new Http2SolrClient.Builder()
-                    .withIdleTimeout(30, TimeUnit.SECONDS)
-                    .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
-                    .withConnectionTimeout(15, TimeUnit.SECONDS))
-            .build()) {
+    try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
       echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
       cloudSolrClient.connect();
       deleteCollection(cloudSolrClient, cli);

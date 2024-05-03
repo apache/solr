@@ -86,12 +86,6 @@ public class ZkCpTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
-    if (zkHost == null) {
-      throw new IllegalStateException(
-          "Solr at "
-              + cli.getOptionValue("solrUrl")
-              + " is running in standalone server mode, cp can only be used when running in SolrCloud mode.\n");
-    }
 
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
     String src = cli.getOptionValue("src");
@@ -152,7 +146,7 @@ public class ZkCpTool extends ToolBase {
         } catch (SolrException e) {
           // Failed to load solr.xml
           throw new IllegalStateException(
-              "Failed to load solr.xml from ZK or SolrHome, put/get operations on compressed data will use data as is. If your intention is to read and de-compress data or compress and write data, then solr.xml must be accessible.");
+              "Failed to load solr.xml, put/get operations on compressed data will use data as is. If your intention is to read and de-compress data or compress and write data, then solr.xml must be accessible.");
         } catch (ClassNotFoundException
             | NoSuchMethodException
             | InstantiationException
@@ -166,7 +160,6 @@ public class ZkCpTool extends ToolBase {
     if (minStateByteLenForCompression > -1) {
       echoIfVerbose("Compression of state.json has been enabled", cli);
     }
-
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
             .withUrl(zkHost)
