@@ -94,9 +94,7 @@ public class SolrPrometheusExporterTest extends SolrTestCaseJ4 {
     Gauge<Number> metric =
         new SettableGauge<>() {
           @Override
-          public void setValue(Number value) {
-            return;
-          }
+          public void setValue(Number value) {}
 
           @Override
           public Number getValue() {
@@ -121,9 +119,7 @@ public class SolrPrometheusExporterTest extends SolrTestCaseJ4 {
     Gauge<Map<String, Number>> metric =
         new SettableGauge<>() {
           @Override
-          public void setValue(Map<String, Number> value) {
-            return;
-          }
+          public void setValue(Map<String, Number> value) {}
 
           @Override
           public Map<String, Number> getValue() {
@@ -146,9 +142,7 @@ public class SolrPrometheusExporterTest extends SolrTestCaseJ4 {
 
   static class TestSolrPrometheusExporter extends SolrPrometheusExporter {
     @Override
-    public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {
-      return;
-    }
+    public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {}
 
     public Map<String, List<CounterSnapshot.CounterDataPointSnapshot>> getMetricCounters() {
       return metricCounters;

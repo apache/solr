@@ -830,7 +830,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
                                     "core",
                                     "collection1",
                                     "handler",
-                                    "/select")))
+                                    "/select[shard]")))
                 .findAny();
     assertTrue(actualCounterDataPoint.isPresent());
     assertEquals(0, actualCounterDataPoint.get().getValue(), 0);
