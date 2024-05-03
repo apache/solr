@@ -49,7 +49,7 @@ teardown() {
 
 @test "get zk host using solr url" {
   sleep 1
-  run solr zk ls / -solrUrl http://localhost:${SOLR_PORT}
+  run solr zk ls / -solrUrl http://localhost:${SOLR_PORT}/solr
   assert_output --partial "aliases.json"
 }
 
