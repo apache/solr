@@ -29,7 +29,7 @@ import org.junit.Test;
 
 public class NumFieldLimitingUpdateRequestProcessorIntegrationTest extends SolrCloudTestCase {
 
-  private static String SINGLE_SHARD_COLL_NAME = "singleShardColl";
+  private static String COLLECTION_NAME = "collName";
   private static String FIELD_LIMITING_CS_NAME = "fieldLimitingConfig";
 
   @BeforeClass
@@ -39,16 +39,15 @@ public class NumFieldLimitingUpdateRequestProcessorIntegrationTest extends SolrC
     configureCluster(1).addConfig(FIELD_LIMITING_CS_NAME, configPath).configure();
 
     final var createRequest =
-        CollectionAdminRequest.createCollection(
-            SINGLE_SHARD_COLL_NAME, FIELD_LIMITING_CS_NAME, 1, 1);
+        CollectionAdminRequest.createCollection(COLLECTION_NAME, FIELD_LIMITING_CS_NAME, 1, 1);
     createRequest.process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(SINGLE_SHARD_COLL_NAME, 20, TimeUnit.SECONDS, 1, 1);
+    cluster.waitForActiveCollection(COLLECTION_NAME, 20, TimeUnit.SECONDS, 1, 1);
   }
 
   private void setFieldLimitTo(int value) throws Exception {
     System.setProperty("solr.test.maxFields", String.valueOf(value));
 
-    final var reloadRequest = CollectionAdminRequest.reloadCollection(SINGLE_SHARD_COLL_NAME);
+    final var reloadRequest = CollectionAdminRequest.reloadCollection(COLLECTION_NAME);
     final var reloadResponse = reloadRequest.process(cluster.getSolrClient());
     assertEquals(0, reloadResponse.getStatus());
   }
@@ -81,9 +80,9 @@ public class NumFieldLimitingUpdateRequestProcessorIntegrationTest extends SolrC
 
   private void addNewFieldsAndCommit(int numFields) throws Exception {
     final var docList = getDocumentListToAddFields(numFields);
-    final var updateResponse = cluster.getSolrClient(SINGLE_SHARD_COLL_NAME).add(docList);
+    final var updateResponse = cluster.getSolrClient(COLLECTION_NAME).add(docList);
     assertEquals(0, updateResponse.getStatus());
-    cluster.getSolrClient(SINGLE_SHARD_COLL_NAME).commit();
+    cluster.getSolrClient(COLLECTION_NAME).commit();
   }
 
   private Collection<SolrInputDocument> getDocumentListToAddFields(int numFieldsToAdd) {

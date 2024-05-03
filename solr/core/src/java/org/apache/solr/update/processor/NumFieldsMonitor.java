@@ -16,10 +16,10 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
 import org.apache.solr.core.AbstractSolrEventListener;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RefCounted;
 
 public class NumFieldsMonitor extends AbstractSolrEventListener {
 
@@ -27,21 +27,12 @@ public class NumFieldsMonitor extends AbstractSolrEventListener {
 
   public NumFieldsMonitor(SolrCore core) {
     super(core);
-    this.numFields = -1;
-  }
 
-  @Override
-  public void postCommit() {
-    RefCounted<SolrIndexSearcher> indexSearcher = null;
     try {
-      indexSearcher = getCore().getSearcher();
-      // Get the number of fields directly from the IndexReader instead of the Schema object to also
-      // include the fields that are missing from the Schema file (dynamic/deleted etc.)
-      numFields = indexSearcher.get().getFieldInfos().size();
-    } finally {
-      if (indexSearcher != null) {
-        indexSearcher.decref();
-      }
+      core.withSearcher(s -> this.numFields = s.getFieldInfos().size());
+    } catch (IOException e) {
+      // Should not happen, but required by the signature of withSearcher above
+      this.numFields = -1;
     }
   }
 

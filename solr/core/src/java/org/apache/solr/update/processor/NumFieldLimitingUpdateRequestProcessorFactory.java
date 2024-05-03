@@ -51,7 +51,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *       </code> if not specified
  * </ul>
  *
- * @since 9.6.0
+ * @since 9.7.0
  */
 public class NumFieldLimitingUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory
     implements SolrCoreAware {
