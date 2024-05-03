@@ -107,6 +107,13 @@ public class DeleteTool extends ToolBase {
   }
 
   protected void deleteCollection(CommandLine cli) throws Exception {
+    Http2SolrClient.Builder builder =
+        new Http2SolrClient.Builder()
+            .withIdleTimeout(30, TimeUnit.SECONDS)
+            .withConnectionTimeout(15, TimeUnit.SECONDS)
+            .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
+            .withOptionalBasicAuthCredentials(cli.getOptionValue(("credentials")));
+
     String zkHost = SolrCLI.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
       echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);

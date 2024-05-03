@@ -99,7 +99,8 @@ public class SolrCLI implements CLIO {
       Option.builder("verbose").required(false).desc("Enable more verbose command output.").build();
 
   public static final Option OPTION_RECURSE =
-      Option.builder("recurse")
+      Option.builder("r")
+          .longOpt("recurse")
           .argName("recurse")
           .hasArg()
           .required(false)
@@ -667,8 +668,7 @@ public class SolrCLI implements CLIO {
         .build();
   }
 
-  public static boolean safeCheckCollectionExists(
-      String solrUrl, String collection, String credentials) {
+  public static boolean safeCheckCollectionExists(String solrUrl, String collection) {
     boolean exists = false;
     try (var solrClient = getSolrClient(solrUrl)) {
       NamedList<Object> existsCheckResult = solrClient.request(new CollectionAdminRequest.List());
