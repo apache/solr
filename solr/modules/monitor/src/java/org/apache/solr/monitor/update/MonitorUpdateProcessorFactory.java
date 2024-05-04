@@ -19,12 +19,9 @@
 
 package org.apache.solr.monitor.update;
 
-import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.Presearcher;
-import org.apache.lucene.monitor.TermFilteredPresearcher;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.monitor.AliasingPresearcher;
-import org.apache.solr.monitor.search.ReverseQueryParserPlugin;
+import org.apache.solr.monitor.search.ReverseSearchComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -45,33 +42,8 @@ public class MonitorUpdateProcessorFactory extends UpdateRequestProcessorFactory
   @Override
   public void inform(SolrCore core) {
     presearcher =
-        ((ReverseQueryParserPlugin) core.getQueryPlugin(ReverseQueryParserPlugin.NAME))
+        ((ReverseSearchComponent)
+                core.getSearchComponents().get(ReverseSearchComponent.COMPONENT_NAME))
             .getPresearcher();
-    var schema = core.getLatestSchema();
-    if (presearcher instanceof AliasingPresearcher) {
-      var fieldType =
-          schema.getDynamicFieldType(((AliasingPresearcher) presearcher).getPrefix() + "*");
-      if (!fieldType.isTokenized() || !fieldType.isMultiValued()) {
-        throw new IllegalStateException(
-            "presearcher-aliased field must be tokenized and multi-valued.");
-      }
-    }
-
-    for (String fieldName : MonitorFields.REQUIRED_MONITOR_FIELDS) {
-      var field = schema.getFieldOrNull(fieldName);
-      if (field == null) {
-        throw new IllegalStateException(
-            fieldName + " must be defined in schema for saved search to work.");
-      }
-    }
-
-    if (presearcher instanceof TermFilteredPresearcher
-        || presearcher instanceof AliasingPresearcher) {
-      var anyTokenField = schema.getFieldOrNull(MonitorFields.ANYTOKEN_FIELD);
-      if (anyTokenField == null || !anyTokenField.tokenized() || !anyTokenField.multiValued()) {
-        throw new IllegalStateException(
-            MonitorFields.ANYTOKEN_FIELD + " field must be tokenized and multi-valued.");
-      }
-    }
   }
 }

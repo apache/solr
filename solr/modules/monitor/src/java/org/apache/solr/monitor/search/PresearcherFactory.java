@@ -33,6 +33,14 @@ import org.apache.solr.monitor.AliasingTermFilteredPresearcher;
 
 public class PresearcherFactory {
 
+  // The default prefix is long because we don't want it to clash
+  // with a user-defined name pattern and the longest one wins.
+  // {@link
+  // https://cwiki.apache.org/confluence/display/solr/SchemaXml#Dynamic_fields:~:text=Longer%20patterns%20will%20be%20matched%20first}
+  // In the worst case this can be overridden by the user but ideally this never comes up.
+  public static final String DEFAULT_ALIAS_PREFIX =
+      "_________________________________________________monitor_alias_";
+
   public static final String TERM_FILTERED = TermFilteredPresearcher.class.getSimpleName();
   public static final String MULTI_PASS_TERM_FILTERED =
       MultipassTermFilteredPresearcher.class.getSimpleName();
@@ -102,27 +110,36 @@ public class PresearcherFactory {
     }
   }
 
-  static class PresearcherParameters {
+  public static class PresearcherParameters {
 
-    private final String presearcherType;
-    private final String termWeightorType;
-    private final boolean applyFieldNameAlias;
-    private final int numberOfPasses;
-    private final float minWeight;
-    private final String aliasPrefix;
+    private String presearcherType;
+    private String termWeightorType;
+    private boolean applyFieldNameAlias = false;
+    private int numberOfPasses = 0;
+    private float minWeight = 0;
+    private String aliasPrefix = DEFAULT_ALIAS_PREFIX;
 
-    public PresearcherParameters(
-        String presearcherType,
-        String termWeightorType,
-        boolean applyFieldNameAlias,
-        int numberOfPasses,
-        float minWeight,
-        String aliasPrefix) {
+    public void setPresearcherType(String presearcherType) {
       this.presearcherType = presearcherType;
+    }
+
+    public void setTermWeightorType(String termWeightorType) {
       this.termWeightorType = termWeightorType;
+    }
+
+    public void setApplyFieldNameAlias(boolean applyFieldNameAlias) {
       this.applyFieldNameAlias = applyFieldNameAlias;
+    }
+
+    public void setNumberOfPasses(int numberOfPasses) {
       this.numberOfPasses = numberOfPasses;
+    }
+
+    public void setMinWeight(float minWeight) {
       this.minWeight = minWeight;
+    }
+
+    public void setAliasPrefix(String aliasPrefix) {
       this.aliasPrefix = aliasPrefix;
     }
   }

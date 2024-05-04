@@ -19,27 +19,33 @@
 
 package org.apache.solr.monitor.search;
 
-import static org.apache.solr.monitor.MonitorConstants.DOCUMENT_BATCH_KEY;
 import static org.apache.solr.monitor.MonitorConstants.MONITOR_DOCUMENTS_KEY;
 import static org.apache.solr.monitor.MonitorConstants.MONITOR_OUTPUT_KEY;
 import static org.apache.solr.monitor.MonitorConstants.QUERY_MATCH_TYPE_KEY;
 import static org.apache.solr.monitor.MonitorConstants.REVERSE_SEARCH_PARAM_NAME;
 import static org.apache.solr.monitor.MonitorConstants.SOLR_MONITOR_CACHE_NAME;
 import static org.apache.solr.monitor.MonitorConstants.WRITE_TO_DOC_LIST_KEY;
+import static org.apache.solr.monitor.search.PresearcherFactory.DEFAULT_ALIAS_PREFIX;
 import static org.apache.solr.monitor.search.QueryMatchResponseCodec.mergeResponses;
 
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.monitor.DocumentBatchVisitor;
+import org.apache.lucene.monitor.MonitorFields;
+import org.apache.lucene.monitor.Presearcher;
+import org.apache.lucene.monitor.TermFilteredPresearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -47,37 +53,42 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
-import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.loader.JsonLoader;
+import org.apache.solr.monitor.AliasingPresearcher;
 import org.apache.solr.monitor.SolrMonitorQueryDecoder;
 import org.apache.solr.monitor.cache.MonitorQueryCache;
 import org.apache.solr.monitor.cache.SharedMonitorCache;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.QParser;
-import org.apache.solr.search.SyntaxError;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.DocumentBuilder;
+import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
-public class ReverseSearchComponent extends SearchComponent implements SolrCoreAware {
+public class ReverseSearchComponent extends QueryComponent implements SolrCoreAware {
 
+  public static final String COMPONENT_NAME = "reverseSearch";
   private static final String MATCHER_THREAD_COUNT_KEY = "threadCount";
 
+  private Presearcher presearcher;
   private SolrMatcherSinkFactory solrMatcherSinkFactory = new SolrMatcherSinkFactory();
-
   private ExecutorService executor;
+  private PresearcherFactory.PresearcherParameters presearcherParameters;
 
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
-    Object threadCount = args.get(MATCHER_THREAD_COUNT_KEY);
+    Object threadCount = args.remove(MATCHER_THREAD_COUNT_KEY);
     if (threadCount instanceof Integer) {
       executor =
           ExecutorUtil.newMDCAwareFixedThreadPool(
               (Integer) threadCount, new NamedThreadFactory("monitor-matcher"));
       solrMatcherSinkFactory = new SolrMatcherSinkFactory(executor);
     }
+    presearcherParameters = new PresearcherFactory.PresearcherParameters();
+    SolrPluginUtils.invokeSetters(presearcherParameters, args);
   }
 
   @Override
@@ -97,28 +108,23 @@ public class ReverseSearchComponent extends SearchComponent implements SolrCoreA
           ErrorCode.BAD_REQUEST,
           "writeToDocList is not supported for parallel matcher. Consider adding more shards/cores instead of parallel matcher.");
     }
-    try {
-      Query preFilterQuery =
-          QParser.getParser("{!" + ReverseQueryParserPlugin.NAME + "}", req).parse();
-      List<Query> mutableFilters =
-          Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
-      rb.setQuery(new MatchAllDocsQuery());
-      mutableFilters.add(preFilterQuery);
-      var searcher = req.getSearcher();
-      MonitorQueryCache solrMonitorCache =
-          (SharedMonitorCache) searcher.getCache(SOLR_MONITOR_CACHE_NAME);
-      SolrMonitorQueryDecoder queryDecoder = SolrMonitorQueryDecoder.fromCore(req.getCore());
-      mutableFilters.add(
-          new MonitorPostFilter(
-              new SolrMonitorQueryCollector.CollectorContext(
-                  solrMonitorCache, queryDecoder, matcherSink, writeToDocList, matchType)));
-      rb.setFilters(mutableFilters);
-      rb.rsp.add(QUERY_MATCH_TYPE_KEY, matchType.name());
-      if (matchType != QueryMatchType.NONE) {
-        rb.rsp.add(MONITOR_OUTPUT_KEY, monitorResult);
-      }
-    } catch (SyntaxError e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Syntax error in query: ", e);
+    Query preFilterQuery = presearcher.buildQuery(documentBatch.get(), getTermAcceptor(rb.req));
+    List<Query> mutableFilters =
+        Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
+    rb.setQuery(new MatchAllDocsQuery());
+    mutableFilters.add(preFilterQuery);
+    var searcher = req.getSearcher();
+    MonitorQueryCache solrMonitorCache =
+        (SharedMonitorCache) searcher.getCache(SOLR_MONITOR_CACHE_NAME);
+    SolrMonitorQueryDecoder queryDecoder = SolrMonitorQueryDecoder.fromCore(req.getCore());
+    mutableFilters.add(
+        new MonitorPostFilter(
+            new SolrMonitorQueryCollector.CollectorContext(
+                solrMonitorCache, queryDecoder, matcherSink, writeToDocList, matchType)));
+    rb.setFilters(mutableFilters);
+    rb.rsp.add(QUERY_MATCH_TYPE_KEY, matchType.name());
+    if (matchType != QueryMatchType.NONE) {
+      rb.rsp.add(MONITOR_OUTPUT_KEY, monitorResult);
     }
   }
 
@@ -145,11 +151,6 @@ public class ReverseSearchComponent extends SearchComponent implements SolrCoreA
       luceneDocs.add(luceneDoc);
     }
     return DocumentBatchVisitor.of(req.getSchema().getIndexAnalyzer(), luceneDocs);
-  }
-
-  @Override
-  public void process(ResponseBuilder rb) throws IOException {
-    /* no-op */
   }
 
   @Override
@@ -187,5 +188,68 @@ public class ReverseSearchComponent extends SearchComponent implements SolrCoreA
             ExecutorUtil.shutdownAndAwaitTermination(executor);
           }
         });
+    presearcher = PresearcherFactory.build(core.getResourceLoader(), presearcherParameters);
+    var schema = core.getLatestSchema();
+    if (presearcher instanceof AliasingPresearcher) {
+      String prefix = ((AliasingPresearcher) presearcher).getPrefix() + "*";
+      String maxLengthPattern =
+          Arrays.stream(schema.getDynamicFieldPrototypes())
+              .map(SchemaField::getName)
+              .max(Comparator.comparingInt(String::length))
+              .orElse("");
+      if (!maxLengthPattern.equals(prefix) && prefix.length() <= maxLengthPattern.length()) {
+        throw new IllegalStateException(
+            "Dynamic field pattern "
+                + maxLengthPattern
+                + " is incompatible with presearcher alias pattern "
+                + prefix
+                + ". Increase the length of presearcher alias prefix to be at least"
+                + (maxLengthPattern.length() + 1)
+                + " characters, i.e. set aliasPrefix to "
+                + "_".repeat(maxLengthPattern.length() - DEFAULT_ALIAS_PREFIX.length() + 1)
+                + DEFAULT_ALIAS_PREFIX
+                + " and update the schema accordingly. Refer to documentation on overriding aliasPrefix in "
+                + this.getClass().getSimpleName());
+      }
+      var fieldType = schema.getDynamicFieldType(prefix);
+      if (!fieldType.isTokenized() || !fieldType.isMultiValued()) {
+        throw new IllegalStateException(
+            "presearcher-aliased field must be tokenized and multi-valued.");
+      }
+      if (!fieldType.isTokenized() || !fieldType.isMultiValued()) {
+        throw new IllegalStateException(
+            "presearcher-aliased field must be tokenized and multi-valued.");
+      }
+    }
+
+    for (String fieldName : MonitorFields.REQUIRED_MONITOR_FIELDS) {
+      var field = schema.getFieldOrNull(fieldName);
+      if (field == null) {
+        throw new IllegalStateException(
+            fieldName + " must be defined in schema for saved search to work.");
+      }
+    }
+
+    if (presearcher instanceof TermFilteredPresearcher
+        || presearcher instanceof AliasingPresearcher) {
+      var anyTokenField = schema.getFieldOrNull(MonitorFields.ANYTOKEN_FIELD);
+      if (anyTokenField == null || !anyTokenField.tokenized() || !anyTokenField.multiValued()) {
+        throw new IllegalStateException(
+            MonitorFields.ANYTOKEN_FIELD + " field must be tokenized and multi-valued.");
+      }
+    }
+  }
+
+  public Presearcher getPresearcher() {
+    return presearcher;
+  }
+
+  private BiPredicate<String, BytesRef> getTermAcceptor(SolrQueryRequest req) {
+    var searcher = req.getSearcher();
+    MonitorQueryCache cache = (MonitorQueryCache) searcher.getCache(SOLR_MONITOR_CACHE_NAME);
+    if (cache == null) {
+      return (__, ___) -> true;
+    }
+    return cache::acceptTerm;
   }
 }

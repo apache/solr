@@ -34,12 +34,12 @@ import org.apache.lucene.util.BytesRef;
  * equivalent. By prefixing fields we ensure "presearcher fields" don't inadvertently affect the
  * scores of "real" document fields. Another issue is that the presearcher can dynamically create
  * field configurations for a given field name that might not be compatible with the pre-existing
- * schema definition. See {\@link
- * org.apache.solr.monitor.ParallelMonitorSolrQueryTest#coexistWithRegularDocumentsTest} In the case
- * of {@link org.apache.lucene.monitor.MultipassTermFilteredPresearcher#field(String, int)}, the
- * presearcher is capable of creating new fields by adding an ordinal suffix to an existing field
- * name. This could also clash with user-defined name patterns, hence the existence of this class,
- * which allows users to alias presearcher fields as they see fit.
+ * schema definition, see {\@link
+ * org.apache.solr.monitor.ParallelMonitorSolrQueryTest#coexistWithRegularDocumentsTest}. In the
+ * case of {@link org.apache.lucene.monitor.MultipassTermFilteredPresearcher#field(String, int)},
+ * the presearcher is capable of creating new fields by adding an ordinal suffix to an existing
+ * field name. This could also clash with user-defined name patterns, hence the existence of this
+ * class, which allows users to alias presearcher fields as they see fit.
  */
 public class AliasingPresearcher extends Presearcher {
 

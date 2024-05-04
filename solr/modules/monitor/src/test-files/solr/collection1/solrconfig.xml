@@ -87,24 +87,8 @@
   <requestDispatcher>
     <httpCaching never304="true"/>
   </requestDispatcher>
-  <requestHandler name="/select" class="solr.SearchHandler">
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-      <int name="rows">10</int>
-      <str name="df">id</str>
-    </lst>
-    <arr name="last-components">
-      <str>reverseSearch</str>
-    </arr>
-  </requestHandler>
-  <requestHandler name="/query" class="solr.SearchHandler">
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-      <str name="wt">json</str>
-      <str name="indent">true</str>
-      <str name="df">id</str>
-    </lst>
-  </requestHandler>
+  <requestHandler name="/select" class="org.apache.solr.monitor.search.ReverseSearchHandler"/>
+  <requestHandler name="/query" class="org.apache.solr.monitor.search.ReverseSearchHandler"/>
   <requestHandler name="/browse" class="solr.SearchHandler"
     useParams="query,facets,velocity,browse">
     <lst name="defaults">
@@ -130,7 +114,9 @@
   </requestHandler>
 
   <searchComponent name="reverseSearch"
-    class="org.apache.solr.monitor.search.ReverseSearchComponent"/>
+    class="org.apache.solr.monitor.search.ReverseSearchComponent">
+    <str name="presearcherType">TermFilteredPresearcher</str>
+  </searchComponent>
   <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
     <str name="queryAnalyzerFieldType">text_general</str>
   </searchComponent>
@@ -184,8 +170,4 @@
     </str>
   </queryResponseWriter>
   <queryParser name="xmlparser" class="solr.XmlQParserPlugin"/>
-  <queryParser name="reverse"
-               class="org.apache.solr.monitor.search.ReverseQueryParserPlugin">
-    <str name="presearcherType">TermFilteredPresearcher</str>
-  </queryParser>
 </config>
