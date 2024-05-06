@@ -628,7 +628,7 @@ public class NodeConfig {
     public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
 
     public static final int DEFAULT_INDEX_SEARCHER_EXECUTOR_THREADS =
-        6; // TODO: what should the default be?
+        1; // Defaults to 1, i.e. each query is executed using a single thread
 
     private static final String DEFAULT_CORESLOCATORCLASS =
         "org.apache.solr.core.CorePropertiesLocator";

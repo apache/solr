@@ -443,18 +443,8 @@ public class CoreContainer {
     this.collectorExecutor =
         ExecutorUtil.newMDCAwareCachedThreadPool(
             cfg.getIndexSearcherExecutorThreads(), // thread count
-            cfg.getIndexSearcherExecutorThreads(), // queue size
+            cfg.getIndexSearcherExecutorThreads() * 1000, // queue size
             new SolrNamedThreadFactory("searcherCollector"));
-    ((ExecutorUtil.MDCAwareThreadPoolExecutor) collectorExecutor)
-        .setRejectedExecutionHandler(
-            (r, executor) -> {
-              if (!executor.isShutdown()) {
-                try {
-                  executor.getQueue().put(r);
-                } catch (InterruptedException e) {
-                }
-              }
-            });
   }
 
   @SuppressWarnings({"unchecked"})

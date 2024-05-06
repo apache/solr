@@ -372,7 +372,7 @@ public class QueryComponent extends SearchComponent {
       return;
     }
 
-    final boolean multiThreaded = params.getBool("multiThreaded", false);
+    final boolean multiThreaded = params.getBool("multiThreaded", true);
 
     // -1 as flag if not set.
     long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
