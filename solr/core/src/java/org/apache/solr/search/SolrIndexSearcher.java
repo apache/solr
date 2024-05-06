@@ -1887,14 +1887,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       qr.setNextCursorMark(cmd.getCursorMark());
       hitsRelation = Relation.EQUAL_TO;
     } else {
-      if (log.isInfoEnabled()) {
-        log.info("calling from 2, query: {}", query.getClass());
+      if (log.isDebugEnabled()) {
+        log.debug("calling from 2, query: {}", query.getClass());
       }
       final TopDocs topDocs;
       final ScoreMode scoreModeUsed;
       if (!MultiThreadedSearcher.allowMT(pf.postFilter, cmd, query)) {
-        if (log.isInfoEnabled()) {
-          log.info("skipping collector manager");
+        if (log.isDebugEnabled()) {
+          log.debug("skipping collector manager");
         }
         final TopDocsCollector<?> topCollector = buildTopDocsCollector(len, cmd);
         MaxScoreCollector maxScoreCollector = null;
@@ -1914,8 +1914,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
                 ? (maxScoreCollector == null ? Float.NaN : maxScoreCollector.getMaxScore())
                 : 0.0f;
       } else {
-        if (log.isInfoEnabled()) {
-          log.info("using CollectorManager");
+        if (log.isDebugEnabled()) {
+          log.debug("using CollectorManager");
         }
         final MultiThreadedSearcher.SearchResult searchResult =
             new MultiThreadedSearcher(this)
