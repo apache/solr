@@ -98,7 +98,7 @@ Other Changes
 ==================  9.7.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-13350: Multithreaded search execution (Ishan Chattopadhyaya, Mark Miller, Christine Poerschke, David Smiley, noble)
 
 Improvements
 ---------------------
