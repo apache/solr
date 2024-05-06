@@ -16,7 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import java.io.IOException;
 import org.apache.solr.core.AbstractSolrEventListener;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -27,13 +26,7 @@ public class NumFieldsMonitor extends AbstractSolrEventListener {
 
   public NumFieldsMonitor(SolrCore core) {
     super(core);
-
-    try {
-      core.withSearcher(s -> this.numFields = s.getFieldInfos().size());
-    } catch (IOException e) {
-      // Should not happen, but required by the signature of withSearcher above
-      this.numFields = -1;
-    }
+    this.numFields = -1;
   }
 
   @Override

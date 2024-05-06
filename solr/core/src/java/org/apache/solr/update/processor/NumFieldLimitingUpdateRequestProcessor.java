@@ -25,6 +25,7 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Update request processor created by {@link NumFieldLimitingUpdateRequestProcessorFactory} */
 public class NumFieldLimitingUpdateRequestProcessor extends UpdateRequestProcessor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -46,6 +47,7 @@ public class NumFieldLimitingUpdateRequestProcessor extends UpdateRequestProcess
     this.warnOnly = warnOnly;
   }
 
+  @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     if (coreExceedsFieldLimit()) {
       throwExceptionOrLog(cmd.getPrintableId());
