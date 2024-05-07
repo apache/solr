@@ -21,14 +21,12 @@ import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
-import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.common.ConfigNode;
@@ -69,6 +67,7 @@ public class SolrIndexConfig implements MapSerializable {
   public final double ramBufferSizeMB;
   public final int ramPerThreadHardLimitMB;
 
+  public String segmentSort;
   /**
    * When using a custom merge policy that allows triggering synchronous merges on commit (see
    * {@link MergePolicy#findFullFlushMerges(org.apache.lucene.index.MergeTrigger,
@@ -106,6 +105,7 @@ public class SolrIndexConfig implements MapSerializable {
     mergePolicyFactoryInfo = null;
     mergeSchedulerInfo = null;
     mergedSegmentWarmerInfo = null;
+    segmentSort = null;
     // enable coarse-grained metrics by default
     metricsInfo = new PluginInfo("metrics", Collections.emptyMap(), null, null);
   }
@@ -117,7 +117,6 @@ public class SolrIndexConfig implements MapSerializable {
   public SolrIndexConfig(SolrConfig cfg, SolrIndexConfig def) {
     this(cfg.get("indexConfig"), def);
   }
-
   /**
    * Constructs a SolrIndexConfig which parses the Lucene related config params in solrconfig.xml
    *
@@ -152,6 +151,7 @@ public class SolrIndexConfig implements MapSerializable {
     maxBufferedDocs = get("maxBufferedDocs").intVal(def.maxBufferedDocs);
     ramBufferSizeMB = get("ramBufferSizeMB").doubleVal(def.ramBufferSizeMB);
     maxCommitMergeWaitMillis = get("maxCommitMergeWaitTime").intVal(def.maxCommitMergeWaitMillis);
+    segmentSort = get("segmentSort").txt(def.segmentSort);
 
     // how do we validate the value??
     ramPerThreadHardLimitMB = get("ramPerThreadHardLimitMB").intVal(def.ramPerThreadHardLimitMB);
@@ -208,6 +208,9 @@ public class SolrIndexConfig implements MapSerializable {
     map.put("writeLockTimeout", writeLockTimeout);
     map.put("lockType", lockType);
     map.put("infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
+    if(segmentSort != null) {
+      map.put("segmentSort", segmentSort);
+    }
     if (mergeSchedulerInfo != null) {
       map.put("mergeScheduler", mergeSchedulerInfo);
     }
@@ -285,6 +288,19 @@ public class SolrIndexConfig implements MapSerializable {
       iwc.setMergedSegmentWarmer(warmer);
     }
 
+    if (segmentSort != null) {
+      try {
+           SegmentSort sortEnum = SegmentSort.valueOf(segmentSort.toUpperCase());
+           LeafSorter sorter = new SegmentTimeLeafSorter(sortEnum);
+           Comparator<LeafReader> leafSorter = sorter.getLeafSorter();
+           if (leafSorter != null) {
+             iwc.setLeafSorter(leafSorter);
+             log.debug("Segment sort enabled:  {}", sorter.toString());
+           }
+       } catch (IllegalArgumentException e) {
+          log.error("Invalid segmentSort option: ", segmentSort);
+       }
+    }
     return iwc;
   }
 
