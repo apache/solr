@@ -21,6 +21,10 @@ final class SegmentTimeLeafSorter implements LeafSorter {
     private SegmentSort sortOptions;
     private Comparator<LeafReader> leafSorter;
 
+    public SegmentTimeLeafSorter() {
+        this.sortOptions = defaultSortOptions;
+        this.leafSorter = null;
+    }
     public SegmentTimeLeafSorter(SegmentSort sortOptions) {
         this.sortOptions = sortOptions;
         this.leafSorter = null;
@@ -48,6 +52,10 @@ final class SegmentTimeLeafSorter implements LeafSorter {
             leafSorter = leafSorter.reversed();
         }
         return leafSorter;
+    }
+
+    public SegmentSort getSortOptions() {
+        return sortOptions;
     }
 
     @Override

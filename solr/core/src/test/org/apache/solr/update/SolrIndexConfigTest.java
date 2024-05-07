@@ -272,7 +272,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   }
 
   /*
-     Solr config with TIME_ASC leaf sorter
+     Solr config with leaf sorter
    */
 
   public void testSegmentSort() throws Exception {
@@ -281,9 +281,9 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
      SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
      assertNotNull(solrIndexConfig);
      assertNotNull(solrIndexConfig.segmentSort);
-     assertEquals(SegmentSort.valueOf(solrIndexConfig.segmentSort.toUpperCase()), SegmentSort.TIME_DESC);
      IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
      assertNotNull(iwc.getLeafSorter());
-     //assertEquals(SegmentTimeLeafSorter.class, iwc.getLeafSorter().getClass());
+     SegmentTimeLeafSorter expected = new SegmentTimeLeafSorter(SegmentSort.valueOf(solrIndexConfig.segmentSort.toUpperCase()));
+     assertEquals(expected.getLeafSorter().getClass(), iwc.getLeafSorter().getClass());
   }
 }
