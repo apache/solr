@@ -168,6 +168,21 @@ limitations under the License.
 #content #index #jvm .processors dt span { background-image: url( ../../img/ico/processor.png ); }
 #content #index #jvm .command_line_args dt span { background-image: url( ../../img/ico/terminal.png ); }
 
+#content #index #jvm #sort-command-line a
+{
+  background-image: url( ../../img/ico/ui-check-box-uncheck.png );
+  background-position: 0 50%;
+  color: #4D4D4D;
+  display: block;
+  padding-left: 21px;
+}
+
+#content #index #jvm #sort-command-line a.on
+{
+  background-image: url( ../../img/ico/ui-check-box.png );
+  color: #333;
+}
+
 #content #index #system h2 { background-image: url( ../../img/ico/system-monitor.png ); }
 
 #content #index #system
@@ -219,3 +234,4 @@ limitations under the License.
 
 #content #index #security h2 { background-image: url( ../../img/ico/prohibition.png ); }
 #content #index #security div { text-align: right; }
+

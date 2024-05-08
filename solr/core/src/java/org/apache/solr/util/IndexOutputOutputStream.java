@@ -14,21 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.util;
 
-package org.apache.solr.client.solrj.util;
+import java.io.IOException;
+import java.io.OutputStream;
+import org.apache.lucene.store.IndexOutput;
 
-/**
- * Listener for async requests
- *
- * @param <T> The result type returned by the {@code onSuccess} method
- */
-public interface AsyncListener<T> {
-  /** Callback method invoked before processing the request */
-  default void onStart() {}
+/** Wraps an {@link IndexOutput} to expose it as an {@link OutputStream}. */
+public class IndexOutputOutputStream extends OutputStream {
 
-  /** Callback method invoked when the request completes successfully */
-  void onSuccess(T t);
+  private final IndexOutput out;
 
-  /** Callback method invoked when the request completes in failure */
-  void onFailure(Throwable throwable);
+  public IndexOutputOutputStream(IndexOutput out) {
+    this.out = out;
+  }
+
+  @Override
+  public void write(int b) throws IOException {
+    out.writeByte((byte) b);
+  }
+
+  @Override
+  public void write(byte[] b, int off, int len) throws IOException {
+    out.writeBytes(b, off, len);
+  }
+
+  @Override
+  public void close() throws IOException {
+    out.close();
+  }
 }

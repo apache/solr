@@ -129,7 +129,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.util.FileUtils;
-import org.apache.solr.util.PropertiesOutputStream;
+import org.apache.solr.util.IndexOutputOutputStream;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
@@ -328,6 +328,7 @@ public class IndexFetcher {
 
   private void setLeaderCoreUrl(String leaderCoreUrl) {
     if (leaderCoreUrl != null) {
+      leaderCoreUrl = leaderCoreUrl.trim();
       ClusterState clusterState =
           solrCore.getCoreContainer().getZkController() == null
               ? null
@@ -985,7 +986,7 @@ public class IndexFetcher {
       String tmpFileName = REPLICATION_PROPERTIES + "." + System.nanoTime();
       final IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
       try (Writer outFile =
-          new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8)) {
+          new OutputStreamWriter(new IndexOutputOutputStream(out), StandardCharsets.UTF_8)) {
         props.store(outFile, "Replication details");
         dir.sync(Collections.singleton(tmpFileName));
       }

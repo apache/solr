@@ -110,6 +110,7 @@ def expand_jinja(text, vars=None):
         'get_next_version': state.get_next_version(),
         'current_git_rev': state.get_current_git_rev(),
         'keys_downloaded': keys_downloaded(),
+        'docker_version_to_remove': state.get_docker_version_to_remove(),
         'editor': get_editor(),
         'rename_cmd': 'ren' if is_windows() else 'mv',
         'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
@@ -601,6 +602,12 @@ class ReleaseState:
         if self.release_type == 'bugfix':
             return "%s.%s.%s" % (self.release_version_major, self.release_version_minor, self.release_version_bugfix + 1)
         return None
+
+    def get_docker_version_to_remove(self):
+        if self.release_type == 'minor' and self.release_version_minor >= 2:
+            return "%s.%s" % (self.release_version_major, self.release_version_minor - 2)
+        else:
+            return None
 
     def get_refguide_release(self):
         return "%s_%s" % (self.release_version_major, self.release_version_minor)
