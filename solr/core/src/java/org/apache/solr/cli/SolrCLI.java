@@ -359,7 +359,7 @@ public class SolrCLI implements CLIO {
         CLIO.err("Failed to parse command-line arguments due to: " + exp.getMessage());
         exit(1);
       } else {
-        HelpFormatter formatter = new HelpFormatter();
+        HelpFormatter formatter = HelpFormatter.builder().setShowDeprecated(true).get();
         formatter.printHelp(toolName, options);
         exit(0);
       }
