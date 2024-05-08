@@ -246,8 +246,6 @@ public class CoreContainer {
 
   private volatile String hostName;
 
-  private final BlobRepository blobRepository = new BlobRepository(this);
-
   private volatile boolean asyncSolrCoreLoad;
 
   protected volatile SecurityConfHandler securityConfHandler;
@@ -2302,10 +2300,6 @@ public class CoreContainer {
     }
 
     return core;
-  }
-
-  public BlobRepository getBlobRepository() {
-    return blobRepository;
   }
 
   /**
