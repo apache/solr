@@ -59,6 +59,22 @@
       </Policies>
       <DefaultRolloverStrategy max="10"/>
     </RollingRandomAccessFile>
+    
+    <RollingRandomAccessFile
+        name="UBILogFile"
+        fileName="${sys:solr.log.dir}/solr_ubi_requests.log"
+        filePattern="${sys:solr.log.dir}/solr_ubi_requests.log.%i" >
+      <PatternLayout>
+        <Pattern>
+          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}%notEmpty{ t:%X{trace_id}}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
+        </Pattern>
+      </PatternLayout>
+      <Policies>
+        <OnStartupTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="32 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingRandomAccessFile>
 
   </Appenders>
   <Loggers>
@@ -74,6 +90,9 @@
     <AsyncLogger name="org.apache.solr.core.SolrCore.SlowRequest" level="info" additivity="false">
       <AppenderRef ref="SlowLogFile"/>
     </AsyncLogger>
+    <AsyncLogger name="org.apache.solr.core.SolrCore.UBIRequest" level="info" additivity="false">
+      <AppenderRef ref="UBILogFile"/>
+    </AsyncLogger>    
     <AsyncLogger name="org.eclipse.jetty.deploy" level="warn"/>
     <AsyncLogger name="org.eclipse.jetty.webapp" level="warn"/>
     <AsyncLogger name="org.eclipse.jetty.server.session" level="warn"/>
@@ -84,4 +103,3 @@
     </AsyncRoot>
   </Loggers>
 </Configuration>
-
