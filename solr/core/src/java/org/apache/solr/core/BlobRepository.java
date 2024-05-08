@@ -91,13 +91,10 @@ public class BlobRepository {
     this.coreContainer = coreContainer;
   }
 
-  // I wanted to {@link SolrCore#loadDecodeAndCacheBlob(String, Decoder)} below but precommit
-  // complains
-
   /**
    * Returns the contents of a blob containing a ByteBuffer and increments a reference count. Please
    * return the same object to decrease the refcount. This is normally used for storing jar files,
-   * and binary raw data. If you are caching Java Objects you want to use {@code
+   * and binary raw data. If you are caching Java Objects you want to use {@link
    * SolrCore#loadDecodeAndCacheBlob(String, Decoder)}
    *
    * @param key it is a combination of blobname and version like blobName/version
