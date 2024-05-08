@@ -73,12 +73,12 @@ public class NumFieldLimitingUpdateRequestProcessorFactoryTest extends SolrTestC
   @Test
   public void testCorrectlyParsesAllConfigurationParams() {
     final var initArgs = new NamedList<>();
-    initArgs.add("maxFields", Integer.valueOf(123));
+    initArgs.add("maxFields", 123);
     initArgs.add("warnOnly", Boolean.TRUE);
 
     factory.init(initArgs);
 
-    assertEquals(123, factory.getFieldThreshold());
-    assertEquals(true, factory.getWarnOnly());
+    assertEquals(123, factory.maximumFields);
+    assertEquals(true, factory.warnOnly);
   }
 }

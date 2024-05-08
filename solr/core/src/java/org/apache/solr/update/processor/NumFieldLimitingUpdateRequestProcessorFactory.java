@@ -16,12 +16,17 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Locale;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.update.AddUpdateCommand;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This factory generates an UpdateRequestProcessor which fails update requests once a core has
@@ -53,22 +58,14 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  *
  * @since 9.7.0
  */
-public class NumFieldLimitingUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory
-    implements SolrCoreAware {
-
+public class NumFieldLimitingUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String MAXIMUM_FIELDS_PARAM = "maxFields";
   private static final String WARN_ONLY_PARAM = "warnOnly";
 
-  private NumFieldsMonitor numFieldsMonitor;
-  private int maximumFields;
-  private boolean warnOnly;
-
-  @Override
-  public void inform(final SolrCore core) {
-    numFieldsMonitor = new NumFieldsMonitor(core);
-    core.registerFirstSearcherListener(numFieldsMonitor);
-    core.registerNewSearcherListener(numFieldsMonitor);
-  }
+  // package visibility for tests
+  int maximumFields;
+  boolean warnOnly;
 
   @Override
   public void init(NamedList<?> args) {
@@ -83,7 +80,7 @@ public class NumFieldLimitingUpdateRequestProcessorFactory extends UpdateRequest
               + ", but no value was provided.");
     }
     final Object rawMaxFields = args.get(MAXIMUM_FIELDS_PARAM);
-    if (rawMaxFields == null || !(rawMaxFields instanceof Integer)) {
+    if (!(rawMaxFields instanceof Integer)) {
       throw new IllegalArgumentException(
           MAXIMUM_FIELDS_PARAM + " must be configured as a non-null <int>");
     }
@@ -96,17 +93,33 @@ public class NumFieldLimitingUpdateRequestProcessorFactory extends UpdateRequest
   @Override
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
+    // note: it's unusual to call req.getSearcher in a /update request but it should be fine
+    final int currentNumFields = req.getSearcher().getFieldInfos().size();
+    if (currentNumFields <= maximumFields) {
+      // great; no need to insert an URP to block or log anything
+      return next;
+    }
 
-    // TODO Should we skip to the next URP if running in SolrCloud and *not* a leader?
-    return new NumFieldLimitingUpdateRequestProcessor(
-        req, next, maximumFields, numFieldsMonitor.getCurrentNumFields(), warnOnly);
+    // Block indexing new documents
+    return new UpdateRequestProcessor(next) {
+      @Override
+      public void processAdd(AddUpdateCommand cmd) throws IOException {
+        String id = cmd.getPrintableId();
+        final String messageSuffix = warnOnly ? "Blocking update of document " + id : "";
+        final String message =
+            String.format(
+                Locale.ROOT,
+                "Current core has %d fields, exceeding the max-fields limit of %d.  %s",
+                currentNumFields,
+                maximumFields,
+                messageSuffix);
+        if (warnOnly) {
+          log.warn(message);
+        } else {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
+        }
+      }
+    };
   }
 
-  public int getFieldThreshold() {
-    return maximumFields;
-  }
-
-  public boolean getWarnOnly() {
-    return warnOnly;
-  }
 }
