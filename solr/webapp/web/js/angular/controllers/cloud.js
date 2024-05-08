@@ -155,7 +155,8 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.isFirstNodeForHost = function(node) {
     var hostName = node.split(":")[0]; 
     var nodesInHost = $scope.filteredNodes.filter(function (node) {
-      return node.startsWith(hostName);
+      var hostName2 = node.split(":")[0];
+      return hostName2 === hostName;
     });
     return nodesInHost[0] === node;
   };
