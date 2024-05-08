@@ -130,6 +130,9 @@ Other Changes
 ---------------------
 * SOLR-17248: Refactor ZK related SolrCli tools to separate SolrZkClient and CloudSolrClient instantiation/usage (Lamine Idjeraoui via Eric Pugh)
 
+* SOLR-16505: Use Jetty HTTP2 for index replication and other "recovery" operations
+  (Sanjay Dutt, David Smiley)
+
 ==================  9.6.0 ==================
 New Features
 ---------------------
@@ -262,8 +265,6 @@ Other Changes
   (Bruno Roustant)
 
 * SOLR-17222: QueryResponseWriterUtil.NonFlushingStream should support bulk write methods (Michael Gibney)
-
-* SOLR-16505: Switch internal replica recovery commands to Jetty HTTP2 (Sanjay Dutt, David Smiley)
 
 ==================  9.5.0 ==================
 New Features
