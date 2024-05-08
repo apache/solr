@@ -382,13 +382,8 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       stat = cluster.getZkClient().exists(PRS_PATH, null, true);
       // +1 for a new replica
       assertEquals(4, stat.getVersion());
-      log.info(
-          "jetty:{}, response: {}, v: {}", j2.getNodeName(), response.jsonStr(), stat.getVersion());
       DocCollection c = cluster.getZkStateReader().getCollection(PRS_COLL);
       Replica newreplica = c.getReplica((s, replica) -> replica.node.equals(j2.getNodeName()));
-
-      log.info(
-          "old  :{}, new :{} , leader: {}", leader.name, newreplica.name, c.getLeader("shard2"));
 
       // let's stop the old leader
       JettySolrRunner oldJetty = cluster.getReplicaJetty(leader);
@@ -406,13 +401,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
                       .get(newreplica.name)
                       .isLeader);
       PerReplicaStates prs = PerReplicaStatesOps.fetch(PRS_PATH, cluster.getZkClient(), null);
-      log.info("prs:{}, new replica :{}", prs, prs.states.get(newreplica.name).isLeader);
       stat = cluster.getZkClient().exists(PRS_PATH, null, true);
-      log.info(
-          "leader:{}, v after leader election: {}, state.json {}",
-          c.getLeader("shard2"),
-          stat.getVersion(),
-          cluster.getZkStateReader().getCollection(PRS_COLL));
       // the version should not have updated
       assertEquals(4, stat.getVersion());
     } finally {

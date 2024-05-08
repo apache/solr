@@ -164,7 +164,6 @@ public class SliceMutator {
       return ZkStateWriter.NO_OP;
     }
 
-
     Map<String, Slice> slices = coll.getSlicesMap();
     Slice slice = slices.get(sliceName);
 
