@@ -115,11 +115,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
   private SSLConfig sslConfig;
 
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
-
-  public List<HttpListenerFactory> getListenerFactory() {
-    return listenerFactory;
-  }
-
   private final AsyncTracker asyncTracker = new AsyncTracker();
 
   private final boolean closeClient;
@@ -152,6 +147,10 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   public void addListenerFactory(HttpListenerFactory factory) {
     this.listenerFactory.add(factory);
+  }
+
+  public List<HttpListenerFactory> getListenerFactory() {
+    return listenerFactory;
   }
 
   // internal usage only
