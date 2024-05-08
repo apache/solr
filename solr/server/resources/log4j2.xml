@@ -62,8 +62,8 @@
     
     <RollingRandomAccessFile
         name="UBILogFile"
-        fileName="${sys:solr.log.dir}/solr_ubi_requests.log"
-        filePattern="${sys:solr.log.dir}/solr_ubi_requests.log.%i" >
+        fileName="${sys:solr.log.dir}/solr_ubi_queries.log"
+        filePattern="${sys:solr.log.dir}/solr_ubi_queries.log.%i" >
       <PatternLayout>
         <Pattern>
           %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%notEmpty{c:%X{collection}}%notEmpty{ s:%X{shard}}%notEmpty{ r:%X{replica}}%notEmpty{ x:%X{core}}%notEmpty{ t:%X{trace_id}}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
