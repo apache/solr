@@ -22,11 +22,8 @@ import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_ST
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiPredicate;
-
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -43,7 +40,7 @@ import org.slf4j.LoggerFactory;
 /** This test would be faster if we simulated the zk state instead. */
 @LogLevel(
     "org.apache.solr.common.cloud.ZkStateReader=DEBUG;"
-    + "org.apache.solr.cloud.overseer.ZkStateWriter=DEBUG;"
+        + "org.apache.solr.cloud.overseer.ZkStateWriter=DEBUG;"
         + "org.apache.solr.handler.admin.CollectionsHandler=DEBUG;"
         + "org.apache.solr.common.cloud.PerReplicaStatesOps=DEBUG;"
         + "org.apache.solr.cloud.Overseer=INFO;"
@@ -372,41 +369,51 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
 
       // test for leader election
       Replica leader =
-              cluster.getZkStateReader().clusterState.getCollection(PRS_COLL).getLeader("shard2");
+          cluster.getZkStateReader().clusterState.getCollection(PRS_COLL).getLeader("shard2");
 
       JettySolrRunner j2 = cluster.startJettySolrRunner();
       response =
-              CollectionAdminRequest.addReplicaToShard(PRS_COLL, "shard2")
-                      .setNode(j2.getNodeName())
-                      .process(cluster.getSolrClient());
+          CollectionAdminRequest.addReplicaToShard(PRS_COLL, "shard2")
+              .setNode(j2.getNodeName())
+              .process(cluster.getSolrClient());
 
-      //wait for the new replica to be active
+      // wait for the new replica to be active
       cluster.waitForActiveCollection(PRS_COLL, 10, 11);
       stat = cluster.getZkClient().exists(PRS_PATH, null, true);
-      //+1 for a new replica
+      // +1 for a new replica
       assertEquals(4, stat.getVersion());
-      log.info("jetty:{}, response: {}, v: {}",j2.getNodeName(), response.jsonStr(), stat.getVersion());
-      DocCollection c = cluster
-              .getZkStateReader()
-              .getCollection(PRS_COLL);
+      log.info(
+          "jetty:{}, response: {}, v: {}", j2.getNodeName(), response.jsonStr(), stat.getVersion());
+      DocCollection c = cluster.getZkStateReader().getCollection(PRS_COLL);
       Replica newreplica = c.getReplica((s, replica) -> replica.node.equals(j2.getNodeName()));
 
+      log.info(
+          "old  :{}, new :{} , leader: {}", leader.name, newreplica.name, c.getLeader("shard2"));
 
-      log.info("old  :{}, new :{} , leader: {}" ,leader.name ,newreplica.name, c.getLeader("shard2") );
-
-      //let's stop the old leader
+      // let's stop the old leader
       JettySolrRunner oldJetty = cluster.getReplicaJetty(leader);
       oldJetty.stop();
 
-      cluster.getZkStateReader().waitForState(PRS_COLL, 10, TimeUnit.SECONDS,
-              (liveNodes, collectionState) -> PerReplicaStatesOps.fetch(PRS_PATH, cluster.getZkClient(), null).states.get(newreplica.name).isLeader);
+      cluster
+          .getZkStateReader()
+          .waitForState(
+              PRS_COLL,
+              10,
+              TimeUnit.SECONDS,
+              (liveNodes, collectionState) ->
+                  PerReplicaStatesOps.fetch(PRS_PATH, cluster.getZkClient(), null)
+                      .states
+                      .get(newreplica.name)
+                      .isLeader);
       PerReplicaStates prs = PerReplicaStatesOps.fetch(PRS_PATH, cluster.getZkClient(), null);
-      log.info("prs:{}, new replica :{}",prs,  prs.states.get(newreplica.name).isLeader);
+      log.info("prs:{}, new replica :{}", prs, prs.states.get(newreplica.name).isLeader);
       stat = cluster.getZkClient().exists(PRS_PATH, null, true);
-      log.info("leader:{}, v after leader election: {}, state.json {}",c.getLeader("shard2"), stat.getVersion(), cluster
-              .getZkStateReader()
-              .getCollection(PRS_COLL));
-      //the version should not have updated
+      log.info(
+          "leader:{}, v after leader election: {}, state.json {}",
+          c.getLeader("shard2"),
+          stat.getVersion(),
+          cluster.getZkStateReader().getCollection(PRS_COLL));
+      // the version should not have updated
       assertEquals(4, stat.getVersion());
     } finally {
       cluster.shutdown();
