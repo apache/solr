@@ -44,7 +44,7 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
     configureCluster(1) // only sharing *within* a node
         .addConfig("configname", TEST_PATH.resolve("resource-sharing"))
         .configure();
-    //    Thread.sleep(2000);
+
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 1)
         .process(cluster.getSolrClient());
     // test component will fail if it can't find a blob with this data by this name
@@ -53,7 +53,7 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
         findLiveNodeURI(),
         "testResource",
         ByteBuffer.wrap("foo,bar\nbaz,bam".getBytes(StandardCharsets.UTF_8)));
-    //    Thread.sleep(2000);
+
     // if these don't load we probably failed to post the blob above
     CollectionAdminRequest.createCollection("col1", "configname", 1, 1)
         .process(cluster.getSolrClient());
