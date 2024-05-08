@@ -79,7 +79,7 @@ public class BlobRepository {
   private final CoreContainer coreContainer;
 
   @SuppressWarnings({"rawtypes"})
-  private Map<String, BlobContent> blobs = createMap();
+  private final Map<String, BlobContent> blobs = createMap();
 
   // for unit tests to override
   @SuppressWarnings({"rawtypes"})
@@ -188,7 +188,7 @@ public class BlobRepository {
   }
 
   public static String sha512Digest(ByteBuffer byteBuffer) {
-    MessageDigest digest = null;
+    MessageDigest digest;
     try {
       digest = MessageDigest.getInstance("SHA-512");
     } catch (NoSuchAlgorithmException e) {
@@ -216,7 +216,7 @@ public class BlobRepository {
     HttpClient httpClient = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
     HttpGet httpGet = new HttpGet(url);
     ByteBuffer b;
-    HttpResponse response = null;
+    HttpResponse response;
     HttpEntity entity = null;
     try {
       response = httpClient.execute(httpGet);
