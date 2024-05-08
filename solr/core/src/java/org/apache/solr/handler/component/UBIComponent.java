@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.schema.IndexSchema;
@@ -100,11 +101,14 @@ public class UBIComponent extends SearchComponent {
 
       sb.append(schema.printableUniqueKey(searcher.doc(iter.nextDoc(), fields))).append(',');
     }
-    String docIds = sb.substring(0, sb.length() - 1);
-    // if (sb.length() > 0) {
-    rb.rsp.addToLog("ubi", docIds);
-    // }
+    String docIds = sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "";
+
+    ubiRequestLogger.error("bob dole");
     ubiRequestLogger.info("docIds: {}", docIds);
+    System.out.println("<UBI> docIds:" + docIds);
+    NamedList<String> ubiInfo = new NamedList<>();
+    ubiInfo.add("query_id", "1234"); // change to generateing
+    rb.rsp.add("ubi", ubiInfo);
   }
 
   @Override
