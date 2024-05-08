@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.schema.IndexSchema;
@@ -63,6 +63,7 @@ import org.slf4j.LoggerFactory;
 public class UBIComponent extends SearchComponent {
 
   public static final String COMPONENT_NAME = "ubi";
+  public static final String QUERY_ID = "query_id";
 
   private static final Logger ubiRequestLogger =
       LoggerFactory.getLogger(SolrCore.class.getName() + ".UBIRequest");
@@ -83,15 +84,25 @@ public class UBIComponent extends SearchComponent {
       return;
     }
 
+    String queryId = params.get(QUERY_ID, null);
+
+    if (queryId == null) {
+      queryId = "1234";
+    }
+
     ResultContext rc = (ResultContext) rb.rsp.getResponse();
 
     DocList docs = rc.getDocList();
 
-    processIds(rb, docs, schema, searcher);
+    processIds(rb, docs, queryId, schema, searcher);
   }
 
   protected void processIds(
-      ResponseBuilder rb, DocList dl, IndexSchema schema, SolrIndexSearcher searcher)
+      ResponseBuilder rb,
+      DocList dl,
+      String queryId,
+      IndexSchema schema,
+      SolrIndexSearcher searcher)
       throws IOException {
 
     StringBuilder sb = new StringBuilder();
@@ -106,8 +117,8 @@ public class UBIComponent extends SearchComponent {
     ubiRequestLogger.error("bob dole");
     ubiRequestLogger.info("docIds: {}", docIds);
     System.out.println("<UBI> docIds:" + docIds);
-    NamedList<String> ubiInfo = new NamedList<>();
-    ubiInfo.add("query_id", "1234"); // change to generateing
+    SimpleOrderedMap<String> ubiInfo = new SimpleOrderedMap<>();
+    ubiInfo.add("query_id", queryId);
     rb.rsp.add("ubi", ubiInfo);
   }
 

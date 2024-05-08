@@ -76,6 +76,28 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testExternallyGeneratedQueryId() throws Exception {
+    assertQ(
+        "Make sure we generate a query id",
+        req("qt", "/withubi", "q", "aa", "rows", "0", "ubi", "true", "query_id", "123abc"),
+        "//lst[@name='ubi']/str[@name='query_id'][.='123abc']");
+  }
+
+  @Test
+  public void testTrackingOfUserQuery() throws Exception {
+    assertQ(
+        "Make sure we generate a query id",
+        req("qt", "/withubi", "q", "aa", "rows", "0", "ubi", "true", "user_query", "fresh air"),
+        "//lst[@name='ubi']/str[@name='query_id'][.='123abc']");
+
+    // How do we handle this nested data?
+    assertQ(
+        "Make sure we generate a query id",
+        req("qt", "/withubi", "q", "aa", "rows", "0", "ubi", "true", "user_query", "fresh air"),
+        "//lst[@name='ubi']/str[@name='query_id'][.='123abc']");
+  }
+
+  @Test
   public void testDisabling() throws Exception {
     // SolrQueryRequest req = null;
     // try {
