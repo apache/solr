@@ -98,7 +98,7 @@ Other Changes
 ==================  9.7.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-13350: Multithreaded search execution (Ishan Chattopadhyaya, Mark Miller, Christine Poerschke, David Smiley, noble)
 
 Improvements
 ---------------------
@@ -108,11 +108,14 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+* SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
+  cluster metrics.  AttributeFetcherImpl was improved accordingly.  (Yohann Callea)
 
 Bug Fixes
 ---------------------
 * SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
+
+* SOLR-17261: Remove unintended timeout of 60 seconds for core loading. (Houston Putman)
 
 Dependency Upgrades
 ---------------------
@@ -120,7 +123,7 @@ Dependency Upgrades
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-17248: Refactor ZK related SolrCli tools to separate SolrZkClient and CloudSolrClient instantiation/usage (Lamine Idjeraoui via Eric Pugh)
 
 ==================  9.6.0 ==================
 New Features
