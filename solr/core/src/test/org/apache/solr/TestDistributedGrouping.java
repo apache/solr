@@ -57,6 +57,7 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
   String tdate_a = "a_n_tdt1"; // use single-valued date field
   String tdate_b = "b_n_tdt1";
   String oddField = "oddField_s1";
+  String enumField = "severity";
 
   @Test
   @SuppressWarnings({"unchecked"})
@@ -214,7 +215,9 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "foo_b",
         "true",
         "foo_d",
-        1.414d);
+        1.414d,
+        enumField,
+        "Low");
     indexr(
         id,
         2,
@@ -231,8 +234,22 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         b1dv,
         false,
         tdate_b,
-        "2009-11-02T11:00:00Z");
-    indexr(id, 3, i1, 2, tlong, 2, t1, "how now brown cow", tdate_a, "2010-05-03T11:00:00Z");
+        "2009-11-02T11:00:00Z",
+        enumField,
+        "Medium");
+    indexr(
+        id,
+        3,
+        i1,
+        2,
+        tlong,
+        2,
+        t1,
+        "how now brown cow",
+        tdate_a,
+        "2010-05-03T11:00:00Z",
+        enumField,
+        "Critical");
     indexr(
         id,
         4,
@@ -251,7 +268,9 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         tdate_a,
         "2010-05-03T11:00:00Z",
         tdate_b,
-        "2010-05-03T11:00:00Z");
+        "2010-05-03T11:00:00Z",
+        enumField,
+        "Low");
     indexr(
         id,
         5,
@@ -766,6 +785,22 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         10,
         "sort",
         i1 + " asc, id asc");
+
+    query(
+        "q",
+        "*:*",
+        "rows",
+        100,
+        "fl",
+        "id," + i1,
+        "group",
+        "true",
+        "group.field",
+        enumField,
+        "group.limit",
+        -1,
+        "sort",
+        enumField + " asc, id asc");
 
     // SOLR-4150: what if group.query has no matches,
     // or only matches on one shard

@@ -569,6 +569,8 @@
               tokenSeparator="_" outputUnigrams="false"/>
     </analyzer>
   </fieldType>
+
+  <fieldType name="severityType" class="solr.EnumField" enumsConfig="enumsConfig.xml" enumName="severity"/>
   
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
   <field name="signatureField" type="string" indexed="true" stored="false"/>
@@ -670,6 +672,8 @@
 
   <!-- Dense Vector-->
   <field name="vector" type="knn_vector" indexed="true" stored="true"/>
+
+  <field name="severity" type="severityType" indexed="true" stored="true" multiValued="false" docValues="true"/>
   
   <!--
      DO NOT INCLUDE _version_ in this schema file
