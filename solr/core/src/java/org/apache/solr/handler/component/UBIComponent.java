@@ -28,6 +28,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -41,8 +43,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Inspired by the ResponseLogComponent.
@@ -83,9 +83,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
   protected PluginInfo info = PluginInfo.EMPTY_INFO;
 
-  private static final Logger ubiRequestLogger =
-      LoggerFactory.getLogger(SolrCore.class.getName() + ".UBIRequest");
-
   private final CharArr charArr = new CharArr(1024 * 2);
   JSONWriter jsonWriter = new JSONWriter(charArr, -1);
   private Writer writer;
@@ -95,13 +92,14 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
   public void inform(SolrCore core) {
     List<PluginInfo> children = info.getChildren("ubi");
     String j = EnvUtils.getProperty("solr.log.dir");
-    // error handlin gon missing prop?
-
+    String ubiQueryJSONLLog = EnvUtils.getProperty("solr.log.dir") + "/" + UBI_QUERY_JSONL_LOG;
     try {
-      System.out.println("writing to " + j);
-      fos = new BufferedOutputStream(new FileOutputStream(j + "/" + UBI_QUERY_JSONL_LOG));
-    } catch (FileNotFoundException e) {
-      e.printStackTrace();
+      fos = new BufferedOutputStream(new FileOutputStream(ubiQueryJSONLLog));
+    } catch (FileNotFoundException exception) {
+      throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Error creating file  " + ubiQueryJSONLLog,
+              exception);
     }
     writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
 
@@ -180,8 +178,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       sb.append(schema.printableUniqueKey(searcher.doc(iter.nextDoc(), fields))).append(',');
     }
     String docIds = sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "";
-
-    ubiRequestLogger.info("docIds: {}", docIds);
     System.out.println("<UBI> docIds:" + docIds);
     SimpleOrderedMap<String> ubiResponseInfo = new SimpleOrderedMap<>();
     SimpleOrderedMap<Object> ubiQueryLogInfo = new SimpleOrderedMap<>();
@@ -196,12 +192,11 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
     writer.append('\n');
     writer.flush();
-    // writer.flush(); // maybe don't keep me
 
   }
 
   @Override
   public String getDescription() {
-    return "A component that inserts the retrieved documents into the response log entry";
+    return "A component that tracks original user query and the resulting documents returned.";
   }
 }
