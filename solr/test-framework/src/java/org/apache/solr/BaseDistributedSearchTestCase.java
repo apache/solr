@@ -536,8 +536,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return getHttpSolrClient(buildUrl(port), DEFAULT_TEST_CORENAME);
   }
 
-  protected String buildUrl(int port) {
-    return buildUrl(port, context);
+  @Deprecated // override static method; doesn't exist in Solr 10
+  protected static String buildUrl(int port) {
+    return buildUrl(port, getHostContextSuitableForServletContext());
   }
 
   protected static void addFields(SolrInputDocument doc, Object... fields) {

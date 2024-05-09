@@ -524,6 +524,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return result;
   }
 
+  protected static String buildUrl(final int port) {
+    return (isSSLMode() ? "https" : "http") + "://127.0.0.1:" + port + "/solr";
+  }
+
+  @Deprecated
   protected static String buildUrl(final int port, final String context) {
     return (isSSLMode() ? "https" : "http") + "://127.0.0.1:" + port + context;
   }
