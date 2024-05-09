@@ -44,13 +44,15 @@ public abstract class FacetMerger {
   public static class Context {
     // FacetComponentState state;  // todo: is this needed?
     final int numShards;
-    // [bucket0_shard0, bucket0_shard1, bucket0_shard2,  bucket1_shard0,
-    private final BitSet sawShard = new BitSet();
+    // BitSet per shard, each bit set holds bucket nums for whether or not a bucket has been seen
+    // for a given shard.
+    private final BitSet[] sawShard;
     // bucket1_shard1, bucket1_shard2]
-    private Map<String, Integer> shardmap = new HashMap<>();
+    private final Map<String, Integer> shardmap = new HashMap<>();
 
     public Context(int numShards) {
       this.numShards = numShards;
+      this.sawShard = new BitSet[numShards];
     }
 
     Object root; // per-shard response
@@ -75,11 +77,17 @@ public abstract class FacetMerger {
 
     public void setShardFlag(int bucketNum) {
       // rely on normal bitset expansion (uses a doubling strategy)
-      sawShard.set(bucketNum * numShards + shardNum);
+      BitSet bitSet = sawShard[shardNum];
+      if (bitSet == null) {
+        bitSet = new BitSet();
+        sawShard[shardNum] = bitSet;
+      }
+      bitSet.set(bucketNum);
     }
 
     public boolean getShardFlag(int bucketNum, int shardNum) {
-      return sawShard.get(bucketNum * numShards + shardNum);
+      BitSet bitSet = sawShard[shardNum];
+      return bitSet != null && bitSet.get(bucketNum);
     }
 
     public boolean getShardFlag(int bucketNum) {
