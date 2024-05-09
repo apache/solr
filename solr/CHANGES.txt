@@ -95,6 +95,8 @@ Other Changes
 
 * SOLR-17205: De-couple SolrJ required Java version from server Java version (janhoy)
 
+* SOLR-17279: Introduce SecurityJson.java file to Test Framework to consolidate setting up authentication in tests. (Rudy Seitz via Eric Pugh)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
