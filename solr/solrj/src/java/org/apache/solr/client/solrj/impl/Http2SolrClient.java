@@ -135,7 +135,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.httpClient = createHttpClient(builder);
       this.closeClient = true;
     }
-
+    if (builder.listenerFactory != null) {
+      this.listenerFactory.addAll(builder.listenerFactory);
+    }
     updateDefaultMimeTypeForParser();
 
     this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
@@ -145,6 +147,10 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   public void addListenerFactory(HttpListenerFactory factory) {
     this.listenerFactory.add(factory);
+  }
+
+  public List<HttpListenerFactory> getListenerFactory() {
+    return listenerFactory;
   }
 
   // internal usage only
@@ -844,6 +850,13 @@ public class Http2SolrClient extends HttpSolrClientBase {
     private SSLConfig sslConfig;
 
     protected Long keyStoreReloadIntervalSecs;
+
+    public Http2SolrClient.Builder withListenerFactory(List<HttpListenerFactory> listenerFactory) {
+      this.listenerFactory = listenerFactory;
+      return this;
+    }
+
+    private List<HttpListenerFactory> listenerFactory;
 
     public Builder() {
       super();
