@@ -30,18 +30,13 @@ teardown() {
 }
 
 @test "Run set up process" {
-
   solr start -c -e films
   
   run solr healthcheck -c films
   refute_output --partial 'error'
-  
-  #echo "Here is the logs dir"
-  #echo $SOLR_LOGS_DIR
-  #run ls ${SOLR_LOGS_DIR}
-  #assert_output --partial "Initializing authentication plugin: solr.KerberosPlugin"
 
-  #assert [ -e ${SOLR_LOGS_DIR}/solr_ubi_queries.log ]
+  # No luck with this
+  # assert [ -e ${SOLR_LOGS_DIR}/solr_ubi_queries.log ]
 
   run curl -X POST -H 'Content-type:application/json' -d '{
     "add-searchcomponent": {
@@ -73,11 +68,31 @@ teardown() {
   
   assert_output --partial '"status":0'
 
+  # Simple ubi enabled query
   run curl "http://localhost:${SOLR_PORT}/solr/films/select?q=*:*&rows=3&ubi=true"
   assert_output --partial '"status":0'
   assert_output --partial '"query_id":"1234'
   
+  
+  # Rich ubi enabled query
+  run curl -X POST -H 'Content-type:application/json' -d '{
+    "query" : "*:*",
+    "limit":2,
+    params: {
+      "ubi": "true"
+      "query_id": "xyz890",
+      "user_query": {
+        "query": "hot air",
+        "page": 2,
+        "filter": "inStock:true"
+      }            
+    }
+  }' "http://localhost:${SOLR_PORT}/solr/films/query" 
+  assert_output --partial '"query_id":"xyz890"'
+  
+  # No luck on getting the logs to read. 
   #run cat "${SOLR_LOGS_DIR}/solr.log"
-  #assert_output --partial "Initializing authentication plugin: solr.KerberosPlugin"
-  #assert_file_contains "${SOLR_LOGS_DIR}/solr_ubi_queries.log" 'eric'
+  #run tail -n 1 "${SOLR_LOGS_DIR}/ubi_queries.jsonl"
+  #assert_output --partial "inStock:false"
+  #assert_file_contains "${SOLR_LOGS_DIR}/ubi_queries.jsonl" 'eric'
 }
