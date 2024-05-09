@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.EnvUtils;
@@ -97,9 +96,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       fos = new BufferedOutputStream(new FileOutputStream(ubiQueryJSONLLog));
     } catch (FileNotFoundException exception) {
       throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Error creating file  " + ubiQueryJSONLLog,
-              exception);
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Error creating file  " + ubiQueryJSONLLog,
+          exception);
     }
     writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
 
@@ -191,7 +190,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
     writer.append('\n');
     writer.flush();
-
   }
 
   @Override

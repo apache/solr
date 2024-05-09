@@ -185,14 +185,11 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
     // }
   }
 
-  private static String readLastLineOfFile(File file) {
+  private static String readLastLineOfFile(File file) throws IOException {
     try (ReversedLinesFileReader reader =
         ReversedLinesFileReader.builder().setFile(file).setCharset(StandardCharsets.UTF_8).get()) {
       String line = reader.readLine();
       return line;
-    } catch (IOException e) {
-      e.printStackTrace();
     }
-    return null;
   }
 }
