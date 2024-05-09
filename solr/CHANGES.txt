@@ -98,7 +98,12 @@ Other Changes
 ==================  9.7.0 ==================
 New Features
 ---------------------
-(No changes)
+* SOLR-13350: Multithreaded search execution (Ishan Chattopadhyaya, Mark Miller, Christine Poerschke, David Smiley, noble)
+
+* SOLR-17192: Put an UpdateRequestProcessor-enforced soft-limit on the number of fields allowed in a core.  The `NumFieldLimitingUpdateRequestProcessorFactory`
+  limit may be adjusted by raising the factory's `maxFields` setting, toggled in and out of "warning-only" mode using the `warnOnly` setting, or disabled entirely
+  by removing it solrconfig.xml.  The limit is set at 1000 fields in the "_default" configset, but left in warning-only mode. (David Smiley, Eric Pugh,
+  Jason Gerlowski)
 
 Improvements
 ---------------------
