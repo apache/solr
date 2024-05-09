@@ -388,4 +388,19 @@ public class StrUtils {
       return stringWriter.toString();
     }
   }
+
+  @SuppressWarnings("ReferenceEquality")
+  public static boolean equalsIgnoreCase(String left, String right) {
+    if (left == right) {
+      return true;
+    }
+    if (left == null || right == null) {
+      return false;
+    }
+    if (left.length() != right.length()) {
+      return false;
+    }
+
+    return left.equalsIgnoreCase(right);
+  }
 }

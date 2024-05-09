@@ -1289,8 +1289,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         maxCode = Math.max(error.statusCode, maxCode);
       }
       if (minCode == maxCode) {
-        // all codes are consistent, use that...
-        return minCode;
+        // all codes are consistent, use that, as long as it's not the default value of -1
+        return minCode != -1 ? minCode : ErrorCode.SERVER_ERROR.code;
       } else if (400 <= minCode && maxCode < 500) {
         // all codes are 4xx, use 400
         return ErrorCode.BAD_REQUEST.code;

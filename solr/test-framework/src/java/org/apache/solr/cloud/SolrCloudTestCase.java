@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.api.collections.CreateCollectionCmd.PRS_DEFAULT_PROP;
+
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.io.IOException;
 import java.lang.annotation.ElementType;
@@ -51,12 +53,11 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,8 +84,6 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String PRS_DEFAULT_PROP = System.getProperty("use.per-replica", null);
-
   // this is an important timeout for test stability - can't be too short
   public static final int DEFAULT_TIMEOUT = 45;
 
@@ -97,11 +96,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return cluster.getZkStateReader().getZkClient();
   }
 
-  /** if the system property is not specified, use a random value */
+  /**
+   * if the system property is not specified, default to false. The SystemProperty will be set in a
+   * beforeClass method.
+   */
   public static boolean isPRS() {
-    return PRS_DEFAULT_PROP == null
-        ? random().nextBoolean()
-        : Boolean.parseBoolean(PRS_DEFAULT_PROP);
+    return EnvUtils.getEnvAsBool(PRS_DEFAULT_PROP, false);
   }
 
   /**
@@ -116,7 +116,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     // By default the MiniSolrCloudCluster being built will randomly (seed based) decide which
     // collection API strategy to use (distributed or Overseer based) and which cluster update
     // strategy to use (distributed if collection API is distributed, but Overseer based or
-    // distributed randomly chosen if Collection API is Overseer based)
+    // distributed randomly chosen if Collection API is Overseer based), and whether to use PRS
+
+    configurePrsDefault();
 
     boolean useDistributedCollectionConfigSetExecution = LuceneTestCase.random().nextInt(2) == 0;
     boolean useDistributedClusterStateUpdate =
@@ -124,6 +126,17 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return new MiniSolrCloudCluster.Builder(nodeCount, createTempDir())
         .withDistributedClusterStateUpdates(
             useDistributedCollectionConfigSetExecution, useDistributedClusterStateUpdate);
+  }
+
+  public static void configurePrsDefault() {
+    Class<?> target = RandomizedTest.getContext().getTargetClass();
+    boolean usePrs;
+    if (target != null && target.isAnnotationPresent(NoPrs.class)) {
+      usePrs = false;
+    } else {
+      usePrs = EnvUtils.getEnvAsBool(PRS_DEFAULT_PROP, LuceneTestCase.random().nextBoolean());
+    }
+    System.setProperty(PRS_DEFAULT_PROP, usePrs ? "true" : "false");
   }
 
   @AfterClass
@@ -134,34 +147,6 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       } finally {
         cluster = null;
       }
-    }
-  }
-
-  @BeforeClass
-  public static void setPrsDefault() {
-    Class<?> target = RandomizedTest.getContext().getTargetClass();
-    if (target != null && target.isAnnotationPresent(NoPrs.class)) return;
-    if (isPRS()) {
-      System.setProperty("solr.prs.default", "true");
-    }
-  }
-
-  @After
-  public void _unsetPrsDefault() {
-    unsetPrsDefault();
-  }
-
-  @Before
-  public void _setPrsDefault() {
-    setPrsDefault();
-  }
-
-  @AfterClass
-  public static void unsetPrsDefault() {
-    Class<?> target = RandomizedTest.getContext().getTargetClass();
-    if (target != null && target.isAnnotationPresent(NoPrs.class)) return;
-    if (isPRS()) {
-      System.clearProperty("solr.prs.default");
     }
   }
 

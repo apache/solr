@@ -17,6 +17,12 @@
 
 package org.apache.solr.cli;
 
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.cli.SolrCLI.findTool;
+import static org.apache.solr.cli.SolrCLI.parseCmdLine;
+import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -27,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import org.apache.commons.cli.CommandLine;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -43,10 +50,15 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JsonRecordReader;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.security.BasicAuthPlugin;
+import org.apache.solr.security.RuleBasedAuthorizationPlugin;
+import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL
 public class TestExportTool extends SolrCloudTestCase {
 
+  @Test
   public void testBasic() throws Exception {
     String COLLECTION_NAME = "globalLoaderColl";
     configureCluster(4).addConfig("conf", configset("cloud-dynamic")).configure();
@@ -216,6 +228,68 @@ public class TestExportTool extends SolrCloudTestCase {
     } finally {
       cluster.shutdown();
     }
+  }
+
+  @Test
+  public void testWithBasicAuth() throws Exception {
+    String COLLECTION_NAME = "secureCollection";
+    String USER = "solr";
+    String PASS = "SolrRocksAgain";
+    final String SECURITY_JSON =
+        Utils.toJSONString(
+            Map.of(
+                "authorization",
+                Map.of(
+                    "class",
+                    RuleBasedAuthorizationPlugin.class.getName(),
+                    "user-role",
+                    singletonMap(USER, "admin"),
+                    "permissions",
+                    singletonList(Map.of("name", "all", "role", "admin"))),
+                "authentication",
+                Map.of(
+                    "class",
+                    BasicAuthPlugin.class.getName(),
+                    "blockUnknown",
+                    true,
+                    "credentials",
+                    singletonMap(USER, getSaltedHashedValue(PASS)))));
+
+    configureCluster(2)
+        .addConfig("conf", configset("cloud-minimal"))
+        .withSecurityJson(SECURITY_JSON)
+        .configure();
+
+    try {
+      CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 1)
+          .setBasicAuthCredentials(USER, PASS)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
+
+      File outFile = File.createTempFile("output", ".json");
+
+      String[] args = {
+        "export",
+        "-url",
+        cluster.getJettySolrRunner(0).getBaseUrl() + "/" + COLLECTION_NAME,
+        "-credentials",
+        USER + ":" + PASS,
+        "-out",
+        outFile.getAbsolutePath(),
+        "-verbose"
+      };
+
+      assertEquals(0, runTool(args));
+    } finally {
+      cluster.shutdown();
+    }
+  }
+
+  private int runTool(String[] args) throws Exception {
+    Tool tool = findTool(args);
+    assertTrue(tool instanceof ExportTool);
+    CommandLine cli = parseCmdLine(tool.getName(), args, tool.getOptions());
+    return tool.runTool(cli);
   }
 
   private void assertJavabinDocsCount(ExportTool.Info info, int expected) throws IOException {

@@ -77,11 +77,9 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private final Http2SolrClient defaultHttpSolrClient;
 
-  private final CloseableHttpClient recoveryOnlyClient;
+  private final Http2SolrClient recoveryOnlyClient;
 
   private final CloseableHttpClient defaultClient;
-
-  private final InstrumentedPoolingHttpClientConnectionManager recoveryOnlyConnectionManager;
 
   private final InstrumentedPoolingHttpClientConnectionManager defaultConnectionManager;
 
@@ -95,16 +93,11 @@ public class UpdateShardHandler implements SolrInfoBean {
   private int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
-    recoveryOnlyConnectionManager =
-        new InstrumentedPoolingHttpClientConnectionManager(
-            HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
     defaultConnectionManager =
         new InstrumentedPoolingHttpClientConnectionManager(
             HttpClientUtil.getSocketFactoryRegistryProvider().getSocketFactoryRegistry());
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     if (cfg != null) {
-      recoveryOnlyConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
-      recoveryOnlyConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
       defaultConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
       defaultConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
       clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, cfg.getDistributedSocketTimeout());
@@ -123,9 +116,7 @@ public class UpdateShardHandler implements SolrInfoBean {
 
     httpRequestExecutor = new InstrumentedHttpRequestExecutor(getMetricNameStrategy(cfg));
     trackHttpSolrMetrics = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
-    recoveryOnlyClient =
-        HttpClientUtil.createClient(
-            clientParams, recoveryOnlyConnectionManager, false, httpRequestExecutor);
+
     defaultClient =
         HttpClientUtil.createClient(
             clientParams, defaultConnectionManager, false, httpRequestExecutor);
@@ -135,9 +126,14 @@ public class UpdateShardHandler implements SolrInfoBean {
             DistributedUpdateProcessor.DISTRIB_FROM,
             DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
     Http2SolrClient.Builder updateOnlyClientBuilder = new Http2SolrClient.Builder();
+    Http2SolrClient.Builder recoveryOnlyClientBuilder = new Http2SolrClient.Builder();
     Http2SolrClient.Builder defaultOnlyClientBuilder = new Http2SolrClient.Builder();
     if (cfg != null) {
       updateOnlyClientBuilder
+          .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
+          .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
+          .withMaxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
+      recoveryOnlyClientBuilder
           .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
           .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
           .withMaxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
@@ -146,9 +142,13 @@ public class UpdateShardHandler implements SolrInfoBean {
           .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS)
           .withMaxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
     }
+
     updateOnlyClientBuilder.withTheseParamNamesInTheUrl(urlParamNames);
     updateOnlyClient = updateOnlyClientBuilder.build();
     updateOnlyClient.addListenerFactory(trackHttpSolrMetrics);
+
+    recoveryOnlyClient = recoveryOnlyClientBuilder.build();
+    recoveryOnlyClient.addListenerFactory(trackHttpSolrMetrics);
 
     defaultHttpSolrClient = defaultOnlyClientBuilder.build();
     defaultHttpSolrClient.addListenerFactory(trackHttpSolrMetrics);
@@ -246,7 +246,6 @@ public class UpdateShardHandler implements SolrInfoBean {
     return solrMetricsContext;
   }
 
-  // please use getDefaultHttpSolrClient instead.
   @Deprecated(since = "9.6")
   public HttpClient getDefaultHttpClient() {
     return defaultClient;
@@ -263,7 +262,7 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   // don't introduce a bug, this client is for recovery ops only!
-  public HttpClient getRecoveryOnlyHttpClient() {
+  public Http2SolrClient getRecoveryOnlyHttpClient() {
     return recoveryOnlyClient;
   }
 
@@ -278,10 +277,6 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   public PoolingHttpClientConnectionManager getDefaultConnectionManager() {
     return defaultConnectionManager;
-  }
-
-  public PoolingHttpClientConnectionManager getRecoveryOnlyConnectionManager() {
-    return recoveryOnlyConnectionManager;
   }
 
   /**
@@ -306,11 +301,10 @@ public class UpdateShardHandler implements SolrInfoBean {
         // do nothing
       }
       IOUtils.closeQuietly(updateOnlyClient);
+      IOUtils.closeQuietly(recoveryOnlyClient);
       IOUtils.closeQuietly(defaultHttpSolrClient);
-      HttpClientUtil.close(recoveryOnlyClient);
       HttpClientUtil.close(defaultClient);
       defaultConnectionManager.close();
-      recoveryOnlyConnectionManager.close();
     }
   }
 
@@ -326,6 +320,7 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   public void setSecurityBuilder(HttpClientBuilderPlugin builder) {
     builder.setup(updateOnlyClient);
+    builder.setup(recoveryOnlyClient);
     builder.setup(defaultHttpSolrClient);
   }
 }

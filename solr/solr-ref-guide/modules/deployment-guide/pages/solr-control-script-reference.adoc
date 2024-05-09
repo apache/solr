@@ -1152,12 +1152,12 @@ The basic usage of bin/solr zk is:
 [source,plain]
 ----
 $ bin/solr zk -h
-Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost]
-         solr zk cp [-r] <src> <dest> [-z zkHost]
-         solr zk rm [-r] <path> [-z zkHost]
-         solr zk mv <src> <dest> [-z zkHost]
-         solr zk ls [-r] <path> [-z zkHost]
-         solr zk mkroot <path> [-z zkHost]
+Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost] [-s solrUrl]
+         solr zk cp [-r] <src> <dest> [-z zkHost] [-s solrUrl]
+         solr zk rm [-r] <path> [-z zkHost] [-s solrUrl]
+         solr zk mv <src> <dest> [-z zkHost] [-s solrUrl]
+         solr zk ls [-r] <path> [-z zkHost] [-s solrUrl]
+         solr zk mkroot <path> [-z zkHost] [-s solrUrl]
 ----
 
 NOTE: Solr should have been started at least once before issuing these commands to initialize ZooKeeper with the znodes Solr expects.
@@ -1217,6 +1217,15 @@ The ZooKeeper connection string.
 Is not required if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
+
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
 An example of this command with all of the parameters is:
 
@@ -1280,6 +1289,15 @@ The ZooKeeper connection string.
 Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
+
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
 An example of this command with all parameters is:
 
@@ -1356,6 +1374,15 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
+
 When `<src>` is a zk resource, `<dest>` may be '.'.
 If `<dest>` ends with '/', then `<dest>` will be a local folder or parent znode and the last element of the <src> path will be appended unless `<src>` also ends in a slash.
 `<dest>` may be `zk:`, which may be useful when using the `cp -r` form to backup/restore the entire zk state.
@@ -1430,6 +1457,15 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
+
 Examples of this command with the parameters are:
 
 `bin/solr zk rm -r /configs`
@@ -1483,6 +1519,15 @@ An example of this command is:
 
 `bin/solr zk mv /configs/oldconfigset /configs/newconfigset`
 
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
+
 
 === List a ZooKeeper znode's Children
 
@@ -1525,11 +1570,20 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
+
 An example of this command with the parameters is:
 
 `bin/solr zk ls -r /collections/mycollection`
 
-`bin/solr zk ls /collections`
+`bin/solr zk ls /collections -s http://localhost:8983`
 
 
 === Create a znode (supports chroot)
@@ -1564,6 +1618,15 @@ The ZooKeeper connection string.
 Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
+
+`-solrUrl <url>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `http://localhost:8983`
+|===
++
+Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper connection string if that's not known.
 
 Examples of this command:
 

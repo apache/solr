@@ -17,8 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -111,21 +109,16 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
     this.solrMetricsContext = parentContext.getChildContext(this);
   }
 
-  public static final Map<String, Class<? extends SearchComponent>> standard_components;
-
-  static {
-    HashMap<String, Class<? extends SearchComponent>> map = new HashMap<>();
-    map.put(HighlightComponent.COMPONENT_NAME, HighlightComponent.class);
-    map.put(QueryComponent.COMPONENT_NAME, QueryComponent.class);
-    map.put(FacetComponent.COMPONENT_NAME, FacetComponent.class);
-    map.put(FacetModule.COMPONENT_NAME, FacetModule.class);
-    map.put(MoreLikeThisComponent.COMPONENT_NAME, MoreLikeThisComponent.class);
-    map.put(StatsComponent.COMPONENT_NAME, StatsComponent.class);
-    map.put(DebugComponent.COMPONENT_NAME, DebugComponent.class);
-    map.put(RealTimeGetComponent.COMPONENT_NAME, RealTimeGetComponent.class);
-    map.put(ExpandComponent.COMPONENT_NAME, ExpandComponent.class);
-    map.put(TermsComponent.COMPONENT_NAME, TermsComponent.class);
-
-    standard_components = Collections.unmodifiableMap(map);
-  }
+  public static final Map<String, Class<? extends SearchComponent>> standard_components =
+      Map.of(
+          HighlightComponent.COMPONENT_NAME, HighlightComponent.class,
+          QueryComponent.COMPONENT_NAME, QueryComponent.class,
+          FacetComponent.COMPONENT_NAME, FacetComponent.class,
+          FacetModule.COMPONENT_NAME, FacetModule.class,
+          MoreLikeThisComponent.COMPONENT_NAME, MoreLikeThisComponent.class,
+          StatsComponent.COMPONENT_NAME, StatsComponent.class,
+          DebugComponent.COMPONENT_NAME, DebugComponent.class,
+          RealTimeGetComponent.COMPONENT_NAME, RealTimeGetComponent.class,
+          ExpandComponent.COMPONENT_NAME, ExpandComponent.class,
+          TermsComponent.COMPONENT_NAME, TermsComponent.class);
 }

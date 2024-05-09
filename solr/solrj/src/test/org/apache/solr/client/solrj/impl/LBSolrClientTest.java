@@ -103,11 +103,13 @@ public class LBSolrClientTest extends SolrTestCase {
     assertTrue(endpointIterator.hasNext());
     assertEquals(new LBSolrClient.Endpoint("1"), endpointIterator.nextOrError());
     assertTrue(endpointIterator.hasNext());
-    assertEquals(new LBSolrClient.Endpoint("2"), endpointIterator.nextOrError());
-    assertTrue(endpointIterator.hasNext());
     assertEquals(new LBSolrClient.Endpoint("3"), endpointIterator.nextOrError());
     assertTrue(endpointIterator.hasNext());
     assertEquals(new LBSolrClient.Endpoint("4"), endpointIterator.nextOrError());
+
+    // Try those on the Zombie list after all other possibilities are exhausted.
+    assertTrue(endpointIterator.hasNext());
+    assertEquals(new LBSolrClient.Endpoint("2"), endpointIterator.nextOrError());
   }
 
   @Test

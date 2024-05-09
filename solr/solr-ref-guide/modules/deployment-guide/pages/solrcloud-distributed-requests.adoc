@@ -266,7 +266,7 @@ shards.preference=replica.location:local,replica.type:PULL,replica.type:TLOG
 * Prefer any replica that is not a leader:
 +
 [source,text]
-`shards.preference=replica.leader:false`
+shards.preference=replica.leader:false
 
 Note that if you provide these parameters in a query string, they need to be properly URL-encoded.
 

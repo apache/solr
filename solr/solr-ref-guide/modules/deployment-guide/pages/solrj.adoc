@@ -98,7 +98,7 @@ Requests are sent in the form of {solr-javadocs}/solrj/org/apache/solr/client/so
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpSolrClient.html[`HttpSolrClient`] - geared towards query-centric workloads, though also a good general-purpose client.
 Communicates directly with a single Solr node.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`] - async, non-blocking and general-purpose client that leverage HTTP/2 using the Jetty Http library.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpJdkSolrClient.html[`HttpJdkSolrClient`] - General-purpose client using the JDK's built-in Http Client. Supports both Http/2 and Http/1.1.  Targeted for those users wishing to minimize application dependencies.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpJdkSolrClient.html[`HttpJdkSolrClient`] - General-purpose client using the JDK's built-in Http Client. Supports both Http/2 and Http/1.1. Supports async. Targeted for those users wishing to minimize application dependencies.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBHttpSolrClient.html[`LBHttpSolrClient`] - balances request load across a list of Solr nodes.
 Adjusts the list of "in-service" nodes based on node health.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBHttp2SolrClient.html[`LBHttp2SolrClient`] - just like `LBHttpSolrClient` but using `Http2SolrClient` instead, with the Jetty Http library.

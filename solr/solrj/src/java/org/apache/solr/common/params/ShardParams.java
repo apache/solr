@@ -123,7 +123,7 @@ public interface ShardParams {
     if (null == shardsTolerantValue || shardsTolerantValue.equals(REQUIRE_ZK_CONNECTED)) {
       return false;
     } else {
-      return StrUtils.parseBool(shardsTolerantValue); // throw an exception if non-boolean
+      return StrUtils.parseBool(shardsTolerantValue.trim()); // throw an exception if non-boolean
     }
   }
 }

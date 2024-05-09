@@ -265,7 +265,7 @@ public abstract class LBSolrClient extends SolrClient {
       while (it.hasNext()) {
         endpoint = it.next();
         // if the server is currently a zombie, just skip to the next one
-        EndpointWrapper wrapper = zombieServers.get(endpoint);
+        EndpointWrapper wrapper = zombieServers.get(endpoint.toString());
         if (wrapper != null) {
           final int numDeadServersToTry = req.getNumDeadServersToTry();
           if (numDeadServersToTry > 0) {
@@ -487,7 +487,7 @@ public abstract class LBSolrClient extends SolrClient {
       req.getRequest().setBasePath(baseUrl.toString());
       rsp.rsp = getClient(baseUrl).request(req.getRequest(), (String) null);
       if (isZombie) {
-        zombieServers.remove(baseUrl);
+        zombieServers.remove(baseUrl.toString());
       }
     } catch (BaseHttpSolrClient.RemoteExecutionException e) {
       throw e;

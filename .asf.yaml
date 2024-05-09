@@ -27,6 +27,7 @@ github:
     branch_9_3: {}
     branch_9_4: {}
     branch_9_5: {}
+    branch_9_6: {}
     branch_9x: {}
 
   protected_tags:

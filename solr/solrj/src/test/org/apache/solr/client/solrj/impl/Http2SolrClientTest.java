@@ -264,6 +264,21 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
   }
 
   @Test
+  public void testAsyncGet() throws Exception {
+    super.testQueryAsync();
+  }
+
+  @Test
+  public void testAsyncPost() throws Exception {
+    super.testUpdateAsync();
+  }
+
+  @Test
+  public void testAsyncException() throws Exception {
+    super.testAsyncExceptionBase();
+  }
+
+  @Test
   public void testFollowRedirect() throws Exception {
     final String clientUrl = getBaseUrl() + REDIRECT_SERVLET_PATH;
     try (Http2SolrClient client =
@@ -568,6 +583,28 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
         String expected3 =
             Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu3", "testp3");
         assertEquals(expected3, clone3.basicAuthAuthorizationStr);
+      }
+    }
+  }
+
+  @Test
+  public void testIdleTimeoutWithHttpClient() {
+    try (Http2SolrClient oldClient =
+        new Http2SolrClient.Builder("baseSolrUrl")
+            .withIdleTimeout(5000, TimeUnit.MILLISECONDS)
+            .build()) {
+      try (Http2SolrClient onlyBaseUrlChangedClient =
+          new Http2SolrClient.Builder("newBaseSolrUrl").withHttpClient(oldClient).build()) {
+        assertEquals(oldClient.getIdleTimeout(), onlyBaseUrlChangedClient.getIdleTimeout());
+        assertEquals(oldClient.getHttpClient(), onlyBaseUrlChangedClient.getHttpClient());
+      }
+      try (Http2SolrClient idleTimeoutChangedClient =
+          new Http2SolrClient.Builder("baseSolrUrl")
+              .withHttpClient(oldClient)
+              .withIdleTimeout(3000, TimeUnit.MILLISECONDS)
+              .build()) {
+        assertFalse(oldClient.getIdleTimeout() == idleTimeoutChangedClient.getIdleTimeout());
+        assertEquals(3000, idleTimeoutChangedClient.getIdleTimeout());
       }
     }
   }

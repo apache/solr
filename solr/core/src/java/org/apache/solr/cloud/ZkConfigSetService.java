@@ -62,7 +62,7 @@ public class ZkConfigSetService extends ConfigSetService {
     this.zkClient = cc.getZkController().getZkClient();
   }
 
-  /** This is for ZkCLI and some tests */
+  /** This is for some tests */
   public ZkConfigSetService(SolrZkClient zkClient) {
     super(null, false);
     this.zkController = null;
