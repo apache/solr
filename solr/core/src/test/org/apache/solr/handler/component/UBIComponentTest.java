@@ -121,6 +121,11 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
         "response/numFound==3",
         "ubi/query_id=='1234'");
 
+    String lastLine = readLastLineOfFile(ubiQueriesLog);
+
+    String json = "{\"query_id\":\"1234\",\"user_query\":null,\"doc_ids\":\"1,two\"}";
+    assertJSONEquals(json, lastLine);
+
     assertJQ(
         req(
             "qt",
@@ -145,11 +150,10 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
         "response/numFound==3",
         "ubi/query_id=='xjy-42-1rj'");
 
-    String lastLine = readLastLineOfFile(ubiQueriesLog);
+    lastLine = readLastLineOfFile(ubiQueriesLog);
 
-    // String json = "{\"query_id\":\"xjy-42-1rj\"}";
-    String json =
-        "{\"query_id\":\"xjy-42-1rj\",\"user_query\":{\"query\":\"aa\",\"page\":2,\"filter\":\"inStock:true\"}}";
+    json =
+        "{\"query_id\":\"xjy-42-1rj\",\"user_query\":{\"query\":\"aa\",\"page\":2,\"filter\":\"inStock:true\"},\"doc_ids\":\"1,two\"}";
     assertJSONEquals(json, lastLine);
   }
 

@@ -178,7 +178,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       sb.append(schema.printableUniqueKey(searcher.doc(iter.nextDoc(), fields))).append(',');
     }
     String docIds = sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "";
-    System.out.println("<UBI> docIds:" + docIds);
     SimpleOrderedMap<String> ubiResponseInfo = new SimpleOrderedMap<>();
     SimpleOrderedMap<Object> ubiQueryLogInfo = new SimpleOrderedMap<>();
     ubiResponseInfo.add("query_id", queryId);
@@ -186,9 +185,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
     ubiQueryLogInfo.add("query_id", queryId);
     ubiQueryLogInfo.add("user_query", userQuery);
+    ubiQueryLogInfo.add("doc_ids", docIds);
 
     jsonWriter.write(ubiQueryLogInfo);
-    System.out.println("This is what the data looks like:" + charArr.toString());
     writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
     writer.append('\n');
     writer.flush();
