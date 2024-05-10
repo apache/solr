@@ -149,7 +149,7 @@ public class AtomicUpdateJsonTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1");
-    Map<String, String> removeSetField = new HashMap<String, String>();
+    Map<String, String> removeSetField = new HashMap<>();
     removeSetField.put("set", null);
     doc.setField("set", removeSetField);
     updateJ(jsonAdd(doc), null);
