@@ -238,7 +238,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     validateGetRequest(solrRequest);
     reqb.GET();
     decorateRequest(reqb, solrRequest);
-    reqb.uri(new URI(url + "?" + queryParams));
+    reqb.uri(new URI(url + queryParams.toQueryString()));
     return new PreparedRequest(reqb, null);
   }
 
