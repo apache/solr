@@ -20,20 +20,14 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 
 // Tests atomic updates using JSON loader, since the existing
 // tests all use XML format, and there have been some atomic update
 // issues that were specific to the JSONformat.
 public class AtomicUpdateJsonTest extends SolrTestCaseJ4 {
-
-  @ClassRule
-  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeTests() throws Exception {
