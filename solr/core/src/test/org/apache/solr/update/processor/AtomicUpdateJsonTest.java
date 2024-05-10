@@ -26,7 +26,7 @@ import org.junit.Test;
 
 // Tests atomic updates using JSON loader, since the existing
 // tests all use XML format, and there have been some atomic update
-// issues that were specific to the JSONformat.
+// issues that were specific to the JSON format.
 public class AtomicUpdateJsonTest extends SolrTestCaseJ4 {
 
   @BeforeClass
