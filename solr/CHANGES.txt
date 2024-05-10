@@ -106,6 +106,9 @@ Improvements
 
 * SOLR-14115: Add linkconfig, cluster, and updateacls as commands to SolrCLI.  Allow bin/solr commands to have parity with zkcli.sh commands. (Eric Pugh)
 
+* SOLR-17274: Allow JSON atomic updates to use multiple modifiers or a modifier like 'set' as a field name
+  if child docs are not enabled. (Calvin Smith, David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
