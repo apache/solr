@@ -26,7 +26,6 @@ public class MonitorConstants {
   private MonitorConstants() {}
 
   public static final String REVERSE_SEARCH_PARAM_NAME = "reverseSearch";
-  public static final String SOLR_MONITOR_CACHE_NAME = "solrMonitorCache";
   public static final String MONITOR_DOCUMENTS_KEY = "monitorDocuments";
   public static final String MONITOR_DOCUMENT_KEY = "monitorDocument";
   public static final String MONITOR_QUERIES_KEY = "queries";

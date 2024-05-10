@@ -23,7 +23,6 @@ import static org.apache.solr.monitor.MonitorConstants.MONITOR_DOCUMENTS_KEY;
 import static org.apache.solr.monitor.MonitorConstants.MONITOR_OUTPUT_KEY;
 import static org.apache.solr.monitor.MonitorConstants.QUERY_MATCH_TYPE_KEY;
 import static org.apache.solr.monitor.MonitorConstants.REVERSE_SEARCH_PARAM_NAME;
-import static org.apache.solr.monitor.MonitorConstants.SOLR_MONITOR_CACHE_NAME;
 import static org.apache.solr.monitor.MonitorConstants.WRITE_TO_DOC_LIST_KEY;
 import static org.apache.solr.monitor.search.PresearcherFactory.DEFAULT_ALIAS_PREFIX;
 import static org.apache.solr.monitor.search.QueryMatchResponseCodec.mergeResponses;
@@ -72,6 +71,10 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
   public static final String COMPONENT_NAME = "reverseSearch";
   private static final String MATCHER_THREAD_COUNT_KEY = "threadCount";
 
+  private static final String SOLR_MONITOR_CACHE_NAME_KEY = "solrMonitorCacheName";
+  private static final String SOLR_MONITOR_CACHE_NAME_DEFAULT = "solrMonitorCache";
+  private String solrMonitorCacheName = SOLR_MONITOR_CACHE_NAME_DEFAULT;
+
   private Presearcher presearcher;
   private SolrMatcherSinkFactory solrMatcherSinkFactory = new SolrMatcherSinkFactory();
   private ExecutorService executor;
@@ -80,6 +83,10 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
+    Object solrMonitorCacheName = args.remove(SOLR_MONITOR_CACHE_NAME_KEY);
+    if (solrMonitorCacheName != null) {
+      this.solrMonitorCacheName = (String) solrMonitorCacheName;
+    }
     Object threadCount = args.remove(MATCHER_THREAD_COUNT_KEY);
     if (threadCount instanceof Integer) {
       executor =
@@ -114,7 +121,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
     mutableFilters.add(preFilterQuery);
     var searcher = req.getSearcher();
     MonitorQueryCache solrMonitorCache =
-        (SharedMonitorCache) searcher.getCache(SOLR_MONITOR_CACHE_NAME);
+        (SharedMonitorCache) searcher.getCache(this.solrMonitorCacheName);
     SolrMonitorQueryDecoder queryDecoder = SolrMonitorQueryDecoder.fromCore(req.getCore());
     mutableFilters.add(
         new MonitorPostFilter(
@@ -245,7 +252,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
   private BiPredicate<String, BytesRef> getTermAcceptor(SolrQueryRequest req) {
     var searcher = req.getSearcher();
-    MonitorQueryCache cache = (MonitorQueryCache) searcher.getCache(SOLR_MONITOR_CACHE_NAME);
+    MonitorQueryCache cache = (MonitorQueryCache) searcher.getCache(this.solrMonitorCacheName);
     if (cache == null) {
       return (__, ___) -> true;
     }

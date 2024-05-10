@@ -65,7 +65,7 @@
       initialSize="0"
       autowarmCount="10"
       regenerator="solr.NoOpRegenerator"/>
-    <cache name="solrMonitorCache"
+    <cache name="mySolrMonitorCache"
       class="org.apache.solr.monitor.cache.SharedMonitorCache"
       async="false"
       maxRamMB="1"
@@ -114,6 +114,7 @@
 
   <searchComponent name="reverseSearch"
     class="org.apache.solr.monitor.search.ReverseSearchComponent">
+    <str name="solrMonitorCacheName">mySolrMonitorCache</str>
     <int name="threadCount">16</int>
     <str name="presearcherType">MultipassTermFilteredPresearcher</str>
     <bool name="applyFieldNameAlias">true</bool>
