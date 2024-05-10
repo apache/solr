@@ -37,7 +37,7 @@ public class AtomicUpdateJsonTest extends SolrTestCaseJ4 {
 
   @Before
   public void before() {
-    h.update("<delete><query>*:*</query></delete>");
+    assertU(delQ("*:*"));
     assertU(commit());
   }
 
