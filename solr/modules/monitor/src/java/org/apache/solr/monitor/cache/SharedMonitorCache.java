@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
 import org.apache.lucene.monitor.MonitorQuery;
 import org.apache.lucene.monitor.QCEVisitor;
+import org.apache.lucene.monitor.QueryDecomposer;
 import org.apache.lucene.monitor.QueryTermFilterVisitor;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -39,7 +40,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.monitor.MonitorConstants;
 import org.apache.solr.monitor.MonitorDataValues;
 import org.apache.solr.monitor.SolrMonitorQueryDecoder;
 import org.apache.solr.search.CacheRegenerator;
@@ -81,7 +81,8 @@ public class SharedMonitorCache extends SolrCacheBase
     return mqCacheMap()
         .compute(
             dataValues.getCacheId(),
-            (cacheId, prevEntry) -> compute(cacheId, prevEntry, dataValues, decoder::decode));
+            (cacheId, prevEntry) ->
+                compute(cacheId, prevEntry, dataValues, decoder::decode, decoder.queryDecomposer));
   }
 
   @Override
@@ -277,13 +278,13 @@ public class SharedMonitorCache extends SolrCacheBase
       String cacheId,
       VersionedQueryCacheEntry prevEntry,
       MonitorDataValues dataValues,
-      IOFunction<MonitorDataValues, MonitorQuery> decoder) {
+      IOFunction<MonitorDataValues, MonitorQuery> decoder,
+      QueryDecomposer decomposer) {
     try {
       var version = dataValues.getVersion();
       if (prevEntry == null || version > prevEntry.version) {
         var monitorQuery = decoder.apply(dataValues);
-        QCEVisitor component =
-            QCEVisitor.getComponent(monitorQuery, MonitorConstants.QUERY_DECOMPOSER, cacheId);
+        QCEVisitor component = QCEVisitor.getComponent(monitorQuery, decomposer, cacheId);
         currentStats.updateAndGet(CurrentStats::miss);
         return new VersionedQueryCacheEntry(component, version);
       }

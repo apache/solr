@@ -20,6 +20,7 @@
 package org.apache.solr.monitor.update;
 
 import org.apache.lucene.monitor.Presearcher;
+import org.apache.lucene.monitor.QueryDecomposer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.monitor.search.ReverseSearchComponent;
 import org.apache.solr.request.SolrQueryRequest;
@@ -31,19 +32,21 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 public class MonitorUpdateProcessorFactory extends UpdateRequestProcessorFactory
     implements SolrCoreAware {
 
+  private QueryDecomposer queryDecomposer;
   private Presearcher presearcher;
 
   @Override
   public UpdateRequestProcessor getInstance(
       SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    return new MonitorUpdateRequestProcessor(next, req.getCore(), presearcher);
+    return new MonitorUpdateRequestProcessor(next, req.getCore(), queryDecomposer, presearcher);
   }
 
   @Override
   public void inform(SolrCore core) {
-    presearcher =
-        ((ReverseSearchComponent)
-                core.getSearchComponents().get(ReverseSearchComponent.COMPONENT_NAME))
-            .getPresearcher();
+    ReverseSearchComponent rsc =
+        (ReverseSearchComponent)
+            core.getSearchComponents().get(ReverseSearchComponent.COMPONENT_NAME);
+    presearcher = rsc.getPresearcher();
+    queryDecomposer = rsc.getQueryDecomposer();
   }
 }

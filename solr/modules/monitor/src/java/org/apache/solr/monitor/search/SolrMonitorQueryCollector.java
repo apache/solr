@@ -24,7 +24,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.monitor.QCEVisitor;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.solr.monitor.MonitorConstants;
 import org.apache.solr.monitor.MonitorDataValues;
 import org.apache.solr.monitor.SolrMonitorQueryDecoder;
 import org.apache.solr.monitor.cache.MonitorQueryCache;
@@ -70,9 +69,7 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
             : monitorQueryCache.computeIfStale(dataValues, queryDecoder);
     return (versionedEntry == null || versionedEntry.version != dataValues.getVersion())
         ? QCEVisitor.getComponent(
-            queryDecoder.decode(dataValues),
-            MonitorConstants.QUERY_DECOMPOSER,
-            dataValues.getCacheId())
+            queryDecoder.decode(dataValues), queryDecoder.queryDecomposer, dataValues.getCacheId())
         : versionedEntry.entry;
   }
 

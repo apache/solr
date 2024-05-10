@@ -41,6 +41,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.monitor.DocumentBatchVisitor;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.Presearcher;
+import org.apache.lucene.monitor.QueryDecomposer;
 import org.apache.lucene.monitor.TermFilteredPresearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -75,6 +76,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
   private static final String SOLR_MONITOR_CACHE_NAME_DEFAULT = "solrMonitorCache";
   private String solrMonitorCacheName = SOLR_MONITOR_CACHE_NAME_DEFAULT;
 
+  private QueryDecomposer queryDecomposer;
   private Presearcher presearcher;
   private SolrMatcherSinkFactory solrMatcherSinkFactory = new SolrMatcherSinkFactory();
   private ExecutorService executor;
@@ -122,7 +124,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
     var searcher = req.getSearcher();
     MonitorQueryCache solrMonitorCache =
         (SharedMonitorCache) searcher.getCache(this.solrMonitorCacheName);
-    SolrMonitorQueryDecoder queryDecoder = SolrMonitorQueryDecoder.fromCore(req.getCore());
+    SolrMonitorQueryDecoder queryDecoder = new SolrMonitorQueryDecoder(req.getCore());
     mutableFilters.add(
         new MonitorPostFilter(
             new SolrMonitorQueryCollector.CollectorContext(
@@ -194,6 +196,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
             ExecutorUtil.shutdownAndAwaitTermination(executor);
           }
         });
+    queryDecomposer = new QueryDecomposer();
     presearcher = PresearcherFactory.build(core.getResourceLoader(), presearcherParameters);
     var schema = core.getLatestSchema();
     if (presearcher instanceof AliasingPresearcher) {
@@ -244,6 +247,10 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
             MonitorFields.ANYTOKEN_FIELD + " field must be tokenized and multi-valued.");
       }
     }
+  }
+
+  public QueryDecomposer getQueryDecomposer() {
+    return queryDecomposer;
   }
 
   public Presearcher getPresearcher() {

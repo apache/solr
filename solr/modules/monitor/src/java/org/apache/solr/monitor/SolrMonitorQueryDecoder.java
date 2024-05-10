@@ -23,22 +23,31 @@ import java.io.IOException;
 import java.util.Map;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.MonitorQuery;
+import org.apache.lucene.monitor.QueryDecomposer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.monitor.search.ReverseSearchComponent;
 
-public interface SolrMonitorQueryDecoder {
+public class SolrMonitorQueryDecoder {
 
-  MonitorQuery decode(MonitorDataValues monitorDataValues) throws IOException;
+  private final SolrCore core;
+  public final QueryDecomposer queryDecomposer;
 
-  static SolrMonitorQueryDecoder fromCore(SolrCore core) {
-    return monitorDataValues -> {
-      String id = monitorDataValues.getQueryId();
-      String queryStr = monitorDataValues.getMq();
-      var query = SimpleQueryParser.parse(queryStr, core);
-      String payload = monitorDataValues.getPayload();
-      if (payload == null) {
-        return new MonitorQuery(id, query, queryStr, Map.of());
-      }
-      return new MonitorQuery(id, query, queryStr, Map.of(MonitorFields.PAYLOAD, payload));
-    };
+  public SolrMonitorQueryDecoder(SolrCore core) {
+    this.core = core;
+    ReverseSearchComponent rsc =
+        (ReverseSearchComponent)
+            core.getSearchComponents().get(ReverseSearchComponent.COMPONENT_NAME);
+    this.queryDecomposer = rsc.getQueryDecomposer();
+  }
+
+  public MonitorQuery decode(MonitorDataValues monitorDataValues) throws IOException {
+    String id = monitorDataValues.getQueryId();
+    String queryStr = monitorDataValues.getMq();
+    var query = SimpleQueryParser.parse(queryStr, core);
+    String payload = monitorDataValues.getPayload();
+    if (payload == null) {
+      return new MonitorQuery(id, query, queryStr, Map.of());
+    }
+    return new MonitorQuery(id, query, queryStr, Map.of(MonitorFields.PAYLOAD, payload));
   }
 }
