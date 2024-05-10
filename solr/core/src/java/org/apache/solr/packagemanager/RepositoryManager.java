@@ -43,6 +43,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.common.SolrException;
@@ -236,7 +237,7 @@ public class RepositoryManager {
       add.manifestSHA512 = manifestSHA512;
 
       GenericSolrRequest request =
-          new GenericSolrRequest(SolrRequest.METHOD.POST, PackageUtils.PACKAGE_PATH) {
+          new GenericV2SolrRequest(SolrRequest.METHOD.POST, PackageUtils.PACKAGE_PATH) {
             @Override
             public RequestWriter.ContentWriter getContentWriter(String expectedType) {
               return new RequestWriter.StringPayloadContentWriter(
