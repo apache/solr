@@ -313,7 +313,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     } else {
       reqb.method("POST", bodyPublisher);
     }
-    URI uriWithQueryParams = new URI(url + "?" + queryParams);
+    URI uriWithQueryParams = new URI(url + queryParams.toQueryString());
     reqb.uri(uriWithQueryParams);
 
     return new PreparedRequest(reqb, contentWritingFuture);
