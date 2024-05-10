@@ -62,8 +62,8 @@ public class TimeZoneUtilsTest extends SolrTestCase {
 
       // Hack: Why do some timezones have useDaylightTime() as true, but DST as 0?
       // It causes an exception during String.valueOf(actual/expected)
-      if (expected.useDaylightTime() && expected.getDSTSavings() == 0
-          || actual.useDaylightTime() && actual.getDSTSavings() == 0) {
+      if ((expected.useDaylightTime() && expected.getDSTSavings() == 0)
+          || (actual.useDaylightTime() && actual.getDSTSavings() == 0)) {
         if (log.isWarnEnabled()) {
           log.warn(
               "Not expecting DST to be 0 for {} " + " (actual: {})",
