@@ -258,7 +258,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
   }
 
   private boolean isV2ApiRequest(final SolrRequest<?> request) {
-    return request instanceof V2Request || request.getPath().contains("/____v2");
+    return request.getApiVersion() == SolrRequest.ApiVersion.V2;
   }
 
   private void setBasicAuthHeader(SolrRequest<?> request, HttpRequestBase method)
@@ -372,7 +372,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     String basePath = baseUrl;
     if (collection != null) basePath += "/" + collection;
 
-    if (request instanceof V2Request) {
+    if (isV2ApiRequest(request)) {
       if (System.getProperty("solr.v2RealPath") == null || ((V2Request) request).isForceV2()) {
         basePath = baseUrl.replace("/solr", "/api");
       } else {
