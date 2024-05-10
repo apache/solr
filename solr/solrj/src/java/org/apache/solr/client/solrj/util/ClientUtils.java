@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.util;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -29,6 +31,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
@@ -44,6 +48,8 @@ public class ClientUtils {
   public static final String TEXT_XML = "application/xml; charset=UTF-8";
   public static final String TEXT_JSON = "application/json; charset=UTF-8";
 
+  public static final String DEFAULT_PATH = "/select";
+
   /** Take a string and make it an iterable ContentStream */
   public static Collection<ContentStream> toContentStreams(
       final String str, final String contentType) {
@@ -54,6 +60,38 @@ public class ClientUtils {
     ccc.setContentType(contentType);
     streams.add(ccc);
     return streams;
+  }
+
+  public static String buildRequestUrl(
+      SolrRequest<?> solrRequest,
+      RequestWriter requestWriter,
+      String serverRootUrl,
+      String collection)
+      throws MalformedURLException {
+    String basePath = solrRequest.getBasePath() == null ? serverRootUrl : solrRequest.getBasePath();
+
+    if (solrRequest instanceof V2Request) {
+      if (System.getProperty("solr.v2RealPath") == null) {
+        basePath = changeV2RequestEndpoint(basePath);
+      } else {
+        basePath = serverRootUrl + "/____v2";
+      }
+    }
+
+    if (collection != null) basePath += "/" + collection;
+
+    String path = requestWriter.getPath(solrRequest);
+    if (path == null || !path.startsWith("/")) {
+      path = DEFAULT_PATH;
+    }
+
+    return basePath + path;
+  }
+
+  private static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
+    URL oldURL = new URL(basePath);
+    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
+    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
   }
 
   // ------------------------------------------------------------------------
