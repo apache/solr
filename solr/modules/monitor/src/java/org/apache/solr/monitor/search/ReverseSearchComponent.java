@@ -22,7 +22,6 @@ package org.apache.solr.monitor.search;
 import static org.apache.solr.monitor.MonitorConstants.MONITOR_DOCUMENTS_KEY;
 import static org.apache.solr.monitor.MonitorConstants.MONITOR_OUTPUT_KEY;
 import static org.apache.solr.monitor.MonitorConstants.QUERY_MATCH_TYPE_KEY;
-import static org.apache.solr.monitor.MonitorConstants.REVERSE_SEARCH_PARAM_NAME;
 import static org.apache.solr.monitor.MonitorConstants.WRITE_TO_DOC_LIST_KEY;
 import static org.apache.solr.monitor.search.PresearcherFactory.DEFAULT_ALIAS_PREFIX;
 import static org.apache.solr.monitor.search.QueryMatchResponseCodec.mergeResponses;
@@ -100,9 +99,6 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
   @Override
   public void prepare(ResponseBuilder rb) {
-    if (skipReverseSearch(rb)) {
-      return;
-    }
     var req = rb.req;
     var documentBatch = documentBatch(req);
     boolean writeToDocList = req.getParams().getBool(WRITE_TO_DOC_LIST_KEY, false);
@@ -161,7 +157,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
   @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
-    if (skipReverseSearch(rb) || (sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) == 0) {
+    if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) == 0) {
       return;
     }
     var responses =
@@ -179,10 +175,6 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
   @Override
   public String getDescription() {
     return "Component that integrates with lucene monitor for reverse search.";
-  }
-
-  private static boolean skipReverseSearch(ResponseBuilder rb) {
-    return !rb.req.getParams().getBool(REVERSE_SEARCH_PARAM_NAME, false);
   }
 
   @Override
