@@ -62,14 +62,14 @@ public class AtomicUpdateJsonTest extends SolrTestCaseJ4 {
     doc.setField("name", new String[] {"aaa"});
     updateJ(jsonAdd(doc), null);
     assertU(commit());
-    assertQ(req("q", "name:bbb", "indent", "true"), "//result[@numFound = '0']");
+    assertQ(req("q", "name:bbb"), "//result[@numFound = '0']");
 
     doc = new SolrInputDocument();
     doc.setField("id", "1");
     doc.setField("name", Map.of("add", "bbb"));
     updateJ(jsonAdd(doc), null);
     assertU(commit());
-    assertQ(req("q", "name:bbb", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "name:bbb"), "//result[@numFound = '1']");
   }
 
   @Test
@@ -79,15 +79,15 @@ public class AtomicUpdateJsonTest extends SolrTestCaseJ4 {
     doc.setField("name", new String[] {"aaa", "bbb"});
     updateJ(jsonAdd(doc), null);
     assertU(commit());
-    assertQ(req("q", "name:bbb", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "name:bbb"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
     doc.setField("id", "1");
     doc.setField("name", Map.of("remove", "bbb"));
     updateJ(jsonAdd(doc), null);
     assertU(commit());
-    assertQ(req("q", "name:bbb", "indent", "true"), "//result[@numFound = '0']");
-    assertQ(req("q", "name:aaa", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "name:bbb"), "//result[@numFound = '0']");
+    assertQ(req("q", "name:aaa"), "//result[@numFound = '1']");
   }
 
   @Test
@@ -97,25 +97,19 @@ public class AtomicUpdateJsonTest extends SolrTestCaseJ4 {
     doc.setField("name", new String[] {"aaa", "bbb", "ccc"});
     updateJ(jsonAdd(doc), null);
     assertU(commit());
-    assertQ(req("q", "name:bbb", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "name:bbb"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
     doc.setField("id", "1");
     doc.setField(
-        "name",
-        new HashMap<String, Object>() {
-          {
-            put("add", new String[] {"ddd", "eee"});
-            put("remove", new String[] {"aaa", "ccc"});
-          }
-        });
+        "name", Map.of("add", new String[] {"ddd", "eee"}, "remove", new String[] {"aaa", "ccc"}));
     updateJ(jsonAdd(doc), null);
     assertU(commit());
-    assertQ(req("q", "name:aaa", "indent", "true"), "//result[@numFound = '0']");
-    assertQ(req("q", "name:ccc", "indent", "true"), "//result[@numFound = '0']");
-    assertQ(req("q", "name:bbb", "indent", "true"), "//result[@numFound = '1']");
-    assertQ(req("q", "name:ddd", "indent", "true"), "//result[@numFound = '1']");
-    assertQ(req("q", "name:eee", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "name:aaa"), "//result[@numFound = '0']");
+    assertQ(req("q", "name:ccc"), "//result[@numFound = '0']");
+    assertQ(req("q", "name:bbb"), "//result[@numFound = '1']");
+    assertQ(req("q", "name:ddd"), "//result[@numFound = '1']");
+    assertQ(req("q", "name:eee"), "//result[@numFound = '1']");
   }
 
   @Test
@@ -125,19 +119,19 @@ public class AtomicUpdateJsonTest extends SolrTestCaseJ4 {
     doc.setField("name", new String[] {"aaa", "bbb", "ccc"});
     updateJ(jsonAdd(doc), null);
     assertU(commit());
-    assertQ(req("q", "name:aaa", "indent", "true"), "//result[@numFound = '1']");
-    assertQ(req("q", "name:bbb", "indent", "true"), "//result[@numFound = '1']");
-    assertQ(req("q", "name:ccc", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "name:aaa"), "//result[@numFound = '1']");
+    assertQ(req("q", "name:bbb"), "//result[@numFound = '1']");
+    assertQ(req("q", "name:ccc"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
     doc.setField("id", "1");
     doc.setField("name", Map.of("add", "ddd", "remove", "bbb"));
     updateJ(jsonAdd(doc), null);
     assertU(commit());
-    assertQ(req("q", "name:ddd", "indent", "true"), "//result[@numFound = '1']");
-    assertQ(req("q", "name:bbb", "indent", "true"), "//result[@numFound = '0']");
-    assertQ(req("q", "name:ccc", "indent", "true"), "//result[@numFound = '1']");
-    assertQ(req("q", "name:aaa", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "name:ddd"), "//result[@numFound = '1']");
+    assertQ(req("q", "name:bbb"), "//result[@numFound = '0']");
+    assertQ(req("q", "name:ccc"), "//result[@numFound = '1']");
+    assertQ(req("q", "name:aaa"), "//result[@numFound = '1']");
   }
 
   @Test
@@ -149,18 +143,19 @@ public class AtomicUpdateJsonTest extends SolrTestCaseJ4 {
     doc.setField("name", new String[] {"aaa"});
     updateJ(jsonAdd(doc), null);
     assertU(commit());
-    assertQ(req("q", "set:setval", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "set:setval"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
     doc.setField("id", "1");
     doc.setField("set", Map.of("set", "modval"));
     updateJ(jsonAdd(doc), null);
     assertU(commit());
-    assertQ(req("q", "set:modval", "indent", "true"), "//result[@numFound = '1']");
-    assertQ(req("q", "set:setval", "indent", "true"), "//result[@numFound = '0']");
+    assertQ(req("q", "set:modval"), "//result[@numFound = '1']");
+    assertQ(req("q", "set:setval"), "//result[@numFound = '0']");
 
     doc = new SolrInputDocument();
     doc.setField("id", "1");
+    //    doc.setField("set", Map.of("set", null));
     doc.setField(
         "set",
         new HashMap<String, String>() {
@@ -170,8 +165,8 @@ public class AtomicUpdateJsonTest extends SolrTestCaseJ4 {
         });
     updateJ(jsonAdd(doc), null);
     assertU(commit());
-    assertQ(req("q", "set:modval", "indent", "true"), "//result[@numFound = '0']");
-    assertQ(req("q", "name:aaa", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "set:modval"), "//result[@numFound = '0']");
+    assertQ(req("q", "name:aaa"), "//result[@numFound = '1']");
   }
 
   @Test
@@ -183,24 +178,18 @@ public class AtomicUpdateJsonTest extends SolrTestCaseJ4 {
     doc.setField("add", new String[] {"aaa", "bbb", "ccc"});
     updateJ(jsonAdd(doc), null);
     assertU(commit());
-    assertQ(req("q", "add:bbb", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "add:bbb"), "//result[@numFound = '1']");
 
     doc = new SolrInputDocument();
     doc.setField("id", "1");
     doc.setField(
-        "add",
-        new HashMap<String, Object>() {
-          {
-            put("add", new String[] {"ddd", "eee"});
-            put("remove", new String[] {"bbb", "ccc"});
-          }
-        });
+        "add", Map.of("add", new String[] {"ddd", "eee"}, "remove", new String[] {"bbb", "ccc"}));
     updateJ(jsonAdd(doc), null);
     assertU(commit());
-    assertQ(req("q", "add:ddd", "indent", "true"), "//result[@numFound = '1']");
-    assertQ(req("q", "add:eee", "indent", "true"), "//result[@numFound = '1']");
-    assertQ(req("q", "add:aaa", "indent", "true"), "//result[@numFound = '1']");
-    assertQ(req("q", "add:bbb", "indent", "true"), "//result[@numFound = '0']");
-    assertQ(req("q", "add:ccc", "indent", "true"), "//result[@numFound = '0']");
+    assertQ(req("q", "add:ddd"), "//result[@numFound = '1']");
+    assertQ(req("q", "add:eee"), "//result[@numFound = '1']");
+    assertQ(req("q", "add:aaa"), "//result[@numFound = '1']");
+    assertQ(req("q", "add:bbb"), "//result[@numFound = '0']");
+    assertQ(req("q", "add:ccc"), "//result[@numFound = '0']");
   }
 }
