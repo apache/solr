@@ -17,6 +17,7 @@
 package org.apache.solr.response.transform;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.StringTokenizer;
-import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -209,7 +209,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testJohnOrNancySingleField() throws Exception {
+  public void testJohnOrNancySingleField() {
     // System.out.println("p "+peopleMultiplier+" d "+deptMultiplier);
     assertQ(
         "subq1.fl is limited to single field",
@@ -289,7 +289,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
       };
 
   @Test
-  public void testTwoSubQueriesAndByNumberWithTwoFields() throws Exception {
+  public void testTwoSubQueriesAndByNumberWithTwoFields() {
     final SolrQueryRequest johnOrNancyTwoFL = req(johnAndNancyParams);
 
     assertQ(
@@ -495,7 +495,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNoExplicitName() throws Exception {
+  public void testNoExplicitName() {
     String[] john =
         new String[] {
           "q",
@@ -551,7 +551,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDupePrefix() throws Exception {
+  public void testDupePrefix() {
     assertQEx(
         "subquery name clash",
         req(
@@ -661,14 +661,14 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
         for (int deptNum : new int[] {0, deptMultiplier - 1}) {
           SolrDocument deptDoc = subDoc.get(deptNum);
           Object expectedDept = (subResult.equals("depts") ? engText : engId);
-          assertTrue("" + expectedDept + " equals to " + deptDoc, expectedDept.equals(deptDoc));
+          assertEquals("" + expectedDept + " equals to " + deptDoc, expectedDept, deptDoc);
         }
       }
     }
   }
 
   @Test
-  public void testExceptionPropagation() throws Exception {
+  public void testExceptionPropagation() {
     final SolrQueryRequest r =
         req(
             "q",
@@ -719,7 +719,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMultiValue() throws Exception {
+  public void testMultiValue() {
 
     String[] happyPathAsserts =
         new String[] {
@@ -919,34 +919,5 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
             "subq1.rows",
             "" + (deptMultiplier * 2)),
         noMatchAtSubQ);
-  }
-
-  static String[] daveMultiValueSearchParams(Random random, int peopleMult, int deptMult) {
-    return new String[] {
-      "q",
-      "name_s:dave",
-      "indent",
-      "true",
-      "fl",
-      (random().nextBoolean() ? "name_s_dv" : "*")
-          + // "dept_ss_dv,
-          ",subq1:[subquery "
-          + ((random.nextBoolean() ? "" : "separator=,"))
-          + "]",
-      "rows",
-      "" + peopleMult,
-      "subq1.q",
-      "{!terms f=dept_id_s v=$row.dept_ss_dv "
-          + ((random.nextBoolean() ? "" : "separator=,"))
-          + "}",
-      "subq1.fl",
-      "text_t",
-      "subq1.indent",
-      "true",
-      "subq1.rows",
-      "" + (deptMult * 2),
-      "subq1.logParamsList",
-      "q,fl,rows,row.dept_ss_dv"
-    };
   }
 }

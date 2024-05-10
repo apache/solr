@@ -24,6 +24,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -45,7 +46,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     if (!tzDisplayName.matches("[A-Za-z]{3,}([+-]\\d\\d(:\\d\\d)?)?")) {
       assertTrue(
           "Is some other JVM affected?  Or bad regex? TzDisplayName: " + tzDisplayName,
-          System.getProperty("java.version").startsWith("11"));
+          EnvUtils.getProperty("java.version").startsWith("11"));
       assumeTrue(
           "SOLR-12759 JDK 11 (1st release) and Tika 1.x can result in extracting dates in a bad format.",
           false);
@@ -66,7 +67,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testExtraction() throws Exception {
     ExtractingRequestHandler handler =
         (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertTrue("handler is null and it shouldn't be", handler != null);
+    assertNotNull("handler is null and it shouldn't be", handler);
     loadLocal(
         "extraction/solr-word.pdf",
         "fmap.created",
@@ -403,7 +404,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testLiterals() throws Exception {
     ExtractingRequestHandler handler =
         (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertTrue("handler is null and it shouldn't be", handler != null);
+    assertNotNull("handler is null and it shouldn't be", handler);
     // test literal
     loadLocal(
         "extraction/version_control.xml",
@@ -579,7 +580,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testPlainTextSpecifyingMimeType() throws Exception {
     ExtractingRequestHandler handler =
         (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertTrue("handler is null and it shouldn't be", handler != null);
+    assertNotNull("handler is null and it shouldn't be", handler);
 
     // Load plain text specifying MIME type:
     loadLocal(
@@ -613,7 +614,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testPlainTextSpecifyingResourceName() throws Exception {
     ExtractingRequestHandler handler =
         (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertTrue("handler is null and it shouldn't be", handler != null);
+    assertNotNull("handler is null and it shouldn't be", handler);
 
     // Load plain text specifying filename
     loadLocal(
@@ -647,7 +648,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testCommitWithin() throws Exception {
     ExtractingRequestHandler handler =
         (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertTrue("handler is null and it shouldn't be", handler != null);
+    assertNotNull("handler is null and it shouldn't be", handler);
 
     SolrQueryRequest req =
         req(
@@ -679,22 +680,21 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testExtractOnly() throws Exception {
     ExtractingRequestHandler handler =
         (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertTrue("handler is null and it shouldn't be", handler != null);
+    assertNotNull("handler is null and it shouldn't be", handler);
     SolrQueryResponse rsp =
         loadLocal("extraction/solr-word.pdf", ExtractingParams.EXTRACT_ONLY, "true");
-    assertTrue("rsp is null and it shouldn't be", rsp != null);
+    assertNotNull("rsp is null and it shouldn't be", rsp);
     NamedList<?> list = rsp.getValues();
 
     String extraction = (String) list.get("solr-word.pdf");
-    assertTrue("extraction is null and it shouldn't be", extraction != null);
-    assertTrue(
-        extraction + " does not contain " + "solr-word", extraction.indexOf("solr-word") != -1);
+    assertNotNull("extraction is null and it shouldn't be", extraction);
+    assertTrue(extraction + " does not contain " + "solr-word", extraction.contains("solr-word"));
 
     NamedList<?> nl = (NamedList<?>) list.get("solr-word.pdf_metadata");
-    assertTrue("nl is null and it shouldn't be", nl != null);
+    assertNotNull("nl is null and it shouldn't be", nl);
     Object title = nl.get("title");
-    assertTrue("title is null and it shouldn't be", title != null);
-    assertTrue(extraction.indexOf("<?xml") != -1);
+    assertNotNull("title is null and it shouldn't be", title);
+    assertTrue(extraction.contains("<?xml"));
 
     rsp =
         loadLocal(
@@ -703,26 +703,25 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "true",
             ExtractingParams.EXTRACT_FORMAT,
             ExtractingDocumentLoader.TEXT_FORMAT);
-    assertTrue("rsp is null and it shouldn't be", rsp != null);
+    assertNotNull("rsp is null and it shouldn't be", rsp);
     list = rsp.getValues();
 
     extraction = (String) list.get("solr-word.pdf");
-    assertTrue("extraction is null and it shouldn't be", extraction != null);
-    assertTrue(
-        extraction + " does not contain " + "solr-word", extraction.indexOf("solr-word") != -1);
-    assertTrue(extraction.indexOf("<?xml") == -1);
+    assertNotNull("extraction is null and it shouldn't be", extraction);
+    assertTrue(extraction + " does not contain " + "solr-word", extraction.contains("solr-word"));
+    assertEquals(-1, extraction.indexOf("<?xml"));
 
     nl = (NamedList<?>) list.get("solr-word.pdf_metadata");
-    assertTrue("nl is null and it shouldn't be", nl != null);
+    assertNotNull("nl is null and it shouldn't be", nl);
     title = nl.get("title");
-    assertTrue("title is null and it shouldn't be", title != null);
+    assertNotNull("title is null and it shouldn't be", title);
   }
 
   @Test
   public void testXPath() throws Exception {
     ExtractingRequestHandler handler =
         (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertTrue("handler is null and it shouldn't be", handler != null);
+    assertNotNull("handler is null and it shouldn't be", handler);
     SolrQueryResponse rsp =
         loadLocal(
             "extraction/example.html",
@@ -730,7 +729,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
             "/xhtml:html/xhtml:body/xhtml:a/descendant::node()",
             ExtractingParams.EXTRACT_ONLY,
             "true");
-    assertTrue("rsp is null and it shouldn't be", rsp != null);
+    assertNotNull("rsp is null and it shouldn't be", rsp);
     NamedList<?> list = rsp.getValues();
     String val = (String) list.get("example.html");
     assertEquals("News", val.trim()); // there is only one matching <a> tag
@@ -761,7 +760,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testArabicPDF() throws Exception {
     ExtractingRequestHandler handler =
         (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertTrue("handler is null and it shouldn't be", handler != null);
+    assertNotNull("handler is null and it shouldn't be", handler);
 
     loadLocal(
         "extraction/arabic.pdf",
@@ -794,7 +793,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testTikaExceptionHandling() throws Exception {
     ExtractingRequestHandler handler =
         (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertTrue("handler is null and it shouldn't be", handler != null);
+    assertNotNull("handler is null and it shouldn't be", handler);
 
     expectThrows(
         Exception.class,
@@ -840,7 +839,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testWrongStreamType() throws Exception {
     ExtractingRequestHandler handler =
         (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertTrue("handler is null and it shouldn't be", handler != null);
+    assertNotNull("handler is null and it shouldn't be", handler);
 
     expectThrows(
         Exception.class,
@@ -870,7 +869,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testLiteralsOverride() throws Exception {
     ExtractingRequestHandler handler =
         (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
-    assertTrue("handler is null and it shouldn't be", handler != null);
+    assertNotNull("handler is null and it shouldn't be", handler);
 
     assertQ(req("*:*"), "//*[@numFound='0']");
 

@@ -44,13 +44,14 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     // ensure we clean up after ourselves, this will fire before superclass...
     System.clearProperty("solr.directoryFactory");
     System.clearProperty("solr.tests.maxBufferedDocs");
     systemClearPropertySolrTestsMergePolicyFactory();
   }
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     // delete all, then add initial doc

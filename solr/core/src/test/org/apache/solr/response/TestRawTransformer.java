@@ -16,7 +16,6 @@
  */
 package org.apache.solr.response;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,11 +24,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -37,6 +34,8 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -54,17 +53,17 @@ public class TestRawTransformer extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static JettySolrRunner JSR;
 
-  private static HttpSolrClient CLIENT;
+  private static SolrClient CLIENT;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     if (random().nextBoolean()) {
       initStandalone();
       JSR.start();
-      CLIENT = (HttpSolrClient) JSR.newClient();
+      CLIENT = JSR.newClient();
     } else {
       initCloud();
-      CLIENT = (HttpSolrClient) JSR.newClient();
+      CLIENT = JSR.newClient();
       JSR = null;
     }
     initIndex();
@@ -72,16 +71,14 @@ public class TestRawTransformer extends SolrCloudTestCase {
 
   private static void initStandalone() throws Exception {
     initCore("solrconfig-minimal.xml", "schema_latest.xml");
-    File homeDir = createTempDir().toFile();
-    final File collDir = new File(homeDir, "collection1");
-    final File confDir = collDir.toPath().resolve("conf").toFile();
-    confDir.mkdirs();
-    FileUtils.copyFile(
-        new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(homeDir, "solr.xml"));
+    Path homeDir = createTempDir();
+    final Path collDir = homeDir.resolve("collection1");
+    final Path confDir = collDir.resolve("conf");
+    Files.createDirectories(confDir);
+    Files.copy(Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), homeDir.resolve("solr.xml"));
     String src_dir = TEST_HOME() + "/collection1/conf";
-    FileUtils.copyFile(new File(src_dir, "schema_latest.xml"), new File(confDir, "schema.xml"));
-    FileUtils.copyFile(
-        new File(src_dir, "solrconfig-minimal.xml"), new File(confDir, "solrconfig.xml"));
+    Files.copy(Path.of(src_dir, "schema_latest.xml"), confDir.resolve("schema.xml"));
+    Files.copy(Path.of(src_dir, "solrconfig-minimal.xml"), confDir.resolve("solrconfig.xml"));
     for (String file :
         new String[] {
           "solrconfig.snippet.randomindexconfig.xml",
@@ -90,12 +87,14 @@ public class TestRawTransformer extends SolrCloudTestCase {
           "protwords.txt",
           "currency.xml"
         }) {
-      FileUtils.copyFile(new File(src_dir, file), new File(confDir, file));
+      Files.copy(Path.of(src_dir, file), confDir.resolve(file));
     }
-    Files.createFile(collDir.toPath().resolve("core.properties"));
+    Files.createFile(collDir.resolve("core.properties"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", h.getCore().getDataDir());
-    JSR = new JettySolrRunner(homeDir.getAbsolutePath(), nodeProperties, buildJettyConfig("/solr"));
+    JSR =
+        new JettySolrRunner(
+            homeDir.toAbsolutePath().toString(), nodeProperties, JettyConfig.builder().build());
   }
 
   private static void initCloud() throws Exception {
@@ -111,7 +110,6 @@ public class TestRawTransformer extends SolrCloudTestCase {
     collectionProperties.put("schema", "schema_latest.xml");
     CloudSolrClient cloudSolrClient = cloud.getSolrClient();
     CollectionAdminRequest.createCollection("collection1", configName, numNodes, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setProperties(collectionProperties)
         .process(cloudSolrClient);
 
@@ -119,15 +117,19 @@ public class TestRawTransformer extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
+  public static void afterClass() throws Exception {
+    if (CLIENT != null) {
+      org.apache.solr.common.util.IOUtils.closeQuietly(CLIENT);
+      CLIENT = null;
+    }
     if (JSR != null) {
       JSR.stop();
+      JSR = null;
     }
-    // NOTE: CLOUD_CLIENT should be stopped automatically in `SolrCloudTestCase.shutdownCluster()`
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     if (JSR != null) {
       assertU(delQ("*:*"));
       assertU(commit());

@@ -55,7 +55,7 @@
        declaring schemaFactory as ManagedIndexSchemaFactory, with
        mutable specified as true.
 
-       See https://solr.apache.org/guide/schemaless-mode.html for further explanation.
+       See https://solr.apache.org/guide/solr/latest/indexing-guide/schemaless-mode.html for further explanation.
 
     -->
   <updateProcessor class="solr.UUIDUpdateProcessorFactory" name="uuid"/>

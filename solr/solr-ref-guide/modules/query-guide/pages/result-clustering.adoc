@@ -36,6 +36,10 @@ The query issued to the system was _Apache Solr_.
 It seems clear that faceting could not yield a similar set of groups, although the goals of both techniques are similar -- to let the user explore the set of search results and either rephrase the query or narrow the focus to a subset of current documents.
 Clustering is also similar to xref:result-grouping.adoc[] in that it can help to look deeper into search results, beyond the top few hits.
 
+== Module
+
+This is provided via the `clustering` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
+
 == Configuration Quick Starter
 
 The clustering extension works as a search component.
@@ -76,7 +80,7 @@ Once attached, as in the example above, the clustering will be performed automat
 on all documents matching the search handler's query.
 The clustering extension will take into
 account all text fields listed in `clustering.fields` parameter of the engine and will
-product a section of the response called `clusters` containing the discovered structure of
+produce a section of the response called `clusters` containing the discovered structure of
 groups, for example (JSON response for brevity):
 
 [source,json]
@@ -210,17 +214,6 @@ These identifiers correspond to the `uniqueKey` field declared in the schema.
 Sometimes cluster labels may not make much sense (this depends on many factors -- text in clustered fields, number of documents, algorithm paramerters).
 Also, some documents may be left out and not be clustered at all; these will be assigned to the synthetic _Other Topics_ group, marked with the `other-topics` property set to `true` (see the XML dump above for an example).
 The score of the other topics group is zero.
-
-== Installation
-
-The clustering module extension requires all JARs under `modules/clustering/lib`.
-
-You can include the required modules JARs in `solrconfig.xml` as shown below (by default paths are relative to the Solr core so they may need adjustments to your configuration, or an explicit specification of the `$solr.install.dir`):
-
-[source,xml]
-----
-<lib dir="${solr.install.dir:../../..}/modules/clustering/lib/" regex=".*\.jar" />
-----
 
 == Configuration
 

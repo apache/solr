@@ -50,7 +50,7 @@ grant {
   permission java.net.SocketPermission "[::1]:4", "connect,resolve";
   permission java.net.SocketPermission "[::1]:6", "connect,resolve";
   permission java.net.SocketPermission "[::1]:8", "connect,resolve";
-  
+
   // Basic permissions needed for Lucene to work:
   permission java.util.PropertyPermission "*", "read,write";
 
@@ -84,6 +84,11 @@ grant {
   permission java.lang.RuntimePermission "getStackWalkerWithClassReference";
   // needed by bytebuddy
   permission java.lang.RuntimePermission "defineClass";
+  permission java.lang.RuntimePermission "net.bytebuddy.createJavaDispatcher";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.description.method";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.description.type";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.dynamic.loading";
+  permission java.lang.reflect.ReflectPermission "newProxyInPackage.net.bytebuddy.utility";
   // needed by mockito
   permission java.lang.RuntimePermission "accessClassInPackage.sun.reflect";
   permission java.lang.RuntimePermission "reflectionFactoryAccess";
@@ -144,6 +149,9 @@ grant {
 
   permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
 
+  // needed by s3mock
+  permission java.lang.RuntimePermission "accessClassInPackage.sun.nio.fs";
+
   // SSL related properties for Solr tests
   permission javax.net.ssl.SSLPermission "setDefaultSSLContext";
 
@@ -153,15 +161,20 @@ grant {
   // Needed by zookeeper to configure SASL Auth in tests
   permission javax.security.auth.AuthPermission "createLoginContext.Server";
   permission javax.security.auth.AuthPermission "createLoginContext.Client";
-  
+
+  // Needed by BouncyCastle in jwt-auth tests
+  permission java.security.SecurityPermission "putProviderProperty.BC";
+  permission java.security.SecurityPermission "removeProviderProperty.BC";
+  permission java.security.SecurityPermission "getProperty.org.bouncycastle.x509.allow_non-der_tbscert";
+
   // may only be necessary with Java 7?
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KeyTab * \"*\"", "read";
   permission javax.security.auth.PrivateCredentialPermission "sun.security.jgss.krb5.Krb5Util$KeysFromKeyTab * \"*\"", "read";
-  
+
   permission javax.security.auth.kerberos.ServicePermission "*", "initiate";
   permission javax.security.auth.kerberos.ServicePermission "*", "accept";
   permission javax.security.auth.kerberos.DelegationPermission "\"*\" \"krbtgt/EXAMPLE.COM@EXAMPLE.COM\"";
-  
+
   // java 8 accessibility requires this perm - should not after 8 I believe (rrd4j is the root reason we hit an accessibility code path)
   permission java.awt.AWTPermission "*";
 
@@ -171,6 +184,19 @@ grant {
   // for Apache HttpClient useSystemProperties
   permission java.net.NetPermission "getProxySelector";
   permission java.net.NetPermission "requestPasswordAuthentication";
+
+  // for java.net.http.HttpClient.  See HttpJdkSolrClientTest
+  permission "java.net.URLPermission" "http://127.0.0.1:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://127.0.0.1:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "socket://127.0.0.1:*", "CONNECT:*";
+
+  permission "java.net.URLPermission" "http://localhost:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://localhost:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "socket://localhost:*", "CONNECT:*";
+
+  permission "java.net.URLPermission" "http://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "socket://[::1]:*", "CONNECT:*";
 };
 
 // additional permissions based on system properties set by /bin/solr
@@ -203,6 +229,9 @@ grant {
   permission java.io.FilePermission "${solr.log.dir}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.log.dir}${/}-", "read,write,delete,readlink";
 
+  permission java.io.FilePermission "${solr.allowPaths}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.allowPaths}${/}-", "read,write,delete,readlink";
+
   permission java.io.FilePermission "${log4j.configurationFile}", "read,write,delete,readlink";
 
   // Credentials for S3 Repository
@@ -231,4 +260,6 @@ grant {
   permission java.io.FilePermission "${gradle.user.home}${/}-", "read";
   // Allow read access to Lucene jars if "-Plucene.dev.version=" or "-Plucene.dev.path=" is used
   permission java.io.FilePermission "${lucene-dev-path.dir}${/}-", "read";
+  // Allow testing effects of customized or bug-fixed dependencies locally (also need to add mavenLocal() to build)
+  permission java.io.FilePermission "${user.home}${/}.m2${/}repository${/}-", "read";
 };

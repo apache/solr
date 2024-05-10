@@ -20,7 +20,6 @@ package org.apache.solr.util.configuration.providers.hadoop;
 import static org.apache.hadoop.security.alias.CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH;
 import static org.apache.solr.util.configuration.providers.AbstractSSLCredentialProvider.DEFAULT_CREDENTIAL_KEY_MAP;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.util.Map;
@@ -34,7 +33,7 @@ import org.junit.rules.TestRule;
 import org.mockito.Mockito;
 
 /** */
-public class HadoopSSLCredentialProviderTest {
+public class HadoopSSLCredentialProviderTest extends SolrTestCaseJ4 {
 
   @Rule
   public TestRule syspropRestore = new TestRuleRestoreSystemProperties(CREDENTIAL_PROVIDER_PATH);

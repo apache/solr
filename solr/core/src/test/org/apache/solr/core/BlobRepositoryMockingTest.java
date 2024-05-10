@@ -17,13 +17,6 @@
 
 package org.apache.solr.core;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
@@ -35,6 +28,7 @@ import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.SolrTestCaseJ4;
@@ -43,19 +37,16 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class BlobRepositoryMockingTest {
+public class BlobRepositoryMockingTest extends SolrTestCaseJ4 {
 
-  private static final Charset UTF8 = Charset.forName("UTF-8");
+  private static final Charset UTF8 = StandardCharsets.UTF_8;
   private static final String[][] PARSED =
       new String[][] {{"foo", "bar", "baz"}, {"bang", "boom", "bash"}};
   private static final String BLOBSTR = "foo,bar,baz\nbang,boom,bash";
   private CoreContainer mockContainer = mock(CoreContainer.class);
 
   @SuppressWarnings({"unchecked", "rawtypes"})
-  private ConcurrentHashMap<String, BlobRepository.BlobContent> mapMock =
-      mock(ConcurrentHashMap.class);
-
-  private Object[] mocks = new Object[] {mockContainer, mapMock};
+  private ConcurrentHashMap<String, BlobRepository.BlobContent> blobStorage;
 
   BlobRepository repository;
   ByteBuffer blobData = ByteBuffer.wrap(BLOBSTR.getBytes(UTF8));
@@ -69,11 +60,14 @@ public class BlobRepositoryMockingTest {
     SolrTestCaseJ4.assumeWorkingMockito();
   }
 
+  @Override
   @Before
-  public void setUp() throws IllegalAccessException, NoSuchFieldException {
+  public void setUp() throws Exception {
+    super.setUp();
     blobFetched = false;
     blobKey = "";
-    reset(mocks);
+    reset(mockContainer);
+    blobStorage = new ConcurrentHashMap<>();
     repository =
         new BlobRepository(mockContainer) {
           @Override
@@ -94,7 +88,7 @@ public class BlobRepositoryMockingTest {
           @Override
           @SuppressWarnings({"rawtypes"})
           ConcurrentHashMap<String, BlobContent> createMap() {
-            return mapMock;
+            return blobStorage;
           }
         };
   }
@@ -103,7 +97,7 @@ public class BlobRepositoryMockingTest {
   public void testCloudOnly() {
     when(mockContainer.isZooKeeperAware()).thenReturn(false);
     try {
-      BlobRepository.BlobContentRef<ByteBuffer> ref = repository.getBlobIncRef("foo!");
+      repository.getBlobIncRef("foo!");
     } catch (SolrException e) {
       verify(mockContainer).isZooKeeperAware();
       throw e;
@@ -119,8 +113,7 @@ public class BlobRepositoryMockingTest {
     assertNotNull(ref.blob);
     assertEquals(blobData, ref.blob.get());
     verify(mockContainer).isZooKeeperAware();
-    verify(mapMock).get("foo!");
-    verify(mapMock).put(eq("foo!"), any(BlobRepository.BlobContent.class));
+    assertNotNull(blobStorage.get("foo!"));
   }
 
   @Test
@@ -153,15 +146,14 @@ public class BlobRepositoryMockingTest {
   @Test
   public void testCachedAlready() {
     when(mockContainer.isZooKeeperAware()).thenReturn(true);
-    when(mapMock.get("foo!"))
-        .thenReturn(new BlobRepository.BlobContent<BlobRepository>("foo!", blobData));
+    blobStorage.put("foo!", new BlobRepository.BlobContent<BlobRepository>("foo!", blobData));
     BlobRepository.BlobContentRef<ByteBuffer> ref = repository.getBlobIncRef("foo!");
     assertEquals("", blobKey);
     assertFalse(blobFetched);
     assertNotNull(ref.blob);
     assertEquals(blobData, ref.blob.get());
     verify(mockContainer).isZooKeeperAware();
-    verify(mapMock).get("foo!");
+    assertNotNull("Key was not mapped to a BlobContent instance.", blobStorage.get("foo!"));
   }
 
   @Test
@@ -194,7 +186,6 @@ public class BlobRepositoryMockingTest {
     assertNotNull(ref.blob);
     assertEquals(PARSED, ref.blob.get());
     verify(mockContainer).isZooKeeperAware();
-    verify(mapMock).get("foo!mocked");
-    verify(mapMock).put(eq("foo!mocked"), any(BlobRepository.BlobContent.class));
+    assertNotNull(blobStorage.get("foo!mocked"));
   }
 }

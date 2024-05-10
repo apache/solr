@@ -30,8 +30,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -40,21 +38,22 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.util.RTimer;
+import org.apache.solr.util.SolrResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +67,7 @@ public class FacetComponent extends SearchComponent {
 
   public static final String COMPONENT_NAME = "facet";
 
+  public static final String FACET_COUNTS_KEY = "facet_counts";
   public static final String FACET_QUERY_KEY = "facet_queries";
   public static final String FACET_FIELD_KEY = "facet_fields";
   public static final String FACET_RANGES_KEY = "facet_ranges";
@@ -95,7 +95,7 @@ public class FacetComponent extends SearchComponent {
         }
         HashSet<String> deDupe =
             new LinkedHashSet<>(Arrays.asList(origParams.getParams(paramName)));
-        params.add(paramName, deDupe.toArray(new String[deDupe.size()]));
+        params.add(paramName, deDupe.toArray(new String[0]));
       }
       rb.req.setParams(params);
 
@@ -163,7 +163,7 @@ public class FacetComponent extends SearchComponent {
 
       String[] queries = rb.req.getParams().getParams(FacetParams.FACET_QUERY);
       if (queries != null) {
-        facetQueries = new ArrayList<>();
+        facetQueries = new ArrayList<>(queries.length);
         for (String query : queries) {
           facetQueries.add(new FacetBase(rb, FacetParams.FACET_QUERY, query));
         }
@@ -263,6 +263,7 @@ public class FacetComponent extends SearchComponent {
   public void process(ResponseBuilder rb) throws IOException {
 
     if (rb.doFacets) {
+      QueryLimits queryLimits = QueryLimits.getCurrentLimits();
       SolrParams params = rb.req.getParams();
       SimpleFacets f = newSimpleFacets(rb.req, rb.getResults().docSet, params, rb);
 
@@ -276,13 +277,20 @@ public class FacetComponent extends SearchComponent {
       }
 
       NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
+      rb.rsp.add(FACET_COUNTS_KEY, counts);
+      if (queryLimits.maybeExitWithPartialResults("Faceting counts")) {
+        return;
+      }
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
-      if (!ArrayUtils.isEmpty(pivots)) {
+      if (pivots != null && Array.getLength(pivots) != 0) {
         PivotFacetProcessor pivotProcessor =
             new PivotFacetProcessor(rb.req, rb.getResults().docSet, params, rb);
         SimpleOrderedMap<List<NamedList<Object>>> v = pivotProcessor.process(pivots);
         if (v != null) {
           counts.add(PIVOT_KEY, v);
+        }
+        if (queryLimits.maybeExitWithPartialResults("Faceting pivots")) {
+          return;
         }
       }
 
@@ -290,8 +298,6 @@ public class FacetComponent extends SearchComponent {
         long timeElapsed = (long) timer.getTime();
         fdebug.setElapse(timeElapsed);
       }
-
-      rb.rsp.add("facet_counts", counts);
     }
   }
 
@@ -524,6 +530,7 @@ public class FacetComponent extends SearchComponent {
     rb.addRequest(this, shardsRefineRequestPivot);
   }
 
+  @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
 
     if (!rb.doFacets) return;
@@ -713,38 +720,15 @@ public class FacetComponent extends SearchComponent {
 
     for (ShardResponse srsp : sreq.responses) {
       int shardNum = rb.getShardNum(srsp.getShard());
-      NamedList<?> facet_counts = null;
-      try {
-        facet_counts = (NamedList<?>) srsp.getSolrResponse().getResponse().get("facet_counts");
-        if (facet_counts == null) {
-          NamedList<?> responseHeader =
-              (NamedList<?>) srsp.getSolrResponse().getResponse().get("responseHeader");
-          if (Boolean.TRUE.equals(
-              responseHeader.getBooleanArg(
-                  SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-            continue;
-          } else {
-            log.warn(
-                "corrupted response on {} : {}", srsp.getShardRequest(), srsp.getSolrResponse());
-            throw new SolrException(
-                ErrorCode.SERVER_ERROR,
-                "facet_counts is absent in response from "
-                    + srsp.getNodeName()
-                    + ", but "
-                    + SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY
-                    + " hasn't been responded");
-          }
-        }
-      } catch (Exception ex) {
-        if (ShardParams.getShardsTolerantAsBool(rb.req.getParams())) {
-          continue; // looks like a shard did not return anything
-        }
-        throw new SolrException(
-            ErrorCode.SERVER_ERROR, "Unable to read facet info for shard: " + srsp.getShard(), ex);
+      NamedList<?> facet_counts =
+          (NamedList<?>)
+              SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, FACET_COUNTS_KEY, false);
+      if (facet_counts == null) {
+        continue; // looks like a shard did not return anything
       }
 
       // handle facet queries
-      NamedList<?> facet_queries = (NamedList<?>) facet_counts.get("facet_queries");
+      NamedList<?> facet_queries = (NamedList<?>) facet_counts.get(FACET_QUERY_KEY);
       if (facet_queries != null) {
         for (int i = 0; i < facet_queries.size(); i++) {
           String returnedKey = facet_queries.getName(i);
@@ -755,7 +739,7 @@ public class FacetComponent extends SearchComponent {
       }
 
       // step through each facet.field, adding results from this shard
-      NamedList<?> facet_fields = (NamedList<?>) facet_counts.get("facet_fields");
+      NamedList<?> facet_fields = (NamedList<?>) facet_counts.get(FACET_FIELD_KEY);
 
       if (facet_fields != null) {
         for (DistribFieldFacet dff : fi.facets.values()) {
@@ -766,7 +750,7 @@ public class FacetComponent extends SearchComponent {
       // Distributed facet_ranges
       @SuppressWarnings("unchecked")
       SimpleOrderedMap<SimpleOrderedMap<Object>> rangesFromShard =
-          (SimpleOrderedMap<SimpleOrderedMap<Object>>) facet_counts.get("facet_ranges");
+          (SimpleOrderedMap<SimpleOrderedMap<Object>>) facet_counts.get(FACET_RANGES_KEY);
       if (rangesFromShard != null) {
         RangeFacetRequest.DistribRangeFacet.mergeFacetRangesFromShardResponse(
             fi.rangeFacets, rangesFromShard);
@@ -936,7 +920,7 @@ public class FacetComponent extends SearchComponent {
   private void doDistribIntervals(FacetInfo fi, NamedList<?> facet_counts) {
     @SuppressWarnings("unchecked")
     SimpleOrderedMap<SimpleOrderedMap<Integer>> facet_intervals =
-        (SimpleOrderedMap<SimpleOrderedMap<Integer>>) facet_counts.get("facet_intervals");
+        (SimpleOrderedMap<SimpleOrderedMap<Integer>>) facet_counts.get(FACET_INTERVALS_KEY);
 
     if (facet_intervals != null) {
 
@@ -998,10 +982,13 @@ public class FacetComponent extends SearchComponent {
     FacetInfo fi = rb._facetInfo;
 
     for (ShardResponse srsp : sreq.responses) {
-      // int shardNum = rb.getShardNum(srsp.shard);
       NamedList<?> facet_counts =
-          (NamedList<?>) srsp.getSolrResponse().getResponse().get("facet_counts");
-      NamedList<?> facet_fields = (NamedList<?>) facet_counts.get("facet_fields");
+          (NamedList<?>)
+              SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, FACET_COUNTS_KEY, false);
+      if (facet_counts == null) {
+        continue; // looks like a shard did not return anything
+      }
+      NamedList<?> facet_fields = (NamedList<?>) facet_counts.get(FACET_FIELD_KEY);
 
       if (facet_fields == null) continue; // this can happen when there's an exception
 
@@ -1037,11 +1024,14 @@ public class FacetComponent extends SearchComponent {
     // This is after the shard has returned the refinement request
     FacetInfo fi = rb._facetInfo;
     for (ShardResponse srsp : sreq.responses) {
-
       int shardNumber = rb.getShardNum(srsp.getShard());
 
       NamedList<?> facetCounts =
-          (NamedList<?>) srsp.getSolrResponse().getResponse().get("facet_counts");
+          (NamedList<?>)
+              SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, FACET_COUNTS_KEY, false);
+      if (facetCounts == null) {
+        continue;
+      }
 
       @SuppressWarnings("unchecked")
       NamedList<List<NamedList<Object>>> pivotFacetResponsesFromShard =
@@ -1109,13 +1099,13 @@ public class FacetComponent extends SearchComponent {
     NamedList<Object> facet_counts = new SimpleOrderedMap<>();
 
     NamedList<Number> facet_queries = new SimpleOrderedMap<>();
-    facet_counts.add("facet_queries", facet_queries);
+    facet_counts.add(FACET_QUERY_KEY, facet_queries);
     for (QueryFacet qf : fi.queryFacets.values()) {
       facet_queries.add(qf.getKey(), num(qf.count));
     }
 
     NamedList<Object> facet_fields = new SimpleOrderedMap<>();
-    facet_counts.add("facet_fields", facet_fields);
+    facet_counts.add(FACET_FIELD_KEY, facet_fields);
 
     for (DistribFieldFacet dff : fi.facets.values()) {
       // order is important for facet values, so use NamedList
@@ -1174,9 +1164,9 @@ public class FacetComponent extends SearchComponent {
       RangeFacetRequest.DistribRangeFacet value = entry.getValue();
       rangeFacetOutput.add(key, value.rangeFacet);
     }
-    facet_counts.add("facet_ranges", rangeFacetOutput);
+    facet_counts.add(FACET_RANGES_KEY, rangeFacetOutput);
 
-    facet_counts.add("facet_intervals", fi.intervalFacets);
+    facet_counts.add(FACET_INTERVALS_KEY, fi.intervalFacets);
     facet_counts.add(
         SpatialHeatmapFacets.RESPONSE_KEY,
         SpatialHeatmapFacets.distribFinish(fi.heatmapFacets, rb));
@@ -1185,9 +1175,11 @@ public class FacetComponent extends SearchComponent {
       facet_counts.add(PIVOT_KEY, createPivotFacetOutput(rb));
     }
 
-    rb.rsp.add("facet_counts", facet_counts);
+    rb.rsp.add(FACET_COUNTS_KEY, facet_counts);
 
     rb._facetInfo = null; // could be big, so release asap
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    queryLimits.maybeExitWithPartialResults("Faceting finish");
   }
 
   private SimpleOrderedMap<List<NamedList<Object>>> createPivotFacetOutput(ResponseBuilder rb) {
@@ -1351,7 +1343,7 @@ public class FacetComponent extends SearchComponent {
         this.threadCount = threadStr != null ? Integer.parseInt(threadStr) : -1;
 
         String excludeStr = localParams.get(CommonParams.EXCLUDE);
-        if (StringUtils.isEmpty(excludeStr)) {
+        if (StrUtils.isNullOrEmpty(excludeStr)) {
           this.excludeTags = Collections.emptyList();
         } else {
           this.excludeTags = StrUtils.splitSmart(excludeStr, ',');
@@ -1451,7 +1443,7 @@ public class FacetComponent extends SearchComponent {
     public long[] missingMax;
     // a bitset for each shard, keeping track of which terms seen
     public FixedBitSet[] counted;
-    public HashMap<String, ShardFacetCount> counts = new HashMap<>(128);
+    public HashMap<String, ShardFacetCount> counts = CollectionUtil.newHashMap(128);
     public int termNum;
 
     public int initialLimit; // how many terms requested in first phase
@@ -1468,6 +1460,7 @@ public class FacetComponent extends SearchComponent {
       counted = new FixedBitSet[rb.shards.length];
     }
 
+    @Override
     protected void fillParams(ResponseBuilder rb, SolrParams params, String field) {
       super.fillParams(rb, params, field);
       this.overrequestRatio =
@@ -1512,7 +1505,7 @@ public class FacetComponent extends SearchComponent {
 
       // the largest possible missing term is (initialMincount - 1) if we received
       // less than the number requested.
-      if (numRequested < 0 || numRequested != 0 && numReceived < numRequested) {
+      if (numRequested < 0 || (numRequested != 0 && numReceived < numRequested)) {
         last = Math.max(0, initialMincount - 1);
       }
 
@@ -1526,14 +1519,14 @@ public class FacetComponent extends SearchComponent {
     }
 
     public ShardFacetCount[] getLexSorted() {
-      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
+      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[0]);
       Arrays.sort(arr, (o1, o2) -> o1.indexed.compareTo(o2.indexed));
       countSorted = arr;
       return arr;
     }
 
     public ShardFacetCount[] getCountSorted() {
-      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[counts.size()]);
+      ShardFacetCount[] arr = counts.values().toArray(new ShardFacetCount[0]);
       Arrays.sort(
           arr,
           (o1, o2) -> {

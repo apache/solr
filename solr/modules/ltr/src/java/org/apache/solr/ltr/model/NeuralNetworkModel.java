@@ -212,6 +212,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
       }
     }
 
+    @Override
     public float[] calculateOutput(float[] inputVec) {
 
       float[] outputVec = new float[this.matrixRows];
@@ -227,6 +228,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
       return outputVec;
     }
 
+    @Override
     public int validate(int inputDim) throws ModelException {
       if (this.numUnits != this.matrixRows) {
         throw new ModelException(
@@ -279,6 +281,7 @@ public class NeuralNetworkModel extends LTRScoringModel {
       return this.matrixRows;
     }
 
+    @Override
     public String describe() {
       final StringBuilder sb = new StringBuilder();
       sb.append("(matrix=")

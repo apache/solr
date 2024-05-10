@@ -15,8 +15,24 @@
  * limitations under the License.
  */
 
-configure([project(":solr:packaging"), project(":solr:solr-ref-guide")]) {
+configure([project(":solr:packaging"), project(":solr:solr-ref-guide"), project(":solr:webapp")]) {
     apply plugin: "com.github.node-gradle.node"
+
+    def npmRegistry = "${ -> propertyOrEnvOrDefault("solr.npm.registry", "SOLR_NPM_REGISTRY", '') }"
+    if (!npmRegistry.isEmpty()) {
+        tasks.npmSetup {
+            args.addAll(['--registry', npmRegistry])
+        }
+
+        afterEvaluate {
+            tasks.withType(NpmTask).each { npmTask ->
+                npmTask.environment.put('NPM_CONFIG_REGISTRY', npmRegistry)
+            }
+            tasks.withType(NpxTask).each { npxTask ->
+                npxTask.environment.put('NPM_CONFIG_REGISTRY', npmRegistry)
+            }
+        }
+    }
 
     ext {
         rootNodeDir = "$rootDir/.gradle/node"
@@ -25,7 +41,12 @@ configure([project(":solr:packaging"), project(":solr:solr-ref-guide")]) {
 
     node {
         download = true
-        version = "16.13.2" // LTS
+        version = "16.20.2" // LTS
+
+        def nodeDistUrl = "${ -> propertyOrEnvOrDefault("solr.node.distUrl", "SOLR_NODE_DIST_URL", '') }"
+        if (!nodeDistUrl.isEmpty()) {
+            distBaseUrl = nodeDistUrl
+        }
 
         // The directory where Node.js is unpacked (when download is true)
         workDir = file("${project.ext.rootNodeDir}/nodejs")

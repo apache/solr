@@ -17,6 +17,8 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,10 +30,30 @@ import org.apache.solr.common.params.CollectionAdminParams;
 /** Provides cluster state from some source */
 public interface ClusterStateProvider extends SolrCloseable {
 
+  static ClusterStateProvider newZkClusterStateProvider(
+      Collection<String> zkHosts, String zkChroot, boolean canUseZkACLs) {
+    // instantiate via reflection so that we don't depend on ZK
+    try {
+      var constructor =
+          Class.forName("org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider")
+              .asSubclass(ClusterStateProvider.class)
+              .getConstructor(Collection.class, String.class, Boolean.TYPE);
+      return constructor.newInstance(zkHosts, zkChroot, canUseZkACLs);
+    } catch (InvocationTargetException e) {
+      if (e.getCause() instanceof RuntimeException) {
+        throw (RuntimeException) e.getCause();
+      } else {
+        throw new RuntimeException(e.getCause());
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(e.toString(), e);
+    }
+  }
+
   /**
    * Obtain the state of the collection (cluster status).
    *
-   * @return the collection state, or null is collection doesn't exist
+   * @return the collection state, or null only if collection doesn't exist
    */
   ClusterState.CollectionRef getState(String collection);
 

@@ -16,6 +16,9 @@
  */
 package org.apache.solr.common;
 
+import static org.apache.solr.client.api.model.ErrorInfo.ERROR_CLASS;
+import static org.apache.solr.client.api.model.ErrorInfo.ROOT_ERROR_CLASS;
+
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -24,8 +27,6 @@ import org.slf4j.MDC;
 /** */
 public class SolrException extends RuntimeException {
 
-  public static final String ROOT_ERROR_CLASS = "root-error-class";
-  public static final String ERROR_CLASS = "error-class";
   private final Map<String, String> mdcContext;
 
   /**
@@ -120,7 +121,7 @@ public class SolrException extends RuntimeException {
     if (key == null || value == null)
       throw new IllegalArgumentException("Exception metadata cannot be null!");
 
-    if (metadata == null) metadata = new NamedList<String>();
+    if (metadata == null) metadata = new NamedList<>();
     metadata.add(key, value);
   }
 
@@ -130,56 +131,6 @@ public class SolrException extends RuntimeException {
 
   public String getRootThrowable() {
     return getMetadata(ROOT_ERROR_CLASS);
-  }
-
-  /**
-   * This method was initially created to aid in testing situations that were known to cause ERRORs.
-   * It should no longer be used by any new code.
-   *
-   * @deprecated Use the Logger directly
-   */
-  @Deprecated
-  public void log(Logger log) {
-    log(log, this);
-  }
-
-  /**
-   * This method was initially created to aid in testing situations that were known to cause ERRORs.
-   * It should no longer be used by any new code.
-   *
-   * @deprecated Use the Logger directly
-   */
-  @Deprecated
-  public static void log(Logger log, Throwable e) {
-    if (log.isErrorEnabled()) {
-      log.error(e.toString(), e); // nowarn (we are inside of isErrorEnabled, toString as msg is ok)
-    }
-  }
-
-  /**
-   * This method was initially created to aid in testing situations that were known to cause ERRORs.
-   * It should no longer be used by any new code.
-   *
-   * @deprecated Use the Logger directly
-   */
-  @Deprecated
-  public static void log(Logger log, String msg, Throwable e) {
-    if (log.isErrorEnabled()) {
-      log.error(msg, e);
-    }
-  }
-
-  /**
-   * This method was initially created to aid in testing situations that were known to cause ERRORs.
-   * It should no longer be used by any new code.
-   *
-   * @deprecated Use the Logger directly
-   */
-  @Deprecated
-  public static void log(Logger log, String msg) {
-    if (log.isErrorEnabled()) {
-      log.error(msg);
-    }
   }
 
   // TODO: This doesn't handle cause loops
@@ -193,6 +144,26 @@ public class SolrException extends RuntimeException {
       }
     }
     return t;
+  }
+
+  /**
+   * Ensure that the provided tragic exception is wrapped in a 5xx SolrException
+   *
+   * <p>Tragic exceptions (those that Lucene's IndexWriter uses to signify it has become inoperable)
+   * are expected to have a 5xx error code. This method takes an input tragic exception and adds the
+   * expected wrapper, if necessary.
+   *
+   * @param e the exception to check the code on. If not a SolrException, then this method acts as a
+   *     no-op.
+   */
+  public static SolrException wrapLuceneTragicExceptionIfNecessary(Exception e) {
+    if (e instanceof SolrException) {
+      final SolrException solrException = (SolrException) e;
+      assert solrException.code() >= 500 && solrException.code() < 600;
+      return solrException;
+    }
+
+    return new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
   }
 
   public void logInfoWithMdc(Logger logger, String msg) {

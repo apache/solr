@@ -106,7 +106,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testContextFilterParamIsIgnoredWhenContextIsNotImplemented() throws Exception {
+  public void testContextFilterParamIsIgnoredWhenContextIsNotImplemented() {
     assertQ(
         req(
             "qt",
@@ -126,8 +126,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testContextFilteringIsIgnoredWhenContextIsImplementedButNotConfigured()
-      throws Exception {
+  public void testContextFilteringIsIgnoredWhenContextIsImplementedButNotConfigured() {
     assertQ(
         req(
             "qt",
@@ -145,8 +144,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBuildThrowsIllegalArgumentExceptionWhenContextIsConfiguredButNotImplemented()
-      throws Exception {
+  public void testBuildThrowsIllegalArgumentExceptionWhenContextIsConfiguredButNotImplemented() {
     IllegalArgumentException ex =
         expectThrows(
             IllegalArgumentException.class,
@@ -179,7 +177,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testContextFilterIsTrimmed() throws Exception {
+  public void testContextFilterIsTrimmed() {
     assertQ(
         req(
             "qt",
@@ -195,7 +193,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='suggest_blended_infix_suggester']/lst[@name='examp']/int[@name='numFound'][.='3']");
   }
 
-  public void testExplicitFieldedQuery() throws Exception {
+  public void testExplicitFieldedQuery() {
     assertQ(
         req(
             "qt",
@@ -212,7 +210,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
         "//lst[@name='suggest']/lst[@name='suggest_blended_infix_suggester']/lst[@name='examp']/arr[@name='suggestions']/lst[1]/str[@name='term'][.='example with ctx1 at 40']");
   }
 
-  public void testContextFilterOK() throws Exception {
+  public void testContextFilterOK() {
     // No filtering
     assertQ(
         req(
@@ -330,7 +328,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testStringContext() {
-    // Here, the context field is a string, so it's case sensitive
+    // Here, the context field is a string, so it's case-sensitive
     assertQ(
         req(
             "qt",
@@ -361,7 +359,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testContextFilterOnInvalidFieldGivesNoSuggestions() throws Exception {
+  public void testContextFilterOnInvalidFieldGivesNoSuggestions() {
     assertQ(
         req(
             "qt",
@@ -378,7 +376,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testContextFilterUsesAnalyzer() throws Exception {
+  public void testContextFilterUsesAnalyzer() {
     assertQ(
         req(
             "qt",
@@ -396,7 +394,7 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
   @Ignore // TODO: SOLR-7964
   @Test
-  public void testContextFilterWithHighlight() throws Exception {
+  public void testContextFilterWithHighlight() {
     assertQ(
         req(
             "qt",

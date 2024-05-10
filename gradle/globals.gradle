@@ -69,6 +69,19 @@ allprojects {
       return file(buildscript.sourceFile.absolutePath.replaceAll('.gradle$', ""))
     }
 
+    failOrWarn = { propName, message, errors ->
+      if (errors) {
+        def shouldFail = Boolean.valueOf(propertyOrDefault(propName, true))
+        def msg = message + (shouldFail ? " (skip with -P${propName}=false)" : "") + ":\n${errors.join("\n")}"
+
+        if (shouldFail) {
+          throw new GradleException(msg)
+        } else {
+          logger.warn("NOTE: ${msg}")
+        }
+      }
+    }
+
     // Utility function similar to project.exec but not emitting
     // any output unless an error code is returned from the executed command.
     quietExec = { closure ->
@@ -151,5 +164,14 @@ allprojects {
       }
       return taskList
     }
+
+    // detect if we run in CI environment by looking at existence of env vars:
+    // "CI": Github (https://docs.github.com/en/actions/learn-github-actions/environment-variables)
+    // anything starting with "JENKINS_" or "HUDSON_": Jenkins/Hudson (https://jenkins.thetaphi.de/env-vars.html/)
+    isCIBuild = System.getenv().keySet().any { it ==~ /(?i)((JENKINS|HUDSON)(_\w+)?|CI)/ }
+
+    // Assign different java version for client-side modules 'api' and 'solrj*'
+    var isSolrJ = project.name.matches("^(solrj.*|api)\$")
+    minJavaVersion = isSolrJ ? rootProject.minJavaVersionSolrJ : rootProject.minJavaVersionDefault
   }
 }

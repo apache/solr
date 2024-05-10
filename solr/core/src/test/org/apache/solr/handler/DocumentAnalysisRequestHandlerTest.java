@@ -118,12 +118,12 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
       this.bytes = bytes;
       this.contentType = contentType;
       name = null;
-      size = Long.valueOf(bytes.length);
+      size = (long) bytes.length;
       sourceInfo = "rawBytes";
     }
 
     @Override
-    public InputStream getStream() throws IOException {
+    public InputStream getStream() {
       return new ByteArrayInputStream(bytes);
     }
 
@@ -134,7 +134,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
   }
 
   // This test should also test charset detection in UpdateRequestHandler,
-  // but the DocumentAnalysisRequestHandler is simplier to use/check.
+  // but the DocumentAnalysisRequestHandler is simpler to use/check.
   @Test
   public void testCharsetInDocument() throws Exception {
     final byte[] xmlBytes =
@@ -168,7 +168,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
   }
 
   // This test should also test charset detection in UpdateRequestHandler,
-  // but the DocumentAnalysisRequestHandler is simplier to use/check.
+  // but the DocumentAnalysisRequestHandler is simpler to use/check.
   @Test
   public void testCharsetOutsideDocument() throws Exception {
     final byte[] xmlBytes =
@@ -207,7 +207,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
    */
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public void testHandleAnalysisRequest() throws Exception {
+  public void testHandleAnalysisRequest() {
 
     SolrInputDocument document = new SolrInputDocument();
     document.addField("id", 1);

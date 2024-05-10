@@ -35,7 +35,7 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
   static QParser _func;
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     _func = null;
   }
 
@@ -87,7 +87,7 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
     }
   }
 
-  // This test should will fail because q1 and q3 evaluate as equal unless
+  // This test should fail because q1 and q3 evaluate as equal unless
   // fixes for bug 2829 are in place.
   void tryQuerySameTypes(String template, String numbers, String type) throws SyntaxError {
     String s1 = template;

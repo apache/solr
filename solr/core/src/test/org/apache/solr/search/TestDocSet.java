@@ -23,8 +23,10 @@ import java.util.Random;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.ByteVectorValues;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FloatVectorValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafMetaData;
@@ -37,13 +39,12 @@ import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.StoredFields;
+import org.apache.lucene.index.TermVectors;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.KnnCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
@@ -54,7 +55,6 @@ import org.apache.solr.SolrTestCase;
 /** */
 public class TestDocSet extends SolrTestCase {
   Random rand;
-  private Object IndexSearcher;
 
   @Override
   public void setUp() throws Exception {
@@ -63,8 +63,9 @@ public class TestDocSet extends SolrTestCase {
   }
 
   // test the DocSetCollector
+  @SuppressWarnings("BadShiftAmount")
   public void collect(DocSet set, int maxDoc) {
-    int smallSetSize = maxDoc >> 64 + 3;
+    int smallSetSize = maxDoc >> (64 + 3);
     if (set.size() > 1) {
       if (random().nextBoolean()) {
         smallSetSize = set.size() + random().nextInt(3) - 1; // test the bounds around smallSetSize
@@ -160,7 +161,7 @@ public class TestDocSet extends SolrTestCase {
     DocIterator i1 = d1.iterator();
     DocIterator i2 = d2.iterator();
 
-    assert (i1.hasNext() == i2.hasNext());
+    assertEquals(i1.hasNext(), i2.hasNext());
 
     for (; ; ) {
       boolean b1 = i1.hasNext();
@@ -215,7 +216,7 @@ public class TestDocSet extends SolrTestCase {
   }
 
   public void testRandomDocSets() {
-    // Make the size big enough to go over certain limits (such as one set
+    // Make the size big enough to go over certain limits, such as one set
     // being 8 times the size of another in the int set, or going over 2 times
     // 64 bits for the bit doc set.  Smaller sets can hit more boundary conditions though.
 
@@ -235,7 +236,7 @@ public class TestDocSet extends SolrTestCase {
       }
     }
 
-    if (n <= smallSetCuttoff) {
+    if (n <= smallSetCutoff) {
       if (smallSetType == 0) {
         Arrays.sort(a);
         return new SortedIntDocSet(a);
@@ -260,7 +261,7 @@ public class TestDocSet extends SolrTestCase {
   }
 
   public static int smallSetType = 0; // 0==sortedint, 2==FixedBitSet
-  public static int smallSetCuttoff = 3000;
+  public static int smallSetCutoff = 3000;
 
   /*
   public void testIntersectionSizePerformance() {
@@ -307,6 +308,11 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
+      public TermVectors termVectors() {
+        return null;
+      }
+
+      @Override
       public int numDocs() {
         return maxDoc;
       }
@@ -322,7 +328,7 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
-      public Terms terms(String field) throws IOException {
+      public Terms terms(String field) {
         return null;
       }
 
@@ -362,16 +368,27 @@ public class TestDocSet extends SolrTestCase {
       }
 
       @Override
-      public VectorValues getVectorValues(String field) {
+      public FloatVectorValues getFloatVectorValues(String field) {
         return null;
       }
 
       @Override
-      public TopDocs searchNearestVectors(
-          String field, float[] target, int k, Bits acceptDocs, int visitedLimit)
-          throws IOException {
+      public ByteVectorValues getByteVectorValues(String field) {
         return null;
       }
+
+      @Override
+      public StoredFields storedFields() {
+        return null;
+      }
+
+      @Override
+      public void searchNearestVectors(
+          String field, float[] target, KnnCollector knnCollector, Bits acceptDocs) {}
+
+      @Override
+      public void searchNearestVectors(
+          String field, byte[] target, KnnCollector knnCollector, Bits acceptDocs) {}
 
       @Override
       protected void doClose() {}
@@ -380,11 +397,11 @@ public class TestDocSet extends SolrTestCase {
       public void document(int doc, StoredFieldVisitor visitor) {}
 
       @Override
-      public void checkIntegrity() throws IOException {}
+      public void checkIntegrity() {}
 
       @Override
       public LeafMetaData getMetaData() {
-        return new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
+        return new LeafMetaData(Version.LATEST.major, Version.LATEST, null, true);
       }
 
       @Override
@@ -407,8 +424,7 @@ public class TestDocSet extends SolrTestCase {
       subs[i] = dummyIndexReader(rand.nextInt(maxDoc));
     }
 
-    MultiReader mr = new MultiReader(subs);
-    return mr;
+    return new MultiReader(subs);
   }
 
   private static boolean checkNullOrEmpty(DocIdSetIterator[] disis) throws IOException {
@@ -445,8 +461,7 @@ public class TestDocSet extends SolrTestCase {
   }
 
   private static void populateDocs(
-      NoThrowDocIdSetIterator[] disis, int[] docs, ToIntFunction<NoThrowDocIdSetIterator> toDocId)
-      throws IOException {
+      NoThrowDocIdSetIterator[] disis, int[] docs, ToIntFunction<NoThrowDocIdSetIterator> toDocId) {
     for (int i = 0; i < docs.length; i++) {
       docs[i] = toDocId.applyAsInt(disis[i]);
     }
@@ -611,12 +626,6 @@ public class TestDocSet extends SolrTestCase {
       IndexReader r = dummyMultiReader(maxSeg, maxDoc);
       doFilterTest(r);
     }
-  }
-
-  private DocIdSetIterator getDocIdSetIteratorFromQuery(
-      DocSetQuery dsq, LeafReaderContext readerContext) throws IOException {
-    Scorer scorer = dsq.createWeight(null, ScoreMode.COMPLETE_NO_SCORES, 0).scorer(readerContext);
-    return scorer != null ? scorer.iterator() : null;
   }
 
   private static final int MAX_SRC_SIZE = 130; // push _just_ into 3 `long` "words"

@@ -18,6 +18,7 @@ package org.apache.solr.common.params;
 
 import java.util.Arrays;
 import java.util.Collection;
+import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 
 public interface CollectionAdminParams {
 
@@ -41,6 +42,14 @@ public interface CollectionAdminParams {
 
   /** The number of shards to create a particular collection with. */
   String NUM_SHARDS = "numShards";
+
+  String NRT_REPLICAS = "nrtReplicas";
+  String PULL_REPLICAS = "pullReplicas";
+  String TLOG_REPLICAS = "tlogReplicas";
+
+  String REPLICATION_FACTOR = "replicationFactor";
+
+  String REPLICA_TYPE = "type";
 
   /**
    * A parameter which specifies if the provided list of Solr nodes (via {@linkplain
@@ -100,12 +109,22 @@ public interface CollectionAdminParams {
 
   /** Option to follow aliases when deciding the target of a collection admin command. */
   String FOLLOW_ALIASES = "followAliases";
+
   /**
    * When AddReplica is called with this set to true, then we do not try to find node assignments
    * for the add replica API. If set to true, a valid "node" should be specified.
    */
   String SKIP_NODE_ASSIGNMENT = "skipNodeAssignment";
 
+  String REPLICA = "replica";
+
+  /** To identify a specific shard. */
+  String SHARD = "shard";
+
+  String READ_ONLY = "readOnly";
+
   /** Prefix for arbitrary collection or replica properties. */
   String PROPERTY_PREFIX = "property.";
+
+  String PER_REPLICA_STATE = CollectionStateProps.PER_REPLICA_STATE;
 }

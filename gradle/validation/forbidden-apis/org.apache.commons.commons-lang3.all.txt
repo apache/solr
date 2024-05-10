@@ -1,0 +1,84 @@
+@defaultMessage Build compareTo manually
+org.apache.commons.lang3.builder.CompareToBuilder
+
+@defaultMessage Use Objects.hash instead
+org.apache.commons.lang3.builder.HashCodeBuilder
+
+@defaultMessage Use Objects.equals instead
+org.apache.commons.lang3.builder.EqualsBuilder
+
+@defaultMessage Use manual String builder
+org.apache.commons.lang3.builder.ToStringBuilder
+
+@defaultMessage Expand array and add element
+org.apache.commons.lang3.ArrayUtils#add(**)
+
+@defaultMessage Use Array.getLength instead
+org.apache.commons.lang3.ArrayUtils#isEmpty(**)
+org.apache.commons.lang3.ArrayUtils#isNotEmpty(**)
+
+@defaultMessage Use Arrays.stream(primitive[]).boxed().toArray() instead
+org.apache.commons.lang3.ArrayUtils.toObject(**)
+
+@defaultMessage Use Arrays.stream(Integer[]).mapToInt(v -> v).toArray() instead
+org.apache.commons.lang3.ArrayUtils#toPrimitive(java.lang.Integer[])
+org.apache.commons.lang3.ArrayUtils#toPrimitive(java.lang.Integer[],int)
+
+@defaultMessage Use Arrays.stream(Long[]).mapToLong(v -> v).toArray() instead
+org.apache.commons.lang3.ArrayUtils#toPrimitive(java.lang.Long[])
+org.apache.commons.lang3.ArrayUtils#toPrimitive(java.lang.Long[],long)
+
+@defaultMessage Use Arrays.stream(Double[]).mapToDouble(v -> v).toArray() instead
+org.apache.commons.lang3.ArrayUtils#toPrimitive(java.lang.Double[])
+org.apache.commons.lang3.ArrayUtils#toPrimitive(java.lang.Double[],double)
+
+@defaultMessage Use loop to convert from array to primitive
+org.apache.commons.lang3.ArrayUtils#toPrimitive(**)
+
+@defaultMessage Use org.apache.solr.util.LocaleUtils
+org.apache.commons.lang3.LocaleUtils
+
+@defaultMessage Use com.carrotsearch.randomizedtesting.generators.RandomStrings instead
+org.apache.commons.lang3.RandomStringUtils
+
+@defaultMessage Use String contains method instead
+org.apache.commons.lang3.StringUtils#contains(**)
+
+@defaultMessage Use String endsWith method instead
+org.apache.commons.lang3.StringUtils#endsWith(**)
+
+@defaultMessage Use Objects.equals instead
+org.apache.commons.lang3.StringUtils#equals(**)
+
+@defaultMessage Use String equalsIgnoreCase instead
+org.apache.commons.lang3.StringUtils#equalsIgnoreCase(**)
+
+@defaultMessage Use StrUtils.isBlank instead
+org.apache.commons.lang3.StringUtils#isBlank(**)
+
+@defaultMessage Use StrUtils.isNotBlank instead
+org.apache.commons.lang3.StringUtils#isNotBlank(**)
+
+@defaultMessage Use StrUtils.isNullOrEmpty instead
+org.apache.commons.lang3.StringUtils#isEmpty(**)
+
+@defaultMessage Use StrUtils.isNotNullOrEmpty instead
+org.apache.commons.lang3.StringUtils#isNotEmpty(**)
+
+@defaultMessage Use String.join or Collectors.joining instead
+org.apache.commons.lang3.StringUtils#join(**)
+
+@defaultMessage Use String repeat method instead
+org.apache.commons.lang3.StringUtils#repeat(**)
+
+@defaultMessage Use String split method instead
+org.apache.commons.lang3.StringUtils#split(**)
+
+@defaultMessage Use String startsWith method instead
+org.apache.commons.lang3.StringUtils#startsWith(**)
+
+@defaultMessage Use org.apache.lucene.util.Constants instead
+org.apache.commons.lang3.SystemUtils
+
+@defaultMessage Use JDK classes where possible
+org.apache.commons.lang3.**

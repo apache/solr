@@ -29,7 +29,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.AlreadyClosedException;
@@ -40,7 +40,11 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +69,8 @@ public class ZkContainer {
 
   // see ZkController.zkRunOnly
   private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
+
+  private SolrMetricProducer metricProducer;
 
   public ZkContainer() {}
 
@@ -106,7 +112,7 @@ public class ZkContainer {
       }
     }
 
-    int zkClientConnectTimeout = 30000;
+    int zkClientConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
 
     if (zookeeperHost != null) {
 
@@ -121,13 +127,7 @@ public class ZkContainer {
         }
         boolean createRoot = Boolean.getBoolean("createZkChroot");
 
-        // We may have already loaded NodeConfig from zookeeper with same connect string, so no need
-        // to recheck chroot
-        boolean alreadyUsedChroot =
-            (cc.getConfig().isFromZookeeper()
-                && zookeeperHost.equals(cc.getConfig().getDefaultZkHost()));
-        if (!alreadyUsedChroot
-            && !ZkController.checkChrootPath(zookeeperHost, zkRunOnly || createRoot)) {
+        if (!ZkController.checkChrootPath(zookeeperHost, zkRunOnly || createRoot)) {
           throw new ZooKeeperException(
               SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
@@ -144,7 +144,7 @@ public class ZkContainer {
                 cc, zookeeperHost, zkClientConnectTimeout, config, descriptorsSupplier);
 
         if (zkRun != null) {
-          if (StringUtils.isNotEmpty(System.getProperty(HTTPS_PORT_PROP))) {
+          if (StrUtils.isNotNullOrEmpty(System.getProperty(HTTPS_PORT_PROP))) {
             // Embedded ZK and probably running with SSL
             new ClusterProperties(zkController.getZkClient())
                 .setClusterProperty(ZkStateReader.URL_SCHEME, HTTPS);
@@ -152,6 +152,23 @@ public class ZkContainer {
         }
 
         this.zkController = zkController;
+        MetricsMap metricsMap = new MetricsMap(zkController.getZkClient().getMetrics());
+        metricProducer =
+            new SolrMetricProducer() {
+              SolrMetricsContext ctx;
+
+              @Override
+              public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+                ctx = parentContext.getChildContext(this);
+                ctx.gauge(
+                    metricsMap, true, scope, null, SolrInfoBean.Category.CONTAINER.toString());
+              }
+
+              @Override
+              public SolrMetricsContext getSolrMetricsContext() {
+                return ctx;
+              }
+            };
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
@@ -197,21 +214,21 @@ public class ZkContainer {
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
-              SolrException.log(log, "", e);
+              log.error("Interrupted", e);
             } catch (KeeperException e) {
-              SolrException.log(log, "", e);
-            } catch (AlreadyClosedException e) {
+              log.error("KeeperException registering core {}", core.getName(), e);
+            } catch (AlreadyClosedException ignore) {
 
             } catch (Exception e) {
+              log.error("Exception registering core {}", core.getName(), e);
               try {
                 zkController.publish(cd, Replica.State.DOWN);
               } catch (InterruptedException e1) {
                 Thread.currentThread().interrupt();
-                log.error("", e1);
+                log.error("Interrupted", e1);
               } catch (Exception e1) {
-                log.error("", e1);
+                log.error("Exception publishing down state for core {}", core.getName(), e1);
               }
-              SolrException.log(log, "", e);
             }
           } finally {
             MDCLoggingContext.clear();
@@ -248,5 +265,9 @@ public class ZkContainer {
 
   public ExecutorService getCoreZkRegisterExecutorService() {
     return coreZkRegister;
+  }
+
+  public SolrMetricProducer getZkMetricsProducer() {
+    return this.metricProducer;
   }
 }

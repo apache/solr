@@ -16,14 +16,12 @@
  */
 package org.apache.solr.cloud;
 
-import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -32,19 +30,17 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.search.similarities.CustomSimilarityFactory;
 import org.apache.solr.search.stats.StatsCache;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** */
 @Ignore("Abstract classes should not be executed as tests")
 public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected int numNodes = 2;
   protected String configset = "cloud-dynamic";
@@ -188,7 +184,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
                         break;
                       case "statsCacheImpl":
                         assertTrue(
-                            "incorreect cache impl, expected"
+                            "incorrect cache impl, expected"
                                 + getImplementationName()
                                 + " but was "
                                 + value,
@@ -212,7 +208,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
   }
 
   protected void assertResponses(
-      QueryResponse controlRsp, QueryResponse cloudRsp, boolean sameScores) throws Exception {
+      QueryResponse controlRsp, QueryResponse cloudRsp, boolean sameScores) {
     Map<String, SolrDocument> cloudDocs = new HashMap<>();
     Map<String, SolrDocument> controlDocs = new HashMap<>();
     cloudRsp.getResults().forEach(doc -> cloudDocs.put((String) doc.getFieldValue("id"), doc));

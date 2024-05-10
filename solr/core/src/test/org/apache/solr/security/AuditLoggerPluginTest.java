@@ -125,6 +125,7 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
   private MockAuditLoggerPlugin plugin;
   private HashMap<String, Object> config;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

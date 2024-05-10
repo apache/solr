@@ -34,7 +34,7 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
   private static final String FIELD = "srpt_quad";
 
   @BeforeClass
-  public static void beforeSuperClass() throws Exception {
+  public static void beforeSuperClass() {
     schemaString = "schema-spatial.xml";
     configString = "solrconfig-basic.xml";
 
@@ -87,7 +87,7 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
     }
     // Monkeying with these params changes the gridLevel in different directions. We don't test the
     // exact
-    // computation here; that's not _that_ relevant, and is Lucene spatial's job (not Solr) any way.
+    // computation here; that's not _that_ relevant, and is Lucene Spatial's job (not Solr) anyway.
     assertEquals(
         7,
         getHmObj(query(params(baseParams, FacetParams.FACET_HEATMAP_GEOM, testBox)))
@@ -317,8 +317,8 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     }
     // Monkeying with these params changes the gridLevel in different directions. We don't test the
-    // exact computation here; that's not _that_ relevant, and is Lucene spatial's job (not Solr)
-    // any way.
+    // exact computation here; that's not _that_ relevant, and is Lucene Spatial's job (not Solr)
+    // anyway.
     assertEquals(
         7,
         getHmObj(
@@ -525,7 +525,7 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
     for (int i = 0; i < counts.length; i++) {
       final int ri = random().nextInt(10);
       if (ri >= 0 && ri <= 3) {
-        counts[i] = ri; // 0 thru 3 will be made common
+        counts[i] = ri; // 0 through 3 will be made common
       } else if (ri > 3) {
         counts[i] = random().nextInt(Integer.MAX_VALUE); // lots of other possible values up to max
       }

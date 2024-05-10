@@ -78,9 +78,14 @@ allprojects {
       }
 
       // default excludes.
+      exclude '/lucene/**'
       exclude '**/build/**'
       exclude '**/.idea/**'
       exclude '**/.gradle/**'
+
+      // Exclude Eclipse
+      exclude ".metadata"
+      exclude ".settings"
 
       if (project == rootProject) {
         // ourselves :-)
@@ -125,6 +130,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
   private ProgressLoggerFactory progressLoggerFactory
 
   @InputFiles
+  @PathSensitive(PathSensitivity.RELATIVE)
   FileTree sourceFiles
 
   @Inject
@@ -156,12 +162,10 @@ class ValidateSourcePatternsTask extends DefaultTask {
       (~$/\n\s*var\s+.*=.*<>.*/$) : 'Diamond operators should not be used with var',
     ]
 
-    def found = 0;
     def violations = new TreeSet();
     def reportViolation = { f, name ->
       logger.error('{}: {}', name, f);
       violations.add(name);
-      found++;
     }
 
     def javadocsPattern = ~$/(?sm)^\Q/**\E(.*?)\Q*/\E/$;
@@ -273,9 +277,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
     }
     progress.completed()
 
-    if (found) {
-      throw new GradleException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
-        found, violations.join(', ')));
-    }
+    def checkProp = "validation.sourcePatterns.failOnError"
+    project.failOrWarn(checkProp, "Found source pattern violations", violations)
   }
 }

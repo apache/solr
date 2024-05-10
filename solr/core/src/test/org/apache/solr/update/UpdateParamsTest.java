@@ -34,14 +34,14 @@ public class UpdateParamsTest extends SolrTestCaseJ4 {
   }
 
   /** Tests that only update.chain and not update.processor works (SOLR-2105) */
-  public void testUpdateProcessorParamDeprecationRemoved() throws Exception {
+  public void testUpdateProcessorParamDeprecationRemoved() {
     SolrCore core = h.getCore();
 
     UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init(null);
 
-    MapSolrParams params = new MapSolrParams(new HashMap<String, String>());
-    params.getMap().put("update.processor", "nonexistant");
+    MapSolrParams params = new MapSolrParams(new HashMap<>());
+    params.getMap().put("update.processor", "nonexistent");
 
     // Add a single document
     SolrQueryResponse rsp = new SolrQueryResponse();
@@ -52,24 +52,24 @@ public class UpdateParamsTest extends SolrTestCaseJ4 {
       handler.handleRequestBody(req, rsp);
       assertTrue("Old param update.processor should not have any effect anymore", true);
     } catch (Exception e) {
-      assertFalse(
+      assertNotEquals(
           "Got wrong exception while testing update.chain",
-          e.getMessage().equals("unknown UpdateRequestProcessorChain: nonexistant"));
+          "unknown UpdateRequestProcessorChain: nonexistent",
+          e.getMessage());
     }
 
     // Then check that the new param behaves correctly
     params.getMap().remove("update.processor");
-    params.getMap().put(UpdateParams.UPDATE_CHAIN, "nonexistant");
+    params.getMap().put(UpdateParams.UPDATE_CHAIN, "nonexistent");
     req.setParams(params);
     try {
       handler.handleRequestBody(req, rsp);
-      assertFalse(
-          "Faulty update.chain parameter not causing an error - i.e. it is not detected", true);
+      fail("Faulty update.chain parameter not causing an error - i.e. it is not detected");
     } catch (Exception e) {
       assertEquals(
           "Got wrong exception while testing update.chain",
           e.getMessage(),
-          "unknown UpdateRequestProcessorChain: nonexistant");
+          "unknown UpdateRequestProcessorChain: nonexistent");
     }
   }
 }

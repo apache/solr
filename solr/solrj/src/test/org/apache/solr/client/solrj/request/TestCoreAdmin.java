@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.request;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.codahale.metrics.MetricRegistry;
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +32,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -46,35 +44,9 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.junit.After;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
-
-  private static String tempDirProp;
-
-  @Rule public TestRule testRule = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
-  /*
-  @Override
-  protected File getSolrXml() throws Exception {
-    // This test writes on the directory where the solr.xml is located. Better
-    // to copy the solr.xml to
-    // the temporary directory where we store the index
-    File origSolrXml = new File(SOLR_HOME, SOLR_XML);
-    File solrXml = new File(tempDir, SOLR_XML);
-    FileUtils.copyFile(origSolrXml, solrXml);
-    return solrXml;
-  }
-  */
-
-  protected SolrClient getSolrAdmin() {
-    return new EmbeddedSolrServer(cores, null);
-  }
 
   @Test
   public void testConfigSet() throws Exception {
@@ -290,7 +262,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     useFactory(null); // use FS factory
 
     try {
-      cores = CoreContainer.createAndLoad(SOLR_HOME, getSolrXml());
+      cores = CoreContainer.createAndLoad(SOLR_HOME);
 
       String ddir = CoreAdminRequest.getCoreStatus("core0", getSolrCore0()).getDataDirectory();
       Path data = Paths.get(ddir, "index");
@@ -303,7 +275,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
       // destroy the index
       Files.move(data.resolve("_0.si"), data.resolve("backup"));
-      cores = CoreContainer.createAndLoad(SOLR_HOME, getSolrXml());
+      cores = CoreContainer.createAndLoad(SOLR_HOME);
 
       // Need to run a query to confirm that the core couldn't load
       expectThrows(SolrException.class, () -> getSolrCore0().query(new SolrQuery("*:*")));
@@ -315,25 +287,8 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       CoreAdminRequest.reloadCore("core0", getSolrCore0());
       assertEquals(1, getSolrCore0().query(new SolrQuery("*:*")).getResults().getNumFound());
     } finally {
+      cores.shutdown();
       resetFactory();
     }
-  }
-
-  @BeforeClass
-  public static void before() {
-    // wtf?
-    if (System.getProperty("tempDir") != null) tempDirProp = System.getProperty("tempDir");
-  }
-
-  @After
-  public void after() {
-    // wtf?
-    if (tempDirProp != null) {
-      System.setProperty("tempDir", tempDirProp);
-    } else {
-      System.clearProperty("tempDir");
-    }
-
-    System.clearProperty("solr.solr.home");
   }
 }

@@ -29,6 +29,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Set;
 import org.apache.http.client.HttpClient;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -38,6 +39,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricProducer;
@@ -54,7 +56,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   private UpdateHandler uhandler;
   private UpdateLog ulog;
-  private HttpSolrClient clientToLeader;
+  private SolrClient clientToLeader;
 
   private boolean doFingerprint;
 
@@ -78,7 +80,14 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     this.uhandler = core.getUpdateHandler();
     this.ulog = uhandler.getUpdateLog();
     HttpClient httpClient = core.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
-    this.clientToLeader = new HttpSolrClient.Builder(leaderUrl).withHttpClient(httpClient).build();
+
+    final var leaderBaseUrl = URLUtil.extractBaseUrl(leaderUrl);
+    final var coreName = URLUtil.extractCoreFromCoreUrl(leaderUrl);
+    this.clientToLeader =
+        new HttpSolrClient.Builder(leaderBaseUrl)
+            .withDefaultCollection(coreName)
+            .withHttpClient(httpClient)
+            .build();
 
     this.updater = new PeerSync.Updater(msg(), core);
 

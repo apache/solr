@@ -23,9 +23,10 @@ import java.util.List;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.comparators.TermOrdValComparator;
 import org.apache.lucene.util.BytesRef;
 
 /** Custom field representing a {@link BinaryField} that's sortable. */
@@ -70,12 +71,14 @@ public class SortableBinaryField extends BinaryField {
           field,
           new FieldComparatorSource() {
             @Override
-            public FieldComparator.TermOrdValComparator newComparator(
+            public TermOrdValComparator newComparator(
                 final String fieldname,
                 final int numHits,
-                final boolean enableSkipping,
+                final Pruning pruning,
                 final boolean reversed) {
-              return new FieldComparator.TermOrdValComparator(numHits, fieldname);
+              final boolean sortMissingLast = false;
+              return new TermOrdValComparator(
+                  numHits, fieldname, sortMissingLast, reversed, pruning);
             }
           },
           reverse);

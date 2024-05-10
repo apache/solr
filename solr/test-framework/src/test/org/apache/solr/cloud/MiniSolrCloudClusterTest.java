@@ -20,16 +20,18 @@ package org.apache.solr.cloud;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -57,9 +59,9 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
           new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build()) {
             @Override
             public JettySolrRunner startJettySolrRunner(
-                String name, String context, JettyConfig config) throws Exception {
+                String name, JettyConfig config, String solrXml) throws Exception {
               if (jettyIndex.incrementAndGet() != 2)
-                return super.startJettySolrRunner(name, context, config);
+                return super.startJettySolrRunner(name, config, solrXml);
               throw new IOException("Fake exception on startup!");
             }
           };
@@ -200,14 +202,18 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
           new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build()) {
             @Override
             public JettySolrRunner startJettySolrRunner(
-                String name, String hostContext, JettyConfig config) throws Exception {
+                String name, JettyConfig config, String solrXml) throws Exception {
               System.setProperty("zkHost", getZkServer().getZkAddress());
 
               final Properties nodeProps = new Properties();
               nodeProps.setProperty("test-from-sysprop", "yup");
 
               Path runnerPath = createTempDir(name);
-              JettyConfig newConfig = JettyConfig.builder(config).setContext("/blarfh").build();
+              if (solrXml == null) {
+                solrXml = DEFAULT_CLOUD_SOLR_XML;
+              }
+              Files.write(runnerPath.resolve("solr.xml"), solrXml.getBytes(StandardCharsets.UTF_8));
+              JettyConfig newConfig = JettyConfig.builder(config).build();
               JettySolrRunner jetty =
                   new JettySolrRunner(runnerPath.toString(), nodeProps, newConfig);
               return super.startJettySolrRunner(jetty);

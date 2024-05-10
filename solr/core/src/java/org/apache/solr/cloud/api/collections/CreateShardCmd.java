@@ -17,23 +17,18 @@
 package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -71,19 +66,13 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     }
     DocCollection collection = clusterState.getCollection(collectionName);
 
-    int numNrtReplicas =
-        message.getInt(
-            NRT_REPLICAS,
-            message.getInt(
-                REPLICATION_FACTOR,
-                collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
-    int numPullReplicas = message.getInt(PULL_REPLICAS, collection.getInt(PULL_REPLICAS, 0));
-    int numTlogReplicas = message.getInt(TLOG_REPLICAS, collection.getInt(TLOG_REPLICAS, 0));
-
-    if (numNrtReplicas + numTlogReplicas <= 0) {
+    ReplicaCount numReplicas = ReplicaCount.fromMessage(message, collection, 1);
+    if (!numReplicas.hasLeaderReplica()) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
+          "Unexpected number of replicas ("
+              + numReplicas
+              + "), there must be at least one leader-eligible replica");
     }
 
     if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
@@ -100,7 +89,7 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     } else {
       // message contains extCollectionName that might be an alias. Unclear (to me) how this works
       // in that case.
-      ccc.offerStateUpdate(Utils.toJSON(message));
+      ccc.offerStateUpdate(message);
     }
 
     // wait for a while until we see the shard and update the local view of the cluster state
@@ -108,33 +97,28 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
         CollectionHandlingUtils.waitForNewShard(collectionName, sliceName, ccc.getZkStateReader());
 
     String async = message.getStr(ASYNC);
-    ZkNodeProps addReplicasProps =
-        new ZkNodeProps(
+    Map<String, Object> addReplicasProps =
+        Utils.makeMap(
             COLLECTION_PROP,
-            collectionName,
+            (Object) collectionName,
             SHARD_ID_PROP,
             sliceName,
-            ZkStateReader.NRT_REPLICAS,
-            String.valueOf(numNrtReplicas),
-            ZkStateReader.TLOG_REPLICAS,
-            String.valueOf(numTlogReplicas),
-            ZkStateReader.PULL_REPLICAS,
-            String.valueOf(numPullReplicas),
             CollectionHandlingUtils.CREATE_NODE_SET,
             message.getStr(CollectionHandlingUtils.CREATE_NODE_SET),
             CommonAdminParams.WAIT_FOR_FINAL_STATE,
             Boolean.toString(waitForFinalState));
+    numReplicas.writeProps(addReplicasProps);
 
-    Map<String, Object> propertyParams = new HashMap<>();
-    CollectionHandlingUtils.addPropertyParams(message, propertyParams);
-    addReplicasProps = addReplicasProps.plus(propertyParams);
-    if (async != null) addReplicasProps.getProperties().put(ASYNC, async);
+    CollectionHandlingUtils.addPropertyParams(message, addReplicasProps);
+    if (async != null) {
+      addReplicasProps.put(ASYNC, async);
+    }
     final NamedList<Object> addResult = new NamedList<>();
     try {
       new AddReplicaCmd(ccc)
           .addReplica(
               clusterState,
-              addReplicasProps,
+              new ZkNodeProps(addReplicasProps),
               addResult,
               () -> {
                 @SuppressWarnings("unchecked")

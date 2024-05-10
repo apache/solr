@@ -18,7 +18,7 @@
 // under the License.
 
 Update handlers are request handlers designed to add, delete and update documents to the index.
-In addition to having plugins for importing rich documents xref:indexing-with-tika.adoc[], Solr natively supports indexing structured documents in XML, CSV, and JSON.
+In addition to having plugins for importing rich documents (see xref:indexing-with-tika.adoc[]), Solr natively supports indexing structured documents in XML, CSV, and JSON.
 
 The recommended way to configure and use request handlers is with path based names that map to paths in the request URL.
 However, request handlers can also be specified with the `qt` (query type) parameter if the xref:configuration-guide:requestdispatcher.adoc[`requestDispatcher`] is appropriately configured.
@@ -275,13 +275,12 @@ The status field will be non-zero in case of failure.
 The xref:configuration-guide:script-update-processor.adoc[Scripting module] provides a separate XSLT Update Request Handler that allows you to index any arbitrary XML by using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation].
 You must have an XSLT stylesheet in the `conf/xslt` directory of your xref:configuration-guide:config-sets.adoc[configset] that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
 
-Learn more about adding the `modules/scripting/lib/*` files into Solr's xref:configuration-guide:libs.adoc#lib-directories[Lib Directories].
+You will need to enable the xref:configuration-guide:script-update-processor.adoc#module[scripting Module] before using this feature.
 
 === tr Parameter
 
-The XSLT Update Request Handler accepts one parameter: the `tr` parameter, which identifies the XML transformation to use.
+The XSLT Update Request Handler accepts the `tr` parameter, which identifies the XML transformation to use.
 The transformation must be found in the Solr `conf/xslt` directory.
-
 
 === XSLT Configuration
 
@@ -667,7 +666,7 @@ Example: `map=left:right` or `f.subject.map=history:bunk`
 |===
 +
 If `true`, split a field into multiple values by a separate parser.
-This parameter is used on a per-field basis.
+This parameter is used on a per-field basis, for example `f.FIELD_NAME_GOES_HERE.split=true`.
 
 `overwrite`::
 +

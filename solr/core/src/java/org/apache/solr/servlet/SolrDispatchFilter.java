@@ -16,16 +16,13 @@
  */
 package org.apache.solr.servlet;
 
-import static org.apache.solr.security.AuditEvent.EventType;
 import static org.apache.solr.servlet.ServletUtils.closeShield;
 import static org.apache.solr.servlet.ServletUtils.configExcludes;
 import static org.apache.solr.servlet.ServletUtils.excludedPath;
+import static org.apache.solr.util.tracing.TraceUtils.getSpan;
+import static org.apache.solr.util.tracing.TraceUtils.setTracer;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.tag.Tags;
-import io.opentracing.util.GlobalTracer;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
@@ -48,14 +45,18 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.NodeRoles;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.logging.MDCSnapshot;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuditEvent;
+import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.CoreContainerProvider.ServiceHolder;
+import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,9 +72,6 @@ import org.slf4j.LoggerFactory;
 // things like CoreContainer can be requested. (or better yet injected)
 public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String ATTR_TRACING_SPAN = Span.class.getName();
-  public static final String ATTR_TRACING_TRACER = Tracer.class.getName();
-  public static final String ATTR_RATELIMIT_MANAGER = RateLimitManager.class.getName();
 
   // TODO: see if we can get rid of the holder here (Servlet spec actually guarantees
   // ContextListeners run before filter init, but JettySolrRunner that we use for tests is
@@ -84,6 +82,8 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
   protected String abortErrorMessage = null;
 
+  private HttpSolrCallFactory solrCallFactory;
+
   @Override
   public void setExcludePatterns(List<Pattern> excludePatterns) {
     this.excludePatterns = excludePatterns;
@@ -91,7 +91,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
   private List<Pattern> excludePatterns;
 
-  private final boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
+  public final boolean isV2Enabled = V2ApiUtils.isEnabled();
 
   public HttpClient getHttpClient() {
     try {
@@ -116,7 +116,8 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     RETRY,
     ADMIN,
     REMOTEQUERY,
-    PROCESS
+    PROCESS,
+    ADMIN_OR_REMOTEQUERY
   }
 
   public SolrDispatchFilter() {}
@@ -137,7 +138,15 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   public void init(FilterConfig config) throws ServletException {
     try {
       coreService = CoreContainerProvider.serviceForContext(config.getServletContext());
-
+      boolean isCoordinator =
+          NodeRoles.MODE_ON.equals(
+              coreService
+                  .getService()
+                  .getCoreContainer()
+                  .nodeRoles
+                  .getRoleMode(NodeRoles.Role.COORDINATOR));
+      solrCallFactory =
+          isCoordinator ? new CoordinatorHttpSolrCall.Factory() : new HttpSolrCallFactory() {};
       if (log.isTraceEnabled()) {
         log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
       }
@@ -148,8 +157,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
 
     } catch (Throwable t) {
       // catch this so our filter still works
-      log.error("Could not start Dispatch Filter.");
-      SolrCore.log(t);
+      log.error("Could not start Dispatch Filter.", t);
       if (t instanceof Error) {
         throw (Error) t;
       }
@@ -195,25 +203,25 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     if (excludedPath(excludePatterns, request, response, chain)) {
       return;
     }
-    Tracer t = getCores() == null ? GlobalTracer.get() : getCores().getTracer();
-    request.setAttribute(Tracer.class.getName(), t);
+    setTracer(request, getCores().getTracer());
     RateLimitManager rateLimitManager = coreService.getService().getRateLimitManager();
-    request.setAttribute(RateLimitManager.class.getName(), rateLimitManager);
-    ServletUtils.rateLimitRequest(
-        request,
-        response,
-        () -> {
-          try {
-            dispatch(chain, request, response, retry);
-          } catch (IOException | ServletException | SolrAuthenticationException e) {
-            throw new ExceptionWhileTracing(e);
-          }
-        },
-        true);
-  }
-
-  private static Span getSpan(HttpServletRequest req) {
-    return (Span) req.getAttribute(ATTR_TRACING_SPAN);
+    try {
+      ServletUtils.rateLimitRequest(
+          rateLimitManager,
+          request,
+          response,
+          () -> {
+            try {
+              dispatch(chain, request, response, retry);
+            } catch (IOException | ServletException | SolrAuthenticationException e) {
+              throw new ExceptionWhileTracing(e);
+            }
+          });
+    } finally {
+      ServletUtils.consumeInputFully(request, response);
+      SolrRequestInfo.reset();
+      SolrRequestParsers.cleanupMultipartFiles(request);
+    }
   }
 
   private void dispatch(
@@ -226,11 +234,18 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       request = wrappedRequest.get();
     }
 
+    var span = getSpan(request);
     if (getCores().getAuthenticationPlugin() != null) {
       if (log.isDebugEnabled()) {
         log.debug("User principal: {}", request.getUserPrincipal());
       }
-      getSpan(request).setTag(Tags.DB_USER, String.valueOf(request.getUserPrincipal()));
+      final String principalName;
+      if (request.getUserPrincipal() != null) {
+        principalName = request.getUserPrincipal().getName();
+      } else {
+        principalName = null;
+      }
+      TraceUtils.setUser(span, String.valueOf(principalName));
     }
 
     HttpSolrCall call = getHttpSolrCall(request, response, retry);
@@ -239,20 +254,21 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       Action result = call.call();
       switch (result) {
         case PASSTHROUGH:
-          getSpan(request).log("SolrDispatchFilter PASSTHROUGH");
+          span.addEvent("SolrDispatchFilter PASSTHROUGH");
           chain.doFilter(request, response);
           break;
         case RETRY:
-          getSpan(request).log("SolrDispatchFilter RETRY");
+          span.addEvent("SolrDispatchFilter RETRY");
           doFilter(request, response, chain, true); // RECURSION
           break;
         case FORWARD:
-          getSpan(request).log("SolrDispatchFilter FORWARD");
+          span.addEvent("SolrDispatchFilter FORWARD");
           request.getRequestDispatcher(call.getPath()).forward(request, response);
           break;
         case ADMIN:
         case PROCESS:
         case REMOTEQUERY:
+        case ADMIN_OR_REMOTEQUERY:
         case RETURN:
           break;
       }
@@ -276,11 +292,7 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
     } catch (UnavailableException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Core Container Unavailable");
     }
-    if (isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
-      return new V2HttpCall(this, cores, request, response, false);
-    } else {
-      return new HttpSolrCall(this, cores, request, response, retry);
-    }
+    return solrCallFactory.createInstance(this, path, cores, request, response, retry);
   }
 
   // TODO: make this a servlet filter
@@ -393,5 +405,22 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   @VisibleForTesting
   void replaceRateLimitManager(RateLimitManager rateLimitManager) {
     coreService.getService().setRateLimitManager(rateLimitManager);
+  }
+
+  /** internal API */
+  public interface HttpSolrCallFactory {
+    default HttpSolrCall createInstance(
+        SolrDispatchFilter filter,
+        String path,
+        CoreContainer cores,
+        HttpServletRequest request,
+        HttpServletResponse response,
+        boolean retry) {
+      if (filter.isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
+        return new V2HttpCall(filter, cores, request, response, retry);
+      } else {
+        return new HttpSolrCall(filter, cores, request, response, retry);
+      }
+    }
   }
 }

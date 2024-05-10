@@ -39,6 +39,7 @@ dependencies {
   implementation 'commons-cli:commons-cli'
 
   testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:solrj-zookeeper')
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
@@ -64,7 +65,9 @@ dependencies {
 
   // Zookeeper dependency - some tests like HdfsCloudBackupRestore need this
   permitTestUnusedDeclared 'org.apache.zookeeper:zookeeper'
-  testImplementation 'org.apache.zookeeper:zookeeper'
+  testImplementation('org.apache.zookeeper:zookeeper', {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+  })
   // required for instantiating a Zookeeper server in tests or embedded
   testRuntimeOnly 'org.xerial.snappy:snappy-java'
 }
@@ -74,13 +77,20 @@ dependencies {
 // of the HDFS module so we can avoid duplication of the test resource files like
 // schemas and SolrConfigs. This can be improved later by making the test classes
 // load the resources from core directories directly.
-task copySolrCoreTestResources(type: Copy) {
+tasks.register('copySolrCoreTestResources', Copy) {
   from(project(':solr:core').sourceSets.test.resources.srcDirs) {
     exclude '**/*.java'
   }
   into sourceSets.test.output.resourcesDir
 }
 
-tasks.processTestResources.configure {
+tasks.named('processTestResources').configure {
   dependsOn copySolrCoreTestResources
+}
+
+// Hadoop mini cluster doesn't handle reflection properly in JDK 16+
+// https://docs.gradle.org/current/userguide/upgrading_version_7.html#removes_implicit_add_opens_for_test_workers
+tasks.withType(Test).configureEach {
+  jvmArgs(["--add-opens=java.base/java.lang=ALL-UNNAMED",
+           "--add-opens=java.base/java.util=ALL-UNNAMED"])
 }

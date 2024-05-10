@@ -26,7 +26,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RandomizeSSL;
 import org.junit.BeforeClass;
@@ -69,7 +68,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
     byte[] stateJsonBytes =
         cluster
             .getZkClient()
-            .getData(ZkStateReader.getCollectionPath(collectionId), null, null, true);
+            .getData(DocCollection.getCollectionPath(collectionId), null, null, true);
     assertNotNull(stateJsonBytes);
     Map<String, Object> replicasMap =
         (Map<String, Object>)
@@ -93,7 +92,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
     }
 
     // http2
-    try (CloudHttp2SolrClient http2BasedClient =
+    try (CloudSolrClient http2BasedClient =
         new CloudHttp2SolrClient.Builder(Collections.singletonList(url0.toExternalForm()))
             .build()) {
       ClusterStateProvider csp = http2BasedClient.getClusterStateProvider();

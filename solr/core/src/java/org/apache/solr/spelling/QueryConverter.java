@@ -32,7 +32,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * SpellingQueryConverter and registering it in the solrconfig.xml
  *
  * <p>Refer to <a
- * href="https://solr.apache.org/guide/spell-checking.html">https://solr.apache.org/guide/spell-checking.html</a>
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html">https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html</a>
  * for more details
  *
  * @since solr 1.3
@@ -42,14 +42,17 @@ public abstract class QueryConverter implements NamedListInitializedPlugin {
 
   /** This term is marked prohibited in the query with the minus sign. */
   public static final int PROHIBITED_TERM_FLAG = 16384;
+
   /** This term is marked required in the query with the plus sign. */
   public static final int REQUIRED_TERM_FLAG = 32768;
+
   /**
    * This term is directly followed by a boolean operator (AND/OR/NOT) and this operator differs
    * from the prior boolean operator in the query (this signifies this term is likely part of a
    * different query clause than the next term in the query)
    */
   public static final int TERM_PRECEDES_NEW_BOOLEAN_OPERATOR_FLAG = 65536;
+
   /** This term exists in a query that contains boolean operators (AND/OR/NOT) */
   public static final int TERM_IN_BOOLEAN_QUERY_FLAG = 131072;
 

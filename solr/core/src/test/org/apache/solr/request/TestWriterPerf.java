@@ -73,7 +73,7 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
   void index(Object... olst) {
     ArrayList<String> lst = new ArrayList<>();
     for (Object o : olst) lst.add(o.toString());
-    assertU(adoc(lst.toArray(new String[lst.size()])));
+    assertU(adoc(lst.toArray(new String[0])));
   }
 
   void makeIndex() {
@@ -152,7 +152,7 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
         t1,
         "Great works are performed, not by strength, but by perseverance.",
         tag,
-        "herculese",
+        "hercules",
         tag,
         "strong",
         tag,
@@ -202,9 +202,9 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
     writerName = writerName.intern();
     for (int i = 0; i < decIter; i++) {
       ResponseParser rp = null;
-      if (writerName == "xml") {
+      if (writerName.equals("xml")) {
         rp = new XMLResponseParser();
-      } else if (writerName == "javabin") {
+      } else if (writerName.equals("javabin")) {
         rp = new BinaryResponseParser();
       } else {
         break;
@@ -270,8 +270,8 @@ public class TestWriterPerf extends SolrTestCaseJ4 {
     doPerf("json", req, 2, 2);
     doPerf("javabin", req, 2, 2);
 
-    int encIter = 20000;
-    int decIter = 50000;
+    // int encIter = 20000;
+    // int decIter = 50000;
 
     // warm up hotspot
     // doPerf("xml", req, 200,1000);

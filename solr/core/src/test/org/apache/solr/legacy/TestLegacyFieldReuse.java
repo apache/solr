@@ -53,7 +53,6 @@ public class TestLegacyFieldReuse extends BaseTokenStreamTestCase {
 
     // pass another bogus stream (numeric, but different precision step!)
     legacyIntField = new LegacyIntField("foo", 42, Field.Store.NO);
-    assert 3 != LegacyNumericUtils.PRECISION_STEP_DEFAULT;
     bogus = new LegacyNumericTokenStream(3);
     ts = legacyIntField.tokenStream(null, bogus);
     assertNotSame(bogus, ts);

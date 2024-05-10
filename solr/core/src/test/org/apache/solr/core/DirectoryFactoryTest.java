@@ -36,7 +36,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
   private static SolrResourceLoader loader = null;
 
   @BeforeClass
-  public static void setupLoader() throws Exception {
+  public static void setupLoader() {
     solrHome = FilterPath.unwrap(createTempDir()); // FilterPath can interfere
     loader = new SolrResourceLoader(solrHome);
   }
@@ -58,7 +58,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
   }
 
   @Test
-  public void testLockTypesUnchanged() throws Exception {
+  public void testLockTypesUnchanged() {
     assertEquals("simple", DirectoryFactory.LOCK_TYPE_SIMPLE);
     assertEquals("native", DirectoryFactory.LOCK_TYPE_NATIVE);
     assertEquals("single", DirectoryFactory.LOCK_TYPE_SINGLE);
@@ -79,7 +79,6 @@ public class DirectoryFactoryTest extends SolrTestCase {
       throws Exception {
     NodeConfig config = loadNodeConfig("/solr/solr-solrDataHome.xml");
     CoreContainer cc = new CoreContainer(config);
-    Properties cp = cc.getContainerProperties();
     DirectoryFactory df = directoryFactoryClass.getConstructor().newInstance();
     df.initCoreContainer(cc);
     df.init(new NamedList<>());
@@ -134,7 +133,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
     assertEquals(Paths.get(expected).toAbsolutePath(), Paths.get(dataHome).toAbsolutePath());
   }
 
-  private NodeConfig loadNodeConfig(String config) throws Exception {
+  private NodeConfig loadNodeConfig(String config) {
     InputStream is = DirectoryFactoryTest.class.getResourceAsStream(config);
     return SolrXmlConfig.fromInputStream(solrHome, is, new Properties());
   }

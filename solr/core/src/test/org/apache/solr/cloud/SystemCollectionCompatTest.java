@@ -28,7 +28,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -44,6 +43,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.util.IdUtils;
@@ -76,7 +76,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     ZkController zkController = cluster.getJettySolrRunner(0).getCoreContainer().getZkController();
     cloudManager = zkController.getSolrCloudManager();
     solrClient =
-        new CloudSolrClientBuilder(
+        new RandomizingCloudSolrClientBuilder(
                 Collections.singletonList(zkController.getZkServerAddress()), Optional.empty())
             .build();
     CollectionAdminRequest.OverseerStatus status = new CollectionAdminRequest.OverseerStatus();
@@ -119,7 +119,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     CollectionAdminResponse response = reloadRequest.process(solrClient);
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-    // wait for the reload of all replicas to complete
+    // wait for the reload operation of all replicas to complete
     RetryUtil.retryUntil(
         "Timed out waiting for core to reload",
         30,
@@ -182,8 +182,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     log.info("Overseer Status indicates that the overseer is: {}", leader);
     JettySolrRunner overseerNode = null;
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
-    for (int i = 0; i < jettySolrRunners.size(); i++) {
-      JettySolrRunner runner = jettySolrRunners.get(i);
+    for (JettySolrRunner runner : jettySolrRunners) {
       if (runner.getNodeName().equals(leader)) {
         overseerNode = runner;
         break;

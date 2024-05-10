@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Apache Solr *Dense Vector Search* module adds support for indexing and searching dense numerical vectors.
+Solr's *Dense Vector Search* adds support for indexing and searching dense numerical vectors.
 
 https://en.wikipedia.org/wiki/Deep_learning[Deep learning] can be used to produce a vector representation of both the query and the documents in a corpus of information.
 
@@ -57,7 +57,7 @@ The dense vector field gives the possibility of indexing and searching dense vec
 
 For example:
 
-`[1.0, 2.5, 3.7, 4.1]` 
+`[1.0, 2.5, 3.7, 4.1]`
 
 Here's how `DenseVectorField` should be configured in the schema:
 
@@ -75,7 +75,7 @@ s|Required |Default: none
 The dimension of the dense vector to pass in.
 +
 Accepted values:
-Any integer < = `1024`.
+Any integer.
 
 `similarityFunction`::
 +
@@ -96,41 +96,44 @@ this similarity is intended as an optimized way to perform cosine similarity. In
 
 * `cosine`: https://en.wikipedia.org/wiki/Cosine_similarity[Cosine similarity]
 
-[NOTE] 
+[NOTE]
 the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
 
 To use the following advanced parameters that customise the codec format
-and the hyper-parameter of the HNSW algorithm make sure you set this configuration in `solrconfig.xml`:
-[source,xml]
-<config>
-<codecFactory class="solr.SchemaCodecFactory"/>
-...
+and the hyperparameter of the HNSW algorithm, make sure the xref:configuration-guide:codec-factory.adoc[Schema Codec Factory], is in use.
 
-Here's how `DenseVectorField` can be configured with the advanced codec hyper-parameters:
+Here's how `DenseVectorField` can be configured with the advanced hyperparameters:
 
 [source,xml]
-<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" codecFormat="Lucene91HnswVectorsFormat" hnswMaxConnections="10" hnswBeamWidth="40"/>
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" hnswMaxConnections="10" hnswBeamWidth="40"/>
 <field name="vector" type="knn_vector" indexed="true" stored="true"/>
 
-`codecFormat`::
+`knnAlgorithm`::
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `Lucene91HnswVectorsFormat`
+|Optional |Default: `hnsw`
 |===
 +
-(advanced) Specifies the knn codec implementation to use
+(advanced) Specifies the underlying knn algorithm to use
 +
 
-Accepted values: `Lucene90HnswVectorsFormat`, `Lucene91HnswVectorsFormat` .
+Accepted values: `hnsw`.
 
-Please note that the `codecFormat` accepted values may change in future releases.
+Please note that the `knnAlgorithm` accepted values may change in future releases.
 
+`vectorEncoding`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `FLOAT32`
+|===
++
+(advanced) Specifies the underlying encoding of the dense vector elements. This affects memory/disk impact for both the indexed and stored fields (if enabled)
++
 
+Accepted values: `FLOAT32`, `BYTE`.
 
-[NOTE]
-Lucene index back-compatibility is only supported for the default codec.
-If you choose to customize the `codecFormat` in your schema, upgrading to a future version of Solr may require you to either switch back to the default codec and optimize your index to rewrite it into the default codec before upgrading, or re-build your entire index from scratch after upgrading.
 
 `hnswMaxConnections`::
 +
@@ -139,7 +142,7 @@ If you choose to customize the `codecFormat` in your schema, upgrading to a futu
 |Optional |Default: `16`
 |===
 +
-(advanced) This parameter is specific for the `Lucene90HnswVectorsFormat` and `Lucene91HnswVectorsFormat` codec formats:
+(advanced) This parameter is specific for the `hnsw` knn algorithm:
 +
 Controls how many of the nearest neighbor candidates are connected to the new node.
 +
@@ -155,7 +158,7 @@ Any integer.
 |Optional |Default: `100`
 |===
 +
-(advanced) This parameter is specific for the `Lucene90HnswVectorsFormat` and `Lucene91HnswVectorsFormat` codec formats:
+(advanced) This parameter is specific for the `hnsw` knn algorithm:
 +
 It is the number of nearest neighbor candidates to track while searching the graph for each newly inserted node.
 +
@@ -237,7 +240,7 @@ client.add(Arrays.asList(d1, d2));
 This is the Apache Solr query approach designed to support dense vector search:
 
 === knn Query Parser
-The `knn` k-nearest neighbors query parser allows to find the k-nearest documents to the target vector according to indexed dense vectors in the given field.
+The `knn` k-nearest neighbors query parser allows to find the k-nearest documents to the target vector according to indexed dense vectors in the given field.  The set of documents can be Pre-Filtered to reduce the number of vector distance calculations that must be computed, and ensure the best `topK` are returned.
 
 The score for a retrieved document is the approximate distance to the target vector(defined by the similarityFunction configured at indexing time).
 
@@ -261,32 +264,113 @@ The `DenseVectorField` to search in.
 +
 How many k-nearest results to return.
 
-Here's how to run a KNN search:
+`preFilter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: Depends on usage, see below.
+|===
++
+Specifies an explicit list of Pre-Filter query strings to use.
+
+`includeTags`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Indicates that only `fq` filters with the specified `tag` should be considered for implicit Pre-Filtering.  Must not be combined with `preFilter`.
+
+
+`excludeTags`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Indicates that `fq` filters with the specified `tag` should be excluded from consideration for implicit Pre-Filtering.  Must not be combined with `preFilter`.
+
+
+Here's how to run a simple KNN search:
 
 [source,text]
-&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
+?q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
 
-The search results retrieved are the k-nearest to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the similarityFunction configured at indexing time.
+The search results retrieved are the k=10 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the `similarityFunction` configured at indexing time.
 
-==== Usage with Filter Queries
-The `knn` query parser can be used in filter queries:
+
+==== Explicit KNN Pre-Filtering
+
+The `knn` query parser's `preFilter` parameter can be specified to reduce the number of candidate documents evaluated for the k-nearest distance calculation:
+
 [source,text]
-&q=id:(1 2 3)&fq={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
+?q={!knn f=vector topK=10 preFilter=inStock:true}[1.0, 2.0, 3.0, 4.0]
 
-The `knn` query parser can be used with filter queries:
+In the above example, only documents matching the Pre-Filter `inStock:true` will be candidates for consideration when evaluating the k-nearest search against the specified vector.
+
+The `preFilter` parameter may be blank (ex: `preFilter=""`) to indicate that no Pre-Filtering should be performed; or it may be multi-valued -- either through repetition, or via duplicated xref:local-params.adoc#parameter-dereferencing[Parameter References].
+
+These two examples are equivalent:
+
 [source,text]
-&q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]&fq=id:(1 2 3)
+?q={!knn f=vector topK=10 preFilter=category:AAA preFilter=inStock:true}[1.0, 2.0, 3.0, 4.0]
 
-[IMPORTANT]
-====
-When using `knn` in these scenarios make sure you have a clear understanding of how filter queries work in Apache Solr:
+[source,text]
+----
+?q={!knn f=vector topK=10 preFilter=$knnPreFilter}[1.0, 2.0, 3.0, 4.0]
+&knnPreFilter=category:AAA
+&knnPreFilter=inStock:true
+----
 
-The Ranked List of document IDs resulting from the main query `q` is intersected with the set of document IDs deriving from each filter query `fq`.
+==== Implicit KNN Pre-Filtering
 
-e.g.
+While the `preFilter` parameter may be explicitly specified on *_any_* usage of the `knn` query parser, the default Pre-Filtering behavior (when no `preFilter` parameter is specified) will vary based on how the `knn` query parser is used:
 
-Ranked List from `q`=`[ID1, ID4, ID2, ID10]` <intersects> Set from `fq`=`{ID3, ID2, ID9, ID4}` = `[ID4,ID2]`
-====
+* When used as the main `q` param: `fq` filters in the request (that are not xref:common-query-parameters.adoc#cache-local-parameter[Solr Post Filters]) will be combined to form an implicit KNN Pre-Filter.
+** This default behavior optimizes the number of vector distance calculations considered, eliminating documents that would eventually be excluded by an `fq` filter anyway.
+** `includeTags` and `excludeTags` may be used to limit the set of `fq` filters used in the Pre-Filter.
+* When used as an `fq` param, or as a subquery clause in a larger query: No implicit Pre-Filter is used.
+** `includeTags` and `excludeTags` must not be used in these situations.
+
+
+The example request below shows two usages of the `knn` query parser that will get _no_ implicit Pre-Filtering from any of the `fq` parameters, because neither usage is as the main `q` param:
+
+[source,text]
+----
+?q=(color_str:red OR {!knn f=color_vector topK=10 v="[1.0, 2.0, 3.0, 4.0]"})
+&fq={!knn f=title_vector topK=10}[9.0, 8.0, 7.0, 6.0]
+&fq=inStock:true
+----
+
+
+However, the next example shows a basic request where all `fq` parameters will be used as implicit Pre-Filters on the main `knn` query:
+
+[source,text]
+----
+?q={!knn f=vector topK=10}[1.0, 2.0, 3.0, 4.0]
+&fq=category:AAA
+&fq=inStock:true
+----
+
+If we modify the above request to add tags to the `fq` parameters, we can specify an `includeTags` option on the `knn` parser to limit which `fq` filters are used for Pre-Filtering:
+
+[source,text]
+----
+?q={!knn f=vector topK=10 includeTags=for_knn}[1.0, 2.0, 3.0, 4.0]
+&fq=category:AAA
+&fq={!tag=for_knn}inStock:true
+----
+
+In this example, only the `inStock:true` filter will be used for KNN Pre-Filtering to find the the `topK=10` documents, and the `category:AAA` filter will be applied independently; possibly resulting in less then 10 total matches.
+
+
+Some use cases where `includeTags` and/or `excludeTags` may be more useful then an explicit `preFilter` parameters:
+
+* You have some `fq` parameters that are xref:configuration-guide:requesthandlers-searchcomponents.adoc#paramsets-and-useparams[re-used on many requests] (even when you don't use the `knn` parser) that you wish to be used as KNN Pre-Filters when you _do_ use the `knn` query parser.
+* You typically want all `fq` params to be used as KNN Pre-Filters, but when users "drill down" on Facets, you want the `fq` parameters you add to be excluded from the KNN Pre-Filtering so that the result set gets smaller; instead of just computing a new `topK` set.
+
 
 
 ==== Usage as Re-Ranking Query

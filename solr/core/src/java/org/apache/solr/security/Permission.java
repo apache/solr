@@ -21,7 +21,6 @@ import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -32,7 +31,9 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 
 class Permission {
@@ -53,18 +54,20 @@ class Permission {
     p.role = readValueAsSet(m, "role");
     if (PermissionNameProvider.Name.get(name) != null) {
       p.wellknownName = PermissionNameProvider.Name.get(name);
-      HashSet<String> disAllowed = new HashSet<>(knownKeys);
-      disAllowed.remove("role"); // these are the only
-      disAllowed.remove(NAME); // allowed keys for well-known permissions
-      disAllowed.remove("collection"); // allowed keys for well-known permissions
-      disAllowed.remove("index");
-      for (String s : disAllowed) {
+      for (String s : customPermissionAdditionalKeys) {
         if (m.containsKey(s))
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
               s + " is not a valid key for the permission : " + name);
       }
+    } else if (!m.containsKey(CommonParams.PATH)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Permission with name "
+              + name
+              + " is neither a pre-defined permission nor qualifies as a custom permission");
     }
+
     p.name = name;
     p.path = readSetSmart(name, m, "path");
     p.collections = readSetSmart(name, m, "collection");
@@ -127,6 +130,7 @@ class Permission {
     }
     return set == null ? singleton(null) : set;
   }
+
   /**
    * read a key value as a set. if the value is a single string, return a singleton set
    *
@@ -160,8 +164,12 @@ class Permission {
     return Utils.toJSONString(originalConfig);
   }
 
+  static final Set<String> predefinedPermissionAllowedKeys =
+      Set.of("collection", "role", NAME, "index");
+  static final Set<String> customPermissionAdditionalKeys = Set.of("method", "path", "params");
   static final Set<String> knownKeys =
-      ImmutableSet.of("collection", "role", "params", "path", "method", NAME, "index");
-  public static final Set<String> HTTP_METHODS =
-      ImmutableSet.of("GET", "POST", "DELETE", "PUT", "HEAD");
+      Stream.concat(
+              predefinedPermissionAllowedKeys.stream(), customPermissionAdditionalKeys.stream())
+          .collect(Collectors.toUnmodifiableSet());
+  public static final Set<String> HTTP_METHODS = Set.of("GET", "POST", "DELETE", "PUT", "HEAD");
 }

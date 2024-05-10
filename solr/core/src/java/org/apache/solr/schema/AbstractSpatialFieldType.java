@@ -16,9 +16,8 @@
  */
 package org.apache.solr.schema;
 
-import com.google.common.base.Throwables;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ExecutionException;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
@@ -82,6 +80,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
    * ({@link DistanceUnits#getSupportedUnits()}.
    */
   public static final String SCORE_PARAM = "score";
+
   /**
    * A local-param boolean that can be set to false to only return the FunctionQuery (score), and
    * thus not do filtering.
@@ -104,7 +103,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   protected ShapeWriter shapeWriter;
   protected ShapeReader shapeReader;
 
-  private final Cache<String, T> fieldStrategyCache = CacheBuilder.newBuilder().build();
+  private final Cache<String, T> fieldStrategyCache = Caffeine.newBuilder().build();
 
   protected DistanceUnits distanceUnits;
 
@@ -463,11 +462,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
    * @return Non-null.
    */
   public T getStrategy(final String fieldName) {
-    try {
-      return fieldStrategyCache.get(fieldName, () -> newSpatialStrategy(fieldName));
-    } catch (ExecutionException e) {
-      throw Throwables.propagate(e.getCause());
-    }
+    return fieldStrategyCache.get(fieldName, k -> newSpatialStrategy(fieldName));
   }
 
   /**

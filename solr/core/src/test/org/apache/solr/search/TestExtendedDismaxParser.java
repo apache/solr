@@ -51,7 +51,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.SolrPluginUtils;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -64,7 +63,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     index();
   }
 
-  public static void index() throws Exception {
+  public static void index() {
     assertU(
         adoc("id", "42", "trait_ss", "Tool", "trait_ss", "Obnoxious", "name", "Zapp Brannigan"));
     assertU(adoc("id", "43", "title", "Democratic Order op Planets"));
@@ -243,7 +242,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     }
   }
 
-  public void testCharFilter() throws Exception {
+  public void testCharFilter() {
     // test that charfilter was applied by the indexer
     assertQ(
         req("defType", "edismax", "stopwords", "false", "qf", "isocharfilter", "q", "nino"),
@@ -808,7 +807,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("defType", "edismax", "uf", "* -id", "q", "42", "qf", "id"), oner);
   }
 
-  public void testAliasing() throws Exception {
+  public void testAliasing() {
     String oner = "*[count(//doc)=1]";
     String twor = "*[count(//doc)=2]";
     String nor = "*[count(//doc)=0]";
@@ -928,7 +927,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
         twor);
   }
 
-  public void testAliasingBoost() throws Exception {
+  public void testAliasingBoost() {
     assertQ(
         req(
             "defType",
@@ -956,7 +955,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** SOLR-13203 * */
-  public void testUfDynamicField() throws Exception {
+  public void testUfDynamicField() {
     try {
       ignoreException("dynamic field");
 
@@ -973,7 +972,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertQ(req("uf", "trait* id", "defType", "edismax"));
   }
 
-  public void testCyclicAliasing() throws Exception {
+  public void testCyclicAliasing() {
     try {
       ignoreException(".*Field aliases lead to a cycle.*");
 
@@ -1406,7 +1405,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testWhitespaceCharacters() throws Exception {
+  public void testWhitespaceCharacters() {
     assertU(adoc("id", "whitespaceChars", "cat_s", "foo\nfoo"));
     assertU(commit());
 
@@ -1428,7 +1427,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDoubleQuoteCharacters() throws Exception {
+  public void testDoubleQuoteCharacters() {
     assertU(adoc("id", "doubleQuote", "cat_s", "foo\"foo"));
     assertU(commit());
 
@@ -1451,7 +1450,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
    * @see ExtendedDismaxQParser#splitIntoClauses(String, boolean)
    */
   @Test
-  public void testEscapingOfReservedCharacters() throws Exception {
+  public void testEscapingOfReservedCharacters() {
     // create a document that contains all reserved characters
     String allReservedCharacters = "!():^[]{}~*?\"+-\\|&/";
 
@@ -1511,13 +1510,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   /** Repeating some of test cases as direct calls to splitIntoClauses */
   @Test
-  public void testSplitIntoClauses() throws Exception {
+  public void testSplitIntoClauses() {
     String query = "(\"foo\nfoo\")";
     SolrQueryRequest request = req("q", query, "qf", "cat_s", "defType", "edismax");
     ExtendedDismaxQParser parser =
         new ExtendedDismaxQParser(query, null, request.getParams(), request);
     List<ExtendedDismaxQParser.Clause> clauses = parser.splitIntoClauses(query, false);
-    Assert.assertEquals(3, clauses.size());
+    assertEquals(3, clauses.size());
     assertClause(clauses.get(0), "\\(", false, true);
     assertClause(clauses.get(1), "foo\nfoo", true, false);
     assertClause(clauses.get(2), "\\)", false, true);
@@ -1526,7 +1525,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     request = req("q", query, "qf", "cat_s", "defType", "edismax");
     parser = new ExtendedDismaxQParser(query, null, request.getParams(), request);
     clauses = parser.splitIntoClauses(query, false);
-    Assert.assertEquals(5, clauses.size());
+    assertEquals(5, clauses.size());
     assertClause(clauses.get(0), "\\[", false, true, "cat_s");
     assertClause(clauses.get(1), "foo\nfoo", true, false);
     assertClause(clauses.get(2), "TO", true, false);
@@ -1537,7 +1536,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     request = req("q", query, "qf", "cat_s", "defType", "edismax");
     parser = new ExtendedDismaxQParser(query, null, request.getParams(), request);
     clauses = parser.splitIntoClauses(query, false);
-    Assert.assertEquals(5, clauses.size());
+    assertEquals(5, clauses.size());
     assertClause(clauses.get(0), "\\[", true, true, "cat_s");
     assertClause(clauses.get(1), "foo\nfoo", true, false);
     assertClause(clauses.get(2), "TO", true, false);
@@ -1553,7 +1552,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
     parser = new ExtendedDismaxQParser(query, null, request.getParams(), request);
     clauses = parser.splitIntoClauses(query, false);
-    Assert.assertEquals(1, clauses.size());
+    assertEquals(1, clauses.size());
     assertClause(
         clauses.get(0), "\\!\\(\\)\\:\\^\\[\\]\\{\\}\\~\\*\\?\\\"\\+\\-\\\\\\|\\&\\/", false, true);
 
@@ -1562,7 +1561,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
     parser = new ExtendedDismaxQParser(query, null, request.getParams(), request);
     clauses = parser.splitIntoClauses(query, false);
-    Assert.assertEquals(1, clauses.size());
+    assertEquals(1, clauses.size());
     assertClause(clauses.get(0), "foo\\/", false, true);
   }
 
@@ -1572,10 +1571,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       boolean hasWhitespace,
       boolean hasSpecialSyntax,
       String field) {
-    Assert.assertEquals(value, clause.val);
-    Assert.assertEquals(hasWhitespace, clause.hasWhitespace);
-    Assert.assertEquals(hasSpecialSyntax, clause.hasSpecialSyntax);
-    Assert.assertEquals(field, clause.field);
+    assertEquals(value, clause.val);
+    assertEquals(hasWhitespace, clause.hasWhitespace);
+    assertEquals(hasSpecialSyntax, clause.hasSpecialSyntax);
+    assertEquals(field, clause.field);
   }
 
   private static void assertClause(
@@ -1587,7 +1586,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** SOLR-3589: Edismax parser does not honor mm parameter if analyzer splits a token */
-  public void testCJK() throws Exception {
+  public void testCJK() {
     assertQ(
         "test cjk (disjunction)",
         req(
@@ -1615,7 +1614,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** test that minShouldMatch works with aliasing for implicit boolean queries */
-  public void testCJKAliasing() throws Exception {
+  public void testCJKAliasing() {
     // single field
     assertQ(
         "test cjk (aliasing+disjunction)",
@@ -1669,7 +1668,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** Test that we apply boosts correctly */
-  public void testCJKBoosts() throws Exception {
+  public void testCJKBoosts() {
     assertQ(
         "test cjk (disjunction)",
         req(
@@ -1732,7 +1731,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
    * always apply minShouldMatch to the inner booleanqueries created from whitespace, as these are
    * never structured lucene queries but only come from unstructured text
    */
-  public void testCJKStructured() throws Exception {
+  public void testCJKStructured() {
     assertQ(
         "test cjk (disjunction)",
         req(
@@ -1764,7 +1763,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
    * Test that we don't apply minShouldMatch to the inner boolean queries when there are synonyms
    * (these are indicated by coordination factor)
    */
-  public void testSynonyms() throws Exception {
+  public void testSynonyms() {
     // document only contains baraaa, but should still match.
     assertQ(
         "test synonyms",
@@ -1777,7 +1776,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** Test that the default operator and MM are interacting appropriately when both provided */
-  public void testDefaultOperatorWithMm() throws Exception {
+  public void testDefaultOperatorWithMm() {
     // Text we are searching
     // "line up and fly directly at the enemy death cannons, clogging them with wreckage!"
     assertQ(
@@ -1855,7 +1854,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   }
 
   /** Test that minShouldMatch applies to Optional terms only */
-  public void testMinShouldMatchOptional() throws Exception {
+  public void testMinShouldMatchOptional() {
     for (String sow : Arrays.asList("true", "false")) {
       assertQ(
           "test minShouldMatch (top level optional terms only)",
@@ -2011,7 +2010,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   /* SOLR-8812 */
   @Test
-  public void testDefaultMM() throws Exception {
+  public void testDefaultMM() {
     // Ensure MM is off when explicit operators (+/-/OR/NOT) are used and no explicit mm spec is
     // specified.
     for (String sow : Arrays.asList("true", "false")) {
@@ -3198,7 +3197,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       return new MultilanguageDismaxConfiguration(localParams, params, req);
     }
 
-    class MultilanguageDismaxConfiguration extends ExtendedDismaxConfiguration {
+    static class MultilanguageDismaxConfiguration extends ExtendedDismaxConfiguration {
 
       public MultilanguageDismaxConfiguration(
           SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -3226,7 +3225,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       return new FuzzyQueryParser(qParser, field);
     }
 
-    class FuzzyQueryParser extends ExtendedSolrQueryParser {
+    static class FuzzyQueryParser extends ExtendedSolrQueryParser {
 
       private Set<String> frequentlyMisspelledWords;
 
@@ -3311,7 +3310,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   /** SOLR-11512 */
   @Test
-  public void killInfiniteRecursionParse() throws Exception {
+  public void killInfiniteRecursionParse() {
     SolrException exception =
         expectThrows(
             SolrException.class,

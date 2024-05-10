@@ -24,7 +24,16 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TwoPhaseIterator;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.search.SolrCache;
@@ -134,8 +143,8 @@ public class HashRangeQuery extends Query {
     final int prime = 31;
     int result = classHash();
     result = prime * result + Objects.hashCode(field);
-    result = prime * result + Objects.hashCode(lower);
-    result = prime * result + Objects.hashCode(upper);
+    result = prime * result + Integer.hashCode(lower);
+    result = prime * result + Integer.hashCode(upper);
     return result;
   }
 }

@@ -32,7 +32,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.parser.ParseException;
 import org.apache.solr.parser.SolrQueryParserBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
@@ -40,7 +39,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrQueryParser;
-import org.apache.solr.search.SyntaxError;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -175,7 +173,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFalsePositives() throws Exception {
+  public void testFalsePositives() {
     // add a doc
     assertU(adoc("id", "1", "one", "gomez", "two", "gomez", "three", "gomez"));
     assertU(commit());
@@ -203,7 +201,7 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
 
   private static final class SolrQParser extends SolrQueryParserBase {
     @Override
-    public Query TopLevelQuery(String field) throws ParseException, SyntaxError {
+    public Query TopLevelQuery(String field) {
       return null;
     }
 

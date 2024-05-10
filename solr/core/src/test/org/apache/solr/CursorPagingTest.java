@@ -35,7 +35,6 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.mutable.MutableValueInt;
@@ -59,12 +58,13 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
   /** solrconfig.xml file name, shared with other cursor related tests */
   public static final String TEST_SOLRCONFIG_NAME = "solrconfig-deeppaging.xml";
+
   /** schema.xml file name, shared with other cursor related tests */
   public static final String TEST_SCHEMAXML_NAME = "schema-sorts.xml";
+
   /** values from enumConfig.xml */
-  public static final String[] SEVERITY_ENUM_VALUES = {
-    "Not Available", "Low", "Medium", "High", "Critical"
-  };
+  public static final List<String> SEVERITY_ENUM_VALUES =
+      List.of("Not Available", "Low", "Medium", "High", "Critical");
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -77,7 +77,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     assertU(delQ("*:*"));
     assertU(commit());
   }
@@ -154,7 +154,6 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     SolrParams params = null;
 
     final String intsort = "int" + (random().nextBoolean() ? "" : "_dv");
-    final String intmissingsort = intsort;
 
     // trivial base case: ensure cursorMark against an empty index doesn't blow up
     cursorMark = CURSOR_MARK_START;
@@ -288,7 +287,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "/response/docs==[]",
             "/facet_counts/facet_fields/str=={'a':4,'b':3,'c':0}"));
 
-    // int sort with dups, id tie breaker ... and some faceting
+    // int sort with duplicates, id tiebreaker ... and some faceting
     cursorMark = CURSOR_MARK_START;
     params =
         params(
@@ -330,7 +329,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "/response/docs==[]",
             "/facet_counts/facet_fields/str=={'a':4,'b':1,'c':3}"));
 
-    // int missing first sort with dups, id tie breaker
+    // int missing first sort with duplicates, id tiebreaker
     cursorMark = CURSOR_MARK_START;
     params =
         params(
@@ -338,7 +337,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "rows", "3",
             "fl", "id",
             "json.nl", "map",
-            "sort", intmissingsort + "_first asc, id asc");
+            "sort", intsort + "_first asc, id asc");
     cursorMark =
         assertCursor(
             req(params, CURSOR_MARK_PARAM, cursorMark),
@@ -366,7 +365,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "/response/start==0",
             "/response/docs==[]"));
 
-    // int missing last sort with dups, id tie breaker
+    // int missing last sort with duplicates, id tiebreaker
     cursorMark = CURSOR_MARK_START;
     params =
         params(
@@ -374,7 +373,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "rows", "3",
             "fl", "id",
             "json.nl", "map",
-            "sort", intmissingsort + "_last asc, id asc");
+            "sort", intsort + "_last asc, id asc");
     cursorMark =
         assertCursor(
             req(params, CURSOR_MARK_PARAM, cursorMark),
@@ -402,7 +401,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "/response/start==0",
             "/response/docs==[]"));
 
-    // string sort with dups, id tie breaker
+    // string sort with duplicates, id tiebreaker
     cursorMark = CURSOR_MARK_START;
     params =
         params(
@@ -431,7 +430,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "/response/start==0",
             "/response/docs==[]"));
 
-    // tri-level sort with more dups of primary then fit on a page
+    // tri-level sort with more duplicates of primary then fit on a page
     cursorMark = CURSOR_MARK_START;
     params =
         params(
@@ -479,7 +478,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "/response/start==0",
             "/response/docs==[]"));
 
-    // trivial base case: rows bigger then number of matches
+    // trivial base case: rows bigger than number of matches
     cursorMark = CURSOR_MARK_START;
     params =
         params(
@@ -585,7 +584,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
             "/response/numFound==8",
             "/response/start==0",
             "/response/docs==[{'id':'2'},{'id':'5'}]");
-    // update the next doc we expect so it's now in the past
+    // update the next doc we expect, so it's now in the past
     assertU(adoc("id", "7", "str", "a"));
     assertU(commit());
     cursorMark =
@@ -850,7 +849,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
                       "forceElevation",
                       "true",
                       "elevateIds",
-                      StringUtils.join(expectedElevated, ',')),
+                      Arrays.stream(expectedElevated)
+                          .mapToObj(String::valueOf)
+                          .collect(Collectors.joining(","))),
                   main),
               ids);
       for (int expected : expectedElevated) {
@@ -904,12 +905,12 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   /**
    * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
    * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as
-   * long as a non-0 number of docs ar returned. This method records the the set of all id's (must
-   * be positive ints) encountered and throws an assertion failure if any id is encountered more
-   * than once, or if an id is encountered which is not expected, or if an id is <code>[elevated]
+   * long as a non-0 number of docs ar returned. This method records the set of all id's (must be
+   * positive ints) encountered and throws an assertion failure if any id is encountered more than
+   * once, or if an id is encountered which is not expected, or if an id is <code>[elevated]
    * </code> and comes "after" any ids which were not <code>[elevated]</code>
    *
-   * @returns set of all elevated ids encountered in the walk
+   * @return set of all elevated ids encountered in the walk
    * @see #assertFullWalkNoDups(SolrParams,Consumer)
    */
   public SentinelIntSet assertFullWalkNoDupsElevated(
@@ -943,11 +944,11 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   /**
    * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
    * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as
-   * long as a non-0 number of docs ar returned. This method records the the set of all id's (must
-   * be positive ints) encountered and throws an assertion failure if any id is encountered more
-   * than once, or if the set grows above maxSize
+   * long as a non-0 number of docs ar returned. This method records the set of all id's (must be
+   * positive ints) encountered and throws an assertion failure if any id is encountered more than
+   * once, or if the set grows above maxSize
    *
-   * @returns set of all ids encountered in the walk
+   * @return set of all ids encountered in the walk
    * @see #assertFullWalkNoDups(SolrParams,Consumer)
    */
   public SentinelIntSet assertFullWalkNoDups(int maxSize, SolrParams params) throws Exception {
@@ -1054,9 +1055,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   /**
    * Given a set of params, executes a cursor query using {@link CursorMarkParams#CURSOR_MARK_START}
    * and then continuously walks the results using {@link CursorMarkParams#CURSOR_MARK_START} as
-   * long as a non-0 number of docs ar returned. This method records the the set of all id's (must
-   * be positive ints) encountered and throws an assertion failure if any id is encountered more
-   * than once, or if the set grows above maxSize.
+   * long as a non-0 number of docs ar returned. This method records the set of all id's (must be
+   * positive ints) encountered and throws an assertion failure if any id is encountered more than
+   * once, or if the set grows above maxSize.
    *
    * <p>Also checks that facets are the same with each page, and that they are correct.
    */
@@ -1116,9 +1117,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       if (null != previousFacets) {
         assertEquals(
             "Facets not the same as on previous page:\nprevious page facets: "
-                + Arrays.toString(facets.toArray(new Object[facets.size()]))
+                + Arrays.toString(facets.toArray(new Object[0]))
                 + "\ncurrent page facets: "
-                + Arrays.toString(previousFacets.toArray(new Object[previousFacets.size()])),
+                + Arrays.toString(previousFacets.toArray(new Object[0])),
             previousFacets,
             facets);
       }
@@ -1160,7 +1161,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
 
   /** execute a local request, verify that we get an expected error */
-  public void assertFail(SolrParams p, ErrorCode expCode, String expSubstr) throws Exception {
+  public void assertFail(SolrParams p, ErrorCode expCode, String expSubstr) {
 
     try {
       SolrException e =
@@ -1251,7 +1252,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       // simple function query across one field.
       return "{!func}" + numericFields.get(0);
     } else {
-      // several SHOULD clauses on range queries
+      // several "SHOULD" clauses on range queries
       int low = TestUtil.nextInt(random(), -2379, 2);
       int high = TestUtil.nextInt(random(), 4, 5713);
       return numericFields.get(0)
@@ -1274,7 +1275,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   }
 
   private static String randomEnumValue() {
-    return SEVERITY_ENUM_VALUES[random().nextInt(SEVERITY_ENUM_VALUES.length)];
+    return SEVERITY_ENUM_VALUES.get(random().nextInt(SEVERITY_ENUM_VALUES.size()));
   }
 
   /**
@@ -1296,7 +1297,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       // wrap in a function sometimes
       if (!"score".equals(field) && 0 == TestUtil.nextInt(random(), 0, 7)) {
         // specific function doesn't matter, just proving that we can handle the concept.
-        // but we do have to be careful with non numeric fields
+        // but we do have to be careful with non-numeric fields
         if (field.contains("float")
             || field.contains("double")
             || field.contains("int")
@@ -1314,7 +1315,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
   /** Given a set of id, picks some, semi-randomly, to use for elevation */
   public static int[] pickElevations(final int numToElevate, final SentinelIntSet ids) {
-    assert numToElevate < ids.size();
+    assertTrue(numToElevate < ids.size());
     final int[] results = new int[numToElevate];
     int slot = 0;
     for (int key : ids.keys) {
@@ -1326,7 +1327,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
           // once we've done enough (extra) iters, break out with what we've got
           break;
         } else {
-          // otherwise, pick a random slot to overwrite .. maybe
+          // otherwise, pick a random slot to overwrite... maybe
           if (random().nextBoolean()) {
             results[random().nextInt(results.length)] = key;
           }

@@ -96,7 +96,7 @@ public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
     assertEquals(121, d.getFieldValue("processor_default_i"));
   }
 
-  public void testRequesTParams() throws Exception {
+  public void testRequestParams() throws Exception {
     SolrInputDocument d =
         processAdd(
             null,
@@ -155,17 +155,12 @@ public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
   }
 
   /** Convenience method for building up SolrInputFields */
-  SolrInputField field(String name, float boost, Object... values) {
+  SolrInputField f(String name, Object... values) {
     SolrInputField f = new SolrInputField(name);
     for (Object v : values) {
       f.addValue(v);
     }
     return f;
-  }
-
-  /** Convenience method for building up SolrInputFields with default boost */
-  SolrInputField f(String name, Object... values) {
-    return field(name, 1.0F, values);
   }
 
   /**

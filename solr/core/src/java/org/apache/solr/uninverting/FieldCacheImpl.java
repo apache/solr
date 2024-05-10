@@ -67,12 +67,13 @@ public class FieldCacheImpl implements FieldCache {
   }
 
   private synchronized void init() {
-    caches = new HashMap<>(6);
-    caches.put(Long.TYPE, new LongCache(this));
-    caches.put(BinaryDocValues.class, new BinaryDocValuesCache(this));
-    caches.put(SortedDocValues.class, new SortedDocValuesCache(this));
-    caches.put(DocTermOrds.class, new DocTermOrdsCache(this));
-    caches.put(DocsWithFieldCache.class, new DocsWithFieldCache(this));
+    caches =
+        Map.ofEntries(
+            Map.entry(Long.TYPE, new LongCache(this)),
+            Map.entry(BinaryDocValues.class, new BinaryDocValuesCache(this)),
+            Map.entry(SortedDocValues.class, new SortedDocValuesCache(this)),
+            Map.entry(DocTermOrds.class, new DocTermOrdsCache(this)),
+            Map.entry(DocsWithFieldCache.class, new DocsWithFieldCache(this)));
   }
 
   @Override
@@ -108,7 +109,7 @@ public class FieldCacheImpl implements FieldCache {
         }
       }
     }
-    return result.toArray(new CacheEntry[result.size()]);
+    return result.toArray(new CacheEntry[0]);
   }
 
   // per-segment fieldcaches don't purge until the shared core closes.
@@ -899,7 +900,7 @@ public class FieldCacheImpl implements FieldCache {
       return bytes.ramBytesUsed()
           + termOrdToBytesOffset.ramBytesUsed()
           + docToTermOrd.ramBytesUsed()
-          + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF
+          + 3L * RamUsageEstimator.NUM_BYTES_OBJECT_REF
           + Integer.BYTES;
     }
 
@@ -913,10 +914,12 @@ public class FieldCacheImpl implements FieldCache {
     }
   }
 
+  @Override
   public SortedDocValues getTermsIndex(LeafReader reader, String field) throws IOException {
     return getTermsIndex(reader, field, PackedInts.FAST);
   }
 
+  @Override
   public SortedDocValues getTermsIndex(
       LeafReader reader, String field, float acceptableOverheadRatio) throws IOException {
     SortedDocValues valuesIn = reader.getSortedDocValues(field);
@@ -1111,7 +1114,7 @@ public class FieldCacheImpl implements FieldCache {
     public long ramBytesUsed() {
       return bytes.ramBytesUsed()
           + docToOffset.ramBytesUsed()
-          + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+          + 2L * RamUsageEstimator.NUM_BYTES_OBJECT_REF;
     }
 
     @Override
@@ -1125,10 +1128,12 @@ public class FieldCacheImpl implements FieldCache {
 
   // TODO: this if DocTermsIndex was already created, we
   // should share it...
+  @Override
   public BinaryDocValues getTerms(LeafReader reader, String field) throws IOException {
     return getTerms(reader, field, PackedInts.FAST);
   }
 
+  @Override
   public BinaryDocValues getTerms(LeafReader reader, String field, float acceptableOverheadRatio)
       throws IOException {
     BinaryDocValues valuesIn = reader.getBinaryDocValues(field);
@@ -1253,10 +1258,11 @@ public class FieldCacheImpl implements FieldCache {
 
   // TODO: this if DocTermsIndex was already created, we
   // should share it...
+  @Override
   public SortedSetDocValues getDocTermOrds(LeafReader reader, String field, BytesRef prefix)
       throws IOException {
     // not a general purpose filtering mechanism...
-    assert prefix == null || prefix == INT32_TERM_PREFIX || prefix == INT64_TERM_PREFIX;
+    assert prefix == null || INT32_TERM_PREFIX.equals(prefix) || INT64_TERM_PREFIX.equals(prefix);
 
     SortedSetDocValues dv = reader.getSortedSetDocValues(field);
     if (dv != null) {

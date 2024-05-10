@@ -22,15 +22,13 @@ description = 'SQL Module'
 dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
+  implementation project(':solr:solrj-streaming')
+  implementation project(':solr:solrj-zookeeper')
 
   implementation 'org.slf4j:slf4j-api'
 
-  implementation 'com.google.guava:guava'
-
   // SQL Parser via Calcite
   implementation ('org.apache.calcite:calcite-core', {
-    exclude group: 'org.apache.calcite.avatica', module: 'avatica-metrics'
-    exclude group: 'com.google.guava', module: 'guava' // TODO remove this to keep versions in sync
     exclude group: 'com.fasterxml.jackson.dataformat', module: 'jackson-dataformat-yaml'
     exclude group: 'com.google.uzaygezen', module: 'uzaygezen-core'
     exclude group: 'com.yahoo.datasketches', module: 'sketches-core'
@@ -38,9 +36,10 @@ dependencies {
     exclude group: 'net.minidev', module: 'json-smart'
     exclude group: 'net.hydromatic', module: 'aggdesigner-algorithm'
   })
+  compileOnly 'org.immutables:value-annotations' // needed due to Calcite requiring this CALCITE-4787
   // sub-deps of calcite-core that we reference directly
-  implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
-  implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
+  implementation 'org.apache.calcite:calcite-linq4j'
+  implementation 'org.apache.calcite.avatica:avatica-core'
   permitUnusedDeclared 'org.apache.calcite.avatica:avatica-core'
 
   testImplementation project(':solr:test-framework')
@@ -48,8 +47,6 @@ dependencies {
   testImplementation 'junit:junit'
 
   testRuntimeOnly project(':solr:modules:analysis-extras')
-
-  testImplementation 'org.apache.commons:commons-lang3'
 }
 
 
@@ -57,13 +54,13 @@ dependencies {
 // of the SQL module so we can avoid duplication of the test resource files like
 // schemas and SolrConfigs. This can be improved later by making the test classes
 // load the resources from core directories directly.
-task copySolrCoreTestResources(type: Copy) {
+tasks.register('copySolrCoreTestResources', Copy) {
   from(project(':solr:core').sourceSets.test.resources.srcDirs) {
     exclude '**/*.java'
   }
   into sourceSets.test.output.resourcesDir
 }
 
-tasks.processTestResources.configure {
+tasks.named('processTestResources').configure {
   dependsOn copySolrCoreTestResources
 }

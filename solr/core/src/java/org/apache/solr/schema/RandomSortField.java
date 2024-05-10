@@ -25,7 +25,11 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.IntDocValues;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.FieldComparatorSource;
+import org.apache.lucene.search.Pruning;
+import org.apache.lucene.search.SimpleFieldComparator;
+import org.apache.lucene.search.SortField;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
@@ -109,7 +113,7 @@ public class RandomSortField extends FieldType {
       new FieldComparatorSource() {
         @Override
         public FieldComparator<Integer> newComparator(
-            final String fieldname, final int numHits, boolean enableSkipping, boolean reversed) {
+            final String fieldname, final int numHits, Pruning pruning, boolean reversed) {
           return new SimpleFieldComparator<>() {
             int seed;
             private final int[] values = new int[numHits];

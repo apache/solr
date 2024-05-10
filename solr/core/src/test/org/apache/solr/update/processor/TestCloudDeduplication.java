@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
@@ -30,6 +29,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.json.BucketBasedJsonFacet;
 import org.apache.solr.client.solrj.response.json.BucketJsonFacet;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -43,6 +43,7 @@ public class TestCloudDeduplication extends SolrCloudTestCase {
 
   /** One client per node */
   private static final List<SolrClient> NODE_CLIENTS = new ArrayList<>(7);
+
   /**
    * clients (including cloud client) for easy randomization and looping of collection level
    * requests
@@ -74,7 +75,7 @@ public class TestCloudDeduplication extends SolrCloudTestCase {
   }
 
   @AfterClass
-  private static void closeClients() throws Exception {
+  public static void closeClients() throws Exception {
     try {
       IOUtils.close(NODE_CLIENTS);
     } finally {
@@ -110,7 +111,7 @@ public class TestCloudDeduplication extends SolrCloudTestCase {
     }
     assertEquals("commit failed", 0, getRandClient().commit(COLLECTION).getStatus());
 
-    assert docCounter > uniqueMod;
+    assertTrue(docCounter > uniqueMod);
 
     // query our collection and confirm no duplicates on the signature field (using faceting)
     // Check every (node) for consistency...

@@ -80,3 +80,6 @@ java.lang.System#currentTimeMillis()
 
 @defaultMessage Use slf4j classes instead
 java.util.logging.**
+
+@defaultMessage Use List.sort(Comparator) instead of Collections.sort(List, Comparator) please.
+java.util.Collections#sort(java.util.List, java.util.Comparator)

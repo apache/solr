@@ -122,7 +122,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
   // LUCENE-4853
   public void testHugeBinaryValues() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    // FSDirectory because SimpleText will consume gobbs of
+    // FSDirectory because SimpleText will consume lots of
     // space when storing big binary values:
     try (Directory d = newFSDirectory(createTempDir("hugeBinaryValues"))) {
       boolean doFixed = random().nextBoolean();
@@ -143,7 +143,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
           // we don't use RandomIndexWriter because it might add
           // more docvalues than we expect !!!!
 
-          // Must be > 64KB in size to ensure more than 2 pages in
+          // Must be > 64 KB in size to ensure more than 2 pages in
           // PagedBytes would be needed:
           int numBytes;
           if (doFixed) {
@@ -232,7 +232,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
       LeafReader r = context.reader();
       SortedDocValues expected = FieldCache.DEFAULT.getTermsIndex(r, "indexed");
       SortedDocValues actual = r.getSortedDocValues("dv");
-      assertEquals(r.maxDoc(), expected, actual);
+      assertEquals(expected, actual);
     }
     ir.close();
     dir.close();
@@ -290,7 +290,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
       LeafReader r = context.reader();
       SortedSetDocValues expected = FieldCache.DEFAULT.getDocTermOrds(r, "indexed", null);
       SortedSetDocValues actual = r.getSortedSetDocValues("dv");
-      assertEquals(r.maxDoc(), expected, actual);
+      assertEquals(expected, actual);
     }
     ir.close();
 
@@ -301,7 +301,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
     LeafReader ar = getOnlyLeafReader(ir);
     SortedSetDocValues expected = FieldCache.DEFAULT.getDocTermOrds(ar, "indexed", null);
     SortedSetDocValues actual = ar.getSortedSetDocValues("dv");
-    assertEquals(ir.maxDoc(), expected, actual);
+    assertEquals(expected, actual);
     ir.close();
 
     writer.close();
@@ -320,7 +320,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
     int numDocs = atLeast(300);
     // numDocs should be always > 256 so that in case of a codec that optimizes
     // for numbers of values <= 256, all storage layouts are tested
-    assert numDocs > 256;
+    assertTrue(numDocs > 256);
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
       long value = longs.next();
@@ -379,15 +379,14 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
     abstract long next();
   }
 
-  private void assertEquals(Bits expected, Bits actual) throws Exception {
+  private void assertEquals(Bits expected, Bits actual) {
     assertEquals(expected.length(), actual.length());
     for (int i = 0; i < expected.length(); i++) {
       assertEquals(expected.get(i), actual.get(i));
     }
   }
 
-  private void assertEquals(int maxDoc, SortedDocValues expected, SortedDocValues actual)
-      throws Exception {
+  private void assertEquals(SortedDocValues expected, SortedDocValues actual) throws Exception {
     // can be null for the segment if no docs actually had any SortedDocValues
     // in this case FC.getDocTermsOrds returns EMPTY
     if (actual == null) {
@@ -419,7 +418,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
     assertEquals(expected.getValueCount(), expected.termsEnum(), actual.termsEnum());
   }
 
-  private void assertEquals(int maxDoc, SortedSetDocValues expected, SortedSetDocValues actual)
+  private void assertEquals(SortedSetDocValues expected, SortedSetDocValues actual)
       throws Exception {
     // can be null for the segment if no docs actually had any SortedDocValues
     // in this case FC.getDocTermsOrds returns EMPTY

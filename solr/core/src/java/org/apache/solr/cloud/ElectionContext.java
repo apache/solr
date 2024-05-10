@@ -48,6 +48,7 @@ public abstract class ElectionContext implements Closeable {
     this.zkClient = zkClient;
   }
 
+  @Override
   public void close() {}
 
   public void cancelElection() throws InterruptedException, KeeperException {
@@ -71,6 +72,12 @@ public abstract class ElectionContext implements Closeable {
 
   public void joinedElectionFired() {}
 
+  /**
+   * Create a new instance when retrying the election.
+   *
+   * <p>This carries over all election parameters, but not current status (mostly the {@link
+   * SyncStrategy} is not copied for shared leader election.
+   */
   public ElectionContext copy() {
     throw new UnsupportedOperationException("copy");
   }

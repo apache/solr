@@ -37,7 +37,7 @@ import org.apache.solr.handler.admin.ConfigSetsHandler;
 
 public class TestHashPartitioner extends SolrTestCaseJ4 {
 
-  public void testMapHashes() throws Exception {
+  public void testMapHashes() {
     DocRouter hp = DocRouter.DEFAULT;
     List<Range> ranges;
 
@@ -117,14 +117,14 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     return Hash.murmurhash3_x86_32(id, 0, id.length(), 0);
   }
 
-  public void testHashCodes() throws Exception {
+  public void testHashCodes() {
     DocRouter router = DocRouter.getDocRouter(PlainIdRouter.NAME);
     assertTrue(router instanceof PlainIdRouter);
     DocCollection coll = createCollection(4, router);
     doNormalIdHashing(coll);
   }
 
-  public void doNormalIdHashing(DocCollection coll) throws Exception {
+  public void doNormalIdHashing(DocCollection coll) {
     assertEquals(4, coll.getSlices().size());
 
     doId(coll, "b", "shard1");
@@ -160,7 +160,7 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     assertEquals(expectedSet, obtainedSet);
   }
 
-  public void testCompositeHashCodes() throws Exception {
+  public void testCompositeHashCodes() {
     DocRouter router = DocRouter.getDocRouter(CompositeIdRouter.NAME);
     assertTrue(router instanceof CompositeIdRouter);
     router = DocRouter.DEFAULT;
@@ -217,12 +217,12 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
       "!!A/1000",
       "A//8!B///10!C////"
     };
-    for (int i = 0; i < ids.length; ++i) {
+    for (String id : ids) {
       try {
-        Slice targetSlice = coll.getRouter().getTargetSlice(ids[i], null, null, null, coll);
+        Slice targetSlice = coll.getRouter().getTargetSlice(id, null, null, null, coll);
         assertNotNull(targetSlice);
       } catch (Exception e) {
-        throw new Exception("Exception routing id '" + ids[i] + "'", e);
+        throw new Exception("Exception routing id '" + id + "'", e);
       }
     }
   }
@@ -295,14 +295,12 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
       slices.put(slice.getName(), slice);
     }
 
-    DocCollection coll =
-        new DocCollection(
-            "collection1",
-            slices,
-            Collections.singletonMap(
-                ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
-            router);
-    return coll;
+    return new DocCollection(
+        "collection1",
+        slices,
+        Collections.singletonMap(
+            ZkStateReader.CONFIGNAME_PROP, ConfigSetsHandler.DEFAULT_CONFIGSET_NAME),
+        router);
   }
 
   // from negative to positive, the upper bits of the hash ranges should be

@@ -18,7 +18,6 @@
 package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
@@ -53,7 +52,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
-import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -253,7 +251,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
             SHARD_ID_PROP,
             sourceSlice.getName(),
             "routeKey",
-            SolrIndexSplitter.getRouteKey(splitKey) + "!",
+            sourceRouter.getRouteKeyNoSuffix(splitKey) + "!",
             "range",
             splitRange.toString(),
             "targetCollection",
@@ -269,7 +267,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
               ccc.getSolrCloudManager(),
               ccc.getZkStateReader());
     } else {
-      ccc.offerStateUpdate(Utils.toJSON(m));
+      ccc.offerStateUpdate(m);
     }
 
     // wait for a while until we see the new rule
@@ -283,7 +281,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
       sourceSlice = sourceCollection.getSlice(sourceSlice.getName());
       Map<String, RoutingRule> rules = sourceSlice.getRoutingRules();
       if (rules != null) {
-        RoutingRule rule = rules.get(SolrIndexSplitter.getRouteKey(splitKey) + "!");
+        RoutingRule rule = rules.get(sourceRouter.getRouteKeyNoSuffix(splitKey) + "!");
         if (rule != null && rule.getRouteRanges().contains(splitRange)) {
           added = true;
           break;
@@ -309,7 +307,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
             CREATE.toLower(),
             NAME,
             tempSourceCollectionName,
-            NRT_REPLICAS,
+            Replica.Type.defaultType().numReplicasPropertyName,
             1,
             CollectionHandlingUtils.NUM_SLICES,
             1,
@@ -395,7 +393,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
             ccc.getSolrCloudManager().getDistribStateManager(),
             zkStateReader.getClusterState().getCollection(tempSourceCollectionName),
             tempSourceSlice.getName(),
-            Replica.Type.NRT);
+            Replica.Type.defaultType());
     props = new HashMap<>();
     props.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
     props.put(COLLECTION_PROP, tempSourceCollectionName);

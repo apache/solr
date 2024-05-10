@@ -17,9 +17,9 @@
 package org.apache.solr.core;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableSet;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -63,7 +63,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.DeprecationLog;
 import org.apache.solr.pkg.PackageListeningClassLoader;
-import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.rest.RestManager;
@@ -72,6 +72,7 @@ import org.apache.solr.schema.ManagedIndexSchemaFactory;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,6 +98,7 @@ public class SolrResourceLoader
     "request.",
     "update.processor.",
     "util.",
+    "util.circuitbreaker.",
     "spelling.",
     "handler.component.",
     "spelling.suggest.",
@@ -224,7 +226,7 @@ public class SolrResourceLoader
           "Added {} libs to classloader, from paths: {}",
           urls.size(),
           urls.stream()
-              .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf("/")))
+              .map(u -> u.getPath().substring(0, u.getPath().lastIndexOf('/')))
               .sorted()
               .distinct()
               .collect(Collectors.toList()));
@@ -270,7 +272,7 @@ public class SolrResourceLoader
 
     ClassLoader oldParent = oldLoader.getParent();
     IOUtils.closeWhileHandlingException(oldLoader);
-    return URLClassLoader.newInstance(allURLs.toArray(new URL[allURLs.size()]), oldParent);
+    return URLClassLoader.newInstance(allURLs.toArray(new URL[0]), oldParent);
   }
 
   /**
@@ -359,11 +361,11 @@ public class SolrResourceLoader
       // The resource is either inside instance dir or we allow unsafe loading, so allow testing if
       // file exists
       if (Files.exists(inConfigDir) && Files.isReadable(inConfigDir)) {
-        return Files.newInputStream(inConfigDir);
+        return new SolrFileInputStream(inConfigDir);
       }
 
       if (Files.exists(inInstanceDir) && Files.isReadable(inInstanceDir)) {
-        return Files.newInputStream(inInstanceDir);
+        return new SolrFileInputStream(inInstanceDir);
       }
     }
 
@@ -600,6 +602,7 @@ public class SolrResourceLoader
   private static final Class<?>[] NO_CLASSES = new Class<?>[0];
   private static final Object[] NO_OBJECTS = new Object[0];
 
+  @Override
   public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
     return newInstance(cname, expectedType, subpackages, NO_CLASSES, NO_OBJECTS);
   }
@@ -711,6 +714,7 @@ public class SolrResourceLoader
   }
 
   /** Tell all {@link SolrCoreAware} instances about the SolrCore */
+  @Override
   public void inform(SolrCore core) {
     if (getSchemaLoader() != null) core.getPackageListeners().addListener(schemaLoader);
 
@@ -720,7 +724,7 @@ public class SolrResourceLoader
 
     while (waitingForCore.size() > 0) {
       synchronized (waitingForCore) {
-        arr = waitingForCore.toArray(new SolrCoreAware[waitingForCore.size()]);
+        arr = waitingForCore.toArray(new SolrCoreAware[0]);
         waitingForCore.clear();
       }
 
@@ -741,7 +745,7 @@ public class SolrResourceLoader
 
     while (waitingForResources.size() > 0) {
       synchronized (waitingForResources) {
-        arr = waitingForResources.toArray(new ResourceLoaderAware[waitingForResources.size()]);
+        arr = waitingForResources.toArray(new ResourceLoaderAware[0]);
         waitingForResources.clear();
       }
 
@@ -776,7 +780,7 @@ public class SolrResourceLoader
 
     SolrInfoBean[] arr;
     synchronized (infoMBeans) {
-      arr = infoMBeans.toArray(new SolrInfoBean[infoMBeans.size()]);
+      arr = infoMBeans.toArray(new SolrInfoBean[0]);
       waitingForResources.clear();
     }
 
@@ -810,7 +814,8 @@ public class SolrResourceLoader
         SolrCoreAware.class,
         new Class<?>[] {
           // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
-          // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
+          // VIA RUNTIME APIS -- UNTIL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
+          CircuitBreaker.class,
           CodecFactory.class,
           DirectoryFactory.class,
           ManagedIndexSchemaFactory.class,
@@ -826,7 +831,7 @@ public class SolrResourceLoader
         ResourceLoaderAware.class,
         new Class<?>[] {
           // DO NOT ADD THINGS TO THIS LIST -- ESPECIALLY THINGS THAT CAN BE CREATED DYNAMICALLY
-          // VIA RUNTIME APIS -- UNTILL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
+          // VIA RUNTIME APIS -- UNTIL CAREFULLY CONSIDERING THE ISSUES MENTIONED IN SOLR-8311
           // evaluate if this must go into schemaResourceLoaderComponents
           CharFilterFactory.class,
           TokenFilterFactory.class,
@@ -838,7 +843,7 @@ public class SolrResourceLoader
 
   /** If these components are trying to load classes, use schema classloader */
   private static final Set<Class<?>> schemaResourceLoaderComponents =
-      ImmutableSet.of(
+      Set.of(
           CharFilterFactory.class,
           TokenFilterFactory.class,
           TokenizerFactory.class,
@@ -882,6 +887,7 @@ public class SolrResourceLoader
   public List<SolrInfoBean> getInfoMBeans() {
     return Collections.unmodifiableList(infoMBeans);
   }
+
   /**
    * Load a class using an appropriate {@link SolrResourceLoader} depending of the package on that
    * class
@@ -895,14 +901,14 @@ public class SolrResourceLoader
     if (info.cName.pkg == null) return findClass(info.className, type);
     return _classLookup(
         info,
-        (Function<PackageLoader.Package.Version, Class<? extends T>>)
+        (Function<SolrPackageLoader.SolrPackage.Version, Class<? extends T>>)
             ver -> ver.getLoader().findClass(info.cName.className, type),
         registerCoreReloadListener);
   }
 
   private <T> T _classLookup(
       PluginInfo info,
-      Function<PackageLoader.Package.Version, T> fun,
+      Function<SolrPackageLoader.SolrPackage.Version, T> fun,
       boolean registerCoreReloadListener) {
     PluginInfo.ClassName cName = info.cName;
     if (registerCoreReloadListener) {
@@ -916,7 +922,7 @@ public class SolrResourceLoader
   }
 
   /**
-   * Create a n instance of a class using an appropriate {@link SolrResourceLoader} depending on the
+   * Create an instance of a class using an appropriate {@link SolrResourceLoader} depending on the
    * package of that class
    *
    * @param registerCoreReloadListener register a listener for the package and reload the core if
@@ -983,4 +989,21 @@ public class SolrResourceLoader
   // This is to verify if this requires to use the schema classloader for classes loaded from
   // packages
   private static final ThreadLocal<ResourceLoaderAware> CURRENT_AWARE = new ThreadLocal<>();
+
+  public static class SolrFileInputStream extends FilterInputStream {
+    private final long lastModified;
+
+    public SolrFileInputStream(Path filePath) throws IOException {
+      this(Files.newInputStream(filePath), Files.getLastModifiedTime(filePath).toMillis());
+    }
+
+    public SolrFileInputStream(InputStream delegate, long lastModified) {
+      super(delegate);
+      this.lastModified = lastModified;
+    }
+
+    public long getLastModified() {
+      return lastModified;
+    }
+  }
 }

@@ -34,7 +34,7 @@ public class TestDFRSimilarityFactory extends BaseSimilarityTestCase {
   }
 
   /** dfr with default parameters */
-  public void test() throws Exception {
+  public void test() {
     Similarity sim = getSimilarity("text");
     assertEquals(DFRSimilarity.class, sim.getClass());
     DFRSimilarity dfr = (DFRSimilarity) sim;
@@ -44,7 +44,7 @@ public class TestDFRSimilarityFactory extends BaseSimilarityTestCase {
   }
 
   /** dfr with parametrized normalization */
-  public void testParameters() throws Exception {
+  public void testParameters() {
     Similarity sim = getSimilarity("text_params");
     assertEquals(DFRSimilarity.class, sim.getClass());
     DFRSimilarity dfr = (DFRSimilarity) sim;
@@ -56,7 +56,7 @@ public class TestDFRSimilarityFactory extends BaseSimilarityTestCase {
   }
 
   /** LUCENE-3566 */
-  public void testParameterC() throws Exception {
+  public void testParameterC() {
     Similarity sim = getSimilarity("text_paramc");
     assertEquals(DFRSimilarity.class, sim.getClass());
     DFRSimilarity dfr = (DFRSimilarity) sim;

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -32,10 +31,8 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
-@Slow
 public class TestReplicaProperties extends ReplicaPropertiesBase {
 
   public static final String COLLECTION_NAME = "testcollection";
@@ -51,12 +48,10 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
 
     try (CloudSolrClient client = createCloudClient(null)) {
       // Mix up a bunch of different combinations of shards and replicas in order to exercise
-      // boundary cases. shards, replicationfactor
-      int shards = random().nextInt(7);
-      if (shards < 2) shards = 2;
-      int rFactor = random().nextInt(4);
-      if (rFactor < 2) rFactor = 2;
-      createCollection(null, COLLECTION_NAME, shards, rFactor, client, null, "conf1");
+      // boundary cases. shards, replicationFactor
+      int shards = random().nextInt(5) + 2;
+      int replicationFactor = random().nextInt(2) + 2;
+      createCollection(null, COLLECTION_NAME, shards, replicationFactor, client, null, "conf1");
     }
 
     waitForCollection(ZkStateReader.from(cloudClient), COLLECTION_NAME, 2);
@@ -157,7 +152,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       String c1_s1_r1 = replicasList.get(0);
       String c1_s1_r2 = replicasList.get(1);
 
-      addProperty(
+      ReplicaPropertiesBase.doPropertyAction(
           client,
           "action",
           CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
@@ -172,7 +167,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
           "property.value",
           "true");
 
-      addProperty(
+      ReplicaPropertiesBase.doPropertyAction(
           client,
           "action",
           CollectionParams.CollectionAction.ADDREPLICAPROP.toString(),
@@ -191,7 +186,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
           assertThrows(
               SolrException.class,
               () ->
-                  doPropertyAction(
+                  ReplicaPropertiesBase.doPropertyAction(
                       client,
                       "action",
                       CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toString(),
@@ -240,7 +235,7 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
   }
 
   private void verifyLeaderAssignment(CloudSolrClient client, String collectionName)
-      throws InterruptedException, KeeperException {
+      throws InterruptedException {
     String lastFailMsg = "";
     // Keep trying while Overseer writes the ZK state for up to 30 seconds.
     for (int idx = 0; idx < 300; ++idx) {
@@ -281,19 +276,5 @@ public class TestReplicaProperties extends ReplicaPropertiesBase {
       Thread.sleep(100);
     }
     fail(lastFailMsg);
-  }
-
-  private void addProperty(CloudSolrClient client, String... paramsIn)
-      throws IOException, SolrServerException {
-    assertTrue(
-        "paramsIn must be an even multiple of 2, it is: " + paramsIn.length,
-        (paramsIn.length % 2) == 0);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    for (int idx = 0; idx < paramsIn.length; idx += 2) {
-      params.set(paramsIn[idx], paramsIn[idx + 1]);
-    }
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    client.request(request);
   }
 }

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.rest.schema;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,7 +25,7 @@ import org.junit.Test;
 
 public class TestFieldCollectionResource extends SolrRestletTestBase {
   @Test
-  public void testXMLGetAllFields() throws Exception {
+  public void testXMLGetAllFields() {
     assertQ(
         "/schema/fields?wt=xml",
         "(/response/arr[@name='fields']/lst/str[@name='name'])[1] = 'HTMLstandardtok'",
@@ -44,7 +43,7 @@ public class TestFieldCollectionResource extends SolrRestletTestBase {
   }
 
   @Test
-  public void testXMLGetThreeFieldsDontIncludeDynamic() throws IOException {
+  public void testXMLGetThreeFieldsDontIncludeDynamic() {
     //
     assertQ(
         "/schema/fields?wt=xml&fl=id,_version_,price_i",
@@ -54,7 +53,7 @@ public class TestFieldCollectionResource extends SolrRestletTestBase {
   }
 
   @Test
-  public void testXMLGetThreeFieldsIncludeDynamic() throws IOException {
+  public void testXMLGetThreeFieldsIncludeDynamic() {
     assertQ(
         "/schema/fields?wt=xml&fl=id,_version_,price_i&includeDynamic=on",
         "count(/response/arr[@name='fields']/lst/str[@name='name']) = 3",
@@ -66,7 +65,7 @@ public class TestFieldCollectionResource extends SolrRestletTestBase {
   }
 
   @Test
-  public void testXMLNotFoundFields() throws IOException {
+  public void testXMLNotFoundFields() {
     assertQ(
         "/schema/fields?&wt=xml&fl=not_in_there,this_one_either",
         "count(/response/arr[@name='fields']) = 1",

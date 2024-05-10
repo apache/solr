@@ -19,10 +19,10 @@ package org.apache.solr.rest;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -253,11 +253,7 @@ public class RestManager {
     /** Determines the ManagedResource resourceId from the request path. */
     public static String resolveResourceId(final String path) {
       String resourceId;
-      try {
-        resourceId = URLDecoder.decode(path, "UTF-8");
-      } catch (UnsupportedEncodingException e) {
-        throw new RuntimeException(e); // shouldn't happen
-      }
+      resourceId = URLDecoder.decode(path, StandardCharsets.UTF_8);
 
       int at = resourceId.indexOf("/schema");
       if (at == -1) {
@@ -288,27 +284,31 @@ public class RestManager {
       final String resourceId = resolveResourceId(solrRequest.getPath());
       managedResource = restManager.getManagedResourceOrNull(resourceId);
       if (managedResource == null) {
-        // see if we have a registered endpoint one-level up ...
-        int lastSlashAt = resourceId.lastIndexOf('/');
-        if (lastSlashAt != -1) {
-          String parentResourceId = resourceId.substring(0, lastSlashAt);
-          log.info(
+        int lastSlashAt;
+        String parentResourceId;
+        String initialResourceId = resourceId;
+        // Check if we have a registered endpoint, going one level up each time...
+        do {
+          lastSlashAt = initialResourceId.lastIndexOf('/');
+          parentResourceId = resourceId.substring(0, lastSlashAt);
+          log.debug(
               "Resource not found for {}, looking for parent: {}", resourceId, parentResourceId);
           managedResource = restManager.getManagedResourceOrNull(parentResourceId);
-          if (managedResource != null) {
-            // verify this resource supports child resources
-            if (!(managedResource instanceof ManagedResource.ChildResourceSupport)) {
-              String errMsg =
-                  String.format(
-                      Locale.ROOT,
-                      "%s does not support child resources!",
-                      managedResource.getResourceId());
-              throw new SolrException(ErrorCode.BAD_REQUEST, errMsg);
-            }
-
-            childId = resourceId.substring(lastSlashAt + 1);
-            log.info("Found parent resource {} for child: {}", parentResourceId, childId);
+          initialResourceId = parentResourceId;
+        } while (managedResource == null && initialResourceId.lastIndexOf("/") != -1);
+        if (managedResource != null) {
+          // verify this resource supports child resources
+          if (!(managedResource instanceof ManagedResource.ChildResourceSupport)) {
+            String errMsg =
+                String.format(
+                    Locale.ROOT,
+                    "%s does not support child resources!",
+                    managedResource.getResourceId());
+            throw new SolrException(ErrorCode.BAD_REQUEST, errMsg);
           }
+
+          childId = resourceId.substring(lastSlashAt + 1);
+          log.debug("Found parent resource {} for child: {}", parentResourceId, childId);
         }
       }
 
@@ -355,10 +355,7 @@ public class RestManager {
     }
 
     private void doHead(ManagedEndpoint managedEndpoint) {
-      // Setting the response to blank clears the content out,
-      // however it also means the Content-Length HTTP Header is set to 0
-      // which isn't compliant with the specification of how HEAD should work,
-      // it should instead return the length of the content if you did a GET.
+      // Setting the response to blank clears the content out.
       NamedList<Object> blank = new SimpleOrderedMap<>();
       managedEndpoint.getSolrResponse().setAllValues(blank);
     }

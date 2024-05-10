@@ -16,8 +16,7 @@
  */
 package org.apache.solr.client.solrj;
 
-import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
-
+import java.util.concurrent.TimeUnit;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -41,8 +40,11 @@ public class SolrExceptionTest extends SolrTestCase {
       // switched to a local address to avoid going out on the net, ns lookup issues, etc.
       // set a 1ms timeout to let the connection fail faster.
       httpClient = HttpClientUtil.createClient(null);
-      try (HttpSolrClient client =
-          getHttpSolrClient("http://" + SolrTestCaseJ4.DEAD_HOST_1 + "/solr/", httpClient, 1)) {
+      try (SolrClient client =
+          new HttpSolrClient.Builder("http://" + SolrTestCaseJ4.DEAD_HOST_1 + "/solr/")
+              .withHttpClient(httpClient)
+              .withConnectionTimeout(1, TimeUnit.MILLISECONDS)
+              .build()) {
         SolrQuery query = new SolrQuery("test123");
         client.query(query);
       }

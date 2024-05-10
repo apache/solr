@@ -65,14 +65,19 @@ public class ManagedModelStore extends ManagedResource
 
   /** name of the attribute containing a class */
   static final String CLASS_KEY = "class";
+
   /** name of the attribute containing the features */
   static final String FEATURES_KEY = "features";
+
   /** name of the attribute containing a name */
   static final String NAME_KEY = "name";
+
   /** name of the attribute containing a normalizer */
   static final String NORM_KEY = "norm";
+
   /** name of the attribute containing parameters */
   static final String PARAMS_KEY = "params";
+
   /** name of the attribute containing a store */
   static final String STORE_KEY = "store";
 
@@ -86,6 +91,12 @@ public class ManagedModelStore extends ManagedResource
       throws SolrException {
     super(resourceId, loader, storageIO);
     store = new ModelStore();
+  }
+
+  @Override
+  protected ManagedResourceStorage createStorage(
+      ManagedResourceStorage.StorageIO storageIO, SolrResourceLoader loader) throws SolrException {
+    return new ManagedResourceStorage.JsonStorage(storageIO, loader, -1);
   }
 
   public void setManagedFeatureStore(ManagedFeatureStore managedFeatureStore) {
@@ -315,7 +326,7 @@ public class ManagedModelStore extends ManagedResource
   }
 
   private static LinkedHashMap<String, Object> toFeatureMap(Feature feature, Normalizer norm) {
-    final LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>(2, 1.0f);
+    final LinkedHashMap<String, Object> map = new LinkedHashMap<>(2, 1.0f);
     map.put(NAME_KEY, feature.getName());
     map.put(NORM_KEY, toNormalizerMap(norm));
     return map;

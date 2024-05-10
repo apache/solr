@@ -23,8 +23,10 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.SolrException;
@@ -80,7 +82,7 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
   protected boolean lessThan(ShardDoc docA, ShardDoc docB) {
     // If these docs are from the same shard, then the relative order
     // is how they appeared in the response from that shard.
-    if (docA.shard == docB.shard) {
+    if (Objects.equals(docA.shard, docB.shard)) {
       // if docA has a smaller position, it should be "larger" so it
       // comes before docB.
       // This will handle sorting by docid within the same shard
@@ -155,7 +157,9 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
 
   Comparator<ShardDoc> comparatorFieldComparator(SortField sortField) {
     @SuppressWarnings({"rawtypes"})
-    final FieldComparator fieldComparator = sortField.getComparator(0, true);
+    final FieldComparator fieldComparator =
+        sortField.getComparator(
+            0, fieldNames.size() > 1 ? Pruning.GREATER_THAN : Pruning.GREATER_THAN_OR_EQUAL_TO);
     return new ShardComparator(sortField) {
       // Since the PriorityQueue keeps the biggest elements by default,
       // we need to reverse the field compare ordering so that the

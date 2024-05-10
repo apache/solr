@@ -192,7 +192,8 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
   private DocFoundAndOldUserAndSolrVersions getOldUserVersionsFromFieldCache(
       BytesRef indexedDocId) {
     SolrInputDocument oldDoc =
-        RealTimeGetComponent.getInputDocumentFromTlog(core, indexedDocId, null, null, true);
+        RealTimeGetComponent.getInputDocumentFromTlog(
+            core, indexedDocId, null, null, RealTimeGetComponent.Resolution.DOC);
     if (oldDoc == RealTimeGetComponent.DELETED) {
       return DocFoundAndOldUserAndSolrVersions.NOT_FOUND;
     }
@@ -233,7 +234,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
     // stored fields only...
     SolrInputDocument oldDoc =
         RealTimeGetComponent.getInputDocument(
-            core, indexedDocId, RealTimeGetComponent.Resolution.DOC);
+            core, indexedDocId, indexedDocId, null, null, RealTimeGetComponent.Resolution.DOC);
     if (null == oldDoc) {
       return DocFoundAndOldUserAndSolrVersions.NOT_FOUND;
     } else {

@@ -32,7 +32,6 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -43,6 +42,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TimeOut;
@@ -81,7 +81,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void releaseClient() throws Exception {
+  public static void releaseClient() {
     solrClient = null;
   }
 
@@ -103,7 +103,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
       fieldsBySize.forEach((k, v) -> assertTrue("unexpected size of " + k + ": " + v, v > 0));
       Map<String, Long> typesBySize = estimate.getTypesBySize();
       assertFalse("empty typesBySize", typesBySize.isEmpty());
-      assertTrue("expected at least 8 types: " + typesBySize.toString(), typesBySize.size() >= 8);
+      assertTrue("expected at least 8 types: " + typesBySize, typesBySize.size() >= 8);
       typesBySize.forEach((k, v) -> assertTrue("unexpected size of " + k + ": " + v, v > 0));
       Map<String, Object> summary = estimate.getSummary();
       assertNotNull("summary", summary);
@@ -149,7 +149,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
           if (liveDocs != null && !liveDocs.get(docId)) {
             continue;
           }
-          storedFieldsReader.visitDocument(docId, visitor);
+          storedFieldsReader.document(docId, visitor);
         }
       }
     } finally {
@@ -196,7 +196,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
       Map<String, Object> typesBySize =
           (Map<String, Object>) rawSizeMap.get(IndexSizeEstimator.TYPES_BY_SIZE);
       assertNotNull("typesBySize missing", typesBySize);
-      assertTrue("expected at least 8 types: " + typesBySize.toString(), typesBySize.size() >= 8);
+      assertTrue("expected at least 8 types: " + typesBySize, typesBySize.size() >= 8);
       @SuppressWarnings({"unchecked"})
       Map<String, Object> summary =
           (Map<String, Object>) rawSizeMap.get(IndexSizeEstimator.SUMMARY);

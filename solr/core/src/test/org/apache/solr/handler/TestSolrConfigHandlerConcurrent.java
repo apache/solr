@@ -68,14 +68,13 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
       if (e.getValue() instanceof Map) {
         List<String> errs = new ArrayList<>();
         collectErrors.add(errs);
-        Map<?, ?> value = (Map<?, ?>) e.getValue();
         Thread t =
             new Thread(
                 () -> {
                   try {
-                    invokeBulkCall((String) e.getKey(), errs, value);
+                    invokeBulkCall((String) e.getKey(), errs);
                   } catch (Exception e1) {
-                    e1.printStackTrace();
+                    log.error("error invoking bulk call", e1);
                   }
                 });
         threads.add(t);
@@ -97,12 +96,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
     assertTrue(collectErrors.toString(), success);
   }
 
-  private void invokeBulkCall(
-      String cacheName,
-      List<String> errs,
-      // TODO this is unused - is that a bug?
-      Map<?, ?> val)
-      throws Exception {
+  private void invokeBulkCall(String cacheName, List<String> errs) throws Exception {
 
     String payload =
         "{"
@@ -112,14 +106,14 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
             + "}";
 
     Set<String> errmessages = new HashSet<>();
-    for (int i = 1; i < 2; i++) { // make it  ahigher number
+    for (int i = 1; i < 2; i++) { // make it a higher number
       RestTestHarness publisher = randomRestTestHarness(r);
       String response;
       String val1;
       String val2;
       String val3;
       try {
-        payload = payload.replaceAll("CACHENAME", cacheName);
+        payload = payload.replace("CACHENAME", cacheName);
         val1 = String.valueOf(10 * i + 1);
         payload = payload.replace("CACHEVAL1", val1);
         val2 = String.valueOf(10 * i + 2);

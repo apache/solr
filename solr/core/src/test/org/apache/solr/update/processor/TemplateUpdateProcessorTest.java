@@ -17,7 +17,6 @@
 
 package org.apache.solr.update.processor;
 
-import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -32,12 +31,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.rules.ExpectedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -49,8 +44,6 @@ public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
     cluster.deleteAllCollections();
     cluster.shutdown();
   }
-
-  @org.junit.Rule public ExpectedException expectedException = ExpectedException.none();
 
   public void testSimple() throws Exception {
 
@@ -87,9 +80,7 @@ public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
     NamedList<Object> result =
         cluster
             .getSolrClient()
-            .request(
-                CollectionAdminRequest.createCollection("c", "conf1", 1, 1)
-                    .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE));
+            .request(CollectionAdminRequest.createCollection("c", "conf1", 1, 1));
     Utils.toJSONString(result.asMap(4));
     AbstractFullDistribZkTestBase.waitForCollection(cluster.getZkStateReader(), "c", 1);
     cluster.getSolrClient().request(add, "c");

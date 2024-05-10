@@ -18,7 +18,6 @@ package org.apache.solr.spelling;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -26,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Set;
 
@@ -112,7 +112,7 @@ public class PossibilityIterator implements Iterator<PossibilityIterator.RankedS
       } else {
         // Needs to be in token-offset order so that the match-and-replace
         // option for collations can work.
-        Collections.sort(rsp.corrections, new StartOffsetComparator());
+        rsp.corrections.sort(new StartOffsetComparator());
         if (removeDuplicates.add(rsp)) {
           rankedPossibilities.offer(rsp);
         }
@@ -363,12 +363,9 @@ public class PossibilityIterator implements Iterator<PossibilityIterator.RankedS
     public boolean equals(Object obj) {
       if (this == obj) return true;
       if (obj == null) return false;
-      if (getClass() != obj.getClass()) return false;
+      if (!(obj instanceof RankedSpellPossibility)) return false;
       RankedSpellPossibility other = (RankedSpellPossibility) obj;
-      if (corrections == null) {
-        if (other.corrections != null) return false;
-      } else if (!corrections.equals(other.corrections)) return false;
-      return true;
+      return Objects.equals(corrections, other.corrections);
     }
 
     @Override

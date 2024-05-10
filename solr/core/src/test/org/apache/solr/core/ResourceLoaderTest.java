@@ -16,7 +16,9 @@
  */
 package org.apache.solr.core;
 
-import static org.apache.solr.core.SolrResourceLoader.*;
+import static org.apache.solr.core.SolrResourceLoader.SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM;
+import static org.apache.solr.core.SolrResourceLoader.assertAwareCompatibility;
+import static org.apache.solr.core.SolrResourceLoader.clearCache;
 import static org.hamcrest.core.Is.is;
 
 import java.io.IOException;
@@ -25,7 +27,6 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -113,7 +114,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings({"unchecked"})
-  public void testAwareCompatibility() throws Exception {
+  public void testAwareCompatibility() {
 
     final Class<?> clazz1 = ResourceLoaderAware.class;
     // Check ResourceLoaderAware valid objects
@@ -163,11 +164,12 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
       assertEquals(
           "Should have been able to read 3 bytes from bomStream", 3, bomStream.read(firstBytes));
 
-      assertTrue(
+      assertArrayEquals(
           "This test only works if "
               + fileWithBom
               + " contains a BOM -- it appears someone removed it.",
-          Arrays.equals(bomExpected, firstBytes));
+          bomExpected,
+          firstBytes);
     } finally {
       try {
         bomStream.close();
@@ -225,7 +227,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     // check "lib/aLibFile"
     assertNotNull(loader.getClassLoader().getResource("aLibFile"));
 
-    // add inidividual jars from other paths
+    // add individual jars from other paths
     loader.addToClassLoader(
         Collections.singletonList(otherLib.resolve("jar2.jar").toUri().toURL()));
 

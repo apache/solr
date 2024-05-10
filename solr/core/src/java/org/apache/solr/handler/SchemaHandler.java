@@ -35,39 +35,21 @@ import java.util.Set;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
-import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.MapWriter;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.SolrClassLoader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.admin.api.SchemaGetDynamicFieldAPI;
-import org.apache.solr.handler.admin.api.SchemaGetFieldAPI;
-import org.apache.solr.handler.admin.api.SchemaGetFieldTypeAPI;
-import org.apache.solr.handler.admin.api.SchemaInfoAPI;
-import org.apache.solr.handler.admin.api.SchemaListAllCopyFieldsAPI;
-import org.apache.solr.handler.admin.api.SchemaListAllDynamicFieldsAPI;
-import org.apache.solr.handler.admin.api.SchemaListAllFieldTypesAPI;
-import org.apache.solr.handler.admin.api.SchemaListAllFieldsAPI;
-import org.apache.solr.handler.admin.api.SchemaNameAPI;
-import org.apache.solr.handler.admin.api.SchemaSimilarityAPI;
-import org.apache.solr.handler.admin.api.SchemaUniqueKeyAPI;
-import org.apache.solr.handler.admin.api.SchemaVersionAPI;
-import org.apache.solr.handler.admin.api.SchemaZkVersionAPI;
-import org.apache.solr.pkg.PackageListeningClassLoader;
+import org.apache.solr.handler.admin.api.GetSchema;
+import org.apache.solr.handler.admin.api.GetSchemaFieldAPI;
+import org.apache.solr.handler.admin.api.SchemaBulkModifyAPI;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.rest.RestManager;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaManager;
-import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -137,51 +119,45 @@ public class SchemaHandler extends RequestHandlerBase
       String path = (String) req.getContext().get("path");
       switch (path) {
         case "/schema":
-          rsp.add(IndexSchema.SCHEMA, req.getSchema().getNamedPropertyValues());
-          break;
+          {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                rsp, new GetSchema(req.getCore(), req.getCore().getLatestSchema()).getSchemaInfo());
+            break;
+          }
         case "/schema/version":
-          rsp.add(IndexSchema.VERSION, req.getSchema().getVersion());
-          break;
+          {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                rsp,
+                new GetSchema(req.getCore(), req.getCore().getLatestSchema()).getSchemaVersion());
+            break;
+          }
         case "/schema/uniquekey":
-          rsp.add(IndexSchema.UNIQUE_KEY, req.getSchema().getUniqueKeyField().getName());
-          break;
+          {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                rsp,
+                new GetSchema(req.getCore(), req.getCore().getLatestSchema()).getSchemaUniqueKey());
+            break;
+          }
         case "/schema/similarity":
-          rsp.add(
-              IndexSchema.SIMILARITY,
-              req.getSchema().getSimilarityFactory().getNamedPropertyValues());
-          break;
+          {
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                rsp,
+                new GetSchema(req.getCore(), req.getCore().getLatestSchema())
+                    .getSchemaSimilarity());
+            break;
+          }
         case "/schema/name":
           {
-            final String schemaName = req.getSchema().getSchemaName();
-            if (null == schemaName) {
-              String message = "Schema has no name";
-              throw new SolrException(SolrException.ErrorCode.NOT_FOUND, message);
-            }
-            rsp.add(IndexSchema.NAME, schemaName);
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                rsp, new GetSchema(req.getCore(), req.getCore().getLatestSchema()).getSchemaName());
             break;
           }
         case "/schema/zkversion":
           {
-            int refreshIfBelowVersion = req.getParams().getInt("refreshIfBelowVersion", -1);
-            int zkVersion = -1;
-            IndexSchema schema = req.getSchema();
-            if (schema instanceof ManagedIndexSchema) {
-              ManagedIndexSchema managed = (ManagedIndexSchema) schema;
-              zkVersion = managed.getSchemaZkVersion();
-              if (refreshIfBelowVersion != -1 && zkVersion < refreshIfBelowVersion) {
-                log.info(
-                    "REFRESHING SCHEMA (refreshIfBelowVersion={}, currentVersion={}) before returning version!",
-                    refreshIfBelowVersion,
-                    zkVersion);
-                ZkSolrResourceLoader zkSolrResourceLoader =
-                    (ZkSolrResourceLoader) req.getCore().getResourceLoader();
-                ZkIndexSchemaReader zkIndexSchemaReader =
-                    zkSolrResourceLoader.getZkIndexSchemaReader();
-                managed = zkIndexSchemaReader.refreshSchemaFromZk(refreshIfBelowVersion);
-                zkVersion = managed.getSchemaZkVersion();
-              }
-            }
-            rsp.add("zkversion", zkVersion);
+            V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                rsp,
+                new GetSchema(req.getCore(), req.getCore().getLatestSchema())
+                    .getSchemaZkVersion(req.getParams().getInt("refreshIfBelowVersion", -1)));
             break;
           }
         default:
@@ -189,7 +165,6 @@ public class SchemaHandler extends RequestHandlerBase
             List<String> parts = StrUtils.splitSmart(path, '/', true);
             if (parts.size() > 1 && level2.containsKey(parts.get(1))) {
               String realName = parts.get(1);
-              String fieldName = IndexSchema.nameMapping.get(realName);
 
               String pathParam = level2.get(realName); // Might be null
               if (parts.size() > 2) {
@@ -197,74 +172,72 @@ public class SchemaHandler extends RequestHandlerBase
                     SolrParams.wrapDefaults(
                         new MapSolrParams(singletonMap(pathParam, parts.get(2))), req.getParams()));
               }
-              Map<String, Object> propertyValues =
-                  req.getSchema().getNamedPropertyValues(realName, req.getParams());
-              Object o = propertyValues.get(fieldName);
-              if (parts.size() > 2) {
-                String name = parts.get(2);
-                if (o instanceof List) {
-                  List<?> list = (List<?>) o;
-                  for (Object obj : list) {
-                    if (obj instanceof SimpleOrderedMap) {
-                      SimpleOrderedMap<?> simpleOrderedMap = (SimpleOrderedMap<?>) obj;
-                      if (name.equals(simpleOrderedMap.get("name"))) {
-                        rsp.add(fieldName.substring(0, realName.length() - 1), simpleOrderedMap);
-                        insertPackageInfo(rsp.getValues(), req);
-                        return;
-                      }
+              switch (realName) {
+                case "fields":
+                  {
+                    if (parts.size() > 2) {
+                      V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                          rsp,
+                          new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams())
+                              .getFieldInfo(parts.get(2)));
+                    } else {
+                      V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                          rsp,
+                          new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams())
+                              .listSchemaFields());
                     }
+                    return;
                   }
-                }
-                throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such path " + path);
-              } else {
-                rsp.add(fieldName, o);
+                case "copyfields":
+                  {
+                    V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                        rsp,
+                        new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams())
+                            .listCopyFields());
+                    return;
+                  }
+                case "dynamicfields":
+                  {
+                    if (parts.size() > 2) {
+                      V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                          rsp,
+                          new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams())
+                              .getDynamicFieldInfo(parts.get(2)));
+                    } else {
+                      V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                          rsp,
+                          new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams())
+                              .listDynamicFields());
+                    }
+                    return;
+                  }
+                case "fieldtypes":
+                  {
+                    if (parts.size() > 2) {
+                      V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                          rsp,
+                          new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams())
+                              .getFieldTypeInfo(parts.get(2)));
+                    } else {
+                      V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+                          rsp,
+                          new GetSchemaFieldAPI(req.getCore().getLatestSchema(), req.getParams())
+                              .listSchemaFieldTypes());
+                    }
+                    return;
+                  }
+                default:
+                  {
+                    break;
+                  }
               }
-              insertPackageInfo(rsp.getValues(), req);
-              return;
             }
-
             throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such path " + path);
           }
       }
 
     } catch (Exception e) {
       rsp.setException(e);
-    }
-  }
-
-  /**
-   * If a plugin is loaded from a package, the version of the package being used should be added to
-   * the response
-   */
-  private void insertPackageInfo(Object o, SolrQueryRequest req) {
-    if (!req.getParams().getBool("meta", false)) return;
-    if (o instanceof List) {
-      List<?> l = (List<?>) o;
-      for (Object o1 : l) {
-        if (o1 instanceof NamedList || o1 instanceof List) insertPackageInfo(o1, req);
-      }
-
-    } else if (o instanceof NamedList) {
-      @SuppressWarnings("unchecked")
-      NamedList<Object> nl = (NamedList<Object>) o;
-      nl.forEach(
-          (n, v) -> {
-            if (v instanceof NamedList || v instanceof List) insertPackageInfo(v, req);
-          });
-      Object v = nl.get("class");
-      if (v instanceof String) {
-        String klas = (String) v;
-        PluginInfo.ClassName parsedClassName = new PluginInfo.ClassName(klas);
-        if (parsedClassName.pkg != null) {
-          SolrClassLoader solrClassLoader = req.getCore().getLatestSchema().getSolrClassLoader();
-          MapWriter mw =
-              solrClassLoader instanceof PackageListeningClassLoader
-                  ? ((PackageListeningClassLoader) solrClassLoader)
-                      .getPackageVersion(parsedClassName)
-                  : null;
-          if (mw != null) nl.add("_packageinfo_", mw);
-        }
-      }
     }
   }
 
@@ -312,24 +285,16 @@ public class SchemaHandler extends RequestHandlerBase
 
   @Override
   public Collection<Api> getApis() {
-    final List<Api> immList = ApiBag.wrapRequestHandlers(this, "core.SchemaEdit");
-    final List<Api> mutList = new ArrayList<>();
-    mutList.addAll(immList);
-    mutList.addAll(AnnotatedApi.getApis(new SchemaNameAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaInfoAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaUniqueKeyAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaVersionAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaSimilarityAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaZkVersionAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllFieldsAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaGetFieldAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllCopyFieldsAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllDynamicFieldsAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaGetDynamicFieldAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaListAllFieldTypesAPI(this)));
-    mutList.addAll(AnnotatedApi.getApis(new SchemaGetFieldTypeAPI(this)));
 
-    return mutList;
+    final List<Api> apis = new ArrayList<>();
+    apis.addAll(AnnotatedApi.getApis(new SchemaBulkModifyAPI(this)));
+
+    return apis;
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(GetSchema.class, GetSchemaFieldAPI.class);
   }
 
   @Override

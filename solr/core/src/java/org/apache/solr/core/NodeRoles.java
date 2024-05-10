@@ -16,9 +16,12 @@
  */
 package org.apache.solr.core;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
 
@@ -32,8 +35,8 @@ public class NodeRoles {
   private Map<Role, String> nodeRoles;
 
   public NodeRoles(String rolesString) {
-    Map<Role, String> roles = new EnumMap<Role, String>(Role.class);
-    if (StringUtils.isEmpty(rolesString)) {
+    Map<Role, String> roles = new EnumMap<>(Role.class);
+    if (StrUtils.isNullOrEmpty(rolesString)) {
       rolesString = DEFAULT_ROLES_STRING;
     }
     List<String> rolesList = StrUtils.splitSmart(rolesString, ',');
@@ -97,6 +100,18 @@ public class NodeRoles {
       @Override
       public String modeWhenRoleIsAbsent() {
         return MODE_DISALLOWED;
+      }
+    },
+
+    COORDINATOR("coordinator") {
+      @Override
+      public String modeWhenRoleIsAbsent() {
+        return MODE_OFF;
+      }
+
+      @Override
+      public Set<String> supportedModes() {
+        return Set.of(MODE_ON, MODE_OFF);
       }
     };
 

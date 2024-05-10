@@ -127,6 +127,25 @@ public class ModifiableSolrParamsTest extends SolrTestCase {
     compareArrays("checking Hello World Universe ", helloWorldUniverse, result);
   }
 
+  public void testSetShardAttributesToParams() {
+    var dummyIndent = "Dummy-Indent";
+
+    modifiable.set(ShardParams.SHARDS, "dummyValue");
+    modifiable.set(CommonParams.HEADER_ECHO_PARAMS, "dummyValue");
+    modifiable.set(CommonParams.INDENT, dummyIndent);
+
+    modifiable.setShardAttributesToParams(2);
+
+    assertEquals(Boolean.FALSE.toString(), modifiable.get(CommonParams.DISTRIB));
+    assertEquals("2", modifiable.get(ShardParams.SHARDS_PURPOSE));
+    assertEquals(Boolean.FALSE.toString(), modifiable.get(CommonParams.OMIT_HEADER));
+    assertEquals(Boolean.TRUE.toString(), modifiable.get(ShardParams.IS_SHARD));
+
+    assertNull(modifiable.get(CommonParams.HEADER_ECHO_PARAMS));
+    assertNull(modifiable.get(ShardParams.SHARDS));
+    assertNull(modifiable.get(CommonParams.INDENT));
+  }
+
   private void compareArrays(String prefix, String[] expected, String[] actual) {
     assertEquals(prefix + "length: ", expected.length, actual.length);
     for (int i = 0; i < expected.length; ++i) {

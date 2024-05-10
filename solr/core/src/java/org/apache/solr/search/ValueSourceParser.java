@@ -32,7 +32,39 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
-import org.apache.lucene.queries.function.valuesource.*;
+import org.apache.lucene.queries.function.valuesource.ConstNumberSource;
+import org.apache.lucene.queries.function.valuesource.ConstValueSource;
+import org.apache.lucene.queries.function.valuesource.DefFunction;
+import org.apache.lucene.queries.function.valuesource.DivFloatFunction;
+import org.apache.lucene.queries.function.valuesource.DocFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
+import org.apache.lucene.queries.function.valuesource.DualFloatFunction;
+import org.apache.lucene.queries.function.valuesource.IDFValueSource;
+import org.apache.lucene.queries.function.valuesource.IfFunction;
+import org.apache.lucene.queries.function.valuesource.JoinDocFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.LinearFloatFunction;
+import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
+import org.apache.lucene.queries.function.valuesource.MaxDocValueSource;
+import org.apache.lucene.queries.function.valuesource.MaxFloatFunction;
+import org.apache.lucene.queries.function.valuesource.MinFloatFunction;
+import org.apache.lucene.queries.function.valuesource.MultiBoolFunction;
+import org.apache.lucene.queries.function.valuesource.MultiValueSource;
+import org.apache.lucene.queries.function.valuesource.NormValueSource;
+import org.apache.lucene.queries.function.valuesource.NumDocsValueSource;
+import org.apache.lucene.queries.function.valuesource.ProductFloatFunction;
+import org.apache.lucene.queries.function.valuesource.QueryValueSource;
+import org.apache.lucene.queries.function.valuesource.RangeMapFloatFunction;
+import org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction;
+import org.apache.lucene.queries.function.valuesource.ScaleFloatFunction;
+import org.apache.lucene.queries.function.valuesource.SimpleBoolFunction;
+import org.apache.lucene.queries.function.valuesource.SimpleFloatFunction;
+import org.apache.lucene.queries.function.valuesource.SingleFunction;
+import org.apache.lucene.queries.function.valuesource.SumFloatFunction;
+import org.apache.lucene.queries.function.valuesource.SumTotalTermFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.TFValueSource;
+import org.apache.lucene.queries.function.valuesource.TermFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.TotalTermFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.VectorValueSource;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.queries.payloads.PayloadFunction;
 import org.apache.lucene.search.IndexSearcher;
@@ -70,6 +102,7 @@ import org.apache.solr.search.facet.UniqueBlockQueryAgg;
 import org.apache.solr.search.facet.VarianceAgg;
 import org.apache.solr.search.function.CollapseScoreFunction;
 import org.apache.solr.search.function.ConcatStringFunction;
+import org.apache.solr.search.function.DualDoubleFunction;
 import org.apache.solr.search.function.EqualFunction;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
@@ -242,16 +275,16 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             ValueSource a = fp.parseValueSource();
             ValueSource b = fp.parseValueSource();
-            return new DualFloatFunction(a, b) {
+            return new DualDoubleFunction(a, b) {
               @Override
               protected String name() {
                 return "mod";
               }
 
               @Override
-              protected float func(int doc, FunctionValues aVals, FunctionValues bVals)
+              protected double func(int doc, FunctionValues aVals, FunctionValues bVals)
                   throws IOException {
-                return aVals.floatVal(doc) % bVals.floatVal(doc);
+                return aVals.doubleVal(doc) % bVals.doubleVal(doc);
               }
             };
           }
@@ -303,18 +336,18 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new SumFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new SumFloatFunction(sources.toArray(new ValueSource[0]));
           }
         });
     alias("sum", "add");
-
+    addParser("vectorSimilarity", new VectorSimilaritySourceParser());
     addParser(
         "product",
         new ValueSourceParser() {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new ProductFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new ProductFloatFunction(sources.toArray(new ValueSource[0]));
           }
         });
     alias("product", "mul");
@@ -679,7 +712,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new MaxFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new MaxFloatFunction(sources.toArray(new ValueSource[0]));
           }
         });
     addParser(
@@ -688,7 +721,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new MinFloatFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new MinFloatFunction(sources.toArray(new ValueSource[0]));
           }
         });
 
@@ -921,6 +954,26 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         });
 
     addParser(
+        "isnan",
+        new ValueSourceParser() {
+          @Override
+          public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+            ValueSource vs = fp.parseValueSource();
+            return new SimpleBoolFunction(vs) {
+              @Override
+              protected String name() {
+                return "isnan";
+              }
+
+              @Override
+              protected boolean func(int doc, FunctionValues vals) throws IOException {
+                return Float.isNaN(vals.floatVal(doc));
+              }
+            };
+          }
+        });
+
+    addParser(
         "not",
         new ValueSourceParser() {
           @Override
@@ -1099,7 +1152,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           @Override
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             List<ValueSource> sources = fp.parseValueSourceList();
-            return new ConcatStringFunction(sources.toArray(new ValueSource[sources.size()]));
+            return new ConcatStringFunction(sources.toArray(new ValueSource[0]));
           }
         });
 
@@ -1553,7 +1606,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (LongConstValueSource.class != o.getClass()) return false;
+      if (!(o instanceof LongConstValueSource)) return false;
       LongConstValueSource other = (LongConstValueSource) o;
       return this.constant == other.constant;
     }
@@ -1706,7 +1759,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
       @Override
       public boolean equals(Object o) {
-        if (this.getClass() != o.getClass()) return false;
+        if (!(o instanceof Function)) return false;
         Function other = (Function) o;
         return this.a.equals(other.a) && this.b.equals(other.b);
       }
@@ -1746,7 +1799,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     @Override
     public boolean equals(Object o) {
-      if (BoolConstValueSource.class != o.getClass()) return false;
+      if (!(o instanceof BoolConstValueSource)) return false;
       BoolConstValueSource other = (BoolConstValueSource) o;
       return this.constant == other.constant;
     }

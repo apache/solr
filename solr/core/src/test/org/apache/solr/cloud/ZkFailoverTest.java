@@ -17,18 +17,23 @@
 
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ZkFailoverTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private ZkTestServer zkTestServer;
 
   @BeforeClass
@@ -52,7 +57,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     cluster.getSolrClient().add(coll, new SolrInputDocument("id", "1"));
     zkTestServer = cluster.getZkServer();
 
-    // This attempt will fail since it will timeout after 1 second
+    // This attempt will fail since it will time out after 1 second
     System.setProperty("waitForZk", "1");
     restartSolrAndZk();
     waitForLiveNodes(0);
@@ -82,7 +87,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
                 try {
                   runner.start();
                 } catch (Exception e) {
-                  e.printStackTrace();
+                  log.error("error starting runner", e);
                 }
               });
       threads[i].start();

@@ -32,8 +32,8 @@ public class FacetDebugInfo {
   Map<String, Object> reqDescription;
 
   public FacetDebugInfo() {
-    children = new ArrayList<FacetDebugInfo>();
-    info = new LinkedHashMap<String, Object>();
+    children = new ArrayList<>();
+    info = new LinkedHashMap<>();
   }
 
   public void addChild(FacetDebugInfo child) {
@@ -76,7 +76,7 @@ public class FacetDebugInfo {
     info.addAll(this.info);
 
     if (children != null && children.size() > 0) {
-      List<Object> subfacet = new ArrayList<Object>();
+      List<Object> subfacet = new ArrayList<>();
       info.add("sub-facet", subfacet);
       for (FacetDebugInfo child : children) {
         subfacet.add(child.getFacetDebugInfo());

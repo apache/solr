@@ -63,7 +63,7 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
     // We do a first request to get the last modified
     // This must result in a 200 OK response
     HttpRequestBase get = getSelectMethod(method);
-    HttpResponse response = getClient().execute(get);
+    HttpResponse response = getHttpClient().execute(get);
     checkResponseBody(method, response);
 
     assertEquals(
@@ -78,7 +78,7 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
     get = getSelectMethod(method);
     get.addHeader("If-Modified-Since", DateUtils.formatDate(new Date()));
 
-    response = getClient().execute(get);
+    response = getHttpClient().execute(get);
     checkResponseBody(method, response);
     assertEquals(
         "Expected 200 with If-Modified-Since header. We should never get a 304 here",
@@ -88,7 +88,7 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
     get = getSelectMethod(method);
     get.addHeader(
         "If-Modified-Since", DateUtils.formatDate(new Date(System.currentTimeMillis() - 10000)));
-    response = getClient().execute(get);
+    response = getHttpClient().execute(get);
     checkResponseBody(method, response);
     assertEquals(
         "Expected 200 with If-Modified-Since header. We should never get a 304 here",
@@ -100,7 +100,7 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
     get.addHeader(
         "If-Unmodified-Since", DateUtils.formatDate(new Date(System.currentTimeMillis() - 10000)));
 
-    response = getClient().execute(get);
+    response = getHttpClient().execute(get);
     checkResponseBody(method, response);
     assertEquals(
         "Expected 200 with If-Unmodified-Since header. We should never get a 304 here",
@@ -109,7 +109,7 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
 
     get = getSelectMethod(method);
     get.addHeader("If-Unmodified-Since", DateUtils.formatDate(new Date()));
-    response = getClient().execute(get);
+    response = getHttpClient().execute(get);
     checkResponseBody(method, response);
     assertEquals(
         "Expected 200 with If-Unmodified-Since header. We should never get a 304 here",
@@ -121,7 +121,7 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
   @Override
   protected void doETag(String method) throws Exception {
     HttpRequestBase get = getSelectMethod(method);
-    HttpResponse response = getClient().execute(get);
+    HttpResponse response = getHttpClient().execute(get);
     checkResponseBody(method, response);
 
     assertEquals(
@@ -133,10 +133,10 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
     assertNull("We got an ETag in the response", head);
 
     // If-None-Match tests
-    // we set a non matching ETag
+    // we set a non-matching ETag
     get = getSelectMethod(method);
     get.addHeader("If-None-Match", "\"xyz123456\"");
-    response = getClient().execute(get);
+    response = getHttpClient().execute(get);
     checkResponseBody(method, response);
     assertEquals(
         "If-None-Match: Got no response code 200 in response to non matching ETag",
@@ -146,7 +146,7 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
     // we now set the special star ETag
     get = getSelectMethod(method);
     get.addHeader("If-None-Match", "*");
-    response = getClient().execute(get);
+    response = getHttpClient().execute(get);
     checkResponseBody(method, response);
     assertEquals(
         "If-None-Match: Got no response 200 for star ETag",
@@ -154,10 +154,10 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
         response.getStatusLine().getStatusCode());
 
     // If-Match tests
-    // we set a non matching ETag
+    // we set a non-matching ETag
     get = getSelectMethod(method);
     get.addHeader("If-Match", "\"xyz123456\"");
-    response = getClient().execute(get);
+    response = getHttpClient().execute(get);
     checkResponseBody(method, response);
     assertEquals(
         "If-Match: Got no response code 200 in response to non matching ETag",
@@ -167,7 +167,7 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
     // now we set the special star ETag
     get = getSelectMethod(method);
     get.addHeader("If-Match", "*");
-    response = getClient().execute(get);
+    response = getHttpClient().execute(get);
     checkResponseBody(method, response);
     assertEquals(
         "If-Match: Got no response 200 to star ETag",
@@ -178,7 +178,7 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
   @Override
   protected void doCacheControl(String method) throws Exception {
     HttpRequestBase m = getSelectMethod(method);
-    HttpResponse response = getClient().execute(m);
+    HttpResponse response = getHttpClient().execute(m);
     checkResponseBody(method, response);
 
     Header head = response.getFirstHeader("Cache-Control");

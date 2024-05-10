@@ -63,7 +63,6 @@ except:
 import scriptutil
 from consolemenu import ConsoleMenu
 from consolemenu.items import FunctionItem, SubmenuItem, ExitItem
-from consolemenu.screen import Screen
 from scriptutil import BranchType, Version, download, run
 
 # Solr-to-Java version mapping
@@ -103,6 +102,7 @@ def expand_jinja(text, vars=None):
         'release_version_minor': state.release_version_minor,
         'release_version_bugfix': state.release_version_bugfix,
         'release_version_refguide': state.get_refguide_release() ,
+        'release_version_jira': state.get_jira_release(),
         'state': state,
         'gpg_key' : state.get_gpg_key(),
         'gradle_cmd' : 'gradlew.bat' if is_windows() else './gradlew',
@@ -110,12 +110,13 @@ def expand_jinja(text, vars=None):
         'get_next_version': state.get_next_version(),
         'current_git_rev': state.get_current_git_rev(),
         'keys_downloaded': keys_downloaded(),
+        'docker_version_to_remove': state.get_docker_version_to_remove(),
         'editor': get_editor(),
         'rename_cmd': 'ren' if is_windows() else 'mv',
         'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
         'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date()),
         'vote_close_72h_holidays': vote_close_72h_holidays(),
-        'solr_news_file': solr_news_file,
+        'solr_news_file': state.get_solr_news_file(),
         'load_lines': load_lines,
         'set_java_home': set_java_home,
         'latest_version': state.get_latest_version(),
@@ -602,8 +603,21 @@ class ReleaseState:
             return "%s.%s.%s" % (self.release_version_major, self.release_version_minor, self.release_version_bugfix + 1)
         return None
 
+    def get_docker_version_to_remove(self):
+        if self.release_type == 'minor' and self.release_version_minor >= 2:
+            return "%s.%s" % (self.release_version_major, self.release_version_minor - 2)
+        else:
+            return None
+
     def get_refguide_release(self):
         return "%s_%s" % (self.release_version_major, self.release_version_minor)
+
+    def get_jira_release(self):
+        if self.release_type == 'major' or self.release_type == 'minor':
+            return "%s.%s" % (self.release_version_major, self.release_version_minor)
+        if self.release_type == 'bugfix':
+            return "%s.%s.%s" % (self.release_version_major, self.release_version_minor, self.release_version_bugfix)
+        return None
 
     def get_java_home(self):
         return self.get_java_home_for_version(self.release_version)
@@ -622,6 +636,10 @@ class ReleaseState:
 
     def get_java_cmd(self):
         return os.path.join(self.get_java_home(), "bin", "java")
+
+    def get_solr_news_file(self):
+        return os.path.join(state.get_website_git_folder(), 'content', 'solr', 'solr_news',
+                     "%s-%s-available.md" % (state.get_release_date_iso(), state.release_version.replace(".", "-")))
 
     def get_todo_states(self):
         states = {}
@@ -675,8 +693,8 @@ class TodoGroup(SecretYamlObject):
         return "%s%s (%d/%d)" % (prefix, self.title, self.num_done(), self.num_applies())
 
     def get_submenu(self):
-        menu = UpdatableConsoleMenu(title=self.title, subtitle=self.get_subtitle, prologue_text=self.get_description(),
-                           screen=MyScreen())
+        menu = ConsoleMenu(title=self.title, subtitle=self.get_subtitle, prologue_text=self.get_description(),
+                           clear_screen=False)
         menu.exit_item = CustomExitItem("Return")
         for todo in self.get_todos():
             if todo.applies(state.release_type):
@@ -684,7 +702,7 @@ class TodoGroup(SecretYamlObject):
         return menu
 
     def get_menu_item(self):
-        item = UpdatableSubmenuItem(self.get_title, self.get_submenu())
+        item = SubmenuItem(self.get_title, self.get_submenu())
         return item
 
     def get_todos(self):
@@ -841,7 +859,7 @@ class Todo(SecretYamlObject):
             print("ERROR while executing todo %s (%s)" % (self.get_title(), e))
 
     def get_menu_item(self):
-        return UpdatableFunctionItem(self.get_title, self.display_and_confirm)
+        return FunctionItem(self.get_title, self.display_and_confirm)
 
     def clone(self):
         clone = Todo(self.id, self.title, description=self.description)
@@ -1152,14 +1170,14 @@ def configure_pgp(gpg_todo):
         res = run("gpg --list-secret-keys %s" % gpg_fingerprint)
         print("Found key %s on your private gpg keychain" % gpg_id)
         # Check rsa and key length >= 4096
-        match = re.search(r'^sec +((rsa|dsa)(\d{4})) ', res)
+        match = re.search(r'^sec#? +((rsa|dsa)(\d{4})) ', res)
         type = "(unknown)"
         length = -1
         if match:
             type = match.group(2)
             length = int(match.group(3))
         else:
-            match = re.search(r'^sec +((\d{4})([DR])/.*?) ', res)
+            match = re.search(r'^sec#? +((\d{4})([DR])/.*?) ', res)
             if match:
                 type = 'rsa' if match.group(3) == 'R' else 'dsa'
                 length = int(match.group(2))
@@ -1231,21 +1249,6 @@ def configure_pgp(gpg_todo):
     gpg_state['gpg_key'] = gpg_id
     gpg_state['gpg_fingerprint'] = gpg_fingerprint
 
-    print(textwrap.dedent("""\
-            You can choose between signing the release with the gpg program or with
-            the gradle signing plugin. Read about the difference by running
-            ./gradlew helpPublishing"""))
-
-    gpg_state['use_gradle'] = ask_yes_no("Do you want to sign the release with gradle plugin? No means gpg")
-
-    print(textwrap.dedent("""\
-            You need the passphrase to sign the release.
-            This script can prompt you securely for your passphrase (will not be stored) and pass it on to
-            buildAndPushRelease in a secure way. However, you can also configure your passphrase in advance 
-            and avoid having to type it in the terminal. This can be done with either a gpg-agent (for gpg tool)
-            or in gradle.properties or an ENV.var (for gradle), See ./gradlew helpPublishing for details."""))
-    gpg_state['prompt_pass'] = ask_yes_no("Do you want this wizard to prompt you for your gpg password? ")
-
     return True
 
 
@@ -1253,104 +1256,6 @@ def pause(fun=None):
     if fun:
         fun()
     input("\nPress ENTER to continue...")
-
-
-# Custom classes for ConsoleMenu, to make menu texts dynamic
-# Needed until https://github.com/aegirhall/console-menu/pull/25 is released
-# See https://pypi.org/project/console-menu/ for other docs
-
-class UpdatableConsoleMenu(ConsoleMenu):
-
-    def __repr__(self):
-        return "%s: %s. %d items" % (self.get_title(), self.get_subtitle(), len(self.items))
-
-    def draw(self):
-        """
-        Refreshes the screen and redraws the menu. Should be called whenever something changes that needs to be redrawn.
-        """
-        self.screen.printf(self.formatter.format(title=self.get_title(), subtitle=self.get_subtitle(), items=self.items,
-                                                 prologue_text=self.get_prologue_text(), epilogue_text=self.get_epilogue_text()))
-
-    # Getters to get text in case method reference
-    def get_title(self):
-        return self.title() if callable(self.title) else self.title
-
-    def get_subtitle(self):
-        return self.subtitle() if callable(self.subtitle) else self.subtitle
-
-    def get_prologue_text(self):
-        return self.prologue_text() if callable(self.prologue_text) else self.prologue_text
-
-    def get_epilogue_text(self):
-        return self.epilogue_text() if callable(self.epilogue_text) else self.epilogue_text
-
-
-class UpdatableSubmenuItem(SubmenuItem):
-    def __init__(self, text, submenu, menu=None, should_exit=False):
-        """
-        :ivar ConsoleMenu self.submenu: The submenu to be opened when this item is selected
-        """
-        super(UpdatableSubmenuItem, self).__init__(text=text, menu=menu, should_exit=should_exit, submenu=submenu)
-
-        if menu:
-            self.get_submenu().parent = menu
-
-    def show(self, index):
-        return "%2d - %s" % (index + 1, self.get_text())
-
-    # Getters to get text in case method reference
-    def get_text(self):
-        return self.text() if callable(self.text) else self.text
-
-    def set_menu(self, menu):
-        """
-        Sets the menu of this item.
-        Should be used instead of directly accessing the menu attribute for this class.
-
-        :param ConsoleMenu menu: the menu
-        """
-        self.menu = menu
-        self.get_submenu().parent = menu
-
-    def action(self):
-        """
-        This class overrides this method
-        """
-        self.get_submenu().start()
-
-    def clean_up(self):
-        """
-        This class overrides this method
-        """
-        self.get_submenu().join()
-        self.menu.clear_screen()
-        self.menu.resume()
-
-    def get_return(self):
-        """
-        :return: The returned value in the submenu
-        """
-        return self.get_submenu().returned_value
-
-    def get_submenu(self):
-        """
-        We unwrap the submenu variable in case it is a reference to a method that returns a submenu
-        """
-        return self.submenu if not callable(self.submenu) else self.submenu()
-
-
-class UpdatableFunctionItem(FunctionItem):
-    def show(self, index):
-        return "%2d - %s" % (index + 1, self.get_text())
-
-    # Getters to get text in case method reference
-    def get_text(self):
-        return self.text() if callable(self.text) else self.text
-
-
-class MyScreen(Screen):
-    def clear(self):
-        return
 
 
 class CustomExitItem(ExitItem):
@@ -1367,6 +1272,13 @@ def main():
     global templates
 
     print("Solr releaseWizard v%s" % getScriptVersion())
+
+    try:
+      ConsoleMenu(clear_screen=True)
+    except Exception as e:
+      sys.exit("You need to install 'consolemenu' package version 0.7.1 for the Wizard to function. Please run 'pip "
+               "install -r requirements.txt'")
+
     c = parse_config()
 
     if c.dry:
@@ -1418,22 +1330,18 @@ def main():
     os.environ['JAVA_HOME'] = state.get_java_home()
     os.environ['JAVACMD'] = state.get_java_cmd()
 
-    global solr_news_file
-    solr_news_file = os.path.join(state.get_website_git_folder(), 'content', 'solr', 'solr_news',
-      "%s-%s-available.md" % (state.get_release_date_iso(), state.release_version.replace(".", "-")))
-
-    main_menu = UpdatableConsoleMenu(title="Solr ReleaseWizard",
+    main_menu = ConsoleMenu(title="Solr ReleaseWizard",
                             subtitle=get_releasing_text,
                             prologue_text="Welcome to the release wizard. From here you can manage the process including creating new RCs. "
                                           "All changes are persisted, so you can exit any time and continue later. Make sure to read the Help section.",
                             epilogue_text="® 2022 The Solr project. Licensed under the Apache License 2.0\nScript version v%s)" % getScriptVersion(),
-                            screen=MyScreen())
+                            clear_screen=False)
 
-    todo_menu = UpdatableConsoleMenu(title=get_releasing_text,
+    todo_menu = ConsoleMenu(title=get_releasing_text,
                             subtitle=get_subtitle,
                             prologue_text=None,
                             epilogue_text=None,
-                            screen=MyScreen())
+                            clear_screen=False)
     todo_menu.exit_item = CustomExitItem("Return")
 
     for todo_group in state.todo_groups:
@@ -1442,14 +1350,14 @@ def main():
             menu_item.set_menu(todo_menu)
             todo_menu.append_item(menu_item)
 
-    main_menu.append_item(UpdatableSubmenuItem(get_todo_menuitem_title, todo_menu, menu=main_menu))
-    main_menu.append_item(UpdatableFunctionItem(get_start_new_rc_menu_title, start_new_rc))
-    main_menu.append_item(UpdatableFunctionItem('Clear and restart current RC', state.clear_rc))
-    main_menu.append_item(UpdatableFunctionItem("Clear all state, restart the %s release" % state.release_version, reset_state))
-    main_menu.append_item(UpdatableFunctionItem('Start release for a different version', release_other_version))
-    main_menu.append_item(UpdatableFunctionItem('Generate Asciidoc guide for this release', generate_asciidoc))
-    # main_menu.append_item(UpdatableFunctionItem('Dump YAML', dump_yaml))
-    main_menu.append_item(UpdatableFunctionItem('Help', help))
+    main_menu.append_item(SubmenuItem(get_todo_menuitem_title, todo_menu, menu=main_menu))
+    main_menu.append_item(FunctionItem(get_start_new_rc_menu_title, start_new_rc))
+    main_menu.append_item(FunctionItem('Clear and restart current RC', state.clear_rc))
+    main_menu.append_item(FunctionItem("Clear all state, restart the %s release" % state.release_version, reset_state))
+    main_menu.append_item(FunctionItem('Start release for a different version', release_other_version))
+    main_menu.append_item(FunctionItem('Generate Asciidoc guide for this release', generate_asciidoc))
+    # main_menu.append_item(FunctionItem('Dump YAML', dump_yaml))
+    main_menu.append_item(FunctionItem('Help', help))
 
     main_menu.show()
 
@@ -1955,7 +1863,7 @@ today = datetime.utcnow().date()
 sundays = {(today + timedelta(days=x)): 'Sunday' for x in range(10) if (today + timedelta(days=x)).weekday() == 6}
 y = datetime.utcnow().year
 years = [y, y+1]
-non_working = holidays.CA(years=years) + holidays.US(years=years) + holidays.England(years=years) \
+non_working = holidays.CA(years=years) + holidays.US(years=years) + holidays.UK(years=years) \
               + holidays.DE(years=years) + holidays.NO(years=years) + holidays.IND(years=years) + holidays.RU(years=years)
 
 
@@ -1984,9 +1892,9 @@ def vote_close_72h_holidays():
 
 
 def prepare_announce_solr(todo): # pylint: disable=unused-argument
-    if not os.path.exists(solr_news_file):
+    if not os.path.exists(state.get_solr_news_file()):
         solr_text = expand_jinja("(( template=announce_solr ))")
-        with open(solr_news_file, 'w') as fp:
+        with open(state.get_solr_news_file(), 'w') as fp:
             fp.write(solr_text)
         # print("Wrote Solr announce draft to %s" % solr_news_file)
     else:

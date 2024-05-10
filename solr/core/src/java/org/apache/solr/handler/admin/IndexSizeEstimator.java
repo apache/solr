@@ -371,7 +371,8 @@ public class IndexSizeEstimator {
             (SummaryStatistics)
                 perField.computeIfAbsent("lengths", s -> new MapWriterSummaryStatistics());
         lengthSummary.addValue(
-            values.size() * values.getBytesPerDimension() * values.getNumIndexDimensions());
+            (double)
+                (values.size() * values.getBytesPerDimension() * values.getNumIndexDimensions()));
       }
     }
     result.put(POINTS, stats);
@@ -548,12 +549,12 @@ public class IndexSizeEstimator {
         for (int i = 0; i < samplingStep; i++) {
           lengthSummary.addValue(term.length);
           docFreqSummary.addValue(termsEnum.docFreq());
-          totalFreqSummary.addValue(termsEnum.totalTermFreq());
+          totalFreqSummary.addValue((double) termsEnum.totalTermFreq());
         }
       } else {
         lengthSummary.addValue(term.length);
         docFreqSummary.addValue(termsEnum.docFreq());
-        totalFreqSummary.addValue(termsEnum.totalTermFreq());
+        totalFreqSummary.addValue((double) termsEnum.totalTermFreq());
       }
       if (terms.hasPayloads()) {
         postings = termsEnum.postings(postings, PostingsEnum.ALL);
@@ -601,7 +602,7 @@ public class IndexSizeEstimator {
           if (liveDocs != null && !liveDocs.get(docId)) {
             continue;
           }
-          mergeInstance.visitDocument(docId, visitor);
+          mergeInstance.document(docId, visitor);
         }
         if (mergeInstance != storedFieldsReader) {
           mergeInstance.close();
@@ -627,6 +628,7 @@ public class IndexSizeEstimator {
       this.size = size;
     }
 
+    @Override
     public String toString() {
       return "size=" + size + ", value=" + value;
     }
@@ -662,6 +664,7 @@ public class IndexSizeEstimator {
       return a.size < b.size;
     }
 
+    @Override
     public String toString() {
       StringBuilder sb = new StringBuilder();
       Iterator<Item> it = iterator();
@@ -708,6 +711,7 @@ public class IndexSizeEstimator {
      *
      * @param value newly allocated byte array with the binary contents.
      */
+    @Override
     public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
       // trim the value if needed
       int len = value != null ? value.length : 0;
@@ -721,6 +725,7 @@ public class IndexSizeEstimator {
     }
 
     /** Process a string field. */
+    @Override
     public void stringField(FieldInfo fieldInfo, String value) throws IOException {
       // trim the value if needed
       int len = value != null ? UnicodeUtil.calcUTF16toUTF8Length(value, 0, value.length()) : 0;
@@ -731,21 +736,25 @@ public class IndexSizeEstimator {
     }
 
     /** Process a int numeric field. */
+    @Override
     public void intField(FieldInfo fieldInfo, int value) throws IOException {
       countItem(fieldInfo.name, String.valueOf(value), 4);
     }
 
     /** Process a long numeric field. */
+    @Override
     public void longField(FieldInfo fieldInfo, long value) throws IOException {
       countItem(fieldInfo.name, String.valueOf(value), 8);
     }
 
     /** Process a float numeric field. */
+    @Override
     public void floatField(FieldInfo fieldInfo, float value) throws IOException {
       countItem(fieldInfo.name, String.valueOf(value), 4);
     }
 
     /** Process a double numeric field. */
+    @Override
     public void doubleField(FieldInfo fieldInfo, double value) throws IOException {
       countItem(fieldInfo.name, String.valueOf(value), 8);
     }

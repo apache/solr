@@ -32,7 +32,6 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.solr.client.solrj.util.SolrBasicAuthentication;
-import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
@@ -43,10 +42,7 @@ import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 /**
  * HttpClientConfigurer implementation providing support for preemptive Http Basic authentication
  * scheme.
- *
- * @deprecated Please look into using Solr's new Http2 clients
  */
-@Deprecated(since = "9.0")
 public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilderFactory {
   /**
    * A system property used to specify a properties file containing default parameters used for
@@ -98,7 +94,7 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
     HttpAuthenticationStore authenticationStore = new HttpAuthenticationStore();
     authenticationStore.addAuthentication(
         new SolrBasicAuthentication(basicAuthUser, basicAuthPass));
-    client.getHttpClient().setAuthenticationStore(authenticationStore);
+    client.setAuthenticationStore(authenticationStore);
     client.getProtocolHandlers().put(new WWWAuthenticationProtocolHandler(client.getHttpClient()));
     client
         .getProtocolHandlers()
@@ -153,7 +149,9 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
 
       if (credentials != null) {
         List<String> ss = StrUtils.splitSmart(credentials, ':');
-        if (ss.size() != 2 || StringUtils.isEmpty(ss.get(0)) || StringUtils.isEmpty(ss.get(1))) {
+        if (ss.size() != 2
+            || StrUtils.isNullOrEmpty(ss.get(0))
+            || StrUtils.isNullOrEmpty(ss.get(1))) {
           throw new IllegalArgumentException(
               "Invalid Authentication credentials: Please provide 'basicauth' in the 'user:password' format");
         }

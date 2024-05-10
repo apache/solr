@@ -16,8 +16,10 @@
  */
 package org.apache.solr.util.hll;
 
-import static com.carrotsearch.randomizedtesting.RandomizedTest.*;
-import static org.apache.solr.util.hll.ProbabilisticTestUtil.*;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomInt;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
+import static com.carrotsearch.randomizedtesting.RandomizedTest.randomLong;
+import static org.apache.solr.util.hll.ProbabilisticTestUtil.constructHLLValue;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -41,7 +43,7 @@ public class IntegrationTestGenerator {
   private static final int LOG2M = 11;
   // NOTE:  This differs from the PostgreSQL impl. parameter 'expthresh'. This
   //        is a literal threshold to use in the promotion hierarchy, implying
-  //        that both EXPLICIT representation should be used and it should
+  //        that both EXPLICIT representation should be used, and it should
   //        NOT be automatically computed. This is done to ensure that the
   //        parameters of the test are very explicitly defined.
   private static final int EXPLICIT_THRESHOLD = 256;
@@ -97,7 +99,7 @@ public class IntegrationTestGenerator {
   /**
    * Cumulatively adds random values to an EMPTY HLL.
    *
-   * <p>Format: cumulative add Tests: - EMPTY, EXPLICIT, SPARSE, PROBABILSTIC addition - EMPTY to
+   * <p>Format: cumulative add Tests: - EMPTY, EXPLICIT, SPARSE, PROBABILISTIC addition - EMPTY to
    * EXPLICIT promotion - EXPLICIT to SPARSE promotion - SPARSE to FULL promotion
    */
   private static void globalStepTest(final ISchemaVersion schemaVersion) throws IOException {
@@ -699,8 +701,8 @@ public class IntegrationTestGenerator {
     ADD,
     /**
      * This type of test is characterized by HLLs being unioned into an accumulator HLL whose
-     * serialized representation (after the HLL is union'd) is printed to each line along with the
-     * cardinalities and the serialized representation of the HLL union'd in.
+     * serialized representation (after the HLL is unioned) is printed to each line along with the
+     * cardinalities and the serialized representation of the HLL unioned in.
      */
     UNION;
   }

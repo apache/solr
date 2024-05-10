@@ -16,10 +16,7 @@
  */
 package org.apache.solr.request;
 
-import io.opentracing.Span;
-import io.opentracing.Tracer;
-import io.opentracing.noop.NoopSpan;
-import io.opentracing.util.GlobalTracer;
+import io.opentelemetry.api.trace.Span;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
@@ -67,6 +64,7 @@ public interface SolrQueryRequest extends AutoCloseable {
    * This method should be called when all uses of this request are finished, so that resources can
    * be freed.
    */
+  @Override
   void close();
 
   /**
@@ -136,20 +134,15 @@ public interface SolrQueryRequest extends AutoCloseable {
   }
 
   /**
-   * Distributed tracing Tracer. Never null but might implement {@link
-   * io.opentracing.noop.NoopTracer}.
-   */
-  default Tracer getTracer() {
-    return GlobalTracer.get(); // default impl is only for some tests
-  }
-
-  /**
    * The distributed tracing Span for the request itself; never null. This is useful for adding tags
-   * or updating the operation name of the request span. If you need the current span, which might
-   * not necessarily be the request span, do this instead: {@code tracer.activeSpan()}.
+   * or updating the operation name of the request span. Not null.
    */
   default Span getSpan() {
-    return NoopSpan.INSTANCE;
+    final HttpSolrCall call = getHttpSolrCall();
+    if (call != null) {
+      return call.getSpan();
+    }
+    return Span.getInvalid();
   }
 
   default CoreContainer getCoreContainer() {

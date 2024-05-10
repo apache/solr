@@ -20,6 +20,7 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
@@ -35,6 +36,7 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
     System.setProperty("solr.statsCache", LocalStatsCache.class.getName());
   }
 
+  @Override
   public void distribTearDown() throws Exception {
     super.distribTearDown();
     System.clearProperty("solr.statsCache");
@@ -78,6 +80,8 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
       dfQuery("q", "{!cache=false}id:" + aDocId, "debugQuery", "true", "fl", "*,score");
     }
     dfQuery("q", "a_t:one a_t:four", "debugQuery", "true", "fl", "*,score");
+
+    checkDistribStatsException();
   }
 
   // in this case, as the number of shards increases, per-shard scores begin to
@@ -109,5 +113,17 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
     SolrClient client = clients.get(which);
     QueryResponse rsp = client.query(params);
     checkResponse(controlRsp, rsp);
+  }
+
+  protected void checkDistribStatsException() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("shards", shards);
+    params.set("distrib.statsCache", "true");
+    int which = r.nextInt(clients.size());
+    SolrClient client = clients.get(which);
+    SolrException e = assertThrows(SolrException.class, () -> client.query(params));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage().contains("distrib.statsCache"));
+    assertTrue(e.getMessage().contains(LocalStatsCache.class.getSimpleName()));
   }
 }

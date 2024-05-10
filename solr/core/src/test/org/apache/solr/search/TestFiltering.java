@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.Locale;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -84,7 +84,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
         if (live == null) {
           live = searcher.getLiveDocSet();
         }
-        assertTrue(set == live);
+        assertSame(set, live);
 
         QueryCommand cmd = new QueryCommand();
         cmd.setQuery(QParser.getParser(qstr, null, req).getQuery());
@@ -93,19 +93,32 @@ public class TestFiltering extends SolrTestCaseJ4 {
         QueryResult res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertTrue(set == live);
+        assertEffectivelySame(set.getFixedBitSet(), live.getFixedBitSet());
 
         cmd.setQuery(QParser.getParser(qstr + " OR id:0", null, req).getQuery());
         cmd.setFilterList(QParser.getParser(qstr + " OR id:1", null, req).getQuery());
         res = new QueryResult();
         searcher.search(res, cmd);
         set = res.getDocSet();
-        assertTrue(set == live);
+        assertEffectivelySame(set.getFixedBitSet(), live.getFixedBitSet());
       }
 
     } finally {
       req.close();
     }
+  }
+
+  /** If the a XOR b == 0, then both a & b are effectively the same bitset */
+  private void assertEffectivelySame(FixedBitSet a, FixedBitSet b) {
+    FixedBitSet xor = a.clone();
+    xor.xor(b);
+    assertEquals(new FixedBitSet(xor.length()), xor);
+  }
+
+  private String bitsString(Bits bits) {
+    StringBuilder s = new StringBuilder();
+    for (int i = 0; i < bits.length(); i++) s.append(bits.get(i) ? 1 : 0);
+    return s.toString();
   }
 
   public void testCaching() throws Exception {
@@ -358,7 +371,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
     return ret;
   }
 
-  String makeRandomQuery(Model model, boolean mainQuery, boolean facetQuery) {
+  String makeRandomQuery(Model model, boolean facetQuery) {
 
     boolean cache = random().nextBoolean();
     int cost = cache ? 0 : random().nextBoolean() ? random().nextInt(200) : 0;
@@ -399,7 +412,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
           }
         }
       } else {
-        // negative frange.. make it relatively small
+        // negative frange... make it relatively small
         l = random().nextInt(model.indexSize);
         u = Math.max(model.indexSize - 1, l + random().nextInt(Math.max(model.indexSize / 10, 2)));
 
@@ -493,18 +506,18 @@ public class TestFiltering extends SolrTestCaseJ4 {
       // sanity check
       assertJQ(req("q", "*:*"), "/response/numFound==" + model.indexSize);
 
-      int totalMatches = 0;
+      long totalMatches = 0;
       int nonZeros = 0;
       for (int qiter = 0; qiter < queryIter; qiter++) {
         model.clear();
         List<String> params = new ArrayList<>();
         params.add("q");
-        params.add(makeRandomQuery(model, true, false));
+        params.add(makeRandomQuery(model, false));
 
         int nFilters = random().nextInt(5);
         for (int i = 0; i < nFilters; i++) {
           params.add("fq");
-          params.add(makeRandomQuery(model, false, false));
+          params.add(makeRandomQuery(model, false));
         }
 
         boolean facet = random().nextBoolean();
@@ -517,7 +530,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
           params.add("facet.query");
           params.add("{!key=multiSelect ex=t}*:*");
 
-          String facetQuery = makeRandomQuery(model, false, true);
+          String facetQuery = makeRandomQuery(model, true);
           if (facetQuery.startsWith("{!")) {
             facetQuery = "{!key=facetQuery " + facetQuery.substring(2);
           } else {
@@ -540,7 +553,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
           }
         }
 
-        SolrQueryRequest sreq = req(params.toArray(new String[params.size()]));
+        SolrQueryRequest sreq = req(params.toArray(new String[0]));
         long expected = model.answer.cardinality();
         long expectedMultiSelect = model.multiSelect.cardinality();
         long expectedFacetQuery = model.facetQuery.cardinality();
@@ -564,7 +577,6 @@ public class TestFiltering extends SolrTestCaseJ4 {
               facet ? "/facet_counts/facet_queries/facetQuery/==" + expectedFacetQuery : null);
         } catch (Exception e) {
           // show the indexIter and queryIter for easier debugging
-          SolrException.log(log, e);
           String s =
               "FAILURE: indexSize="
                   + model.indexSize
@@ -574,7 +586,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
                   + qiter
                   + " request="
                   + params;
-          log.error(s);
+          log.error(s, e);
           fail(s);
         }
       }

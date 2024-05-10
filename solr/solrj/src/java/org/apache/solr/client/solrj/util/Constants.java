@@ -17,26 +17,34 @@
 
 package org.apache.solr.client.solrj.util;
 
-import java.util.StringTokenizer;
+import java.lang.invoke.MethodHandles;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // Clone of org.apache.lucene.util.Constants, so SolrJ can use it
 public class Constants {
-  public static final String JVM_SPEC_VERSION = System.getProperty("java.specification.version");
-  private static final int JVM_MAJOR_VERSION;
-  private static final int JVM_MINOR_VERSION;
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static {
-    final StringTokenizer st = new StringTokenizer(JVM_SPEC_VERSION, ".");
-    JVM_MAJOR_VERSION = Integer.parseInt(st.nextToken());
-    if (st.hasMoreTokens()) {
-      JVM_MINOR_VERSION = Integer.parseInt(st.nextToken());
-    } else {
-      JVM_MINOR_VERSION = 0;
+  public static final String JVM_SPEC_VERSION = System.getProperty("java.specification.version");
+
+  public static final boolean JRE_IS_MINIMUM_JAVA9 = true;
+  public static final boolean JRE_IS_MINIMUM_JAVA11 = true;
+  // Future, enable if needed...
+  // public static final boolean JRE_IS_MINIMUM_JAVA17 = Runtime.version().feature() >= 17;
+
+  public static final boolean IS_IBM_JAVA = isIBMJava();
+
+  private static boolean isIBMJava() {
+    try {
+      Class.forName(
+          "com.ibm.security.auth.module.Krb5LoginModule", false, Constants.class.getClassLoader());
+      return true;
+    } catch (SecurityException se) {
+      log.warn(
+          "Unable to determine if IBM Java due to SecurityException. Assuming not IBM Java.", se);
+      return false;
+    } catch (ClassNotFoundException ignore) {
+      return false;
     }
   }
-
-  public static final boolean JRE_IS_MINIMUM_JAVA9 =
-      JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 9);
-  public static final boolean JRE_IS_MINIMUM_JAVA11 =
-      JVM_MAJOR_VERSION > 1 || (JVM_MAJOR_VERSION == 1 && JVM_MINOR_VERSION >= 11);
 }

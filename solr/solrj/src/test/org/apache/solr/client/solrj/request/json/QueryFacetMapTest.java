@@ -32,11 +32,7 @@ public class QueryFacetMapTest extends SolrTestCaseJ4 {
   @Test
   public void testRejectsInvalidQueryString() {
     final Throwable thrown =
-        expectThrows(
-            IllegalArgumentException.class,
-            () -> {
-              final QueryFacetMap queryFacet = new QueryFacetMap(null);
-            });
+        expectThrows(IllegalArgumentException.class, () -> new QueryFacetMap(null));
     assertThat(thrown.getMessage(), containsString("must be non-null"));
   }
 

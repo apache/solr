@@ -272,7 +272,7 @@ final class NumericFacets {
     if (FacetParams.FACET_SORT_COUNT.equals(sort)
         || FacetParams.FACET_SORT_COUNT_LEGACY.equals(sort)) {
       pq =
-          new PriorityQueue<Entry>(pqSize) {
+          new PriorityQueue<>(pqSize) {
             @Override
             protected boolean lessThan(Entry a, Entry b) {
               if (a.count < b.count || (a.count == b.count && a.bits > b.bits)) {
@@ -284,7 +284,7 @@ final class NumericFacets {
           };
     } else {
       pq =
-          new PriorityQueue<Entry>(pqSize) {
+          new PriorityQueue<>(pqSize) {
             @Override
             protected boolean lessThan(Entry a, Entry b) {
               return a.bits > b.bits;
@@ -518,7 +518,7 @@ final class NumericFacets {
     if (FacetParams.FACET_SORT_COUNT.equals(sort)
         || FacetParams.FACET_SORT_COUNT_LEGACY.equals(sort)) {
       pq =
-          new PriorityQueue<Entry>(pqSize) {
+          new PriorityQueue<>(pqSize) {
             @Override
             protected boolean lessThan(Entry a, Entry b) {
               if (a.count < b.count || (a.count == b.count && a.bits > b.bits)) {
@@ -531,7 +531,7 @@ final class NumericFacets {
     } else {
       // sort=index
       pq =
-          new PriorityQueue<Entry>(pqSize) {
+          new PriorityQueue<>(pqSize) {
             @Override
             protected boolean lessThan(Entry a, Entry b) {
               return a.bits > b.bits;

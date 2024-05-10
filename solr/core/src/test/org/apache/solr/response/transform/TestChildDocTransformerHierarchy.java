@@ -16,29 +16,34 @@
  */
 package org.apache.solr.response.transform;
 
-import com.google.common.collect.Iterables;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BasicResultContext;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
 
   private static AtomicInteger idCounter = new AtomicInteger();
   private static final String[] types = {"donut", "cake"};
   private static final String[] ingredients = {"flour", "cocoa", "vanilla"};
-  private static final Iterator<String> ingredientsCycler = Iterables.cycle(ingredients).iterator();
+  private static final Iterator<String> ingredientsCycler =
+      Stream.generate(() -> List.of(ingredients)).flatMap(Collection::stream).iterator();
   private static final String[] names = {"Yaz", "Jazz", "Costa"};
   private static final String[] fieldsToRemove = {"_nest_parent_", "_nest_path_", "_root_"};
   private static final int sumOfDocsPerNestedDocument = 8;
@@ -46,6 +51,9 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   // filter documents that were created for random segments to ensure the transformer works with
   // multiple segments.
   private static final String fqToExcludeNonTestedDocs = "{!frange l=0}id_i";
+
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -72,13 +80,13 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   }
 
   @After
-  public void after() throws Exception {
+  public void after() {
     assertU(delQ(fqToExcludeNonTestedDocs));
     assertU(commit());
   }
 
   @Test
-  public void testNonTrivialChildFilter() throws Exception {
+  public void testNonTrivialChildFilter() {
     // just check we don't throw an exception. This used to throw before SOLR-15152
     assertQ(
         req(
@@ -498,7 +506,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExceptionThrownWParentFilter() throws Exception {
+  public void testExceptionThrownWParentFilter() {
     expectThrows(
         SolrException.class,
         "Exception was not thrown when parentFilter param was passed to ChildDocTransformer using a nested schema",

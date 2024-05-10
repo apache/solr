@@ -21,17 +21,17 @@ import static org.apache.solr.response.DocsStreamer.convertLuceneDocToSolrDoc;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.Set;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.response.transform.*;
+import org.apache.solr.response.transform.DocTransformers;
+import org.apache.solr.response.transform.ScoreAugmenter;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,14 +45,14 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
     String v = "how now brown cow";
-    assertU(adoc("id", "1", "text", v, "text_np", v, "#foo_s", v));
+    assertU(adoc("id", "1", "new_id_s", "10", "text", v, "text_np", v, "#foo_s", v));
     v = "now cow";
-    assertU(adoc("id", "2", "text", v, "text_np", v));
+    assertU(adoc("id", "2", "new_id_s", "20", "text", v, "text_np", v));
     assertU(commit());
   }
 
   @Test
-  public void testCopyRename() throws Exception {
+  public void testCopyRename() {
 
     // original
     assertQ(
@@ -91,11 +91,18 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
         "*//doc[1]/str[2][.='1'] ");
   }
 
+  public void testMovePk() {
+    assertQ(
+        req("q", "id:1", "fl", "old_id:id,id:new_id_s"),
+        "//*[@numFound='1'] ",
+        "*//doc[1]/arr[@name='id']/str[.='10'] ");
+  }
+
   @Test
   public void testToString() {
     for (Method m : SolrReturnFields.class.getMethods()) {
       if (m.getName().equals("toString")) {
-        assertTrue(m + " is not overridden ! ", m.getDeclaringClass() == SolrReturnFields.class);
+        assertSame(m + " is not overridden ! ", m.getDeclaringClass(), SolrReturnFields.class);
         break;
       }
     }
@@ -185,7 +192,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testWilcards() {
+  public void testWildcards() {
     ReturnFields rf = new SolrReturnFields(req("fl", "*"));
     assertFalse(rf.wantsScore());
     assertTrue(rf.wantsField("xxx"));
@@ -390,7 +397,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   /**
    * Whitebox verification that the conversion from lucene {@link Document} to {@link SolrDocument}
-   * respects the {@link ReturnFields} and doesn't unneccessarily convert Fields that aren't needed.
+   * respects the {@link ReturnFields} and doesn't unnecessarily convert Fields that aren't needed.
    *
    * <p>This is important because {@link SolrDocumentFetcher} may return additional fields (lazy or
    * otherwise) if the document has been cached.
@@ -423,7 +430,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     // output should only have a single field
     docOut = convertLuceneDocToSolrDoc(docIn, schema, new SolrReturnFields(req("fl", "id")));
     assertEquals(docOut.toString(), 1, docOut.size());
-    assertEquals(docOut.toString(), Collections.singleton("id"), docOut.getFieldNames());
+    assertEquals(docOut.toString(), List.of("id"), List.copyOf(docOut.getFieldNames()));
     assertTrue(docOut.toString(), docOut.get("id") instanceof StringField);
 
     // output should only have the few specified fields
@@ -435,12 +442,12 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
             new SolrReturnFields(req("fl", "id,xxx:[geo f=store],uniq,foo_2_s1,subword")),
             new SolrReturnFields(req("fl", "id,xxx:subword,uniq,yyy:foo_2_s1,[geo f=store]")))) {
       docOut = convertLuceneDocToSolrDoc(docIn, schema, rf);
-      final String debug = rf.toString() + " => " + docOut.toString();
+      final String debug = rf + " => " + docOut;
       assertEquals(debug, 5, docOut.size());
       assertEquals(
           debug,
-          new HashSet<String>(Arrays.asList("id", "subword", "uniq", "foo_2_s1", "store")),
-          docOut.getFieldNames());
+          Set.of("id", "subword", "uniq", "foo_2_s1", "store"),
+          Set.copyOf(docOut.getFieldNames()));
       assertTrue(debug, docOut.get("id") instanceof StringField);
       assertTrue(debug, docOut.get("store") instanceof StringField);
       assertTrue(debug, docOut.get("foo_2_s1") instanceof StringField);
@@ -450,7 +457,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
     // all source fields should be in the output
     // behavior should be ultimately be consistent for all of these ReturnField instances
-    // (globbing or requesting more fields then doc has)
+    // (globbing or requesting more fields than doc has)
     for (ReturnFields rf :
         Arrays.asList(
             new SolrReturnFields(),
@@ -461,7 +468,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
             new SolrReturnFields(req("fl", allFieldNames + ",bogus1,bogus2,bogus3")))) {
 
       docOut = convertLuceneDocToSolrDoc(docIn, schema, rf);
-      final String debug = rf.toString() + " => " + docOut.toString();
+      final String debug = rf + " => " + docOut;
       assertEquals(debug, 24, docOut.size());
       assertTrue(debug, docOut.get("id") instanceof StringField);
       assertTrue(debug, docOut.get("store") instanceof StringField);
@@ -543,8 +550,8 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
 
   static {
     // if the JVM/unicode can redefine whitespace once (LUCENE-6760), it might happen again
-    // in the future.  if that happens, fail early with a clera msg, even if java asserts
-    // (used in randomWhitespace) are disbled
+    // in the future.  if that happens, fail early with a clear msg, even if java asserts
+    // (used in randomWhitespace) are disabled
 
     for (int offset = 0; offset < WHITESPACE_CHARACTERS.length; offset++) {
       char c = WHITESPACE_CHARACTERS[offset];
@@ -572,12 +579,13 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
       int offset = TestUtil.nextInt(r, 0, WHITESPACE_CHARACTERS.length - 1);
       char c = WHITESPACE_CHARACTERS[offset];
       // sanity check
-      assert Character.isWhitespace(c)
-          : String.format(
+      assertTrue(
+          String.format(
               Locale.ENGLISH,
               "Not really whitespace? WHITESPACE_CHARACTERS[%d] is '\\u%04X'",
               offset,
-              (int) c);
+              (int) c),
+          Character.isWhitespace(c));
       out.append(c);
     }
     return out.toString();

@@ -39,7 +39,7 @@ import javax.servlet.descriptor.JspConfigDescriptor;
 
 /** A concrete implementation of {@linkplain ServletContext} which support only attributes. */
 class AttributeOnlyServletContext implements ServletContext {
-  private Map<String, Object> attributes = new HashMap<String, Object>();
+  private Map<String, Object> attributes = new HashMap<>();
 
   @Override
   public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes) {}
@@ -72,6 +72,30 @@ class AttributeOnlyServletContext implements ServletContext {
   public String getVirtualServerName() {
     return null;
   }
+
+  @Override
+  public int getSessionTimeout() {
+    return 0;
+  }
+
+  @Override
+  public void setSessionTimeout(int sessionTimeout) {}
+
+  @Override
+  public String getRequestCharacterEncoding() {
+    return null;
+  }
+
+  @Override
+  public void setRequestCharacterEncoding(String encoding) {}
+
+  @Override
+  public String getResponseCharacterEncoding() {
+    return null;
+  }
+
+  @Override
+  public void setResponseCharacterEncoding(String encoding) {}
 
   @Override
   public SessionCookieConfig getSessionCookieConfig() {
@@ -249,6 +273,11 @@ class AttributeOnlyServletContext implements ServletContext {
   @Override
   public javax.servlet.ServletRegistration.Dynamic addServlet(
       String servletName, Class<? extends Servlet> servletClass) {
+    return null;
+  }
+
+  @Override
+  public ServletRegistration.Dynamic addJspFile(String servletName, String jspFile) {
     return null;
   }
 

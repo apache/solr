@@ -18,8 +18,11 @@ package org.apache.solr.search;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.ConstKnnByteVectorValueSource;
+import org.apache.lucene.queries.function.valuesource.ConstKnnFloatValueSource;
 import org.apache.lucene.queries.function.valuesource.ConstValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
 import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
@@ -40,6 +43,9 @@ public class FunctionQParser extends QParser {
   // When a field name is encountered, use the placeholder FieldNameValueSource instead of resolving
   // to a real ValueSource
   public static final int FLAG_USE_FIELDNAME_SOURCE = 0x04;
+
+  // When the flag is set, vector parsing use byte encoding, otherwise float encoding is used
+  public static final int FLAG_PARSE_VECTOR_BYTE_ENCODING = 0x08;
   public static final int FLAG_DEFAULT = FLAG_CONSUME_DELIMITER;
 
   /**
@@ -83,11 +89,14 @@ public class FunctionQParser extends QParser {
   }
 
   @Override
+  @SuppressWarnings("ErroneousBitwiseExpression")
   public Query parse() throws SyntaxError {
     ValueSource vs = null;
     List<ValueSource> lst = null;
 
     for (; ; ) {
+      // @SuppressWarnings("ErroneousBitwiseExpression") is needed since
+      // FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER == 0
       ValueSource valsource = parseValueSource(FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER);
       sp.eatws();
       if (!parseMultipleSources) {
@@ -240,6 +249,49 @@ public class FunctionQParser extends QParser {
     return val;
   }
 
+  public List<Number> parseVector(VectorEncoding encoding) throws SyntaxError {
+    ArrayList<Number> values = new ArrayList<>();
+    char initChar = sp.val.charAt(sp.pos);
+    if (initChar != '[') {
+      throw new SyntaxError("Missing parenthesis at the beginning of vector ");
+    }
+    sp.pos += 1;
+    boolean valueExpected = true;
+    while (sp.pos < sp.end) {
+      char ch = sp.val.charAt(sp.pos);
+      if (Character.isWhitespace(ch)) {
+        sp.pos++;
+      } else if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '+' || ch == '-') {
+        switch (encoding) {
+          case BYTE:
+            values.add(sp.getByte());
+            break;
+          case FLOAT32:
+            values.add(sp.getFloat());
+            break;
+          default:
+            throw new SyntaxError("Unexpected vector encoding: " + encoding);
+        }
+        valueExpected = false;
+      } else if (ch == ',') {
+        if (valueExpected) {
+          throw new SyntaxError("Unexpected vector encoding: " + encoding);
+        }
+        sp.pos++;
+        valueExpected = true;
+      } else if (ch == ']' && !valueExpected) {
+        break;
+      } else {
+        throw new SyntaxError("Unexpected " + ch + " at position " + sp.pos);
+      }
+    }
+    if (sp.pos >= sp.end) {
+      throw new SyntaxError("Missing parenthesis at the end of vector");
+    }
+    sp.pos++;
+    return values;
+  }
+
   /**
    * Parse a list of ValueSource. Must be the final set of arguments to a ValueSource.
    *
@@ -334,7 +386,10 @@ public class FunctionQParser extends QParser {
    *
    * @param doConsumeDelimiter whether to consume a delimiter following the ValueSource
    */
+  @SuppressWarnings("ErroneousBitwiseExpression")
   protected ValueSource parseValueSource(boolean doConsumeDelimiter) throws SyntaxError {
+    // @SuppressWarnings("ErroneousBitwiseExpression") is needed since
+    // FLAG_DEFAULT & ~FLAG_CONSUME_DELIMITER == 0
     return parseValueSource(
         doConsumeDelimiter
             ? (FLAG_DEFAULT | FLAG_CONSUME_DELIMITER)
@@ -345,7 +400,7 @@ public class FunctionQParser extends QParser {
     ValueSource valueSource;
 
     int ch = sp.peek();
-    if (ch >= '0' && ch <= '9' || ch == '.' || ch == '+' || ch == '-') {
+    if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '+' || ch == '-') {
       Number num = sp.getNumber();
       if (num instanceof Long) {
         valueSource = new ValueSourceParser.LongConstValueSource(num.longValue());
@@ -357,6 +412,8 @@ public class FunctionQParser extends QParser {
       }
     } else if (ch == '"' || ch == '\'') {
       valueSource = new LiteralValueSource(sp.getQuotedString());
+    } else if (ch == '[') {
+      valueSource = parseConstVector(flags);
     } else if (ch == '$') {
       sp.pos++;
       String param = sp.getId();
@@ -449,6 +506,32 @@ public class FunctionQParser extends QParser {
     }
 
     return valueSource;
+  }
+
+  public ValueSource parseConstVector(int flags) throws SyntaxError {
+
+    VectorEncoding encoding =
+        (flags & FLAG_PARSE_VECTOR_BYTE_ENCODING) != 0
+            ? VectorEncoding.BYTE
+            : VectorEncoding.FLOAT32;
+    var vector = parseVector(encoding);
+
+    switch (encoding) {
+      case BYTE:
+        byte[] byteVector = new byte[vector.size()];
+        for (int i = 0; i < vector.size(); ++i) {
+          byteVector[i] = vector.get(i).byteValue();
+        }
+        return new ConstKnnByteVectorValueSource(byteVector);
+      case FLOAT32:
+        float[] floatVector = new float[vector.size()];
+        for (int i = 0; i < vector.size(); ++i) {
+          floatVector[i] = vector.get(i).floatValue();
+        }
+        return new ConstKnnFloatValueSource(floatVector);
+    }
+
+    throw new SyntaxError("wrong vector encoding:" + encoding);
   }
 
   /**

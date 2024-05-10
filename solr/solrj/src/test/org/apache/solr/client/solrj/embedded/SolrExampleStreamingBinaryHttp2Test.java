@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -33,20 +32,21 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
 
-@LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHttp2Test {
 
   @Override
   public SolrClient createNewSolrClient() {
-    // setup the server...
-    String url = jetty.getBaseUrl().toString() + "/collection1";
+    String url = getBaseUrl();
     // smaller queue size hits locks more often
-    Http2SolrClient solrClient = new Http2SolrClient.Builder().build();
-    solrClient.setParser(new BinaryResponseParser());
-    solrClient.setRequestWriter(new BinaryRequestWriter());
+    Http2SolrClient solrClient =
+        new Http2SolrClient.Builder()
+            .withRequestWriter(new BinaryRequestWriter())
+            .withResponseParser(new BinaryResponseParser())
+            .build();
     ConcurrentUpdateHttp2SolrClient concurrentClient =
         new ErrorTrackingConcurrentUpdateSolrClient.Builder(url, solrClient)
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(2)
             .withThreadCount(5)
             .build();

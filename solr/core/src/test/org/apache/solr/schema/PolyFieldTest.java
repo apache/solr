@@ -36,7 +36,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSchemaBasics() throws Exception {
+  public void testSchemaBasics() {
     IndexSchema schema = h.getCore().getLatestSchema();
 
     SchemaField home = schema.getField("home");
@@ -63,13 +63,13 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     home = schema.getField("home");
     assertNotNull(home);
 
-    home = schema.getField("homed"); // sub field suffix
+    home = schema.getField("homed"); // subfield suffix
     assertNotNull(home);
     assertTrue(home.isPolyField());
   }
 
   @Test
-  public void testPointFieldType() throws Exception {
+  public void testPointFieldType() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
     SchemaField home = schema.getField("home");
@@ -83,16 +83,16 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     String point = xy[0] + "," + xy[1];
     List<IndexableField> fields = home.createFields(point);
     assertNotNull(pt.getSubType());
-    int expectdNumFields = 3; // If DV=false, we expect one field per dimension plus a stored field
+    int expectedNumFields = 3; // If DV=false, we expect one field per dimension plus a stored field
     if (pt.subField(home, 0, schema).hasDocValues()) {
-      expectdNumFields += 2; // If docValues=true, then we expect two more fields
+      expectedNumFields += 2; // If docValues=true, then we expect two more fields
     }
     assertEquals(
         "Unexpected fields created: " + Arrays.toString(fields.toArray()),
-        expectdNumFields,
+        expectedNumFields,
         fields.size());
     // first two/four fields contain the values, last one is just stored and contains the original
-    for (int i = 0; i < expectdNumFields; i++) {
+    for (int i = 0; i < expectedNumFields; i++) {
       boolean hasValue =
           fields.get(i).binaryValue() != null
               || fields.get(i).stringValue() != null
@@ -107,13 +107,13 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     assertNotNull(home);
     fields = home.createFields(point);
     // one less field than with "home", since we aren't storing
-    assertEquals(expectdNumFields - 1, fields.size(), 2);
+    assertEquals(expectedNumFields - 1, fields.size(), 2);
 
     home = schema.getField("home_ns");
     assertNotNull(home);
     try {
       fields = home.createFields("35.0,foo");
-      assertTrue(false);
+      fail();
     } catch (Exception e) {
       //
     }
@@ -127,7 +127,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSearching() throws Exception {
+  public void testSearching() {
     for (int i = 0; i < 50; i++) {
       assertU(
           adoc("id", "" + i, "home", i + "," + (i * 100), "homed", (i * 1000) + "," + (i * 10000)));
@@ -162,7 +162,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSearchDetails() throws Exception {
+  public void testSearchDetails() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
     double[] xy = new double[] {35.0, -79.34};

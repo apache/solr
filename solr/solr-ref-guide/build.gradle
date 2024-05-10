@@ -17,7 +17,13 @@
 
 import org.apache.tools.ant.util.TeeOutputStream
 
+apply plugin: 'java'
+
 description = 'Solr Reference Guide'
+
+/*
+ Antora Logic - Building the ref-guide
+ */
 
 def officialSiteIncludePrerelease = propertyOrEnvOrDefault("refguide.official.includePrereleaseVersions", "SOLR_REF_GUIDE_OFFICIAL_INCLUDE_PRERELEASE", "false").toBoolean()
 
@@ -34,7 +40,8 @@ def escapeYamlSingleQuotesString(props) {
 
 // Attach building the ref guide to standard convention tasks. This
 // can be optionally turned off (see SOLR-15670).
-if (propertyOrEnvOrDefault('refguide.include', 'SOLR_REF_GUIDE_INCLUDE', "true").toBoolean()) {
+var defaultRefGuideInclude = file("${rootDir}/.git").exists()
+if (propertyOrEnvOrDefault('refguide.include', 'SOLR_REF_GUIDE_INCLUDE', "${defaultRefGuideInclude}").toBoolean()) {
     check.dependsOn 'checkSiteLinks'
     assemble.dependsOn 'buildLocalSite'
 }
@@ -52,7 +59,13 @@ dependencies {
 }
 
 ext {
-    antoraVersion = "3.0.1"
+    antoraVersion = "3.1.4"
+    antoraLunrExtensionVersion = "1.0.0-alpha.8"
+    asciidoctorMathjaxVersion = "0.0.9"
+    linkCheckerVersion = "1.4.2"
+    gulpCliVersion = "2.3.0"
+    // Most recent commit as of 2022-06-24, this repo does not have tags
+    antoraDefaultUIVersion = "51ad811622394027afb4e182c2fdabc235ae04dd"
 
     siteDir = "${buildDir}/site"
     antoraConfigBuildDir = "${buildDir}/antora-config"
@@ -98,7 +111,7 @@ task buildLocalAntoraYaml {
         prerelease         : prerelease,
     ]
     props.putAll([
-        solr_javadocs_link : "https://solr.apache.org/docs/${props.solr_version.replaceAll("\\.", "_")}",
+        solr_javadocs_link : "https://solr.apache.org/docs/${props.solr_version.replace(".", "_")}",
         lucene_javadocs_link :  project(':solr:documentation').luceneDocUrl,
     ])
 
@@ -114,7 +127,9 @@ task buildLocalAntoraYaml {
             ["dep_version_tika", "org.apache.tika", "tika-core"],
             ["dep_version_zookeeper", "org.apache.zookeeper", "zookeeper"],
             ["dep_version_lucene", "org.apache.lucene", "lucene-core"],
-        ].collectEntries { propKey, depGroup, depId -> [propKey, "${-> project.getVersion(depGroup, depId)}"] })
+            ["dep_version_opentelemetry", "io.opentelemetry", "opentelemetry-sdk"],
+        ].collectEntries { propKey, depGroup, depId ->
+            [propKey, "${-> depGroup == 'org.apache.lucene' ? luceneBaseVersionProvider.get() : project.getVersion(depGroup, depId)}"] })
 
 
         copy {
@@ -204,7 +219,6 @@ task downloadAntoraCli(type: NpmTask) {
     args = ["install", "@antora/cli@${project.ext.antoraVersion}"]
 
     inputs.property("Antora version", project.ext.antoraVersion)
-    inputs.files("${project.ext.nodeProjectDir}/package.json")
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/cli")
 }
 
@@ -213,23 +227,22 @@ task downloadAntoraSiteGenerator(type: NpmTask) {
     args = ["install", "@antora/site-generator-default@${project.ext.antoraVersion}"]
 
     inputs.property("Antora version", project.ext.antoraVersion)
-    inputs.files("${project.ext.nodeProjectDir}/package.json")
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/site-generator-default")
 }
 
 task downloadAntoraLunrExtension(type: NpmTask) {
     group = 'Build Dependency Download'
-    args = ["install", "@antora/lunr-extension"]
+    args = ["install", "@antora/lunr-extension@${project.ext.antoraLunrExtensionVersion}"]
 
-    inputs.files("${project.ext.nodeProjectDir}/package.json")
+    inputs.property("Antora lunr-extension version", project.ext.antoraLunrExtensionVersion)
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/lunr-extension")
 }
 
 task downloadAsciidoctorMathjaxExtension(type: NpmTask) {
     group = 'Build Dependency Download'
-    args = ["install", "@djencks/asciidoctor-mathjax"]
+    args = ["install", "@djencks/asciidoctor-mathjax@${project.ext.asciidoctorMathjaxVersion}"]
 
-    inputs.files("${project.ext.nodeProjectDir}/package.json")
+    inputs.property("asciidoctor-mathjax version", project.ext.asciidoctorMathjaxVersion)
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@djencks/asciidoctor-mathjax")
 }
 
@@ -245,17 +258,17 @@ task downloadAntora {
 
 task downloadLinkValidator(type: NpmTask) {
     group = 'Build Dependency Download'
-    args = ["install", "link-checker"]
+    args = ["install", "link-checker@${project.ext.linkCheckerVersion}"]
 
-    inputs.files("${project.ext.nodeProjectDir}/package.json")
+    inputs.property("link-checker version", project.ext.linkCheckerVersion)
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/link-checker")
 }
 
 task downloadDefaultUITemplate(type: NpmTask) {
     group = 'Build Dependency Download'
-    args = ["install", "gitlab:antora/antora-ui-default", "--include=dev"]
+    args = ["install", "gitlab:antora/antora-ui-default#${project.ext.antoraDefaultUIVersion}", "--include=dev"]
 
-    inputs.files("${project.ext.nodeProjectDir}/package.json")
+    inputs.property("Antora default-ui version", project.ext.antoraDefaultUIVersion)
     outputs.dir("${project.ext.nodeProjectDir}/node_modules/@antora/ui-default")
 }
 
@@ -293,14 +306,14 @@ task downloadGulp(type: NpmTask) {
     group = 'Build Dependency Download'
     dependsOn tasks.startUIBuildDir
 
-    args = ["install", "gulp-cli", "--legacy-peer-deps"]
+    args = ["install", "gulp-cli@${project.ext.gulpCliVersion}", "--legacy-peer-deps"]
     execOverrides {
         // The it variable contains the `ExecSpec`
         workingDir = project.ext.uiBuildDir
     }
 
     inputs.property("Antora version", project.ext.antoraVersion)
-    inputs.files("${project.ext.uiBuildDir}/package.json")
+    inputs.property("Gulp CLI version", project.ext.gulpCliVersion)
     outputs.dir("${project.ext.uiBuildDir}/node_modules/")
 }
 
@@ -498,4 +511,38 @@ task buildOfficialSite(type: NpxTask) {
         project.logger.lifecycle("The generated official ref-guide can be found at:")
         project.logger.lifecycle("\t${project.ext.siteDir}")
     }
+}
+
+/*
+ Compiling, Testing and Validation for the java examples in the Solr Ref Guide
+ */
+
+sourceSets {
+    test {
+        java {
+            srcDirs = ['modules/configuration-guide/examples', 'modules/deployment-guide/examples', 'modules/getting-started/examples', 'modules/indexing-guide/examples', 'modules/query-guide/examples']
+        }
+    }
+}
+
+dependencies {
+    // For the SolrJ examples
+    testImplementation project(":solr:core")
+    testImplementation project(":solr:solrj")
+    testImplementation project(":solr:test-framework")
+    testImplementation 'junit:junit'
+}
+
+// Copy all the test resource files from SolrJ to the build/resources/test directory
+// of the examples so we can avoid duplication of the test resource files like
+// schemas and SolrConfigs.
+tasks.register('copySolrjTestResources', Copy) {
+    from(project(':solr:solrj').sourceSets.test.resources.srcDirs) {
+        exclude '**/*.java'
+    }
+    into sourceSets.test.output.resourcesDir
+}
+
+tasks.named('processTestResources').configure {
+    dependsOn copySolrjTestResources
 }

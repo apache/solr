@@ -47,6 +47,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     assertU(delQ("*:*"));
@@ -114,7 +115,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
    * fields that are not inverted (indexed "forward" only)
    */
   @Test
-  public void testStringDocValuesMatch() throws Exception {
+  public void testStringDocValuesMatch() {
     assertU(adoc("id", "1", "stringdv", "b"));
     assertU(adoc("id", "2", "stringdv", "a"));
     assertU(adoc("id", "3", "stringdv", "c"));
@@ -163,7 +164,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
    * fields that are not inverted (indexed "forward" only)
    */
   @Test
-  public void testBoolDocValuesMatch() throws Exception {
+  public void testBoolDocValuesMatch() {
     assertU(adoc("id", "1", "booldv", "true"));
     assertU(adoc("id", "2", "booldv", "false"));
     assertU(adoc("id", "3", "booldv", "true"));
@@ -196,12 +197,13 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
         "//result/doc[5]/arr[@name='booldv']/bool[1][.='false']",
         "//result/doc[5]/arr[@name='booldv']/bool[2][.='true']");
   }
+
   /**
    * Tests the ability to do basic queries (without scoring, just match-only) on float docvalues
    * fields that are not inverted (indexed "forward" only)
    */
   @Test
-  public void testFloatDocValuesMatch() throws Exception {
+  public void testFloatDocValuesMatch() {
     assertU(adoc("id", "1", "floatdv", "2"));
     assertU(adoc("id", "2", "floatdv", "-5"));
     assertU(adoc("id", "3", "floatdv", "3.0", "floatdv", "-1.3", "floatdv", "2.2"));
@@ -242,7 +244,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
    * fields that are not inverted (indexed "forward" only)
    */
   @Test
-  public void testDoubleDocValuesMatch() throws Exception {
+  public void testDoubleDocValuesMatch() {
     assertU(adoc("id", "1", "doubledv", "2"));
     assertU(adoc("id", "2", "doubledv", "-5"));
     assertU(adoc("id", "3", "doubledv", "3.0", "doubledv", "-1.3", "doubledv", "2.2"));
@@ -682,7 +684,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
         "//lst[@name='stringdv']/int[@name='abc19'][.='1']",
         "//lst[@name='stringdv']/int[@name='abc49'][.='1']");
 
-    // Even though offseting by 33, the sort order is abc1 abc11....abc2 so it throws the position
+    // Even though offsetting by 33, the sort order is abc1 abc11....abc2, so it throws the position
     // in the return list off.
     assertQ(
         req(

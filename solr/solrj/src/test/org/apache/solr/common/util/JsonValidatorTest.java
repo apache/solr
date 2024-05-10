@@ -17,17 +17,9 @@
 package org.apache.solr.common.util;
 
 import java.util.List;
-import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 
 public class JsonValidatorTest extends SolrTestCaseJ4 {
-
-  public void testSchema() {
-    checkSchema("cluster.security.BasicAuth.Commands");
-    checkSchema("cluster.security.RuleBasedAuthorization");
-    checkSchema("core.config.Commands");
-    checkSchema("core.SchemaEdit");
-  }
 
   public void testSchemaValidation() {
     final JsonSchemaValidator personSchemaValidator =
@@ -188,20 +180,5 @@ public class JsonValidatorTest extends SolrTestCaseJ4 {
     errs =
         mutuallyExclusivePropertiesValidator.validateJson(Utils.fromJSONString("" + "{'a':'val'}"));
     assertNull(errs);
-  }
-
-  private void checkSchema(String name) {
-    ValidatingJsonMap spec = Utils.getSpec(name).getSpec();
-    @SuppressWarnings({"rawtypes"})
-    Map commands = (Map) spec.get("commands");
-    for (Object o : commands.entrySet()) {
-      @SuppressWarnings({"rawtypes"})
-      Map.Entry cmd = (Map.Entry) o;
-      try {
-        JsonSchemaValidator validator = new JsonSchemaValidator((Map) cmd.getValue());
-      } catch (Exception e) {
-        throw new RuntimeException("Error in command  " + cmd.getKey() + " in schema " + name, e);
-      }
-    }
   }
 }

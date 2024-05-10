@@ -29,9 +29,7 @@ Of those below, strongly consider "config overlay" as the preferred approach, as
 
 == JVM System Properties
 
-Any JVM system property, usually specified using the `-D` flag when starting the JVM, can be used as variables in any XML configuration file in Solr.
-
-For example, in the sample `solrconfig.xml` files, you will see this value which defines the locking type to use:
+Any JVM system property can be used as variables in any XML configuration file in Solr. For example, in the sample `solrconfig.xml` files, you will see this value which defines the locking type to use:
 
 [source,xml]
 ----
@@ -46,6 +44,8 @@ bin/solr start -Dsolr.lock.type=none
 ----
 
 In general, any Java system property that you want to set can be passed through the `bin/solr` script using the standard `-Dproperty=value` syntax.
+
+Solr will also automatically map any environment variables that start with `SOLR_` to system properties by lowercasing the name and replacing underscores with `.`. This means that starting Solr with `SOLR_LOCK_TYPE=none` (or setting it in `solr.in.sh` or `solr.in.cmd`) will have the same effect as the previous example.
 
 Alternatively, you can add common system properties to the `SOLR_OPTS` environment variable defined in the Solr include file (`bin/solr.in.sh` or `bin/solr.in.cmd`).
 For more information about how the Solr include file works, refer to: xref:deployment-guide:taking-solr-to-production.adoc[].
@@ -96,7 +96,7 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=gettingstarted&n
 
 [source,bash]
 ----
-curl -X POST -H 'Content-type: application/json' -d '{"create": {"name": "gettingstarted", "numShards": "1", "property.my.custom.prop": "edismax"}}' http://localhost:8983/api/collections
+curl -X POST -H 'Content-type: application/json' -d '{"name": "gettingstarted", "numShards": 1, "properties": {"my.custom.prop": "edismax"}}' http://localhost:8983/api/collections
 ----
 ====
 --

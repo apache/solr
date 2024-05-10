@@ -23,11 +23,12 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.AbstractVMParamsZkACLAndCredentialsProvidersTestBase;
+import org.apache.solr.cloud.AbstractDigestZkACLAndCredentialsProvidersTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
@@ -38,6 +39,7 @@ import org.apache.solr.common.cloud.ZkACLProvider;
 import org.apache.solr.util.BadZookeeperThreadsFilter;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.client.ZKClientConfig;
 import org.apache.zookeeper.client.ZooKeeperSaslClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -65,13 +67,14 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     assumeFalse(
         "FIXME: SOLR-7040: This test fails under IBM J9", Constants.JAVA_VENDOR.startsWith("IBM"));
     System.setProperty("solrcloud.skip.autorecovery", "true");
-    System.setProperty("hostName", "localhost");
+    System.setProperty("hostName", "127.0.0.1");
   }
 
   @AfterClass
   public static void afterClass() {
     System.clearProperty("solrcloud.skip.autorecovery");
     System.clearProperty("hostName");
+    System.clearProperty(ZKClientConfig.ZOOKEEPER_SERVER_PRINCIPAL);
   }
 
   @Override
@@ -155,7 +158,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     SolrZkClient zkClient =
         new SolrZkClientWithACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      AbstractVMParamsZkACLAndCredentialsProvidersTestBase.doTest(
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, true, true, true, true, true, true, true, true);
     } finally {
       zkClient.close();
@@ -166,7 +169,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     System.setProperty("zookeeper.sasl.client", "false");
     zkClient = new SolrZkClientNoACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);
     try {
-      AbstractVMParamsZkACLAndCredentialsProvidersTestBase.doTest(
+      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
           zkClient, true, true, false, false, false, false, false, false, false, false);
     } finally {
       zkClient.close();
@@ -178,7 +181,10 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   private static class SolrZkClientWithACLs extends SolrZkClient {
 
     public SolrZkClientWithACLs(String zkServerAddress, int zkClientTimeout) {
-      super(zkServerAddress, zkClientTimeout);
+      super(
+          new Builder()
+              .withUrl(zkServerAddress)
+              .withTimeout(zkClientTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Override
@@ -191,7 +197,10 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   private static class SolrZkClientNoACLs extends SolrZkClient {
 
     public SolrZkClientNoACLs(String zkServerAddress, int zkClientTimeout) {
-      super(zkServerAddress, zkClientTimeout);
+      super(
+          new Builder()
+              .withUrl(zkServerAddress)
+              .withTimeout(zkClientTimeout, TimeUnit.MILLISECONDS));
     }
 
     @Override
@@ -219,7 +228,8 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
         System.setProperty("zookeeper.kerberos.removeHostFromPrincipal", "true");
         File keytabFile = kdcDir.resolve("keytabs").toFile();
         String zkClientPrincipal = "solr";
-        String zkServerPrincipal = "zookeeper/localhost";
+        String zkServerPrincipal = "zookeeper/127.0.0.1";
+        System.setProperty(ZKClientConfig.ZOOKEEPER_SERVER_PRINCIPAL, zkServerPrincipal);
 
         kerberosTestServices =
             KerberosTestServices.builder()
@@ -232,6 +242,8 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
         kerberosTestServices
             .getKdc()
             .createPrincipal(keytabFile, zkClientPrincipal, zkServerPrincipal);
+      } catch (RuntimeException rex) {
+        throw rex;
       } catch (Exception ex) {
         throw new RuntimeException(ex);
       }

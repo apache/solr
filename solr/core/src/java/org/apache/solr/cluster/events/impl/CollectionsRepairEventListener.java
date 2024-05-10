@@ -41,7 +41,7 @@ import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.NodesDownEvent;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
@@ -171,39 +171,25 @@ public class CollectionsRepairEventListener
       ClusterState clusterState = solrCloudManager.getClusterState();
       clusterState.forEachCollection(
           coll -> {
-            // shard / type / count
-            Map<String, Map<Replica.Type, AtomicInteger>> lostReplicas = new HashMap<>();
+            // shard / number of replicas per type
+            Map<String, ReplicaCount> lostReplicas = new HashMap<>();
             coll.forEachReplica(
                 (shard, replica) -> {
                   if (reallyLostNodes.contains(replica.getNodeName())) {
                     lostReplicas
-                        .computeIfAbsent(shard, s -> new HashMap<>())
-                        .computeIfAbsent(replica.type, t -> new AtomicInteger())
-                        .incrementAndGet();
+                        .computeIfAbsent(shard, s -> ReplicaCount.empty())
+                        .increment(replica.type);
                   }
                 });
             Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(cc);
             lostReplicas.forEach(
                 (shard, types) -> {
-                  Assign.AssignRequestBuilder assignRequestBuilder =
+                  Assign.AssignRequest assignRequest =
                       new Assign.AssignRequestBuilder()
                           .forCollection(coll.getName())
-                          .forShard(Collections.singletonList(shard));
-                  types.forEach(
-                      (type, count) -> {
-                        switch (type) {
-                          case NRT:
-                            assignRequestBuilder.assignNrtReplicas(count.get());
-                            break;
-                          case PULL:
-                            assignRequestBuilder.assignPullReplicas(count.get());
-                            break;
-                          case TLOG:
-                            assignRequestBuilder.assignTlogReplicas(count.get());
-                            break;
-                        }
-                      });
-                  Assign.AssignRequest assignRequest = assignRequestBuilder.build();
+                          .forShard(Collections.singletonList(shard))
+                          .assignReplicas(types)
+                          .build();
                   try {
                     List<ReplicaPosition> positions =
                         assignStrategy.assign(solrCloudManager, assignRequest);

@@ -29,10 +29,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.apache.solr.common.cloud.Replica.Type;
-import org.noggit.JSONWriter;
+import org.apache.solr.common.util.CollectionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +45,18 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   public final String collection;
 
+  private AtomicReference<PerReplicaStates> perReplicaStatesRef;
+
+  void setPerReplicaStatesRef(AtomicReference<PerReplicaStates> perReplicaStatesRef) {
+    this.perReplicaStatesRef = perReplicaStatesRef;
+    for (Replica r : replicas.values()) {
+      r.setPerReplicaStatesRef(perReplicaStatesRef);
+    }
+    if (leader == null) {
+      leader = findLeader();
+    }
+  }
+
   /**
    * Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON.
    */
@@ -52,7 +64,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   public static Map<String, Slice> loadAllFromMap(
       String collection, Map<String, Object> genericSlices) {
     if (genericSlices == null) return Collections.emptyMap();
-    Map<String, Slice> result = new LinkedHashMap<>(genericSlices.size());
+    Map<String, Slice> result = CollectionUtil.newLinkedHashMap(genericSlices.size());
     for (Map.Entry<String, Object> entry : genericSlices.entrySet()) {
       String name = entry.getKey();
       Object val = entry.getValue();
@@ -79,6 +91,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     replicasCopy.put(modified.getName(), modified);
     return new Slice(name, replicasCopy, propMap, collection);
   }
+
   /** The slice's state. */
   public enum State {
 
@@ -87,8 +100,8 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
     /**
      * A shard is put in that state after it has been successfully split. See <a
-     * href="https://solr.apache.org/guide/collections-api.html#splitshard">the reference guide</a>
-     * for more details.
+     * href="https://solr.apache.org/guide/solr/latest/deployment-guide/shard-management.html#splitshard">the
+     * reference guide</a> for more details.
      */
     INACTIVE,
 
@@ -127,22 +140,16 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     }
   }
 
-  public static final String REPLICAS = "replicas";
-  public static final String RANGE = "range";
-  // FUTURE: do we want to record the leader as a slice property in the JSON (as opposed to isLeader
-  // as a replica property?)
-  public static final String LEADER = "leader";
-  public static final String PARENT = "parent";
-
   private final String name;
   private final DocRouter.Range range;
   // FUTURE: optional per-slice override of the collection replicationFactor
   private final Integer replicationFactor;
   private final Map<String, Replica> replicas;
-  private final Replica leader;
+  private Replica leader;
   private final State state;
   private final String parent;
   private final Map<String, RoutingRule> routingRules;
+  private final int numLeaderReplicas;
 
   /**
    * @param name The name of the slice
@@ -153,16 +160,16 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   @SuppressWarnings({"unchecked", "rawtypes"})
   public Slice(
       String name, Map<String, Replica> replicas, Map<String, Object> props, String collection) {
-    super(props == null ? new LinkedHashMap<String, Object>(2) : new LinkedHashMap<>(props));
+    super(props == null ? CollectionUtil.newLinkedHashMap(2) : new LinkedHashMap<>(props));
     this.name = name;
     this.collection = collection;
 
-    Object rangeObj = propMap.get(RANGE);
-    if (propMap.get(ZkStateReader.STATE_PROP) != null) {
-      this.state = State.getState((String) propMap.get(ZkStateReader.STATE_PROP));
+    Object rangeObj = propMap.get(SliceStateProps.RANGE);
+    if (propMap.get(SliceStateProps.STATE_PROP) != null) {
+      this.state = State.getState((String) propMap.get(SliceStateProps.STATE_PROP));
     } else {
       this.state = State.ACTIVE; // Default to ACTIVE
-      propMap.put(ZkStateReader.STATE_PROP, state.toString());
+      propMap.put(SliceStateProps.STATE_PROP, state.toString());
     }
     DocRouter.Range tmpRange = null;
     if (rangeObj instanceof DocRouter.Range) {
@@ -173,12 +180,12 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     }
     range = tmpRange;
 
-    /**
+    /*
      * debugging. this isn't an error condition for custom sharding. if (range == null) {
      * System.out.println("###### NO RANGE for " + name + " props=" + props); }
      */
-    if (propMap.containsKey(PARENT) && propMap.get(PARENT) != null)
-      this.parent = (String) propMap.get(PARENT);
+    if (propMap.containsKey(SliceStateProps.PARENT) && propMap.get(SliceStateProps.PARENT) != null)
+      this.parent = (String) propMap.get(SliceStateProps.PARENT);
     else this.parent = null;
 
     replicationFactor = null; // future
@@ -188,9 +195,12 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     this.replicas =
         replicas != null
             ? replicas
-            : makeReplicas(collection, name, (Map<String, Object>) propMap.get(REPLICAS));
-    propMap.put(REPLICAS, this.replicas);
+            : makeReplicas(
+                collection, name, (Map<String, Object>) propMap.get(SliceStateProps.REPLICAS));
+    propMap.put(SliceStateProps.REPLICAS, this.replicas);
 
+    this.numLeaderReplicas =
+        (int) this.replicas.values().stream().filter(r -> r.type.leaderEligible).count();
     Map<String, Object> rules = (Map<String, Object>) propMap.get("routingRules");
     if (rules != null) {
       this.routingRules = new HashMap<>();
@@ -207,15 +217,13 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     } else {
       this.routingRules = null;
     }
-
-    leader = findLeader();
   }
 
   @SuppressWarnings({"unchecked"})
   private Map<String, Replica> makeReplicas(
       String collection, String slice, Map<String, Object> genericReplicas) {
-    if (genericReplicas == null) return new HashMap<>(1);
-    Map<String, Replica> result = new LinkedHashMap<>(genericReplicas.size());
+    if (genericReplicas == null) return CollectionUtil.newHashMap(1);
+    Map<String, Replica> result = CollectionUtil.newLinkedHashMap(genericReplicas.size());
     for (Map.Entry<String, Object> entry : genericReplicas.entrySet()) {
       String name = entry.getKey();
       Object val = entry.getValue();
@@ -233,8 +241,8 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   private Replica findLeader() {
     for (Replica replica : replicas.values()) {
       if (replica.isLeader()) {
-        assert replica.getType() == Type.TLOG || replica.getType() == Type.NRT
-            : "Pull replica should not become leader!";
+        assert replica.getType().leaderEligible
+            : replica.getType().toString() + " replica should not become leader!";
         return replica;
       }
     }
@@ -244,6 +252,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   public String getCollection() {
     return collection;
   }
+
   /** Return slice name (shard id). */
   public String getName() {
     return name;
@@ -278,7 +287,19 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   }
 
   public Replica getLeader() {
-    return leader;
+    if (perReplicaStatesRef != null) {
+      // this  is a PRS collection. leader may keep changing
+      return findLeader();
+    } else {
+      if (leader == null) {
+        leader = findLeader();
+      }
+      return leader;
+    }
+  }
+
+  public int getNumLeaderReplicas() {
+    return numLeaderReplicas;
   }
 
   public Replica getReplica(String replicaName) {
@@ -306,8 +327,16 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     return name + ':' + toJSONString(propMap);
   }
 
-  @Override
-  public void write(JSONWriter jsonWriter) {
-    jsonWriter.write(propMap);
+  /** JSON properties related to a slice's state. */
+  public interface SliceStateProps {
+
+    String STATE_PROP = "state";
+    String REPLICAS = "replicas";
+    String RANGE = "range";
+    // FUTURE: do we want to record the leader as a slice property in the JSON (as opposed to
+    // isLeader
+    // as a replica property?)
+    String LEADER = "leader";
+    String PARENT = "parent";
   }
 }

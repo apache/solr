@@ -31,6 +31,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.ltr.interleaving.OriginalRankingLTRScoringQuery;
+import org.apache.solr.search.IncompleteRerankingException;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
@@ -218,7 +220,7 @@ public class LTRRescorer extends Rescorer {
       LTRScoringQuery.ModelWeight.ModelScorer scorer,
       ScoreDoc[] reranked)
       throws IOException {
-    /**
+    /*
      * Scorer for a LTRScoringQuery.ModelWeight should never be null since we always have to call
      * score even if no feature scorers match, since a model might use that info to return a
      * non-zero score. Same applies for the case of advancing a
@@ -234,6 +236,13 @@ public class LTRRescorer extends Rescorer {
 
     scorer.getDocInfo().setOriginalDocScore(hit.score);
     hit.score = scorer.score();
+    if (QueryLimits.getCurrentLimits()
+        .maybeExitWithPartialResults(
+            "Learning To Rank rescoring -"
+                + " The full reranking didn't complete."
+                + " If partial results are tolerated the reranking got reverted and all documents preserved their original score and ranking.")) {
+      throw new IncompleteRerankingException();
+    }
     if (hitUpto < topN) {
       reranked[hitUpto] = hit;
       // if the heap is not full, maybe I want to log the features for this

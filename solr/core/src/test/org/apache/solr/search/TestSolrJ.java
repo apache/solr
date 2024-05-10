@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -25,13 +26,15 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.RTimer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestSolrJ extends SolrTestCaseJ4 {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public void testSolrJ() throws Exception {
+  public void testSolrJ() {
     // docs, producers, connections, sleep_time
     //  main(new String[] {"1000000","4", "1", "0"});
 
@@ -56,7 +59,12 @@ public class TestSolrJ extends SolrTestCaseJ4 {
     ConcurrentUpdateSolrClient concurrentClient = null;
 
     // server = concurrentClient = new ConcurrentUpdateSolrServer(addr,32,8);
-    client = concurrentClient = getConcurrentUpdateSolrClient(addr, 64, nConnections);
+    client =
+        concurrentClient =
+            new ConcurrentUpdateSolrClient.Builder(addr)
+                .withQueueSize(64)
+                .withThreadCount(nConnections)
+                .build();
 
     client.deleteByQuery("*:*");
     client.commit();
@@ -77,8 +85,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
               try {
                 indexDocs(base, docsPerThread, maxSleep);
               } catch (Exception e) {
-                System.out.println("###############################CAUGHT EXCEPTION");
-                e.printStackTrace();
+                log.error("###############################CAUGHT EXCEPTION", e);
                 ex = e;
               }
             }
@@ -155,7 +162,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
           Thread.sleep(sleep);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
-          e.printStackTrace();
+          log.error("interrupted", e);
           throw new RuntimeException(e);
         }
       }
@@ -164,7 +171,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
 
   public void doCommitPerf() throws Exception {
 
-    try (HttpSolrClient client = getHttpSolrClient("http://127.0.0.1:8983/solr")) {
+    try (SolrClient client = getHttpSolrClient("http://127.0.0.1:8983/solr")) {
 
       final RTimer timer = new RTimer();
 

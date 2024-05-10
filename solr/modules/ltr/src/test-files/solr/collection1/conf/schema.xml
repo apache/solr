@@ -22,8 +22,8 @@
     <field name="finalScore" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="finalScoreFloat" type="float" indexed="true" stored="true" multiValued="false"/>
     <field name="field" type="text_general" indexed="true" stored="false" multiValued="false"/>
-    <field name="title" type="text_general" indexed="true" stored="true"/>
-    <field name="description" type="text_general" indexed="true" stored="true"/>
+    <field name="title" type="text_general" indexed="true" stored="false"/>
+    <field name="description" type="text_general" indexed="true" stored="false"/>
     <field name="keywords" type="text_general" indexed="true" stored="true" multiValued="true"/>
     <field name="popularity" type="int" indexed="true" stored="true" />
     <field name="dvIntPopularity" type="int" indexed="false" docValues="true" stored="false" multiValued="false"/>
@@ -35,6 +35,7 @@
     <field name="normHits" type="float" indexed="true" stored="true" />
 
     <field name="isTrendy" type="boolean" indexed="true" stored="true" />
+    <field name="storedDvIsTrendy" type="boolean" indexed="true" stored="true" docValues="true"/>
     <field name="dvIsTrendy" type="boolean" indexed="true" stored="false" docValues="true"/>
 
     <field name="dvIntField" type="int" indexed="false" docValues="true" stored="false" default="-1" multiValued="false"/>
@@ -67,6 +68,7 @@
   <copyField source="popularity" dest="dvDoublePopularity"/>
 
   <copyField source="isTrendy" dest="dvIsTrendy"/>
+  <copyField source="isTrendy" dest="storedDvIsTrendy"/>
 
   <types>
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
@@ -109,7 +111,7 @@
   <!-- Similarity is the scoring routine for each document vs. a query.
        A custom Similarity or SimilarityFactory may be specified here, but
        the default is fine for most applications.
-       For more info: https://solr.apache.org/guide/schema-elements.html#similarity
+       For more info: https://solr.apache.org/guide/solr/latest/indexing-guide/schema-elements.html#similarity
     -->
   <!--
      <similarity class="com.example.solr.CustomSimilarityFactory">

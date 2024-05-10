@@ -18,11 +18,13 @@
 package org.apache.solr.client.solrj.impl;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableSet;
 import java.net.ConnectException;
 import java.net.SocketException;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -80,12 +82,13 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     AtomicInteger lbhttpRequestCount = new AtomicInteger();
     try (ClusterStateProvider clusterStateProvider = getStateProvider(livenodes, refs);
         CloudSolrClient cloudClient =
-            new CloudSolrClientBuilder(clusterStateProvider)
+            new RandomizingCloudSolrClientBuilder(clusterStateProvider)
                 .withLBHttpSolrClient(mockLbclient)
                 .build()) {
-      livenodes.addAll(ImmutableSet.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
+      livenodes.addAll(Set.of("192.168.1.108:7574_solr", "192.168.1.108:8983_solr"));
       ClusterState cs =
-          ClusterState.createFromJson(1, coll1State.getBytes(UTF_8), Collections.emptySet());
+          ClusterState.createFromJson(
+              1, coll1State.getBytes(UTF_8), Collections.emptySet(), Instant.now(), null);
       refs.put(collName, new Ref(collName));
       colls.put(collName, cs.getCollectionOrNull(collName));
       responses.put(
@@ -125,7 +128,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
               if (res instanceof Exception) throw (Throwable) res;
               LBSolrClient.Rsp rsp = new LBSolrClient.Rsp();
               rsp.rsp = (NamedList<Object>) res;
-              rsp.server = req.servers.get(0);
+              rsp.server = req.endpoints.get(0).toString();
               return rsp;
             });
     return mockLbclient;

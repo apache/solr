@@ -138,3 +138,9 @@ rule-based-replica-placement.html;_8_11
 putting-the-pieces-together.html;_8_11
 blockjoin-faceting.html;_8_11
 errata.html;_8_11
+
+# Page links from the prereleased 9.0 codebase before the antora migration
+neural-search.html;dense-vector-search.adoc
+real-time-get.html;realtime-get.adoc
+deployment-guide.html;system-requirements.adoc
+fields-and-schema-design.html;schema-elements.adoc

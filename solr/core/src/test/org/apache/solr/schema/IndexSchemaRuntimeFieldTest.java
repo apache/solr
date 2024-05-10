@@ -34,7 +34,7 @@ public class IndexSchemaRuntimeFieldTest extends SolrTestCaseJ4 {
   @Test
   public void testRuntimeFieldCreation() {
     // any field manipulation needs to happen when you know the core will not
-    // be accepting any requests.  Typically this is done within the inform()
+    // be accepting any requests.  Typically, this is done within the inform()
     // method.  Since this is a single threaded test, we can change the fields
     // willi-nilly
 

@@ -17,20 +17,17 @@
 
 package org.apache.solr.handler;
 
-import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
-import com.google.common.collect.Maps;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.api.UpdateAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -38,14 +35,11 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 /** Unit tests for the v2 to v1 mapping logic in {@link UpdateAPI} */
-public class V2UpdateAPIMappingTest {
+public class V2UpdateAPIMappingTest extends SolrTestCaseJ4 {
   private ApiBag apiBag;
-  private ArgumentCaptor<SolrQueryRequest> queryRequestCaptor;
   private UpdateRequestHandler mockUpdateHandler;
-  private ConfigSetsHandler mockConfigSetHandler;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -53,11 +47,8 @@ public class V2UpdateAPIMappingTest {
   }
 
   @Before
-  public void setupApiBag() throws Exception {
+  public void setupApiBag() {
     mockUpdateHandler = mock(UpdateRequestHandler.class);
-    mockConfigSetHandler = mock(ConfigSetsHandler.class);
-    queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);
-
     apiBag = new ApiBag(false);
     final UpdateAPI updateAPI = new UpdateAPI(mockUpdateHandler);
 
@@ -99,7 +90,7 @@ public class V2UpdateAPIMappingTest {
     final Api api = apiBag.lookup(path, "POST", parts);
     final SolrQueryResponse rsp = new SolrQueryResponse();
     final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, Maps.newHashMap()) {
+        new LocalSolrQueryRequest(null, Map.of()) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
             return Collections.emptyList();

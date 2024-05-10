@@ -544,7 +544,7 @@ public class TestFieldCacheSort extends SolrTestCase {
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits.value);
-    // null is treated as a Integer.MAX_VALUE
+    // null is treated as an Integer.MAX_VALUE
     assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
@@ -678,7 +678,7 @@ public class TestFieldCacheSort extends SolrTestCase {
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
     assertEquals(3, td.totalHits.value);
-    // null is treated as a Integer.MAX_VALUE
+    // null is treated as an Integer.MAX_VALUE
     assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
     assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
     assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));

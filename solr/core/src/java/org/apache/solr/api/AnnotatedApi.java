@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
@@ -214,7 +215,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
     }
 
     for (CommandOperation cmd : cmds) {
-      TraceUtils.ifNotNoop(req.getSpan(), (span) -> span.log("Command: " + cmd.name));
+      TraceUtils.ifNotNoop(req.getSpan(), (span) -> span.addEvent("Command: " + cmd.name));
       commands.get(cmd.name).invoke(req, rsp, cmd);
     }
 
@@ -333,6 +334,26 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
         log.error("Error executing command : ", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(command, method, obj, paramsCount, parameterClass, isWrappedInPayloadObj);
+    }
+
+    @Override
+    public boolean equals(Object rhs) {
+      if (null == rhs) return false;
+      if (this == rhs) return true;
+      if (!(rhs instanceof Cmd)) return false;
+
+      final Cmd rhsCast = (Cmd) rhs;
+      return Objects.equals(command, rhsCast.command)
+          && Objects.equals(method, rhsCast.method)
+          && Objects.equals(obj, rhsCast.obj)
+          && paramsCount == rhsCast.paramsCount
+          && Objects.equals(parameterClass, rhsCast.parameterClass)
+          && isWrappedInPayloadObj == rhsCast.isWrappedInPayloadObj;
     }
 
     private void checkForErrorInPayload(CommandOperation cmd) {

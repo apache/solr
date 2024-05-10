@@ -30,7 +30,7 @@ Language detector implementations are pluggable.
 
 Getting Started
 ---------------
-Please refer to the Solr Ref Guide at https://solr.apache.org/guide/language-detection.html
+Please refer to the Solr Ref Guide at https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html
 for more information.
 
 Dependencies

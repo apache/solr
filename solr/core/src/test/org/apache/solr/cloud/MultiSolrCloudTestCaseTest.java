@@ -73,7 +73,7 @@ public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
   }
 
   @Test
-  public void test() throws Exception {
+  public void test() {
     assertEquals("numClouds", numClouds, clusterId2cluster.size());
   }
 }

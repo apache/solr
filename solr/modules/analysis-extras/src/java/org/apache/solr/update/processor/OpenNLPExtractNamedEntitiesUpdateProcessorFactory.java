@@ -34,12 +34,13 @@ import java.util.regex.PatternSyntaxException;
 import opennlp.tools.util.Span;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.opennlp.OpenNLPTokenizer;
+import org.apache.lucene.analysis.opennlp.SentenceAttributeExtractor;
 import org.apache.lucene.analysis.opennlp.tools.NLPNERTaggerOp;
 import org.apache.lucene.analysis.opennlp.tools.OpenNLPOpsFactory;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.SentenceAttribute;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -75,8 +76,8 @@ import org.slf4j.LoggerFactory;
  * <p>See the <a href="https://opennlp.apache.org/models.html">OpenNLP website</a> for information
  * on downloading pre-trained models. Note that in order to use model files larger than 1MB on
  * SolrCloud, <a
- * href="https://solr.apache.org/guide/setting-up-an-external-zookeeper-ensemble.html#increasing-the-file-size-limit"
- * >ZooKeeper server and client configuration is required</a>.
+ * href="https://solr.apache.org/guide/solr/latest/deployment-guide/zookeeper-ensemble.html#increasing-the-file-size-limit">ZooKeeper
+ * server and client configuration is required</a>.
  *
  * <p>The <code>source</code> field(s) can be configured as either:
  *
@@ -199,6 +200,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
    * @see #pattern
    */
   private String dest = null;
+
   /**
    * @see #dest
    */
@@ -636,28 +638,23 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
         List<Integer> endOffsets = new ArrayList<>();
         String fullText = srcFieldValue.toString();
         TokenStream tokenStream = analyzer.tokenStream("", fullText);
-        CharTermAttribute termAtt = tokenStream.addAttribute(CharTermAttribute.class);
-        OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
-        FlagsAttribute flagsAtt = tokenStream.addAttribute(FlagsAttribute.class);
+        SentenceAttributeExtractor sentenceAttributeExtractor =
+            new SentenceAttributeExtractor(
+                tokenStream, tokenStream.addAttribute(SentenceAttribute.class));
         tokenStream.reset();
         synchronized (nerTaggerOp) {
-          while (tokenStream.incrementToken()) {
-            terms.add(termAtt.toString());
-            startOffsets.add(offsetAtt.startOffset());
-            endOffsets.add(offsetAtt.endOffset());
-            boolean endOfSentence = 0 != (flagsAtt.getFlags() & OpenNLPTokenizer.EOS_FLAG_BIT);
-            if (endOfSentence) { // extract named entities one sentence at a time
-              extractEntitiesFromSentence(
-                  fullText, terms, startOffsets, endOffsets, entitiesWithType);
+          while (!sentenceAttributeExtractor.allSentencesProcessed()) {
+            for (AttributeSource attributeSource :
+                sentenceAttributeExtractor.extractSentenceAttributes()) {
+              terms.add(attributeSource.getAttribute(CharTermAttribute.class).toString());
+              startOffsets.add(attributeSource.getAttribute(OffsetAttribute.class).startOffset());
+              endOffsets.add(attributeSource.getAttribute(OffsetAttribute.class).endOffset());
             }
-          }
-          tokenStream.end();
-          tokenStream.close();
-          if (!terms.isEmpty()) { // In case last token of last sentence isn't properly flagged with
-            // EOS_FLAG_BIT
             extractEntitiesFromSentence(
                 fullText, terms, startOffsets, endOffsets, entitiesWithType);
           }
+          tokenStream.end();
+          tokenStream.close();
           nerTaggerOp.reset(); // Forget all adaptive data collected during previous calls
         }
         return entitiesWithType;
@@ -669,7 +666,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateReq
           List<Integer> startOffsets,
           List<Integer> endOffsets,
           List<Pair<String, String>> entitiesWithType) {
-        for (Span span : nerTaggerOp.getNames(terms.toArray(new String[terms.size()]))) {
+        for (Span span : nerTaggerOp.getNames(terms.toArray(new String[0]))) {
           String text =
               fullText.substring(
                   startOffsets.get(span.getStart()), endOffsets.get(span.getEnd() - 1));

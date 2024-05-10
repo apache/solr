@@ -49,7 +49,7 @@ public class TestTrie extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testTrieIntRangeSearch() throws Exception {
+  public void testTrieIntRangeSearch() {
     for (int i = 0; i < 10; i++) {
       assertU(adoc("id", String.valueOf(i), "tint", String.valueOf(i)));
     }
@@ -102,7 +102,7 @@ public class TestTrie extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testTrieTermQuery() throws Exception {
+  public void testTrieTermQuery() {
     for (int i = 0; i < 10; i++) {
       assertU(
           adoc(
@@ -157,7 +157,7 @@ public class TestTrie extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testTrieFloatRangeSearch() throws Exception {
+  public void testTrieFloatRangeSearch() {
     for (int i = 0; i < 10; i++) {
       assertU(adoc("id", String.valueOf(i), "tfloat", String.valueOf(i * i * 31.11f)));
     }
@@ -188,7 +188,7 @@ public class TestTrie extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testTrieLongRangeSearch() throws Exception {
+  public void testTrieLongRangeSearch() {
     for (long i = Integer.MAX_VALUE, c = 0; i < (long) Integer.MAX_VALUE + 10l; i++) {
       assertU(adoc("id", String.valueOf(c++), "tlong", String.valueOf(i)));
     }
@@ -222,7 +222,7 @@ public class TestTrie extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testTrieDoubleRangeSearch() throws Exception {
+  public void testTrieDoubleRangeSearch() {
     for (long i = Integer.MAX_VALUE, c = 0; i < (long) Integer.MAX_VALUE + 10l; i++) {
       assertU(adoc("id", String.valueOf(c++), "tdouble", String.valueOf(i * 2.33d)));
     }
@@ -342,7 +342,7 @@ public class TestTrie extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testTrieDoubleRangeSearch_CustomPrecisionStep() throws Exception {
+  public void testTrieDoubleRangeSearch_CustomPrecisionStep() {
     for (long i = Integer.MAX_VALUE, c = 0; i < (long) Integer.MAX_VALUE + 10l; i++) {
       assertU(adoc("id", String.valueOf(c++), "tdouble4", String.valueOf(i * 2.33d)));
     }

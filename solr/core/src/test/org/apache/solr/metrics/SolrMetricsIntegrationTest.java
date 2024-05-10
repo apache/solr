@@ -24,15 +24,23 @@ import com.codahale.metrics.Timer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+import org.apache.http.client.HttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
 import org.apache.solr.util.JmxUtil;
 import org.apache.solr.util.TestHarness;
@@ -128,9 +136,9 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   }
 
   @After
-  public void afterTest() throws Exception {
+  public void afterTest() {
     if (null == metricManager) {
-      return; // test failed to init, nothing to cleanup
+      return; // test failed to init, nothing to clean up
     }
 
     SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
@@ -139,10 +147,8 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
     Gauge<?> gauge = (Gauge<?>) coreMetricManager.getRegistry().getMetrics().get("CORE.indexDir");
     assertNotNull(gauge.getValue());
-    h.getCore().close();
+    deleteCore(); // closes TestHarness which closes CoreContainer which closes SolrCore
     assertEquals(metricManager.nullString(), gauge.getValue());
-
-    deleteCore();
 
     for (String reporterName : RENAMED_REPORTERS) {
       SolrMetricReporter reporter = reporters.get(reporterName + "@" + tag);
@@ -195,7 +201,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCoreContainerMetrics() throws Exception {
+  public void testCoreContainerMetrics() {
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
     assertTrue(
         cc.getMetricManager().registryNames().toString(),
@@ -215,5 +221,68 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertTrue(metrics.containsKey("CONTAINER.version.implementation"));
     Gauge<?> g = (Gauge<?>) metrics.get("CONTAINER.fs.path");
     assertEquals(g.getValue(), cc.getSolrHome());
+  }
+
+  @Test
+  public void testZkMetrics() throws Exception {
+    System.setProperty("metricsEnabled", "true");
+    MiniSolrCloudCluster cluster =
+        new MiniSolrCloudCluster.Builder(3, createTempDir())
+            .addConfig("conf", configset("conf2"))
+            .configure();
+    System.clearProperty("metricsEnabled");
+    try {
+      JettySolrRunner j = cluster.getRandomJetty(random());
+      String url = j.getBaseUrl() + "/admin/metrics?key=solr.node:CONTAINER.zkClient&wt=json";
+      try (SolrClient solrClient = j.newClient()) {
+        HttpClient httpClient = ((HttpSolrClient) solrClient).getHttpClient();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> zkMmetrics =
+            (Map<String, Object>)
+                Utils.getObjectByPath(
+                    Utils.executeGET(httpClient, url, Utils.JSONCONSUMER),
+                    false,
+                    List.of("metrics", "solr.node:CONTAINER.zkClient"));
+
+        Set<String> allKeys =
+            Set.of(
+                "watchesFired",
+                "reads",
+                "writes",
+                "bytesRead",
+                "bytesWritten",
+                "multiOps",
+                "cumulativeMultiOps",
+                "childFetches",
+                "cumulativeChildrenFetched",
+                "existsChecks",
+                "deletes");
+
+        for (String k : allKeys) {
+          assertNotNull(zkMmetrics.get(k));
+        }
+        Utils.executeGET(
+            httpClient,
+            j.getBaseURLV2() + "/cluster/zookeeper/children/live_nodes",
+            Utils.JSONCONSUMER);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> zkMmetricsNew =
+            (Map<String, Object>)
+                Utils.getObjectByPath(
+                    Utils.executeGET(httpClient, url, Utils.JSONCONSUMER),
+                    false,
+                    List.of("metrics", "solr.node:CONTAINER.zkClient"));
+
+        assertTrue(findDelta(zkMmetrics, zkMmetricsNew, "childFetches") >= 1);
+        assertTrue(findDelta(zkMmetrics, zkMmetricsNew, "cumulativeChildrenFetched") >= 3);
+        assertTrue(findDelta(zkMmetrics, zkMmetricsNew, "existsChecks") >= 4);
+      }
+    } finally {
+      cluster.shutdown();
+    }
+  }
+
+  private long findDelta(Map<String, Object> m1, Map<String, Object> m2, String k) {
+    return ((Number) m2.get(k)).longValue() - ((Number) m1.get(k)).longValue();
   }
 }

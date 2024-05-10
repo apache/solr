@@ -17,11 +17,10 @@
 package org.apache.solr.security.hadoop;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -178,7 +177,7 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
 
   private static String getHttpParam(HttpServletRequest request, String param) {
     List<NameValuePair> pairs =
-        URLEncodedUtils.parse(request.getQueryString(), Charset.forName("UTF-8"));
+        URLEncodedUtils.parse(request.getQueryString(), StandardCharsets.UTF_8);
     for (NameValuePair nvp : pairs) {
       if (param.equals(nvp.getName())) {
         return nvp.getValue();
@@ -274,9 +273,9 @@ public class HttpParamDelegationTokenPlugin extends KerberosPlugin {
         throws IOException, ServletException {
       // remove the filter-specific authentication information, so it doesn't get accidentally
       // forwarded.
-      List<NameValuePair> newPairs = new LinkedList<NameValuePair>();
+      List<NameValuePair> newPairs = new ArrayList<>();
       List<NameValuePair> pairs =
-          URLEncodedUtils.parse(request.getQueryString(), Charset.forName("UTF-8"));
+          URLEncodedUtils.parse(request.getQueryString(), StandardCharsets.UTF_8);
       for (NameValuePair nvp : pairs) {
         if (!USER_PARAM.equals(nvp.getName())) {
           newPairs.add(nvp);

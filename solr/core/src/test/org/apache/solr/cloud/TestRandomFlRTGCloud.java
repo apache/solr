@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -39,8 +40,10 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.*;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -51,7 +54,10 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Pair;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.RawValueTransformerFactory;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -71,13 +77,13 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
   private static final String COLLECTION_NAME = DEBUG_LABEL + "_collection";
 
-  /** A basic client for operations at the cloud level, default collection will be set */
-  private static CloudSolrClient CLOUD_CLIENT;
-  /** One client per node */
-  private static final List<HttpSolrClient> CLIENTS =
-      Collections.synchronizedList(new ArrayList<>(5));
+  /** A collection specific client for operations at the cloud level */
+  private static CloudSolrClient COLLECTION_CLIENT;
 
-  /** Always included in fl so we can vet what doc we're looking at */
+  /** We have a map of clients using specific writerTypes, keyed by pair of baseurl and wt */
+  private static final Map<Pair<String, String>, SolrClient> CLIENTS = new ConcurrentHashMap<>();
+
+  /** Always included in fl, so we can check what doc we're looking at */
   private static final FlValidator ID_VALIDATOR = new SimpleFieldValueValidator("id");
 
   /**
@@ -101,6 +107,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           new DocIdValidator("my_docid_alias"),
           new ShardValidator(),
           new ShardValidator("my_shard_alias"),
+          new CoreValidator(),
+          new CoreValidator("my_core_alias"),
           new ValueAugmenterValidator(42),
           new ValueAugmenterValidator(1976, "val_alias"),
           //
@@ -150,7 +158,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     // 50% runs use multi node/shard with FL_VALIDATORS only containing stuff that works in cloud
     final boolean singleCoreMode = random().nextBoolean();
 
-    // (asuming multi core multi replicas shouldn't matter (assuming multi node) ...
+    // (assuming multi core multi replicas shouldn't matter (assuming multi node) ...
     final int repFactor = singleCoreMode ? 1 : (usually() ? 1 : 2);
     // ... but we definitely want to ensure forwarded requests to other shards work ...
     final int numShards = singleCoreMode ? 1 : 2;
@@ -162,29 +170,24 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
     configureCluster(numNodes).addConfig(configName, configDir).configure();
 
-    CLOUD_CLIENT = cluster.getSolrClient();
-    CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
+    COLLECTION_CLIENT = cluster.getSolrClient(COLLECTION_NAME);
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
         .withProperty("config", "solrconfig-tlog.xml")
         .withProperty("schema", "schema-pseudo-fields.xml")
-        .process(CLOUD_CLIENT);
+        .process(COLLECTION_CLIENT);
 
     cluster.waitForActiveCollection(COLLECTION_NAME, numShards, repFactor * numShards);
-
-    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
-    }
   }
 
   @AfterClass
-  private static void afterClass() throws Exception {
-    if (null != CLOUD_CLIENT) {
-      CLOUD_CLIENT.close();
-      CLOUD_CLIENT = null;
+  public static void afterClass() throws Exception {
+    if (null != COLLECTION_CLIENT) {
+      COLLECTION_CLIENT.close();
+      COLLECTION_CLIENT = null;
     }
-    for (HttpSolrClient client : CLIENTS) {
-      client.close();
+    for (SolrClient client : CLIENTS.values()) {
+      IOUtils.closeQuietly(client);
     }
     CLIENTS.clear();
   }
@@ -197,7 +200,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * @see #FL_VALIDATORS
    * @see TransformerFactory#defaultFactories
    */
-  public void testCoverage() throws Exception {
+  public void testCoverage() {
     final Set<String> implicit = new LinkedHashSet<>();
     for (String t : TransformerFactory.defaultFactories.keySet()) {
       implicit.add(t);
@@ -215,7 +218,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     // and a specific Jira for fixing this is listed as a comment
     final List<String> knownBugs =
         Arrays.asList(
-            "child" // way to complicatd to vet with this test, see SOLR-9379 instead
+            "child" // way too complicated to check with this test, see SOLR-9379 instead
             );
 
     for (String buggy : knownBugs) {
@@ -265,15 +268,15 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * Randomly chooses to do a commit, where the probability of doing so increases the longer it's
    * been since a commit was done.
    *
-   * @returns <code>0</code> if a commit was done, else <code>itersSinceLastCommit + 1</code>
+   * @return <code>0</code> if a commit was done, else <code>itersSinceLastCommit + 1</code>
    */
   private static int maybeCommit(
       final Random rand, final int itersSinceLastCommit, final int numIters)
       throws IOException, SolrServerException {
-    final float threshold = itersSinceLastCommit / numIters;
+    final float threshold = (float) itersSinceLastCommit / numIters;
     if (rand.nextFloat() < threshold) {
       log.info("COMMIT");
-      assertEquals(0, getRandClient(rand).commit().getStatus());
+      assertEquals(0, getRandomClient(rand).commit().getStatus());
       return 0;
     }
     return itersSinceLastCommit + 1;
@@ -281,7 +284,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   private void assertOneIter(final SolrInputDocument[] knownDocs)
       throws IOException, SolrServerException {
-    // we want to occasionally test more then one doc per RTG
+    // we want to occasionally test more than one doc per RTG
     final int numDocsThisIter = TestUtil.nextInt(random(), 1, atLeast(2));
     int numDocsThisIterThatExist = 0;
 
@@ -337,7 +340,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   /**
-   * Deletes the docIds specified and asserts the results are valid, updateing knownDocs accordingly
+   * Deletes the docIds specified and asserts the results are valid, updating knownDocs accordingly
    */
   private void assertDelete(final SolrInputDocument[] knownDocs, final int[] docIds)
       throws IOException, SolrServerException {
@@ -347,7 +350,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       knownDocs[docId] = null;
     }
     assertEquals(
-        "Failed delete: " + docIds, 0, getRandClient(random()).deleteById(ids).getStatus());
+        "Failed delete: " + Arrays.toString(docIds),
+        0,
+        getRandomClient(random()).deleteById(ids).getStatus());
   }
 
   /**
@@ -356,7 +361,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    */
   private SolrInputDocument addRandomDocument(final int docId)
       throws IOException, SolrServerException {
-    final SolrClient client = getRandClient(random());
+    final SolrClient client = getRandomClient(random());
 
     final SolrInputDocument doc =
         sdoc(
@@ -373,7 +378,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
             //
             "geo_1_srpt", GeoTransformerValidator.getValueForIndexing(random()),
             "geo_2_srpt", GeoTransformerValidator.getValueForIndexing(random()),
-            // for testing subqueries
+            // for testing sub-queries
             "next_2_ids_ss", String.valueOf(docId + 1),
             "next_2_ids_ss", String.valueOf(docId + 2),
             // for testing prefix globbing
@@ -427,18 +432,21 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         }
       };
 
-  private static ResponseParser modifyParser(HttpSolrClient client, final String wt) {
-    final ResponseParser ret = client.getParser();
+  /** Helper to convert from wt string parameter to actual SolrClient. */
+  private static SolrClient getSolrClient(final String jettyBaseUrl, final String wt) {
+    HttpSolrClient.Builder builder =
+        new HttpSolrClient.Builder(jettyBaseUrl).withDefaultCollection(COLLECTION_NAME);
     switch (wt) {
       case "xml":
-        client.setParser(RAW_XML_RESPONSE_PARSER);
-        return ret;
+        builder.withResponseParser(RAW_XML_RESPONSE_PARSER);
+        break;
       case "json":
-        client.setParser(RAW_JSON_RESPONSE_PARSER);
-        return ret;
+        builder.withResponseParser(RAW_JSON_RESPONSE_PARSER);
+        break;
       default:
-        return null;
+        break;
     }
+    return builder.build();
   }
 
   /**
@@ -447,7 +455,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    */
   private void assertRTG(final SolrInputDocument[] knownDocs, final int[] docIds)
       throws IOException, SolrServerException {
-    final SolrClient client = getRandClient(random());
+
     // NOTE: not using SolrClient.getById or getByIds because we want to force choice of "id" vs
     // "ids" params
     final ModifiableSolrParams params = params("qt", "/get");
@@ -459,7 +467,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
 
     final Set<FlValidator> validators = new LinkedHashSet<>();
-    // always include id so we can be confident which doc we're looking at
+    // always include id, so we can be confident which doc we're looking at
     validators.add(ID_VALIDATOR);
     validators.add(ROOT_VALIDATOR); // always added in a nested schema, with the same value as id
     addRandomFlValidators(random(), validators);
@@ -475,7 +483,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       // response
       if (null != knownDocs[docId]) {
         Integer filterVal = (Integer) knownDocs[docId].getFieldValue("aaa_i");
-        if (null == FQ_MAX || ((null != filterVal) && filterVal.intValue() <= FQ_MAX.intValue())) {
+        if (null == FQ_MAX || ((null != filterVal) && filterVal <= FQ_MAX)) {
           docsToExpect.add(knownDocs[docId]);
         }
       }
@@ -496,22 +504,20 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           }
         } else {
           // add one or more comma separated ids params
-          params.add(buildCommaSepParams(random(), "ids", idsToRequest));
+          params.add(buildCommaSepParams("ids", idsToRequest));
         }
       }
     } else {
-      assert 1 == idsToRequest.size();
       params.add("id", idsToRequest.get(0));
     }
 
     String wt = params.get(CommonParams.WT, "javabin");
-    final ResponseParser restoreResponseParser;
-    if (client instanceof HttpSolrClient) {
-      restoreResponseParser = modifyParser((HttpSolrClient) client, wt);
-    } else {
-      // unless HttpSolrClient, `wt` doesn't matter -- it'll always be binary.
+    final SolrClient client = getRandomClient(random(), wt);
+
+    // If we have chosen a CloudSolrClient, then override wt parameter back to javabin format,
+    // regardless of what was randomly picked.
+    if (client instanceof CloudSolrClient) {
       wt = "javabin";
-      restoreResponseParser = null;
     }
 
     final Object rsp;
@@ -524,8 +530,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       docs = getDocsFromRTGResponse(askForList, qRsp);
     } else {
       final NamedList<Object> nlRsp = client.request(new QueryRequest(params));
-      assertNotNull(restoreResponseParser);
-      ((HttpSolrClient) client).setParser(restoreResponseParser);
       assertNotNull(params.toString(), nlRsp);
       rsp = nlRsp;
       final String textResult = (String) nlRsp.get("response");
@@ -548,7 +552,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         docsToExpect.size(),
         docs.size());
 
-    // NOTE: RTG makes no garuntees about the order docs will be returned in when multi requested
+    // NOTE: RTG makes no guarantees about the order docs will be returned in when multi requested
     for (SolrDocument actual : docs) {
       try {
         int actualId = assertParseInt("id", actual.getFirstValue("id"));
@@ -631,16 +635,35 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   /**
    * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
-   * in our cluster
+   * in our cluster. This method doesn't care which wt is defined.
    */
-  public static SolrClient getRandClient(Random rand) {
-    int numClients = CLIENTS.size();
+  public static SolrClient getRandomClient(Random rand) {
+    List<String> writerTypes = List.of("javabin", "json", "xml");
+    int writerTypeIdx = TestUtil.nextInt(rand, 0, writerTypes.size() - 1);
+    return getRandomClient(rand, writerTypes.get(writerTypeIdx));
+  }
+
+  /**
+   * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
+   * in our cluster. We have different CLIENTS created for each node based on their wt setting.
+   */
+  public static SolrClient getRandomClient(Random rand, String wt) {
+    List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
+    int numClients = jettySolrRunners.size();
     int idx = TestUtil.nextInt(rand, 0, numClients);
-    return (idx == numClients) ? CLOUD_CLIENT : CLIENTS.get(idx);
+    if (idx == numClients) {
+      // Return the CloudSolrClient, it only uses javabin writerType.
+      return COLLECTION_CLIENT;
+    } else {
+      JettySolrRunner jetty = jettySolrRunners.get(idx);
+      String jettyBaseUrl = jetty.getBaseUrl().toString();
+      return CLIENTS.computeIfAbsent(
+          new Pair<>(jettyBaseUrl, wt), k -> getSolrClient(k.first(), k.second()));
+    }
   }
 
   public static void waitForRecoveriesToFinish(CloudSolrClient client) throws Exception {
-    assert null != client.getDefaultCollection();
+    assertNotNull(client.getDefaultCollection());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(
         client.getDefaultCollection(), ZkStateReader.from(client), true, true, 330);
   }
@@ -652,7 +675,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   private interface FlValidator {
 
     /**
-     * Given a list of FlValidators, adds one or more fl params that corrispond to the entire set,
+     * Given a list of FlValidators, adds one or more fl params that correspond to the entire set,
      * as well as any other special case top level params required by the validators.
      */
     public static void addParams(
@@ -662,15 +685,15 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         params.add(v.getExtraRequestParams());
         fls.add(v.getFlParam());
       }
-      params.add(buildCommaSepParams(random(), "fl", fls));
+      params.add(buildCommaSepParams("fl", fls));
     }
 
     /**
      * Indicates if this validator is for a transformer that returns true from {@link
      * DocTransformer#needsSolrIndexSearcher}. Other validators for transformers that do
-     * <em>not</em> require a re-opened searcher (but may have slightly diff behavior depending on
-     * wether a doc comesfrom the index or from the update log) may use this information to decide
-     * wether they wish to enforce stricter assertions on the resulting document.
+     * <em>not</em> require a re-opened searcher (but may have slightly different behavior depending
+     * on whether a doc comes from the index or from the update log) may use this information to
+     * decide whether they wish to enforce stricter assertions on the resulting document.
      *
      * <p>The default implementation always returns <code>false</code>
      *
@@ -682,7 +705,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
     /**
      * the name of a transformer listed in {@link TransformerFactory#defaultFactories} that this
-     * validator corrisponds to, or null if not applicable. Used for testing coverage of Solr's
+     * validator corresponds to, or null if not applicable. Used for testing coverage of Solr's
      * implicitly supported transformers.
      *
      * <p>Default behavior is to return null
@@ -699,7 +722,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
 
     /**
-     * Must return a non null String that can be used in an fl param -- either by itself, or with
+     * Must return a non-null String that can be used in a fl param -- either by itself, or with
      * other items separated by commas
      */
     public String getFlParam();
@@ -742,6 +765,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       this.actualFieldName = actualFieldName;
     }
 
+    @Override
     public abstract String getFlParam();
 
     @Override
@@ -781,6 +805,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       super(fieldName, fieldName);
     }
 
+    @Override
     public String getFlParam() {
       return expectedFieldName;
     }
@@ -792,10 +817,12 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       super(origFieldName, alias);
     }
 
+    @Override
     public String getFlParam() {
       return actualFieldName + ":" + expectedFieldName;
     }
 
+    @Override
     public Set<String> getSuppressedFields() {
       return Collections.singleton(expectedFieldName);
     }
@@ -805,11 +832,11 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * Validator for {@link RawValueTransformerFactory}
    *
    * <p>This validator is fairly weak, because it doesn't do anything to verify the conditional
-   * logic in RawValueTransformerFactory realted to the output format -- but that's out of the scope
+   * logic in RawValueTransformerFactory related to the output format -- but that's out of the scope
    * of this randomized testing.
    *
-   * <p>What we're primarily concerned with is that the transformer does it's job and puts the
-   * string in the response, regardless of cloud/RTG/uncommited state of the document.
+   * <p>What we're primarily concerned with is that the transformer does its job and puts the string
+   * in the response, regardless of cloud/RTG/uncommitted state of the document.
    */
   private static class RawFieldValueValidator extends RenameFieldValueValidator {
     final String type;
@@ -828,6 +855,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       this(type, fieldName, null);
     }
 
+    @Override
     public String getFlParam() {
       return (null == alias ? "" : (alias + ":")) + "[" + type + " f=" + expectedFieldName + "]";
     }
@@ -878,6 +906,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       return extraParams;
     }
 
+    @Override
     public String getDefaultTransformerFactoryName() {
       return type;
     }
@@ -903,6 +932,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
           });
     }
 
+    @Override
     protected String consumeRawContent(XMLStreamReader parser) throws XMLStreamException {
       return consumeRawContent0(parser);
     }
@@ -934,7 +964,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   /**
    * enforces that a valid <code>[docid]</code> is present in the response, possibly using a
-   * resultKey alias. By default the only validation of docId values is that they are an integer
+   * resultKey alias. By default, the only validation of docId values is that they are an integer
    * greater than or equal to <code>-1</code> -- but if any other validator in use returns true from
    * {@link #requiresRealtimeSearcherReOpen} then the constraint is tightened and values must be
    * greater than or equal to <code>0</code>
@@ -952,14 +982,17 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       this(USAGE);
     }
 
+    @Override
     public String getDefaultTransformerFactoryName() {
       return NAME;
     }
 
+    @Override
     public String getFlParam() {
       return USAGE.equals(resultKey) ? resultKey : resultKey + ":" + USAGE;
     }
 
+    @Override
     public Collection<String> assertRTGResults(
         final Collection<FlValidator> validators,
         final SolrInputDocument expected,
@@ -977,8 +1010,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
         }
       }
       assertTrue(
-          USAGE + " must be >= " + minValidDocId + ": " + value,
-          minValidDocId <= ((Integer) value).intValue());
+          USAGE + " must be >= " + minValidDocId + ": " + value, minValidDocId <= (Integer) value);
       return Collections.<String>singleton(resultKey);
     }
   }
@@ -997,14 +1029,17 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       this(USAGE);
     }
 
+    @Override
     public String getDefaultTransformerFactoryName() {
       return NAME;
     }
 
+    @Override
     public String getFlParam() {
       return USAGE.equals(resultKey) ? resultKey : resultKey + ":" + USAGE;
     }
 
+    @Override
     public Collection<String> assertRTGResults(
         final Collection<FlValidator> validators,
         final SolrInputDocument expected,
@@ -1017,6 +1052,46 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       // trivial sanity check
       assertFalse(USAGE + " => blank string", value.toString().trim().isEmpty());
       return Collections.<String>singleton(resultKey);
+    }
+  }
+
+  /** Trivial validator of CoreAugmenterFactory */
+  private static class CoreValidator implements FlValidator {
+    private static final String NAME = "core";
+    private static final String USAGE = "[" + NAME + "]";
+    private final String resultKey;
+
+    public CoreValidator(final String resultKey) {
+      this.resultKey = resultKey;
+    }
+
+    public CoreValidator() {
+      this(USAGE);
+    }
+
+    @Override
+    public String getDefaultTransformerFactoryName() {
+      return NAME;
+    }
+
+    @Override
+    public String getFlParam() {
+      return USAGE.equals(resultKey) ? resultKey : resultKey + ":" + USAGE;
+    }
+
+    @Override
+    public Collection<String> assertRTGResults(
+        final Collection<FlValidator> validators,
+        final SolrInputDocument expected,
+        final SolrDocument actual,
+        final String wt) {
+      final Object value = actual.getFirstValue(resultKey);
+      assertNotNull(getFlParam() + " => no value in actual doc", value);
+      assertTrue(USAGE + " must be a String: " + value, value instanceof String);
+
+      // trivial sanity check
+      assertFalse(USAGE + " => blank string", value.toString().trim().isEmpty());
+      return Collections.singleton(resultKey);
     }
   }
 
@@ -1048,14 +1123,17 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       this(trans(expectedVal), expectedVal, "[" + NAME + "]");
     }
 
+    @Override
     public String getDefaultTransformerFactoryName() {
       return NAME;
     }
 
+    @Override
     public String getFlParam() {
       return fl;
     }
 
+    @Override
     public Collection<String> assertRTGResults(
         final Collection<FlValidator> validators,
         final SolrInputDocument expected,
@@ -1091,15 +1169,19 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       this.resultKey = resultKey;
       this.fieldName = fieldName;
     }
+
     /** always returns true */
+    @Override
     public boolean requiresRealtimeSearcherReOpen() {
       return true;
     }
 
+    @Override
     public String getFlParam() {
       return fl;
     }
 
+    @Override
     public Collection<String> assertRTGResults(
         final Collection<FlValidator> validators,
         final SolrInputDocument expected,
@@ -1121,15 +1203,15 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
    * focuses on the basics of:
    *
    * <ul>
-   *   <li>do a subquery for docs where SUBQ_FIELD contains the id of the top level doc
-   *   <li>verify that any subquery match is expected based on indexing pattern
+   *   <li>do a sub-query for docs where SUBQ_FIELD contains the id of the top level doc
+   *   <li>verify that any sub-query match is expected based on indexing pattern
    * </ul>
    */
   private static class SubQueryValidator implements FlValidator {
 
     // HACK to work around SOLR-9396...
     //
-    // we're using "id" (and only "id") in the subquery.q as a workarround limitation in
+    // we're using "id" (and only "id") in the sub-query.q as a workaround limitation in
     // "$rows.foo" parsing -- it only works reliably if "foo" is in fl, so we only use "$rows.id",
     // which we know is in every request (and is a valid integer)
 
@@ -1137,10 +1219,12 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     public static final String SUBQ_KEY = "subq";
     public static final String SUBQ_FIELD = "next_2_ids_i";
 
+    @Override
     public String getFlParam() {
       return SUBQ_KEY + ":[" + NAME + "]";
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public Collection<String> assertRTGResults(
         final Collection<FlValidator> validators,
@@ -1176,10 +1260,12 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       return Collections.<String>singleton(SUBQ_KEY);
     }
 
+    @Override
     public String getDefaultTransformerFactoryName() {
       return NAME;
     }
 
+    @Override
     public SolrParams getExtraRequestParams() {
       return params(
           SubQueryValidator.SUBQ_KEY + ".q",
@@ -1190,14 +1276,16 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   /** Trivial validator of a GeoTransformer */
   private static class GeoTransformerValidator implements FlValidator, SuppressRealFields {
     private static final String NAME = "geo";
+
     /**
      * we're not worried about testing the actual geo parsing/formatting of values, just that the
      * transformer gets called with the expected field value. so have a small set of fixed input
      * values we use when indexing docs, and the expected output for each
      */
     private static final Map<String, String> VALUES = new HashMap<>();
+
     /**
-     * The set of legal field values this validator is willing to test as a list so we can reliably
+     * The set of legal field values this validator is willing to test as a list, so we can reliably
      * index into it with random ints
      */
     private static final List<String> ALLOWED_FIELD_VALUES;
@@ -1208,6 +1296,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       }
       ALLOWED_FIELD_VALUES = List.copyOf(VALUES.keySet());
     }
+
     /**
      * returns a random field value usable when indexing a document that this validator will be able
      * to handle.
@@ -1240,14 +1329,17 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       this.fieldName = fieldName;
     }
 
+    @Override
     public String getDefaultTransformerFactoryName() {
       return NAME;
     }
 
+    @Override
     public String getFlParam() {
       return fl;
     }
 
+    @Override
     public Collection<String> assertRTGResults(
         final Collection<FlValidator> validators,
         final SolrInputDocument expected,
@@ -1269,6 +1361,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       return Collections.<String>singleton(resultKey);
     }
 
+    @Override
     public Set<String> getSuppressedFields() {
       return Collections.singleton(fieldName);
     }
@@ -1293,6 +1386,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
     private final Set<String> matchingFieldsCache = new LinkedHashSet<>();
 
+    @Override
     public String getFlParam() {
       return glob;
     }
@@ -1305,6 +1399,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       return false;
     }
 
+    @Override
     public Collection<String> assertRTGResults(
         final Collection<FlValidator> validators,
         final SolrInputDocument expected,
@@ -1348,16 +1443,18 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       this.fl = fl;
     }
 
+    @Override
     public String getFlParam() {
       return fl;
     }
 
+    @Override
     public Collection<String> assertRTGResults(
         final Collection<FlValidator> validators,
         final SolrInputDocument expected,
         final SolrDocument actual,
         final String wt) {
-      assertEquals(fl, null, actual.getFirstValue(fieldName));
+      assertNull(fl, actual.getFirstValue(fieldName));
       return Collections.emptySet();
     }
   }
@@ -1375,12 +1472,16 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       super(USAGE, resultKey + ":" + USAGE);
     }
 
+    @Override
     public String getDefaultTransformerFactoryName() {
       return NAME;
     }
   }
 
-  /** helper method for adding a random number (may be 0) of items from {@link #FL_VALIDATORS} */
+  /**
+   * helper method for adding a random number (the number may be 0) of items from {@link
+   * #FL_VALIDATORS}
+   */
   private static void addRandomFlValidators(final Random r, final Set<FlValidator> validators) {
     List<FlValidator> copyToShuffle = new ArrayList<>(FL_VALIDATORS);
     Collections.shuffle(copyToShuffle, r);
@@ -1389,11 +1490,10 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   /**
-   * Given an ordered list of values to include in a (key) param, randomly groups them (ie: comma
-   * separated) into actual param key=values which are returned as a new SolrParams instance
+   * Given an ordered list of values to include in a (key) param, groups them (ie: comma separated)
+   * into actual param key=values which are returned as a new SolrParams instance
    */
-  private static SolrParams buildCommaSepParams(
-      final Random rand, final String key, Collection<String> values) {
+  private static SolrParams buildCommaSepParams(final String key, Collection<String> values) {
     ModifiableSolrParams result = new ModifiableSolrParams();
     List<String> copy = new ArrayList<>(values);
     while (!copy.isEmpty()) {

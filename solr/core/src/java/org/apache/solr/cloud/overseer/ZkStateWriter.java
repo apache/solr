@@ -20,17 +20,20 @@ import static java.util.Collections.singletonMap;
 
 import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -76,12 +79,32 @@ public class ZkStateWriter {
    */
   protected boolean invalidState = false;
 
-  public ZkStateWriter(ZkStateReader zkStateReader, Stats stats) {
+  // If the state.json is greater than this many bytes and compression is enabled in solr.xml, then
+  // the data will be compressed
+  protected int minStateByteLenForCompression;
+
+  protected Compressor compressor;
+
+  public ZkStateWriter(
+      ZkStateReader zkStateReader,
+      Stats stats,
+      int minStateByteLenForCompression,
+      Compressor compressor) {
     assert zkStateReader != null;
 
     this.reader = zkStateReader;
     this.stats = stats;
     this.clusterState = zkStateReader.getClusterState();
+    this.minStateByteLenForCompression = minStateByteLenForCompression;
+    this.compressor = compressor;
+  }
+
+  /**
+   * if any collection is updated not through this class (directly written to ZK, then it needs to
+   * be updated locally)
+   */
+  public void updateClusterState(Function<ClusterState, ClusterState> fun) {
+    clusterState = fun.apply(clusterState);
   }
 
   /**
@@ -194,12 +217,13 @@ public class ZkStateWriter {
       throws IllegalStateException, KeeperException, InterruptedException {
     Map<String, ZkWriteCommand> commands = new HashMap<>();
     commands.put(command.name, command);
-    return writePendingUpdates(commands);
+    return writePendingUpdates(commands, false);
   }
 
   public ClusterState writePendingUpdates() throws KeeperException, InterruptedException {
-    return writePendingUpdates(updates);
+    return writePendingUpdates(updates, true);
   }
+
   /**
    * Writes all pending updates to ZooKeeper and returns the modified cluster state
    *
@@ -208,13 +232,29 @@ public class ZkStateWriter {
    * @throws KeeperException if any ZooKeeper operation results in an error
    * @throws InterruptedException if the current thread is interrupted
    */
-  public ClusterState writePendingUpdates(Map<String, ZkWriteCommand> updates)
+  public ClusterState writePendingUpdates(
+      Map<String, ZkWriteCommand> updates, boolean resetPendingUpdateCounters)
       throws IllegalStateException, KeeperException, InterruptedException {
     if (invalidState) {
       throw new IllegalStateException(
           "ZkStateWriter has seen a tragic error, this instance can no longer be used");
     }
+
+    if (log.isDebugEnabled()) {
+      log.debug(
+          String.format(
+              Locale.ROOT,
+              "Request to write pending updates with updates of length: %d, "
+                  + "pending updates of length: %d, writing all pending updates: %b",
+              updates.size(),
+              this.updates.size(),
+              updates == this.updates));
+    }
+
     if ((updates == this.updates) && !hasPendingUpdates()) {
+      if (log.isDebugEnabled()) {
+        log.debug("Attempted to flush all pending updates, but there are no pending updates");
+      }
       return clusterState;
     }
     Timer.Context timerContext = stats.time("update_state");
@@ -223,18 +263,19 @@ public class ZkStateWriter {
       if (!updates.isEmpty()) {
         for (Map.Entry<String, ZkWriteCommand> entry : updates.entrySet()) {
           String name = entry.getKey();
-          String path = ZkStateReader.getCollectionPath(name);
+          String path = DocCollection.getCollectionPath(name);
           ZkWriteCommand cmd = entry.getValue();
           DocCollection c = cmd.collection;
 
           // Update the Per Replica State znodes if needed
           if (cmd.ops != null) {
             cmd.ops.persist(path, reader.getZkClient());
+
             clusterState =
                 clusterState.copyWith(
                     name,
-                    cmd.collection.copyWith(
-                        PerReplicaStates.fetch(
+                    cmd.collection.setPerReplicaStates(
+                        PerReplicaStatesOps.fetch(
                             cmd.collection.getZNode(), reader.getZkClient(), null)));
           }
 
@@ -247,49 +288,61 @@ public class ZkStateWriter {
             reader.getZkClient().clean(path);
           } else {
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
+            if (minStateByteLenForCompression > -1 && data.length > minStateByteLenForCompression) {
+              // When compressing state.json, we expect at least a 10:1 compression ratio.
+              data = compressor.compressBytes(data, data.length / 10);
+            }
             if (reader.getZkClient().exists(path, true)) {
               if (log.isDebugEnabled()) {
                 log.debug("going to update_collection {} version: {}", path, c.getZNodeVersion());
               }
               Stat stat = reader.getZkClient().setData(path, data, c.getZNodeVersion(), true);
               DocCollection newCollection =
-                  new DocCollection(
-                      name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion());
+                  DocCollection.create(
+                      name,
+                      c.getSlicesMap(),
+                      c.getProperties(),
+                      c.getRouter(),
+                      stat.getVersion(),
+                      Instant.ofEpochMilli(stat.getCtime()),
+                      PerReplicaStatesOps.getZkClientPrsSupplier(reader.getZkClient(), path));
               clusterState = clusterState.copyWith(name, newCollection);
             } else {
               log.debug("going to create_collection {}", path);
-              reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
+              Stat stat = new Stat();
+              reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true, stat);
               DocCollection newCollection =
-                  new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0);
+                  DocCollection.create(
+                      name,
+                      c.getSlicesMap(),
+                      c.getProperties(),
+                      c.getRouter(),
+                      0,
+                      Instant.ofEpochMilli(stat.getCtime()),
+                      PerReplicaStatesOps.getZkClientPrsSupplier(reader.getZkClient(), path));
               clusterState = clusterState.copyWith(name, newCollection);
             }
           }
 
-          // When dealing with a per replica collection that did not do any update to the per
-          // replica states znodes but did update state.json, we add then remove a dummy node to
-          // change the cversion of the parent znode. This is not needed by Solr, there's no code
-          // watching the children and not watching the state.json node itself. It would be useful
-          // for external code watching the collection's Zookeeper state.json node children but not
-          // the node itself.
           if (cmd.ops == null && cmd.isPerReplicaStateCollection) {
-            PerReplicaStatesOps.touchChildren().persist(path, reader.getZkClient());
             DocCollection currentCollState = clusterState.getCollection(cmd.name);
             if (currentCollState != null) {
               clusterState =
                   clusterState.copyWith(
                       name,
-                      currentCollState.copyWith(
-                          PerReplicaStates.fetch(
+                      currentCollState.setPerReplicaStates(
+                          PerReplicaStatesOps.fetch(
                               currentCollState.getZNode(), reader.getZkClient(), null)));
             }
           }
         }
 
         updates.clear();
-        numUpdates = 0;
       }
 
-      lastUpdatedTime = System.nanoTime();
+      if (resetPendingUpdateCounters) {
+        resetPendingUpdateCounters();
+      }
       success = true;
     } catch (KeeperException.BadVersionException bve) {
       // this is a tragic error, we must disallow usage of this instance
@@ -306,6 +359,11 @@ public class ZkStateWriter {
 
     log.trace("New Cluster State is: {}", clusterState);
     return clusterState;
+  }
+
+  public void resetPendingUpdateCounters() {
+    lastUpdatedTime = System.nanoTime();
+    numUpdates = 0;
   }
 
   /**

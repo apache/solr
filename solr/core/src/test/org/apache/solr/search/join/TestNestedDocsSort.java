@@ -25,10 +25,16 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SortSpecParsing;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class TestNestedDocsSort extends SolrTestCaseJ4 {
+
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -86,7 +92,7 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testOmitSpaceinFrontOfOrd() {
+  public void testOmitSpaceInFrontOfOrd() {
     parseAssertEq("childfield(name_s1,$q)asc", "childfield(name_s1,$q) asc");
   }
 
@@ -100,7 +106,7 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
   }
 
   private void parseAssertNe(String sortField, String sortField2) {
-    assertFalse(parse(sortField).equals(parse(sortField2)));
+    assertNotEquals(parse(sortField), parse(sortField2));
   }
 
   private SortField parse(String a) {
@@ -124,7 +130,7 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
     }
   }
 
-  public void testCachehits() {
+  public void testCacheHits() {
     final SolrQueryRequest req = req();
     try {
       @SuppressWarnings({"rawtypes"})

@@ -16,11 +16,12 @@
  */
 package org.apache.solr.core;
 
+import static org.apache.lucene.codecs.lucene90.Lucene90StoredFieldsFormat.MODE_KEY;
+
 import java.io.IOException;
 import java.util.Map;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene90.Lucene90StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene91.Lucene91Codec.Mode;
+import org.apache.lucene.codecs.lucene99.Lucene99Codec.Mode;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.SegmentInfo;
@@ -139,7 +140,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
                   "Expecting compression mode string to be "
                       + expectedModeString
                       + " but got: "
-                      + info.getAttribute(Lucene90StoredFieldsFormat.MODE_KEY)
+                      + info.getAttribute(MODE_KEY)
                       + "\n SegmentInfo: "
                       + info
                       + "\n SegmentInfos: "
@@ -147,7 +148,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
                       + "\n Codec: "
                       + core.getCodec(),
                   expectedModeString,
-                  info.getAttribute(Lucene90StoredFieldsFormat.MODE_KEY));
+                  info.getAttribute(MODE_KEY));
               return null;
             });
   }
@@ -188,7 +189,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     System.clearProperty("tests.COMPRESSION_MODE");
   }
 
-  public void testBadCompressionMode() throws Exception {
+  public void testBadCompressionMode() {
     SolrException thrown =
         expectThrows(
             SolrException.class,

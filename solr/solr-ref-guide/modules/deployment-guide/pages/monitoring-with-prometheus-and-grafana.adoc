@@ -18,14 +18,15 @@
 
 If you use https://prometheus.io[Prometheus] and https://grafana.com[Grafana] for metrics storage and data visualization, Solr includes a Prometheus exporter to collect metrics and other data.
 
+The Prometheus exporter is included with the full Solr distribution, and is located under `prometheus-exporter/`.
+It is not included in the `slim` Solr distribution.
+
 A Prometheus exporter (`solr-exporter`) allows users to monitor not only Solr metrics which come from the xref:metrics-reporting.adoc#metrics-api[Metrics API], but also facet counts which come from xref:query-guide:faceting.adoc[] and responses to xref:configuration-guide:collections-api.adoc[] commands and xref:ping.adoc[] requests.
 
 This graphic provides a more detailed view:
 
 .solr-exporter Diagram
 image::monitoring-with-prometheus-and-grafana/solr-exporter-diagram.png[image,width=600]
-
-The Prometheus exporter is included with the Solr distribution, and is located under `prometheus-exporter/`.
 
 There are three aspects to running `solr-exporter`:
 
@@ -38,6 +39,8 @@ See the section below <<Prometheus Configuration>>
 
 == Starting the Exporter
 You can start `solr-exporter` by running `./bin/solr-exporter` (Linux) or `.\bin\solr-exporter.cmd` (Windows) from the `prometheus-exporter/` directory.
+
+The metrics exposed by `solr-exporter` can be seen at the metrics endpoint: `\http://localhost:8983/solr/admin/metrics`.
 
 See the commands below depending on your operating system and Solr operating mode:
 
@@ -161,7 +164,24 @@ The `solr-exporter` collects metrics from Solr every few seconds controlled by t
 These metrics are cached and returned regardless of how frequently prometheus is configured to pull metrics from this tool.
 The freshness of the metrics can be improved by reducing the scrape interval but do not set it to a very low value because metrics collection can be expensive and can execute arbitrary searches to ping Solr.
 
-The metrics exposed by `solr-exporter` can be seen at the metrics endpoint: `\http://localhost:8983/solr/admin/metrics`.
+`-i`, `--cluster-id`, `$CLUSTER_ID`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: _see description_
+|===
++
+A unique ID for the cluster to monitor. This ID will be added to all metrics as a label `cluster_id` and can be used as a filter in the Grafana dashboard if you operate multiple Solr clusters reporting to the same Prometheus instance. If this option is omitted, a hash of the `baseUrl` or `zkHost` will be used as ID by default.
+
+`-u`, `--credentials`, `$CREDENTIALS`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Specify the credentials in the format `username:password`. Example: `--credentials solr:SolrRocks`.
+
 
 === Environment Variable Options
 
@@ -212,7 +232,7 @@ Extra JVM options.
 |===
 +
 Credentials for connecting to a ZooKeeper host that is protected with ACLs.
-For more information on what to include in this variable, refer to the section xref:zookeeper-access-control.adoc#zookeeper-acls-in-solr-scripts[ZooKeeper ACLs in Solr Scripts] or the example <<getting-metrics-from-a-secured-solrcloud>> below.
+For more information on what to include in this variable, refer to the section xref:zookeeper-access-control.adoc#zookeeper-acls-in-solr-cli[ZooKeeper ACLs in Solr CLI] or the example <<getting-metrics-from-a-secured-solrcloud>> below.
 
 `CLASSPATH_PREFIX`::
 +
@@ -279,7 +299,7 @@ Below is a slightly shortened version of it:
             {
               name         : "solr_ping",
               type         : "GAUGE",
-              help         : "See following URL: https://solr.apache.org/guide/ping.html",
+              help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/ping.html",
               label_names  : [],
               label_values : [],
               value        : $value
@@ -311,7 +331,7 @@ Below is a slightly shortened version of it:
             {
             name         : "solr_metrics_jetty_response_total",
             type         : "COUNTER",
-            help         : "See following URL: https://solr.apache.org/guide/metrics-reporting.html",
+            help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/metrics-reporting.html",
             label_names  : ["status"],
             label_values : [$status],
             value        : $value
@@ -336,7 +356,7 @@ Below is a slightly shortened version of it:
             {
               name         : "solr_collections_live_nodes",
               type         : "GAUGE",
-              help         : "See following URL: https://solr.apache.org/guide/collections-api.html#clusterstatus",
+              help         : "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/cluster-node-management.html#clusterstatus",
               label_names  : [],
               label_values : [],
               value        : $value
@@ -473,7 +493,7 @@ A jq query has to output JSON in the following format:
 {
   "name": "solr_ping",
   "type": "GAUGE",
-  "help": "See following URL: https://solr.apache.org/guide/ping.html",
+  "help": "See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/ping.html",
   "label_names": ["base_url","core"],
   "label_values": ["http://localhost:8983/solr","collection1"],
   "value": 1.0
@@ -523,7 +543,7 @@ For example, `solr-exporter` converts the JSON in the previous section to the fo
 [source,plain]
 ----
 # TYPE solr_ping gauge
-# HELP solr_ping See following URL: https://solr.apache.org/guide/ping.html
+# HELP solr_ping See following URL: https://solr.apache.org/guide/solr/latest/deployment-guide/ping.html
 solr_ping{base_url="http://localhost:8983/solr",core="collection1"} 1.0
 ----
 

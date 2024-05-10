@@ -91,7 +91,7 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
 
     @Override
     public void write(JSONWriter arg0) {
-      LinkedHashMap<String, Object> info = new LinkedHashMap<String, Object>();
+      LinkedHashMap<String, Object> info = new LinkedHashMap<>();
       info.put(CoreAdminParams.CORE, getCoreName());
       info.put(SolrSnapshotManager.INDEX_DIR_PATH, getIndexDirPath());
       info.put(SolrSnapshotManager.GENERATION_NUM, getGenerationNumber());
@@ -244,7 +244,7 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
     result.add(SolrSnapshotManager.SNAPSHOT_STATUS, this.status.toString());
     result.add(SolrSnapshotManager.CREATION_DATE, this.getCreationDate().getTime());
 
-    NamedList<NamedList<Object>> replicas = new NamedList<NamedList<Object>>();
+    NamedList<NamedList<Object>> replicas = new NamedList<>();
     for (CoreSnapshotMetaData x : replicaSnapshots) {
       replicas.add(x.getCoreName(), x.toNamedList());
     }

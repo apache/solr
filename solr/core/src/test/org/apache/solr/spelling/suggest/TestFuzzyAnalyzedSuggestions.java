@@ -36,7 +36,7 @@ public class TestFuzzyAnalyzedSuggestions extends SolrTestCaseJ4 {
     assertQ(req("qt", URI_MIN_FUZZY_LENGTH, "q", "", SpellingParams.SPELLCHECK_BUILD, "true"));
   }
 
-  public void testDefault() throws Exception {
+  public void testDefault() {
 
     // tests to demonstrate default maxEdit parameter (value: 1), control for testWithMaxEdit2
     assertQ(
@@ -69,7 +69,7 @@ public class TestFuzzyAnalyzedSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='spellcheck']/lst[@name='suggestions'][not(node())]");
   }
 
-  public void testWithMaxEdit2() throws Exception {
+  public void testWithMaxEdit2() {
 
     assertQ(
         req("qt", URI_MIN_EDIT_2, "q", "chagn", SpellingParams.SPELLCHECK_COUNT, "3"),
@@ -93,7 +93,7 @@ public class TestFuzzyAnalyzedSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='chacn']/arr[@name='suggestion']/str[3][.='charge']");
   }
 
-  public void testWithNonFuzzyPrefix4() throws Exception {
+  public void testWithNonFuzzyPrefix4() {
 
     // This test should not match charge, as the nonFuzzyPrefix has been set to 4
     assertQ(
@@ -103,7 +103,7 @@ public class TestFuzzyAnalyzedSuggestions extends SolrTestCaseJ4 {
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='chanr']/arr[@name='suggestion']/str[2][.='change']");
   }
 
-  public void testWithMinFuzzyLength2() throws Exception {
+  public void testWithMinFuzzyLength2() {
 
     // This test should match chance as the minFuzzyLength parameter has been set to 2
     assertQ(

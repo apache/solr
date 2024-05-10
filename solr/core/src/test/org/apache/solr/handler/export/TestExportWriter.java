@@ -1048,11 +1048,11 @@ public class TestExportWriter extends SolrTestCaseJ4 {
           String field = "number_" + type + mv + indexed;
           SchemaField sf = h.getCore().getLatestSchema().getField(field + "_t");
           assertTrue(sf.hasDocValues());
-          assertTrue(sf.getType().getNumberType() != null);
+          assertNotNull(sf.getType().getNumberType());
 
           sf = h.getCore().getLatestSchema().getField(field + "_p");
           assertTrue(sf.hasDocValues());
-          assertTrue(sf.getType().getNumberType() != null);
+          assertNotNull(sf.getType().getNumberType());
           assertTrue(sf.getType().isPointField());
 
           trieFields.add(field + "_t");
@@ -1080,7 +1080,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
       addDouble(doc, random().nextDouble() * 3000 * (random().nextBoolean() ? 1 : -1), false);
       addDate(doc, dateFormat.format(new Date()), false);
 
-      // MV need to be unique in order to be the same in Trie vs Points
+      // MV needs to be unique in order to be the same in Trie vs Points
       Set<Integer> ints = new HashSet<>();
       Set<Long> longs = new HashSet<>();
       Set<Float> floats = new HashSet<>();
@@ -1235,8 +1235,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     for (int i = 0; i < 100; i++) {
       boolean found = false;
       String si = String.valueOf(i);
-      for (int j = 0; j < docs.size(); j++) {
-        if (docs.get(j).get("sortabledv_udvas").equals(si)) {
+      for (Map<String, Object> doc : docs) {
+        if (doc.get("sortabledv_udvas").equals(si)) {
           found = true;
           break;
         }
@@ -1298,6 +1298,43 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             .contains("Must have useDocValuesAsStored='true'"));
   }
 
+  @Test
+  public void testGlobFields() throws Exception {
+    assertU(delQ("*:*"));
+    assertU(commit());
+    createLargeIndex();
+    SolrQueryRequest req =
+        req("q", "*:*", "qt", "/export", "fl", "id,*_udvas,*_i_p", "sort", "id asc");
+    assertJQ(
+        req,
+        "response/numFound==100000",
+        "response/docs/[0]/id=='0'",
+        "response/docs/[1]/id=='1'",
+        "response/docs/[0]/sortabledv_udvas=='0'",
+        "response/docs/[1]/sortabledv_udvas=='1'",
+        "response/docs/[0]/small_i_p==0",
+        "response/docs/[1]/small_i_p==1");
+
+    assertU(delQ("*:*"));
+    assertU(commit());
+    createLargeIndex();
+    req = req("q", "*:*", "qt", "/export", "fl", "*", "sort", "id asc");
+    assertJQ(
+        req,
+        "response/numFound==100000",
+        "response/docs/[0]/id=='0'",
+        "response/docs/[1]/id=='1'",
+        "response/docs/[0]/sortabledv_udvas=='0'",
+        "response/docs/[1]/sortabledv_udvas=='1'",
+        "response/docs/[0]/small_i_p==0",
+        "response/docs/[1]/small_i_p==1");
+
+    String jq = JQ(req);
+    assertFalse(
+        "Fields without docvalues and useDocValuesAsStored should not be returned",
+        jq.contains("\"sortabledv\""));
+  }
+
   @SuppressWarnings("rawtypes")
   private void validateSort(int numDocs) throws Exception {
     // 10 fields
@@ -1354,7 +1391,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     Map rsp = (Map) Utils.fromJSONString(response);
     List doclist = (List) (((Map) rsp.get("response")).get("docs"));
 
-    assert docs.size() == numDocs;
+    assertEquals(docs.size(), numDocs);
 
     for (int i = 0; i < docs.size() - 1; i++) { // docs..
       assertEquals(
@@ -1362,9 +1399,9 @@ public class TestExportWriter extends SolrTestCaseJ4 {
           ((LinkedHashMap) doclist.get(i)).get("id"),
           String.valueOf(((HashMap<?, ?>) docs.get(i)).get("id")));
 
-      for (int j = 0; j < fieldSorts.length; j++) { // fields ..
-        String field = fieldSorts[j].getField();
-        String sort = fieldSorts[j].getSort();
+      for (SortFields fieldSort : fieldSorts) { // fields ..
+        String field = fieldSort.getField();
+        String sort = fieldSort.getSort();
         String fieldVal1 = String.valueOf(((HashMap) docs.get(i)).get(field)); // 1st doc
         String fieldVal2 = String.valueOf(((HashMap) docs.get(i + 1)).get(field)); // 2nd obj
         if (fieldVal1.equals(fieldVal2)) {
@@ -1409,7 +1446,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     }
   }
 
-  private class SortFields {
+  private static class SortFields {
     String fieldName;
     String sortOrder;
     String[] orders = {"asc", "desc"};
@@ -1446,7 +1483,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         h.query(req("q", query, "qt", "/export", "fl", pointFieldsFl, "sort", sort));
     String resultTries =
         h.query(req("q", query, "qt", "/export", "fl", trieFieldsFl, "sort", sort));
-    assertJsonEquals(resultPoints.replaceAll("_p", ""), resultTries.replaceAll("_t", ""));
+    assertJsonEquals(resultPoints.replace("_p", ""), resultTries.replace("_t", ""));
   }
 
   private void addFloat(SolrInputDocument doc, float value, boolean mv) {

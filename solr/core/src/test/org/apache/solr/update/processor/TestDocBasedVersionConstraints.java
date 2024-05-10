@@ -47,7 +47,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void before() throws Exception {
+  public void before() {
     assertU(delQ("*:*"));
     assertU(commit());
   }
@@ -529,7 +529,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
 
     // "dead" placeholder docs can be periodically cleaned up
     // ie: assertU(delQ("+live_b:false +timestamp_tdt:[* TO NOW/MINUTE-5MINUTE]"));
-    // but to prevent the test from ebing time sensitive we'll just purge them all
+    // but to prevent the test from being time sensitive we'll just purge them all
     assertU(delQ("+live_b:false"));
     assertU(commit());
     // now doc can be re-added w/any version, no matter how low
@@ -788,7 +788,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
   }
 
   private void updateWithChain(String chain, String... fields) throws Exception {
-    assert fields.length % 2 == 0;
+    assertEquals(0, fields.length % 2);
     SolrInputDocument doc = new SolrInputDocument(fields);
     updateJ(jsonAdd(doc), params("update.chain", chain));
   }

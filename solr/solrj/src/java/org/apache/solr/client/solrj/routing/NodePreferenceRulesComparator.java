@@ -22,11 +22,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.common.StringUtils;
-import org.apache.solr.common.cloud.NodesSysPropsCacher;
+import org.apache.solr.common.cloud.NodesSysProps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 
 /**
  * This comparator makes sure that the given replicas are sorted according to the given list of
@@ -40,7 +40,7 @@ import org.apache.solr.common.params.SolrParams;
  */
 public class NodePreferenceRulesComparator implements Comparator<Object> {
 
-  private final NodesSysPropsCacher sysPropsCache;
+  private final NodesSysProps sysProps;
   private final String nodeName;
   private final List<PreferenceRule> sortRules;
   private final List<PreferenceRule> preferenceRules;
@@ -60,10 +60,10 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
       final SolrParams requestParams,
       final String nodeName,
       final String localHostAddress,
-      final NodesSysPropsCacher sysPropsCache,
+      final NodesSysProps sysProps,
       final ReplicaListTransformerFactory defaultRltFactory,
       final ReplicaListTransformerFactory stableRltFactory) {
-    this.sysPropsCache = sysPropsCache;
+    this.sysProps = sysProps;
     this.preferenceRules = preferenceRules;
     this.nodeName = nodeName;
     this.localHostAddress = localHostAddress;
@@ -100,16 +100,11 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
     }
   }
 
-  private static final ReplicaListTransformer NOOP_RLT =
-      new ReplicaListTransformer() {
-        @Override
-        public <T> void transform(List<T> choices) {
-          // Cannot use a method reference because of generic types!
-        }
-      };
+  private static final ReplicaListTransformer NOOP_RLT = NoOpReplicaListTransformer.INSTANCE;
   private static final ReplicaListTransformerFactory NOOP_RLTF =
       (String configSpec, SolrParams requestParams, ReplicaListTransformerFactory fallback) ->
           NOOP_RLT;
+
   /**
    * For compatibility with tests, which expect this constructor to have no effect on the *base*
    * order.
@@ -143,7 +138,7 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
             rhs = hasLeaderStatus(right, preferenceRule.value);
             break;
           case ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP:
-            if (sysPropsCache == null) {
+            if (sysProps == null) {
               throw new IllegalArgumentException(
                   "Unable to get the NodesSysPropsCacher on sorting replicas by preference:"
                       + preferenceRule.value);
@@ -175,8 +170,8 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
 
     Collection<String> tags = Collections.singletonList(metricTag);
     String otherNodeName = ((Replica) o).getNodeName();
-    Map<String, Object> currentNodeMetric = sysPropsCache.getSysProps(nodeName, tags);
-    Map<String, Object> otherNodeMetric = sysPropsCache.getSysProps(otherNodeName, tags);
+    Map<String, Object> currentNodeMetric = sysProps.getSysProps(nodeName, tags);
+    Map<String, Object> otherNodeMetric = sysProps.getSysProps(otherNodeName, tags);
     return currentNodeMetric.equals(otherNodeMetric);
   }
 
@@ -190,7 +185,7 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
       return false;
     }
     if (prefix.equals(ShardParams.REPLICA_LOCAL)) {
-      return !StringUtils.isEmpty(localHostAddress) && s.startsWith(localHostAddress);
+      return StrUtils.isNotNullOrEmpty(localHostAddress) && s.startsWith(localHostAddress);
     } else {
       return s.startsWith(prefix);
     }

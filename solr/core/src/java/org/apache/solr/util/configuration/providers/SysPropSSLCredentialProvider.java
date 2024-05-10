@@ -26,6 +26,7 @@ public class SysPropSSLCredentialProvider extends AbstractSSLCredentialProvider 
     return DEFAULT_CREDENTIAL_KEY_MAP;
   }
 
+  @Override
   protected String getCredential(String syspropKey) {
     if (System.getProperty(syspropKey) != null) {
       return System.getProperty(syspropKey);

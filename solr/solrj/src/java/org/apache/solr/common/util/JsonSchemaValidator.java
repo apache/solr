@@ -17,7 +17,15 @@
 
 package org.apache.solr.common.util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -39,7 +47,7 @@ public class JsonSchemaValidator {
   }
 
   public JsonSchemaValidator(Map<?, ?> jsonSchema) {
-    this.validators = new LinkedList<>();
+    this.validators = new ArrayList<>();
     for (Map.Entry<?, ?> entry : jsonSchema.entrySet()) {
       Object fname = entry.getKey();
       if (KNOWN_FNAMES.contains(fname.toString())) continue;
@@ -74,7 +82,7 @@ public class JsonSchemaValidator {
   }
 
   public List<String> validateJson(Object data) {
-    List<String> errs = new LinkedList<>();
+    List<String> errs = new ArrayList<>();
     validate(data, errs);
     return errs.isEmpty() ? null : errs;
   }
@@ -142,7 +150,7 @@ enum Type {
   NULL(null),
   UNKNOWN(Object.class);
 
-  Class<?> type;
+  final Class<?> type;
 
   Type(Class<?> type) {
     this.type = type;
@@ -159,7 +167,7 @@ class TypeValidator extends Validator<Object> {
 
   TypeValidator(Map<?, ?> schema, Object type) {
     super(schema, type);
-    types = new HashSet<>(1);
+    types = CollectionUtil.newHashSet(1);
     if (type instanceof List) {
       for (Object t : (List) type) {
         types.add(getType(t.toString()));
@@ -262,7 +270,7 @@ class RequiredValidator extends Validator<List<String>> {
                     + ").  This is a bug.");
             return false;
           }
-          String subprop = requiredProp.substring(requiredProp.indexOf(".") + 1);
+          String subprop = requiredProp.substring(requiredProp.indexOf('.') + 1);
           if (!validate(((Map) o).get(requiredProp), errs, Collections.singleton(subprop))) {
             return false;
           }

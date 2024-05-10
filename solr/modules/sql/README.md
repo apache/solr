@@ -43,4 +43,4 @@ To execute the module tests:
 
 Usage
 -----
-Please refer to the 'SQL Query Language' section of the reference guide: https://solr.apache.org/guide/query-guide/sql-query.html
+Please refer to the 'SQL Query Language' section of the reference guide: https://solr.apache.org/guide/solr/latest/query-guide/sql-query.html

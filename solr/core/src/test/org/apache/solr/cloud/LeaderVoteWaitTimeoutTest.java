@@ -30,9 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.JSONTestUtil;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -41,6 +41,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -58,7 +59,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   private static Map<URI, JettySolrRunner> jettys;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void setupCluster() {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
     System.setProperty("leaderVoteWait", "2000");
@@ -70,7 +71,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void tearDownCluster() throws Exception {
+  public static void tearDownCluster() {
     proxies = null;
     jettys = null;
     System.clearProperty("solr.directoryFactory");
@@ -104,6 +105,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     }
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     if (null != proxies) {
@@ -261,7 +263,8 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     cluster.waitForJettyToStop(j);
 
     try {
-      // even replica2 joined election at the end of the queue, but it is the one with highest term
+      // even replica2 joined election at the end of the queue, but it is the one with the highest
+      // term
       waitForState(
           "Timeout waiting for new leader",
           collectionName,
@@ -290,7 +293,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
   private void addDoc(String collection, int docId, JettySolrRunner solrRunner)
       throws IOException, SolrServerException {
-    try (HttpSolrClient solrClient =
+    try (SolrClient solrClient =
         new HttpSolrClient.Builder(solrRunner.getBaseUrl().toString()).build()) {
       solrClient.add(collection, new SolrInputDocument("id", String.valueOf(docId)));
       solrClient.commit(collection);
@@ -301,54 +304,44 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       List<Replica> notLeaders, String testCollectionName, int firstDocId, int lastDocId)
       throws Exception {
     Replica leader = cluster.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
-    HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
-    List<HttpSolrClient> replicas = new ArrayList<>(notLeaders.size());
+    SolrClient leaderSolr = getSolrClient(leader, testCollectionName);
+    List<SolrClient> replicas = new ArrayList<>(notLeaders.size());
 
     for (Replica r : notLeaders) {
-      replicas.add(getHttpSolrClient(r, testCollectionName));
+      replicas.add(getSolrClient(r, testCollectionName));
     }
     try {
       for (int d = firstDocId; d <= lastDocId; d++) {
         String docId = String.valueOf(d);
-        assertDocExists(leaderSolr, testCollectionName, docId);
-        for (HttpSolrClient replicaSolr : replicas) {
-          assertDocExists(replicaSolr, testCollectionName, docId);
+        assertDocExists(leaderSolr, docId);
+        for (SolrClient replicaSolr : replicas) {
+          assertDocExists(replicaSolr, docId);
         }
       }
     } finally {
       if (leaderSolr != null) {
         leaderSolr.close();
       }
-      for (HttpSolrClient replicaSolr : replicas) {
+      for (SolrClient replicaSolr : replicas) {
         replicaSolr.close();
       }
     }
   }
 
-  private void assertDocExists(HttpSolrClient solr, String coll, String docId) throws Exception {
+  private void assertDocExists(SolrClient solr, String docId) throws Exception {
     NamedList<?> rsp = realTimeGetDocId(solr, docId);
     String match = JSONTestUtil.matchObj("/id", rsp.get("doc"), docId);
-    assertTrue(
-        "Doc with id="
-            + docId
-            + " not found in "
-            + solr.getBaseURL()
-            + " due to: "
-            + match
-            + "; rsp="
-            + rsp,
-        match == null);
+    assertNull("Doc with id=" + docId + " not found due to: " + match + "; rsp=" + rsp, match);
   }
 
-  private NamedList<Object> realTimeGetDocId(HttpSolrClient solr, String docId)
+  private NamedList<Object> realTimeGetDocId(SolrClient solr, String docId)
       throws SolrServerException, IOException {
     QueryRequest qr = new QueryRequest(params("qt", "/get", "id", docId, "distrib", "false"));
     return solr.request(qr);
   }
 
-  protected HttpSolrClient getHttpSolrClient(Replica replica, String coll) throws Exception {
+  protected SolrClient getSolrClient(Replica replica, String coll) {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    String url = zkProps.getBaseUrl() + "/" + coll;
-    return getHttpSolrClient(url);
+    return getHttpSolrClient(zkProps.getBaseUrl(), coll);
   }
 }

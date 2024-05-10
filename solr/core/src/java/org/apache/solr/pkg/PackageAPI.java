@@ -35,16 +35,17 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.beans.Package;
+import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.filestore.PackageStoreAPI;
+import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
@@ -57,8 +58,7 @@ import org.slf4j.LoggerFactory;
 
 /** This implements the public end points (/api/cluster/package) of package API. */
 public class PackageAPI {
-  public final boolean enablePackages =
-      Boolean.parseBoolean(System.getProperty("enable.packages", "false"));
+  public final boolean enablePackages = EnvUtils.getPropertyAsBool("enable.packages", false);
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ERR_MSG =
@@ -66,15 +66,15 @@ public class PackageAPI {
 
   final CoreContainer coreContainer;
   private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
-  private final PackageLoader packageLoader;
+  private final SolrPackageLoader packageLoader;
   Packages pkgs;
 
   public final Edit editAPI = new Edit();
   public final Read readAPI = new Read();
 
-  public PackageAPI(CoreContainer coreContainer, PackageLoader loader) {
-    if (coreContainer.getPackageStoreAPI() == null) {
-      throw new IllegalStateException("Must successfully load PackageStoreAPI first");
+  public PackageAPI(CoreContainer coreContainer, SolrPackageLoader loader) {
+    if (coreContainer.getFileStoreAPI() == null) {
+      throw new IllegalStateException("Must successfully load FileStoreAPI first");
     }
 
     this.coreContainer = coreContainer;
@@ -192,7 +192,7 @@ public class PackageAPI {
 
     public PkgVersion() {}
 
-    public PkgVersion(Package.AddVersion addVersion) {
+    public PkgVersion(PackagePayload.AddVersion addVersion) {
       this.pkg = addVersion.pkg;
       this.version = addVersion.version;
       this.files = addVersion.files == null ? null : Collections.unmodifiableList(addVersion.files);
@@ -247,14 +247,14 @@ public class PackageAPI {
         payload.addError("Package null");
         return;
       }
-      PackageLoader.Package pkg = coreContainer.getPackageLoader().getPackage(p);
+      SolrPackageLoader.SolrPackage pkg = coreContainer.getPackageLoader().getPackage(p);
       if (pkg == null) {
         payload.addError("No such package: " + p);
         return;
       }
       // first refresh my own
       packageLoader.notifyListeners(p);
-      for (String s : coreContainer.getPackageStoreAPI().shuffledNodes()) {
+      for (String s : coreContainer.getFileStoreAPI().shuffledNodes()) {
         Utils.executeGET(
             coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
             coreContainer
@@ -269,15 +269,15 @@ public class PackageAPI {
     }
 
     @Command(name = "add")
-    public void add(PayloadObj<Package.AddVersion> payload) {
+    public void add(PayloadObj<PackagePayload.AddVersion> payload) {
       if (!checkEnabled(payload)) return;
-      Package.AddVersion add = payload.get();
+      PackagePayload.AddVersion add = payload.get();
       if (add.files.isEmpty()) {
         payload.addError("No files specified");
         return;
       }
-      PackageStoreAPI packageStoreAPI = coreContainer.getPackageStoreAPI();
-      packageStoreAPI.validateFiles(add.files, true, s -> payload.addError(s));
+      FileStoreAPI fileStoreAPI = coreContainer.getFileStoreAPI();
+      fileStoreAPI.validateFiles(add.files, true, s -> payload.addError(s));
       if (payload.hasError()) return;
       Packages[] finalState = new Packages[1];
       try {
@@ -322,9 +322,9 @@ public class PackageAPI {
     }
 
     @Command(name = "delete")
-    public void del(PayloadObj<Package.DelVersion> payload) {
+    public void del(PayloadObj<PackagePayload.DelVersion> payload) {
       if (!checkEnabled(payload)) return;
-      Package.DelVersion delVersion = payload.get();
+      PackagePayload.DelVersion delVersion = payload.get();
       try {
         coreContainer
             .getZkController()
@@ -426,7 +426,7 @@ public class PackageAPI {
   }
 
   void notifyAllNodesToSync(int expected) {
-    for (String s : coreContainer.getPackageStoreAPI().shuffledNodes()) {
+    for (String s : coreContainer.getFileStoreAPI().shuffledNodes()) {
       Utils.executeGET(
           coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
           coreContainer

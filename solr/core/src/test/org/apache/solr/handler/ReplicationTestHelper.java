@@ -16,21 +16,22 @@
  */
 package org.apache.solr.handler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -38,6 +39,8 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,20 +58,29 @@ public final class ReplicationTestHelper {
         new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
-    JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
+    JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
     JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
     jetty.start();
     return jetty;
   }
 
-  public static HttpSolrClient createNewSolrClient(String baseUrl) {
-    try {
-      // setup the client...
-      HttpSolrClient client = SolrTestCaseJ4.getHttpSolrClient(baseUrl, 15000, 90000);
-      return client;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+  /**
+   * @param baseUrl the root URL for a Solr node
+   */
+  public static SolrClient createNewSolrClient(String baseUrl) {
+    return createNewSolrClient(baseUrl, null);
+  }
+
+  /**
+   * @param baseUrl the root URL for a Solr node
+   * @param collectionOrCore an optional default collection/core for the created client
+   */
+  public static SolrClient createNewSolrClient(String baseUrl, String collectionOrCore) {
+    return new HttpSolrClient.Builder(baseUrl)
+        .withDefaultCollection(collectionOrCore)
+        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
+        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
+        .build();
   }
 
   public static int index(SolrClient s, Object... fields) throws Exception {
@@ -85,30 +97,25 @@ public final class ReplicationTestHelper {
    */
   private static void copyFile(File src, File dst, Integer port, boolean internalCompression)
       throws IOException {
-    try (BufferedReader in =
-            new BufferedReader(
-                new InputStreamReader(new FileInputStream(src), StandardCharsets.UTF_8));
-        Writer out = new OutputStreamWriter(new FileOutputStream(dst), StandardCharsets.UTF_8)) {
-
+    try (BufferedReader in = Files.newBufferedReader(src.toPath(), StandardCharsets.UTF_8);
+        Writer out = Files.newBufferedWriter(dst.toPath(), StandardCharsets.UTF_8)) {
       for (String line = in.readLine(); null != line; line = in.readLine()) {
         if (null != port) {
           line = line.replace("TEST_PORT", port.toString());
         }
-        line = line.replace("COMPRESSION", internalCompression ? "internal" : "false");
+        String externalCompression = LuceneTestCase.random().nextBoolean() ? "external" : "false";
+        line = line.replace("COMPRESSION", internalCompression ? "internal" : externalCompression);
         out.write(line);
       }
     }
   }
 
   public static void assertVersions(SolrClient client1, SolrClient client2) throws Exception {
-    NamedList<Object> details = getDetails(client1);
-    @SuppressWarnings({"unchecked"})
-    ArrayList<NamedList<Object>> commits = (ArrayList<NamedList<Object>>) details.get("commits");
     Long maxVersionClient1 = getVersion(client1);
     Long maxVersionClient2 = getVersion(client2);
 
     if (maxVersionClient1 > 0 && maxVersionClient2 > 0) {
-      assertEquals(maxVersionClient1, maxVersionClient2);
+      SolrTestCaseJ4.assertEquals(maxVersionClient1, maxVersionClient2);
     }
 
     // check vs /replication?command=indexversion call
@@ -120,13 +127,13 @@ public final class ReplicationTestHelper {
     NamedList<Object> resp = client1.request(req);
     assertReplicationResponseSucceeded(resp);
     Long version = (Long) resp.get("indexversion");
-    assertEquals(maxVersionClient1, version);
+    SolrTestCaseJ4.assertEquals(maxVersionClient1, version);
 
     // check vs /replication?command=indexversion call
     resp = client2.request(req);
     assertReplicationResponseSucceeded(resp);
     version = (Long) resp.get("indexversion");
-    assertEquals(maxVersionClient2, version);
+    SolrTestCaseJ4.assertEquals(maxVersionClient2, version);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -199,49 +206,16 @@ public final class ReplicationTestHelper {
     @SuppressWarnings("unchecked")
     NamedList<Object> details = (NamedList<Object>) res.get("details");
 
-    assertNotNull("null details", details);
+    SolrTestCaseJ4.assertNotNull("null details", details);
 
     return details;
   }
 
-  public static NamedList<Object> getIndexVersion(SolrClient s) throws Exception {
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("command", "indexversion");
-    params.set("_trace", "getIndexVersion");
-    params.set("qt", ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
-
-    NamedList<Object> res = s.request(req);
-    assertReplicationResponseSucceeded(res);
-
-    return res;
-  }
-
   public static void assertReplicationResponseSucceeded(NamedList<?> response) {
-    assertNotNull("null response from server", response);
-    assertNotNull("Expected replication response to have 'status' field", response.get("status"));
-    assertEquals("OK", response.get("status"));
-  }
-
-  public static NamedList<Object> reloadCore(SolrClient s, String core) throws Exception {
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("action", "reload");
-    params.set("core", core);
-    params.set("qt", "/admin/cores");
-    QueryRequest req = new QueryRequest(params);
-
-    try (HttpSolrClient adminClient = adminClient(s)) {
-      NamedList<Object> res = adminClient.request(req);
-      assertNotNull("null response from server", res);
-      return res;
-    }
-  }
-
-  public static HttpSolrClient adminClient(SolrClient client) {
-    String adminUrl = ((HttpSolrClient) client).getBaseURL().replace("/collection1", "");
-    return SolrTestCaseJ4.getHttpSolrClient(adminUrl);
+    SolrTestCaseJ4.assertNotNull("null response from server", response);
+    SolrTestCaseJ4.assertNotNull(
+        "Expected replication response to have 'status' field", response.get("status"));
+    SolrTestCaseJ4.assertEquals("OK", response.get("status"));
   }
 
   public static void pullFromTo(String srcUrl, String destUrl) throws IOException {

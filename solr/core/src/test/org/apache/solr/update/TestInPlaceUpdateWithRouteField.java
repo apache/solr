@@ -42,7 +42,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.UpdateParams;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -85,14 +84,14 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
 
     new UpdateRequest().deleteByQuery("*:*").commit(cluster.getSolrClient(), COLLECTION);
 
-    new UpdateRequest().add(createDocs(NUMBER_OF_DOCS)).commit(cluster.getSolrClient(), COLLECTION);
+    new UpdateRequest().add(createDocs()).commit(cluster.getSolrClient(), COLLECTION);
 
     int id = TestUtil.nextInt(random(), 1, NUMBER_OF_DOCS - 1);
     SolrDocument solrDocument = queryDoc(id);
     Long initialVersion = (Long) solrDocument.get("_version_");
     Integer luceneDocId = (Integer) solrDocument.get("[docid]");
     String shardName = (String) solrDocument.get("shardName");
-    Assert.assertThat(solrDocument.get("inplace_updatable_int"), is(id));
+    assertThat(solrDocument.get("inplace_updatable_int"), is(id));
 
     int newDocValue = TestUtil.nextInt(random(), 1, 2 * NUMBER_OF_DOCS - 1);
     SolrInputDocument sdoc =
@@ -117,12 +116,12 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
     updateRequest.commit(cluster.getSolrClient(), COLLECTION);
     solrDocument = queryDoc(id);
     Long newVersion = (Long) solrDocument.get("_version_");
-    Assert.assertTrue(
+    assertTrue(
         "Version of updated document must be greater than original one",
         newVersion > initialVersion);
-    Assert.assertThat(
+    assertThat(
         "Doc value must be updated", solrDocument.get("inplace_updatable_int"), is(newDocValue));
-    Assert.assertThat(
+    assertThat(
         "Lucene doc id should not be changed for In-Place Updates.",
         solrDocument.get("[docid]"),
         is(luceneDocId));
@@ -160,9 +159,9 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
     }
   }
 
-  private Collection<SolrInputDocument> createDocs(int number) {
+  private Collection<SolrInputDocument> createDocs() {
     List<SolrInputDocument> result = new ArrayList<>();
-    for (int i = 0; i < number; i++) {
+    for (int i = 0; i < NUMBER_OF_DOCS; i++) {
       String randomShard = shards[random().nextInt(shards.length)];
       result.add(
           sdoc("id", String.valueOf(i), "shardName", randomShard, "inplace_updatable_int", i));
@@ -181,7 +180,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
             COLLECTION);
     QueryResponse response = cluster.getSolrClient().query(COLLECTION, query);
     SolrDocumentList result = (SolrDocumentList) response.getResponse().get("response");
-    Assert.assertThat(result.getNumFound(), is(1L));
+    assertThat(result.getNumFound(), is(1L));
     return result.get(0);
   }
 }

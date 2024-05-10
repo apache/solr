@@ -24,7 +24,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -51,11 +51,15 @@ public class MDCLoggingContext {
   }
 
   public static void setTracerId(String traceId) {
-    if (!StringUtils.isEmpty(traceId)) {
+    if (StrUtils.isNotNullOrEmpty(traceId)) {
       MDC.put(TRACE_ID, traceId);
     } else {
       MDC.remove(TRACE_ID);
     }
+  }
+
+  public static String getTraceId() {
+    return MDC.get(TRACE_ID);
   }
 
   public static void setShard(String shard) {
@@ -105,6 +109,16 @@ public class MDCLoggingContext {
       MDC.put(NODE_NAME_PROP, node);
     } else {
       MDC.remove(NODE_NAME_PROP);
+    }
+  }
+
+  public static String getNodeName() {
+    String s = MDC.get(NODE_NAME_PROP);
+    if (s == null) return null;
+    if (s.startsWith("n:")) {
+      return s.substring(2);
+    } else {
+      return null;
     }
   }
 

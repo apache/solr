@@ -16,34 +16,20 @@
  */
 package org.apache.solr.util;
 
-import java.lang.invoke.MethodHandles;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class MultipleManagedSchemasTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void setUpCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "false");
     configureCluster(1).configure();
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    if (cluster != null) {
-      cluster.shutdown();
-    }
-    super.tearDown();
   }
 
   @Test

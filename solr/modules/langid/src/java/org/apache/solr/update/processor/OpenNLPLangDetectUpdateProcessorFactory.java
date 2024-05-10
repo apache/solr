@@ -19,7 +19,6 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.io.InputStream;
 import opennlp.tools.langdetect.LanguageDetectorModel;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -46,7 +45,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * </pre>
  *
  * See <a
- * href="https://solr.apache.org/guide/language-detection.html#configuring-opennlp-language-detection">https://solr.apache.org/guide/language-detection.html#configuring-opennlp-language-detection</a>
+ * href="https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-opennlp-language-detection">https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-opennlp-language-detection</a>
  *
  * @since 7.3.0
  */
@@ -110,14 +109,10 @@ public class OpenNLPLangDetectUpdateProcessorFactory extends UpdateRequestProces
   }
 
   private void loadModel() throws IOException {
-    InputStream is = null;
-    try {
-      if (modelFile != null) {
-        is = solrResourceLoader.openResource(modelFile);
+    if (modelFile != null) {
+      try (InputStream is = solrResourceLoader.openResource(modelFile)) {
         model = new LanguageDetectorModel(is);
       }
-    } finally {
-      IOUtils.closeQuietly(is);
     }
   }
 

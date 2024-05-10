@@ -23,7 +23,7 @@ public class MockEventListener implements SolrEventListener {
 
   static final AtomicInteger createCounter = new AtomicInteger(0);
 
-  public static final int getCreateCount() {
+  public static int getCreateCount() {
     return createCounter.intValue();
   }
 

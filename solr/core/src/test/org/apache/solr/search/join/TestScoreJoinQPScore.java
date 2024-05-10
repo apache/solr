@@ -19,7 +19,6 @@ package org.apache.solr.search.join;
 import com.codahale.metrics.Metric;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -119,7 +118,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
   }
 
   public void testDeleteByScoreJoinQuery() throws Exception {
-    indexDataForScorring();
+    indexDataForScoring();
     String joinQuery = "{!join from=" + toField + " to=" + idField + " score=Max}title:random";
     assertJQ(
         req("q", joinQuery, "fl", "id"),
@@ -132,7 +131,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
   }
 
   public void testSimpleWithScoring() throws Exception {
-    indexDataForScorring();
+    indexDataForScoring();
 
     // Search for movie via subtitle
     assertJQ(
@@ -202,15 +201,9 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
 
   }
 
-  static final Comparator<String> lessFloat =
-      (o1, o2) -> {
-        assertTrue(Float.parseFloat(o1) < Float.parseFloat(o2));
-        return 0;
-      };
-
   @Ignore("SOLR-7814, also don't forget cover boost at testCacheHit()")
   public void testBoost() throws Exception {
-    indexDataForScorring();
+    indexDataForScoring();
     ScoreMode score = ScoreMode.values()[random().nextInt(ScoreMode.values().length)];
 
     final SolrQueryRequest req =
@@ -234,7 +227,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
   }
 
   public void testCacheHit() throws Exception {
-    indexDataForScorring();
+    indexDataForScoring();
 
     Map<String, Metric> metrics =
         h.getCoreContainer()
@@ -346,8 +339,8 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
               "true"),
           SolrException.ErrorCode.BAD_REQUEST);
     }
-    // this queries are not overlap, with other in this test case.
-    // however it might be better to extract this method into the separate suite
+    // these queries are not overlapping with others in this test case.
+    // however, it might be better to extract this method into a separate suite
     // for a while let's nuke a cache content, in case of repetitions
     @SuppressWarnings("rawtypes")
     SolrCache cache = (SolrCache) h.getCore().getInfoRegistry().get("queryResultCache");
@@ -384,7 +377,7 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     return (Long) a.get(key) - (Long) b.get(key);
   }
 
-  private void indexDataForScorring() {
+  private void indexDataForScoring() {
     clearIndex();
     // 0
     assertU(add(doc("t_description", "A random movie", "name", "Movie 1", idField, "1")));

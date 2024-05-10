@@ -18,28 +18,32 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Test;
 
-@Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
 
   @Override
   public SolrClient createNewSolrClient() {
-    ConcurrentUpdateSolrClient client = (ConcurrentUpdateSolrClient) super.createNewSolrClient();
-    client.setParser(new BinaryResponseParser());
-    client.setRequestWriter(new BinaryRequestWriter());
+
+    SolrClient client =
+        new ErrorTrackingConcurrentUpdateSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+            .withQueueSize(2)
+            .withThreadCount(5)
+            .withResponseParser(new BinaryResponseParser())
+            .withRequestWriter(new BinaryRequestWriter())
+            .build();
+
     return client;
   }
 

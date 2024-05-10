@@ -36,13 +36,19 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
 
   private static final String VERSION = "_version_";
+
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -56,7 +62,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMergeChildDoc() throws Exception {
+  public void testMergeChildDoc() {
     SolrInputDocument newChildDoc = sdoc("id", "3", "cat_ss", "child");
     SolrInputDocument addedDoc =
         sdoc(
@@ -97,7 +103,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMergeChildDocsWithSameId() throws Exception {
+  public void testMergeChildDocsWithSameId() {
     SolrInputDocument existingChild = sdoc("id", "2", "cat_ss", "child");
     SolrInputDocument existingDoc =
         sdoc(
@@ -136,7 +142,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMergeChildDocsWithSameAndNestedSet() throws Exception {
+  public void testMergeChildDocsWithSameAndNestedSet() {
     SolrInputDocument existingChild = sdoc("id", "2", "cat_ss", "child");
     SolrInputDocument existingDoc =
         sdoc(
@@ -178,7 +184,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMergeChildDocsWithMultipleChildDocs() throws Exception {
+  public void testMergeChildDocsWithMultipleChildDocs() {
     SolrInputDocument existingChild = sdoc("id", "2", "cat_ss", "child");
     SolrInputDocument nonMatchingExistingChild = sdoc("id", "3", "cat_ss", "other");
     SolrInputDocument existingDoc =
@@ -218,7 +224,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAtomicUpdateNonExistingChildException() throws Exception {
+  public void testAtomicUpdateNonExistingChildException() {
     SolrInputDocument existingChild = sdoc("id", "2", "cat_ss", "child");
     SolrInputDocument existingDoc =
         sdoc(
@@ -247,10 +253,9 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
             () -> {
               docMerger.merge(updateDoc, existingDoc);
             });
-    assertTrue(
-        expected
-            .getMessage()
-            .equals("A nested atomic update can only update an existing nested document"));
+    assertEquals(
+        "A nested atomic update can only update an existing nested document",
+        expected.getMessage());
   }
 
   @Test
@@ -1012,7 +1017,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
         "/response/docs/[0]/cat_ss/[1]==\"ccc\"");
   }
 
-  public void testIncorrectlyUpdateChildDoc() throws Exception {
+  public void testIncorrectlyUpdateChildDoc() {
     SolrInputDocument doc = sdoc("id", "1", "child", sdoc("id", "2"));
     assertU(adoc(doc));
     assertU(commit());

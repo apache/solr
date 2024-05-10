@@ -64,8 +64,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     String scope = SolrMetricTestUtils.getRandomScope(random);
     SolrInfoBean.Category category = SolrMetricTestUtils.getRandomCategory(random);
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random);
-    SolrMetricProducer producer =
-        SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+    SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
     try {
       coreMetricManager.registerMetricProducer(scope, producer);
       assertNotNull(scope);
@@ -94,8 +93,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
       if (metrics.isEmpty()) {
         continue;
       }
-      SolrMetricProducer producer =
-          SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
+      SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(category, scope, metrics);
       coreMetricManager.registerMetricProducer(scope, producer);
       registered.putAll(metrics);
       assertRegistered(scope, registered, coreMetricManager);
@@ -172,7 +170,7 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testNonCloudRegistryName() throws Exception {
+  public void testNonCloudRegistryName() {
     String registryName = h.getCore().getCoreMetricManager().getRegistryName();
     String leaderRegistryName = h.getCore().getCoreMetricManager().getLeaderRegistryName();
     assertNotNull(registryName);

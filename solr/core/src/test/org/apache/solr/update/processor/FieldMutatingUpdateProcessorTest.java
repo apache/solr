@@ -16,8 +16,8 @@
  */
 package org.apache.solr.update.processor;
 
-import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.TreeSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -65,6 +65,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
         "//long[@name='min_foo_l'][.='-34']");
   }
 
+  @SuppressWarnings("UnnecessaryStringBuilder")
   public void testTrimAll() throws Exception {
     SolrInputDocument d = null;
 
@@ -82,8 +83,8 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     // simple stuff
     assertEquals("string", d.getFieldValue("foo_s"));
-    assertEquals(Arrays.asList("some text", "other Text"), d.getFieldValues("foo_t"));
-    assertEquals(Arrays.asList("Hoss", "Man"), d.getFieldValues("name"));
+    assertEquals(List.of("some text", "other Text"), List.copyOf(d.getFieldValues("foo_t")));
+    assertEquals(List.of("Hoss", "Man"), List.copyOf(d.getFieldValues("name")));
 
     // slightly more interesting
     assertEquals("processor borked non string value", 42, d.getFieldValue("foo_d"));
@@ -104,14 +105,14 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertNotNull(d);
 
-    assertEquals(Arrays.asList("Hoss", "Man", "Hoss"), d.getFieldValues("name"));
-    assertEquals(Arrays.asList("Hoss", "Man"), d.getFieldValues("uniq_1_s"));
-    assertEquals(Arrays.asList("Foo", "Hoss", "Man", "Bar"), d.getFieldValues("uniq_2_s"));
-    assertEquals(Arrays.asList(5.0F, 23, "string"), d.getFieldValues("uniq_3_s"));
+    assertEquals(List.of("Hoss", "Man", "Hoss"), List.copyOf(d.getFieldValues("name")));
+    assertEquals(List.of("Hoss", "Man"), List.copyOf(d.getFieldValues("uniq_1_s")));
+    assertEquals(List.of("Foo", "Hoss", "Man", "Bar"), List.copyOf(d.getFieldValues("uniq_2_s")));
+    assertEquals(List.of(5.0F, 23, "string"), List.copyOf(d.getFieldValues("uniq_3_s")));
   }
 
   public void testTrimFields() throws Exception {
-    for (String chain : Arrays.asList("trim-fields", "trim-fields-arr")) {
+    for (String chain : List.of("trim-fields", "trim-fields-arr")) {
       SolrInputDocument d = null;
       d =
           processAdd(
@@ -125,8 +126,8 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
       assertNotNull(d);
 
       assertEquals(" string ", d.getFieldValue("foo_s"));
-      assertEquals(Arrays.asList("some text", "other Text"), d.getFieldValues("foo_t"));
-      assertEquals(Arrays.asList("Hoss", "Man"), d.getFieldValues("name"));
+      assertEquals(List.of("some text", "other Text"), List.copyOf(d.getFieldValues("foo_t")));
+      assertEquals(List.of("Hoss", "Man"), List.copyOf(d.getFieldValues("name")));
     }
   }
 
@@ -144,8 +145,8 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertNotNull(d);
 
     assertEquals(" string ", d.getFieldValue("foo_s"));
-    assertEquals(Arrays.asList("some text", "other Text"), d.getFieldValues("foo_t"));
-    assertEquals(Arrays.asList(" Hoss ", " Man"), d.getFieldValues("name"));
+    assertEquals(List.of("some text", "other Text"), List.copyOf(d.getFieldValues("foo_t")));
+    assertEquals(List.of(" Hoss ", " Man"), List.copyOf(d.getFieldValues("name")));
   }
 
   public void testTrimRegex() throws Exception {
@@ -309,8 +310,8 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertNotNull(d);
 
-    assertEquals(Arrays.asList("string1"), d.getFieldValues("foo_s"));
-    assertEquals(Arrays.asList("string2", "string3"), d.getFieldValues("bar_dt"));
+    assertEquals(List.of("string1"), List.copyOf(d.getFieldValues("foo_s")));
+    assertEquals(List.of("string2", "string3"), List.copyOf(d.getFieldValues("bar_dt")));
     assertFalse("shouldn't be any values for yak_t", d.containsKey("yak_t"));
     assertEquals("processor borked non string value", 42, d.getFieldValue("foo_d"));
   }
@@ -329,7 +330,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertNotNull(d);
 
-    assertEquals(Arrays.asList("string1", "string222"), d.getFieldValues("foo_s"));
+    assertEquals(List.of("string1", "string222"), List.copyOf(d.getFieldValues("foo_s")));
     assertEquals("string3", d.getFieldValue("bar_dt"));
     assertEquals("", d.getFieldValue("yak_t"));
     assertEquals("processor borked non string value", 42, d.getFieldValue("foo_d"));
@@ -346,7 +347,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertNotNull(d);
 
-    assertEquals(Arrays.asList(7, 9), d.getFieldValues("foo_s"));
+    assertEquals(List.of(7, 9), List.copyOf(d.getFieldValues("foo_s")));
     assertEquals("string3", d.getFieldValue("bar_dt"));
     assertEquals(0, d.getFieldValue("yak_t"));
     assertEquals("processor borked non string value", 42, d.getFieldValue("foo_d"));
@@ -438,9 +439,9 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertNotNull(d);
 
-    assertEquals(Arrays.asList("string1"), d.getFieldValues("foo_s"));
-    assertEquals(Arrays.asList("string3"), d.getFieldValues("bar_s"));
-    assertEquals(Arrays.asList("string4", "string5"), d.getFieldValues("yak_t"));
+    assertEquals(List.of("string1"), List.copyOf(d.getFieldValues("foo_s")));
+    assertEquals(List.of("string3"), List.copyOf(d.getFieldValues("bar_s")));
+    assertEquals(List.of("string4", "string5"), List.copyOf(d.getFieldValues("yak_t")));
   }
 
   public void testLastValue() throws Exception {
@@ -459,9 +460,9 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertNotNull(d);
 
-    assertEquals(Arrays.asList("string222"), d.getFieldValues("foo_s"));
-    assertEquals(Arrays.asList("string3"), d.getFieldValues("bar_s"));
-    assertEquals(Arrays.asList("string4", "string5"), d.getFieldValues("yak_t"));
+    assertEquals(List.of("string222"), List.copyOf(d.getFieldValues("foo_s")));
+    assertEquals(List.of("string3"), List.copyOf(d.getFieldValues("bar_s")));
+    assertEquals(List.of("string4", "string5"), List.copyOf(d.getFieldValues("yak_t")));
 
     // test optimizations (and force test of defaults)
 
@@ -470,7 +471,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     // test something that's definitely a SortedSet
 
     special = new SolrInputField("foo_s");
-    special.setValue(new TreeSet<>(Arrays.asList("ggg", "first", "last", "hhh")));
+    special.setValue(new TreeSet<>(List.of("ggg", "first", "last", "hhh")));
 
     d = processAdd("last-value", doc(f("id", "1111"), special));
 
@@ -481,7 +482,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     // test something that's definitely a List
 
     special = new SolrInputField("foo_s");
-    special.setValue(Arrays.asList("first", "ggg", "hhh", "last"));
+    special.setValue(List.of("first", "ggg", "hhh", "last"));
 
     d = processAdd("last-value", doc(f("id", "1111"), special));
 
@@ -493,7 +494,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     // (ie: get default behavior of Collection using iterator)
 
     special = new SolrInputField("foo_s");
-    special.setValue(new LinkedHashSet<>(Arrays.asList("first", "ggg", "hhh", "last")));
+    special.setValue(new LinkedHashSet<>(List.of("first", "ggg", "hhh", "last")));
 
     d = processAdd("last-value", doc(f("id", "1111"), special));
 
@@ -517,10 +518,10 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertNotNull(d);
 
-    assertEquals(Arrays.asList("aaa"), d.getFieldValues("foo_s"));
-    assertEquals(Arrays.asList(-3), d.getFieldValues("foo_i"));
-    assertEquals(Arrays.asList("aaa"), d.getFieldValues("bar_s"));
-    assertEquals(Arrays.asList("aaa", "bbb"), d.getFieldValues("yak_t"));
+    assertEquals(List.of("aaa"), List.copyOf(d.getFieldValues("foo_s")));
+    assertEquals(List.of(-3), List.copyOf(d.getFieldValues("foo_i")));
+    assertEquals(List.of("aaa"), List.copyOf(d.getFieldValues("bar_s")));
+    assertEquals(List.of("aaa", "bbb"), List.copyOf(d.getFieldValues("yak_t")));
 
     // failure when un-comparable
 
@@ -541,7 +542,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
       resetExceptionIgnores();
     }
     assertNotNull("no error on un-comparable values", error);
-    assertTrue("error doesn't mention field name", 0 <= error.getMessage().indexOf("foo_s"));
+    assertTrue("error doesn't mention field name", error.getMessage().contains("foo_s"));
   }
 
   public void testMaxValue() throws Exception {
@@ -559,10 +560,10 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertNotNull(d);
 
-    assertEquals(Arrays.asList("zzz"), d.getFieldValues("foo_s"));
-    assertEquals(Arrays.asList(128), d.getFieldValues("foo_i"));
-    assertEquals(Arrays.asList("aaa"), d.getFieldValues("bar_s"));
-    assertEquals(Arrays.asList("aaa", "bbb"), d.getFieldValues("yak_t"));
+    assertEquals(List.of("zzz"), List.copyOf(d.getFieldValues("foo_s")));
+    assertEquals(List.of(128), List.copyOf(d.getFieldValues("foo_i")));
+    assertEquals(List.of("aaa"), List.copyOf(d.getFieldValues("bar_s")));
+    assertEquals(List.of("aaa", "bbb"), List.copyOf(d.getFieldValues("yak_t")));
 
     // failure when un-comparable
 
@@ -583,7 +584,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
       resetExceptionIgnores();
     }
     assertNotNull("no error on un-comparable values", error);
-    assertTrue("error doesn't mention field name", 0 <= error.getMessage().indexOf("foo_s"));
+    assertTrue("error doesn't mention field name", error.getMessage().contains("foo_s"));
   }
 
   public void testHtmlStrip() throws Exception {
@@ -599,7 +600,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertNotNull(d);
 
-    assertEquals(Arrays.asList("hi & bye", "aaa", "bbb"), d.getFieldValues("html_s"));
+    assertEquals(List.of("hi & bye", "aaa", "bbb"), List.copyOf(d.getFieldValues("html_s")));
     assertEquals("<body>hi &amp; bye", d.getFieldValue("bar_s"));
   }
 
@@ -610,7 +611,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertNotNull(d);
 
-    assertEquals(Arrays.asList("12345", "", 42, "abcd"), d.getFieldValues("trunc"));
+    assertEquals(List.of("12345", "", 42, "abcd"), List.copyOf(d.getFieldValues("trunc")));
   }
 
   public void testIgnore() throws Exception {
@@ -644,7 +645,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     assertFalse(d.containsKey("bar_giberish"));
     assertFalse(d.containsKey("foo_giberish"));
-    assertEquals(Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("t_raw"));
+    assertEquals(List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("t_raw")));
     assertEquals("hoss", d.getFieldValue("foo_s"));
 
     d =
@@ -658,8 +659,10 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                 f("foo_s", "hoss")));
 
     assertNotNull(d);
-    assertEquals(Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("foo_giberish"));
-    assertEquals(Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("bar_giberish"));
+    assertEquals(
+        List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("foo_giberish")));
+    assertEquals(
+        List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("bar_giberish")));
     assertFalse(d.containsKey("t_raw"));
     assertEquals("hoss", d.getFieldValue("foo_s"));
 
@@ -675,7 +678,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     assertFalse(d.containsKey("foo_giberish"));
     assertFalse(d.containsKey("bar_giberish"));
-    assertEquals(Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("t_raw"));
+    assertEquals(List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("t_raw")));
     assertEquals("hoss", d.getFieldValue("foo_s"));
 
     d =
@@ -689,8 +692,9 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                 f("foo_s", "hoss")));
     assertNotNull(d);
     assertFalse(d.containsKey("foo_giberish"));
-    assertEquals(Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("bar_giberish"));
-    assertEquals(Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("t_raw"));
+    assertEquals(
+        List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("bar_giberish")));
+    assertEquals(List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("t_raw")));
     assertEquals("hoss", d.getFieldValue("foo_s"));
 
     d =
@@ -703,9 +707,11 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                 f("t_raw", "123456789", "", 42, "abcd"),
                 f("foo_s", "hoss")));
     assertNotNull(d);
-    assertEquals(Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("foo_giberish"));
-    assertEquals(Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("bar_giberish"));
-    assertEquals(Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("t_raw"));
+    assertEquals(
+        List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("foo_giberish")));
+    assertEquals(
+        List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("bar_giberish")));
+    assertEquals(List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("t_raw")));
     assertFalse(d.containsKey("foo_s"));
 
     d =
@@ -736,7 +742,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertNotNull(d);
     assertFalse(d.containsKey("foo_giberish"));
     assertFalse(d.containsKey("bar_giberish"));
-    assertEquals(Arrays.asList("123456789", "", 42, "abcd"), d.getFieldValues("t_raw"));
+    assertEquals(List.of("123456789", "", 42, "abcd"), List.copyOf(d.getFieldValues("t_raw")));
     assertEquals("hoss", d.getFieldValue("foo_s"));
 
     d =
@@ -783,19 +789,19 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
                 f("editors", "John W. Campbell"),
                 f("list_price", 1000)));
     assertNotNull(d);
-    assertEquals(Arrays.asList("scifi", "war", "space"), d.getFieldValues("category"));
+    assertEquals(List.of("scifi", "war", "space"), List.copyOf(d.getFieldValues("category")));
     assertEquals(3, d.getFieldValue("category_count"));
-    assertEquals(Arrays.asList("John W. Campbell"), d.getFieldValues("editors"));
+    assertEquals(List.of("John W. Campbell"), List.copyOf(d.getFieldValues("editors")));
     assertEquals(1000, d.getFieldValue("list_price"));
 
-    // typical usecase: clone and count demonstrating default
+    // typical use case: clone and count demonstrating default
     d =
         processAdd(
             "clone-then-count",
             doc(f("id", "1111"), f("editors", "Anonymous"), f("list_price", 1000)));
     assertNotNull(d);
     assertEquals(0, d.getFieldValue("category_count"));
-    assertEquals(Arrays.asList("Anonymous"), d.getFieldValues("editors"));
+    assertEquals(List.of("Anonymous"), List.copyOf(d.getFieldValues("editors")));
     assertEquals(1000, d.getFieldValue("list_price"));
   }
 
@@ -815,10 +821,10 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertNotNull(d);
 
     assertEquals("1111, 222", d.getFieldValue("id"));
-    assertEquals(Arrays.asList("string1", "string2"), d.getFieldValues("attr_foo"));
+    assertEquals(List.of("string1", "string2"), List.copyOf(d.getFieldValues("attr_foo")));
     assertEquals("string3, string4", d.getFieldValue("foo_s1"));
-    assertEquals(Arrays.asList("string5", "string6"), d.getFieldValues("bar_dt"));
-    assertEquals(Arrays.asList("string7", "string8"), d.getFieldValues("bar_HOSS_s"));
+    assertEquals(List.of("string5", "string6"), List.copyOf(d.getFieldValues("bar_dt")));
+    assertEquals(List.of("string7", "string8"), List.copyOf(d.getFieldValues("bar_HOSS_s")));
     assertEquals("processor borked non string value", 42, d.getFieldValue("foo_d"));
   }
 
@@ -844,7 +850,7 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
 
     assertNotNull(d);
 
-    assertEquals(Arrays.asList("string1", "string2"), d.getFieldValues("foo_t"));
+    assertEquals(List.of("string1", "string2"), List.copyOf(d.getFieldValues("foo_t")));
     assertEquals("string3" + delim + "string4", d.getFieldValue("foo_s"));
 
     // slightly more interesting

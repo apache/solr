@@ -26,9 +26,12 @@
 ** xref:solr-glossary.adoc[]
 
 * xref:solr-tutorial.adoc[]
+** xref:tutorial-five-minutes.adoc[]
 ** xref:tutorial-techproducts.adoc[]
 ** xref:tutorial-films.adoc[]
 ** xref:tutorial-diy.adoc[]
+** xref:tutorial-paramsets.adoc[]
+** xref:tutorial-vectors.adoc[]
 ** xref:tutorial-solrcloud.adoc[]
 ** xref:tutorial-aws.adoc[]
 

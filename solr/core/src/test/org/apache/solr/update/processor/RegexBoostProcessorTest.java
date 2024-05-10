@@ -54,7 +54,7 @@ public class RegexBoostProcessorTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void tearDownAfterClass() throws Exception {
+  public static void tearDownAfterClass() {
     // null static members for gc
     reProcessor = null;
     _parser = null;
@@ -62,6 +62,7 @@ public class RegexBoostProcessorTest extends SolrTestCaseJ4 {
     factory = null;
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     document = new SolrInputDocument();

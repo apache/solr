@@ -21,7 +21,7 @@ import org.junit.Test;
 
 public class TestSchemaNameResource extends SolrRestletTestBase {
   @Test
-  public void testGetSchemaName() throws Exception {
+  public void testGetSchemaName() {
     assertQ(
         "/schema/name?wt=xml",
         "count(/response/str[@name='name']) = 1",

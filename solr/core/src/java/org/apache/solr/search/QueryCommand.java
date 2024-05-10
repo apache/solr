@@ -31,15 +31,16 @@ public class QueryCommand {
   private String queryID;
   private boolean isQueryCancellable;
   private List<Query> filterList;
-  private DocSet filter;
   private Sort sort;
   private int offset;
   private int len;
   private int supersetMaxDoc;
   private int flags;
+  private boolean multiThreaded = false;
   private long timeAllowed = -1;
   private int minExactCount = Integer.MAX_VALUE;
   private CursorMark cursorMark;
+  private boolean distribStatsDisabled;
 
   public CursorMark getCursorMark() {
     return cursorMark;
@@ -79,10 +80,6 @@ public class QueryCommand {
    * @throws IllegalArgumentException if filter is not null.
    */
   public QueryCommand setFilterList(List<Query> filterList) {
-    if (filter != null) {
-      throw new IllegalArgumentException(
-          "Either filter or filterList may be set in the QueryCommand, but not both.");
-    }
     this.filterList = filterList;
     return this;
   }
@@ -93,31 +90,11 @@ public class QueryCommand {
    * @throws IllegalArgumentException if filter is not null.
    */
   public QueryCommand setFilterList(Query f) {
-    if (filter != null) {
-      throw new IllegalArgumentException(
-          "Either filter or filterList may be set in the QueryCommand, but not both.");
-    }
     filterList = null;
     if (f != null) {
       filterList = new ArrayList<>(2);
       filterList.add(f);
     }
-    return this;
-  }
-
-  public DocSet getFilter() {
-    return filter;
-  }
-
-  /**
-   * @throws IllegalArgumentException if filterList is not null.
-   */
-  public QueryCommand setFilter(DocSet filter) {
-    if (filterList != null) {
-      throw new IllegalArgumentException(
-          "Either filter or filterList may be set in the QueryCommand, but not both.");
-    }
-    this.filter = filter;
     return this;
   }
 
@@ -173,6 +150,15 @@ public class QueryCommand {
 
   public QueryCommand clearFlags(int flags) {
     this.flags &= ~flags;
+    return this;
+  }
+
+  public boolean getMultiThreaded() {
+    return multiThreaded;
+  }
+
+  public QueryCommand setMultiThreaded(boolean multiThreaded) {
+    this.multiThreaded = multiThreaded;
     return this;
   }
 
@@ -244,5 +230,13 @@ public class QueryCommand {
 
   public boolean isQueryCancellable() {
     return isQueryCancellable;
+  }
+
+  public void setDistribStatsDisabled(boolean distribStatsDisabled) {
+    this.distribStatsDisabled = distribStatsDisabled;
+  }
+
+  public boolean isDistribStatsDisabled() {
+    return distribStatsDisabled;
   }
 }

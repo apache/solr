@@ -58,13 +58,21 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   private static final String solrConfigFileNameIndexSort = "solrconfig-indexSort.xml";
   private static final String schemaFileName = "schema.xml";
 
+  private static boolean compoundMergePolicySort = false;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
+    compoundMergePolicySort = random().nextBoolean();
+    if (compoundMergePolicySort) {
+      System.setProperty("mergePolicySort", "timestamp_i_dvo desc, id asc");
+    }
     initCore(solrConfigFileName, schemaFileName);
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
+    System.clearProperty("mergePolicySort");
     System.clearProperty("solr.tests.maxCommitMergeWait");
     super.tearDown();
   }
@@ -108,7 +116,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     ConcurrentMergeScheduler ms = (ConcurrentMergeScheduler) iwc.getMergeScheduler();
     assertEquals("ms.maxMergeCount", 987, ms.getMaxMergeCount());
     assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
-    assertEquals("ms.isAutoIOThrottle", true, ms.getAutoIOThrottle());
+    assertTrue("ms.isAutoIOThrottle", ms.getAutoIOThrottle());
 
     assertNull("indexSort", iwc.getIndexSort());
   }
@@ -131,15 +139,15 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     ConcurrentMergeScheduler ms = (ConcurrentMergeScheduler) iwc.getMergeScheduler();
     assertEquals("ms.maxMergeCount", 987, ms.getMaxMergeCount());
     assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
-    assertEquals("ms.isAutoIOThrottle", false, ms.getAutoIOThrottle());
+    assertFalse("ms.isAutoIOThrottle", ms.getAutoIOThrottle());
 
     assertNull("indexSort", iwc.getIndexSort());
   }
 
   public void testSortingMPSolrIndexConfigCreation() throws Exception {
-    final String expectedFieldName = "timestamp_i_dvo";
-    final SortField.Type expectedFieldType = SortField.Type.INT;
-    final boolean expectedFieldSortDescending = true;
+    final SortField sortField1 = new SortField("timestamp_i_dvo", SortField.Type.INT, true);
+    final SortField sortField2 = new SortField("id", SortField.Type.STRING, false);
+    sortField2.setMissingValue(SortField.STRING_LAST);
 
     SolrConfig solrConfig =
         new SolrConfig(instanceDir, solrConfigFileNameSortingMergePolicyFactory);
@@ -156,8 +164,12 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
         "mergePolicy (" + mergePolicy + ") is not a SortingMergePolicy",
         mergePolicy instanceof SortingMergePolicy);
     final SortingMergePolicy sortingMergePolicy = (SortingMergePolicy) mergePolicy;
-    final Sort expected =
-        new Sort(new SortField(expectedFieldName, expectedFieldType, expectedFieldSortDescending));
+    final Sort expected;
+    if (compoundMergePolicySort) {
+      expected = new Sort(sortField1, sortField2);
+    } else {
+      expected = new Sort(sortField1);
+    }
     final Sort actual = sortingMergePolicy.getSort();
     assertEquals("SortingMergePolicy.getSort", expected, actual);
     assertEquals("indexSort", expected, iwc.getIndexSort());
@@ -249,7 +261,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     ++mSizeExpected;
     assertTrue(m.get("infoStreamEnabled") instanceof Boolean);
     {
-      assertFalse(Boolean.valueOf(m.get("infoStreamEnabled").toString()).booleanValue());
+      assertFalse(Boolean.valueOf(m.get("infoStreamEnabled").toString()));
     }
 
     ++mSizeExpected;

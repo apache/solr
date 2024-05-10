@@ -24,8 +24,11 @@
 configure(rootProject) {
   ext {
     published = [
+        ":solr:api",
         ":solr:core",
         ":solr:solrj",
+        ":solr:solrj-streaming",
+        ":solr:solrj-zookeeper",
         ":solr:prometheus-exporter",
         ":solr:test-framework",
     ] + project(":solr:modules").getChildProjects().values().path
@@ -171,7 +174,10 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
       }
 
       signing {
-        required { !version.endsWith("SNAPSHOT") }
+        if (project(":solr:distribution").ext.useGpgForSigning) {
+          useGpgCmd()
+        }
+        required { project(":solr:distribution").ext.withSignedArtifacts }
         sign publishing.publications.jars
       }
     }

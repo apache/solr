@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,14 +23,19 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -41,15 +45,11 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Test of the Collections API with the MiniSolrCloudCluster. */
-@LuceneTestCase.Slow
 public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int numShards = 2;
   private static final int numReplicas = 2;
@@ -61,7 +61,10 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
   @Override
   public void setUp() throws Exception {
-    configureCluster(nodeCount).addConfig(configName, configset("cloud-minimal")).configure();
+    configureCluster(nodeCount)
+        .addConfig(configName, configset("cloud-minimal"))
+        .addConfig("cloud-minimal-userproperties", configset("cloud-minimal-userproperties"))
+        .configure();
     super.setUp();
   }
 
@@ -193,7 +196,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     // create collection
     createCollection(collectionName, CollectionHandlingUtils.CREATE_NODE_SET_EMPTY);
 
-    // check the collection's corelessness
+    // check the collection has no cores.
     int coreCount = 0;
     DocCollection docCollection = client.getClusterState().getCollection(collectionName);
     for (Map.Entry<String, Slice> entry : docCollection.getSlicesMap().entrySet()) {
@@ -306,5 +309,69 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
     // re-query collection
     assertEquals(numDocs, client.query(collectionName, query).getResults().getNumFound());
+  }
+
+  @Test
+  public void testUserDefinedProperties() throws Exception {
+    String confName = "cloud-minimal-userproperties";
+    String collectionName = "testUserDefinedPropertiesCollection";
+
+    switch (random().nextInt(3)) {
+      case 0:
+        CollectionAdminRequest.Create createOp =
+            CollectionAdminRequest.createCollection(collectionName, confName, 1, 2);
+        createOp.withProperty("my.custom.prop", "customProp");
+        CollectionAdminResponse rsp = createOp.process(cluster.getSolrClient());
+        assertNull(rsp.getErrorMessages());
+        assertSame(0, rsp.getStatus());
+        break;
+
+      case 1:
+        // Sometimes use v1 API
+        String url =
+            String.format(
+                Locale.ROOT,
+                "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&nrtReplicas=%s&tlogReplicas=%s&pullReplicas=%s&&property.my.custom.prop=%s",
+                cluster.getRandomJetty(random()).getBaseUrl(),
+                collectionName,
+                confName,
+                2,
+                2,
+                2,
+                0,
+                "customProp");
+
+        HttpGet createCollectionGet = new HttpGet(url);
+        HttpResponse httpResponseV1 =
+            ((CloudLegacySolrClient) cluster.getSolrClient())
+                .getHttpClient()
+                .execute(createCollectionGet);
+        assertEquals(200, httpResponseV1.getStatusLine().getStatusCode());
+        break;
+
+      case 2:
+        // Sometimes use V2 API
+        url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/collections";
+        String requestBody =
+            String.format(
+                Locale.ROOT,
+                "{\"name\":\"%s\", \"config\":\"%s\", \"numShards\":%s, \"nrtReplicas\":%s, \"tlogReplicas\":%s, \"pullReplicas\":%s,"
+                    + " \"properties\": { \"my.custom.prop\": \"test\" } }",
+                collectionName,
+                confName,
+                2,
+                2,
+                2,
+                0);
+        HttpPost createCollectionPost = new HttpPost(url);
+        createCollectionPost.setHeader("Content-type", "application/json");
+        createCollectionPost.setEntity(new StringEntity(requestBody));
+        HttpResponse httpResponseV2 =
+            ((CloudLegacySolrClient) cluster.getSolrClient())
+                .getHttpClient()
+                .execute(createCollectionPost);
+        assertEquals(200, httpResponseV2.getStatusLine().getStatusCode());
+        break;
+    }
   }
 }

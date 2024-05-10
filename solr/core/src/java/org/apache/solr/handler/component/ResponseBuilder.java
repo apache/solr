@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHits;
@@ -59,7 +60,6 @@ public class ResponseBuilder {
   public boolean doExpand;
   public boolean doStats;
   public boolean doTerms;
-  public boolean doAnalytics;
   public MergeStrategy mergeFieldHandler;
 
   public String queryID;
@@ -72,9 +72,9 @@ public class ResponseBuilder {
 
   private boolean isCancellation;
   private String cancellationUUID;
-
   private String taskStatusCheckUUID;
   private boolean isTaskListRequest;
+  private boolean isDistribStatsDisabled;
 
   private QParser qparser = null;
   private String queryString = null;
@@ -149,7 +149,7 @@ public class ResponseBuilder {
 
   public int getShardNum(String shard) {
     for (int i = 0; i < shards.length; i++) {
-      if (shards[i] == shard || shards[i].equals(shard)) return i;
+      if (Objects.equals(shards[i], shard)) return i;
     }
     return -1;
   }
@@ -180,8 +180,6 @@ public class ResponseBuilder {
   StatsInfo _statsInfo;
   TermsComponent.TermsHelper _termsHelper;
   SimpleOrderedMap<List<NamedList<Object>>> _pivots;
-  Object _analyticsRequestManager;
-  boolean _isOlapAnalytics;
 
   // Context fields for grouping
   public final Map<String, Collection<SearchGroup<BytesRef>>> mergedSearchGroups = new HashMap<>();
@@ -447,9 +445,7 @@ public class ResponseBuilder {
   public void setResult(QueryResult result) {
     setResults(result.getDocListAndSet());
     if (result.isPartialResults()) {
-      rsp.getResponseHeader()
-          .asShallowMap()
-          .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+      rsp.setPartialResults();
       if (getResults() != null && getResults().docList == null) {
         getResults().docList =
             new DocSlice(0, 0, new int[] {}, new float[] {}, 0, 0, TotalHits.Relation.EQUAL_TO);
@@ -491,30 +487,6 @@ public class ResponseBuilder {
     this.nextCursorMark = nextCursorMark;
   }
 
-  public void setAnalytics(boolean doAnalytics) {
-    this.doAnalytics = doAnalytics;
-  }
-
-  public boolean isAnalytics() {
-    return this.doAnalytics;
-  }
-
-  public void setAnalyticsRequestManager(Object analyticsRequestManager) {
-    this._analyticsRequestManager = analyticsRequestManager;
-  }
-
-  public Object getAnalyticsRequestManager() {
-    return this._analyticsRequestManager;
-  }
-
-  public void setOlapAnalytics(boolean isOlapAnalytics) {
-    this._isOlapAnalytics = isOlapAnalytics;
-  }
-
-  public boolean isOlapAnalytics() {
-    return this._isOlapAnalytics;
-  }
-
   public void setCancellation(boolean isCancellation) {
     this.isCancellation = isCancellation;
   }
@@ -545,5 +517,13 @@ public class ResponseBuilder {
 
   public String getTaskStatusCheckUUID() {
     return taskStatusCheckUUID;
+  }
+
+  public void setDistribStatsDisabled(boolean isEnableDistribStats) {
+    this.isDistribStatsDisabled = isEnableDistribStats;
+  }
+
+  public boolean isDistribStatsDisabled() {
+    return isDistribStatsDisabled;
   }
 }

@@ -20,12 +20,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -41,7 +40,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Slow
 public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
   @BeforeClass
@@ -105,13 +103,13 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
   @Test
   public void multipleShardMigrateTest() throws Exception {
 
-    CollectionAdminRequest.createCollection("sourceCollection", "conf", 2, 1)
+    String sourceCollection = "sourceCollection";
+    CollectionAdminRequest.createCollection(sourceCollection, "conf", 2, 1)
         .process(cluster.getSolrClient());
-    cluster.getSolrClient().setDefaultCollection("sourceCollection");
 
     final String splitKey = "a";
     final int BIT_SEP = 1;
-    final int[] splitKeyCount = new int[1];
+    int splitKeyCount = 0;
     for (int id = 0; id < 26 * 3; id++) {
       String shardKey =
           "" + (char) ('a' + (id % 26)); // See comment in ShardRoutingTest for hash distribution
@@ -122,21 +120,21 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", key + "!" + id);
       doc.addField("n_ti", id);
-      cluster.getSolrClient().add("sourceCollection", doc);
-      if (splitKey.equals(shardKey)) splitKeyCount[0]++;
+      cluster.getSolrClient().add(sourceCollection, doc);
+      if (splitKey.equals(shardKey)) splitKeyCount++;
     }
-    assertTrue(splitKeyCount[0] > 0);
+    assertTrue(splitKeyCount > 0);
 
     String targetCollection = "migrate_multipleshardtest_targetCollection";
     CollectionAdminRequest.createCollection(targetCollection, "conf", 1, 1)
         .process(cluster.getSolrClient());
 
-    Indexer indexer = new Indexer(cluster.getSolrClient(), splitKey, 1, 30);
+    Indexer indexer = new Indexer(cluster.getSolrClient(), sourceCollection, splitKey, 1, 30);
     indexer.start();
 
     DocCollection state = getCollectionState(targetCollection);
     Replica replica = state.getReplicas().get(0);
-    try (HttpSolrClient collectionClient = getHttpSolrClient(replica.getCoreUrl())) {
+    try (SolrClient collectionClient = getHttpSolrClient(replica)) {
 
       SolrQuery solrQuery = new SolrQuery("*:*");
       assertEquals(
@@ -146,21 +144,21 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
 
       invokeCollectionMigration(
           CollectionAdminRequest.migrateData(
-                  "sourceCollection", targetCollection, splitKey + "/" + BIT_SEP + "!")
+                  sourceCollection, targetCollection, splitKey + "/" + BIT_SEP + "!")
               .setForwardTimeout(45));
 
       long finishTime = System.nanoTime();
 
       indexer.join();
-      splitKeyCount[0] += indexer.getSplitKeyCount();
+      splitKeyCount += indexer.getSplitKeyCount();
 
       try {
-        cluster.getSolrClient().deleteById("a/" + BIT_SEP + "!104");
-        splitKeyCount[0]--;
+        cluster.getSolrClient().deleteById(sourceCollection, "a/" + BIT_SEP + "!104");
+        splitKeyCount--;
       } catch (Exception e) {
         log.warn("Error deleting document a/{}!104", BIT_SEP, e);
       }
-      cluster.getSolrClient().commit();
+      cluster.getSolrClient().commit(sourceCollection);
       collectionClient.commit();
 
       solrQuery = new SolrQuery("*:*").setRows(1000);
@@ -168,12 +166,12 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
       log.info("Response from target collection: {}", response);
       assertEquals(
           "DocCount on target collection does not match",
-          splitKeyCount[0],
+          splitKeyCount,
           response.getResults().getNumFound());
 
       waitForState(
           "Expected to find routing rule for split key " + splitKey,
-          "sourceCollection",
+          sourceCollection,
           (n, c) -> {
             if (c == null) return false;
             Slice shard = c.getSlice("shard2");
@@ -183,7 +181,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
             return true;
           });
 
-      boolean ruleRemoved = waitForRuleToExpire("sourceCollection", "shard2", splitKey, finishTime);
+      boolean ruleRemoved = waitForRuleToExpire(sourceCollection, "shard2", splitKey, finishTime);
       assertTrue("Routing rule was not expired", ruleRemoved);
     }
   }
@@ -192,14 +190,17 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     final int seconds;
     final CloudSolrClient cloudClient;
     final String splitKey;
+    private final String collection;
     int splitKeyCount = 0;
     final int bitSep;
 
-    public Indexer(CloudSolrClient cloudClient, String splitKey, int bitSep, int seconds) {
-      this.seconds = seconds;
+    public Indexer(
+        CloudSolrClient cloudClient, String collection, String splitKey, int bitSep, int seconds) {
       this.cloudClient = cloudClient;
+      this.collection = collection;
       this.splitKey = splitKey;
       this.bitSep = bitSep;
+      this.seconds = seconds;
     }
 
     @Override
@@ -212,7 +213,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
         doc.addField("id", shardKey + (bitSep != -1 ? "/" + bitSep : "") + "!" + id);
         doc.addField("n_ti", id);
         try {
-          cloudClient.add(doc);
+          cloudClient.add(collection, doc);
           if (splitKey.equals(shardKey)) splitKeyCount++;
         } catch (Exception e) {
           log.error("Exception while adding document id: {}", doc.getField("id"), e);

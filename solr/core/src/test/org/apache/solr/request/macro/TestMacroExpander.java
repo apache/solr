@@ -27,7 +27,7 @@ public class TestMacroExpander extends SolrTestCase {
 
   @Test
   public void testExamples() {
-    final Map<String, String[]> testParams = new HashMap<String, String[]>();
+    final Map<String, String[]> testParams = new HashMap<>();
     final MacroExpander me;
     // example behavior unaffected by absence or value of failOnMissingParams
     if (random().nextBoolean()) {
@@ -37,8 +37,7 @@ public class TestMacroExpander extends SolrTestCase {
       me = new MacroExpander(testParams, failOnMissingParams);
     }
 
-    // default examples: https://cwiki.apache.org/confluence/display/solr/Parameter+Substitution
-    // and http://yonik.com/solr-query-parameter-substitution/
+    // default examples: https://yonik.com/solr-query-parameter-substitution/
 
     // using params
     String[] lowParams = {"50"};
@@ -73,7 +72,7 @@ public class TestMacroExpander extends SolrTestCase {
 
   @Test
   public void testOnMissingParams() {
-    final Map<String, String[]> testParams = new HashMap<String, String[]>();
+    final Map<String, String[]> testParams = new HashMap<>();
     final MacroExpander meSkipOnMissingParams = new MacroExpander(testParams);
     final MacroExpander meFailOnMissingParams = new MacroExpander(testParams, true);
 
@@ -108,7 +107,7 @@ public class TestMacroExpander extends SolrTestCase {
         "q=popularity:[ " + expandedLow + " TO " + expandedHigh + " ]",
         meSkipOnMissingParams.expand(testQuery));
     if (testParams.size() < 2) { // at least one of the two parameters missing
-      assertEquals(null, meFailOnMissingParams.expand(testQuery));
+      assertNull(meFailOnMissingParams.expand(testQuery));
     }
   }
 
@@ -168,9 +167,9 @@ public class TestMacroExpander extends SolrTestCase {
     assertEquals("${${b}}", meSkipOnMissingParams.expand("${${b}}"));
     assertNull(meFailOnMissingParams.expand("${${b}}"));
 
-    // Does not register as a syntax failure, although may subjectively look like it.
-    //   Consequently, the expression is replaced with nothing in default mode.
-    //   It'd be nice if there was a mode to leave un-resolved macros as-is when they don't resolve.
+    // Does not register as a syntax failure, although it may subjectively look like it.
+    // Consequently, the expression is replaced with nothing in default mode.
+    // It'd be nice if there was a mode to leave un-resolved macros as-is when they don't resolve.
     assertEquals("preamble ", meSkipOnMissingParams.expand("preamble ${exp${bad}"));
     assertNull(meFailOnMissingParams.expand("preamble ${exp${bad}"));
   }

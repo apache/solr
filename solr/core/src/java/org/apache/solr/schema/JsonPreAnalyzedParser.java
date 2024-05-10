@@ -21,10 +21,10 @@ import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -228,7 +228,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
     }
     TokenStream ts = f.tokenStreamValue();
     if (ts != null) {
-      List<Map<String, Object>> tokens = new LinkedList<>();
+      List<Map<String, Object>> tokens = new ArrayList<>();
       while (ts.incrementToken()) {
         Iterator<Class<? extends Attribute>> it = ts.getAttributeClassesIterator();
         String cTerm = null;

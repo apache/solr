@@ -78,7 +78,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
             SolrException.class,
             "didn't fail on next with incorrect num of sortvalues",
             () -> {
-              // append to our random sort string so we know it has wrong num clauses
+              // append to our random sort string, so we know it has wrong num clauses
               final SortSpec otherSort =
                   SortSpecParsing.parseSortSpec(randomSortString + ",id asc", req);
               CursorMark trash =
@@ -222,7 +222,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
         final String fieldName = sf.getName();
         assertNotNull(fieldName);
 
-        // Note: In some cases we build a human readable version of the sort value and then
+        // Note: In some cases we build a human-readable version of the sort value and then
         // unmarshall it into the raw, real, sort values that are expected by the FieldTypes.
         // In other cases we just build the raw value to begin with because it's easier
 
@@ -252,7 +252,7 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
         } else if (fieldName.startsWith("bool")) {
           val = sf.getType().unmarshalSortValue(random().nextBoolean() ? "t" : "f");
         } else if (fieldName.startsWith("enum")) {
-          val = random().nextInt(CursorPagingTest.SEVERITY_ENUM_VALUES.length);
+          val = random().nextInt(CursorPagingTest.SEVERITY_ENUM_VALUES.size());
         } else if (fieldName.contains("collation")) {
           val = getRandomCollation(sf);
         } else {

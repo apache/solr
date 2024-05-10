@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.common.luke;
+
 /**
  * @since solr 1.3
  */
@@ -66,6 +67,7 @@ public enum FieldFlag {
     return display;
   }
 
+  @Override
   public String toString() {
     return abbreviation + " - " + display;
   }

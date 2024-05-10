@@ -24,7 +24,7 @@ import org.junit.BeforeClass;
 
 /**
  * This class started life as a test for SOLR-749 to prove that value source plugins were properly
- * intialized, but it has since evolved to also help prove that ValueSource's are not asked to
+ * initialized, but it has since evolved to also help prove that ValueSource's are not asked to
  * compute values for documents unnecessarily.
  *
  * @see CountUsageValueSourceParser
@@ -36,23 +36,23 @@ public class SOLR749Test extends SolrTestCaseJ4 {
     initCore("solrconfig-SOLR-749.xml", "schema.xml");
   }
 
-  public void testConstruction() throws Exception {
+  public void testConstruction() {
     SolrCore core = h.getCore();
-    assertTrue("core is null and it shouldn't be", core != null);
+    assertNotNull("core is null and it shouldn't be", core);
     QParserPlugin parserPlugin = core.getQueryPlugin(QParserPlugin.DEFAULT_QTYPE);
-    assertTrue("parserPlugin is null and it shouldn't be", parserPlugin != null);
+    assertNotNull("parserPlugin is null and it shouldn't be", parserPlugin);
     assertTrue(
         "parserPlugin is not an instanceof " + FooQParserPlugin.class,
         parserPlugin instanceof FooQParserPlugin);
 
     ValueSourceParser vsp = core.getValueSourceParser("boost");
-    assertTrue("vsp is null and it shouldn't be", vsp != null);
+    assertNotNull("vsp is null and it shouldn't be", vsp);
     assertTrue(
         "vsp is not an instanceof " + DummyValueSourceParser.class,
         vsp instanceof DummyValueSourceParser);
   }
 
-  public void testHowManyDocsHaveBoostFunctionComputed() throws Exception {
+  public void testHowManyDocsHaveBoostFunctionComputed() {
     for (int i = 0; i < 100; i++) {
       assertU(adoc("id", "" + i));
     }
@@ -146,7 +146,7 @@ public class SOLR749Test extends SolrTestCaseJ4 {
       assertQ(
           "query matching 20 -> 10 -> 5 docs; two non-cached queries",
           req(
-              // match 20. the below IDs have alternating even/odd pairings so as to test possible
+              // match 20. the below IDs have alternating even/odd pairings to test possible
               // sequencing of evaluation
               "q", "{!notfoo cache=false}id_i1:[20 TO 39]",
               // match 10 (subset of above)

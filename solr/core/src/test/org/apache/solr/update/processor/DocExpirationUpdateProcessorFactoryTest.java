@@ -45,7 +45,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
             params("NOW", "1394059630042"),
             doc(f("id", "1111"), f("_ttl_", "+5MINUTES")));
     assertNotNull(d);
-    assertEquals(new Date(1394059930042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394059930042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     d =
         processAdd(
@@ -56,7 +58,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
             doc(f("id", "1111")));
 
     assertNotNull(d);
-    assertEquals(new Date(1394059930042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394059930042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
   }
 
   public void testTTLFieldConversion() throws Exception {
@@ -68,7 +72,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
             params("NOW", "1394059630042"),
             doc(f("id", "1111"), f("_ttl_field_", "+5MINUTES")));
     assertNotNull(d);
-    assertEquals(new Date(1394059930042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394059930042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     d =
         processAdd(
@@ -76,7 +82,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
             params("NOW", "1394059630042"),
             doc(f("id", "2222"), f("_ttl_field_", "+27MINUTES")));
     assertNotNull(d);
-    assertEquals(new Date(1394061250042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394061250042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     d =
         processAdd(
@@ -84,7 +92,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
             params("NOW", "1394059630042"),
             doc(f("id", "3333"), f("_ttl_field_", "+1YEAR")));
     assertNotNull(d);
-    assertEquals(new Date(1425595630042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1425595630042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     d =
         processAdd(
@@ -92,7 +102,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
             params("NOW", "1394059630042"),
             doc(f("id", "1111"), f("_ttl_field_", "/DAY+1YEAR")));
     assertNotNull(d);
-    assertEquals(new Date(1425513600000L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1425513600000L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     // default ttlParamName is disabled, this should not convert...
     d =
@@ -118,7 +130,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
             doc(f("id", "1111")));
 
     assertNotNull(d);
-    assertEquals(new Date(1394059930042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394059930042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     d =
         processAdd(
@@ -128,7 +142,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
                 "_ttl_param_", "+27MINUTES"),
             doc(f("id", "2222")));
     assertNotNull(d);
-    assertEquals(new Date(1394061250042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394061250042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     // default ttlFieldName is disabled, param should be used...
     d =
@@ -139,7 +155,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
                 "_ttl_param_", "+5MINUTES"),
             doc(f("id", "1111"), f("_ttl_field_", "+999MINUTES")));
     assertNotNull(d);
-    assertEquals(new Date(1394059930042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394059930042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     // default ttlFieldName is disabled, this should not convert...
     d =
@@ -160,7 +178,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
                 "_ttl_param_", "+999MINUTES"),
             doc(f("id", "1111"), f("_ttl_field_", "+5MINUTES")));
     assertNotNull(d);
-    assertEquals(new Date(1394059930042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394059930042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
 
     d =
         processAdd(
@@ -170,7 +190,9 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
                 "_ttl_param_", "+27MINUTES"),
             doc(f("id", "2222")));
     assertNotNull(d);
-    assertEquals(new Date(1394061250042L), d.getFieldValue("_expire_at_tdt"));
+    assertEquals(
+        new Date(1394061250042L).toInstant(),
+        ((Date) d.getFieldValue("_expire_at_tdt")).toInstant());
   }
 
   public void testAutomaticDeletes() throws Exception {
@@ -193,17 +215,20 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
     try {
       recorder.startRecording();
 
-      // more then one iter to verify it's recurring
+      final int timeout = 30; // in seconds
+
+      // more than one iter to verify it's recurring
       final int numItersToCheck = 1 + RANDOM_MULTIPLIER;
 
       for (int i = 0; i < numItersToCheck; i++) {
         UpdateCommand tmp;
 
         // be generous in how long we wait, some jenkins machines are slooooow
-        tmp = recorder.commandQueue.poll(30, TimeUnit.SECONDS);
+        tmp = recorder.commandQueue.poll(timeout, TimeUnit.SECONDS);
+        assertNotNull("Unable to get UpdateCommand from queue within " + timeout + " seconds", tmp);
 
         // we can be confident in the order because DocExpirationUpdateProcessorFactory
-        // uses the same request for both the delete & the commit -- and both
+        // uses the same request for both delete & commit operations -- and both
         // RecordingUpdateProcessorFactory's getInstance & startRecording methods are
         // synchronized.  So it should not be possible to start recording in the
         // middle of the two commands
@@ -216,8 +241,11 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
         assertTrue(
             delete.getQuery(), delete.getQuery().startsWith("{!cache=false}eXpField_tdt:[* TO "));
 
-        // commit should be immediately after the delete
-        tmp = recorder.commandQueue.poll(5, TimeUnit.SECONDS);
+        // be generous in how long we wait, some jenkins machines are slooooow
+        tmp = recorder.commandQueue.poll(timeout, TimeUnit.SECONDS);
+        assertNotNull("Unable to get UpdateCommand from queue within " + timeout + " seconds", tmp);
+
+        // commit should be immediately after the delete operation
         assertTrue(
             "expected CommitUpdateCommand: " + tmp.getClass(), tmp instanceof CommitUpdateCommand);
 

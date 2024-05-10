@@ -18,10 +18,10 @@
 package org.apache.solr.cloud;
 
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -34,7 +34,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
-    // the default is 180s and our waitForState times out in 90s
+    // the default is 180s and our waitForState times out in 90s,
     // so we lower this so that we can still test timeouts
     System.setProperty("leaderConflictResolveWait", "5000");
     System.setProperty("prepRecoveryReadTimeoutExtraWait", "1000");
@@ -47,7 +47,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void tearCluster() throws Exception {
+  public static void tearCluster() {
     System.clearProperty("leaderConflictResolveWait");
   }
 
@@ -82,7 +82,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
         .setNode(newNodeName)
         .process(solrClient);
 
-    // in the absence of the fixes made in SOLR-10914, this statement will timeout after 90s
+    // in the absence of the fixes made in SOLR-10914, this statement will time out after 90s
     waitForState(
         "Expected collection: testLeaderUnloaded to be live with 1 shard and 3 replicas",
         collectionName,

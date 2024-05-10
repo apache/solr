@@ -24,11 +24,12 @@ public interface QueryElevationParams {
   String FORCE_ELEVATION = "forceElevation";
   String IDS = "elevateIds";
   String EXCLUDE = "excludeIds";
+
   /**
    * The name of the field that editorial results will be written out as when using the
    * QueryElevationComponent, which automatically configures the EditorialMarkerFactory. The default
    * name is "elevated" <br>
-   * See https://solr.apache.org/guide/query-elevation-component.html
+   * See https://solr.apache.org/guide/solr/latest/query-guide/query-elevation-component.html
    */
   String EDITORIAL_MARKER_FIELD_NAME = "editorialMarkerFieldName";
 
@@ -37,7 +38,7 @@ public interface QueryElevationParams {
    * QueryElevationComponent, which automatically configures the EditorialMarkerFactory. The default
    * name is "excluded". This is only used when {@link #MARK_EXCLUDES} is set to true at query time.
    * <br>
-   * See https://solr.apache.org/guide/query-elevation-component.html
+   * See https://solr.apache.org/guide/solr/latest/query-guide/query-elevation-component.html
    */
   String EXCLUDE_MARKER_FIELD_NAME = "excludeMarkerFieldName";
 
@@ -59,4 +60,15 @@ public interface QueryElevationParams {
    * set this to true. False by default.
    */
   String ELEVATE_ONLY_DOCS_MATCHING_QUERY = "elevateOnlyDocsMatchingQuery";
+
+  /**
+   * By default, the component respects the fq parameter. If you want to elevate documents that do
+   * not match the provided filters, tag the filters in question via the local parameter syntax
+   * fq={!tag=t1}field1:value1 and then specify the tags for exclusion via elevate.excludeTag=t1
+   *
+   * <p>Note: This is the first parameter to use a common prefix naming standard ("elevate.X") so it
+   * looks different from the other parameters. The other parameters should eventually be reworked
+   * to follow this standard, which is used by other SearchComponents.
+   */
+  String ELEVATE_EXCLUDE_TAGS = "elevate.excludeTags";
 }

@@ -71,7 +71,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @Test
-  public void testPointField() throws Exception {
+  public void testPointField() {
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldType("pint");
     request.setFieldValue("5");
@@ -94,7 +94,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
    * FieldAnalysisRequestHandler#resolveAnalysisRequest(org.apache.solr.request.SolrQueryRequest)}
    */
   @Test
-  public void testResolveAnalysisRequest() throws Exception {
+  public void testResolveAnalysisRequest() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(AnalysisParams.FIELD_NAME, "text,nametext");
     params.add(AnalysisParams.FIELD_TYPE, "whitetok,keywordtok");
@@ -116,7 +116,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertFalse(request.isShowMatch());
     req.close();
 
-    // testing overide of query value using analysis.query param
+    // testing override of query value using analysis.query param
     params.add(AnalysisParams.QUERY, "quick lazy");
     req = new LocalSolrQueryRequest(h.getCore(), params);
     request = handler.resolveAnalysisRequest(req);
@@ -178,7 +178,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
    */
   @Test
   @SuppressWarnings({"unchecked"})
-  public void testHandleAnalysisRequest() throws Exception {
+  public void testHandleAnalysisRequest() {
 
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldName("whitetok");
@@ -192,7 +192,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> result =
         handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
-    assertTrue("result is null and it shouldn't be", result != null);
+    assertNotNull("result is null and it shouldn't be", result);
 
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -208,7 +208,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     List<NamedList> tokenList =
         indexPart.get("org.apache.lucene.analysis.standard.StandardTokenizer");
-    assertNotNull("Expcting StandardTokenizer analysis breakdown", tokenList);
+    assertNotNull("Expecting StandardTokenizer analysis breakdown", tokenList);
     assertEquals(tokenList.size(), 10);
     assertToken(
         tokenList.get(0),
@@ -274,7 +274,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
         tokenList.get(9),
         new TokenInfo("dogs", null, "<ALPHANUM>", 45, 49, 10, new int[] {10, 10}, null, false));
     tokenList = indexPart.get("org.apache.lucene.analysis.core.StopFilter");
-    assertNotNull("Expcting StopFilter analysis breakdown", tokenList);
+    assertNotNull("Expecting StopFilter analysis breakdown", tokenList);
     assertEquals(tokenList.size(), 8);
     assertToken(
         tokenList.get(0),
@@ -301,7 +301,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
         tokenList.get(7),
         new TokenInfo("dogs", null, "<ALPHANUM>", 45, 49, 10, new int[] {10, 10, 10}, null, false));
     tokenList = indexPart.get("org.apache.lucene.analysis.en.PorterStemFilter");
-    assertNotNull("Expcting PorterStemFilter analysis breakdown", tokenList);
+    assertNotNull("Expecting PorterStemFilter analysis breakdown", tokenList);
     assertEquals(tokenList.size(), 8);
     assertToken(
         tokenList.get(0),
@@ -346,7 +346,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
         tokenList.get(1),
         new TokenInfo("brown", null, "<ALPHANUM>", 4, 9, 2, new int[] {2}, null, false));
     tokenList = queryPart.get("org.apache.lucene.analysis.core.LowerCaseFilter");
-    assertNotNull("Expcting LowerCaseFilter analysis breakdown", tokenList);
+    assertNotNull("Expecting LowerCaseFilter analysis breakdown", tokenList);
     assertEquals(2, tokenList.size());
     assertToken(
         tokenList.get(0),
@@ -355,7 +355,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
         tokenList.get(1),
         new TokenInfo("brown", null, "<ALPHANUM>", 4, 9, 2, new int[] {2, 2}, null, false));
     tokenList = queryPart.get("org.apache.lucene.analysis.core.StopFilter");
-    assertNotNull("Expcting StopFilter analysis breakdown", tokenList);
+    assertNotNull("Expecting StopFilter analysis breakdown", tokenList);
     assertEquals(2, tokenList.size());
     assertToken(
         tokenList.get(0),
@@ -364,7 +364,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
         tokenList.get(1),
         new TokenInfo("brown", null, "<ALPHANUM>", 4, 9, 2, new int[] {2, 2, 2}, null, false));
     tokenList = queryPart.get("org.apache.lucene.analysis.en.PorterStemFilter");
-    assertNotNull("Expcting PorterStemFilter analysis breakdown", tokenList);
+    assertNotNull("Expecting PorterStemFilter analysis breakdown", tokenList);
     assertEquals(2, tokenList.size());
     assertToken(
         tokenList.get(0),
@@ -381,7 +381,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertNotNull("expecting an index token analysis for field type 'nametext'", indexPart);
 
     tokenList = indexPart.get("org.apache.lucene.analysis.core.WhitespaceTokenizer");
-    assertNotNull("Expcting WhitespaceTokenizer analysis breakdown", tokenList);
+    assertNotNull("Expecting WhitespaceTokenizer analysis breakdown", tokenList);
     assertEquals(10, tokenList.size());
     assertToken(
         tokenList.get(0), new TokenInfo("the", null, "word", 0, 3, 1, new int[] {1}, null, false));
@@ -511,7 +511,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @Test
-  public void testCharFilterAnalysis() throws Exception {
+  public void testCharFilterAnalysis() {
 
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldType("charfilthtmlmap");
@@ -521,7 +521,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> result =
         handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
-    assertTrue("result is null and it shouldn't be", result != null);
+    assertNotNull("result is null and it shouldn't be", result);
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -551,7 +551,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @Test
-  public void testPositionHistoryWithWDGF() throws Exception {
+  public void testPositionHistoryWithWDGF() {
 
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldType("skutype1");
@@ -561,7 +561,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> result =
         handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
-    assertTrue("result is null and it shouldn't be", result != null);
+    assertNotNull("result is null and it shouldn't be", result);
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -576,7 +576,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
 
     @SuppressWarnings({"rawtypes"})
     List<NamedList> tokenList = indexPart.get(MockTokenizer.class.getName());
-    assertNotNull("Expcting MockTokenizer analysis breakdown", tokenList);
+    assertNotNull("Expecting MockTokenizer analysis breakdown", tokenList);
     assertEquals(4, tokenList.size());
     assertToken(
         tokenList.get(0), new TokenInfo("hi,", null, "word", 0, 3, 1, new int[] {1}, null, false));
@@ -589,7 +589,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
         tokenList.get(3),
         new TokenInfo("Test", null, "word", 14, 18, 4, new int[] {4}, null, false));
     tokenList = indexPart.get("org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter");
-    assertNotNull("Expcting WordDelimiterGraphFilter analysis breakdown", tokenList);
+    assertNotNull("Expecting WordDelimiterGraphFilter analysis breakdown", tokenList);
     assertEquals(6, tokenList.size());
     assertToken(
         tokenList.get(0),
@@ -610,7 +610,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
         tokenList.get(5),
         new TokenInfo("Test", null, "word", 14, 18, 5, new int[] {4, 5}, null, false));
     tokenList = indexPart.get("org.apache.lucene.analysis.core.LowerCaseFilter");
-    assertNotNull("Expcting LowerCaseFilter analysis breakdown", tokenList);
+    assertNotNull("Expecting LowerCaseFilter analysis breakdown", tokenList);
     assertEquals(6, tokenList.size());
     assertToken(
         tokenList.get(0),
@@ -633,7 +633,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @SuppressWarnings({"unchecked"})
-  public void testCommonGrams() throws Exception {
+  public void testCommonGrams() {
 
     final FieldAnalysisRequest request = new FieldAnalysisRequest();
     final String fieldType = "commongrams";
@@ -645,7 +645,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> result =
         handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
-    assertTrue("result is null and it shouldn't be", result != null);
+    assertNotNull("result is null and it shouldn't be", result);
 
     @SuppressWarnings({"rawtypes"})
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -660,7 +660,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
 
     @SuppressWarnings({"rawtypes"})
     List<NamedList> tokenList = indexPart.get(WhitespaceTokenizer.class.getName());
-    assertNotNull("Expcting WhitespaceTokenizer analysis breakdown", tokenList);
+    assertNotNull("Expecting WhitespaceTokenizer analysis breakdown", tokenList);
     assertEquals(tokenList.size(), 5);
     assertToken(
         tokenList.get(0), new TokenInfo("the", null, "word", 0, 3, 1, new int[] {1}, null, false));
@@ -677,7 +677,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
         tokenList.get(4),
         new TokenInfo("dead", null, "word", 18, 22, 5, new int[] {5}, null, false));
     tokenList = indexPart.get(CommonGramsFilter.class.getName());
-    assertNotNull("Expcting CommonGramsFilter analysis breakdown", tokenList);
+    assertNotNull("Expecting CommonGramsFilter analysis breakdown", tokenList);
     assertEquals(tokenList.size(), 9);
     assertToken(
         tokenList.get(0),
@@ -725,8 +725,8 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
         tokenList.get(3),
         new TokenInfo("man", null, "word", 13, 16, 4, new int[] {4}, null, false));
     tokenList = queryPart.get(CommonGramsQueryFilter.class.getName());
-    assertNotNull("Expcting CommonGramsQueryFilter analysis breakdown", tokenList);
-    // Hmmm... Not clear if "dead" should really be here, but it's what the filter currently
+    assertNotNull("Expecting CommonGramsQueryFilter analysis breakdown", tokenList);
+    // Hmm... Not clear if "dead" should really be here, but it's what the filter currently
     // produces, see: LUCENE-10007
     assertEquals(4, tokenList.size()); // LUCENE-10007
     assertToken(
@@ -745,7 +745,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @Test
-  public void testSpatial() throws Exception {
+  public void testSpatial() {
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldType("location_rpt");
     request.setFieldValue("MULTIPOINT ((10 40), (40 30), (20 20), (30 10))");
@@ -771,7 +771,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @Test // See SOLR-8460
-  public void testCustomAttribute() throws Exception {
+  public void testCustomAttribute() {
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldType("skutype1");
     request.setFieldValue("hi, 3456-12 a Test");
@@ -810,7 +810,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   @Test(expected = Exception.class)
-  public void testNoDefaultField() throws Exception {
+  public void testNoDefaultField() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CommonParams.Q, "fox brown");
     SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params);
@@ -818,14 +818,14 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   }
 
   /** A custom impl of a standard attribute impl; test this instance is used. */
-  public class CustomFlagsAttributeImpl extends FlagsAttributeImpl {
+  public static class CustomFlagsAttributeImpl extends FlagsAttributeImpl {
     @Override
     public void setFlags(int flags) {
       super.setFlags(900 + flags); // silly modification
     }
   }
 
-  private class CustomTokenizer extends Tokenizer {
+  private static class CustomTokenizer extends Tokenizer {
     CharTermAttribute charAtt;
     FlagsAttribute customAtt;
     boolean sentOneToken;
@@ -838,7 +838,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     }
 
     @Override
-    public void reset() throws IOException {
+    public void reset() {
       sentOneToken = false;
     }
 
@@ -854,7 +854,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     }
   }
 
-  private class CustomTokenFilter extends TokenFilter {
+  private static class CustomTokenFilter extends TokenFilter {
     FlagsAttribute flagAtt;
 
     public CustomTokenFilter(TokenStream input) {

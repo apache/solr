@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Currency;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -49,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * Field type for support of monetary values.
  *
  * <p>See <a
- * href="https://solr.apache.org/guide/currencies-exchange-rates.html">https://solr.apache.org/guide/currencies-exchange-rates.html</a>
+ * href="https://solr.apache.org/guide/solr/latest/indexing-guide/currencies-exchange-rates.html">https://solr.apache.org/guide/solr/latest/indexing-guide/currencies-exchange-rates.html</a>
  */
 public class CurrencyFieldType extends FieldType implements SchemaAware, ResourceLoaderAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -184,7 +185,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
     if (field.stored()) {
       String storedValue = externalVal.toString().trim();
-      if (storedValue.indexOf(",") < 0) {
+      if (!storedValue.contains(",")) {
         storedValue += "," + defaultCurrency;
       }
       f.add(createField(field.getName(), storedValue, StoredField.TYPE));
@@ -307,6 +308,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
    * @see Currency#getDefaultFractionDigits
    * @see #getConvertedValueSource
    */
+  @Override
   public RawCurrencyValueSource getValueSource(SchemaField field, QParser parser) {
     getAmountField(field).checkFieldCacheSource();
     getCurrencyField(field).checkFieldCacheSource();
@@ -513,22 +515,20 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof ConvertedCurrencyValueSource)) return false;
 
       ConvertedCurrencyValueSource that = (ConvertedCurrencyValueSource) o;
 
-      return !(source != null ? !source.equals(that.source) : that.source != null)
+      return Objects.equals(source, that.source)
           && (rate == that.rate)
-          && !(targetCurrency != null
-              ? !targetCurrency.equals(that.targetCurrency)
-              : that.targetCurrency != null);
+          && Objects.equals(targetCurrency, that.targetCurrency);
     }
 
     @Override
     public int hashCode() {
       int result = targetCurrency != null ? targetCurrency.hashCode() : 0;
       result = 31 * result + (source != null ? source.hashCode() : 0);
-      result = 31 * (int) Double.doubleToLongBits(rate);
+      result = 31 * result + (int) Double.doubleToLongBits(rate);
       return result;
     }
   }
@@ -610,6 +610,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
             return currencies.strVal(doc);
           }
         }
+
         /** throws a (Server Error) SolrException if the code is not valid */
         private Currency getDocCurrency(int doc, int currencyOrd) throws IOException {
           String code = getDocCurrencyCode(doc, currencyOrd);
@@ -727,19 +728,13 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
+      if (!(o instanceof RawCurrencyValueSource)) return false;
 
       RawCurrencyValueSource that = (RawCurrencyValueSource) o;
 
-      return !(amountValues != null
-              ? !amountValues.equals(that.amountValues)
-              : that.amountValues != null)
-          && !(currencyValues != null
-              ? !currencyValues.equals(that.currencyValues)
-              : that.currencyValues != null)
-          && !(targetCurrency != null
-              ? !targetCurrency.equals(that.targetCurrency)
-              : that.targetCurrency != null);
+      return Objects.equals(amountValues, that.amountValues)
+          && Objects.equals(currencyValues, that.currencyValues)
+          && Objects.equals(targetCurrency, that.targetCurrency);
     }
 
     @Override

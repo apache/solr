@@ -19,9 +19,9 @@ package org.apache.solr.search.facet;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 // TODO: refactor more out to base class
@@ -104,7 +104,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
 
     List<SimpleOrderedMap<?>> resultBuckets = new ArrayList<>(Math.max(0, (int) (last - first)));
 
-    /**
+    /*
      * this only works if there are no filters (like mincount) for (int i=first; i<last; i++) {
      * FacetBucket bucket = sortedBuckets.get(i); resultBuckets.add( bucket.getMergedBucket() ); } *
      */
@@ -166,7 +166,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
         refinement =
             getRefinementSpecial(mcontext, refinement, tagsWithPartial, missingBucket, "missing");
       }
-      /**
+      /*
        * allBuckets does not execute sub-facets because we don't change the domain. We may need
        * refinement info in the future though for stats. if (freq.allBuckets) { refinement =
        * getRefinementSpecial(mcontext, refinement, tagsWithPartial, allBuckets, "allBuckets"); }
@@ -185,7 +185,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
     // same "missing" status as this facet, so no need to set it again
     Map<String, Object> bucketRefinement = bucket.getRefinement(mcontext, tagsWithPartial);
     if (bucketRefinement != null) {
-      refinement = refinement == null ? new HashMap<>(2) : refinement;
+      refinement = refinement == null ? CollectionUtil.newHashMap(2) : refinement;
       refinement.put(label, bucketRefinement);
     }
     return refinement;

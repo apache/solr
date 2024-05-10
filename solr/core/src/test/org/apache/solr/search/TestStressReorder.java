@@ -336,7 +336,8 @@ public class TestStressReorder extends TestRTGBase {
                   @SuppressWarnings({"rawtypes"})
                   List doclist = (List) (((Map) rsp.get("response")).get("docs"));
                   if (doclist.size() == 0) {
-                    // there's no info we can get back with a delete, so not much we can check
+                    // there's no info we can get back with a delete operation, so not much we can
+                    // check
                     // without further synchronization
                   } else {
                     assertEquals(1, doclist.size());
@@ -346,7 +347,7 @@ public class TestStressReorder extends TestRTGBase {
                         || (foundVer == info.version
                             && foundVal != info.val)) { // if the version matches, the val must
                       log.error("ERROR, id={} found={} model {}", id, response, info);
-                      assertTrue(false);
+                      fail();
                     }
                   }
                 }

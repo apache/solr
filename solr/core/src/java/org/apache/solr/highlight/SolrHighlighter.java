@@ -90,13 +90,13 @@ public abstract class SolrHighlighter {
 
   protected static String[] expandWildcardsInFields(
       Supplier<Collection<String>> availableFieldNamesSupplier, String... inFields) {
-    Set<String> expandedFields = new LinkedHashSet<String>();
+    Set<String> expandedFields = new LinkedHashSet<>();
     Collection<String> availableFieldNames = null;
     for (String inField : inFields) {
       for (String field : SolrPluginUtils.split(inField)) {
         if (field.contains("*")) {
           // create a Java regular expression from the wildcard string
-          Pattern fieldRegex = Pattern.compile(field.replaceAll("\\*", ".*"));
+          Pattern fieldRegex = Pattern.compile(field.replace("*", ".*"));
           if (availableFieldNames == null) {
             availableFieldNames = availableFieldNamesSupplier.get();
           }

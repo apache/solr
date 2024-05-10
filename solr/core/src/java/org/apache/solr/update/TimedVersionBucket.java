@@ -24,11 +24,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.solr.common.SolrException;
 
 /**
- * @lucene.internal
- */
-/**
  * This implementation uses lock and condition and will throw exception if it can't obtain the lock
  * within <code>lockTimeoutMs</code>.
+ *
+ * @lucene.internal
  */
 public class TimedVersionBucket extends VersionBucket {
 
@@ -51,14 +50,17 @@ public class TimedVersionBucket extends VersionBucket {
     }
   }
 
+  @Override
   public void unlock() {
     lock.unlock();
   }
 
+  @Override
   public void signalAll() {
     condition.signalAll();
   }
 
+  @Override
   public void awaitNanos(long nanosTimeout) {
     try {
       if (nanosTimeout > 0) {

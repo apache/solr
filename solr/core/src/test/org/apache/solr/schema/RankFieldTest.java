@@ -143,7 +143,7 @@ public class RankFieldTest extends SolrTestCaseJ4 {
             });
   }
 
-  public void testSortFails() throws IOException {
+  public void testSortFails() {
     assertU(adoc("id", "testSortFails", RANK_1, "1"));
     assertU(commit());
     assertQEx(
@@ -151,7 +151,7 @@ public class RankFieldTest extends SolrTestCaseJ4 {
   }
 
   @Ignore("We currently don't fail these kinds of requests with other field types")
-  public void testFacetFails() throws IOException {
+  public void testFacetFails() {
     assertU(adoc("id", "testFacetFails", RANK_1, "1"));
     assertU(commit());
     assertQEx(
@@ -163,7 +163,7 @@ public class RankFieldTest extends SolrTestCaseJ4 {
         400);
   }
 
-  public void testTermQuery() throws IOException {
+  public void testTermQuery() {
     assertU(adoc("id", "testTermQuery", RANK_1, "1", RANK_2, "1"));
     assertU(adoc("id", "testTermQuery2", RANK_1, "1"));
     assertU(commit());
@@ -176,7 +176,7 @@ public class RankFieldTest extends SolrTestCaseJ4 {
     assertQEx("Range queries not supported", req("q", RANK_1 + ":[1 TO 10]"), 400);
   }
 
-  public void testResponseQuery() throws IOException {
+  public void testResponseQuery() {
     assertU(adoc("id", "testResponseQuery", RANK_1, "1"));
     assertU(commit());
     // Ignore requests to retrieve rank
@@ -186,7 +186,7 @@ public class RankFieldTest extends SolrTestCaseJ4 {
         "count(//result/doc[1]/str)=1");
   }
 
-  public void testRankQParserQuery() throws IOException {
+  public void testRankQParserQuery() {
     assertU(adoc("id", "1", "str_field", "foo", RANK_1, "1", RANK_2, "2"));
     assertU(adoc("id", "2", "str_field", "foo", RANK_1, "2", RANK_2, "1"));
     assertU(commit());

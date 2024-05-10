@@ -66,8 +66,8 @@ public class Tagger2Test extends TaggerTestCase {
     assertTags("He lived in Clayton North Carolina", "in", "Clayton", "North Carolina");
   }
 
-  // As of Lucene/Solr 4.9, StandardTokenizer never does this anymore (reported to Lucene dev-list,
-  // Jan 26th 2015.  Honestly it's not particularly important to us but it renders this test
+  // As of Lucene/Solr 4.9, StandardTokenizer never does this (reported to Lucene dev-list,
+  // Jan 26th 2015).  Honestly it's not particularly important to us, but it renders this test
   // pointless.
   /** Orig issue https://github.com/OpenSextant/SolrTextTagger/issues/2 related: #13 */
   @Test

@@ -19,12 +19,15 @@ package org.apache.solr.s3;
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
-import org.apache.commons.io.IOUtils;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import software.amazon.awssdk.profiles.ProfileFileSystemSetting;
 
 /** Abstract class for test with S3Mock. */
 public class AbstractS3ClientTest extends SolrTestCaseJ4 {
@@ -38,9 +41,11 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
   S3StorageClient client;
 
   @Before
-  public void setUpClient() {
+  public void setUpClient() throws URISyntaxException {
     System.setProperty("aws.accessKeyId", "foo");
     System.setProperty("aws.secretAccessKey", "bar");
+
+    setS3ConfFile();
 
     client =
         new S3StorageClient(
@@ -51,6 +56,17 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
             false,
             "http://localhost:" + S3_MOCK_RULE.getHttpPort(),
             false);
+  }
+
+  /**
+   * Use this to make sure that we don't pollute the test environment with defaults from the local
+   * user's ~/.aws/config or credentials
+   */
+  public static void setS3ConfFile() throws URISyntaxException {
+    URI conf = S3IncrementalBackupTest.class.getClassLoader().getResource("s3.conf").toURI();
+    String emptyFile = Path.of(conf).toString();
+    System.setProperty(ProfileFileSystemSetting.AWS_CONFIG_FILE.property(), emptyFile);
+    System.setProperty(ProfileFileSystemSetting.AWS_SHARED_CREDENTIALS_FILE.property(), emptyFile);
   }
 
   @After
@@ -66,7 +82,7 @@ public class AbstractS3ClientTest extends SolrTestCaseJ4 {
    */
   void pushContent(String path, String content) throws S3Exception {
     try (OutputStream output = client.pushStream(path)) {
-      IOUtils.write(content, output, Charset.defaultCharset());
+      output.write(content.getBytes(StandardCharsets.UTF_8));
     } catch (IOException e) {
       throw new S3Exception(e);
     }

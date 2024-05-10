@@ -18,12 +18,9 @@ package org.apache.solr.prometheus.exporter;
 
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.junit.Before;
 import org.junit.Test;
 
-// @org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13786")
-@Slow
 public class SolrExporterIntegrationTest extends SolrExporterTestBase {
 
   @Override
@@ -60,8 +57,8 @@ public class SolrExporterIntegrationTest extends SolrExporterTestBase {
     assertTrue(durationHistogram.get("solr_exporter_duration_seconds_count") > 0);
     assertTrue(durationHistogram.get("solr_exporter_duration_seconds_sum") > 0);
 
-    // 17 = (15 buckets in the histogram) + (count metric) + (sum metric)
-    assertEquals(17, durationHistogram.size());
+    // 18 = (15 buckets in the histogram) + (count metric) + (sum metric) + (created metric)
+    assertEquals(18, durationHistogram.size());
   }
 
   @Test

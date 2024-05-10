@@ -117,20 +117,10 @@ public class TestCancellableCollector extends SolrTestCase {
     assertEquals(topDocs.totalHits.value, topScoreDocCollector.getTotalHits());
   }
 
-  private void cancelQuery(CancellableCollector cancellableCollector, final int sleepTime) {
+  private void cancelQuery(CancellableCollector cancellableCollector) {
     executor.submit(
         () -> {
-          // Wait for some time to let the query start
-          try {
-            if (sleepTime > 0) {
-              Thread.sleep(sleepTime);
-            }
-
-            cancellableCollector.cancel();
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e.getMessage());
-          }
+          cancellableCollector.cancel();
         });
   }
 
@@ -157,7 +147,7 @@ public class TestCancellableCollector extends SolrTestCase {
         CancellableCollector.QueryCancelledException.class,
         () -> {
           // Cancel the query before the document collection starts
-          cancelQuery(cancellableCollector, 0);
+          cancelQuery(cancellableCollector);
 
           executeSearchTest(searcher, query, cancellableCollector, 5000);
         });
@@ -172,13 +162,13 @@ public class TestCancellableCollector extends SolrTestCase {
         CancellableCollector.QueryCancelledException.class,
         () -> {
           // Cancel the query before the document collection starts
-          cancelQuery(cancellableCollector, 0);
+          cancelQuery(cancellableCollector);
 
           executeSearchTest(searcher, query, cancellableCollector, 5000);
         });
   }
 
-  public class DummyCancellableCollector extends CancellableCollector {
+  public static class DummyCancellableCollector extends CancellableCollector {
     private final CancellableCollector collector;
     private final boolean delayStart;
     private final boolean delayCollection;

@@ -24,11 +24,11 @@ import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.handler.admin.LukeRequestHandlerTest; // jdoc
+import org.apache.solr.handler.admin.LukeRequestHandlerTest;
 
 /**
  * A Test only custom FieldType that specifies null for various params when constructing
- * TokenizerChain instances to ensure that they are still well behaved.
+ * TokenizerChain instances to ensure that they are still well-behaved.
  *
  * @see LukeRequestHandlerTest#testNullFactories
  */

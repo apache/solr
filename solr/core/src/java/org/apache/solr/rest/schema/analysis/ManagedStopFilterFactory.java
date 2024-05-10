@@ -58,6 +58,7 @@ public class ManagedStopFilterFactory extends BaseManagedTokenFilterFactory {
   }
 
   /** Returns the implementation class for managing stop words. */
+  @Override
   protected Class<? extends ManagedResource> getManagedResourceImplClass() {
     return ManagedWordSetResource.class;
   }

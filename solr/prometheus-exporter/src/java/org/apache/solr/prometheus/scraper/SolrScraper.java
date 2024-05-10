@@ -37,7 +37,7 @@ import net.thisptr.jackson.jq.exception.JsonQueryException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.prometheus.collector.MetricSamples;
@@ -48,14 +48,22 @@ import org.slf4j.LoggerFactory;
 
 public abstract class SolrScraper implements Closeable {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  protected static final String ZK_HOST_LABEL = "zk_host";
+  protected static final String BASE_URL_LABEL = "base_url";
+  protected static final String CLUSTER_ID_LABEL = "cluster_id";
+
   private static final Counter scrapeErrorTotal =
       Counter.build()
           .name("solr_exporter_scrape_error_total")
           .help("Number of scrape error.")
+          .labelNames(ZK_HOST_LABEL, BASE_URL_LABEL, CLUSTER_ID_LABEL)
           .register(SolrExporter.defaultRegistry);
 
   protected static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  protected final String clusterId;
 
   protected final ExecutorService executor;
 
@@ -71,8 +79,9 @@ public abstract class SolrScraper implements Closeable {
 
   public abstract MetricSamples collections(MetricsQuery metricsQuery) throws IOException;
 
-  public SolrScraper(ExecutorService executor) {
+  public SolrScraper(ExecutorService executor, String clusterId) {
     this.executor = executor;
+    this.clusterId = clusterId;
   }
 
   protected Map<String, MetricSamples> sendRequestsInParallel(
@@ -113,20 +122,34 @@ public abstract class SolrScraper implements Closeable {
   protected MetricSamples request(SolrClient client, MetricsQuery query) throws IOException {
     MetricSamples samples = new MetricSamples();
 
+    String baseUrlLabelValue = "";
+    String zkHostLabelValue = "";
+    if (client instanceof Http2SolrClient) {
+      baseUrlLabelValue = ((Http2SolrClient) client).getBaseURL();
+    } else if (client instanceof CloudSolrClient) {
+      zkHostLabelValue = ((CloudSolrClient) client).getClusterStateProvider().getQuorumHosts();
+    }
+
     QueryRequest queryRequest = new QueryRequest(query.getParameters());
     queryRequest.setPath(query.getPath());
 
-    NamedList<Object> queryResponse = null;
+    NamedList<Object> queryResponse;
     try {
-      if (!query.getCollection().isPresent() && !query.getCore().isPresent()) {
+      if (query.getCollection().isEmpty() && query.getCore().isEmpty()) {
         queryResponse = client.request(queryRequest);
       } else if (query.getCore().isPresent()) {
         queryResponse = client.request(queryRequest, query.getCore().get());
       } else if (query.getCollection().isPresent()) {
         queryResponse = client.request(queryRequest, query.getCollection().get());
+      } else {
+        throw new AssertionError("Invalid configuration");
+      }
+      if (queryResponse == null) { // ideally we'd make this impossible
+        throw new RuntimeException("no response from server");
       }
     } catch (SolrServerException | IOException e) {
       log.error("failed to request: {}", queryRequest.getPath(), e);
+      return samples;
     }
 
     JsonNode jsonNode = OBJECT_MAPPER.readTree((String) queryResponse.get("response"));
@@ -153,15 +176,17 @@ public abstract class SolrScraper implements Closeable {
           }
 
           /* Labels due to client */
-          if (client instanceof HttpSolrClient) {
-            labelNames.add("base_url");
-            labelValues.add(((HttpSolrClient) client).getBaseURL());
+          if (!baseUrlLabelValue.isEmpty()) {
+            labelNames.add(BASE_URL_LABEL);
+            labelValues.add(baseUrlLabelValue);
+          } else if (!zkHostLabelValue.isEmpty()) {
+            labelNames.add(ZK_HOST_LABEL);
+            labelValues.add(zkHostLabelValue);
           }
 
-          if (client instanceof CloudSolrClient) {
-            labelNames.add("zk_host");
-            labelValues.add(((CloudSolrClient) client).getClusterStateProvider().getQuorumHosts());
-          }
+          // Add the unique cluster ID, either as specified on cmdline -i or baseUrl/zkHost
+          labelNames.add(CLUSTER_ID_LABEL);
+          labelValues.add(clusterId);
 
           // Deduce core if not there
           if (labelNames.indexOf("core") < 0
@@ -187,7 +212,7 @@ public abstract class SolrScraper implements Closeable {
         }
       } catch (JsonQueryException e) {
         log.error("Error apply JSON query={} to result", jsonQuery, e);
-        scrapeErrorTotal.inc();
+        scrapeErrorTotal.labels(zkHostLabelValue, baseUrlLabelValue, clusterId).inc();
       }
     }
 

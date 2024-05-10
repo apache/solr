@@ -45,7 +45,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.zookeeper.KeeperException;
@@ -149,7 +148,7 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(Utils.toJSON(m));
+        ccc.offerStateUpdate(m);
       }
 
       // wait for a while until we don't see the collection
@@ -209,7 +208,7 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
     } finally {
 
       try {
-        String collectionPath = ZkStateReader.getCollectionPathRoot(collection);
+        String collectionPath = DocCollection.getCollectionPathRoot(collection);
         if (zkStateReader.getZkClient().exists(collectionPath, true)) {
           if (removeCounterNode) {
             zkStateReader.getZkClient().clean(collectionPath);
@@ -219,10 +218,10 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
           }
         }
       } catch (InterruptedException e) {
-        SolrException.log(log, "Cleaning up collection in zk was interrupted:" + collection, e);
+        log.error("Cleaning up collection in zk was interrupted: {}", collection, e);
         Thread.currentThread().interrupt();
       } catch (KeeperException e) {
-        SolrException.log(log, "Problem cleaning up collection in zk:" + collection, e);
+        log.error("Problem cleaning up collection in zk: {}", collection, e);
       }
     }
   }

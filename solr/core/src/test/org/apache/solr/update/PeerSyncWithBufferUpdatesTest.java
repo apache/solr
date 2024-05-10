@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -69,7 +68,6 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
 
     SolrClient client0 = clients.get(0);
     SolrClient client1 = clients.get(1);
-    SolrClient client2 = clients.get(2);
 
     long v = 0;
     // add some context
@@ -100,9 +98,9 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
     add(client1, seenLeader, sdoc("id", "23", "_version_", v));
 
     // client1 should be able to sync
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    assertSync(client1, numVersions, shardsArr[0]);
 
-    // on-wire updates arrived on jetty1
+    // on-wire updates arrived at jetty1
     add(client1, seenLeader, sdoc("id", "21", "_version_", v - 2));
     add(client1, seenLeader, sdoc("id", "22", "_version_", v - 1));
 
@@ -124,7 +122,6 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
 
     log.info("After buffer updates");
     jetty1Core.getUpdateHandler().getUpdateLog().bufferUpdates();
-    List<Object> onWireUpdates = new ArrayList<>();
     Set<Integer> docIds = new HashSet<>();
 
     for (int i = 0; i <= 50; i++) {
@@ -132,15 +129,16 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
       if (docIds.size() < 10) kindOfUpdate = 0;
       // TODO test atomic update
       if (kindOfUpdate <= 50) {
-        // add a new document update, may by duplicate with the current one
+        // add a new document update, may be duplicate with the current one
         int val = random().nextInt(1000);
         int docId = random().nextInt(10000);
         docIds.add(docId);
 
         SolrInputDocument doc = sdoc("id", docId, "val_i_dvo", val, "_version_", ++v);
         add(client0, seenLeader, doc);
-        if (random().nextBoolean()) add(client1, seenLeader, doc);
-        else onWireUpdates.add(doc);
+        if (random().nextBoolean()) {
+          add(client1, seenLeader, doc);
+        }
 
       } else if (kindOfUpdate <= 65) {
         // delete by query
@@ -153,8 +151,6 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
         delQ(client0, params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", version), query);
         if (random().nextBoolean()) {
           delQ(client1, params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", version), query);
-        } else {
-          onWireUpdates.add(new DeleteByQuery(query, version));
         }
 
       } else {
@@ -166,33 +162,11 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
         del(client0, params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", version), docId);
         if (random().nextBoolean()) {
           del(client1, params(DISTRIB_UPDATE_PARAM, FROM_LEADER, "_version_", version), docId);
-        } else {
-          onWireUpdates.add(new DeleteById(docId, version));
         }
       }
     }
     // with many gaps, client1 should be able to sync
-    assertSync(client1, numVersions, true, shardsArr[0]);
-  }
-
-  private static class DeleteByQuery {
-    String query;
-    String version;
-
-    public DeleteByQuery(String query, String version) {
-      this.query = query;
-      this.version = version;
-    }
-  }
-
-  private static class DeleteById {
-    String id;
-    String version;
-
-    public DeleteById(String id, String version) {
-      this.id = id;
-      this.version = version;
-    }
+    assertSync(client1, numVersions, shardsArr[0]);
   }
 
   private void validateDocs(Set<Integer> docsAdded, SolrClient client0, SolrClient client1)
@@ -215,7 +189,7 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
     assertEquals(docsAdded.size(), qacResponse.getResults().getNumFound());
   }
 
-  void assertSync(SolrClient client, int numVersions, boolean expectedResult, String syncWith)
+  void assertSync(SolrClient client, int numVersions, String syncWith)
       throws IOException, SolrServerException {
     QueryRequest qr =
         new QueryRequest(
@@ -227,6 +201,6 @@ public class PeerSyncWithBufferUpdatesTest extends BaseDistributedSearchTestCase
                 "syncWithLeader",
                 syncWith));
     NamedList<?> rsp = client.request(qr);
-    assertEquals(expectedResult, rsp.get("syncWithLeader"));
+    assertEquals(true, rsp.get("syncWithLeader"));
   }
 }

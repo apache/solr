@@ -37,6 +37,7 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -50,12 +51,19 @@ import org.apache.solr.legacy.LegacyIntField;
 import org.apache.solr.legacy.LegacyLongField;
 import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.solr.uninverting.UninvertingReader.Type;
+import org.apache.solr.util.RandomMergePolicy;
 
 public class TestUninvertingReader extends SolrTestCase {
 
+  private static IndexWriterConfig newIndexConfig() {
+    // don't allow random doc re-orders; this test isn't tolerant to that
+    final var allowMockMP = false;
+    return newIndexWriterConfig(null).setMergePolicy(new RandomMergePolicy(allowMockMP));
+  }
+
   public void testSortedSetInteger() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    IndexWriter iw = new IndexWriter(dir, newIndexConfig());
 
     Document doc = new Document();
     doc.add(new LegacyIntField("foo", 5, Field.Store.NO));
@@ -97,7 +105,7 @@ public class TestUninvertingReader extends SolrTestCase {
 
   public void testSortedSetFloat() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    IndexWriter iw = new IndexWriter(dir, newIndexConfig());
 
     Document doc = new Document();
     doc.add(new LegacyIntField("foo", Float.floatToRawIntBits(5f), Field.Store.NO));
@@ -140,7 +148,7 @@ public class TestUninvertingReader extends SolrTestCase {
 
   public void testSortedSetLong() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    IndexWriter iw = new IndexWriter(dir, newIndexConfig());
 
     Document doc = new Document();
     doc.add(new LegacyLongField("foo", 5, Field.Store.NO));
@@ -182,7 +190,7 @@ public class TestUninvertingReader extends SolrTestCase {
 
   public void testSortedSetDouble() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    IndexWriter iw = new IndexWriter(dir, newIndexConfig());
 
     Document doc = new Document();
     doc.add(new LegacyLongField("foo", Double.doubleToRawLongBits(5d), Field.Store.NO));
@@ -227,24 +235,24 @@ public class TestUninvertingReader extends SolrTestCase {
    */
   public void testSortedSetIntegerManyValues() throws IOException {
     final Directory dir = newDirectory();
-    final IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    final IndexWriter iw = new IndexWriter(dir, newIndexConfig());
 
     final LegacyFieldType NO_TRIE_TYPE = new LegacyFieldType(LegacyIntField.TYPE_NOT_STORED);
     NO_TRIE_TYPE.setNumericPrecisionStep(Integer.MAX_VALUE);
 
-    final Map<String, Type> UNINVERT_MAP = new LinkedHashMap<String, Type>();
+    final Map<String, Type> UNINVERT_MAP = new LinkedHashMap<>();
     UNINVERT_MAP.put("notrie_single", Type.SORTED_SET_INTEGER);
     UNINVERT_MAP.put("notrie_multi", Type.SORTED_SET_INTEGER);
     UNINVERT_MAP.put("trie_single", Type.SORTED_SET_INTEGER);
     UNINVERT_MAP.put("trie_multi", Type.SORTED_SET_INTEGER);
-    final Set<String> MULTI_VALUES = new LinkedHashSet<String>();
+    final Set<String> MULTI_VALUES = new LinkedHashSet<>();
     MULTI_VALUES.add("trie_multi");
     MULTI_VALUES.add("notrie_multi");
 
     final int NUM_DOCS = TestUtil.nextInt(random(), 200, 1500);
     final int MIN = TestUtil.nextInt(random(), 10, 100);
     final int MAX = MIN + TestUtil.nextInt(random(), 10, 100);
-    final long EXPECTED_VALSET_SIZE = 1 + MAX - MIN;
+    final long EXPECTED_VALSET_SIZE = 1L + MAX - MIN;
 
     { // (at least) one doc should have every value, so that at least one segment has every value
       final Document doc = new Document();
@@ -264,7 +272,8 @@ public class TestUninvertingReader extends SolrTestCase {
         doc.add(new LegacyIntField("notrie_single", val, NO_TRIE_TYPE));
       }
       if (0 != TestUtil.nextInt(random(), 0, 9)) {
-        int numMulti = atLeast(1);
+        // Half of the documents will have >= 5 values, i.e. the non-inline path
+        int numMulti = TestUtil.nextInt(random(), 1, 10);
         while (0 < numMulti--) {
           int val = TestUtil.nextInt(random(), MIN, MAX);
           doc.add(new LegacyIntField("trie_multi", val, Field.Store.NO));
@@ -281,7 +290,7 @@ public class TestUninvertingReader extends SolrTestCase {
 
     final int NUM_LEAVES = ir.leaves().size();
 
-    // check the leaves: no more then total set size
+    // check the leaves: no more than total set size
     for (LeafReaderContext rc : ir.leaves()) {
       final LeafReader ar = rc.reader();
       for (String f : UNINVERT_MAP.keySet()) {
@@ -294,7 +303,7 @@ public class TestUninvertingReader extends SolrTestCase {
                 + " values per segment, got "
                 + valSetSize
                 + " from: "
-                + ar.toString(),
+                + ar,
             valSetSize <= EXPECTED_VALSET_SIZE);
 
         if (1 == NUM_LEAVES && MULTI_VALUES.contains(f)) {
@@ -327,10 +336,10 @@ public class TestUninvertingReader extends SolrTestCase {
 
   public void testSortedSetEmptyIndex() throws IOException {
     final Directory dir = newDirectory();
-    final IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    final IndexWriter iw = new IndexWriter(dir, newIndexConfig());
     iw.close();
 
-    final Map<String, Type> UNINVERT_MAP = new LinkedHashMap<String, Type>();
+    final Map<String, Type> UNINVERT_MAP = new LinkedHashMap<>();
     for (Type t : EnumSet.allOf(Type.class)) {
       UNINVERT_MAP.put(t.name(), t);
     }
@@ -363,7 +372,7 @@ public class TestUninvertingReader extends SolrTestCase {
 
   public void testFieldInfos() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    IndexWriter iw = new IndexWriter(dir, newIndexConfig());
 
     Document doc = new Document();
     BytesRef idBytes = new BytesRef("id");

@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * A wrapper for an IndexDeletionPolicy instance.
  *
  * <p>Provides features for looking up IndexCommit given a version. Allows reserving index commit
- * points for certain amounts of time to support features such as index replication or snapshooting
+ * points for certain amounts of time to support features such as index replication or snapshotting
  * directly out of a live index directory.
  *
  * <p><b>NOTE</b>: The {@link #clone()} method returns <code>this</code> in order to make this
@@ -71,7 +72,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   private volatile Map<Long, IndexCommit> knownCommits = new ConcurrentHashMap<>();
 
   /**
-   * The most recent commit included in call to {@link #onInit} or {@link #onCommit} <em>beore</em>
+   * The most recent commit included in call to {@link #onInit} or {@link #onCommit} <em>before</em>
    * delegating to our {@link #getWrappedDeletionPolicy()}.
    *
    * <p><b>NOTE:</b> This may be null if there is not yet a single commit to our index.
@@ -84,7 +85,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   private volatile IndexCommit latestCommit;
 
   /**
-   * The set of all commit generations htat have been reserved for for some amount of time.
+   * The set of all commit generations that have been reserved for some amount of time.
    *
    * <p>The keys of the {@link IndexCommit#getGeneration} of a commit, the values are the {@link
    * System#nanoTime} that the commit should be reserved until.
@@ -116,7 +117,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   /**
    * Returns the most recent commit point.
    *
-   * <p><b>NOTE:</b> This method makes no garuntee that the commit returned still exists as the
+   * <p><b>NOTE:</b> This method makes no guarantee that the commit returned still exists as the
    * moment this method completes. Callers are encouraged to use {@link #getAndSaveLatestCommit}
    * instead.
    *
@@ -185,13 +186,13 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   /**
    * Set the duration for which commit point is to be reserved by the deletion policy.
    *
-   * <p><b>NOTE:</b> This method does not make any garuntees that the specified index generation
-   * exists, or that the specified generation has not already ben deleted. The only garuntee is that
-   * <em>if</em> the specified generation exists now, or is created at some point in the future,
-   * then it will be resered for <em>at least</em> the specified <code>reserveTime</code>.
+   * <p><b>NOTE:</b> This method does not make any guarantees that the specified index generation
+   * exists, or that the specified generation has not already ben deleted. The only guarantee is
+   * that <em>if</em> the specified generation exists now, or is created at some point in the
+   * future, then it will be reserved for <em>at least</em> the specified <code>reserveTime</code>.
    *
    * @param indexGen gen of the commit point to be reserved
-   * @param reserveTime durration in milliseconds (relative to 'now') for which the commit point is
+   * @param reserveTime duration in milliseconds (relative to 'now') for which the commit point is
    *     to be reserved
    */
   public void setReserveDuration(Long indexGen, long reserveTime) {
@@ -199,7 +200,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
     // all operations on 'reserves' are done atomically.
     //
     // Here we'll use Map.merge to ensure that we atomically replace any existing timestamp if
-    // and only if our new reservation timetsamp is larger.
+    // and only if our new reservation timestamp is larger.
     final long reserveAsNanoTime =
         System.nanoTime() + TimeUnit.NANOSECONDS.convert(reserveTime, TimeUnit.MILLISECONDS);
     reserves.merge(indexGen, reserveAsNanoTime, BinaryOperator.maxBy(Comparator.naturalOrder()));
@@ -219,13 +220,13 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
 
   /**
    * Permanently prevent this commit point from being deleted (if it has not already) using a
-   * refrence count.
+   * reference count.
    *
    * <p><b>NOTE:</b> Callers <em>MUST</em> call {@link #releaseCommitPoint} when finished using it
    * in order to decrement the reference count, or the commit will be preserved in the Directory
    * forever.
    *
-   * @param generation the generation of the IndexComit to save until released
+   * @param generation the generation of the IndexCommit to save until released
    * @see #getAndSaveLatestCommit
    * @see #getAndSaveCommitPoint
    * @see #releaseCommitPoint
@@ -238,7 +239,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   /**
    * Release a previously saved commit point.
    *
-   * <p>This is a convinience wrapper around {@link #releaseCommitPoint(Long)} that will ignore null
+   * <p>This is a convenience wrapper around {@link #releaseCommitPoint(Long)} that will ignore null
    * input.
    */
   public synchronized void releaseCommitPoint(IndexCommit commit) {
@@ -250,9 +251,9 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   /**
    * Release a previously saved commit point.
    *
-   * <p>This method does not enforce that that the specified generation has previously been saved,
-   * or even that it's 'non-null'. But if both are true then it will decrement the reference count
-   * for the specified generation.
+   * <p>This method does not enforce that the specified generation has previously been saved, or
+   * even that it's 'non-null'. But if both are true then it will decrement the reference count for
+   * the specified generation.
    */
   public synchronized void releaseCommitPoint(Long generation) {
     if (null == generation) {
@@ -381,7 +382,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   /**
    * Returns the commit with the specified generation <em>if it is known</em>.
    *
-   * <p><b>NOTE:</b> This method makes no garuntee that the commit returned still exists as the
+   * <p><b>NOTE:</b> This method makes no guarantee that the commit returned still exists as the
    * moment this method completes. Callers are encouraged to use {@link #getAndSaveLatestCommit}
    * instead.
    *
@@ -401,7 +402,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
    * <p><b>NOTE:</b> This map instance may change between commits and commit points may be deleted.
    * This API is intended for "informational purposes" only, to provide an "at the moment" view of
    * the current list of known commits. Callers that need to ensure commits exist for an extended
-   * period must wrap this call and all subsequent usage of the results in a synchornization block.
+   * period must wrap this call and all subsequent usage of the results in a synchronization block.
    *
    * @return a Map of generation to commit points
    */
@@ -418,32 +419,32 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
    * #latestCommit} from being deleted.
    *
    * <p>If we did not do this, and waited to update <code>latestCommit</code> in <code>
-   * updateKnownCommitPoints()</code> then we would need to wrap synchronization completley around
+   * updateKnownCommitPoints()</code> then we would need to wrap synchronization completely around
    * the (delegated) <code>onInit()</code> and <code>onCommit()</code> calls, to ensure there was no
    * window of time when {@link #getAndSaveLatestCommit} might return the "old" latest commit, after
    * our delegate Policy had already deleted it.
    *
    * <p>(Since Saving/Reserving (other) commits is handled indirectly ("by reference") via the
    * generation callers can still safely (try) to reserve "old" commits using an explicit generation
-   * since {@link IndexCommitWrapper#delete} is synchornized on <code>this</code>)
+   * since {@link IndexCommitWrapper#delete} is synchronized on <code>this</code>)
    *
    * @see #latestCommit
    * @see #updateKnownCommitPoints
    */
   private synchronized void updateLatestCommit(final List<IndexCommitWrapper> list) {
-    // NOTE: There's a hypothetical, not neccessarily possible/plausible, situation that
+    // NOTE: There's a hypothetical, not necessarily possible/plausible, situation that
     // could lead to this combination of updateLatestCommit + updateKnownCommitPoints not
-    // being as thread safe as completley synchornizing in onInit/onCommit...
+    // being as thread safe as completely synchronizing in onInit/onCommit...
     //  - knownCommits==(1, 2, 3, 4), latestCommit==4
     //  - onCommit(1, 2, 3, 4, 5, 6, 7) - we immediately update latestCommit=7
     //    - before knownCommits is updated, some client calls getAndSaveCommitPoint(6)
     //      - call fails "too old to be saved" even though it's in flight
     // (this assumes some future caller/use-case that doesn't currently exist)
     //
-    // The upside of this current approach, and not completley synchornizing onInit/onCommit
+    // The upside of this current approach, and not completely synchronizing onInit/onCommit
     // is that we have no control over what delegate is used, or how long those calls might take.
     //
-    // If the hypotehtical situation above ever becomes problematic, then an alternative approach
+    // If the hypothetical situation above ever becomes problematic, then an alternative approach
     // might be to *add* to the Set/Map of all known commits *before* delegating, then *remove*
     // everything except the new (non-deleted) commits *after* delegating.
 
@@ -462,7 +463,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
    * Updates the state of all "current" commits.
    *
    * <p>This method is safe to call <em>after</em> delegating to ou inner <code>IndexDeletionPolicy
-   * </code> (w/o synchornizing the delegate calls) because even if the delegate decides to {@link
+   * </code> (w/o synchronizing the delegate calls) because even if the delegate decides to {@link
    * IndexCommit#delete} a commit that a concurrent thread may wish to reserve/save, that {@link
    * IndexCommitWrapper} will ensure that call is synchronized.
    *
@@ -473,7 +474,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
     assert (list.isEmpty() || null != latestCommit) : "Code flaw: How is latestCommit not set yet?";
     assert (null == latestCommit || !latestCommit.isDeleted())
         : "Code flaw: How did the latestCommit get set but deleted?";
-    assert (list.isEmpty() || latestCommit == list.get(list.size() - 1).delegate)
+    assert (list.isEmpty() || Objects.equals(latestCommit, list.get(list.size() - 1).delegate))
         : "Code flaw, updateLatestCommit() should have already been called";
 
     final Map<Long, IndexCommit> map = new ConcurrentHashMap<>();
@@ -486,7 +487,7 @@ public final class IndexDeletionPolicyWrapper extends IndexDeletionPolicy {
   }
 
   /**
-   * Helper method for unpacking the timestamp infor from the user data
+   * Helper method for unpacking the timestamp info from the user data
    *
    * @see SolrIndexWriter#COMMIT_TIME_MSEC_KEY
    * @see IndexCommit#getUserData

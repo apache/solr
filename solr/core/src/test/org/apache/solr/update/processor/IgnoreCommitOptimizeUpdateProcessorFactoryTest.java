@@ -76,7 +76,7 @@ public class IgnoreCommitOptimizeUpdateProcessorFactoryTest extends SolrTestCase
 
     if (commitEndPoint != null) {
       ((ModifiableSolrParams) req.getParams())
-          .set(DistributedUpdateProcessor.COMMIT_END_POINT, commitEndPoint.booleanValue());
+          .set(DistributedUpdateProcessor.COMMIT_END_POINT, commitEndPoint);
     }
 
     try {

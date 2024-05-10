@@ -31,12 +31,12 @@ import java.util.List;
 import java.util.Locale;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
@@ -59,7 +59,7 @@ public class XmlInterpolationTest extends TaggerTestCase {
   }
 
   @AfterClass
-  public static void cleanUpAfterClass() throws Exception {
+  public static void cleanUpAfterClass() {
     xmlDocBuilder = null;
   }
 
@@ -101,8 +101,7 @@ public class XmlInterpolationTest extends TaggerTestCase {
   }
 
   protected void assertXmlTag(String docText, boolean expected) throws Exception {
-    final SolrQueryRequest req = reqDoc(docText);
-    try { // 5.4 and beyond we can use try-with-resources
+    try (SolrQueryRequest req = reqDoc(docText)) {
       final SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get("qt"), req);
       final TestTag[] testTags = pullTagsFromResponse(req, rsp);
       if (!expected) {
@@ -112,8 +111,6 @@ public class XmlInterpolationTest extends TaggerTestCase {
         final TestTag tag = testTags[0];
         validateXml(insertAnchorAtOffsets(docText, tag.startOffset, tag.endOffset, tag.docName));
       }
-    } finally {
-      req.close();
     }
   }
 
@@ -222,6 +219,6 @@ public class XmlInterpolationTest extends TaggerTestCase {
     } finally {
       IOUtils.closeQuietly(ts);
     }
-    return result.toArray(new String[result.size()]);
+    return result.toArray(new String[0]);
   }
 }

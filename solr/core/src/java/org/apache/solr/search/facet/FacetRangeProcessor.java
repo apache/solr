@@ -20,15 +20,27 @@ package org.apache.solr.search.facet;
 import static org.apache.solr.search.facet.FacetContext.SKIP_FACET;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.schema.*;
+import org.apache.solr.schema.AbstractEnumField;
 import org.apache.solr.schema.AbstractEnumField.EnumMapping;
+import org.apache.solr.schema.CurrencyFieldType;
+import org.apache.solr.schema.CurrencyValue;
+import org.apache.solr.schema.DateRangeField;
+import org.apache.solr.schema.ExchangeRateProvider;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.ExtendedQuery;
 import org.apache.solr.search.SyntaxError;
@@ -56,6 +68,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
   /** Build by {@link #createRangeList} if and only if needed for basic faceting */
   List<Range> rangeList;
+
   /** Build by {@link #createRangeList} if and only if needed for basic faceting */
   List<Range> otherList;
 
@@ -713,6 +726,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
             e);
       }
     }
+
     /**
      * Adds the String gap param to a low Range endpoint value to determine the corresponding high
      * Range endpoint value. Can throw a low level format exception as needed.

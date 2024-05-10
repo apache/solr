@@ -67,9 +67,9 @@ public class HdfsLockFactoryTest extends SolrTestCaseJ4 {
     HdfsDirectory dir = new HdfsDirectory(lockPath, conf);
 
     try (Lock lock = dir.obtainLock("testlock")) {
-      assert lock != null;
+      assertNotNull(lock);
       try (Lock lock2 = dir.obtainLock("testlock")) {
-        assert lock2 != null;
+        assertNotNull(lock2);
         fail("Locking should fail");
       } catch (LockObtainFailedException lofe) {
         // pass
@@ -77,9 +77,9 @@ public class HdfsLockFactoryTest extends SolrTestCaseJ4 {
     }
     // now repeat after close()
     try (Lock lock = dir.obtainLock("testlock")) {
-      assert lock != null;
+      assertNotNull(lock);
       try (Lock lock2 = dir.obtainLock("testlock")) {
-        assert lock2 != null;
+        assertNotNull(lock2);
         fail("Locking should fail");
       } catch (LockObtainFailedException lofe) {
         // pass

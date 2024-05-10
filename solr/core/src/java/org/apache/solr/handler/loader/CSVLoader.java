@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler.loader;
 
-import java.io.*;
+import java.io.IOException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.request.SolrQueryRequest;

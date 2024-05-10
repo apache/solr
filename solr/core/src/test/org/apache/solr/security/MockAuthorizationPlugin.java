@@ -16,7 +16,6 @@
  */
 package org.apache.solr.security;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Map;
@@ -57,5 +56,5 @@ public class MockAuthorizationPlugin implements AuthorizationPlugin {
   public void init(Map<String, Object> initInfo) {}
 
   @Override
-  public void close() throws IOException {}
+  public void close() {}
 }

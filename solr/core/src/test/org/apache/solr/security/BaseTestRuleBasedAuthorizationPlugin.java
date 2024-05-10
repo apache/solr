@@ -16,7 +16,10 @@
  */
 package org.apache.solr.security;
 
-import static java.util.Collections.*;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -28,6 +31,7 @@ import java.io.StringReader;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -57,7 +61,7 @@ import org.junit.Test;
 
 /**
  * Base class for testing RBAC. This will test the {@link RuleBasedAuthorizationPlugin}
- * implementation but also serves as a base class for testing other sub classes
+ * implementation but also serves as a base class for testing other subclasses
  */
 @SuppressWarnings("unchecked")
 @LogLevel("org.apache.solr.security=TRACE")
@@ -702,7 +706,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
   @Test
   public void testGetPermissionNamesForRoles() {
     // Tests the method that maps role(s) to permissions, used by SystemInfoHandler to provide UI
-    // with logged in user's permissions
+    // with logged-in user's permissions
     try (RuleBasedAuthorizationPluginBase plugin = createPlugin()) {
       plugin.init(rules);
       assertEquals(
@@ -714,8 +718,14 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
       assertEquals(
           Set.of("schema-edit", "collection-admin-edit", "mycoll_update", "read"),
           plugin.getPermissionNamesForRoles(Set.of("admin", "dev")));
+      assertEquals(emptySet(), plugin.getPermissionNamesForRoles(null));
+      assertEquals(
+          Set.of("collection-admin-read"),
+          plugin.getPermissionNamesForRoles(Collections.singletonList(null)));
+      assertEquals(
+          Set.of("freeforall"), plugin.getPermissionNamesForRoles(Collections.singletonList("*")));
     } catch (IOException e) {
-      ; // swallow error, otherwise a you have to add a _lot_ of exceptions to methods.
+      ; // swallow error, otherwise you have to add a _lot_ of exceptions to methods.
     }
   }
 
@@ -784,7 +794,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     assertTrue(captureErrors(perms.parsedCommands).isEmpty());
     permList = (List<Map<String, Object>>) perms.getVal("permissions");
     assertEquals(1, permList.size());
-    // indexes should have been re-ordered after the delete, so now "read" has index==1
+    // indexes should have been re-ordered after the delete operation, so now "read" has index==1
     assertEquals("read", perms.getVal("permissions[0]/name"));
     assertEquals(1, perms.getVal("permissions[0]/index"));
     // delete last remaining
@@ -827,7 +837,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
       AuthorizationResponse authResp = plugin.authorize(context);
       assertEquals(expected, authResp.statusCode);
     } catch (IOException e) {
-      ; // swallow error, otherwise a you have to add a _lot_ of exceptions to methods.
+      ; // swallow error, otherwise you have to add a _lot_ of exceptions to methods.
     }
   }
 

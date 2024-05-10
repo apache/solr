@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
@@ -34,6 +34,7 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorable;
@@ -47,6 +48,7 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -64,9 +66,11 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.SolrResponseUtil;
 
 public class RankQueryTestPlugin extends QParserPlugin {
 
+  @Override
   public QParser createParser(
       String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new TestRankQueryParser(query, localParams, params, req);
@@ -79,7 +83,8 @@ public class RankQueryTestPlugin extends QParserPlugin {
       super(query, localParams, params, req);
     }
 
-    public Query parse() throws SyntaxError {
+    @Override
+    public Query parse() {
 
       int mergeStrategy = localParams.getInt("mergeStrategy", 0);
       int collector = localParams.getInt("collector", 0);
@@ -93,10 +98,12 @@ public class RankQueryTestPlugin extends QParserPlugin {
     private int collector;
     private Query q;
 
+    @Override
     public int hashCode() {
       return collector + q.hashCode();
     }
 
+    @Override
     public boolean equals(Object o) {
       if (o instanceof TestRankQuery) {
         TestRankQuery trq = (TestRankQuery) o;
@@ -107,6 +114,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
       return false;
     }
 
+    @Override
     public Weight createWeight(IndexSearcher indexSearcher, ScoreMode scoreMode, float boost)
         throws IOException {
       return q.createWeight(indexSearcher, scoreMode, boost);
@@ -120,6 +128,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
       return q.toString(field);
     }
 
+    @Override
     public RankQuery wrap(Query q) {
       this.q = q;
       return this;
@@ -130,12 +139,14 @@ public class RankQueryTestPlugin extends QParserPlugin {
       this.mergeStrategy = mergeStrategy;
     }
 
+    @Override
     public TopDocsCollector<ScoreDoc> getTopDocsCollector(
         int len, QueryCommand cmd, IndexSearcher searcher) {
       if (collector == 0) return new TestCollector(null);
       else return new TestCollector1(null);
     }
 
+    @Override
     public MergeStrategy getMergeStrategy() {
       if (mergeStrategy == 0) return new TestMergeStrategy();
       else return new TestMergeStrategy1();
@@ -144,21 +155,25 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
   static class TestMergeStrategy implements MergeStrategy {
 
+    @Override
     public int getCost() {
       return 1;
     }
 
+    @Override
     public boolean mergesIds() {
       return true;
     }
 
+    @Override
     public boolean handlesMergeFields() {
       return false;
     }
 
+    @Override
     public void handleMergeFields(ResponseBuilder rb, SolrIndexSearcher searcher) {}
 
-    @SuppressWarnings({"unchecked"})
+    @Override
     public void merge(ResponseBuilder rb, ShardRequest sreq) {
 
       // id to shard mapping, to eliminate any accidental dups
@@ -197,7 +212,11 @@ public class RankQueryTestPlugin extends QParserPlugin {
               nl.add("shardAddress", srsp.getShardAddress());
             }
           } else {
-            docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
+            docs =
+                Objects.requireNonNull(
+                    (SolrDocumentList)
+                        SolrResponseUtil.getSubsectionFromShardResponse(
+                            null, srsp, "response", false));
             nl.add("numFound", docs.getNumFound());
             nl.add("maxScore", docs.getMaxScore());
             nl.add("shardAddress", srsp.getShardAddress());
@@ -214,12 +233,18 @@ public class RankQueryTestPlugin extends QParserPlugin {
           continue;
         }
 
-        if (docs == null) { // could have been initialized in the shards info block above
-          docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
+        if (docs == null) { // could have been initialized in the 'shardInfo' block above
+          docs =
+              Objects.requireNonNull(
+                  (SolrDocumentList)
+                      SolrResponseUtil.getSubsectionFromShardResponse(
+                          null, srsp, "response", false));
         }
 
         NamedList<?> responseHeader =
-            (NamedList<?>) srsp.getSolrResponse().getResponse().get("responseHeader");
+            (NamedList<?>)
+                SolrResponseUtil.getSubsectionFromShardResponse(
+                    null, srsp, "responseHeader", false);
         if (responseHeader != null
             && Boolean.TRUE.equals(
                 responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
@@ -268,8 +293,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
         } // end for-each-doc-in-response
       } // end for-each-response
 
-      Collections.sort(
-          shardDocs,
+      shardDocs.sort(
           (o1, o2) -> {
             if (o1.score < o2.score) {
               return 1;
@@ -287,7 +311,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
         ShardDoc shardDoc = shardDocs.get(i);
         shardDoc.positionInResponse = i;
         // Need the toString() for correlation with other lists that must
-        // be strings (like keys in highlighting, explain, etc)
+        // be strings (like keys in highlighting, explain, etc.)
         resultIds.put(shardDoc.id.toString(), shardDoc);
       }
 
@@ -318,18 +342,22 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
   static class TestMergeStrategy1 implements MergeStrategy {
 
+    @Override
     public int getCost() {
       return 1;
     }
 
+    @Override
     public boolean mergesIds() {
       return true;
     }
 
+    @Override
     public boolean handlesMergeFields() {
       return true;
     }
 
+    @Override
     public void handleMergeFields(ResponseBuilder rb, SolrIndexSearcher searcher)
         throws IOException {
       SolrQueryRequest req = rb.req;
@@ -353,7 +381,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
         DocList docList = rb.getResults().docList;
 
-        // sort ids from lowest to highest so we can access them in order
+        // sort ids from lowest to highest, so we can access them in order
         int nDocs = docList.size();
         final long[] sortedIds = new long[nDocs];
         final float[] scores = new float[nDocs]; // doc scores, parallel to sortedIds
@@ -420,7 +448,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
             }
 
             if (comparator == null) {
-              comparator = sortField.getComparator(1, true);
+              comparator = sortField.getComparator(1, Pruning.NONE);
               leafComparator = comparator.getLeafComparator(currentLeaf);
             }
 
@@ -460,6 +488,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
       }
     }
 
+    @Override
     @SuppressWarnings({"unchecked"})
     public void merge(ResponseBuilder rb, ShardRequest sreq) {
 
@@ -499,7 +528,11 @@ public class RankQueryTestPlugin extends QParserPlugin {
               nl.add("shardAddress", srsp.getShardAddress());
             }
           } else {
-            docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
+            docs =
+                Objects.requireNonNull(
+                    (SolrDocumentList)
+                        SolrResponseUtil.getSubsectionFromShardResponse(
+                            null, srsp, "response", false));
             nl.add("numFound", docs.getNumFound());
             nl.add("maxScore", docs.getMaxScore());
             nl.add("shardAddress", srsp.getShardAddress());
@@ -516,12 +549,18 @@ public class RankQueryTestPlugin extends QParserPlugin {
           continue;
         }
 
-        if (docs == null) { // could have been initialized in the shards info block above
-          docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
+        if (docs == null) { // could have been initialized in the 'shardInfo' block above
+          docs =
+              Objects.requireNonNull(
+                  (SolrDocumentList)
+                      SolrResponseUtil.getSubsectionFromShardResponse(
+                          null, srsp, "response", false));
         }
 
         NamedList<?> responseHeader =
-            (NamedList<?>) srsp.getSolrResponse().getResponse().get("responseHeader");
+            (NamedList<?>)
+                SolrResponseUtil.getSubsectionFromShardResponse(
+                    null, srsp, "responseHeader", false);
         if (responseHeader != null
             && Boolean.TRUE.equals(
                 responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
@@ -535,13 +574,16 @@ public class RankQueryTestPlugin extends QParserPlugin {
         numFound += docs.getNumFound();
 
         SortSpec ss = rb.getSortSpec();
-        Sort sort = ss.getSort();
 
         @SuppressWarnings({"rawtypes"})
         NamedList sortFieldValues =
-            (NamedList) (srsp.getSolrResponse().getResponse().get("merge_values"));
+            (NamedList)
+                SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "merge_values", false);
+        if (sortFieldValues == null) {
+          continue;
+        }
         @SuppressWarnings({"rawtypes"})
-        NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues, schema);
+        NamedList unmarshalledSortFieldValues = unmarshalSortValues(ss, sortFieldValues);
         @SuppressWarnings({"rawtypes"})
         List lst = (List) unmarshalledSortFieldValues.getVal(0);
 
@@ -577,8 +619,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
         } // end for-each-doc-in-response
       } // end for-each-response
 
-      Collections.sort(
-          shardDocs,
+      shardDocs.sort(
           (o1, o2) -> {
             if (o1.score < o2.score) {
               return 1;
@@ -596,7 +637,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
         ShardDoc shardDoc = shardDocs.get(i);
         shardDoc.positionInResponse = i;
         // Need the toString() for correlation with other lists that must
-        // be strings (like keys in highlighting, explain, etc)
+        // be strings (like keys in highlighting, explain, etc.)
         resultIds.put(shardDoc.id.toString(), shardDoc);
       }
 
@@ -625,8 +666,7 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private NamedList unmarshalSortValues(
-        SortSpec sortSpec, NamedList sortFieldValues, IndexSchema schema) {
+    private NamedList unmarshalSortValues(SortSpec sortSpec, NamedList sortFieldValues) {
       NamedList unmarshalledSortValsPerField = new NamedList<>();
 
       if (0 == sortFieldValues.size()) return unmarshalledSortValsPerField;
@@ -644,8 +684,10 @@ public class RankQueryTestPlugin extends QParserPlugin {
 
         final String sortFieldName = sortField.getField();
         final String valueFieldName = sortFieldValues.getName(marshalledFieldNum);
-        assert sortFieldName.equals(valueFieldName)
-            : "sortFieldValues name key does not match expected SortField.getField";
+        SolrTestCase.assertEquals(
+            "sortFieldValues name key does not match expected SortField.getField",
+            sortFieldName,
+            valueFieldName);
 
         List sortVals = (List) sortFieldValues.getVal(marshalledFieldNum);
 
@@ -681,8 +723,9 @@ public class RankQueryTestPlugin extends QParserPlugin {
       return new LeafCollector() {
 
         @Override
-        public void setScorer(Scorable scorer) throws IOException {}
+        public void setScorer(Scorable scorer) {}
 
+        @Override
         public void collect(int doc) throws IOException {
           long value;
           if (values.advanceExact(doc)) {
@@ -695,14 +738,16 @@ public class RankQueryTestPlugin extends QParserPlugin {
       };
     }
 
+    @Override
     public int topDocsSize() {
       return list.size();
     }
 
+    @Override
     public TopDocs topDocs() {
-      Collections.sort(
-          list,
+      list.sort(
           new Comparator<>() {
+            @Override
             public int compare(ScoreDoc s1, ScoreDoc s2) {
               if (s1.score == s2.score) {
                 return 0;
@@ -713,14 +758,16 @@ public class RankQueryTestPlugin extends QParserPlugin {
               }
             }
           });
-      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[list.size()]);
+      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[0]);
       return new TopDocs(new TotalHits(list.size(), TotalHits.Relation.EQUAL_TO), scoreDocs);
     }
 
+    @Override
     public TopDocs topDocs(int start, int len) {
       return topDocs();
     }
 
+    @Override
     public int getTotalHits() {
       return list.size();
     }
@@ -740,31 +787,34 @@ public class RankQueryTestPlugin extends QParserPlugin {
     }
 
     @Override
-    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+    public LeafCollector getLeafCollector(LeafReaderContext context) {
       final int base = context.docBase;
       return new LeafCollector() {
 
         Scorable scorer;
 
         @Override
-        public void setScorer(Scorable scorer) throws IOException {
+        public void setScorer(Scorable scorer) {
           this.scorer = scorer;
         }
 
+        @Override
         public void collect(int doc) throws IOException {
           list.add(new ScoreDoc(doc + base, scorer.score()));
         }
       };
     }
 
+    @Override
     public int topDocsSize() {
       return list.size();
     }
 
+    @Override
     public TopDocs topDocs() {
-      Collections.sort(
-          list,
+      list.sort(
           new Comparator<>() {
+            @Override
             public int compare(ScoreDoc s1, ScoreDoc s2) {
               if (s1.score == s2.score) {
                 return 0;
@@ -775,14 +825,16 @@ public class RankQueryTestPlugin extends QParserPlugin {
               }
             }
           });
-      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[list.size()]);
+      ScoreDoc[] scoreDocs = list.toArray(new ScoreDoc[0]);
       return new TopDocs(new TotalHits(list.size(), TotalHits.Relation.EQUAL_TO), scoreDocs);
     }
 
+    @Override
     public TopDocs topDocs(int start, int len) {
       return topDocs();
     }
 
+    @Override
     public int getTotalHits() {
       return list.size();
     }

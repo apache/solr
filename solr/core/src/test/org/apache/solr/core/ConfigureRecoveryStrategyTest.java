@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -41,7 +42,7 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
     initCore(solrConfigFileName, "schema.xml");
   }
 
-  public void testBuilder() throws Exception {
+  public void testBuilder() {
     final RecoveryStrategy.Builder recoveryStrategyBuilder =
         h.getCore().getSolrCoreState().getRecoveryStrategyBuilder();
     assertNotNull("recoveryStrategyBuilder is null", recoveryStrategyBuilder);
@@ -66,11 +67,12 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
         recoveryStrategyBuilder.getClass().getName());
   }
 
-  public void testAlmostAllMethodsAreFinal() throws Exception {
+  public void testAlmostAllMethodsAreFinal() {
+    final var expectedNonFinals = Set.of("getReplicateLeaderUrl");
     for (Method m : RecoveryStrategy.class.getDeclaredMethods()) {
       if (Modifier.isStatic(m.getModifiers()) || Modifier.isPrivate(m.getModifiers())) continue;
       final String methodName = m.getName();
-      if ("getReplicateLeaderUrl".equals(methodName)) {
+      if (expectedNonFinals.contains(methodName)) {
         assertFalse(m.toString(), Modifier.isFinal(m.getModifiers()));
       } else {
         assertTrue(m.toString(), Modifier.isFinal(m.getModifiers()));

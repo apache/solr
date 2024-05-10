@@ -17,22 +17,23 @@
 
 package org.apache.solr.cluster.placement.plugins;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Replica;
 import org.apache.solr.cluster.SolrCollection;
-import org.apache.solr.cluster.placement.*;
+import org.apache.solr.cluster.placement.PlacementContext;
+import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.PlacementPluginFactory;
 
 /**
  * Factory for creating {@link RandomPlacementPlugin}, a placement plugin implementing random
  * placement for new collection creation while preventing two replicas of same shard from being
  * placed on same node..
+ *
+ * <p>See {@link RandomNode} for information on how this PlacementFactory weights nodes.
  *
  * <p>See {@link AffinityPlacementFactory} for a more realistic example and documentation.
  */
@@ -44,7 +45,7 @@ public class RandomPlacementFactory
     return new RandomPlacementPlugin();
   }
 
-  public static class RandomPlacementPlugin implements PlacementPlugin {
+  public static class RandomPlacementPlugin extends OrderedNodePlacementPlugin {
     private final Random replicaPlacementRandom =
         new Random(); // ok even if random sequence is predictable.
 
@@ -57,65 +58,64 @@ public class RandomPlacementFactory
     }
 
     @Override
-    public List<PlacementPlan> computePlacements(
-        Collection<PlacementRequest> requests, PlacementContext placementContext)
-        throws PlacementException {
-      List<PlacementPlan> placementPlans = new ArrayList<>(requests.size());
-      for (PlacementRequest request : requests) {
-        int totalReplicasPerShard = 0;
-        for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
-          totalReplicasPerShard += request.getCountReplicasToCreate(rt);
-        }
+    protected Map<Node, WeightedNode> getBaseWeightedNodes(
+        PlacementContext placementContext,
+        Set<Node> nodes,
+        Iterable<SolrCollection> relevantCollections,
+        boolean skipNodesWithErrors) {
+      HashMap<Node, WeightedNode> nodeMap = new HashMap<>();
 
-        if (request.getTargetNodes().size() < totalReplicasPerShard) {
-          throw new PlacementException("Cluster size too small for number of replicas per shard");
-        }
-
-        Set<ReplicaPlacement> replicaPlacements =
-            new HashSet<>(totalReplicasPerShard * request.getShardNames().size());
-
-        // Now place randomly all replicas of all shards on available nodes
-        for (String shardName : request.getShardNames()) {
-          // Shuffle the nodes for each shard so that replicas for a shard are placed on distinct
-          // yet random nodes
-          ArrayList<Node> nodesToAssign = new ArrayList<>(request.getTargetNodes());
-          Collections.shuffle(nodesToAssign, replicaPlacementRandom);
-
-          for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
-            placeForReplicaType(
-                request.getCollection(),
-                nodesToAssign,
-                placementContext.getPlacementPlanFactory(),
-                replicaPlacements,
-                shardName,
-                request,
-                rt);
-          }
-        }
-
-        placementPlans.add(
-            placementContext
-                .getPlacementPlanFactory()
-                .createPlacementPlan(request, replicaPlacements));
+      for (Node node : nodes) {
+        nodeMap.put(node, new RandomNode(node, replicaPlacementRandom));
       }
-      return placementPlans;
+
+      return nodeMap;
+    }
+  }
+
+  /**
+   * This implementation weights nodes equally. When trying to determine which nodes should be
+   * chosen to host replicas, a random sorting is used.
+   *
+   * <p>Multiple replicas of the same shard are not permitted to live on the same Node.
+   */
+  private static class RandomNode extends OrderedNodePlacementPlugin.WeightedNode {
+    private final Random random;
+    private int randomTiebreaker;
+
+    public RandomNode(Node node, Random random) {
+      super(node);
+      this.random = random;
+      this.randomTiebreaker = random.nextInt();
     }
 
-    private void placeForReplicaType(
-        SolrCollection solrCollection,
-        ArrayList<Node> nodesToAssign,
-        PlacementPlanFactory placementPlanFactory,
-        Set<ReplicaPlacement> replicaPlacements,
-        String shardName,
-        PlacementRequest request,
-        Replica.ReplicaType replicaType) {
-      for (int replica = 0; replica < request.getCountReplicasToCreate(replicaType); replica++) {
-        Node node = nodesToAssign.remove(0);
+    @Override
+    public int calcWeight() {
+      return 0;
+    }
 
-        replicaPlacements.add(
-            placementPlanFactory.createReplicaPlacement(
-                solrCollection, shardName, node, replicaType));
-      }
+    @Override
+    @SuppressWarnings({"rawtypes"})
+    public Comparable getTiebreaker() {
+      return randomTiebreaker;
+    }
+
+    @Override
+    public int calcRelevantWeightWithReplica(Replica replica) {
+      return calcWeight();
+    }
+
+    @Override
+    protected boolean addProjectedReplicaWeights(Replica replica) {
+      randomTiebreaker = random.nextInt();
+      // NO-OP
+      return false;
+    }
+
+    @Override
+    protected void removeProjectedReplicaWeights(Replica replica) {
+      randomTiebreaker = random.nextInt();
+      // NO-OP
     }
   }
 }

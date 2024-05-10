@@ -19,9 +19,7 @@ package org.apache.solr.cloud;
 
 import static org.apache.lucene.tests.util.LuceneTestCase.random;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,19 +51,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DocValuesNotIndexedTest extends SolrCloudTestCase {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
   static final String COLLECTION = "dv_coll";
 
   static volatile List<FieldProps> fieldsToTestSingle = null;
@@ -158,15 +146,13 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
     defineFields(updateList, fieldsToTestSingle, false);
     defineFields(updateList, fieldsToTestMulti, true);
-    defineFields(updateList, fieldsToTestGroupSortFirst, false, "sorMissingFirst", "true");
-    defineFields(updateList, fieldsToTestGroupSortLast, false, "sorMissingLast", "true");
+    defineFields(updateList, fieldsToTestGroupSortFirst, false);
+    defineFields(updateList, fieldsToTestGroupSortLast, false);
 
     MultiUpdate multiUpdateRequest = new MultiUpdate(updateList);
     SchemaResponse.UpdateResponse multipleUpdatesResponse =
         multiUpdateRequest.process(cluster.getSolrClient(), COLLECTION);
     assertNull("Error adding fields", multipleUpdatesResponse.getResponse().get("errors"));
-
-    cluster.getSolrClient().setDefaultCollection(COLLECTION);
   }
 
   @AfterClass
@@ -176,7 +162,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   @Before
   public void clean() throws IOException, SolrServerException {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudSolrClient client = cluster.getSolrClient(COLLECTION);
     client.deleteByQuery("*:*");
     client.commit();
     resetFields(fieldsToTestSingle);
@@ -193,10 +179,10 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   @Test
   public void testDistribFaceting() throws IOException, SolrServerException {
-    // For this test, I want to insure that there are shards that do _not_ have a doc with any of
+    // For this test, I want to ensure that there are shards that do _not_ have a doc with any of
     // the DV_only fields, see SOLR-5260. So I'll add exactly 1 document to a 4 shard collection.
 
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudSolrClient client = cluster.getSolrClient(COLLECTION);
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "1");
@@ -237,7 +223,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   // one server.
   @Test
   public void testGroupingSorting() throws IOException, SolrServerException {
-    CloudSolrClient client = cluster.getSolrClient();
+    CloudSolrClient client = cluster.getSolrClient(COLLECTION);
 
     // The point of these is to have at least one shard w/o the value.
     // While getting values for each of these fields starts _out_ random, each successive
@@ -368,7 +354,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", idx);
 
-      // Every 7th doc we bump a counter by some random amount
+      // Every 7th doc we bump a counter by a random amount
       for (FieldProps prop : fieldProps) {
         doc.addField(prop.getName(), prop.getValue((idx % 7) == 0));
       }
@@ -410,8 +396,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       int nullCount = 0;
       int sevenCount = 0;
       int boolCount = 0;
-      for (int idx = 0; idx < commands.size(); ++idx) {
-        GroupCommand fieldCommand = commands.get(idx);
+      for (GroupCommand fieldCommand : commands) {
         for (Group grp : fieldCommand.getValues()) {
           switch (grp.getResult().size()) {
             case 7:
@@ -460,7 +445,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
             7,
             sevenCount);
         assertEquals(
-            "Should be no gropus with 24 or 25 entries for field " + prop.getName(), 0, boolCount);
+            "Should be no groups with 24 or 25 entries for field " + prop.getName(), 0, boolCount);
       }
     }
   }
@@ -485,8 +470,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     return doc;
   }
 
-  private static void defineFields(
-      List<Update> updateList, List<FieldProps> props, boolean multi, String... extras) {
+  private static void defineFields(List<Update> updateList, List<FieldProps> props, boolean multi) {
     for (FieldProps prop : props) {
       Map<String, Object> fieldAttributes = new LinkedHashMap<>();
       fieldAttributes.put("name", prop.getName());
@@ -555,7 +539,7 @@ class FieldProps {
       long lng = random().nextLong();
       base = lng == Long.MIN_VALUE ? 0 : Math.abs(lng) / 2;
     } else if (name.startsWith("bool")) {
-      base = true; // Must start with a known value since bools only have a two values....
+      base = true; // Must start with a known value since booleans only have two values....
     } else if (name.startsWith("string") || name.startsWith("sortable")) {
       base = "base_string_" + random().nextInt(1_000_000) + "_";
     } else {

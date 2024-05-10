@@ -17,7 +17,12 @@
 
 package org.apache.solr.search.join;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.Set;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -52,12 +57,16 @@ public class FiltersQParser extends QParser {
 
     exclude(clauses.keySet());
 
-    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    BooleanQuery.Builder builder = createBuilder();
     for (Map.Entry<QParser, Occur> clause : clauses.entrySet()) {
       builder.add(unwrapQuery(clause.getKey().getQuery(), clause.getValue()), clause.getValue());
     }
     // what about empty query?
     return builder.build();
+  }
+
+  protected BooleanQuery.Builder createBuilder() {
+    return new BooleanQuery.Builder();
   }
 
   protected Query unwrapQuery(Query query, BooleanClause.Occur occur) {
@@ -97,7 +106,7 @@ public class FiltersQParser extends QParser {
               + " is not defined for "
               + stringIncludingLocalParams);
     }
-    Map<QParser, Occur> clauses = new IdentityHashMap<>();
+    IdentityHashMap<QParser, Occur> clauses = new IdentityHashMap<>();
 
     for (String filter : params == null ? new String[0] : params) {
       if (filter == null || filter.length() == 0) {

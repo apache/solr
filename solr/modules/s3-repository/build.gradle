@@ -34,6 +34,9 @@ dependencies {
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
   }
   implementation(group: 'software.amazon.awssdk', name: 'sdk-core')
+  runtimeOnly(group: 'software.amazon.awssdk', name: 'sts') {
+    exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
+  }
 
   implementation 'com.google.guava:guava'
   implementation 'org.slf4j:slf4j-api'
@@ -45,6 +48,9 @@ dependencies {
   testImplementation 'org.apache.lucene:lucene-test-framework'
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner'
   testImplementation 'junit:junit'
+  testImplementation 'software.amazon.awssdk:profiles'
+
+  testImplementation 'org.hamcrest:hamcrest'
 
   testImplementation('com.adobe.testing:s3mock-junit4') {
     // Don't pull in separate versions of these libs, just use what Solr already has
@@ -72,9 +78,15 @@ dependencies {
   }
 
   testImplementation 'commons-io:commons-io'
-  testImplementation 'org.apache.commons:commons-lang3'
 
   testRuntimeOnly 'org.eclipse.jetty:jetty-webapp'
+
+  testImplementation('org.mockito:mockito-core', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
+  testRuntimeOnly('org.mockito:mockito-subclass', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
 }
 
 test {

@@ -36,7 +36,6 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -49,12 +48,12 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
   private static String addDoc(int id) {
     return adoc("id", Integer.toString(id));
   }
+
   // Given an ID, returns an XML string for a "delete document" request
   private static String delDoc(int id) {
     return delI(Integer.toString(id));
   }
-  // How long to sleep while checking for commits
-  private static final int COMMIT_CHECKING_SLEEP_TIME_MS = 50;
+
   // max TLOG file size
   private static final int MAX_FILE_SIZE = 1000;
 
@@ -71,11 +70,11 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     core = h.getCore();
     updateHandler = (DirectUpdateHandler2) core.getUpdateHandler();
 
-    // we don't care about auto-commit's opening a new Searcher in this test, just skip it.
+    // we don't care about auto-commits opening a new Searcher in this test, just skip it.
     updateHandler.softCommitTracker.setOpenSearcher(false);
     updateHandler.commitTracker.setOpenSearcher(false);
 
-    // we don't care about soft commit's at all
+    // we don't care about soft commits at all
     updateHandler.softCommitTracker.setTimeUpperBound(-1);
     updateHandler.softCommitTracker.setDocsUpperBound(-1);
     updateHandler.softCommitTracker.setTLogFileSizeUpperBound(-1);
@@ -93,6 +92,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     updateRequestHandler.init(null);
   }
 
+  @Override
   @After
   public void tearDown() throws Exception {
     if (null != monitor) {
@@ -106,15 +106,13 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
 
   @Test
   public void testAdds() throws Exception {
-
-    Assert.assertEquals(
+    assertEquals(
         "There have been no updates yet, so there shouldn't have been any commits",
         0,
         hardCommitTracker.getCommitCount());
 
     long tlogSizePreUpdates = updateHandler.getUpdateLog().getCurrentLogSizeFromStream();
-    Assert.assertEquals(
-        "There have been no updates yet, so tlog should be empty", 0, tlogSizePreUpdates);
+    assertEquals("There have been no updates yet, so tlog should be empty", 0, tlogSizePreUpdates);
 
     // Add a large number of docs - should trigger a commit
     int numDocsToAdd = 500;
@@ -124,22 +122,19 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
         hardCommitTracker,
         updateHandler,
         () -> {
-          updateRequestHandler.handleRequest(
-              constructBatchAddDocRequest(0, numDocsToAdd), updateResp);
+          updateRequestHandler.handleRequest(constructBatchAddDocRequest(numDocsToAdd), updateResp);
         });
   }
 
   @Test
   public void testRedundantDeletes() throws Exception {
-
-    Assert.assertEquals(
+    assertEquals(
         "There have been no updates yet, so there shouldn't have been any commits",
         0,
         hardCommitTracker.getCommitCount());
 
     long tlogSizePreUpdates = updateHandler.getUpdateLog().getCurrentLogSizeFromStream();
-    Assert.assertEquals(
-        "There have been no updates yet, so tlog should be empty", 0, tlogSizePreUpdates);
+    assertEquals("There have been no updates yet, so tlog should be empty", 0, tlogSizePreUpdates);
 
     // Add docs
     int numDocsToAdd = 150;
@@ -149,8 +144,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
         hardCommitTracker,
         updateHandler,
         () -> {
-          updateRequestHandler.handleRequest(
-              constructBatchAddDocRequest(0, numDocsToAdd), updateResp);
+          updateRequestHandler.handleRequest(constructBatchAddDocRequest(numDocsToAdd), updateResp);
         });
 
     // Send a bunch of redundant deletes
@@ -175,15 +169,13 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDeletes() throws Exception {
-
-    Assert.assertEquals(
+    assertEquals(
         "There have been no updates yet, so there shouldn't have been any commits",
         0,
         hardCommitTracker.getCommitCount());
 
     long tlogSizePreUpdates = updateHandler.getUpdateLog().getCurrentLogSizeFromStream();
-    Assert.assertEquals(
-        "There have been no updates yet, so tlog should be empty", 0, tlogSizePreUpdates);
+    assertEquals("There have been no updates yet, so tlog should be empty", 0, tlogSizePreUpdates);
 
     // Add docs
     int numDocsToAdd = 500;
@@ -193,8 +185,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
         hardCommitTracker,
         updateHandler,
         () -> {
-          updateRequestHandler.handleRequest(
-              constructBatchAddDocRequest(0, numDocsToAdd), updateResp);
+          updateRequestHandler.handleRequest(constructBatchAddDocRequest(numDocsToAdd), updateResp);
         });
 
     // Delete all documents - should trigger a commit
@@ -204,7 +195,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
         updateHandler,
         () -> {
           updateRequestHandler.handleRequest(
-              constructBatchDeleteDocRequest(0, numDocsToAdd), updateResp);
+              constructBatchDeleteDocRequest(numDocsToAdd), updateResp);
         });
   }
 
@@ -212,40 +203,37 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
    * Construct a batch add document request with a series of very simple Solr docs with increasing
    * IDs.
    *
-   * @param startId the document ID to begin with
    * @param batchSize the number of documents to include in the batch
    * @return a SolrQueryRequestBase
    */
-  private SolrQueryRequestBase constructBatchAddDocRequest(int startId, int batchSize) {
-    return constructBatchRequestHelper(startId, batchSize, MaxSizeAutoCommitTest::addDoc);
+  private SolrQueryRequestBase constructBatchAddDocRequest(int batchSize) {
+    return constructBatchRequestHelper(batchSize, MaxSizeAutoCommitTest::addDoc);
   }
 
   /**
    * Construct a batch delete document request, with IDs incrementing from startId
    *
-   * @param startId the document ID to begin with
    * @param batchSize the number of documents to include in the batch
    * @return a SolrQueryRequestBase
    */
-  private SolrQueryRequestBase constructBatchDeleteDocRequest(int startId, int batchSize) {
-    return constructBatchRequestHelper(startId, batchSize, MaxSizeAutoCommitTest::delDoc);
+  private SolrQueryRequestBase constructBatchDeleteDocRequest(int batchSize) {
+    return constructBatchRequestHelper(batchSize, MaxSizeAutoCommitTest::delDoc);
   }
 
   /**
    * Helper for constructing a batch update request
    *
-   * @param startId the document ID to begin with
    * @param batchSize the number of documents to include in the batch
    * @param requestFn a function that takes an (int) ID and returns an XML string of the request to
    *     add to the batch request
    * @return a SolrQueryRequestBase
    */
   private SolrQueryRequestBase constructBatchRequestHelper(
-      int startId, int batchSize, Function<Integer, String> requestFn) {
+      int batchSize, Function<Integer, String> requestFn) {
     SolrQueryRequestBase updateReq =
         new SolrQueryRequestBase(core, new MapSolrParams(new HashMap<>())) {};
     List<String> docs = new ArrayList<>();
-    for (int i = startId; i < startId + batchSize; i++) {
+    for (int i = 0; i < batchSize; i++) {
       docs.add(requestFn.apply(i));
     }
     updateReq.setContentStreams(toContentStreams(docs));
@@ -277,7 +265,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     public final BlockingQueue<Long> hard = new LinkedBlockingQueue<>(1000);
 
     // if non enpty, then at least one offer failed (queues full)
-    private StringBuffer fail = new StringBuffer();
+    private final StringBuilder fail = new StringBuilder();
 
     @Override
     public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
@@ -287,7 +275,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     @Override
     public void postCommit() {
       Long now = System.nanoTime();
-      if (!hard.offer(now)) fail.append(", hardCommit @ " + now);
+      if (!hard.offer(now)) fail.append(", hardCommit @ ").append(now);
     }
 
     @Override
@@ -334,7 +322,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
           if ((currentFileSize < MAX_FILE_SIZE)
               && (currentAutoCommitCount == numIters)
               && (!commitTracker.hasPending())) {
-            // if all of these condiions are met, then we should be completely done
+            // if all of these conditions are met, then we should be completely done
             assertSaneOffers(); // last minute sanity check
             return;
           }

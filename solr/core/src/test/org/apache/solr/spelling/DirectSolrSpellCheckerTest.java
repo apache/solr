@@ -75,9 +75,10 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
               assertFalse("suggestions shouldn't be empty", suggestions.isEmpty());
               Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
               assertEquals("foo", entry.getKey());
-              assertFalse(
+              assertNotEquals(
                   entry.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO,
-                  entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
+                  SpellingResult.NO_FREQUENCY_INFO,
+                  (int) entry.getValue());
 
               // check that 'super' is *not* corrected
               spellOpts.tokens = queryConverter.convert("super");
@@ -99,7 +100,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testOnlyMorePopularWithExtendedResults() throws Exception {
+  public void testOnlyMorePopularWithExtendedResults() {
     assertQ(
         req(
             "q",

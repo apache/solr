@@ -19,16 +19,20 @@ package org.apache.solr.update;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase.FROMLEADER;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongSet;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -59,9 +63,11 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -76,9 +82,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
-import org.apache.solr.util.LongSet;
 import org.apache.solr.util.OrderedExecutor;
-import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -199,8 +203,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected TransactionLog prevTlog;
   protected TransactionLog prevTlogOnPrecommit;
   // list of recent logs, newest first
-  protected final Deque<TransactionLog> logs = new LinkedList<>();
-  protected LinkedList<TransactionLog> newestLogsOnStartup = new LinkedList<>();
+  protected final Deque<TransactionLog> logs = new ArrayDeque<>();
+  protected Deque<TransactionLog> newestLogsOnStartup = new ArrayDeque<>();
   protected int numOldRecords; // number of records in the recent logs
 
   protected Map<BytesRef, LogPtr> map = new HashMap<>();
@@ -218,17 +222,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   // This should only be used to initialize VersionInfo... the actual number of buckets may be
   // rounded up to a power of two.
   protected int numVersionBuckets;
-  protected Long maxVersionFromIndex = null;
   protected boolean existOldBufferLog = false;
 
   // keep track of deletes only... this is not updated on an add
   protected LinkedHashMap<BytesRef, LogPtr> oldDeletes =
-      new LinkedHashMap<>(numDeletesToKeep) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<BytesRef, LogPtr> eldest) {
-          return size() > numDeletesToKeep;
-        }
-      };
+      new OldDeletesLinkedHashMap(this.numDeletesToKeep);
 
   /** Holds the query and the version for a DeleteByQuery command */
   public static class DBQ {
@@ -241,6 +239,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
+  @SuppressWarnings("JdkObsolete")
   protected LinkedList<DBQ> deleteByQueries = new LinkedList<>();
 
   // Needs to be String because hdfs.Path is incompatible with nio.Path
@@ -742,7 +741,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
         holder.decref();
       } catch (Exception e) {
-        SolrException.log(log, "Error opening realtime searcher", e);
+        log.error("Error opening realtime searcher", e);
         return;
       }
 
@@ -759,7 +758,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         RefCounted<SolrIndexSearcher> holder = uhandler.core.openNewSearcher(true, true);
         holder.decref();
       } catch (Exception e) {
-        SolrException.log(log, "Error opening realtime searcher for deleteByQuery", e);
+        log.error("Error opening realtime searcher for deleteByQuery", e);
       }
 
       if (map != null) map.clear();
@@ -984,7 +983,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             entry
                 + " should've been either ADD or UPDATE_INPLACE update"
                 + ", while looking for id="
-                + new String(id.bytes, Charset.forName("UTF-8")));
+                + new String(id.bytes, StandardCharsets.UTF_8));
       }
       // if this is an ADD (i.e. full document update), stop here
       if ((flags & UpdateLog.ADD) == UpdateLog.ADD) {
@@ -998,7 +997,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             entry
                 + " is not a partial doc"
                 + ", while looking for id="
-                + new String(id.bytes, Charset.forName("UTF-8")));
+                + new String(id.bytes, StandardCharsets.UTF_8));
       }
       // This update is an inplace update, get the partial doc. The input doc is always at last
       // position.
@@ -1022,8 +1021,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       // if the newerDoc has this field, then this field from olderDoc can be ignored
       if (!newerDoc.containsKey(fieldName)
           && (mergeFields == null || mergeFields.contains(fieldName))) {
-        for (Object val : olderDoc.getFieldValues(fieldName)) {
-          newerDoc.addField(fieldName, val);
+        Collection<Object> values = olderDoc.getFieldValues(fieldName);
+        if (values == null) {
+          newerDoc.addField(fieldName, null);
+        } else {
+          for (Object val : values) {
+            newerDoc.addField(fieldName, val);
+          }
         }
       }
     }
@@ -1343,9 +1347,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     copyOverOldUpdatesMeter.mark();
 
     SolrQueryRequest req = new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams());
-    TransactionLog.LogReader logReader = oldTlog.getReader(0);
+    TransactionLog.LogReader logReader = null;
     Object o = null;
     try {
+      logReader = oldTlog.getReader(0);
       while ((o = logReader.next()) != null) {
         try {
           List<?> entry = (List<?>) o;
@@ -1487,7 +1492,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     try {
       ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
     } catch (Exception e) {
-      SolrException.log(log, e);
+      log.error("Exception shutting down recoveryExecutor", e);
     }
   }
 
@@ -1541,7 +1546,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     public List<Long> getVersions(int n, long maxVersion) {
       List<Long> ret = new ArrayList<>(n);
-      LongSet set = new LongSet(n);
+      LongSet set = new LongHashSet(n);
       final int nInput = n;
 
       for (List<Update> singleList : updateList) {
@@ -1598,7 +1603,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       updateList = new ArrayList<>(logList.size());
       deleteByQueryList = new ArrayList<>();
       deleteList = new ArrayList<>();
-      updates = new HashMap<>(numRecordsToKeep);
+      updates = CollectionUtil.newHashMap(numRecordsToKeep);
 
       for (TransactionLog oldLog : logList) {
         List<Update> updatesForLog = new ArrayList<>();
@@ -1699,7 +1704,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public RecentUpdates getRecentUpdates() {
     Deque<TransactionLog> logList;
     synchronized (this) {
-      logList = new LinkedList<>(logs);
+      logList = new ArrayDeque<>(logs);
       for (TransactionLog log : logList) {
         log.incref();
       }
@@ -1805,7 +1810,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       versionInfo.unblockUpdates();
     }
 
-    if (recoveryExecutor.isShutdown()) {
+    if (ExecutorUtil.isShutdown(recoveryExecutor)) {
       throw new RuntimeException("executor is not running...");
     }
     ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(recoveryExecutor);
@@ -1844,7 +1849,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     boolean inSortedOrder;
 
     public LogReplayer(List<TransactionLog> translogs, boolean activeLog) {
-      this.translogs = new LinkedList<>();
+      this.translogs = new ArrayDeque<>();
       this.translogs.addAll(translogs);
       this.activeLog = activeLog;
     }
@@ -1875,25 +1880,19 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         }
       } catch (SolrException e) {
         if (e.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
-          SolrException.log(log, e);
+          log.error("Replay failed service unavailable", e);
           recoveryInfo.failed = true;
         } else {
           recoveryInfo.errors.incrementAndGet();
-          SolrException.log(log, e);
+          log.error("Replay failed due to exception", e);
         }
       } catch (Exception e) {
         recoveryInfo.errors.incrementAndGet();
-        SolrException.log(log, e);
+        log.error("Replay failed due to exception", e);
       } finally {
         // change the state while updates are still blocked to prevent races
         state = State.ACTIVE;
         if (finishing) {
-
-          // after replay, update the max from the index
-          log.info("Re-computing max version from index after log re-play.");
-          maxVersionFromIndex = null;
-          getMaxVersionFromIndex();
-
           versionInfo.unblockUpdates();
         }
 
@@ -1921,10 +1920,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             recoveryInfo.positionOfStart,
             inSortedOrder);
         long lastStatusTime = System.nanoTime();
-        if (inSortedOrder) {
-          tlogReader = translog.getSortedReader(recoveryInfo.positionOfStart);
-        } else {
-          tlogReader = translog.getReader(recoveryInfo.positionOfStart);
+        try {
+          if (inSortedOrder) {
+            tlogReader = translog.getSortedReader(recoveryInfo.positionOfStart);
+          } else {
+            tlogReader = translog.getReader(recoveryInfo.positionOfStart);
+          }
+        } catch (IOException e) {
+          throw new UncheckedIOException(e);
         }
 
         // NOTE: we don't currently handle a core reload during recovery.  This would cause the core
@@ -2004,7 +2007,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               }
             }
           } catch (Exception e) {
-            SolrException.log(log, e);
+            log.error("Exception during replay", e);
           }
 
           if (o == null) break;
@@ -2322,68 +2325,18 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
   }
 
-  public Long getCurrentMaxVersion() {
-    return maxVersionFromIndex;
-  }
+  @SuppressForbidden(reason = "extends linkedhashmap")
+  private static class OldDeletesLinkedHashMap extends LinkedHashMap<BytesRef, LogPtr> {
+    private final int numDeletesToKeepInternal;
 
-  // this method is primarily used for unit testing and is not part of the public API for this class
-  Long getMaxVersionFromIndex() {
-    RefCounted<SolrIndexSearcher> newestSearcher =
-        (uhandler != null && uhandler.core != null) ? uhandler.core.getRealtimeSearcher() : null;
-    if (newestSearcher == null)
-      throw new IllegalStateException("No searcher available to lookup max version from index!");
-
-    try {
-      seedBucketsWithHighestVersion(newestSearcher.get());
-      return getCurrentMaxVersion();
-    } finally {
-      newestSearcher.decref();
-    }
-  }
-
-  /** Used to seed all version buckets with the max value of the version field in the index. */
-  protected Long seedBucketsWithHighestVersion(
-      SolrIndexSearcher newSearcher, VersionInfo versions) {
-    Long highestVersion = null;
-    final RTimer timer = new RTimer();
-
-    try (RecentUpdates recentUpdates = getRecentUpdates()) {
-      long maxVersionFromRecent = recentUpdates.getMaxRecentVersion();
-      long maxVersionFromIndex = versions.getMaxVersionFromIndex(newSearcher);
-
-      long maxVersion = Math.max(maxVersionFromIndex, maxVersionFromRecent);
-      if (maxVersion == 0L) {
-        maxVersion = versions.getNewClock();
-        log.info(
-            "Could not find max version in index or recent updates, using new clock {}",
-            maxVersion);
-      }
-
-      // seed all version buckets with the highest value from recent and index
-      versions.seedBucketsWithHighestVersion(maxVersion);
-
-      highestVersion = maxVersion;
-    } catch (IOException ioExc) {
-      log.warn("Failed to determine the max value of the version field due to: ", ioExc);
+    public OldDeletesLinkedHashMap(int numDeletesToKeep) {
+      super(numDeletesToKeep);
+      this.numDeletesToKeepInternal = numDeletesToKeep;
     }
 
-    if (debug) {
-      log.debug(
-          "Took {}ms to seed version buckets with highest version {}",
-          timer.getTime(),
-          highestVersion);
-    }
-
-    return highestVersion;
-  }
-
-  public void seedBucketsWithHighestVersion(SolrIndexSearcher newSearcher) {
-    log.debug("Looking up max value of version field to seed version buckets");
-    versionInfo.blockUpdates();
-    try {
-      maxVersionFromIndex = seedBucketsWithHighestVersion(newSearcher, versionInfo);
-    } finally {
-      versionInfo.unblockUpdates();
+    @Override
+    protected boolean removeEldestEntry(Map.Entry<BytesRef, LogPtr> eldest) {
+      return size() > numDeletesToKeepInternal;
     }
   }
 }

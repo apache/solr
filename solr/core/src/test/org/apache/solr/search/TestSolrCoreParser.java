@@ -17,9 +17,9 @@
 package org.apache.solr.search;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.spans.SpanNearQuery;
@@ -68,13 +68,13 @@ public class TestSolrCoreParser extends SolrTestCaseJ4 {
     return solrCoreParser;
   }
 
-  private Query parseXmlString(String xml) throws IOException, ParserException {
+  private Query parseXmlString(String xml) throws ParserException {
     final byte[] xmlBytes = xml.getBytes(StandardCharsets.UTF_8);
     final InputStream xmlStream = new ByteArrayInputStream(xmlBytes);
     return solrCoreParser().parse(xmlStream);
   }
 
-  private Query parseHandyQuery(String lhsXml, String rhsXml) throws IOException, ParserException {
+  private Query parseHandyQuery(String lhsXml, String rhsXml) throws ParserException {
     final String xml =
         "<HandyQuery>"
             + "<Left>"
@@ -87,17 +87,17 @@ public class TestSolrCoreParser extends SolrTestCaseJ4 {
     return parseXmlString(xml);
   }
 
-  public void testHello() throws IOException, ParserException {
+  public void testHello() throws ParserException {
     final Query query = parseXmlString("<HelloQuery/>");
     assertTrue(query instanceof MatchAllDocsQuery);
   }
 
-  public void testGoodbye() throws IOException, ParserException {
+  public void testGoodbye() throws ParserException {
     final Query query = parseXmlString("<GoodbyeQuery/>");
     assertTrue(query instanceof MatchNoDocsQuery);
   }
 
-  public void testApacheLuceneSolr() throws IOException, ParserException {
+  public void testApacheLuceneSolr() throws ParserException {
     final String fieldName = "contents";
     final Query query = parseXmlString("<ApacheLuceneSolr fieldName='" + fieldName + "'/>");
     checkApacheLuceneSolr(query, fieldName);
@@ -116,7 +116,7 @@ public class TestSolrCoreParser extends SolrTestCaseJ4 {
   }
 
   // test custom query (HandyQueryBuilder) wrapping a Query
-  public void testHandyQuery() throws IOException, ParserException {
+  public void testHandyQuery() throws ParserException {
     final String lhsXml = "<HelloQuery/>";
     final String rhsXml = "<GoodbyeQuery/>";
     final Query query = parseHandyQuery(lhsXml, rhsXml);
@@ -128,7 +128,7 @@ public class TestSolrCoreParser extends SolrTestCaseJ4 {
   }
 
   // test custom query (HandyQueryBuilder) wrapping a SpanQuery
-  public void testHandySpanQuery() throws IOException, ParserException {
+  public void testHandySpanQuery() throws ParserException {
     final String lhsXml =
         "<SpanOr fieldName='contents'>"
             + "<SpanTerm>rain</SpanTerm>"
@@ -168,7 +168,7 @@ public class TestSolrCoreParser extends SolrTestCaseJ4 {
   }
 
   // test custom queries being wrapped in a Query or SpanQuery
-  public void testCustomQueryWrapping() throws IOException, ParserException {
+  public void testCustomQueryWrapping() throws ParserException {
     final boolean span = random().nextBoolean();
     // the custom queries
     final String fieldName = "contents";
@@ -228,7 +228,11 @@ public class TestSolrCoreParser extends SolrTestCaseJ4 {
     }
     assertEquals(fieldName, term.field());
     assertTrue(
-        "expected term text (" + text + ") not found in (" + expectedTermTexts + ")",
+        "expected term text ("
+            + text
+            + ") not found in ("
+            + Arrays.toString(expectedTermTexts)
+            + ")",
         foundExpected);
   }
 }

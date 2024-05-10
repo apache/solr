@@ -32,17 +32,17 @@ import org.junit.Test;
 public class SpellingQueryConverterTest extends SolrTestCase {
 
   @Test
-  public void test() throws Exception {
+  public void test() {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
     Collection<Token> tokens = converter.convert("field:foo");
-    assertTrue("tokens is null and it shouldn't be", tokens != null);
-    assertTrue("tokens Size: " + tokens.size() + " is not: " + 1, tokens.size() == 1);
+    assertNotNull("tokens is null and it shouldn't be", tokens);
+    assertEquals("tokens Size: " + tokens.size() + " is not: " + 1, 1, tokens.size());
   }
 
   @Test
-  public void testNumeric() throws Exception {
+  public void testNumeric() {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList<>());
     converter.setAnalyzer(new WhitespaceAnalyzer());
@@ -59,9 +59,10 @@ public class SpellingQueryConverterTest extends SolrTestCase {
     int[] tokensToExpect = {1, 1, 2, 2, 2, 2, 2, 2};
     for (int i = 0; i < queries.length; i++) {
       Collection<Token> tokens = converter.convert(queries[i]);
-      assertTrue(
+      assertEquals(
           "tokens Size: " + tokens.size() + " is not: " + tokensToExpect[i],
-          tokens.size() == tokensToExpect[i]);
+          tokens.size(),
+          tokensToExpect[i]);
     }
   }
 
@@ -72,32 +73,32 @@ public class SpellingQueryConverterTest extends SolrTestCase {
     converter.setAnalyzer(new WhitespaceAnalyzer());
     String original = "field_with_underscore:value_with_underscore";
     Collection<Token> tokens = converter.convert(original);
-    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
     assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
 
     original = "field_with_digits123:value_with_digits123";
     tokens = converter.convert(original);
-    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
     assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
 
     original = "field-with-hyphens:value-with-hyphens";
     tokens = converter.convert(original);
-    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
     assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
 
     // mix 'em up and add some to the value
     //    original = "field_with-123s:value_,.|with-hyphens";
     //    tokens = converter.convert(original);
-    //    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    //    assertTrue("tokens is null, and it shouldn't be", tokens != null);
     //    assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
     //    assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
 
     original = "foo:bar^5.0";
     tokens = converter.convert(original);
-    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
     assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
 
@@ -105,15 +106,17 @@ public class SpellingQueryConverterTest extends SolrTestCase {
     String secondKeyword = "value2";
     original = "field-with-parenthesis:(" + firstKeyword + " " + secondKeyword + ")";
     tokens = converter.convert(original);
-    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 2", 2, tokens.size());
     assertTrue("Token offsets do not match", isOffsetCorrect(original, tokens));
-    assertTrue(
+    assertEquals(
         "first Token is not " + firstKeyword,
-        new ArrayList<>(tokens).get(0).toString().equals(firstKeyword));
-    assertTrue(
+        new ArrayList<>(tokens).get(0).toString(),
+        firstKeyword);
+    assertEquals(
         "second Token is not " + secondKeyword,
-        new ArrayList<>(tokens).get(1).toString().equals(secondKeyword));
+        new ArrayList<>(tokens).get(1).toString(),
+        secondKeyword);
   }
 
   private boolean isOffsetCorrect(String s, Collection<Token> tokens) {
@@ -133,15 +136,15 @@ public class SpellingQueryConverterTest extends SolrTestCase {
 
     // chinese text value
     Collection<Token> tokens = converter.convert("text_field:我购买了道具和服装。");
-    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
 
     tokens = converter.convert("text_购field:我购买了道具和服装。");
-    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
 
     tokens = converter.convert("text_field:我购xyz买了道具和服装。");
-    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
   }
 
@@ -153,12 +156,12 @@ public class SpellingQueryConverterTest extends SolrTestCase {
 
     // two field:value pairs should give two tokens
     Collection<Token> tokens = converter.convert("买text_field:我购买了道具和服装。 field2:bar");
-    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 2", 2, tokens.size());
 
     // a field:value pair and a search term should give two tokens
     tokens = converter.convert("text_field:我购买了道具和服装。 bar");
-    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    assertNotNull("tokens is null and it shouldn't be", tokens);
     assertEquals("tokens Size: " + tokens.size() + " is not 2", 2, tokens.size());
   }
 

@@ -23,7 +23,7 @@
 
    More information about options available in this configuration file,
    and Solr Core administration can be found online:
-   https://solr.apache.org/guide/format-of-solr-xml.html
+   https://solr.apache.org/guide/solr/latest/configuration-guide/configuring-solr-xml.html
 -->
 
 <solr>
@@ -33,12 +33,13 @@
   <str name="modules">${solr.modules:}</str>
   <str name="allowPaths">${solr.allowPaths:}</str>
   <str name="allowUrls">${solr.allowUrls:}</str>
+  <str name="hideStackTrace">${solr.hideStackTrace:false}</str>
+  <int name="indexSearcherExecutorThreads">${solr.searchThreads:4}</int>
 
   <solrcloud>
 
     <str name="host">${host:}</str>
     <int name="hostPort">${solr.port.advertise:0}</int>
-    <str name="hostContext">${hostContext:solr}</str>
 
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
 
@@ -47,8 +48,11 @@
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>
     <str name="zkCredentialsProvider">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str>
     <str name="zkACLProvider">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str>
+    <str name="zkCredentialsInjector">${zkCredentialsInjector:org.apache.solr.common.cloud.DefaultZkCredentialsInjector}</str>
     <bool name="distributedClusterStateUpdates">${distributedClusterStateUpdates:false}</bool>
     <bool name="distributedCollectionConfigSetExecution">${distributedCollectionConfigSetExecution:false}</bool>
+    <int name="minStateByteLenForCompression">${minStateByteLenForCompression:-1}</int>
+    <str name="stateCompressor">${stateCompressor:org.apache.solr.common.util.ZLibCompressor}</str>
 
   </solrcloud>
 
@@ -59,7 +63,15 @@
   </shardHandlerFactory>
 
   <metrics enabled="${metricsEnabled:true}">
+    <!--    Solr computes JVM metrics for threads. Computing these metrics, esp. computing deadlocks etc.,
+     requires potentially expensive computations, and can be avoided for every metrics call by
+     setting a high caching expiration interval (in seconds).
+      <caching>
+        <int name="threadsIntervalSeconds">5</int>
+      </caching>
+    -->
     <!--reporter name="jmx_metrics" group="core" class="org.apache.solr.metrics.reporters.SolrJmxReporter"/-->
   </metrics>
+
 
 </solr>

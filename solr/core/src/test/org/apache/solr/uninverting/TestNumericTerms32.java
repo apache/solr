@@ -124,7 +124,7 @@ public class TestNumericTerms32 extends SolrTestCase {
   private void testSorting(int precisionStep) throws Exception {
     String field = "field" + precisionStep;
     // 10 random tests, the index order is ascending,
-    // so using a reverse sort field should retun descending documents
+    // so using a reverse sort field should return descending documents
     int num = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < num; i++) {
       int lower = (int) (random().nextDouble() * noDocs * distance) + startOffset;

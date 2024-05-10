@@ -46,7 +46,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   private static AtomicInteger docIdCounter = new AtomicInteger(42);
 
   @After
-  public void after() throws Exception {
+  public void after() {
     deleteCore();
   }
 
@@ -69,7 +69,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   public void testDefaultMergePolicyConfig() throws Exception {
     initCore("solrconfig-mergepolicy-defaults.xml", "schema-minimal.xml");
     IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
-    assertEquals(false, iwc.getUseCompoundFile());
+    assertFalse(iwc.getUseCompoundFile());
 
     TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class, iwc.getMergePolicy());
     assertEquals(TieredMergePolicy.DEFAULT_NO_CFS_RATIO, tieredMP.getNoCFSRatio(), 0.0D);
@@ -256,7 +256,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
           atomic.reader() instanceof SegmentReader);
 
       assertEquals(
-          "Compound status incorrect for: " + atomic.reader().toString(),
+          "Compound status incorrect for: " + atomic.reader(),
           compound,
           ((SegmentReader) atomic.reader()).getSegmentInfo().info.getUseCompoundFile());
     }

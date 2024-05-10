@@ -18,10 +18,11 @@ package org.apache.solr.handler;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -30,6 +31,8 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
@@ -87,7 +90,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
   public void testEnablingServer() throws Exception {
 
-    assertTrue(!healthcheckFile.exists());
+    assertFalse(healthcheckFile.exists());
 
     // first make sure that ping responds back that the service is disabled
     SolrQueryResponse sqr = makeRequest(handler, req());
@@ -102,7 +105,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     makeRequest(handler, req("action", "enable"));
 
     assertTrue(healthcheckFile.exists());
-    assertNotNull(FileUtils.readFileToString(healthcheckFile, "UTF-8"));
+    assertNotNull(Files.readString(healthcheckFile.toPath(), StandardCharsets.UTF_8));
 
     // now verify that the handler response with success
 
@@ -116,7 +119,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
 
   public void testDisablingServer() throws Exception {
 
-    assertTrue(!healthcheckFile.exists());
+    assertFalse(healthcheckFile.exists());
 
     healthcheckFile.createNewFile();
 
@@ -158,7 +161,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
     assertEquals("disabled", rsp.getValues().get("status"));
   }
 
-  public void testBadActionRaisesException() throws Exception {
+  public void testBadActionRaisesException() {
     SolrException se =
         expectThrows(SolrException.class, () -> makeRequest(handler, req("action", "badaction")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, se.code());
@@ -167,7 +170,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
   public void testPingInClusterWithNoHealthCheck() throws Exception {
 
     MiniSolrCloudCluster miniCluster =
-        new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
+        new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), JettyConfig.builder().build());
 
     final CloudSolrClient cloudSolrClient = miniCluster.getSolrClient();
 
@@ -186,7 +189,7 @@ public class PingRequestHandlerTest extends SolrTestCaseJ4 {
           SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), configName);
       CollectionAdminRequest.createCollection(
               collectionName, configName, NUM_SHARDS, REPLICATION_FACTOR)
-          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .setPerReplicaState(SolrCloudTestCase.isPRS())
           .process(miniCluster.getSolrClient());
 
       // Send distributed and non-distributed ping query

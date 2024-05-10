@@ -19,7 +19,7 @@ package org.apache.solr.uninverting;
 import java.io.IOException;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.IndexReader; // javadocs
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
@@ -81,6 +81,7 @@ public interface FieldCache {
    * <p>This abstraction can be cleaned up when Parser.termsEnum is removed.
    */
   public abstract class PointParser implements Parser {
+    @Override
     public final TermsEnum termsEnum(Terms terms) throws IOException {
       throw new UnsupportedOperationException("makes no sense for parsing points");
     }
@@ -342,6 +343,7 @@ public interface FieldCache {
   /** Can be passed to {@link #getDocTermOrds} to filter for 32-bit numeric terms */
   public static final BytesRef INT32_TERM_PREFIX =
       new BytesRef(new byte[] {LegacyNumericUtils.SHIFT_START_INT});
+
   /** Can be passed to {@link #getDocTermOrds} to filter for 64-bit numeric terms */
   public static final BytesRef INT64_TERM_PREFIX =
       new BytesRef(new byte[] {LegacyNumericUtils.SHIFT_START_LONG});

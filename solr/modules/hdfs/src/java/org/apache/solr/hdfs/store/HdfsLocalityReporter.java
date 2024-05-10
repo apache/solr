@@ -156,7 +156,7 @@ public class HdfsLocalityReporter implements SolrInfoBean {
         log.info("Registering direcotry {} for locality metrics.", dir.getHdfsDirPath());
       }
     }
-    cache.put(dir, new ConcurrentHashMap<FileStatus, BlockLocation[]>());
+    cache.put(dir, new ConcurrentHashMap<>());
   }
 
   /**

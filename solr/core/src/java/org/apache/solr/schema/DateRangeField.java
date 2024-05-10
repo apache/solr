@@ -65,8 +65,9 @@ public class DateRangeField
 
   @Override
   public List<IndexableField> createFields(SchemaField field, Object val) {
-    if (val instanceof Date || val instanceof Calendar) // From URP?
-    val = tree.toUnitShape(val);
+    if (val instanceof Date || val instanceof Calendar) { // From URP?
+      val = tree.toUnitShape(val);
+    }
     return super.createFields(field, val);
   }
 

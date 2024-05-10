@@ -29,7 +29,7 @@ allprojects {
     }
 
     dependencies {
-      missingdoclet "org.apache.lucene.tools:missing-doclet"
+      missingdoclet "org.apache.solr.tools:missing-doclet"
     }
 
     ext {
@@ -49,7 +49,7 @@ allprojects {
       description "Generates Javadoc API documentation for each module. This directly invokes javadoc tool."
       group "documentation"
 
-      taskResources = resources
+      taskResources = project.relativePath(resources)
       dependsOn sourceSets.main.compileClasspath
       classpath = sourceSets.main.compileClasspath
       srcDirSet = sourceSets.main.java
@@ -61,12 +61,14 @@ allprojects {
       description "Generates Javadoc API documentation for the site (relative links)."
       group "documentation"
 
-      taskResources = resources
+      taskResources = project.relativePath(resources)
       dependsOn sourceSets.main.compileClasspath
       classpath = sourceSets.main.compileClasspath;
       srcDirSet = sourceSets.main.java;
 
       relativeProjectLinks = true
+
+      enableSearch = true
 
       // Place the documentation under Lucene or Solr's documentation directory.
       // docroot is defined in 'documentation.gradle'
@@ -85,8 +87,8 @@ allprojects {
     title = "Solr ${project.version} ${project.name} API"
 
     offlineLinks += [
-        "https://docs.oracle.com/en/java/javase/11/docs/api/": javaJavadocPackages,
-        "https://junit.org/junit4/javadoc/4.12/": junitJavadocPackages
+        "https://docs.oracle.com/en/java/javase/11/docs/api/": project.relativePath(javaJavadocPackages),
+        "https://junit.org/junit4/javadoc/4.12/": project.relativePath(junitJavadocPackages)
     ]
 
     solrDocUrl = provider({ rootProject.solrDocUrl })
@@ -108,7 +110,7 @@ configure(project(":solr").allprojects) {
 
 configure(project(":solr:modules:analysis-extras")) {
   project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
+    // TODO: clean up split packages SOLR-15604
     javadocMissingIgnore = [
         "org.apache.solr.schema",
         "org.apache.solr.update.processor"
@@ -116,38 +118,41 @@ configure(project(":solr:modules:analysis-extras")) {
   }
 }
 
-configure(project(":solr:modules:analytics")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [
-        "org.apache.solr.handler",
-        "org.apache.solr.handler.component",
-        "org.apache.solr.response"
-    ]
-  }
-}
-
 configure(project(":solr:modules:langid")) {
   project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
+    // TODO: clean up split packages SOLR-15604
     javadocMissingIgnore = ["org.apache.solr.update.processor"]
   }
 }
 
 configure(project(":solr:solrj")) {
   project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
+    // TODO: clean up split packages SOLR-15604
     javadocMissingIgnore = ["org.apache.solr.client.solrj.embedded"]
+  }
+}
+
+configure(project(":solr:solrj-zookeeper")) {
+  project.tasks.withType(RenderJavadocTask) {
+    // TODO: clean up split packages SOLR-15604
+    javadocMissingIgnore = [
+            "org.apache.solr.common",
+            "org.apache.solr.common.cloud",
+            "org.apache.solr.client.solrj.impl",
+            "org.apache.solr.client.solrj.cloud"
+    ]
   }
 }
 
 configure(project(":solr:test-framework")) {
   project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
+    // TODO: clean up split packages SOLR-15604 or don't because it's test stuff
     javadocMissingIgnore = [
         "org.apache.solr",
         "org.apache.solr.analysis",
         "org.apache.solr.cloud",
+        "org.apache.solr.cloud.api.collections",
+        "org.apache.solr.common.cloud",
         "org.apache.solr.core",
         "org.apache.solr.handler",
         "org.apache.solr.handler.component",
@@ -216,6 +221,9 @@ class RenderJavadocTask extends DefaultTask {
   boolean linksource = false
 
   @Input
+  boolean enableSearch = false
+
+  @Input
   boolean relativeProjectLinks = false
 
   @Input
@@ -253,10 +261,14 @@ class RenderJavadocTask extends DefaultTask {
   private Set findRenderTasksInDependencies() {
     Set found = []
     def collectDeps
-    collectDeps = { task -> task.taskDependencies.getDependencies(task).findAll{ it.name == this.name && it.enabled && !found.contains(it) }.each{
-      found << it
-      collectDeps(it)
-    }}
+    collectDeps = { task ->
+      task.taskDependencies.getDependencies(task)
+              .findAll{ it.name == this.name && it.enabled && !found.contains(it) }
+              .each{
+                found << it
+                collectDeps(it)
+              }
+    }
     collectDeps(this)
     return found
   }
@@ -267,6 +279,7 @@ class RenderJavadocTask extends DefaultTask {
     def optionsFile = project.file("${getTemporaryDir()}/javadoc-options.txt")
 
     // create the directory, so relative link calculation knows that it's a directory:
+    project.delete(outputDir);
     outputDir.mkdirs();
 
     def opts = []
@@ -278,7 +291,9 @@ class RenderJavadocTask extends DefaultTask {
     opts << [ '-encoding', 'UTF-8' ]
     opts << [ '-charset', 'UTF-8' ]
     opts << [ '-docencoding', 'UTF-8' ]
-    opts << '-noindex'
+    if (!enableSearch) {
+      opts << '-noindex'
+    }
     opts << '-author'
     opts << '-version'
     if (linksource) {
@@ -324,6 +339,7 @@ class RenderJavadocTask extends DefaultTask {
     // lucene-test-framework was first, or broken links to things like LuceneTestCase if lucene-core was first)
     if (project.path != ':solr:test-framework') {  //
       findRenderTasksInDependencies()
+          .findAll({it.project.path != ':solr:solrj' && it.project.path != ':solr:solrj-zookeeper'}) // split packages
           .sort(false, Comparator.comparing { (it.project.name != 'core') as Boolean }.thenComparing(Comparator.comparing { it.path }))
           .each { otherTask ->
             def otherProject = otherTask.project

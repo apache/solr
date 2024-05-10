@@ -76,8 +76,8 @@ public class TestHash extends SolrTestCase {
     assertEquals(hash, hash2);
     int hash3 = Hash.lookup3ycs(sb, 0, sb.length(), seed);
     assertEquals(hash, hash3);
-    long hash4 = Hash.lookup3ycs64(sb, 0, sb.length(), seed);
-    assertEquals((int) hash4, hash);
+    int hash4 = (int) Hash.lookup3ycs64(sb, 0, sb.length(), seed);
+    assertEquals(hash4, hash);
   }
 
   public void testHash() {

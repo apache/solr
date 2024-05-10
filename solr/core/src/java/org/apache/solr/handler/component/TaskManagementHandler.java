@@ -26,7 +26,6 @@ import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -80,14 +79,7 @@ public abstract class TaskManagementHandler extends RequestHandlerBase
         String reqPath = (String) req.getContext().get(PATH);
 
         params.set(CommonParams.QT, reqPath);
-        params.remove(ShardParams.SHARDS); // not a top-level request
-        params.set(DISTRIB, "false"); // not a top-level request
-        params.remove("indent");
-        params.remove(CommonParams.HEADER_ECHO_PARAMS);
-        params.set(ShardParams.IS_SHARD, true); // a sub (shard) request
-        params.set(ShardParams.SHARDS_PURPOSE, sreq.purpose);
-        params.set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
-        params.set(CommonParams.OMIT_HEADER, false);
+        params.setShardAttributesToParams(sreq.purpose);
 
         if (extraParams != null) {
           for (Map.Entry<String, String> entry : extraParams.entrySet()) {

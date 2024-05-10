@@ -18,13 +18,12 @@
 package org.apache.solr.util.configuration;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
 import org.junit.Before;
@@ -32,7 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-public class SSLConfigurationsTest {
+public class SSLConfigurationsTest extends SolrTestCase {
   private Map<String, String> envs;
   private SSLConfigurations sut;
 
@@ -55,8 +54,10 @@ public class SSLConfigurationsTest {
           SSLConfigurations.SysProps.SSL_CLIENT_KEY_STORE_PASSWORD,
           SSLConfigurations.SysProps.SSL_CLIENT_TRUST_STORE_PASSWORD);
 
+  @Override
   @Before
-  public void setUp() {
+  public void setUp() throws Exception {
+    super.setUp();
     envs = new HashMap<>();
   }
 
@@ -180,7 +181,7 @@ public class SSLConfigurationsTest {
   }
 
   @Test
-  public void testSystemPropertyPriorityOverEnvVar() throws IOException {
+  public void testSystemPropertyPriorityOverEnvVar() {
     envs.put(EnvSSLCredentialProvider.EnvVars.SOLR_SSL_KEY_STORE_PASSWORD, SAMPLE_PW2);
     assertThat(createSut().getKeyStorePassword(), is(SAMPLE_PW2));
     System.setProperty(KEY_STORE_PASSWORD, SAMPLE_PW1);

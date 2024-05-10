@@ -26,7 +26,7 @@ limitations under the License.
   <div ng-show="!isSecurityAdminEnabled">
     <p class="warning-msg"><img src="img/ico/shield--exclamation.png"/>&nbsp;WARNING: Security is not enabled for this server!</p>
     <div ng-show="isCloudMode">
-      <p class="clearfix">Use the <b>bin/solr auth</b> command-line tool to enable security and then reload this panel. For more information, see: <a target="_blank" href="https://solr.apache.org/guide/authentication-and-authorization-plugins.html#using-security-json-with-solr" class="ref-guide-link">Using security.json with Solr</a></p>
+      <p class="clearfix">Use the <b>bin/solr auth</b> command-line tool to enable security and then reload this panel. For more information, see: <a target="_blank" href="https://solr.apache.org/guide/solr/latest/deployment-guide/authentication-and-authorization-plugins.html#using-security-json-with-solr" class="ref-guide-link">Using security.json with Solr</a></p>
       <p class="clearfix"><br/>Example usage of <b>bin/solr auth</b> to enable basic authentication:</p>
       <pre>
 
@@ -36,7 +36,7 @@ limitations under the License.
       </pre>
     </div>
     <div ng-show="!isCloudMode">
-      <p class="clearfix">Create a <b>security.json</b> config file in your Solr home directory and then restart Solr (on all nodes). For more information, see: <a target="_blank" href="https://solr.apache.org/guide/authentication-and-authorization-plugins.html#using-security-json-with-solr" class="ref-guide-link">Using security.json with Solr</a></p>
+      <p class="clearfix">Create a <b>security.json</b> config file in your Solr home directory and then restart Solr (on all nodes). For more information, see: <a target="_blank" href="https://solr.apache.org/guide/solr/latest/deployment-guide/authentication-and-authorization-plugins.html#using-security-json-with-solr" class="ref-guide-link">Using security.json with Solr</a></p>
     </div>
   </div>
 
@@ -67,7 +67,7 @@ limitations under the License.
               <div id="blockUnknownHelp" class="help" ng-show="helpId === 'blockUnknownHelp'">
                 <div class="help-top">
                   <p>If checked, un-authenticated requests to any Solr endpoint are blocked. If un-checked, then any endpoint that is not protected with a permission will be accessible by anonymous users. Only disable this check if you want to allow un-authenticated access to specific endpoints that are configured with <b>role: null</b>. All other endpoints should be protected with explicit role bindings that require authentication. For more information, see:
-                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/basic-authentication-plugin.html#enable-basic-authentication">Basic Authentication</a></div></p>
+                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/solr/latest/deployment-guide/basic-authentication-plugin.html#enable-basic-authentication">Basic Authentication</a></div></p>
                 </div>
               </div>
             </span>
@@ -75,7 +75,7 @@ limitations under the License.
               <div id="forwardCredsHelp" class="help" ng-show="helpId === 'forwardCredsHelp'">
                 <div class="help-top">
                   <p>If checked, Solr forwards user credentials when making distributed requests to other nodes in the cluster. If un-checked (the default), Solr will use the internal PKI authentication mechanism for distributed requests. For more information, see:
-                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/authentication-and-authorization-plugins.html#pkiauthenticationplugin">PKIAuthenticationPlugin</a></div></p>
+                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/solr/latest/deployment-guide/authentication-and-authorization-plugins.html#pkiauthenticationplugin">PKIAuthenticationPlugin</a></div></p>
                 </div>
               </div>
             </span>
@@ -132,7 +132,7 @@ limitations under the License.
               <div id="permIndexHelp" class="help" ng-show="helpId === 'permIndexHelp'">
                 <div class="help-index">
                   <p>For requests where multiple permissions match, Solr applies the first permission that matches based on a complex ordering logic. In general, more specific permissions should be listed earlier in the configuration. The permission index (1-based) governs its position in the configuration. To re-order a permission, change the index to desired position.
-                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/rule-based-authorization-plugin.html#permission-ordering-and-resolution">Permission Ordering and Resolution</a></div></p>
+                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/solr/latest/deployment-guide/rule-based-authorization-plugin.html#permission-ordering-and-resolution">Permission Ordering and Resolution</a></div></p>
                 </div>
               </div>
             </div>
@@ -147,7 +147,7 @@ limitations under the License.
               <div id="permDialogHelp" class="help" ng-show="helpId === 'permDialogHelp'">
                 <div class="help-perm">
                   <p>Permissions allow you to grant access to protected resources to one or more roles. Solr provides a list of <b>predefined</b> permissions to cover common use cases, such as collection administration. Otherwise, you can define a <b>custom permission</b> for fine-grained control over the API path(s), collection(s), request method(s) and params.
-                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/rule-based-authorization-plugin.html#permissions-2">Rule-based Authorization :: Permissions</a></div></p>
+                  <div class="help-anchor"><a target="_blank" href="https://solr.apache.org/guide/solr/latest/deployment-guide/rule-based-authorization-plugin.html#permissions-2">Rule-based Authorization :: Permissions</a></div></p>
                 </div>
               </div></span>
             </div>

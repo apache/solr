@@ -18,14 +18,15 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
+import org.apache.solr.embedded.JettyConfig;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,7 +50,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    solrCluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
   }
 
   @Override
@@ -81,7 +82,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
     for (ConfigSetsAPIThread thread : threads) {
       thread.join();
     }
-    List<Exception> exceptions = new LinkedList<Exception>();
+    List<Exception> exceptions = new ArrayList<>();
     for (ConfigSetsAPIThread thread : threads) {
       exceptions.addAll(thread.getUnexpectedExceptions());
     }
@@ -107,7 +108,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   private abstract static class ConfigSetsAPIThread extends Thread {
     private MiniSolrCloudCluster solrCluster;
     private int trials;
-    private List<Exception> unexpectedExceptions = new LinkedList<Exception>();
+    private List<Exception> unexpectedExceptions = new ArrayList<>();
     private List<String> allowedExceptions =
         Arrays.asList(
             new String[] {
@@ -123,6 +124,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
 
     public abstract ConfigSetAdminRequest<?, ?> createRequest();
 
+    @Override
     public void run() {
       final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       final SolrClient solrClient = getHttpSolrClient(baseUrl);

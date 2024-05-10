@@ -31,7 +31,7 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
     index();
   }
 
-  private static void index() throws Exception {
+  private static void index() {
     assertU(adoc("id", "1", "text", "USA Today"));
     assertU(adoc("id", "2", "text", "A dynamic US economy"));
     assertU(adoc("id", "3", "text", "The United States of America's 50 states"));
@@ -90,7 +90,7 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPf() throws Exception {
+  public void testPf() {
     // test phrase fields including pf2 pf3 and phrase slop
     // same as edismax test, but "bar" is synonym for "tropical cyclone" here
     assertU(adoc("id", "10", "text", "foo bar a b c", "boost_d", "1.0"));
@@ -204,7 +204,7 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPf3WithReordering() throws Exception {
+  public void testPf3WithReordering() {
     // test pf3 and phrase slop
     assertU(
         adoc(
@@ -248,7 +248,7 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testPf3WithoutReordering() throws Exception {
+  public void testPf3WithoutReordering() {
     // test pf3 and phrase slop
     assertU(
         adoc(

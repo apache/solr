@@ -42,6 +42,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.TermsParams;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -53,6 +54,7 @@ import org.apache.solr.schema.StrField;
 import org.apache.solr.search.PointMerger;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
+import org.apache.solr.util.SolrResponseUtil;
 
 /**
  * Return TermEnum information, useful for things like auto suggest.
@@ -383,12 +385,14 @@ public class TermsComponent extends SearchComponent {
       for (ShardResponse srsp : sreq.responses) {
         @SuppressWarnings("unchecked")
         NamedList<NamedList<Object>> terms =
-            (NamedList<NamedList<Object>>) srsp.getSolrResponse().getResponse().get("terms");
+            (NamedList<NamedList<Object>>)
+                SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "terms", false);
         th.parse(terms);
 
         @SuppressWarnings({"unchecked"})
         NamedList<Number> stats =
-            (NamedList<Number>) srsp.getSolrResponse().getResponse().get("indexstats");
+            (NamedList<Number>)
+                SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "indexstats", true);
         if (stats != null) {
           th.numDocs += stats.get("numDocs").longValue();
           th.stats = true;
@@ -452,7 +456,7 @@ public class TermsComponent extends SearchComponent {
     public boolean stats;
 
     public TermsHelper() {
-      fieldmap = new HashMap<>(5);
+      fieldmap = CollectionUtil.newHashMap(5);
     }
 
     public void init(SolrParams params) {
@@ -462,7 +466,7 @@ public class TermsComponent extends SearchComponent {
         for (String field : fields) {
           // TODO: not sure 128 is the best starting size
           // It use it because that is what is used for facets
-          fieldmap.put(field, new HashMap<String, TermsResponse.Term>(128));
+          fieldmap.put(field, CollectionUtil.newHashMap(128));
         }
       }
     }
@@ -568,7 +572,7 @@ public class TermsComponent extends SearchComponent {
 
     // based on code from facets
     public TermsResponse.Term[] getLexSorted(HashMap<String, TermsResponse.Term> data) {
-      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[data.size()]);
+      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[0]);
 
       Arrays.sort(arr, (o1, o2) -> o1.getTerm().compareTo(o2.getTerm()));
 
@@ -577,7 +581,7 @@ public class TermsComponent extends SearchComponent {
 
     // based on code from facets
     public TermsResponse.Term[] getCountSorted(HashMap<String, TermsResponse.Term> data) {
-      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[data.size()]);
+      TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[0]);
 
       Arrays.sort(arr, new TermCountComparator());
       return arr;
@@ -593,7 +597,7 @@ public class TermsComponent extends SearchComponent {
       throws IOException {
     List<String> splitTermList = StrUtils.splitSmart(termList, ",", true);
     // Sort the terms once
-    String[] splitTerms = splitTermList.toArray(new String[splitTermList.size()]);
+    String[] splitTerms = splitTermList.toArray(new String[0]);
     // Not a great idea to trim here, but it was in the original implementation
     for (int i = 0; i < splitTerms.length; i++) {
       splitTerms[i] = splitTerms[i].trim();

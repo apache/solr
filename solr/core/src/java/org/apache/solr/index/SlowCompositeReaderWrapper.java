@@ -17,14 +17,43 @@
 package org.apache.solr.index;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.lucene.index.*;
+import java.util.function.Function;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.ByteVectorValues;
+import org.apache.lucene.index.CompositeReader;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FloatVectorValues;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafMetaData;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiBits;
+import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.MultiTerms;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.OrdinalMap;
+import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.StoredFields;
+import org.apache.lucene.index.TermVectors;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.KnnCollector;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * This class forces a composite reader (eg a {@link MultiReader} or {@link DirectoryReader}) to
@@ -47,12 +76,9 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   // also have a cached FieldInfos instance so this is consistent. SOLR-12878
   private final FieldInfos fieldInfos;
 
-  final Map<String, Terms> cachedTerms = new ConcurrentHashMap<>();
-
-  // TODO: consider ConcurrentHashMap ?
   // TODO: this could really be a weak map somewhere else on the coreCacheKey,
   // but do we really need to optimize slow-wrapper any more?
-  final Map<String, OrdinalMap> cachedOrdMaps = new HashMap<>();
+  final Map<String, OrdinalMap> cachedOrdMaps = new ConcurrentHashMap<>();
 
   /**
    * This method is sugar for getting an {@link LeafReader} from an {@link IndexReader} of any kind.
@@ -71,7 +97,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     in = reader;
     in.registerParentReader(this);
     if (reader.leaves().isEmpty()) {
-      metaData = new LeafMetaData(Version.LATEST.major, Version.LATEST, null);
+      metaData = new LeafMetaData(Version.LATEST.major, Version.LATEST, null, false);
     } else {
       Version minVersion = Version.LATEST;
       for (LeafReaderContext leafReaderContext : reader.leaves()) {
@@ -83,9 +109,13 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
           minVersion = leafVersion;
         }
       }
-      int createdVersionMajor =
-          reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor();
-      metaData = new LeafMetaData(createdVersionMajor, minVersion, null);
+      LeafMetaData leafMetaData = reader.leaves().get(0).reader().getMetaData();
+      metaData =
+          new LeafMetaData(
+              leafMetaData.getCreatedVersionMajor(),
+              minVersion,
+              leafMetaData.getSort(),
+              leafMetaData.hasBlocks());
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
   }
@@ -111,23 +141,7 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public Terms terms(String field) throws IOException {
     ensureOpen();
-    try {
-      return cachedTerms.computeIfAbsent(
-          field,
-          f -> {
-            try {
-              return MultiTerms.getTerms(in, f);
-            } catch (IOException e) {
-              // yuck!  ...sigh... checked exceptions with built-in lambdas are a pain
-              throw new RuntimeException("unwrapMe", e);
-            }
-          });
-    } catch (RuntimeException e) {
-      if (e.getMessage().equals("unwrapMe") && e.getCause() instanceof IOException) {
-        throw (IOException) e.getCause();
-      }
-      throw e;
-    }
+    return MultiTerms.getTerms(in, field);
   }
 
   @Override
@@ -151,23 +165,23 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public SortedDocValues getSortedDocValues(String field) throws IOException {
     ensureOpen();
-    OrdinalMap map = null;
-    synchronized (cachedOrdMaps) {
-      map = cachedOrdMaps.get(field);
-      if (map == null) {
-        // uncached, or not a multi dv
-        SortedDocValues dv = MultiDocValues.getSortedValues(in, field);
-        if (dv instanceof MultiSortedDocValues) {
-          map = ((MultiSortedDocValues) dv).mapping;
-          IndexReader.CacheHelper cacheHelper = getReaderCacheHelper();
-          if (cacheHelper != null && map.owner == cacheHelper.getKey()) {
-            cachedOrdMaps.put(field, map);
-          }
-        }
-        return dv;
-      }
+
+    // Integration of what was previously in MultiDocValues.getSortedValues:
+    // The purpose of this integration is to be able to construct a value producer which can always
+    // produce a value that is actually needed. The reason for the producer is to avoid getAndSet
+    // pitfalls in this multithreaded context.
+    // So all cases that do not lead to a cacheable value are handled upfront.
+    // We kept the semantics of MultiDocValues.getSortedValues.
+    final List<LeafReaderContext> leaves = in.leaves();
+    final int size = leaves.size();
+
+    if (size == 0) {
+      return null;
+    } else if (size == 1) {
+      return leaves.get(0).reader().getSortedDocValues(field);
     }
-    int size = in.leaves().size();
+
+    boolean anyReal = false;
     final SortedDocValues[] values = new SortedDocValues[size];
     final int[] starts = new int[size + 1];
     long totalCost = 0;
@@ -181,40 +195,68 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       SortedDocValues v = reader.getSortedDocValues(field);
       if (v == null) {
         v = DocValues.emptySorted();
+      } else {
+        anyReal = true;
       }
       totalCost += v.cost();
       values[i] = v;
       starts[i] = context.docBase;
     }
     starts[size] = maxDoc();
+    if (anyReal == false) {
+      return null;
+    }
+
+    // at this point in time we are able to formulate the producer
+    OrdinalMap map = null;
+    CacheHelper cacheHelper = getReaderCacheHelper();
+
+    Function<? super String, ? extends OrdinalMap> producer =
+        (notUsed) -> {
+          try {
+            OrdinalMap mapping =
+                OrdinalMap.build(
+                    cacheHelper == null ? null : cacheHelper.getKey(), values, PackedInts.DEFAULT);
+            return mapping;
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        };
+
+    // either we use a cached result that gets produced eventually during caching,
+    // or we produce directly without caching
+    if (cacheHelper != null) {
+      map = cachedOrdMaps.computeIfAbsent(field + cacheHelper.getKey(), producer);
+    } else {
+      map = producer.apply("notUsed");
+    }
+
     return new MultiSortedDocValues(values, starts, map, totalCost);
   }
 
   @Override
   public SortedSetDocValues getSortedSetDocValues(String field) throws IOException {
     ensureOpen();
-    OrdinalMap map = null;
-    synchronized (cachedOrdMaps) {
-      map = cachedOrdMaps.get(field);
-      if (map == null) {
-        // uncached, or not a multi dv
-        SortedSetDocValues dv = MultiDocValues.getSortedSetValues(in, field);
-        if (dv instanceof MultiDocValues.MultiSortedSetDocValues) {
-          map = ((MultiDocValues.MultiSortedSetDocValues) dv).mapping;
-          IndexReader.CacheHelper cacheHelper = getReaderCacheHelper();
-          if (cacheHelper != null && map.owner == cacheHelper.getKey()) {
-            cachedOrdMaps.put(field, map);
-          }
-        }
-        return dv;
-      }
+
+    // Integration of what was previously in MultiDocValues.getSortedSetValues:
+    // The purpose of this integration is to be able to construct a value producer which can always
+    // produce a value that is actually needed. The reason for the producer is to avoid getAndSet
+    // pitfalls in this multithreaded context.
+    // So all cases that do not lead to a cacheable value are handled upfront.
+    // We kept the semantics of MultiDocValues.getSortedSetValues.
+    final List<LeafReaderContext> leaves = in.leaves();
+    final int size = leaves.size();
+
+    if (size == 0) {
+      return null;
+    } else if (size == 1) {
+      return leaves.get(0).reader().getSortedSetDocValues(field);
     }
 
-    assert map != null;
-    int size = in.leaves().size();
+    boolean anyReal = false;
     final SortedSetDocValues[] values = new SortedSetDocValues[size];
     final int[] starts = new int[size + 1];
-    long cost = 0;
+    long totalCost = 0;
     for (int i = 0; i < size; i++) {
       LeafReaderContext context = in.leaves().get(i);
       final LeafReader reader = context.reader();
@@ -225,13 +267,43 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       SortedSetDocValues v = reader.getSortedSetDocValues(field);
       if (v == null) {
         v = DocValues.emptySortedSet();
+      } else {
+        anyReal = true;
       }
+      totalCost += v.cost();
       values[i] = v;
       starts[i] = context.docBase;
-      cost += v.cost();
     }
     starts[size] = maxDoc();
-    return new MultiDocValues.MultiSortedSetDocValues(values, starts, map, cost);
+    if (anyReal == false) {
+      return null;
+    }
+
+    // at this point in time we are able to formulate the producer
+    OrdinalMap map = null;
+    CacheHelper cacheHelper = getReaderCacheHelper();
+
+    Function<? super String, ? extends OrdinalMap> producer =
+        (notUsed) -> {
+          try {
+            OrdinalMap mapping =
+                OrdinalMap.build(
+                    cacheHelper == null ? null : cacheHelper.getKey(), values, PackedInts.DEFAULT);
+            return mapping;
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        };
+
+    // either we use a cached result that gets produced eventually during caching,
+    // or we produce directly without caching
+    if (cacheHelper != null) {
+      map = cachedOrdMaps.computeIfAbsent(field + cacheHelper.getKey(), producer);
+    } else {
+      map = producer.apply("notUsed");
+    }
+
+    return new MultiDocValues.MultiSortedSetDocValues(values, starts, map, totalCost);
   }
 
   @Override
@@ -243,6 +315,18 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public Fields getTermVectors(int docID) throws IOException {
     return in.getTermVectors(docID);
+  }
+
+  @Override
+  public TermVectors termVectors() throws IOException {
+    ensureOpen();
+    return in.termVectors();
+  }
+
+  @Override
+  public StoredFields storedFields() throws IOException {
+    ensureOpen();
+    return in.storedFields();
   }
 
   @Override
@@ -272,19 +356,31 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   @Override
   public PointValues getPointValues(String field) {
     ensureOpen();
-    return null; // because not supported.  Throw UOE?
+    throw new UnsupportedOperationException();
   }
 
   @Override
-  public VectorValues getVectorValues(String field) {
+  public FloatVectorValues getFloatVectorValues(String field) {
     ensureOpen();
-    return VectorValues.EMPTY;
+    throw new UnsupportedOperationException();
   }
 
   @Override
-  public TopDocs searchNearestVectors(
-      String field, float[] target, int k, Bits acceptDocs, int visitedLimit) throws IOException {
-    return null;
+  public ByteVectorValues getByteVectorValues(String field) {
+    ensureOpen();
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void searchNearestVectors(
+      String field, float[] target, KnnCollector knnCollector, Bits acceptDocs) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void searchNearestVectors(
+      String field, byte[] target, KnnCollector knnCollector, Bits acceptDocs) throws IOException {
+    throw new UnsupportedOperationException();
   }
 
   @Override

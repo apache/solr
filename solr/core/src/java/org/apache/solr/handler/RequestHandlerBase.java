@@ -21,13 +21,15 @@ import static org.apache.solr.core.RequestParams.USEPARAM;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
-import com.google.common.collect.ImmutableList;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Optional;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -35,15 +37,20 @@ import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.ThreadCpuTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +67,7 @@ public abstract class RequestHandlerBase
   protected SolrParams appends;
   protected SolrParams invariants;
   protected boolean httpCaching = true;
+  protected boolean aggregateNodeLevelMetricsEnabled = false;
 
   protected SolrMetricsContext solrMetricsContext;
   protected HandlerMetrics metrics = HandlerMetrics.NO_OP;
@@ -68,6 +76,8 @@ public abstract class RequestHandlerBase
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private PluginInfo pluginInfo;
+
+  protected boolean publishCpuTime = Boolean.getBoolean(ThreadCpuTimer.ENABLE_CPU_TIME);
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
   public RequestHandlerBase() {
@@ -131,6 +141,11 @@ public abstract class RequestHandlerBase
     if (initArgs != null) {
       Object caching = initArgs.get("httpCaching");
       httpCaching = caching != null ? Boolean.parseBoolean(caching.toString()) : true;
+      Boolean aggregateNodeLevelMetricsEnabled =
+          initArgs.getBooleanArg("aggregateNodeLevelMetricsEnabled");
+      if (aggregateNodeLevelMetricsEnabled != null) {
+        this.aggregateNodeLevelMetricsEnabled = aggregateNodeLevelMetricsEnabled;
+      }
     }
   }
 
@@ -141,7 +156,16 @@ public abstract class RequestHandlerBase
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    this.solrMetricsContext = parentContext.getChildContext(this);
+    if (aggregateNodeLevelMetricsEnabled) {
+      this.solrMetricsContext =
+          new SolrDelegateRegistryMetricsContext(
+              parentContext.getMetricManager(),
+              parentContext.getRegistryName(),
+              SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
+              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+    } else {
+      this.solrMetricsContext = parentContext.getChildContext(this);
+    }
     metrics = new HandlerMetrics(solrMetricsContext, getCategory().toString(), scope);
     solrMetricsContext.gauge(
         () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
@@ -157,13 +181,13 @@ public abstract class RequestHandlerBase
                 "NO_OP",
                 "NO_OP"));
 
-    private final Meter numErrors;
-    private final Meter numServerErrors;
-    private final Meter numClientErrors;
-    private final Meter numTimeouts;
-    private final Counter requests;
-    private final Timer requestTimes;
-    private final Counter totalTime;
+    public final Meter numErrors;
+    public final Meter numServerErrors;
+    public final Meter numClientErrors;
+    public final Meter numTimeouts;
+    public final Counter requests;
+    public final Timer requestTimes;
+    public final Counter totalTime;
 
     public HandlerMetrics(SolrMetricsContext solrMetricsContext, String... metricPath) {
       numErrors = solrMetricsContext.meter("errors", metricPath);
@@ -193,6 +217,13 @@ public abstract class RequestHandlerBase
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
+    ThreadCpuTimer threadCpuTimer = null;
+    if (publishCpuTime) {
+      threadCpuTimer =
+          SolrRequestInfo.getRequestInfo() == null
+              ? new ThreadCpuTimer()
+              : SolrRequestInfo.getRequestInfo().getThreadCpuTimer();
+    }
     HandlerMetrics metrics = getMetricsForThisRequest(req);
     metrics.requests.inc();
 
@@ -206,63 +237,72 @@ public abstract class RequestHandlerBase
       rsp.setHttpCaching(httpCaching);
       handleRequestBody(req, rsp);
       // count timeouts
-      NamedList<?> header = rsp.getResponseHeader();
-      if (header != null) {
-        if (Boolean.TRUE.equals(
-            header.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-          metrics.numTimeouts.mark();
-          rsp.setHttpCaching(false);
-        }
+      if (rsp.isPartialResults()) {
+        metrics.numTimeouts.mark();
+        rsp.setHttpCaching(false);
       }
     } catch (Exception e) {
-      if (req.getCore() != null) {
-        boolean isTragic = req.getCoreContainer().checkTragicException(req.getCore());
-        if (isTragic) {
-          if (e instanceof SolrException) {
-            // Tragic exceptions should always throw a server error
-            assert ((SolrException) e).code() == 500;
-          } else {
-            // wrap it in a solr exception
-            e = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
-          }
-        }
-      }
-      boolean incrementErrors = true;
-      boolean isServerError = true;
-      if (e instanceof SolrException) {
-        SolrException se = (SolrException) e;
-        if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
-          incrementErrors = false;
-        } else if (se.code() >= 400 && se.code() < 500) {
-          isServerError = false;
-        }
-      } else {
-        if (e instanceof SyntaxError) {
-          isServerError = false;
-          e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-        }
-      }
-
-      rsp.setException(e);
-
-      if (incrementErrors) {
-        SolrException.log(log, e);
-
-        metrics.numErrors.mark();
-        if (isServerError) {
-          metrics.numServerErrors.mark();
-        } else {
-          metrics.numClientErrors.mark();
-        }
-      }
+      Exception normalized = normalizeReceivedException(req, e);
+      processErrorMetricsOnException(normalized, metrics);
+      rsp.setException(normalized);
     } finally {
       long elapsed = timer.stop();
       metrics.totalTime.inc(elapsed);
+
+      if (publishCpuTime && threadCpuTimer != null) {
+        Optional<Long> cpuTime = threadCpuTimer.getElapsedCpuMs();
+        if (cpuTime.isPresent()) {
+          // add CPU_TIME if not already added by SearchHandler
+          NamedList<Object> header = rsp.getResponseHeader();
+          if (header != null) {
+            if (header.get(ThreadCpuTimer.CPU_TIME) == null) {
+              header.add(ThreadCpuTimer.CPU_TIME, cpuTime.get());
+            }
+          }
+          rsp.addToLog(ThreadCpuTimer.LOCAL_CPU_TIME, cpuTime.get());
+        }
+      }
     }
   }
 
+  public static void processErrorMetricsOnException(Exception e, HandlerMetrics metrics) {
+    boolean isClientError = false;
+    if (e instanceof SolrException) {
+      final SolrException se = (SolrException) e;
+      if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
+        return;
+      } else if (se.code() >= 400 && se.code() < 500) {
+        isClientError = true;
+      }
+    }
+
+    metrics.numErrors.mark();
+    if (isClientError) {
+      log.error("Client exception", e);
+      metrics.numClientErrors.mark();
+    } else {
+      log.error("Server exception", e);
+      metrics.numServerErrors.mark();
+    }
+  }
+
+  public static Exception normalizeReceivedException(SolrQueryRequest req, Exception e) {
+    if (req.getCore() != null) {
+      assert req.getCoreContainer() != null;
+      if (req.getCoreContainer().checkTragicException(req.getCore())) {
+        return SolrException.wrapLuceneTragicExceptionIfNecessary(e);
+      }
+    }
+
+    if (e instanceof SyntaxError) {
+      return new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+
+    return e;
+  }
+
   /** The metrics to be used for this request. */
-  protected HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
+  public HandlerMetrics getMetricsForThisRequest(SolrQueryRequest req) {
     return this.metrics;
   }
 
@@ -324,6 +364,19 @@ public abstract class RequestHandlerBase
 
   @Override
   public Collection<Api> getApis() {
-    return ImmutableList.of(new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
+    return Collections.singleton(
+        new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
+  }
+
+  /**
+   * Checks whether the given request is an internal request to a shard. We rely on the fact that an
+   * internal search request to a shard contains the param "isShard", and an internal update request
+   * to a shard contains the param "distrib.from".
+   *
+   * @return true if request is internal
+   */
+  public static boolean isInternalShardRequest(SolrQueryRequest req) {
+    return req.getParams().get(DistributedUpdateProcessor.DISTRIB_FROM) != null
+        || "true".equals(req.getParams().get(ShardParams.IS_SHARD));
   }
 }

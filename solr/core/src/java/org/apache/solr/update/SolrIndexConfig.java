@@ -70,6 +70,7 @@ public class SolrIndexConfig implements MapSerializable {
 
   public final double ramBufferSizeMB;
   public final int ramPerThreadHardLimitMB;
+
   /**
    * When using a custom merge policy that allows triggering synchronous merges on commit (see
    * {@link MergePolicy#findFullFlushMerges(org.apache.lucene.index.MergeTrigger,
@@ -120,6 +121,7 @@ public class SolrIndexConfig implements MapSerializable {
   public SolrIndexConfig(SolrConfig cfg, SolrIndexConfig def) {
     this(cfg.get("indexConfig"), def);
   }
+
   /**
    * Constructs a SolrIndexConfig which parses the Lucene related config params in solrconfig.xml
    *

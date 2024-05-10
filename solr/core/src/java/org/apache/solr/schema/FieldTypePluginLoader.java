@@ -239,7 +239,7 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
 
     final ArrayList<CharFilterFactory> charFilters = new ArrayList<>();
     AbstractPluginLoader<CharFilterFactory> charFilterLoader =
-        new AbstractPluginLoader<CharFilterFactory>(
+        new AbstractPluginLoader<>(
             "[schema.xml] analyzer/charFilter", CharFilterFactory.class, false, false) {
 
           @Override
@@ -303,7 +303,7 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
 
     final ArrayList<TokenizerFactory> tokenizers = new ArrayList<>(1);
     AbstractPluginLoader<TokenizerFactory> tokenizerLoader =
-        new AbstractPluginLoader<TokenizerFactory>(
+        new AbstractPluginLoader<>(
             "[schema.xml] analyzer/tokenizer", TokenizerFactory.class, false, false) {
 
           @Override
@@ -375,7 +375,7 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
     final ArrayList<TokenFilterFactory> filters = new ArrayList<>();
 
     AbstractPluginLoader<TokenFilterFactory> filterLoader =
-        new AbstractPluginLoader<TokenFilterFactory>(
+        new AbstractPluginLoader<>(
             "[schema.xml] analyzer/filter", TokenFilterFactory.class, false, false) {
           @Override
           protected TokenFilterFactory create(
@@ -433,9 +433,9 @@ public final class FieldTypePluginLoader extends AbstractPluginLoader<FieldType>
     filterLoader.load(loader, tokenFilterNodes);
 
     return new TokenizerChain(
-        charFilters.toArray(new CharFilterFactory[charFilters.size()]),
+        charFilters.toArray(new CharFilterFactory[0]),
         tokenizers.get(0),
-        filters.toArray(new TokenFilterFactory[filters.size()]));
+        filters.toArray(new TokenFilterFactory[0]));
   }
 
   private Version parseConfiguredVersion(String configuredVersion, String pluginClassName) {

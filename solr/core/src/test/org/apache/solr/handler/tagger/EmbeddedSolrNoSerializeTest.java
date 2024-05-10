@@ -60,10 +60,11 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void cleanUpAfterClass() throws Exception {
+  public static void cleanUpAfterClass() {
     solrServer = null;
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();

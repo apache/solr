@@ -35,19 +35,19 @@ public class TestMissingGroups extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() {
     clearIndex();
     assertU(optimize());
   }
 
-  public void testGroupsOnMissingValues() throws Exception {
+  public void testGroupsOnMissingValues() {
 
     final int numDocs = atLeast(500);
 
     // setup some key values for some random docs in our index
     // every other doc will have no values for these fields
     // NOTE: special values may be randomly assigned to the *same* docs
-    final List<SpecialField> specials = new ArrayList<SpecialField>(7);
+    final List<SpecialField> specials = new ArrayList<>(7);
     specials.add(new SpecialField(numDocs, "group_s1", "xxx", "yyy"));
     specials.add(new SpecialField(numDocs, "group_ti", "42", "24"));
     specials.add(new SpecialField(numDocs, "group_td", "34.56", "12.78"));

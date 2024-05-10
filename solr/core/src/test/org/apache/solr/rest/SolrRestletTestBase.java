@@ -46,6 +46,9 @@ public abstract class SolrRestletTestBase extends RestTestBase {
     System.setProperty("coreRootDirectory", coresDir.toString());
     System.setProperty("configSetBaseDir", TEST_HOME());
 
+    System.setProperty("solr.test.sys.prop1", "propone");
+    System.setProperty("solr.test.sys.prop2", "proptwo");
+
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     Properties props = new Properties();

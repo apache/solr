@@ -64,11 +64,6 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml");
   }
 
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-
   @AfterClass
   public static void azt_afterClass() throws Exception {
 
@@ -89,9 +84,5 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
       }
       zkDir = null;
     }
-  }
-
-  protected void printLayout() throws Exception {
-    zkServer.printLayout();
   }
 }

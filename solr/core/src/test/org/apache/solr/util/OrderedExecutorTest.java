@@ -62,7 +62,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       final BlockingQueue<String> events = new ArrayBlockingQueue<>(2);
       final Integer lockId = 1;
 
-      // AAA enters executor first so it should execute first (even though it's waiting on latch)
+      // AAA enters executor first, so it should execute first (even though it's waiting on latch)
       final CountDownLatch latchAAA = new CountDownLatch(1);
       orderedExecutor.execute(
           lockId,
@@ -78,7 +78,7 @@ public class OrderedExecutorTest extends SolrTestCase {
               Thread.currentThread().interrupt();
             }
           });
-      // BBB doesn't care about the latch, but because it uses the same lockId, it's blocked on AAA
+      // BBB doesn't care about the latch, but because it uses the same lockId, it's blocked on AAA,
       // so we execute it in a background thread...
       controlExecutor.execute(
           () -> {
@@ -89,7 +89,7 @@ public class OrderedExecutorTest extends SolrTestCase {
                 });
           });
 
-      // now if we release the latchAAA, AAA should be garunteed to fire first, then BBB
+      // now if we release the latchAAA, AAA should be guaranteed to fire first, then BBB
       latchAAA.countDown();
       try {
         assertEquals("AAA", events.poll(120, TimeUnit.SECONDS));
@@ -97,7 +97,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       } catch (InterruptedException e) {
         log.error("Interrupt polling event queue", e);
         Thread.currentThread().interrupt();
-        fail("interupt while trying to poll event queue");
+        fail("interrupt while trying to poll event queue");
       }
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(controlExecutor);
@@ -117,7 +117,7 @@ public class OrderedExecutorTest extends SolrTestCase {
 
     try {
       // distinct lockIds should be able to be used in parallel, up to the size of the executor,
-      // w/o any execute calls blocking... until the test Runables being executed are all
+      // w/o any execute calls blocking... until the test Runnables being executed are all
       // waiting on the same cyclic barrier...
       final CyclicBarrier barrier = new CyclicBarrier(parallelism + 1);
       final CountDownLatch preBarrierLatch = new CountDownLatch(parallelism);
@@ -160,9 +160,9 @@ public class OrderedExecutorTest extends SolrTestCase {
         assertTrue(
             "Timeout awaiting pre barrier latch", preBarrierLatch.await(120, TimeUnit.SECONDS));
       } catch (InterruptedException e) {
-        log.error("Interrupt awwaiting pre barrier latch", e);
+        log.error("Interrupt awaiting pre barrier latch", e);
         Thread.currentThread().interrupt();
-        fail("interupt while trying to await the preBarrierLatch");
+        fail("interrupt while trying to await the preBarrierLatch");
       }
 
       if (log.isInfoEnabled()) {
@@ -176,7 +176,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       assertEquals(parallelism, postBarrierLatch.getCount());
 
       try {
-        // if we now await on the the barrier, it should release
+        // if we now await on the barrier, it should release
         // (once all other threads get to the barrier as well, but no external action needed)
         barrier.await(120, TimeUnit.SECONDS);
 
@@ -197,9 +197,9 @@ public class OrderedExecutorTest extends SolrTestCase {
         log.error("Broken Barrier in main test thread", b);
         fail("broken barrier while trying to release the barrier");
       } catch (InterruptedException e) {
-        log.error("Interrupt awwaiting barrier / post barrier latch", e);
+        log.error("Interrupt awaiting barrier / post barrier latch", e);
         Thread.currentThread().interrupt();
-        fail("interupt while trying to release the barrier and await the postBarrierLatch");
+        fail("interrupt while trying to release the barrier and await the postBarrierLatch");
       }
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(controlExecutor);
@@ -224,7 +224,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       orderedExecutor.execute(key, () -> run.put(key, run.get(key) + 1));
     }
     orderedExecutor.shutdownAndAwaitTermination();
-    assertTrue(base.equals(run));
+    assertEquals(base, run);
   }
 
   private static class IntBox {
@@ -242,12 +242,13 @@ public class OrderedExecutorTest extends SolrTestCase {
     try {
       orderedExecutor.execute(
           () -> {
-            // This will aquire and hold the single max size semaphore permit
+            // This will acquire and hold the single max size semaphore permit
             try {
               isRunning.countDown();
               blockingLatch.await();
             } catch (InterruptedException e) {
-              e.printStackTrace();
+              Thread.currentThread().interrupt();
+              log.error("interrupted", e);
             }
           });
 

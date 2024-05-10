@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.LongAdder;
@@ -51,6 +50,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrDelegateRegistryMetricsContext;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -103,6 +105,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
   protected final CommitTracker softCommitTracker;
 
   protected boolean commitWithinSoftCommit;
+
   /**
    * package access for testing
    *
@@ -197,7 +200,16 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    if (core.getSolrConfig().getUpdateHandlerInfo().aggregateNodeLevelMetricsEnabled) {
+      this.solrMetricsContext =
+          new SolrDelegateRegistryMetricsContext(
+              parentContext.getMetricManager(),
+              parentContext.getRegistryName(),
+              SolrMetricProducer.getUniqueMetricTag(this, parentContext.getTag()),
+              SolrMetricManager.getRegistryName(SolrInfoBean.Group.node));
+    } else {
+      this.solrMetricsContext = parentContext.getChildContext(this);
+    }
     commitCommands = solrMetricsContext.meter("commits", getCategory().toString(), scope);
     solrMetricsContext.gauge(
         () -> commitTracker.getCommitCount(), true, "autoCommits", getCategory().toString(), scope);
@@ -301,33 +313,27 @@ public class DirectUpdateHandler2 extends UpdateHandler
     } catch (SolrException e) {
       throw e;
     } catch (AlreadyClosedException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          String.format(
-              Locale.ROOT,
-              "Server error writing document id %s to the index",
-              cmd.getPrintableId()),
-          e);
+      String errorMsg =
+          "Server error writing document id " + cmd.getPrintableId() + " to the index.";
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, errorMsg, e);
     } catch (IllegalArgumentException iae) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          String.format(
-              Locale.ROOT,
-              "Exception writing document id %s to the index; possible analysis error: "
-                  + iae.getMessage()
-                  + (iae.getCause() instanceof BytesRefHash.MaxBytesLengthExceededException
-                      ? ". Perhaps the document has an indexed string field (solr.StrField) which is too large"
-                      : ""),
-              cmd.getPrintableId()),
-          iae);
+      String errorDetails =
+          (iae.getCause() instanceof BytesRefHash.MaxBytesLengthExceededException
+              ? ". Perhaps the document has an indexed string field (solr.StrField) which is too large"
+              : "");
+      String errorMsg =
+          "Exception writing document id "
+              + cmd.getPrintableId()
+              + " to the index; possible analysis error: "
+              + iae.getMessage()
+              + errorDetails;
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errorMsg, iae);
     } catch (RuntimeException t) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          String.format(
-              Locale.ROOT,
-              "Exception writing document id %s to the index; possible analysis error.",
-              cmd.getPrintableId()),
-          t);
+      String errorMsg =
+          "Exception writing document id "
+              + cmd.getPrintableId()
+              + " to the index; possible analysis error.";
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errorMsg, t);
     }
   }
 
@@ -373,13 +379,12 @@ public class DirectUpdateHandler2 extends UpdateHandler
       }
 
       if ((cmd.getFlags() & UpdateCommand.IGNORE_AUTOCOMMIT) == 0) {
-        long currentTlogSize = getCurrentTLogSize();
         if (commitWithinSoftCommit) {
-          commitTracker.addedDocument(-1, currentTlogSize);
+          commitTracker.addedDocument(-1, this::getCurrentTLogSize);
           softCommitTracker.addedDocument(cmd.commitWithin);
         } else {
           softCommitTracker.addedDocument(-1);
-          commitTracker.addedDocument(cmd.commitWithin, currentTlogSize);
+          commitTracker.addedDocument(cmd.commitWithin, this::getCurrentTLogSize);
         }
       }
 
@@ -478,8 +483,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
         commitTracker.scheduleCommitWithin(commitTracker.getTimeUpperBound());
       }
 
-      long currentTlogSize = getCurrentTLogSize();
-      commitTracker.scheduleMaxSizeTriggeredCommitIfNeeded(currentTlogSize);
+      commitTracker.scheduleMaxSizeTriggeredCommitIfNeeded(this::getCurrentTLogSize);
 
       if (softCommitTracker.getTimeUpperBound() > 0) {
         softCommitTracker.scheduleCommitWithin(softCommitTracker.getTimeUpperBound());
@@ -640,7 +644,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       }
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
-        iw.get().addIndexes(mergeReaders.toArray(new CodecReader[mergeReaders.size()]));
+        iw.get().addIndexes(mergeReaders.toArray(new CodecReader[0]));
       } finally {
         iw.decref();
       }
@@ -744,7 +748,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
           // SolrCore.verbose("writer.commit() start writer=",writer);
 
-          if (writer.hasUncommittedChanges()) {
+          if (shouldCommit(cmd, writer)) {
             SolrIndexWriter.setCommitData(writer, cmd.getVersion(), cmd.commitData);
             writer.commit();
           } else {
@@ -819,9 +823,18 @@ public class DirectUpdateHandler2 extends UpdateHandler
       try {
         waitSearcher[0].get();
       } catch (InterruptedException | ExecutionException e) {
-        SolrException.log(log, e);
+        log.error("Exception waiting for searcher", e);
       }
     }
+  }
+
+  /**
+   * Determines whether the commit command should effectively trigger a commit on the index writer.
+   * This method is called with the commit lock and is the last step before effectively calling
+   * {@link IndexWriter#commit()}.
+   */
+  protected boolean shouldCommit(CommitUpdateCommand cmd, IndexWriter writer) throws IOException {
+    return writer.hasUncommittedChanges() || (cmd.commitData != null && !cmd.commitData.isEmpty());
   }
 
   @Override
@@ -1036,7 +1049,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
       // skips uniqueKey and _root_
       List<IndexableField> fields = cmd.makeLuceneDocForInPlaceUpdate().getFields();
       log.debug("updateDocValues({})", cmd);
-      writer.updateDocValues(updateTerm, fields.toArray(new Field[fields.size()]));
+      writer.updateDocValues(updateTerm, fields.toArray(new Field[0]));
 
     } else { // more normal path
 

@@ -18,22 +18,27 @@ package org.apache.solr.update.processor;
 
 import static org.hamcrest.core.StringContains.containsString;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.DateMathParser;
-import org.hamcrest.MatcherAssert;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class AtomicUpdatesTest extends SolrTestCaseJ4 {
+
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -48,7 +53,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemove() throws Exception {
+  public void testRemove() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -79,11 +84,10 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1");
-    List<String> removeList = new ArrayList<String>();
+    List<String> removeList = new ArrayList<>();
     removeList.add("bbb");
     removeList.add("ccc");
-    doc.setField(
-        "cat", ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+    doc.setField("cat", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -95,11 +99,10 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "21");
-    removeList = new ArrayList<String>();
+    removeList = new ArrayList<>();
     removeList.add("bbb");
     removeList.add("ccc");
-    doc.setField(
-        "cat", ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+    doc.setField("cat", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -108,7 +111,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1");
-    doc.setField("cat", ImmutableMap.of("remove", "aaa")); // behavior when hitting Solr directly
+    doc.setField("cat", Map.of("remove", "aaa")); // behavior when hitting Solr directly
 
     assertU(adoc(doc));
     assertU(commit());
@@ -118,7 +121,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveInteger() throws Exception {
+  public void testRemoveInteger() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -150,12 +153,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    List<Long> removeList = new ArrayList<Long>();
+    List<Long> removeList = new ArrayList<>();
     removeList.add(222L);
     removeList.add(333L);
     doc.setField(
-        "intRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "intRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -167,12 +169,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
-    removeList = new ArrayList<Long>();
+    removeList = new ArrayList<>();
     removeList.add(222L);
     removeList.add(333L);
     doc.setField(
-        "intRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "intRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -181,8 +182,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    doc.setField(
-        "intRemove", ImmutableMap.of("remove", 111)); // behavior when hitting Solr directly
+    doc.setField("intRemove", Map.of("remove", 111)); // behavior when hitting Solr directly
 
     assertU(adoc(doc));
     assertU(commit());
@@ -199,7 +199,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "4242");
-    doc.setField("values_is", ImmutableMap.of("remove", 111));
+    doc.setField("values_is", Map.of("remove", 111));
     assertU(adoc(doc));
     assertU(commit());
 
@@ -209,7 +209,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveIntegerInDocSavedWithInteger() throws Exception {
+  public void testRemoveIntegerInDocSavedWithInteger() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -241,12 +241,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    List<Long> removeList = new ArrayList<Long>();
+    List<Long> removeList = new ArrayList<>();
     removeList.add(222L);
     removeList.add(333L);
     doc.setField(
-        "intRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "intRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -258,12 +257,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
-    removeList = new ArrayList<Long>();
+    removeList = new ArrayList<>();
     removeList.add(222L);
     removeList.add(333L);
     doc.setField(
-        "intRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "intRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -272,8 +270,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    doc.setField(
-        "intRemove", ImmutableMap.of("remove", 111)); // behavior when hitting Solr directly
+    doc.setField("intRemove", Map.of("remove", 111)); // behavior when hitting Solr directly
 
     assertU(adoc(doc));
     assertU(commit());
@@ -290,7 +287,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "4242");
-    doc.setField("values_is", ImmutableMap.of("remove", 111));
+    doc.setField("values_is", Map.of("remove", 111));
     assertU(adoc(doc));
     assertU(commit());
 
@@ -300,7 +297,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveIntegerUsingStringType() throws Exception {
+  public void testRemoveIntegerUsingStringType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -330,12 +327,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    List<String> removeList = new ArrayList<String>();
+    List<String> removeList = new ArrayList<>();
     removeList.add("222");
     removeList.add("333");
     doc.setField(
-        "intRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "intRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -347,12 +343,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
-    removeList = new ArrayList<String>();
+    removeList = new ArrayList<>();
     removeList.add("222");
     removeList.add("333");
     doc.setField(
-        "intRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "intRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -361,8 +356,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    doc.setField(
-        "intRemove", ImmutableMap.of("remove", "111")); // behavior when hitting Solr directly
+    doc.setField("intRemove", Map.of("remove", "111")); // behavior when hitting Solr directly
 
     assertU(adoc(doc));
     assertU(commit());
@@ -372,7 +366,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveIntegerUsingLongType() throws Exception {
+  public void testRemoveIntegerUsingLongType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -403,12 +397,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    List<Long> removeList = new ArrayList<Long>();
+    List<Long> removeList = new ArrayList<>();
     removeList.add(222L);
     removeList.add(333L);
     doc.setField(
-        "intRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "intRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -420,12 +413,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
-    removeList = new ArrayList<Long>();
+    removeList = new ArrayList<>();
     removeList.add(222L);
     removeList.add(333L);
     doc.setField(
-        "intRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "intRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -434,8 +426,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    doc.setField(
-        "intRemove", ImmutableMap.of("remove", 111L)); // behavior when hitting Solr directly
+    doc.setField("intRemove", Map.of("remove", 111L)); // behavior when hitting Solr directly
 
     assertU(adoc(doc));
     assertU(commit());
@@ -445,7 +436,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveIntegerUsingFloatType() throws Exception {
+  public void testRemoveIntegerUsingFloatType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -495,12 +486,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    List<Float> removeList = new ArrayList<Float>();
+    List<Float> removeList = new ArrayList<>();
     removeList.add(222.20F);
     removeList.add(333.30F);
     doc.setField(
-        "intRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "intRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -512,12 +502,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
-    removeList = new ArrayList<Float>();
+    removeList = new ArrayList<>();
     removeList.add(222.20F);
     removeList.add(333.30F);
     doc.setField(
-        "intRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "intRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -526,8 +515,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    doc.setField(
-        "intRemove", ImmutableMap.of("remove", 111L)); // behavior when hitting Solr directly
+    doc.setField("intRemove", Map.of("remove", 111L)); // behavior when hitting Solr directly
 
     assertU(adoc(doc));
     assertU(commit());
@@ -537,7 +525,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveIntegerUsingDoubleType() throws Exception {
+  public void testRemoveIntegerUsingDoubleType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -570,12 +558,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    List<Double> removeList = new ArrayList<Double>();
+    List<Double> removeList = new ArrayList<>();
     removeList.add(22222222D);
     removeList.add(33333333D);
     doc.setField(
-        "intRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "intRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -587,12 +574,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
-    removeList = new ArrayList<Double>();
+    removeList = new ArrayList<>();
     removeList.add(22222222D);
     removeList.add(33333333D);
     doc.setField(
-        "intRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "intRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -601,8 +587,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
-    doc.setField(
-        "intRemove", ImmutableMap.of("remove", 11111111D)); // behavior when hitting Solr directly
+    doc.setField("intRemove", Map.of("remove", 11111111D)); // behavior when hitting Solr directly
 
     assertU(adoc(doc));
     assertU(commit());
@@ -612,7 +597,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveDateUsingStringType() throws Exception {
+  public void testRemoveDateUsingStringType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -673,13 +658,12 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    List<String> removeList = new ArrayList<String>();
+    List<String> removeList = new ArrayList<>();
     removeList.add("2014-09-02T12:00:00Z");
     removeList.add("2014-09-03T12:00:00Z");
 
     doc.setField(
-        "dateRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "dateRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -694,12 +678,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
-    removeList = new ArrayList<String>();
+    removeList = new ArrayList<>();
     removeList.add("2014-09-02T12:00:00Z");
     removeList.add("2014-09-03T12:00:00Z");
     doc.setField(
-        "dateRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "dateRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -716,7 +699,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc.setField("id", "10001");
     doc.setField(
         "dateRemove",
-        ImmutableMap.of("remove", "2014-09-01T12:00:00Z")); // behavior when hitting Solr directly
+        Map.of("remove", "2014-09-01T12:00:00Z")); // behavior when hitting Solr directly
 
     assertU(adoc(doc));
     assertU(commit());
@@ -733,7 +716,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
   @Ignore("Remove Date is not supported in other formats than UTC")
   @Test
-  public void testRemoveDateUsingDateType() throws Exception {
+  public void testRemoveDateUsingDateType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -801,13 +784,12 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    List<Date> removeList = new ArrayList<Date>();
+    List<Date> removeList = new ArrayList<>();
     removeList.add(DateMathParser.parseMath(null, "2014-09-02T12:00:00Z"));
     removeList.add(DateMathParser.parseMath(null, "2014-09-03T12:00:00Z"));
 
     doc.setField(
-        "dateRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "dateRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -821,12 +803,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
-    removeList = new ArrayList<Date>();
+    removeList = new ArrayList<>();
     removeList.add(DateMathParser.parseMath(null, "2014-09-02T12:00:00Z"));
     removeList.add(DateMathParser.parseMath(null, "2014-09-03T12:00:00Z"));
     doc.setField(
-        "dateRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "dateRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -839,7 +820,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc.setField("id", "10001");
     doc.setField(
         "dateRemove",
-        ImmutableMap.of(
+        Map.of(
             "remove",
             DateMathParser.parseMath(
                 null, "2014-09-01T12:00:00Z"))); // behavior when hitting Solr directly
@@ -854,7 +835,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveFloatUsingFloatType() throws Exception {
+  public void testRemoveFloatUsingFloatType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -885,13 +866,12 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    List<Float> removeList = new ArrayList<Float>();
+    List<Float> removeList = new ArrayList<>();
     removeList.add(222.222F);
     removeList.add(333.333F);
 
     doc.setField(
-        "floatRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "floatRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -900,12 +880,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
-    removeList = new ArrayList<Float>();
+    removeList = new ArrayList<>();
     removeList.add(222.222F);
     removeList.add(333.333F);
     doc.setField(
-        "floatRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "floatRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -914,8 +893,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    doc.setField(
-        "floatRemove", ImmutableMap.of("remove", "111.111")); // behavior when hitting Solr directly
+    doc.setField("floatRemove", Map.of("remove", "111.111")); // behavior when hitting Solr directly
 
     assertU(adoc(doc));
     assertU(commit());
@@ -925,7 +903,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveFloatUsingStringType() throws Exception {
+  public void testRemoveFloatUsingStringType() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -959,13 +937,12 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    List<String> removeList = new ArrayList<String>();
+    List<String> removeList = new ArrayList<>();
     removeList.add("222.222");
     removeList.add("333.333");
 
     doc.setField(
-        "floatRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "floatRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -977,12 +954,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
-    removeList = new ArrayList<String>();
+    removeList = new ArrayList<>();
     removeList.add("222.222");
     removeList.add("333.333");
     doc.setField(
-        "floatRemove",
-        ImmutableMap.of("remove", removeList)); // behavior when hitting Solr through ZK
+        "floatRemove", Map.of("remove", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -991,8 +967,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
-    doc.setField(
-        "floatRemove", ImmutableMap.of("remove", "111.111")); // behavior when hitting Solr directly
+    doc.setField("floatRemove", Map.of("remove", "111.111")); // behavior when hitting Solr directly
 
     assertU(adoc(doc));
     assertU(commit());
@@ -1002,7 +977,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveregex() throws Exception {
+  public void testRemoveregex() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -1036,8 +1011,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     List<String> removeList = new ArrayList<>();
     removeList.add(".b.");
     removeList.add("c+c");
-    doc.setField(
-        "cat", ImmutableMap.of("removeregex", removeList)); // behavior when hitting Solr through ZK
+    doc.setField("cat", Map.of("removeregex", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -1052,8 +1026,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     removeList = new ArrayList<>();
     removeList.add("bb*");
     removeList.add("cc+");
-    doc.setField(
-        "cat", ImmutableMap.of("removeregex", removeList)); // behavior when hitting Solr through ZK
+    doc.setField("cat", Map.of("removeregex", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -1062,8 +1035,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "1");
-    doc.setField(
-        "cat", ImmutableMap.of("removeregex", "a.a")); // behavior when hitting Solr directly
+    doc.setField("cat", Map.of("removeregex", "a.a")); // behavior when hitting Solr directly
 
     assertU(adoc(doc));
     assertU(commit());
@@ -1073,7 +1045,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoveregexMustMatchWholeValue() throws Exception {
+  public void testRemoveregexMustMatchWholeValue() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -1089,8 +1061,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc.setField("id", "1");
     List<String> removeList = new ArrayList<>();
     removeList.add("bb");
-    doc.setField(
-        "cat", ImmutableMap.of("removeregex", removeList)); // behavior when hitting Solr through ZK
+    doc.setField("cat", Map.of("removeregex", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -1103,8 +1074,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     doc.setField("id", "1");
     removeList = new ArrayList<>();
     removeList.add("bbb");
-    doc.setField(
-        "cat", ImmutableMap.of("removeregex", removeList)); // behavior when hitting Solr through ZK
+    doc.setField("cat", Map.of("removeregex", removeList)); // behavior when hitting Solr through ZK
     assertU(adoc(doc));
     assertU(commit());
 
@@ -1115,7 +1085,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAdd() throws Exception {
+  public void testAdd() {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "3");
     doc.setField("cat", new String[] {"aaa", "ccc"});
@@ -1137,7 +1107,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "3");
-    doc.setField("cat", ImmutableMap.of("add", "bbb"));
+    doc.setField("cat", Map.of("add", "bbb"));
     assertU(adoc(doc));
     assertU(commit());
 
@@ -1146,7 +1116,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAddDistinct() throws Exception {
+  public void testAddDistinct() {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "3");
     doc.setField("cat", new String[] {"aaa", "ccc"});
@@ -1165,8 +1135,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "3");
-    doc.setField("cat", ImmutableMap.of("add-distinct", "bbb"));
-    doc.setField("atomic_is", ImmutableMap.of("add-distinct", 10));
+    doc.setField("cat", Map.of("add-distinct", "bbb"));
+    doc.setField("atomic_is", Map.of("add-distinct", 10));
     assertU(adoc(doc));
     assertU(commit());
 
@@ -1179,8 +1149,8 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "3");
-    doc.setField("cat", ImmutableMap.of("add-distinct", Arrays.asList("bbb", "bbb")));
-    doc.setField("atomic_is", ImmutableMap.of("add-distinct", Arrays.asList(10, 34)));
+    doc.setField("cat", Map.of("add-distinct", Arrays.asList("bbb", "bbb")));
+    doc.setField("atomic_is", Map.of("add-distinct", Arrays.asList(10, 34)));
     assertU(adoc(doc));
     assertU(commit());
 
@@ -1193,7 +1163,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "5");
-    doc.setField("cat", ImmutableMap.of("add-distinct", "bbb"));
+    doc.setField("cat", Map.of("add-distinct", "bbb"));
     assertU(adoc(doc));
     assertU(commit());
 
@@ -1204,7 +1174,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testAddMultiple() throws Exception {
+  public void testAddMultiple() {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "3");
     doc.setField("cat", new String[] {"aaa", "ccc"});
@@ -1216,7 +1186,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "3");
-    doc.setField("cat", ImmutableMap.of("add", "bbb"));
+    doc.setField("cat", Map.of("add", "bbb"));
     assertU(adoc(doc));
     assertU(commit());
 
@@ -1225,7 +1195,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "3");
-    doc.setField("cat", ImmutableMap.of("add", "bbb"));
+    doc.setField("cat", Map.of("add", "bbb"));
     assertU(adoc(doc));
     assertU(commit());
 
@@ -1236,7 +1206,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "3");
-    doc.setField("cat", ImmutableMap.of("remove", "bbb"));
+    doc.setField("cat", Map.of("remove", "bbb"));
     assertU(adoc(doc));
     assertU(commit());
 
@@ -1247,7 +1217,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "3");
-    doc.setField("cat", ImmutableMap.of("remove", "bbb"));
+    doc.setField("cat", Map.of("remove", "bbb"));
     assertU(adoc(doc));
     assertU(commit());
 
@@ -1258,7 +1228,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSet() throws Exception {
+  public void testSet() {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
@@ -1280,7 +1250,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "5");
-    doc.setField("cat", ImmutableMap.of("set", "bbb"));
+    doc.setField("cat", Map.of("set", "bbb"));
     assertU(adoc(doc));
     assertU(commit());
 
@@ -1291,11 +1261,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     // update on id
     doc = new SolrInputDocument();
-    doc.setField("id", ImmutableMap.of("set", "1001"));
+    doc.setField("id", Map.of("set", "1001"));
     assertFailedU(adoc(doc));
   }
 
-  public void testAtomicUpdatesOnDateFields() throws Exception {
+  public void testAtomicUpdatesOnDateFields() {
     String[] dateFieldNames = {"simple_tdt1", "simple_tdts", "simple_tdtdv1", "simple_tdtdvs"};
 
     SolrInputDocument doc = new SolrInputDocument();
@@ -1316,40 +1286,35 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       // none (this can fail with Invalid Date String exception)
       doc = new SolrInputDocument();
       doc.setField("id", "6");
-      doc.setField(
-          "other_i", ImmutableMap.of("set", "43")); // set the independent field to another value
+      doc.setField("other_i", Map.of("set", "43")); // set the independent field to another value
       assertU(adoc(doc));
 
       if (dateFieldName.endsWith("s")) {
         // add
         doc = new SolrInputDocument();
         doc.setField("id", "6");
-        doc.setField(
-            "other_i", ImmutableMap.of("set", "43")); // set the independent field to another value
-        doc.setField(dateFieldName, ImmutableMap.of("add", "1987-01-01T00:00:00Z"));
+        doc.setField("other_i", Map.of("set", "43")); // set the independent field to another value
+        doc.setField(dateFieldName, Map.of("add", "1987-01-01T00:00:00Z"));
         assertU(adoc(doc));
 
         // remove
         doc = new SolrInputDocument();
         doc.setField("id", "6");
-        doc.setField(
-            "other_i", ImmutableMap.of("set", "43")); // set the independent field to another value
-        doc.setField(dateFieldName, ImmutableMap.of("remove", "1987-01-01T00:00:00Z"));
+        doc.setField("other_i", Map.of("set", "43")); // set the independent field to another value
+        doc.setField(dateFieldName, Map.of("remove", "1987-01-01T00:00:00Z"));
         assertU(adoc(doc));
       } else {
         // set
         doc = new SolrInputDocument();
         doc.setField("id", "6");
-        doc.setField(
-            "other_i", ImmutableMap.of("set", "43")); // set the independent field to another value
-        doc.setField(dateFieldName, ImmutableMap.of("set", "1987-01-01T00:00:00Z"));
+        doc.setField("other_i", Map.of("set", "43")); // set the independent field to another value
+        doc.setField(dateFieldName, Map.of("set", "1987-01-01T00:00:00Z"));
         assertU(adoc(doc));
 
         // unset
         doc = new SolrInputDocument();
         doc.setField("id", "6");
-        doc.setField(
-            "other_i", ImmutableMap.of("set", "43")); // set the independent field to another value
+        doc.setField("other_i", Map.of("set", "43")); // set the independent field to another value
         doc.setField(dateFieldName, map("set", null));
         assertU(adoc(doc));
       }
@@ -1372,24 +1337,10 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertU(
-        adoc(
-            sdoc(
-                "id",
-                2,
-                "title",
-                ImmutableMap.of("set", "newtitle2"),
-                "single_i_dvo",
-                ImmutableMap.of("inc", 1))));
+        adoc(sdoc("id", 2, "title", Map.of("set", "newtitle2"), "single_i_dvo", Map.of("inc", 1))));
     assertU(
-        adoc(
-            sdoc(
-                "id",
-                3,
-                "title",
-                ImmutableMap.of("set", "newtitle3"),
-                "single_d_dvo",
-                ImmutableMap.of("inc", 1))));
-    assertU(adoc(sdoc("id", 4, "single_i_dvo", ImmutableMap.of("inc", 1))));
+        adoc(sdoc("id", 3, "title", Map.of("set", "newtitle3"), "single_d_dvo", Map.of("inc", 1))));
+    assertU(adoc(sdoc("id", 4, "single_i_dvo", Map.of("inc", 1))));
     assertU(commit());
 
     assertJQ(
@@ -1413,7 +1364,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
         "/response/docs/[0]/single_i_dvo==2");
 
     // test that non stored docvalues was carried forward for a non-docvalue update
-    assertU(adoc(sdoc("id", 3, "title", ImmutableMap.of("set", "newertitle3"))));
+    assertU(adoc(sdoc("id", 3, "title", Map.of("set", "newertitle3"))));
     assertU(commit());
     assertJQ(
         req("q", "id:3"),
@@ -1438,7 +1389,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
                 Integer.MAX_VALUE)));
     assertU(commit());
 
-    assertU(adoc(sdoc("id", 1, "title", ImmutableMap.of("set", "newtitle1"))));
+    assertU(adoc(sdoc("id", 1, "title", Map.of("set", "newtitle1"))));
     assertU(commit());
 
     // test that non stored multivalued docvalues was carried forward for a non docvalues update
@@ -1466,19 +1417,19 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
                   "id",
                   101,
                   "title",
-                  ImmutableMap.of("set", "newtitle2"),
+                  Map.of("set", "newtitle2"),
                   "single_i_dvn",
-                  ImmutableMap.of("inc", 1))));
+                  Map.of("inc", 1))));
       assertU(
           adoc(
               sdoc(
                   "id",
                   102,
                   "title",
-                  ImmutableMap.of("set", "newtitle3"),
+                  Map.of("set", "newtitle3"),
                   "single_d_dvn",
-                  ImmutableMap.of("inc", 1))));
-      assertU(adoc(sdoc("id", 103, "single_i_dvn", ImmutableMap.of("inc", 1))));
+                  Map.of("inc", 1))));
+      assertU(adoc(sdoc("id", 103, "single_i_dvn", Map.of("inc", 1))));
     }
     assertU(commit());
 
@@ -1508,9 +1459,9 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
                 "id",
                 103,
                 "single_s_dvn",
-                ImmutableMap.of("set", "abcupdate"),
+                Map.of("set", "abcupdate"),
                 "single_i_dvn",
-                ImmutableMap.of("set", 5))));
+                Map.of("set", 5))));
     assertU(commit());
     assertJQ(
         req("q", "id:103"),
@@ -1534,7 +1485,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     doc = new SolrInputDocument();
     doc.setField("id", "7");
-    doc.setField("cat", ImmutableMap.of("whatever", "bbb"));
+    doc.setField("cat", Map.of("whatever", "bbb"));
     assertFailedU(adoc(doc));
     assertU(commit());
 
@@ -1546,7 +1497,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     // add a nested document;
     doc = new SolrInputDocument();
     doc.setField("id", "123");
-    doc.setField("cat", ImmutableMap.of("whatever", "ddd"));
+    doc.setField("cat", Map.of("whatever", "ddd"));
 
     SolrInputDocument childDoc = new SolrInputDocument();
     childDoc.setField("id", "1231");
@@ -1586,12 +1537,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     // inc op on non-numeric field
     SolrInputDocument invalidDoc = new SolrInputDocument();
     invalidDoc.setField("id", "7");
-    invalidDoc.setField("cat", ImmutableMap.of("inc", "bbb"));
+    invalidDoc.setField("cat", Map.of("inc", "bbb"));
 
     SolrException e = expectThrows(SolrException.class, () -> assertU(adoc(invalidDoc)));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(
-        e.getMessage(), containsString("'inc' is not supported on non-numeric field cat"));
+    assertThat(e.getMessage(), containsString("'inc' is not supported on non-numeric field cat"));
   }
 
   public void testFieldsWithDefaultValuesWhenAtomicUpdatesAgainstTlog() {
@@ -1612,7 +1562,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
           "//doc/arr[@name='multiDefault']/str[.='muLti-Default']");
 
       // do atomic update
-      assertU(adoc(sdoc("id", "7", fieldToUpdate, ImmutableMap.of("inc", -555))));
+      assertU(adoc(sdoc("id", "7", fieldToUpdate, Map.of("inc", -555))));
       assertQ(
           fieldToUpdate + ": RTG after atomic update",
           req("qt", "/get", "id", "7"),
@@ -1646,7 +1596,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       clearIndex();
 
       // doc where we immediately attempt to inc the default value
-      assertU(adoc(sdoc("id", "7", fieldToUpdate, ImmutableMap.of("inc", "666"))));
+      assertU(adoc(sdoc("id", "7", fieldToUpdate, Map.of("inc", "666"))));
       assertQ(
           fieldToUpdate + ": initial RTG#7",
           req("qt", "/get", "id", "7"),
@@ -1659,7 +1609,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
           "//doc/date[@name='timestamp']",
           "//doc/arr[@name='multiDefault']/str[.='muLti-Default']");
       // do atomic update
-      assertU(adoc(sdoc("id", "7", fieldToUpdate, ImmutableMap.of("inc", -555))));
+      assertU(adoc(sdoc("id", "7", fieldToUpdate, Map.of("inc", -555))));
       assertQ(
           fieldToUpdate + ": RTG#7 after atomic update",
           req("qt", "/get", "id", "7"),
@@ -1673,7 +1623,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
           "//doc/arr[@name='multiDefault']/str[.='muLti-Default']");
 
       // diff doc where we check that we can overwrite the default value
-      assertU(adoc(sdoc("id", "8", fieldToUpdate, ImmutableMap.of("set", "666"))));
+      assertU(adoc(sdoc("id", "8", fieldToUpdate, Map.of("set", "666"))));
       assertQ(
           fieldToUpdate + ": initial RTG#8",
           req("qt", "/get", "id", "8"),
@@ -1686,7 +1636,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
           "//doc/date[@name='timestamp']",
           "//doc/arr[@name='multiDefault']/str[.='muLti-Default']");
       // do atomic update
-      assertU(adoc(sdoc("id", "8", fieldToUpdate, ImmutableMap.of("inc", -555))));
+      assertU(adoc(sdoc("id", "8", fieldToUpdate, Map.of("inc", -555))));
       assertQ(
           fieldToUpdate + ": RTG after atomic update",
           req("qt", "/get", "id", "8"),
@@ -1724,5 +1674,34 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
           "//doc/date[@name='timestamp']",
           "//doc/arr[@name='multiDefault']/str[.='muLti-Default']");
     }
+  }
+
+  @Test
+  public void testAddDistinctToEmptyCollection() {
+    SolrInputDocument doc;
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "5005");
+    doc.setField("intRemove", new Long[] {111L, 222L});
+    assertU(adoc(doc));
+
+    assertU(commit());
+    assertQ(
+        req("q", "intRemove:*", "indent", "true"),
+        "//result[@numFound = '1']",
+        "//result/doc[1]/arr[@name='intRemove']/int[1][.=111]",
+        "//result/doc[1]/arr[@name='intRemove']/int[2][.=222]");
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "5005");
+    doc.setField("intRemove", Map.of("remove", List.of(111L, 222L), "add-distinct", 333L));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(
+        req("q", "intRemove:*", "indent", "true"),
+        "//result[@numFound = '1']",
+        "*[count(//result/doc[1]/arr[@name='intRemove']/int)=1]",
+        "//result/doc[1]/arr[@name='intRemove']/int[1][.=333]");
   }
 }

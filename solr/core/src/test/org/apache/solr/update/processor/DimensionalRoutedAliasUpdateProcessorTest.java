@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -44,8 +43,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -68,24 +65,12 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
   @Before
   public void doBefore() throws Exception {
     configureCluster(4).configure();
-    solrClient = getCloudSolrClient(cluster);
+    solrClient = cluster.getSolrClient();
     // log this to help debug potential causes of problems
     if (log.isInfoEnabled()) {
       log.info("SolrClient: {}", solrClient);
       log.info("ClusterStateProvider {}", solrClient.getClusterStateProvider()); // nowarn
     }
-  }
-
-  @After
-  public void doAfter() throws Exception {
-    solrClient.close();
-    shutdownCluster();
-  }
-
-  @AfterClass
-  public static void finish() throws Exception {
-    IOUtils.close(solrClient);
-    solrClient = null;
   }
 
   @Test
@@ -555,14 +540,14 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
       throws Exception {
     final int expectNumFound =
         lastDocId - numDocsDeletedOrFailed; // lastDocId is effectively # generated docs
-    int totalNumFound = 0;
+    long totalNumFound = 0;
 
     final List<String> cols =
         new CollectionAdminRequest.ListAliases()
             .process(solrClient)
             .getAliasesAsLists()
             .get(getSaferTestName());
-    assert !cols.isEmpty();
+    assertFalse(cols.isEmpty());
 
     for (String category : categories) {
       List<String> cats =
@@ -581,7 +566,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
           String colTmp = col;
           // special case for tests... all of which have no more than one TRA dimension
           // This won't work if we decide to write a test with 2 time dimensions.
-          // (but that's an odd case so we'll wait)
+          // (but that's an odd case, so we'll wait)
           int traIndex = colTmp.indexOf(TRA) + TRA.length();
           while (colTmp.lastIndexOf("__") > traIndex) {
             colTmp = colTmp.substring(0, colTmp.lastIndexOf("__"));
@@ -622,7 +607,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
       throws SolrServerException, IOException {
     try {
       final UpdateResponse resp = solrClient.add(getAlias(), newDoc(category, timestamp));
-      // if we have a TolerantUpdateProcessor then we see it there)
+      // if we have a TolerantUpdateProcessor then we see it there
       final Object errors = resp.getResponseHeader().get("errors"); // Tolerant URP
       assertTrue(errors != null && errors.toString().contains(errorMsg));
     } catch (SolrException e) {

@@ -18,26 +18,41 @@
 
 package org.apache.hadoop.fs;
 
+import org.apache.hadoop.classification.InterfaceAudience;
+import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.impl.StoreImplementationUtils;
+import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.fs.statistics.BufferedIOStatisticsOutputStream;
+import org.apache.hadoop.fs.statistics.IOStatistics;
+import org.apache.hadoop.fs.statistics.IOStatisticsSource;
+import org.apache.hadoop.fs.statistics.impl.IOStatisticsStore;
+import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.io.nativeio.NativeIO;
 import org.apache.hadoop.thirdparty.com.google.common.annotations.VisibleForTesting;
+import org.apache.hadoop.util.Progressable;
+import org.apache.hadoop.util.Shell;
+import org.apache.hadoop.util.StringUtils;
+import org.apache.solr.common.util.EnvUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutput;
 import java.io.EOFException;
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.FileDescriptor;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.BasicFileAttributeView;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -46,21 +61,6 @@ import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.classification.InterfaceStability;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.impl.StoreImplementationUtils;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.fs.statistics.IOStatistics;
-import org.apache.hadoop.fs.statistics.IOStatisticsSource;
-import org.apache.hadoop.fs.statistics.BufferedIOStatisticsOutputStream;
-import org.apache.hadoop.fs.statistics.impl.IOStatisticsStore;
-import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.io.nativeio.NativeIO;
-import org.apache.hadoop.util.Progressable;
-import org.apache.hadoop.util.Shell;
-import org.apache.hadoop.util.StringUtils;
 
 import static org.apache.hadoop.fs.impl.PathCapabilitiesSupport.validatePathCapabilityArgs;
 import static org.apache.hadoop.fs.statistics.StreamStatisticNames.STREAM_READ_BYTES;
@@ -707,7 +707,7 @@ public class RawLocalFileSystem extends FileSystem {
 
   @Override
   public Path getHomeDirectory() {
-    return this.makeQualified(new Path(System.getProperty("user.home")));
+    return this.makeQualified(new Path(EnvUtils.getProperty("user.home")));
   }
 
   /**
@@ -726,7 +726,7 @@ public class RawLocalFileSystem extends FileSystem {
 
   @Override
   protected Path getInitialWorkingDirectory() {
-    return this.makeQualified(new Path(System.getProperty("user.dir")));
+    return this.makeQualified(new Path(EnvUtils.getProperty("user.dir")));
   }
 
   @Override
@@ -897,7 +897,7 @@ public class RawLocalFileSystem extends FileSystem {
     // remove domain name as follows:
     // DOMAIN\\user => user, DOMAIN\\group => group
     private String removeDomain(String str) {
-      int index = str.indexOf("\\");
+      int index = str.indexOf('\\');
       if (index != -1) {
         str = str.substring(index + 1);
       }
@@ -991,6 +991,7 @@ public class RawLocalFileSystem extends FileSystem {
    * @param opts Constraints that determine the validity of the
    *            {@link PathHandle} reference.
    */
+  @Override
   protected PathHandle createPathHandle(FileStatus stat,
       Options.HandleOpt... opts) {
     if (stat.isDirectory() || stat.isSymlink()) {

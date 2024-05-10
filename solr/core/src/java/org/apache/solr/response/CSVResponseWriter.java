@@ -20,7 +20,6 @@ import java.io.CharArrayWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -150,8 +149,6 @@ class CSVWriter extends TabularResponseWriter {
 
   int pass;
   Map<String, CSVField> csvFields = new LinkedHashMap<>();
-
-  Calendar cal; // for formatting date objects
 
   CSVStrategy strategy; // strategy for encoding the fields of documents
   CSVPrinter printer;

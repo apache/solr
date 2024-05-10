@@ -27,7 +27,7 @@ import org.junit.Test;
 public class TokenizerChainTest extends SolrTestCaseJ4 {
 
   @Test
-  public void testNormalization() throws Exception {
+  public void testNormalization() {
     String fieldName = "f";
     TokenFilterFactory[] tff = new TokenFilterFactory[2];
     tff[0] = new LowerCaseFilterFactory(Collections.emptyMap());

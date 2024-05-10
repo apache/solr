@@ -22,12 +22,12 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrException;
@@ -458,7 +458,9 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertU(add(doc("id", "5")));
     assertU(commit());
 
-    // Just checking if no errors occur
+    // should exceed timeAllowed
+    // TODO: this always succeeds now, regardless of partialResults=true
+    // needs SOLR-17151 to fix how QueryLimitsExceeded exception is handled
     assertJQ(
         req(
             "q",
@@ -470,7 +472,23 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             "group.query",
             "id:2",
             "timeAllowed",
-            "1"));
+            "0"),
+        "/responseHeader/partialResults==true");
+    // should succeed
+    assertJQ(
+        req(
+            "q",
+            "*:*",
+            "group",
+            "true",
+            "group.query",
+            "id:1",
+            "group.query",
+            "id:2",
+            "timeAllowed",
+            "200"),
+        "/grouped/id:1/matches==5",
+        "/grouped/id:2/matches==5");
   }
 
   @Test
@@ -1574,7 +1592,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @Test
   public void testRandomGrouping() throws Exception {
-    /**
+    /*
      * updateJ("{\"add\":{\"doc\":{\"id\":\"77\"}}}", params("commit","true"));
      * assertJQ(req("q","id:77"), "/response/numFound==1");
      *
@@ -1681,7 +1699,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
         // since groupSortStr defaults to sortStr, we need to normalize null to "score desc" if
         // sortStr != null.
-        if (groupSortStr == null && groupSortStr != sortStr) {
+        if (groupSortStr == null && !Objects.equals(groupSortStr, sortStr)) {
           groupSortStr = "score desc";
         }
 
@@ -1707,7 +1725,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
         // first sort the docs in each group
         for (Grp grp : groups.values()) {
-          Collections.sort(grp.docs, groupComparator);
+          grp.docs.sort(groupComparator);
         }
 
         // now sort the groups
@@ -1718,8 +1736,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         }
 
         List<Grp> sortedGroups = new ArrayList<>(groups.values());
-        Collections.sort(
-            sortedGroups,
+        sortedGroups.sort(
             groupComparator == sortComparator
                 ? createFirstDocComparator(sortComparator)
                 : createMaxDocComparator(sortComparator));
@@ -1786,7 +1803,9 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
                 "fl",
                 // only docValued fields are not returned by default
                 "*,score_ff,foo_ii,foo_bdv," + FOO_STRING_DOCVAL_FIELD,
-                (groupSortStr == null || groupSortStr == sortStr) ? "noGroupsort" : "group.sort",
+                (groupSortStr == null || groupSortStr.equals(sortStr))
+                    ? "noGroupsort"
+                    : "group.sort",
                 groupSortStr == null ? "" : groupSortStr,
                 "rows",
                 "" + rows,
@@ -1859,7 +1878,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGroupWithMinExactHitCount() throws Exception {
+  public void testGroupWithMinExactHitCount() {
     final int NUM_DOCS = 20;
     for (int i = 0; i < NUM_DOCS; i++) {
       assertU(adoc("id", String.valueOf(i), FOO_STRING_FIELD, "Book1"));
@@ -1990,7 +2009,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     public Doc maxDoc; // the document highest according to the "sort" param
 
     public void setMaxDoc(Comparator<Doc> comparator) {
-      Doc[] arr = docs.toArray(new Doc[docs.size()]);
+      Doc[] arr = docs.toArray(new Doc[0]);
       Arrays.sort(arr, comparator);
       maxDoc = arr.length > 0 ? arr[0] : null;
     }

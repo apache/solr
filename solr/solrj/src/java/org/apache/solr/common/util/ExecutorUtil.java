@@ -16,13 +16,17 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.SynchronousQueue;
@@ -30,6 +34,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -83,10 +88,52 @@ public class ExecutorUtil {
     void clean(AtomicReference<Object> ctx);
   }
 
+  public static boolean isShutdown(ExecutorService pool) {
+    try {
+      return pool.isShutdown();
+    } catch (IllegalStateException e) {
+      // JSR-236 ManagedExecutorService cannot query the lifecycle, so just return false
+      return false;
+    }
+  }
+
+  public static boolean isTerminated(ExecutorService pool) {
+    try {
+      return pool.isTerminated();
+    } catch (IllegalStateException e) {
+      // JSR-236 ManagedExecutorService cannot query the lifecycle, so just return false
+      return false;
+    }
+  }
+
+  /**
+   * Shutdown the {@link ExecutorService} and wait for 60 seconds for the threads to complete. More
+   * detail on the waiting can be found in {@link #awaitTermination(ExecutorService)}.
+   *
+   * @param pool The ExecutorService to shutdown and wait on
+   */
   public static void shutdownAndAwaitTermination(ExecutorService pool) {
     if (pool == null) return;
     pool.shutdown(); // Disable new tasks from being submitted
     awaitTermination(pool);
+  }
+
+  /**
+   * Shutdown the {@link ExecutorService} and wait forever for the threads to complete. More detail
+   * on the waiting can be found in {@link #awaitTerminationForever(ExecutorService)}.
+   *
+   * <p>This should likely not be used in {@code close()} methods, as we want to timebound when
+   * shutting down. However, sometimes {@link ExecutorService}s are used to submit a list of tasks
+   * and awaiting termination is akin to waiting on the list of {@link Future}s to complete. In that
+   * case, this method should be used as there is no inherent time bound to waiting on those tasks
+   * to complete.
+   *
+   * @param pool The ExecutorService to shutdown and wait on
+   */
+  public static void shutdownAndAwaitTerminationForever(ExecutorService pool) {
+    if (pool == null) return;
+    pool.shutdown(); // Disable new tasks from being submitted
+    awaitTerminationForever(pool);
   }
 
   public static void shutdownNowAndAwaitTermination(ExecutorService pool) {
@@ -95,16 +142,55 @@ public class ExecutorUtil {
     awaitTermination(pool);
   }
 
+  /**
+   * Await the termination of an {@link ExecutorService} for a default of 60 seconds, then force
+   * shutdown the remaining threads and wait another 60 seconds.
+   *
+   * @param pool the ExecutorService to wait on
+   */
   public static void awaitTermination(ExecutorService pool) {
+    awaitTermination(pool, 60, TimeUnit.SECONDS);
+  }
+
+  // Used in testing to not have to wait the full 60 seconds.
+  static void awaitTermination(ExecutorService pool, long timeout, TimeUnit unit) {
+    try {
+      // Wait a while for existing tasks to terminate.
+      if (!pool.awaitTermination(timeout, unit)) {
+        // We want to force shutdown any remaining threads.
+        pool.shutdownNow();
+        // Wait again for forced threads to stop.
+        if (!pool.awaitTermination(timeout, unit)) {
+          log.error("Threads from pool {} did not forcefully stop.", pool);
+          throw new RuntimeException("Timeout waiting for pool " + pool + " to shutdown.");
+        }
+      }
+    } catch (InterruptedException ie) {
+      // (Re-)Cancel if current thread also interrupted
+      pool.shutdownNow();
+      // Preserve interrupt status
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  /**
+   * Await the termination of an {@link ExecutorService} until all threads are complete, or until we
+   * are interrupted, at which point the {@link ExecutorService} will be interrupted as well.
+   *
+   * @param pool the ExecutorService to wait on
+   */
+  public static void awaitTerminationForever(ExecutorService pool) {
     boolean shutdown = false;
-    while (!shutdown) {
-      try {
+    try {
+      while (!shutdown) {
         // Wait a while for existing tasks to terminate
         shutdown = pool.awaitTermination(60, TimeUnit.SECONDS);
-      } catch (InterruptedException ie) {
-        // Preserve interrupt status
-        Thread.currentThread().interrupt();
       }
+    } catch (InterruptedException e) {
+      // Force cancel if current thread also interrupted
+      pool.shutdownNow();
+      // Preserve interrupt status
+      Thread.currentThread().interrupt();
     }
   }
 
@@ -115,10 +201,23 @@ public class ExecutorUtil {
         nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), threadFactory);
   }
 
-  /** See {@link java.util.concurrent.Executors#newSingleThreadExecutor(ThreadFactory)} */
+  /**
+   * See {@link java.util.concurrent.Executors#newSingleThreadExecutor(ThreadFactory)}. Note the
+   * thread is always active, even if no tasks are submitted to the executor.
+   */
   public static ExecutorService newMDCAwareSingleThreadExecutor(ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(
         1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(), threadFactory);
+  }
+
+  /**
+   * Similar to {@link #newMDCAwareSingleThreadExecutor(ThreadFactory)}, but the thread will not be
+   * kept active after the specified time if no task is submitted to the executor.
+   */
+  public static ExecutorService newMDCAwareSingleLazyThreadExecutor(
+      ThreadFactory threadFactory, long keepAliveTime, TimeUnit unit) {
+    return new MDCAwareThreadPoolExecutor(
+        0, 1, keepAliveTime, unit, new LinkedBlockingQueue<>(), threadFactory);
   }
 
   /** Create a cached thread pool using a named thread factory */
@@ -133,9 +232,14 @@ public class ExecutorUtil {
   }
 
   public static ExecutorService newMDCAwareCachedThreadPool(
-      int maxThreads, ThreadFactory threadFactory) {
+      int maxThreads, int queueCapacity, ThreadFactory threadFactory) {
     return new MDCAwareThreadPoolExecutor(
-        0, maxThreads, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(maxThreads), threadFactory);
+        0,
+        maxThreads,
+        60L,
+        TimeUnit.SECONDS,
+        new LinkedBlockingQueue<>(queueCapacity),
+        threadFactory);
   }
 
   @SuppressForbidden(reason = "class customizes ThreadPoolExecutor so it can be used instead")
@@ -261,15 +365,19 @@ public class ExecutorUtil {
               if (t instanceof OutOfMemoryError) {
                 throw t;
               }
-              if (enableSubmitterStackTrace) {
-                log.error(
-                    "Uncaught exception {} thrown by thread: {}",
-                    t,
-                    currentThread.getName(),
-                    submitterStackTrace);
-              } else {
-                log.error("Uncaught exception {} thrown by thread: {}", t, currentThread.getName());
+              // Flip around the exception cause tree, because it is in reverse order
+              Throwable baseCause = t;
+              Throwable nextCause = submitterStackTrace;
+              while (nextCause != null) {
+                baseCause = new Exception(nextCause.getMessage(), baseCause);
+                baseCause.setStackTrace(nextCause.getStackTrace());
+                nextCause = nextCause.getCause();
               }
+              log.error(
+                  "Uncaught exception {} thrown by thread: {}",
+                  t,
+                  currentThread.getName(),
+                  baseCause);
               throw t;
             } finally {
               isServerPool.remove();
@@ -298,5 +406,49 @@ public class ExecutorUtil {
   public static void setServerThreadFlag(Boolean flag) {
     if (flag == null) isServerPool.remove();
     else isServerPool.set(flag);
+  }
+
+  /**
+   * Takes an executor and a list of Callables and executes them returning the results as a list.
+   * The method waits for the return of every task even if one of them throws an exception. If any
+   * exception happens it will be thrown, wrapped into an IOException, and other following
+   * exceptions will be added as `addSuppressed` to the original exception
+   *
+   * @param <T> the response type
+   * @param service executor
+   * @param tasks the list of callables to be executed
+   * @return results list
+   * @throws IOException in case any exceptions happened
+   */
+  public static <T> Collection<T> submitAllAndAwaitAggregatingExceptions(
+      ExecutorService service, List<? extends Callable<T>> tasks) throws IOException {
+    List<T> results = new ArrayList<>(tasks.size());
+    IOException parentException = null;
+
+    // Could alternatively use service.invokeAll, but this way we can start looping over futures
+    // before all are done
+    List<Future<T>> futures =
+        tasks.stream().map(service::submit).collect(Collectors.toUnmodifiableList());
+    for (Future<T> f : futures) {
+      try {
+        results.add(f.get());
+      } catch (ExecutionException e) {
+        if (parentException == null) {
+          parentException = new IOException(e.getCause());
+        } else {
+          parentException.addSuppressed(e.getCause());
+        }
+      } catch (Exception e) {
+        if (parentException == null) {
+          parentException = new IOException(e);
+        } else {
+          parentException.addSuppressed(e);
+        }
+      }
+    }
+    if (parentException != null) {
+      throw parentException;
+    }
+    return results;
   }
 }

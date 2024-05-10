@@ -16,45 +16,23 @@
  */
 package org.apache.solr.metrics;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.SlidingTimeWindowReservoir;
 import com.codahale.metrics.UniformReservoir;
-import java.io.File;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 /** */
 public class MetricsConfigTest extends SolrTestCaseJ4 {
-  @Rule public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule());
-
-  // tmp dir, cleaned up automatically.
-  private static File solrHome = null;
-
-  @BeforeClass
-  public static void setupLoader() throws Exception {
-    solrHome = createTempDir().toFile();
-  }
-
-  @AfterClass
-  public static void cleanupLoader() throws Exception {
-    solrHome = null;
-  }
-
   @Test
-  public void testDefaults() throws Exception {
+  public void testDefaults() {
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig.xml");
     SolrMetricManager mgr =
         new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig());
@@ -69,7 +47,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCustomReservoir() throws Exception {
+  public void testCustomReservoir() {
     System.setProperty("timer.reservoir", UniformReservoir.class.getName());
     System.setProperty("histogram.size", "2048");
     System.setProperty("histogram.window", "600");
@@ -88,7 +66,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCustomSupplier() throws Exception {
+  public void testCustomSupplier() {
     System.setProperty("counter.class", MockCounterSupplier.class.getName());
     System.setProperty("meter.class", MockMeterSupplier.class.getName());
     System.setProperty("timer.class", MockTimerSupplier.class.getName());
@@ -107,7 +85,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     MockMeterSupplier mockMeterSupplier = ((MockMeterSupplier) mgr.getMeterSupplier());
     assertEquals("bar", mockMeterSupplier.foo);
     MockTimerSupplier mockTimerSupplier = ((MockTimerSupplier) mgr.getTimerSupplier());
-    assertEquals(true, mockTimerSupplier.boolParam);
+    assertTrue(mockTimerSupplier.boolParam);
     assertEquals("strParam", mockTimerSupplier.strParam);
     assertEquals(-100, mockTimerSupplier.intParam);
 
@@ -118,7 +96,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDisabledMetrics() throws Exception {
+  public void testDisabledMetrics() {
     System.setProperty("metricsEnabled", "false");
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig.xml");
     SolrMetricManager mgr =
@@ -130,11 +108,11 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testMissingValuesConfig() throws Exception {
+  public void testMissingValuesConfig() {
     NodeConfig cfg = loadNodeConfig("solr-metricsconfig1.xml");
     SolrMetricManager mgr =
         new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig());
-    assertEquals("nullNumber", null, mgr.nullNumber());
+    assertNull("nullNumber", mgr.nullNumber());
     assertEquals("notANumber", -1, mgr.notANumber());
     assertEquals("nullNumber", "", mgr.nullString());
     assertTrue("nullObject", mgr.nullObject() instanceof Map);
@@ -143,7 +121,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     assertEquals("missing", map.get("value"));
   }
 
-  private NodeConfig loadNodeConfig(String config) throws Exception {
+  private NodeConfig loadNodeConfig(String config) {
     InputStream is = MetricsConfigTest.class.getResourceAsStream("/solr/" + config);
     return SolrXmlConfig.fromInputStream(TEST_PATH(), is, new Properties()); // TODO pass in props
   }

@@ -18,10 +18,11 @@
 package org.apache.solr.metrics.reporters;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
@@ -49,8 +50,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
     String solrXml =
-        FileUtils.readFileToString(
-            Paths.get(home.toString(), "solr-slf4jreporter.xml").toFile(), "UTF-8");
+        Files.readString(home.resolve("solr-slf4jreporter.xml"), StandardCharsets.UTF_8);
     NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
     CoreContainer cc =
         createCoreContainer(
@@ -94,17 +94,17 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
     // dot-separated names are treated like class names and collapsed
     // in regular log output, but here we get the full name
     if (history.stream().filter(d -> "solr.node".equals(d.getFirstValue("logger"))).count() == 0) {
-      fail("No 'solr.node' logs in: " + history.toString());
+      fail("No 'solr.node' logs in: " + history);
     }
     if (history.stream().filter(d -> "foobar".equals(d.getFirstValue("logger"))).count() == 0) {
-      fail("No 'foobar' logs in: " + history.toString());
+      fail("No 'foobar' logs in: " + history);
     }
     if (history.stream().filter(d -> "collection1".equals(d.getFirstValue("core"))).count() == 0) {
-      fail("No 'solr.core' or MDC context in logs: " + history.toString());
+      fail("No 'solr.core' or MDC context in logs: " + history);
     }
   }
 
-  private static void ensureLoggingConfiguredAppropriately() throws Exception {
+  private static void ensureLoggingConfiguredAppropriately() {
     if (!log.isInfoEnabled()) {
       fail("Test requires that log-level is at-least INFO, but INFO is disabled");
     }

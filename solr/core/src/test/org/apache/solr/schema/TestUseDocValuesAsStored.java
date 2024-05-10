@@ -49,9 +49,6 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   private int id = 1;
 
-  private static File tmpSolrHome;
-  private static File tmpConfDir;
-
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
 
@@ -61,7 +58,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   // http://www.w3.org/TR/2006/REC-xml-20060816/#charsets
   private static final String NON_XML_CHARS = "\u0000-\u0008\u000B-\u000C\u000E-\u001F\uFFFE\uFFFF";
-  // Avoid single quotes (problematic in XPath literals) and carriage returns (XML roundtripping
+  // Avoid single quotes (problematic in XPath literals) and carriage returns (XML round tripping
   // fails)
   private static final Pattern BAD_CHAR_PATTERN = Pattern.compile("[\'\r" + NON_XML_CHARS + "]");
   private static final Pattern STORED_FIELD_NAME_PATTERN = Pattern.compile("_dv$");
@@ -97,9 +94,9 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   }
 
   @Before
-  private void initManagedSchemaCore() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
+  public void initManagedSchemaCore() throws Exception {
+    File tmpSolrHome = createTempDir().toFile();
+    File tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(
         new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);
@@ -120,7 +117,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   }
 
   @After
-  private void afterTest() throws Exception {
+  public void afterTest() {
     clearIndex();
     deleteCore();
     System.clearProperty("managed.schema.mutable");
@@ -170,7 +167,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   }
 
   @Test
-  public void testDuplicateMultiValued() throws Exception {
+  public void testDuplicateMultiValued() {
     doTest("strTF", dvStringFieldName(3, true, false), "str", "X", "X", "Y");
     doTest("strTT", dvStringFieldName(3, true, true), "str", "X", "X", "Y");
     doTest("strFF", dvStringFieldName(3, false, false), "str", "X", "X", "Y");
@@ -190,7 +187,8 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Test
   public void testRandomSingleAndMultiValued() throws Exception {
-    for (int c = 0; c < 10 * RANDOM_MULTIPLIER; ++c) {
+    int iterations = atLeast(5);
+    for (int c = 0; c < iterations; ++c) {
       clearIndex();
       int[] arity = new int[9];
       for (int a = 0; a < arity.length; ++a) {
@@ -255,7 +253,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
     if (indexed && stored) suffix = "_dv";
     else if (indexed && !stored) suffix = "_dvo";
     else if (!indexed && !stored) suffix = "_dvo2";
-    else assertTrue("unsupported dv string field combination: stored and not indexed", false);
+    else fail("unsupported dv string field combination: stored and not indexed");
     return base + suffix;
   }
 

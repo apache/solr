@@ -16,7 +16,10 @@
  */
 package org.apache.solr.util;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * A TreeSet that ensures it never grows beyond a max size. <code>last()</code> is removed if the

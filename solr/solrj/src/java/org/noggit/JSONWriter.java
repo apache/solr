@@ -19,7 +19,10 @@
 
 package org.noggit;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
 
 public class JSONWriter {
 
@@ -27,6 +30,8 @@ public class JSONWriter {
   public static interface Writable {
     public void write(JSONWriter writer);
   }
+
+  public static final int DEFAULT_INDENT = 2;
 
   protected int level;
   protected int indent;
@@ -43,7 +48,7 @@ public class JSONWriter {
   }
 
   public JSONWriter(CharArr out) {
-    this(out, 2);
+    this(out, DEFAULT_INDENT);
   }
 
   public void setIndentSize(int indentSize) {
@@ -68,6 +73,8 @@ public class JSONWriter {
     // perfect hashing.
     if (o == null) {
       writeNull();
+    } else if (o instanceof Writable) {
+      ((Writable) o).write(this);
     } else if (o instanceof String) {
       writeString((String) o);
     } else if (o instanceof Number) {
@@ -84,12 +91,12 @@ public class JSONWriter {
       write((Map<?, ?>) o);
     } else if (o instanceof Collection) {
       write((Collection<?>) o);
+    } else if (o instanceof Iterator) {
+      write((Iterator<?>) o);
     } else if (o instanceof Boolean) {
       write(((Boolean) o).booleanValue());
     } else if (o instanceof CharSequence) {
       writeString((CharSequence) o);
-    } else if (o instanceof Writable) {
-      ((Writable) o).write(this);
     } else if (o instanceof Object[]) {
       write(Arrays.asList((Object[]) o));
     } else if (o instanceof int[]) {
@@ -150,6 +157,20 @@ public class JSONWriter {
       }
       if (sz > 1) indent();
       write(o);
+    }
+    endArray();
+  }
+
+  public void write(Iterator<?> val) {
+    startArray();
+    boolean first = true;
+    while (val.hasNext()) {
+      if (first) {
+        first = false;
+      } else {
+        writeValueSeparator();
+      }
+      write(val.next());
     }
     endArray();
   }

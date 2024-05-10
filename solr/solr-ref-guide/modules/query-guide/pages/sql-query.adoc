@@ -21,10 +21,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Solr SQL module brings the power of SQL querying to Solr. The SQL module needs to be xref:configuration-guide:solr-modules.adoc[installed] to use.
-
-The SQL interface seamlessly combines SQL with Solr's full-text search capabilities.
+The Solr SQL Module brings the power of SQL querying to Solr by seamlessly combining
+SQL with Solr's full-text search capabilities.
 Both MapReduce style and JSON Facet API aggregations are supported, which means that SQL querying can be used to support both *high query volume* and *high cardinality* use cases.
+
+== Module
+
+This is provided via the `sql` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 == SQL Architecture
 
@@ -36,10 +39,10 @@ More information about how to Solr supports SQL queries for Solr is described in
 === Solr Collections and DB Tables
 
 In a standard `SELECT` statement such as `SELECT <expressions> FROM <table>`, the table names correspond to Solr collection names.
-Table names are case insensitive.
+Table names are case-insensitive.
 
 Column names in the SQL query map directly to fields in the Solr index for the collection being queried.
-These identifiers are case sensitive.
+These identifiers are case-sensitive.
 Aliases are supported, and can be referenced in the `ORDER BY` clause.
 
 The `SELECT *` syntax to indicate all fields is only supported for queries with a `LIMIT` clause.
@@ -62,7 +65,7 @@ Solr supports a broad range of SQL syntax.
 .SQL Parser is Case Insensitive
 [IMPORTANT]
 ====
-The SQL parser being used by Solr to translate the SQL statements is case insensitive.
+The SQL parser being used by Solr to translate the SQL statements is case-insensitive.
 However, for ease of reading, all examples on this page use capitalized keywords.
 ====
 
@@ -196,7 +199,7 @@ If the `ORDER BY` clause contains the exact fields in the `GROUP BY` clause, the
 If the `ORDER BY` clause contains different fields than the `GROUP BY` clause, a limit of 100 is automatically applied.
 To increase this limit you must specify a value in the `LIMIT` clause.
 
-Order by fields are case sensitive.
+Order by fields are case-sensitive.
 
 ==== OFFSET with FETCH
 
@@ -292,7 +295,7 @@ The Column Identifiers can contain both fields in the Solr index and aggregate f
 The supported aggregate functions are:
 
 * `COUNT(*)`: Counts the number of records over a set of buckets.
-* `SUM(field)`: Sums a numeric field over over a set of buckets.
+* `SUM(field)`: Sums a numeric field over a set of buckets.
 * `AVG(field)`: Averages a numeric field over a set of buckets.
 * `MIN(field)`: Returns the min value of a numeric field over a set of buckets.
 * `MAX(field)`: Returns the max value of a numerics over a set of buckets.
@@ -349,7 +352,7 @@ The request handlers used for the SQL interface are configured to load implicitl
 The `/sql` handler is the front end of the Parallel SQL interface.
 All SQL queries are sent to the `/sql` handler to be processed.
 The handler also coordinates the distributed MapReduce jobs when running `GROUP BY` and `SELECT DISTINCT` queries in `map_reduce` mode.
-By default the `/sql` handler will choose worker nodes from its own collection to handle the distributed operations.
+By default, the `/sql` handler will choose worker nodes from its own collection to handle the distributed operations.
 In this default scenario the collection where the `/sql` handler resides acts as the default worker collection for MapReduce queries.
 
 By default, the `/sql` request handler is configured as an implicit handler, meaning that it is always enabled in every Solr installation and no further configuration is required.
@@ -385,7 +388,7 @@ Like the `/sql` request handler, the `/stream` and `/export` request handlers ar
 
 In some cases, fields used in SQL queries must be configured as DocValue fields.
 If queries are unlimited, all fields must be DocValue fields.
-If queries are limited (with the `limit` clause) then fields do not have to be have DocValues enabled.
+If queries are limited (with the `limit` clause) then fields do not have to have DocValues enabled.
 
 .Multi-valued Fields
 [IMPORTANT]
@@ -480,7 +483,7 @@ One of the parameters of the request is the `aggregationMode`, which defines if 
 === Parallelized Queries
 
 The Parallel SQL architecture consists of three logical tiers: a *SQL* tier, a *Worker* tier, and a *Data Table* tier.
-By default the SQL and Worker tiers are collapsed into the same physical SolrCloud collection.
+By default, the SQL and Worker tiers are collapsed into the same physical SolrCloud collection.
 
 ==== SQL Tier
 

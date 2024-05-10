@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -39,6 +38,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster.JettySolrRunnerWithMetrics;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.response.SolrQueryResponse;
@@ -63,9 +63,9 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   /**
    * Client used for all test requests.
    *
-   * <p>LBSolrClient (and by extension CloudSolrClient) has it's own enforcement of timeAllowed in
-   * an attempt to prevent "retrying" failed requests far longer then the client requested. Because
-   * of this client side logic, we do not want to use any LBSolrClient (derivative) in this test, in
+   * <p>LBSolrClient (and by extension CloudSolrClient) has its own enforcement of timeAllowed in an
+   * attempt to prevent "retrying" failed requests far longer then the client requested. Because of
+   * this client side logic, we do not want to use any LBSolrClient (derivative) in this test, in
    * order to ensure that on a "slow" machine, the client doesn't pre-emptively abort any of our
    * requests that use very low 'timeAllowed' values.
    *
@@ -75,7 +75,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    // create one more node then shard, so that we also test the case of proxied requests.
+    // create one more node than shard, so that we also test the case of proxied requests.
     MiniSolrCloudCluster.Builder clusterBuilder =
         configureCluster(3)
             .addConfig(
@@ -98,7 +98,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
             (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
 
     fiveHundredsByNode = new LinkedHashMap<>();
-    int httpOk = 0;
+    long httpOk = 0;
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       MetricRegistry metricRegistry = ((JettySolrRunnerWithMetrics) jetty).getMetricRegistry();
 
@@ -221,7 +221,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testWhitebox() throws Exception {
+  public void testClearbox() throws Exception {
 
     try (Trap catchIds = catchTrace(new CheckMethodName("doProcessSearchByIds"), () -> {})) {
       assertPartialResults(
@@ -233,7 +233,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
     }
 
     // the point is to catch sort_values (fsv) timeout, between search and facet
-    // I haven't find a way to encourage fsv to read index
+    // I haven't found a way to encourage fsv to read index
     try (Trap catchFSV = catchTrace(new CheckMethodName("doFieldSortValues"), () -> {})) {
       assertPartialResults(
           params("q", "{!cache=false}name:a*", "sort", "query($q,1) asc"),
@@ -301,11 +301,10 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
         }; // add more cases here
 
     params.add(cases[random().nextInt(cases.length)]);
-    for (; ; creep *= 1.5) {
-      final int boundary = creep;
-      try (Trap catchClass = catchCount(boundary)) {
+    for (; ; creep = (int) (creep * 1.5)) {
+      try (Trap catchClass = catchCount(creep)) {
 
-        params.set("boundary", boundary);
+        params.set("boundary", creep);
         QueryResponse rsp = client.query(COLLECTION, params);
         assertEquals("" + rsp, rsp.getStatus(), 0);
         assertNo500s("" + rsp);

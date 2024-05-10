@@ -97,7 +97,7 @@ public class TestSweetSpotSimilarityFactory extends BaseSimilarityTestCase {
     for (int i = 1; i <= 6; i++) {
       assertEquals("tf i=" + i, 1.5F, sim.tf(i), 0.0F);
     }
-    // less then default sim above 6
+    // less than default sim above 6
     for (int i = 6; i <= 1000; i++) {
       assertTrue("tf: i=" + i + " : s=" + sim.tf(i) + " < d=" + d.tf(i), sim.tf(i) < d.tf(i));
     }

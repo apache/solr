@@ -17,6 +17,7 @@
 package org.apache.solr.servlet;
 
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
@@ -25,6 +26,7 @@ public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("solr.enableStreamBody", "true");
     initCore("solr/crazy-path-to-config.xml", "solr/crazy-path-to-schema.xml");
   }
 
@@ -45,7 +47,7 @@ public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
     assertTrue(got.indexOf("<str name=\"echoParams\">explicit</str>") > 5);
 
     // It should throw an exception for unknown handler
-    expectThrows(Exception.class, () -> direct.request("/path to nonexistang thingy!!", null));
+    expectThrows(Exception.class, () -> direct.request("/path to nonexistent thingy!!", null));
   }
 
   // Check that a request gets back the echoParams call
@@ -64,7 +66,11 @@ public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
     // Test using the Stream body parameter
     for (String cmd : cmds) {
       direct.request(
-          "/update?" + CommonParams.STREAM_BODY + "=" + URLEncoder.encode(cmd, "UTF-8"), null);
+          "/update?"
+              + CommonParams.STREAM_BODY
+              + "="
+              + URLEncoder.encode(cmd, StandardCharsets.UTF_8),
+          null);
     }
     String got = direct.request(getIt, null);
     assertTrue(got.indexOf(value) > 0);

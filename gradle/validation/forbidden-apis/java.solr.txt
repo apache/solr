@@ -18,3 +18,11 @@ java.lang.Thread#<init>()
 java.lang.Thread#<init>(java.lang.Runnable)
 java.lang.Thread#<init>(java.lang.ThreadGroup,java.lang.Runnable)
 
+@defaultMessage Use CollectionUtil.newHashMap(int)
+java.util.HashMap#<init>(int)
+
+@defaultMessage Use CollectionUtil.newLinkedHashMap(int)
+java.util.LinkedHashMap#<init>(int)
+
+@defaultMessage Use CollectionUtil.newHashSet(int)
+java.util.HashSet#<init>(int)

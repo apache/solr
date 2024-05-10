@@ -17,13 +17,20 @@
 
 package org.apache.solr.schema;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
+import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
 import org.apache.lucene.search.MatchNoDocsQuery;
@@ -31,8 +38,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDate;
-import org.apache.lucene.util.mutable.MutableValueLong;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.processor.TimestampUpdateProcessorFactory;
@@ -168,7 +175,11 @@ public class DatePointField extends PointField implements DateValueFieldType {
       values[i] = DateMathParser.parseMath(null, val).getTime();
       i++;
     }
-    return LongPoint.newSetQuery(field.getName(), values);
+    if (field.hasDocValues()) {
+      return LongField.newSetQuery(field.getName(), values);
+    } else {
+      return LongPoint.newSetQuery(field.getName(), values);
+    }
   }
 
   @Override
@@ -229,11 +240,6 @@ public class DatePointField extends PointField implements DateValueFieldType {
     }
 
     @Override
-    protected MutableValueLong newMutableValueLong() {
-      return new MutableValueDate();
-    }
-
-    @Override
     public Date longToObject(long val) {
       return new Date(val);
     }
@@ -246,6 +252,85 @@ public class DatePointField extends PointField implements DateValueFieldType {
     @Override
     public long externalToLong(String extVal) {
       return DateMathParser.parseMath(null, extVal).getTime();
+    }
+
+    // Override this whole method, everything is copied from LongFieldSource except:
+    // -- externalToLong uses DPFS.externalToLong
+    // -- ValueFiller is changed to have MutableValueDate
+    @Override
+    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+        throws IOException {
+      final NumericDocValues arr = getNumericDocValues(context, readerContext);
+
+      return new LongDocValues(this) {
+        int lastDocID;
+
+        @Override
+        public long longVal(int doc) throws IOException {
+          if (exists(doc)) {
+            return arr.longValue();
+          } else {
+            return 0;
+          }
+        }
+
+        @Override
+        public boolean exists(int doc) throws IOException {
+          if (doc < lastDocID) {
+            throw new IllegalArgumentException(
+                "docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
+          }
+          lastDocID = doc;
+          int curDocID = arr.docID();
+          if (doc > curDocID) {
+            curDocID = arr.advance(doc);
+          }
+          return doc == curDocID;
+        }
+
+        @Override
+        public Object objectVal(int doc) throws IOException {
+          if (exists(doc)) {
+            long value = longVal(doc);
+            return longToObject(value);
+          } else {
+            return null;
+          }
+        }
+
+        @Override
+        public String strVal(int doc) throws IOException {
+          if (exists(doc)) {
+            long value = longVal(doc);
+            return longToString(value);
+          } else {
+            return null;
+          }
+        }
+
+        @Override
+        protected long externalToLong(String extVal) {
+          return DatePointFieldSource.this.externalToLong(extVal);
+        }
+
+        @Override
+        public ValueFiller getValueFiller() {
+          return new ValueFiller() {
+            private final MutableValueDate mval = new MutableValueDate();
+
+            @Override
+            public MutableValue getValue() {
+              return mval;
+            }
+
+            @Override
+            public void fillValue(int doc) throws IOException {
+              mval.value = longVal(doc);
+              mval.exists = exists(doc);
+            }
+          };
+        }
+      };
     }
   }
 }

@@ -30,18 +30,16 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -61,6 +59,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.hdfs.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TestInjection;
@@ -73,7 +72,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Nightly
-@Slow
 @SuppressSSL
 @ThreadLeakFilters(
     defaultFilters = true,
@@ -90,15 +88,6 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
 
   private static final boolean DEBUG = true;
   private static MiniDFSCluster dfsCluster;
-
-  ThreadPoolExecutor executor =
-      new ExecutorUtil.MDCAwareThreadPoolExecutor(
-          0,
-          Integer.MAX_VALUE,
-          5,
-          TimeUnit.SECONDS,
-          new SynchronousQueue<Runnable>(),
-          new SolrNamedThreadFactory("testExecutor"));
 
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;
@@ -137,11 +126,20 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
     useJettyDataDir = false;
   }
 
+  @Override
   protected String getSolrXml() {
     return "solr.xml";
   }
 
   public SharedFileSystemAutoReplicaFailoverTest() {
+    executor =
+        new ExecutorUtil.MDCAwareThreadPoolExecutor(
+            0,
+            Integer.MAX_VALUE,
+            5,
+            TimeUnit.SECONDS,
+            new SynchronousQueue<>(),
+            new SolrNamedThreadFactory("testExecutor"));
     completionService = new ExecutorCompletionService<>(executor);
     pending = new HashSet<>();
   }
@@ -312,9 +310,9 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
         fail("expected: " + expectedResultSize + ", actual: " + actualResultSize);
       }
       SolrParams queryAll = new SolrQuery("*:*");
-      cloudClient.setDefaultCollection(collection);
+      CloudSolrClient solrClient = this.getSolrClient(collection);
       try {
-        QueryResponse queryResponse = cloudClient.query(queryAll);
+        QueryResponse queryResponse = solrClient.query(queryAll);
         actualResultSize = queryResponse.getResults().getNumFound();
         if (expectedResultSize == actualResultSize) {
           return;
@@ -330,15 +328,16 @@ public class SharedFileSystemAutoReplicaFailoverTest extends AbstractFullDistrib
 
   private void addDocs(String collection, int numDocs, boolean commit)
       throws SolrServerException, IOException {
+    CloudSolrClient solrClient = this.getSolrClient(collection);
     for (int docId = 1; docId <= numDocs; docId++) {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", docId);
       doc.addField("text", "shard" + docId % 5);
-      cloudClient.setDefaultCollection(collection);
-      cloudClient.add(doc);
+
+      solrClient.add(doc);
     }
     if (commit) {
-      cloudClient.commit();
+      solrClient.commit();
     }
   }
 

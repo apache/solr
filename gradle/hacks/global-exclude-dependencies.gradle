@@ -40,6 +40,7 @@ allprojects { prj ->
   ]
   configurations.matching { it.name in configNames }.all {
     exclude group: 'log4j', module: 'log4j' // use SLF4j
+    exclude group: "ch.qos.logback" // use SLF4j
     exclude group: 'commons-logging', module: 'commons-logging' // use SLF4j
     exclude group: 'com.google.code.findbugs', module: 'jsr305' // Uses GPL license
     exclude group: 'com.google.code.findbugs', module: 'annotations' // Use Spotbugs Annotations as replacement
@@ -47,6 +48,7 @@ allprojects { prj ->
     exclude group: 'org.slf4j', module: 'slf4j-log4j12' // don't include log4j 1.x
     exclude group: 'org.apache.yetus', module: 'audience-annotations' // Don't need annotations
     exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations' // Don't need annotations
+    exclude group: 'net.jcip', module: 'jcip-annotations' // use com.github.stephenc.jcip instead
     // be conservative on what's added here.  Affects all Java project compilation and runtime.
   }
 }

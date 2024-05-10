@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -33,7 +34,10 @@ import org.apache.solr.cloud.CloudInspectUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.After;
@@ -47,6 +51,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
   public static final int NUM_SHARDS = 3;
 
   private static final List<SolrClient> clients = new ArrayList<>(); // not CloudSolrClient
+  private static SolrClient solrClient;
 
   /**
    * A randomized prefix to put on every route value. This helps ensure that documents wind up on
@@ -58,7 +63,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
   public static void setupClusterAndCollection() throws Exception {
     RVAL_PRE = TestUtil.randomRealisticUnicodeString(random());
 
-    // sometimes use 2 replicas of every shard so we hit more interesting update code paths
+    // sometimes use 2 replicas of every shard, so we hit more interesting update code paths
     final int numReplicas = usually() ? 1 : 2;
 
     configureCluster(
@@ -72,11 +77,14 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient())
             .isSuccess());
 
-    cluster.getSolrClient().setDefaultCollection(COLL);
+    solrClient = cluster.basicSolrClientBuilder().withDefaultCollection(COLL).build();
 
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     for (Replica replica : clusterState.getCollection(COLL).getReplicas()) {
-      clients.add(getHttpSolrClient(replica.getCoreUrl()));
+      clients.add(
+          new HttpSolrClient.Builder(replica.getBaseUrl())
+              .withDefaultCollection(replica.getCoreName())
+              .build());
     }
   }
 
@@ -84,6 +92,8 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
   public static void afterClass() throws Exception {
     IOUtils.close(clients);
     clients.clear();
+    IOUtils.close(solrClient);
+
     RVAL_PRE = null;
   }
 
@@ -95,7 +105,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
         new UpdateRequest()
             .deleteByQuery("*:*")
             .setAction(UpdateRequest.ACTION.COMMIT, true, true)
-            .process(cluster.getSolrClient())
+            .process(solrClient)
             .getStatus());
   }
 
@@ -106,10 +116,10 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
       final String shardName = entry.getKey();
       final Slice slice = entry.getValue();
       final Replica leader = entry.getValue().getLeader();
-      try (SolrClient leaderClient = getHttpSolrClient(leader.getCoreUrl())) {
+      try (SolrClient leaderClient = getHttpSolrClient(leader)) {
         final SolrDocumentList leaderResults = leaderClient.query(params).getResults();
         for (Replica replica : slice) {
-          try (SolrClient replicaClient = getHttpSolrClient(replica.getCoreUrl())) {
+          try (SolrClient replicaClient = getHttpSolrClient(replica)) {
             final SolrDocumentList replicaResults = replicaClient.query(params).getResults();
             assertEquals(
                 "inconsistency w/leader: shard=" + shardName + "core=" + replica.getCoreName(),
@@ -127,7 +137,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
 
   private SolrClient getRandomSolrClient() {
     final int index = random().nextInt(clients.size() + 1);
-    return index == clients.size() ? cluster.getSolrClient() : clients.get(index);
+    return index == clients.size() ? solrClient : clients.get(index);
   }
 
   /**
@@ -285,15 +295,17 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
    * Test that {@link UpdateRequest#getRoutesToCollection} correctly populates routes for all
    * deletes
    */
-  public void testGlassBoxUpdateRequestRoutesToShards() throws Exception {
+  public void testGlassBoxUpdateRequestRoutesToShards() {
 
     final DocCollection docCol = cluster.getSolrClient().getClusterState().getCollection(COLL);
     // we don't need "real" urls for all replicas, just something we can use as lookup keys for
-    // verification so we'll use the shard names as "leader urls"
+    // verification, so we'll use the shard names as "leader urls"
     final Map<String, List<String>> urlMap =
         docCol.getActiveSlices().stream()
             .collect(
-                Collectors.toMap(s -> s.getName(), s -> Collections.singletonList(s.getName())));
+                Collectors.toMap(
+                    s -> s.getName(),
+                    s -> Collections.singletonList(fakeSolrUrlForShard(s.getName()))));
 
     // simplified rote info we'll build up with the shards for each delete (after sanity checking
     // they have routing info at all)...
@@ -304,7 +316,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
             .getRoutesToCollection(docCol.getRouter(), docCol, urlMap, params(), ROUTE_FIELD);
     for (LBSolrClient.Req lbreq : rawDelRoutes.values()) {
       assertTrue(lbreq.getRequest() instanceof UpdateRequest);
-      final String shard = lbreq.getServers().get(0);
+      final LBSolrClient.Endpoint shard = lbreq.getEndpoints().get(0);
       final UpdateRequest req = (UpdateRequest) lbreq.getRequest();
       for (Map.Entry<String, Map<String, Object>> entry : req.getDeleteByIdMap().entrySet()) {
         final String id = entry.getKey();
@@ -317,7 +329,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
             RVAL_PRE + id.substring(id.length() - 1),
             route.toString());
 
-        actualDelRoutes.put(id, shard);
+        actualDelRoutes.put(id, shard.toString());
       }
     }
 
@@ -332,11 +344,18 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
               .getRouter()
               .getTargetSlice(id, doc, doc.getFieldValue(ROUTE_FIELD).toString(), params(), docCol);
       assertNotNull(id + " add route is null?", expectedShard);
-      assertEquals("Wrong shard for delete of id: " + id, expectedShard.getName(), actualShard);
+      assertEquals(
+          "Wrong shard for delete of id: " + id,
+          fakeSolrUrlForShard(expectedShard.getName()),
+          actualShard.toString());
     }
 
     // sanity check no one broke our test and made it a waste of time
     assertEquals(100, add100Docs().getDocuments().size());
     assertEquals(100, actualDelRoutes.entrySet().size());
+  }
+
+  private static String fakeSolrUrlForShard(String shardName) {
+    return "http://localhost:8983/solr/" + shardName;
   }
 }

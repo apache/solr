@@ -18,6 +18,7 @@ package org.apache.solr.spelling;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -28,8 +29,12 @@ import org.apache.lucene.search.spell.SuggestWord;
 import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
 import org.apache.lucene.search.spell.SuggestWordQueue;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.handler.component.SpellCheckMergeData;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -231,6 +236,51 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
       }
     }
     return result;
+  }
+
+  @Override
+  public void modifyRequest(ResponseBuilder rb, ShardRequest sreq) {
+    if (1.0F <= checker.getMaxQueryFrequency()) {
+      // we need extended results in order to prune things individual shards might think are below
+      // max freq
+      sreq.params.set(SpellingParams.SPELLCHECK_EXTENDED_RESULTS, true);
+      sreq.params.set(SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, true);
+    }
+  }
+
+  @Override
+  public SpellingResult mergeSuggestions(
+      SpellCheckMergeData mergeData, int numSug, int count, boolean extendedResults) {
+
+    for (String original : new ArrayList<>(mergeData.origVsSuggested.keySet())) {
+      if (mergeData.origVsFreq.containsKey(original)) {
+        if (1.0F <= checker.getMaxQueryFrequency()) {
+          // absolute maxQueryFreq threshold
+          if (checker.getMaxQueryFrequency() < mergeData.origVsFreq.get(original)) {
+            // one or more shards thought the word needed suggestions because it's
+            // (per-shard) origFreq was too low, but the aggregate sum of origFreq
+            // is above our threshold, so ignore those suggestions.
+            mergeData.removeOriginal(original);
+          }
+        } else {
+          // percentage maxQueryFreq threshold
+
+          // This situation is also problematic, but in the reverse situation of
+          // the absolute maxQueryFreq threshold.
+          //
+          // An individual shard may have found that it's (per-shard) origFreq
+          // was higher then the computed max for that shard (relative to the
+          // per-shard maxDoc) and said it's "correctlySpelled" even though
+          // it's cumulative origFreq may not meet the computed max across the
+          // entire collection.
+          //
+          // But we don't have a straightforward way to determine that, so for
+          // now it's just a documented deficiency in the ref-guide.
+
+        }
+      }
+    }
+    return super.mergeSuggestions(mergeData, numSug, count, extendedResults);
   }
 
   @Override

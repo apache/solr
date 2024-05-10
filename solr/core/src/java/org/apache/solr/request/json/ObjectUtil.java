@@ -60,7 +60,6 @@ public class ObjectUtil {
 
       // if we aren't handling as a list, and we aren't handling as a map, then just overwrite (i.e.
       // nothing else to do)
-      return;
     }
 
     // merges srcMap onto targetMap (i.e. changes targetMap but not srcMap)
@@ -104,7 +103,7 @@ public class ObjectUtil {
       @SuppressWarnings({"unchecked"})
       Map<String, Object> sub = (Map<String, Object>) outer.get(path.get(i));
       if (sub == null) {
-        sub = new LinkedHashMap<String, Object>();
+        sub = new LinkedHashMap<>();
         outer.put(path.get(i), sub);
       }
       outer = sub;

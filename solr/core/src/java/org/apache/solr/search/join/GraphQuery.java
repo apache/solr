@@ -62,12 +62,16 @@ public class GraphQuery extends Query {
 
   /** The inital node matching query */
   private Query q;
+
   /** the field with the node id */
   private String fromField;
+
   /** the field containing the edge ids */
   private String toField;
+
   /** A query to apply while traversing the graph to filter out edges */
   private Query traversalFilter;
+
   /** The max depth to traverse the graph, -1 means no limit. */
   private int maxDepth = -1;
 
@@ -159,10 +163,10 @@ public class GraphQuery extends Query {
       final Scorer cs = scorer(context);
       final boolean exists = (cs != null && cs.iterator().advance(doc) == doc);
       if (exists) {
-        List<Explanation> subs = new ArrayList<Explanation>();
+        List<Explanation> subs = new ArrayList<>();
         return Explanation.match(1.0F, "Graph Match", subs);
       } else {
-        List<Explanation> subs = new ArrayList<Explanation>();
+        List<Explanation> subs = new ArrayList<>();
         return Explanation.noMatch("No Graph Match.", subs);
       }
     }
@@ -262,7 +266,7 @@ public class GraphQuery extends Query {
     /** Build an automaton to represent the frontier query */
     private Automaton buildAutomaton(BytesRefHash termBytesHash) {
       // need top pass a sorted set of terms to the autn builder (maybe a better way to avoid this?)
-      final TreeSet<BytesRef> terms = new TreeSet<BytesRef>();
+      final TreeSet<BytesRef> terms = new TreeSet<>();
       for (int i = 0; i < termBytesHash.size(); i++) {
         BytesRef ref = new BytesRef();
         termBytesHash.get(i, ref);
@@ -293,6 +297,7 @@ public class GraphQuery extends Query {
 
     final DocIdSetIterator iter;
     final float score;
+
     // graph query scorer constructor with iterator
     public GraphScorer(Weight w, DocIdSetIterator iter, float score) throws IOException {
       super(w);

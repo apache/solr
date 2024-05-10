@@ -24,10 +24,10 @@
   <str name="shareSchema">${shareSchema:false}</str>
   <str name="configSetBaseDir">${configSetBaseDir:configsets}</str>
   <str name="coreRootDirectory">${coreRootDirectory:.}</str>
+  <int name="indexSearcherExecutorThreads">4</int>
 
   <solrcloud>
     <str name="host">127.0.0.1</str>
-    <str name="hostContext">${hostContext:solr}</str>
     <int name="hostPort">${hostPort:8983}</int>
     <int name="zkClientTimeout">${solr.zkclienttimeout:30000}</int>
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>

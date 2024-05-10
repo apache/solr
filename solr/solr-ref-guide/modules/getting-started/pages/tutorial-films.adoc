@@ -1,4 +1,4 @@
-= Exercise 2 Index Films Data
+= Exercise 2: Index Films Data
 :experimental:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -29,17 +29,17 @@ Then go ahead to the next section.
 
 If you did, though, and need to restart Solr, issue these commands:
 
-[source,bash]
+[,console]
 ----
-./bin/solr start -c -p 8983 -s example/cloud/node1/solr
+$ bin/solr start -c -p 8983 -s example/cloud/node1/solr
 ----
 
 This starts the first node.
 When it's done start the second node, and tell it how to connect to ZooKeeper:
 
-[source,bash]
+[,console]
 ----
-./bin/solr start -c -p 7574 -s example/cloud/node2/solr -z localhost:9983
+$ bin/solr start -c -p 7574 -s example/cloud/node2/solr -z localhost:9983
 ----
 
 NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:deployment-guide:zookeeper-ensemble#updating-solr-include-files[Updating Solr Include Files]) you can omit `-z <zk host string>` from the above command.
@@ -72,9 +72,9 @@ This time, we're going to use a configset that has a very minimal schema and let
 
 The data you're going to index is related to movies, so start by creating a collection named "films" that uses the `_default` configset:
 
-[source,bash]
+[,console]
 ----
-bin/solr create -c films -s 2 -rf 2
+$ bin/solr create -c films -s 2 -rf 2
 ----
 
 Whoa, wait.
@@ -87,7 +87,7 @@ This is equivalent to the options we had during the interactive example from the
 
 You should see output like:
 
-[source,subs="verbatim,attributes+"]
+[,console]
 ----
 WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is
          NOT RECOMMENDED for production use.
@@ -165,8 +165,10 @@ That's not going to get us very far.
 What we can do is set up the "name" field in Solr before we index the data to be sure Solr always interprets it as a string.
 At the command line, enter this curl command:
 
-[source,bash]
-curl -X POST -H 'Content-type:application/json' --data-binary '{"add-field": {"name":"name", "type":"text_general", "multiValued":false, "stored":true}}' http://localhost:8983/solr/films/schema
+[,console]
+----
+$ curl -X POST -H 'Content-type:application/json' --data-binary '{"add-field": {"name":"name", "type":"text_general", "multiValued":false, "stored":true}}' http://localhost:8983/solr/films/schema
+----
 
 This command uses the Schema API to explicitly define a field named "name" that has the field type "text_general" (a text field).
 It will not be permitted to have multiple values, but it will be stored (meaning it can be retrieved by queries).
@@ -192,8 +194,10 @@ You can use either the Admin UI or the Schema API for this.
 
 At the command line, use the Schema API again to define a copy field:
 
-[source,bash]
-curl -X POST -H 'Content-type:application/json' --data-binary '{"add-copy-field" : {"source":"*","dest":"_text_"}}' http://localhost:8983/solr/films/schema
+[,console]
+----
+$ curl -X POST -H 'Content-type:application/json' --data-binary '{"add-copy-field" : {"source":"*","dest":"_text_"}}' http://localhost:8983/solr/films/schema
+----
 
 In the Admin UI, choose btn:[Add Copy Field], then fill out the source and destination for your field, as in this screenshot.
 
@@ -215,28 +219,81 @@ It comes in three formats: JSON, XML and CSV.
 Pick one of the formats and index it into the "films" collection (in each example, one command is for Unix/MacOS and the other is for Windows):
 
 .To Index JSON Format
-[source,subs="verbatim,attributes+"]
-----
-bin/post -c films example/films/films.json
+[.dynamic-tabs]
+--
+[example.tab-pane#unixindexjson]
+====
+[.tab-label]*Linux/Mac*
 
-C:\solr-{solr-full-version}> java -jar -Dc=films -Dauto example\exampledocs\post.jar example\films\*.json
+[,console]
 ----
+$ bin/solr post -c films example/films/films.json
+
+----
+====
+
+[example.tab-pane#winindexjson]
+====
+[.tab-label]*Windows*
+
+[,console]
+----
+$ bin/solr post -c films example\films\films.json
+----
+====
+--
+
 
 .To Index XML Format
-[source,subs="verbatim,attributes+"]
-----
-bin/post -c films example/films/films.xml
+[.dynamic-tabs]
+--
+[example.tab-pane#unixindexxml]
+====
+[.tab-label]*Linux/Mac*
 
-C:\solr-{solr-full-version}> java -jar -Dc=films -Dauto example\exampledocs\post.jar example\films\*.xml
+[,console]
 ----
+$ bin/solr post -c films example/films/films.xml
+
+----
+====
+
+[example.tab-pane#winindexxml]
+====
+[.tab-label]*Windows*
+
+[,console]
+----
+$ java -jar -Dc=films -Dauto example\exampledocs\post.jar example\films\*.xml
+----
+====
+--
+
 
 .To Index CSV Format
-[source,subs="verbatim,attributes+"]
-----
-bin/post -c films example/films/films.csv -params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
+[.dynamic-tabs]
+--
+[example.tab-pane#unixindexcsv]
+====
+[.tab-label]*Linux/Mac*
 
-C:\solr-{solr-full-version}> java -jar -Dc=films -Dparams=f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=| -Dauto example\exampledocs\post.jar example\films\*.csv
+[,console]
 ----
+$ bin/solr post -c films example/films/films.csv -params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
+
+----
+====
+
+[example.tab-pane#winindexcsv]
+====
+[.tab-label]*Windows*
+
+[,console]
+----
+$ java -jar -Dc=films -Dparams=f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=| -Dauto example\exampledocs\post.jar example\films\*.csv
+----
+====
+--
 
 Each command includes these main parameters:
 
@@ -250,11 +307,9 @@ Telling Solr to split these columns this way will ensure proper indexing of the 
 
 Each command will produce output similar to the below seen while indexing JSON:
 
-[source,bash,subs="verbatim,attributes"]
+[,console]
 ----
-$ ./bin/post -c films example/films/films.json
-/bin/java -classpath /solr-{solr-full-version}/server/solr-webapp/webapp/WEB-INF/lib/solr-core-{solr-full-version}.jar -Dauto=yes -Dc=films -Ddata=files org.apache.solr.util.SimplePostTool example/films/films.json
-SimplePostTool version 5.0.0
+$ bin/solr post -c films example/films/films.json
 Posting files to [base] url http://localhost:8983/solr/films/update...
 Entering auto mode. File endings considered are xml,json,jsonl,csv,pdf,doc,docx,ppt,pptx,xls,xlsx,odt,odp,ods,ott,otp,ots,rtf,htm,html,txt,log
 POSTing file films.json (application/json) to [base]/json/docs
@@ -292,7 +347,10 @@ To see facet counts from all documents (`q=\*:*`): turn on faceting (`facet=true
 If you only want facets, and no document contents, specify `rows=0`.
 The `curl` command below will return facet counts for the `genre_str` field:
 
-`curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=true&facet.field=genre_str"`
+[,console]
+----
+$ curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=true&facet.field=genre_str"`
+----
 
 In your terminal, you'll see something like:
 
@@ -330,9 +388,9 @@ Or, perhaps you do want all the facets, and you'll let your application's front-
 
 If you wanted to control the number of items in a bucket, you could do something like this:
 
-[source,bash]
+[,console]
 ----
-curl "http://localhost:8983/solr/films/select?=&q=\*:*&facet.field=genre_str&facet.mincount=200&facet=on&rows=0"
+$ curl "http://localhost:8983/solr/films/select?=&q=\*:*&facet.field=genre_str&facet.mincount=200&facet=on&rows=0"
 ----
 
 You should only see 4 facets returned.
@@ -350,16 +408,18 @@ The Solr Admin UI doesn't yet support range facet options, so you will need to u
 
 If we construct a query that looks like this:
 
-[source,bash]
-curl 'http://localhost:8983/solr/films/select?q=*:*&rows=0'\
-'&facet=true'\
-'&facet.range=initial_release_date'\
-'&facet.range.start=NOW/YEAR-25YEAR'\
-'&facet.range.end=NOW'\
-'&facet.range.gap=%2B1YEAR'
+[,console]
+----
+$ curl "http://localhost:8983/solr/films/select?q=*:*&rows=0\
+&facet=true\
+&facet.range=initial_release_date\
+&facet.range.start=NOW/YEAR-25YEAR\
+&facet.range.end=NOW\
+&facet.range.gap=%2B1YEAR"
+----
 
 This will request all films and ask for them to be grouped by year starting with 25 years ago (our earliest release date is in 2000) and ending today.
-Note that this query again URL encodes a `+` as `%2B`.
+Note that this query URL encodes a `+` as `%2B`.
 
 In the terminal you will see:
 
@@ -418,9 +478,9 @@ Another faceting type is pivot facets, also known as "decision trees", allowing 
 Using the films data, pivot facets can be used to see how many of the films in the "Drama" category (the `genre_str` field) are directed by a director.
 Here's how to get at the raw data for this scenario:
 
-[source,bash]
+[,console]
 ----
-curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=on&facet.pivot=genre_str,directed_by_str"
+$ curl "http://localhost:8983/solr/films/select?q=\*:*&rows=0&facet=on&facet.pivot=genre_str,directed_by_str"
 ----
 
 This results in the following response, which shows a facet for each category and director combination:
@@ -474,7 +534,7 @@ Like our previous exercise, this data may not be relevant to your needs.
 We can clean up our work by deleting the collection.
 To do that, issue this command at the command line:
 
-[source,bash]
+[,console]
 ----
-bin/solr delete -c films
+$ bin/solr delete -c films
 ----

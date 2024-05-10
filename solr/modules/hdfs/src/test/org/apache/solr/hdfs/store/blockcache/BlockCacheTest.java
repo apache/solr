@@ -16,15 +16,20 @@
  */
 package org.apache.solr.hdfs.store.blockcache;
 
-import com.github.benmanes.caffeine.cache.*;
-import java.util.Arrays;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.RemovalCause;
+import com.github.benmanes.caffeine.cache.RemovalListener;
+import java.lang.invoke.MethodHandles;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BlockCacheTest extends SolrTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
   public void testBlockCache() {
@@ -32,14 +37,14 @@ public class BlockCacheTest extends SolrTestCase {
     int blockSize = 1024;
 
     int slabSize = blockSize * 4096;
-    long totalMemory = 2 * slabSize;
+    long totalMemory = 2L * slabSize;
 
     BlockCache blockCache = new BlockCache(new Metrics(), true, totalMemory, slabSize, blockSize);
     byte[] buffer = new byte[1024];
     Random random = random();
     byte[] newData = new byte[blockSize];
-    AtomicLong hitsInCache = new AtomicLong();
-    AtomicLong missesInCache = new AtomicLong();
+    long hitsInCache = 0L;
+    long missesInCache = 0L;
     long storeTime = 0;
     long fetchTime = 0;
     int passes = 10000;
@@ -54,9 +59,9 @@ public class BlockCacheTest extends SolrTestCase {
       blockCacheKey.setPath("/");
 
       if (blockCache.fetch(blockCacheKey, buffer)) {
-        hitsInCache.incrementAndGet();
+        hitsInCache += 1;
       } else {
-        missesInCache.incrementAndGet();
+        missesInCache += 1;
       }
 
       byte[] testData = testData(random, blockSize, newData);
@@ -69,11 +74,11 @@ public class BlockCacheTest extends SolrTestCase {
       long t3 = System.nanoTime();
       if (blockCache.fetch(blockCacheKey, buffer)) {
         fetchTime += (System.nanoTime() - t3);
-        assertTrue("buffer content differs", Arrays.equals(testData, buffer));
+        assertArrayEquals("buffer content differs", testData, buffer);
       }
     }
-    System.out.println("Cache Hits    = " + hitsInCache.get());
-    System.out.println("Cache Misses  = " + missesInCache.get());
+    System.out.println("Cache Hits    = " + hitsInCache);
+    System.out.println("Cache Misses  = " + missesInCache);
     System.out.println("Store         = " + (storeTime / (double) passes) / 1000000.0);
     System.out.println("Fetch         = " + (fetchTime / (double) passes) / 1000000.0);
     System.out.println("# of Elements = " + blockCache.getSize());
@@ -157,7 +162,7 @@ public class BlockCacheTest extends SolrTestCase {
 
               } catch (Throwable e) {
                 failed.set(true);
-                e.printStackTrace();
+                log.error("failure", e);
               }
             }
 
@@ -320,7 +325,7 @@ public class BlockCacheTest extends SolrTestCase {
                 test(readsPerThread);
               } catch (Throwable e) {
                 failed.set(true);
-                e.printStackTrace();
+                log.error("failure", e);
               }
             }
 

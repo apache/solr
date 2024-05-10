@@ -111,6 +111,31 @@ Note that while date math is most commonly used relative to `NOW` it can be appl
 
 `1972-05-20T17:33:18.772Z+6MONTHS+3DAYS/DAY`
 
+==== Date Math Unit Options ====
+The following units are valid for use in date math expressions. The first column is the value used in date math expressions in Solr. The second column is the chronological unit to which it maps, as multiple aliases exist for given units of time.
+
+|===
+|Date Math Expression Unit | Chronological Unit
+
+|YEAR | Years
+|YEARS | Years
+|MONTH | Months
+|MONTHS | Months
+|DAY | Days
+|DAYS | Days
+|DATE | Days
+|HOUR | Hours
+|HOURS | Hours
+|MINUTE | Minutes
+|MINUTES | Minutes
+|SECOND | Seconds
+|SECONDS | Seconds
+|MILLI | Milliseconds
+|MILLIS | Milliseconds
+|MILLISECOND | Milliseconds
+|MILLISECONDS | Milliseconds
+|===
+
 === Request Parameters That Affect Date Math
 
 ==== NOW
@@ -192,4 +217,117 @@ Unlike most local params, `op` is actually _not_ defined by any query parser (`f
 In the above example, it would find documents with indexed ranges that _contain_ (or equals) the range 2013 thru 2018.
 Multi-valued overlapping indexed ranges in a document are effectively coalesced.
 
-For a DateRangeField example use-case, see https://cwiki.apache.org/confluence/display/solr/DateRangeField[see Solr's community wiki].
+== An Example Use Case
+
+Suppose we want to find all restaurants that are open within a certain time window.
+Let's add a date range field to the schema.xml, so that we could index the information about the restaurant opening hours:
+
+[source,xml]
+----
+<field name="opening_hours" type="date_range" indexed="true" stored="true" multiValued="true"/>
+<fieldType name="date_range" class="solr.DateRangeField"/>
+----
+
+Next, we will add two restaurants to the index:
+
+====
+[.tab-label]*JSON*
+[source,json]
+----
+[{ "id": "r01",
+   "opening_hours": [ "[2016-02-01T03:00Z TO 2016-02-01T15:00Z]",
+                      "[2016-02-02T03:00Z TO 2016-02-02T15:00Z]",
+                      "[2016-02-03T03:00Z TO 2016-02-03T15:00Z]",
+                      "[2016-02-04T03:00Z TO 2016-02-04T15:00Z]",
+                      "[2016-02-05T03:00Z TO 2016-02-05T16:00Z]",
+                      "[2016-02-06T03:00Z TO 2016-02-06T16:00Z]",
+                      "[2016-02-07T03:00Z TO 2016-02-07T15:00Z]" ]},
+ { "id": "r02",
+   "opening_hours": [ "[2016-02-06T10:00Z TO 2016-02-06T12:00Z]",
+                      "[2016-02-06T14:00Z TO 2016-02-06T16:00Z]",
+                      "[2016-02-07T12:00Z TO 2016-02-07T16:00Z]" ]}
+]
+----
+====
+
+Each restaurant can have multiple opening hours in a single day,
+and the opening hours can be different on different days.
+
+NOTE: The date ranges in `opening_hours` should be converted to UTC before indexing.
+
+Now, to find the restaurants that are open during a specific time window,
+we can use a filter query:
+
+[source,text]
+----
+fq={!field f=opening_hours op=Contains}[2016-02-02T14:50 TO 2016-02-02T15:00]
+----
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":29,
+    "params":{
+      "q":"id:*",
+      "fl":"id",
+      "fq":"{!field f=opening_hours op=Contains}[2016-02-02T14:50 TO 2016-02-02T15:00]",
+      "wt":"json"}},
+  "response":{"numFound":1,"start":0,"numFoundExact":true,"docs":[
+      {
+        "id":"r01"}]
+  }}
+----
+
+And if we need to get opening hour ranges, we can use a xref:query-guide:faceting.adoc[facet query]:
+
+[source,text]
+----
+q=id:*
+rows=0
+facet=true
+facet.range=opening_hours
+f.opening_hours.facet.range.start=NOW
+f.opening_hours.facet.range.end=NOW+6HOUR
+f.opening_hours.facet.range.gap=+1HOUR
+----
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":16,
+    "params":{
+      "q":"id:*",
+      "facet":"true",
+      "facet.range":"opening_hours",
+      "f.opening_hours.facet.range.start":"NOW",
+      "f.opening_hours.facet.range.gap":"+1HOUR",
+      "f.opening_hours.facet.range.end":"NOW+6HOUR",
+      "rows":"0",
+      "wt":"json"}},
+  "response":{"numFound":2,"start":0,"numFoundExact":true,"docs":[]
+  },
+  "facet_counts":{
+    "facet_queries":{},
+    "facet_fields":{},
+    "facet_ranges":{
+      "opening_hours":{
+        "counts":[
+          "2016-02-06T11:01:00Z",2,
+          "2016-02-06T12:01:00Z",1,
+          "2016-02-06T13:01:00Z",2,
+          "2016-02-06T14:01:00Z",2,
+          "2016-02-06T15:01:00Z",2,
+          "2016-02-06T16:01:00Z",0],
+        "gap":"+1HOUR",
+        "start":"2016-02-06T11:01:00Z",
+        "end":"2016-02-06T17:01:00Z"}},
+    "facet_intervals":{},
+    "facet_heatmaps":{}}}
+----
+
+The query results show how many restaurants will be open in the next 6 hours,
+with a breakdown for each of the six consecutive one-hour intervals.

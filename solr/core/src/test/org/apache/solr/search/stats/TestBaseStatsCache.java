@@ -33,6 +33,7 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
     System.setProperty("solr.statsCache", getStatsCacheClassName());
   }
 
+  @Override
   public void distribTearDown() throws Exception {
     super.distribTearDown();
     System.clearProperty("solr.statsCache");
@@ -62,5 +63,10 @@ public abstract class TestBaseStatsCache extends TestDefaultStatsCache {
       SolrDocument shardDoc = it2.next();
       assertEquals(controlDoc.getFieldValue("score"), shardDoc.getFieldValue("score"));
     }
+  }
+
+  @Override
+  protected void checkDistribStatsException() {
+    // doing nothing on distrib stats
   }
 }

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -174,7 +173,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
         davesDepartments);
 
     // find people that develop stuff - but limit via filter query to a name of "john"
-    // this tests filters being pushed down to queries (SOLR-3062)
+    // this tests filters being pushed down to the queries (SOLR-3062)
     assertJQ(
         req(
             "q",
@@ -199,7 +198,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
         "/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}");
   }
 
-  public void testNotEquals() throws SyntaxError, IOException {
+  public void testNotEquals() throws SyntaxError {
     try (SolrQueryRequest req = req("*:*")) {
       Query x =
           QParser.getParser("{!join from=dept_id_s to=dept_ss score=none}text_t:develop", req)
@@ -207,7 +206,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
       Query y =
           QParser.getParser("{!join from=dept_ss to=dept_ss score=none}text_t:develop", req)
               .getQuery();
-      assertFalse("diff from fields produce equal queries", x.equals(y));
+      assertNotEquals("diff from fields produce equal queries", x, y);
     }
   }
 
@@ -269,7 +268,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
 
       List<FldType> types = new ArrayList<FldType>();
       types.add(new FldType("id", ONE_ONE, new SVal('A', 'Z', 4, 4)));
-      /**
+      /*
        * no numeric fields so far LUCENE-5868 types.add(new FldType("score_f_dv",ONE_ONE, new
        * FVal(1,100))); // field used to score
        */
@@ -280,7 +279,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
       types.add(
           new FldType("small2_ss_dv", ZERO_TWO, new SVal('a', (char) ('c' + indexSize / 3), 1, 1)));
       types.add(new FldType("small3_ss_dv", new IRange(0, 25), new SVal('A', 'z', 1, 1)));
-      /**
+      /*
        * no numeric fields so far LUCENE-5868 types.add(new FldType("small_i_dv",ZERO_ONE, new
        * IRange(0,5+indexSize/3))); types.add(new FldType("small2_i_dv",ZERO_ONE, new
        * IRange(0,5+indexSize/3))); types.add(new FldType("small2_is_dv",ZERO_TWO, new
@@ -321,7 +320,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
         Set<Comparable> docs = join(fromDocs, pivot);
         List<Doc> docList = new ArrayList<Doc>(docs.size());
         for (Comparable id : docs) docList.add(model.get(id));
-        Collections.sort(docList, createComparator("_docid_", true, false, false, false));
+        docList.sort(createComparator("_docid_", true, false, false, false));
         List sortedDocs = new ArrayList();
         for (Doc doc : docList) {
           if (sortedDocs.size() >= 10) break;
@@ -398,7 +397,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
           {
             final Map<String, String> ps = ((MapSolrParams) req.getParams()).getMap();
             final String q = ps.get("q");
-            ps.put("q", q.replaceAll("join score=none", "join"));
+            ps.put("q", q.replace("join score=none", "join"));
             log.error("plain join: {}", h.query(req));
             ps.put("q", q);
           }
@@ -406,7 +405,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
             // re-execute the request... good for putting a breakpoint here for debugging
             final Map<String, String> ps = ((MapSolrParams) req.getParams()).getMap();
             final String q = ps.get("q");
-            ps.put("q", q.replaceAll("\\}", " cache=false\\}"));
+            ps.put("q", q.replace("}", " cache=false}"));
             h.query(req);
           }
           fail(err);

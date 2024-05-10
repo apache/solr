@@ -25,9 +25,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -35,6 +35,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  @Override
   public void merge(ResponseBuilder rb, ShardRequest sreq) {
     rb._responseDocs = new SolrDocumentList(); // Null pointers will occur otherwise.
     rb.onePassDistributedQuery = true; // Turn off the second pass distributed.
@@ -64,30 +66,39 @@ public abstract class IterativeMergeStrategy implements MergeStrategy {
     }
   }
 
+  @Override
   public boolean mergesIds() {
     return true;
   }
 
+  @Override
   public int getCost() {
     return 0;
   }
 
+  @Override
   public boolean handlesMergeFields() {
     return false;
   }
 
+  @Override
   public void handleMergeFields(ResponseBuilder rb, SolrIndexSearcher searcher) {}
 
   public class CallBack implements Callable<CallBack> {
-    private HttpSolrClient solrClient;
+    private SolrClient solrClient;
     private QueryRequest req;
     private QueryResponse response;
     private ShardResponse originalShardResponse;
 
     public CallBack(ShardResponse originalShardResponse, QueryRequest req) {
-
+      final String shardBaseUrl = URLUtil.extractBaseUrl(originalShardResponse.getShardAddress());
+      final String shardCoreName =
+          URLUtil.extractCoreFromCoreUrl(originalShardResponse.getShardAddress());
       this.solrClient =
-          new Builder(originalShardResponse.getShardAddress()).withHttpClient(httpClient).build();
+          new Builder(shardBaseUrl)
+              .withDefaultCollection(shardCoreName)
+              .withHttpClient(httpClient)
+              .build();
       this.req = req;
       this.originalShardResponse = originalShardResponse;
       req.setMethod(SolrRequest.METHOD.POST);
@@ -103,6 +114,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy {
       return this.originalShardResponse;
     }
 
+    @Override
     public CallBack call() throws Exception {
       this.response = req.process(solrClient);
       return this;

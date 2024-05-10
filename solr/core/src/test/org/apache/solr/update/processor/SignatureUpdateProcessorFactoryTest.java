@@ -179,22 +179,21 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       threads2[i].setName("testThread2-" + i);
     }
 
-    for (int i = 0; i < threads.length; i++) {
-      threads[i].start();
+    for (Thread thread : threads) {
+      thread.start();
     }
 
-    for (int i = 0; i < threads2.length; i++) {
-      threads2[i].start();
+    for (Thread thread2 : threads2) {
+      thread2.start();
     }
 
-    for (int i = 0; i < threads.length; i++) {
-      threads[i].join();
+    for (Thread thread : threads) {
+      thread.join();
     }
 
-    for (int i = 0; i < threads2.length; i++) {
-      threads2[i].join();
+    for (Thread thread2 : threads2) {
+      thread2.join();
     }
-    SolrCore core = h.getCore();
 
     assertU(commit());
 
@@ -217,7 +216,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testFailNonIndexedSigWithOverwriteDupes() throws Exception {
+  public void testFailNonIndexedSigWithOverwriteDupes() {
     SolrCore core = h.getCore();
     SignatureUpdateProcessorFactory f = new SignatureUpdateProcessorFactory();
     NamedList<String> initArgs = new NamedList<>();
@@ -262,8 +261,8 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       ureq.add(doc);
     }
     {
-      // A and B should have same sig as eachother
-      // even though the particulars of how the the ints_is list are built
+      // A and B should have same sig as each other
+      // even though the particulars of how the ints_is list are built
 
       SolrInputDocument docA = new SolrInputDocument();
       SolrInputDocument docB = new SolrInputDocument();

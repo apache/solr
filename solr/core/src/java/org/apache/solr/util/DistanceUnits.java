@@ -16,7 +16,6 @@
  */
 package org.apache.solr.util;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -47,7 +46,7 @@ public class DistanceUnits {
 
   // volatile so other threads see when we replace when copy-on-write
   private static volatile Map<String, DistanceUnits> instances =
-      ImmutableMap.of(
+      Map.of(
           KILOMETERS_PARAM, KILOMETERS,
           MILES_PARAM, MILES,
           DEGREES_PARAM, DEGREES);
@@ -119,9 +118,9 @@ public class DistanceUnits {
   public static synchronized void addUnits(
       String strId, double earthRadius, double multiplierThisToDegrees) {
     // copy-on-write.
-    Map<String, DistanceUnits> map = new HashMap<String, DistanceUnits>(instances);
+    Map<String, DistanceUnits> map = new HashMap<>(instances);
     map.put(strId, new DistanceUnits(strId, earthRadius, multiplierThisToDegrees));
-    instances = ImmutableMap.copyOf(map);
+    instances = Map.copyOf(map);
   }
 
   @Override

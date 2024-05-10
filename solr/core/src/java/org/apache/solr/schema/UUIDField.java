@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.update.processor.UUIDUpdateProcessorFactory; // jdoc
+import org.apache.solr.update.processor.UUIDUpdateProcessorFactory;
 
 /**
  * This FieldType accepts UUID string values, as well as the special value of "NEW" which triggers
@@ -91,18 +91,5 @@ public class UUIDField extends StrField {
 
   public String toInternal(UUID uuid) {
     return uuid.toString().toLowerCase(Locale.ROOT);
-  }
-
-  @Override
-  public UUID toObject(IndexableField f) {
-    return UUID.fromString(toExternal(f));
-  }
-
-  @Override
-  public Object toNativeType(Object val) {
-    if (val instanceof CharSequence) {
-      return UUID.fromString(val.toString());
-    }
-    return val;
   }
 }

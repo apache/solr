@@ -60,8 +60,11 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
 ====
 [.tab-label]*V2 API*
 
-We do not currently have a V2 equivalent.
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cluster
 
+----
 ====
 --
 
@@ -162,9 +165,7 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
         "health": "GREEN",
         "aliases":["both_collections"]
       },
-      "collection2":{
-        "..."
-      }
+      "collection2":{"key": "value"}
     },
     "aliases":{ "both_collections":"collection1,collection2" },
     "roles":{
@@ -229,7 +230,6 @@ curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/jso
 +
 The name of the property.
 Supported properties names are `location`, `maxCoresPerNode`, `urlScheme`, and `defaultShardPreferences`.
-If the xref:distributed-tracing.adoc[Jaeger tracing module] has been enabled, the property `samplePercentage` is also available.
 +
 Other properties can be set (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`.
 Unknown properties that don't begin with `ext.` will be rejected.
@@ -335,12 +335,6 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 }' http://localhost:8983/api/cluster
 ----
 
-NOTE: Until Solr 7.5, cluster properties supported a `collectionDefaults` key which is now deprecated and
-replaced with `defaults`.
-Using the `collectionDefaults` parameter in Solr 7.4 or 7.5 will continue to work
- but the format of the properties will automatically be converted to the new nested structure.
-Support for the "collectionDefaults" key will be removed in Solr 9.
-
 === Default Shard Preferences
 
 Using the `defaultShardPreferences` parameter, you can implement rack or availability zone awareness.
@@ -360,10 +354,82 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 
 At this point, if you run a query on a node having e.g., `rack=rack1`, Solr will try to hit only replicas from `rack1`.
 
+[[balancereplicas]]
+== Balance Replicas
+
+Shuffle the replicas across the given set of Solr nodes until an equilibrium is reached.
+
+The configured xref:configuration-guide:replica-placement-plugins.adoc[Replica Placement Plugin]
+will be used to decide:
+
+* Which replicas should be moved for the balancing
+* Which nodes those replicas should be placed
+* When the cluster has reached an "equilibrium"
+
+[example.tab-pane#v2balancereplicas]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cluster/replicas/balance -H 'Content-Type: application/json' -d '
+  {
+    "nodes": ["localhost:8983_solr", "localhost:8984_solr"],
+    "async": "balance-replicas-1"
+  }
+'
+----
+====
+
+===  Parameters
+
+
+`nodes`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The nodes over which replicas will be balanced.
+Replicas that live outside this set of nodes will not be included in the balancing.
++
+If this parameter is not provided, all live data nodes will be used.
+
+`waitForFinalState`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, the request will complete only when all affected replicas become active.
+If `false`, the API will return when the bare minimum replicas are active, such as the affected leader replicas.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
+
+=== BalanceReplicas Response
+
+The response will include the status of the request.
+If the status is anything other than "0", an error message will explain why the request failed.
+
+[IMPORTANT]
+====
+This operation does not hold necessary locks on the replicas that belong to on the source node.
+So don't perform other collection operations in this period.
+====
+
 [[balanceshardunique]]
 == BALANCESHARDUNIQUE: Balance a Property Across Nodes
 
-Insures that a particular property is distributed evenly amongst the physical nodes that make up a collection.
+Ensures that a particular property is distributed evenly amongst the physical nodes that make up a collection.
 If the property already exists on a replica, every effort is made to leave it there.
 If the property is *not* on any replica on a shard, one is chosen and the property is added.
 
@@ -386,11 +452,9 @@ http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collectio
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d '
+curl -X POST http://localhost:8983/api/collections/techproducts/balance-shard-unique -H 'Content-Type: application/json' -d '
   {
-    "balance-shard-unique": {
-      "property": "preferredLeader"
-    }
+    "property": "preferredLeader"
   }
 '
 ----
@@ -471,13 +535,103 @@ http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collectio
 
 Examining the clusterstate after issuing this call should show exactly one replica in each shard that has this property.
 
+[[migratereplicas]]
+== Migrate Replicas
+
+Migrate all replicas off of a given set of source nodes.
++
+If more than one node is used as a targetNode (either explicitly, or by default), then the configured
+xref:configuration-guide:replica-placement-plugins.adoc[Replica Placement Plugin] will be used to determine
+which targetNode should be used for each migrated replica.
+
+[example.tab-pane#v2migratereplicas]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cluster/replicas/migrate -H 'Content-Type: application/json' -d '
+  {
+    "sourceNodes": ["localhost:8983_solr", "localhost:8984_solr"],
+    "targetNodes": ["localhost:8985_solr", "localhost:8986_solr"],
+    "async": "migrate-replicas-1"
+  }
+'
+----
+====
+
+===  Parameters
+
+
+`sourceNodes`::
++
+[%autowidth,frame=none]
+|===
+|Required |Default: none
+|===
++
+The nodes over which replicas will be balanced.
+Replicas that live outside this set of nodes will not be included in the balancing.
+
+`targetNodes`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The nodes which the migrated replicas will be moved to.
+If none is provided, then the API will use all live nodes not provided in `sourceNodes`.
++
+If there is more than one node to migrate the replicas to, then the configured PlacementPlugin replica will have one of these nodes selected
+
+`waitForFinalState`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, the request will complete only when all affected replicas become active.
+If `false`, the API will return when the bare minimum replicas are active, such as the affected leader replicas.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be xref:configuration-guide:collections-api.adoc#asynchronous-calls[processed asynchronously].
+
+=== MigrateReplicas Response
+
+The response will include the status of the request.
+If the status is anything other than "0", an error message will explain why the request failed.
+
+[IMPORTANT]
+====
+This operation does not hold necessary locks on the replicas that belong to on the source node.
+So don't perform other collection operations in this period.
+====
+
 [[replacenode]]
 == REPLACENODE: Move All Replicas in a Node to Another
+
+[WARNING]
+====
+This API's functionality has been replaced and enhanced by <<migratereplicas>>, please consider using the new
+API instead, as this API may be removed in a future version.
+====
 
 This command recreates replicas in one node (the source) on another node(s) (the target).
 After each replica is copied, the replicas in the source node are deleted.
 
 For source replicas that are also shard leaders the operation will wait for the number of seconds set with the `timeout` parameter to make sure there's an active replica that can become a leader, either an existing replica becoming a leader or the new replica completing recovery and becoming a leader).
+
+If no targetNode is provided, then the configured
+xref:configuration-guide:replica-placement-plugins.adoc[Replica Placement Plugin] will be used to determine
+which node each recreated replica should be placed on.
 
 [.dynamic-tabs]
 --
@@ -496,7 +650,16 @@ http://localhost:8983/solr/admin/collections?action=REPLACENODE&sourceNode=sourc
 ====
 [.tab-label]*V2 API*
 
-We do not currently have a V2 equivalent.
+[source,bash]
+----
+curl -X POST "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/replace" -H 'Content-Type: application/json' -d '
+    {
+      "targetNodeName": "localhost:8983_solr",
+      "waitForFinalState": "false",
+      "async": "async"
+    }
+'
+----
 
 ====
 --
@@ -520,7 +683,9 @@ The source node from which the replicas need to be copied from.
 |===
 +
 The target node where replicas will be copied.
-If this parameter is not provided, Solr will identify nodes automatically based on policies or number of cores in each node.
+If this parameter is not provided, Solr will use all live nodes except for the `sourceNode`.
+The configured xref:configuration-guide:replica-placement-plugins.adoc[Replica Placement Plugin]
+will be used to determine which node will be used for each replica.
 
 `parallel`::
 +
@@ -531,6 +696,16 @@ If this parameter is not provided, Solr will identify nodes automatically based 
 +
 If this flag is set to `true`, all replicas are created in separate threads.
 Keep in mind that this can lead to very high network and disk I/O if the replicas have very large indices.
+
+`waitForFinalState`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+If `true`, the request will complete only when all affected replicas become active.
+If `false`, the API will return when the bare minimum replicas are active, such as the affected leader replicas.
 
 `async`::
 +
@@ -578,7 +753,14 @@ http://localhost:8983/solr/admin/collections?action=DELETENODE&node=nodeName
 ====
 [.tab-label]*V2 API*
 
-We do not currently have a V2 equivalent.
+[source,bash]
+----
+curl -X POST "http://localhost:8983/api/cluster/nodes/localhost:7574_solr/clear/" -H 'Content-Type: application/json' -d '
+    {
+      "async": "someAsyncId"
+    }
+'
+----
 
 ====
 --
@@ -840,9 +1022,8 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
       "95thPcRequestTime":0.519016,
       "99thPcRequestTime":0.519016,
       "999thPcRequestTime":0.519016},
-    "removeshard",{
-      "..."
-  }],
+    "removeshard",{}
+  ],
   "collection_operations":[
     "splitshard",{
       "requests":1,
@@ -870,7 +1051,6 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
   ],
   "overseer_queue":[
     "..."
-  ],
-  "..."
+  ]
  }
 ----

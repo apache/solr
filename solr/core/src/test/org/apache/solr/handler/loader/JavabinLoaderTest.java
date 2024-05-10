@@ -17,7 +17,6 @@
 package org.apache.solr.handler.loader;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -74,7 +73,7 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
     BufferingRequestProcessor mockUpdateProcessor =
         new BufferingRequestProcessor(null) {
           @Override
-          public void processAdd(AddUpdateCommand cmd) throws IOException {
+          public void processAdd(AddUpdateCommand cmd) {
             addCommands.add((AddUpdateCommand) cmd.clone());
           }
         };
@@ -88,7 +87,7 @@ public class JavabinLoaderTest extends SolrTestCaseJ4 {
             mockUpdateProcessor);
     req.close();
 
-    assertTrue(mockUpdateProcessor.addCommands.size() == numDocsInBatch);
+    assertEquals(mockUpdateProcessor.addCommands.size(), numDocsInBatch);
     for (int i = 0; i < numDocsInBatch - 1; i++)
       assertFalse(mockUpdateProcessor.addCommands.get(i).isLastDocInBatch); // not last doc in batch
 

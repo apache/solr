@@ -62,7 +62,7 @@ All of the examples in this section assume you are running the "techproducts" So
 
 [source,bash]
 ----
-bin/solr -e techproducts
+bin/solr start -e techproducts
 ----
 
 == Modify the Schema
@@ -955,7 +955,7 @@ See the section xref:fields.adoc[] for more information about each parameter.
 [tab-label]*V1 API*
 [source,bash]
 ----
-http://localhost:8983/techproducts/schema/fields
+http://localhost:8983/solr/techproducts/schema/fields
 ----
 ====
 

@@ -16,17 +16,15 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
 import java.io.IOException;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
 /** Test the LBHttpSolrClient. */
-public class LBHttpSolrClientTest {
+public class LBHttpSolrClientTest extends SolrTestCase {
 
   /**
    * Test method for {@link LBHttpSolrClient.Builder}.
@@ -42,7 +40,8 @@ public class LBHttpSolrClientTest {
                 .withHttpClient(httpClient)
                 .withResponseParser(null)
                 .build();
-        HttpSolrClient httpSolrClient = testClient.makeSolrClient("http://127.0.0.1:8080")) {
+        HttpSolrClient httpSolrClient =
+            testClient.makeSolrClient(new LBSolrClient.Endpoint("http://127.0.0.1:8080"))) {
       assertNull("Generated server should have null parser.", httpSolrClient.getParser());
     } finally {
       HttpClientUtil.close(httpClient);
@@ -56,7 +55,8 @@ public class LBHttpSolrClientTest {
                   .withHttpClient(httpClient)
                   .withResponseParser(parser)
                   .build();
-          HttpSolrClient httpSolrClient = testClient.makeSolrClient("http://127.0.0.1:8080")) {
+          HttpSolrClient httpSolrClient =
+              testClient.makeSolrClient(new LBSolrClient.Endpoint("http://127.0.0.1:8080"))) {
         assertEquals(
             "Invalid parser passed to generated server.", parser, httpSolrClient.getParser());
       }

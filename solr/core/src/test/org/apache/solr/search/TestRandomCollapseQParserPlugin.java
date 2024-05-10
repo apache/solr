@@ -43,7 +43,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
   public static List<String> ALL_SORT_FIELD_NAMES;
   public static List<String> ALL_COLLAPSE_FIELD_NAMES;
 
-  private static String[] NULL_POLICIES =
+  private static final String[] NULL_POLICIES =
       new String[] {
         CollapsingQParserPlugin.NullPolicy.IGNORE.getName(),
         CollapsingQParserPlugin.NullPolicy.COLLAPSE.getName(),
@@ -63,14 +63,14 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
     }
     assertU(commit());
 
-    // Don't close this client, it would shutdown the CoreContainer
+    // Don't close this client, it would shut down the CoreContainer
     SOLR = new EmbeddedSolrServer(h.getCoreContainer(), h.coreName);
 
     ALL_SORT_FIELD_NAMES =
         CursorPagingTest.pruneAndDeterministicallySort(
             h.getCore().getLatestSchema().getFields().keySet());
 
-    ALL_COLLAPSE_FIELD_NAMES = new ArrayList<String>(ALL_SORT_FIELD_NAMES.size());
+    ALL_COLLAPSE_FIELD_NAMES = new ArrayList<>(ALL_SORT_FIELD_NAMES.size());
     for (String candidate : ALL_SORT_FIELD_NAMES) {
       if (candidate.startsWith("str")
           || candidate.startsWith("float")
@@ -81,10 +81,10 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void cleanupStatics() throws Exception {
-    deleteCore();
+  public static void cleanupStatics() {
     SOLR = null;
-    ALL_SORT_FIELD_NAMES = ALL_COLLAPSE_FIELD_NAMES = null;
+    ALL_SORT_FIELD_NAMES = null;
+    ALL_COLLAPSE_FIELD_NAMES = null;
   }
 
   public void testEveryIsolatedSortFieldOnSingleGroup() throws Exception {
@@ -92,7 +92,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
     for (String sortField : ALL_SORT_FIELD_NAMES) {
       for (String dir : Arrays.asList(" asc", " desc")) {
 
-        final String sort = sortField + dir + ", id" + dir; // need id for tie breaker
+        final String sort = sortField + dir + ", id" + dir; // need id for tiebreaker
         final String q = random().nextBoolean() ? "*:*" : CursorPagingTest.buildRandomQuery();
 
         final SolrParams sortedP = params("q", q, "rows", "1", "sort", sort);
@@ -108,9 +108,10 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
             for (String fq :
                 Arrays.asList(
                     p + "same_for_all_docs sort='" + sort + "'}",
-                    // nullPolicy=expand shouldn't change anything since every doc has field
+                    // nullPolicy=expand shouldn't change anything since every doc has the field
                     p + "same_for_all_docs sort='" + sort + "' nullPolicy=expand}",
-                    // a field in no docs with nullPolicy=collapse should have same effect as
+                    // a field in no docs with nullPolicy=collapse should have had the same effect
+                    // as
                     // collapsing on a field in every doc
                     p + "not_in_any_docs sort='" + sort + "' nullPolicy=collapse}")) {
               final SolrParams collapseP = params("q", q, "rows", "1", "fq", fq);
@@ -135,7 +136,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
     }
   }
 
-  public void testRandomCollpaseWithSort() throws Exception {
+  public void testRandomCollapseWithSort() {
 
     final int numMainQueriesPerCollapseField = atLeast(5);
 
@@ -188,14 +189,15 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
                 continue;
               }
 
-              assertFalse(
+              assertNotEquals(
                   groupHeadId
                       + " has null collapseVal but nullPolicy==ignore; "
                       + "mainP: "
                       + mainP
                       + ", collapseP: "
                       + collapseP,
-                  nullPolicy.equals(CollapsingQParserPlugin.NullPolicy.IGNORE.getName()));
+                  nullPolicy,
+                  CollapsingQParserPlugin.NullPolicy.IGNORE.getName());
             }
 
             // workaround for SOLR-8082...
@@ -208,7 +210,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
             final String checkFQ =
                 ((null == collapseVal)
                     ? ("-" + checkField + ":[* TO *]")
-                    : ("{!field f=" + checkField + "}" + collapseVal.toString()));
+                    : ("{!field f=" + checkField + "}" + collapseVal));
 
             final SolrParams checkP =
                 params(
@@ -218,9 +220,9 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
 
             final QueryResponse checkRsp = SOLR.query(SolrParams.wrapDefaults(checkP, mainP));
 
-            assertTrue(
+            assertFalse(
                 "not even 1 match for sanity check query? expected: " + doc,
-                !checkRsp.getResults().isEmpty());
+                checkRsp.getResults().isEmpty());
             final SolrDocument firstMatch = checkRsp.getResults().get(0);
             final Object firstMatchId = firstMatch.getFieldValue("id");
             assertEquals(

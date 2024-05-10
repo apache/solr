@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -74,7 +73,8 @@ public class StatsField {
    * @lucene.internal
    * @lucene.experimental
    */
-  public static enum Stat {
+  @SuppressWarnings("ImmutableEnumChecker")
+  public enum Stat {
     min(true),
     max(true),
     missing(true),
@@ -87,10 +87,11 @@ public class StatsField {
     countDistinct(false, distinctValues),
     percentiles(true) {
       /** special for percentiles * */
+      @Override
       boolean parseParams(StatsField sf) {
         String percentileParas = sf.localParams.get(this.name());
         if (percentileParas != null) {
-          List<Double> percentiles = new ArrayList<Double>();
+          List<Double> percentiles = new ArrayList<>();
           try {
             for (String percentile : StrUtils.splitSmart(percentileParas, ',')) {
               percentiles.add(Double.parseDouble(percentile));
@@ -118,6 +119,7 @@ public class StatsField {
     },
     cardinality(true) {
       /** special for percentiles * */
+      @Override
       boolean parseParams(StatsField sf) {
         try {
           sf.hllOpts = HllOptions.parseHllOptions(sf.localParams, sf.schemaField);
@@ -149,7 +151,7 @@ public class StatsField {
      * @see #getDistribDeps
      */
     Stat(boolean selfDep, Stat... deps) {
-      distribDeps = new ArrayList<Stat>(deps.length + 1);
+      distribDeps = new ArrayList<>(deps.length + 1);
       distribDeps.addAll(Arrays.asList(deps));
       if (selfDep) {
         distribDeps.add(this);
@@ -220,7 +222,7 @@ public class StatsField {
   private final List<String> excludeTagList;
   private final EnumSet<Stat> statsToCalculate = EnumSet.noneOf(Stat.class);
   private final EnumSet<Stat> statsInResponse = EnumSet.noneOf(Stat.class);
-  private final List<Double> percentilesList = new ArrayList<Double>();
+  private final List<Double> percentilesList = new ArrayList<>();
   private final boolean isShard;
 
   private double tdigestCompression = 100.0D;
@@ -252,7 +254,7 @@ public class StatsField {
       SchemaField sf = null;
       ValueSource vs = null;
 
-      if (StringUtils.isBlank(parserName)) {
+      if (StrUtils.isBlank(parserName)) {
 
         // basic request for field stats
         sf = searcher.getSchema().getField(localParams.get(QueryParsing.V));
@@ -397,7 +399,7 @@ public class StatsField {
       return docs;
     }
 
-    IdentityHashMap<Query, Boolean> excludeSet = new IdentityHashMap<Query, Boolean>();
+    IdentityHashMap<Query, Boolean> excludeSet = new IdentityHashMap<>();
     for (String excludeTag : excludeTagList) {
       Object olst = tagMap.get(excludeTag);
       // tagMap has entries of List<String,List<QParser>>, but subject to change in the future
@@ -419,7 +421,7 @@ public class StatsField {
     }
     if (excludeSet.size() == 0) return docs;
 
-    List<Query> qlist = new ArrayList<Query>();
+    List<Query> qlist = new ArrayList<>();
 
     // add the base query
     if (!excludeSet.containsKey(rb.getQuery())) {
@@ -551,6 +553,7 @@ public class StatsField {
     return tagList;
   }
 
+  @Override
   public String toString() {
     return "StatsField<" + originalParam + ">";
   }
@@ -661,6 +664,7 @@ public class StatsField {
       this.regwidth = regwidth;
       this.hasher = hasher;
     }
+
     /**
      * Creates an HllOptions based on the (local) params specified (if appropriate).
      *
@@ -675,7 +679,7 @@ public class StatsField {
         throws SolrException {
 
       String cardinalityOpt = localParams.get(Stat.cardinality.name());
-      if (StringUtils.isBlank(cardinalityOpt)) {
+      if (StrUtils.isBlank(cardinalityOpt)) {
         return null;
       }
 
@@ -775,18 +779,21 @@ public class StatsField {
       // if we're still here, then we need an HLL...
       return new HllOptions(log2m, regwidth, hasher);
     }
+
     /**
      * @see HLL
      */
     public int getLog2m() {
       return log2m;
     }
+
     /**
      * @see HLL
      */
     public int getRegwidth() {
       return regwidth;
     }
+
     /** May be null if user has indicated that field values are pre-hashed */
     public HashFunction getHasher() {
       return hasher;

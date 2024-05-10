@@ -161,7 +161,7 @@ Let this default to `false` unless you know that such tokens can't be avoided.
 +
 A boolean flag that causes stopwords (or any condition causing positions to skip like >255 char words) to be ignored as if they aren't there.
 Otherwise, the behavior is to treat them as breaks in tagging on the presumption your indexed text-analysis configuration doesn't have a `StopWordFilter` defined.
-By default the indexed analysis chain is checked for the presence of a `StopWordFilter` and if found then `ignoreStopWords` is true if unspecified.
+By default, the indexed analysis chain is checked for the presence of a `StopWordFilter` and if found then `ignoreStopWords` is true if unspecified.
 You probably shouldn't have a `StopWordFilter` configured and probably won't need to set this parameter either.
 
 `xmlOffsetAdjust`::
@@ -202,7 +202,7 @@ declare a field type, 2 fields, and a copy-field.
 
 The critical part
 up-front is to define the "tag" field type.
-There are many many ways to
+There are many ways to
 configure text analysis; and we're not going to get into those choices
 here.
 But an important bit is the `ConcatenateGraphFilterFactory` at the
@@ -274,10 +274,10 @@ should be almost 7MB file expanding to a cities1000.txt file around
 22.2MB containing 145k lines, each a city in the world of at least 1000
 population.
 
-Using bin/post:
+Using bin/solr post:
 [source,bash]
 ----
-bin/post -c geonames -type text/csv \
+bin/solr post -c geonames -type text/csv \
   -params 'optimize=true&maxSegments=1&separator=%09&encapsulator=%00&fieldnames=id,name,,alternative_names,latitude,longitude,,,countrycode,,,,,,population,elevation,,timezone,lastupdate' \
   /tmp/cities1000.txt
 ----

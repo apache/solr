@@ -30,44 +30,43 @@ public class TestPerFieldSimilarity extends BaseSimilarityTestCase {
   }
 
   /** test a field where the sim is specified directly */
-  public void testDirect() throws Exception {
+  public void testDirect() {
     assertEquals(SweetSpotSimilarity.class, getSimilarity("sim1text").getClass());
   }
 
   /** ... and for a dynamic field */
-  public void testDirectDynamic() throws Exception {
+  public void testDirectDynamic() {
     assertEquals(SweetSpotSimilarity.class, getSimilarity("text_sim1").getClass());
   }
 
   /** test a field where a configurable sim factory is defined */
-  public void testFactory() throws Exception {
+  public void testFactory() {
     Similarity sim = getSimilarity("sim2text");
     assertEquals(MockConfigurableSimilarity.class, sim.getClass());
     assertEquals("is there an echo?", ((MockConfigurableSimilarity) sim).getPassthrough());
   }
 
   /** ... and for a dynamic field */
-  public void testFactoryDynamic() throws Exception {
+  public void testFactoryDynamic() {
     Similarity sim = getSimilarity("text_sim2");
     assertEquals(MockConfigurableSimilarity.class, sim.getClass());
     assertEquals("is there an echo?", ((MockConfigurableSimilarity) sim).getPassthrough());
   }
 
   /** test a field where no similarity is specified */
-  public void testDefaults() throws Exception {
+  public void testDefaults() {
     Similarity sim = getSimilarity("sim3text");
     assertEquals(BM25Similarity.class, sim.getClass());
-    ;
   }
 
   /** ... and for a dynamic field */
-  public void testDefaultsDynamic() throws Exception {
+  public void testDefaultsDynamic() {
     Similarity sim = getSimilarity("text_sim3");
     assertEquals(BM25Similarity.class, sim.getClass());
   }
 
   /** test a field that does not exist */
-  public void testNonexistent() throws Exception {
+  public void testNonexistent() {
     Similarity sim = getSimilarity("sdfdsfdsfdswr5fsdfdsfdsfs");
     assertEquals(BM25Similarity.class, sim.getClass());
   }

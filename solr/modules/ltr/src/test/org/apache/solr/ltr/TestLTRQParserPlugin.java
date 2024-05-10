@@ -29,6 +29,9 @@ public class TestLTRQParserPlugin extends TestRerankBase {
 
     loadFeatures("features-linear.json");
     loadModels("linear-model.json");
+
+    loadFeatures("features-slow.json");
+    loadModels("linear-slow-model.json"); // just a linear model with one feature
   }
 
   @AfterClass
@@ -47,7 +50,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("Must provide one or two models in the request"));
+    assertTrue(res.contains("Must provide one or two models in the request"));
   }
 
   @Test
@@ -61,7 +64,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr model=-1 reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("cannot find model"));
+    assertTrue(res.contains("cannot find model"));
   }
 
   @Test
@@ -75,7 +78,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr model=\"\" reRankDocs=100}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("the model 0 is empty"));
+    assertTrue(res.contains("the model 0 is empty"));
   }
 
   @Test
@@ -89,7 +92,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("rq", "{!ltr model=6029760550880411648 reRankDocs=-1}");
 
     final String res = restTestHarness.query("/query" + query.toQueryString());
-    assert (res.contains("Must rerank at least 1 document"));
+    assertTrue(res.contains("Must rerank at least 1 document"));
   }
 
   @Test
@@ -136,5 +139,94 @@ public class TestLTRQParserPlugin extends TestRerankBase {
     query.add("debugQuery", "on");
     query.add("rq", "{!ltr reRankDocs=3 model=6029760550880411648}");
     assertJQ("/query" + query.toQueryString(), "/response/numFound/==0");
+  }
+
+  @Test
+  public void ltr_expensiveFeatureRescoring_shouldTimeOutAndReturnPartialResults()
+      throws Exception {
+    /* One SolrFeature is defined: {!func}sleep(1000,999)
+     * It simulates a slow feature extraction, sleeping for 1000ms and returning 999 as a score when finished
+     * */
+
+    final String solrQuery = "_query_:{!edismax qf='id' v='8^=10 9^=5 7^=3 6^=1'}";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.setFields("id", "score");
+    query.setRows(4);
+    query.setTimeAllowed(300);
+    query.add("fv", "true");
+    query.add("rq", "{!ltr model=slowModel reRankDocs=3}");
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound/==4",
+        "/responseHeader/partialResults/==true",
+        "/responseHeader/partialResultsDetails/=='Limits exceeded! (Learning To Rank rescoring - "
+            + "The full reranking didn\\'t complete. "
+            + "If partial results are tolerated the reranking got reverted and "
+            + "all documents preserved their original score and ranking.)"
+            + ": Query limits: [TimeAllowedLimit:LIMIT EXCEEDED]'",
+        "/response/docs/[0]/id=='8'",
+        "/response/docs/[0]/score==10.0",
+        "/response/docs/[1]/id=='9'",
+        "/response/docs/[1]/score==5.0",
+        "/response/docs/[2]/id=='7'",
+        "/response/docs/[2]/score==3.0",
+        "/response/docs/[3]/id=='6'",
+        "/response/docs/[3]/score==1.0");
+  }
+
+  @Test
+  public void ltr_expensiveFeatureRescoringAndPartialResultsNotTolerated_shouldRaiseException()
+      throws Exception {
+    /* One SolrFeature is defined: {!func}sleep(1000,999)
+     * It simulates a slow feature extraction, sleeping for 1000ms and returning 999 as a score when finished
+     * */
+    final String solrQuery = "_query_:{!edismax qf='id' v='8^=10 9^=5 7^=3 6^=1'}";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.setFields("id", "score");
+    query.setRows(4);
+    query.setTimeAllowed(300);
+    query.add("partialResults", "false");
+    query.add("fv", "true");
+    query.add("rq", "{!ltr model=slowModel reRankDocs=3}");
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/error/msg=='org.apache.solr.search.QueryLimitsExceededException: Limits exceeded! (Learning To Rank rescoring - "
+            + "The full reranking didn\\'t complete. "
+            + "If partial results are tolerated the reranking got reverted and all documents preserved their original score and ranking.)"
+            + ": Query limits: [TimeAllowedLimit:LIMIT EXCEEDED]'");
+  }
+
+  @Test
+  public void ltr_expensiveFeatureRescoringWithinTimeAllowed_shouldReturnRerankedResults()
+      throws Exception {
+    /* One SolrFeature is defined: {!func}sleep(1000,999)
+     * It simulates a slow feature extraction, sleeping for 1000ms and returning 999 as a score when finished
+     * */
+
+    final String solrQuery = "_query_:{!edismax qf='id' v='8^=10 9^=5 7^=3 6^=1'}";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.setFields("id", "score");
+    query.setRows(4);
+    query.setTimeAllowed(5000);
+    query.add("fv", "true");
+    query.add("rq", "{!ltr model=slowModel reRankDocs=3}");
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound/==4",
+        "/response/docs/[0]/id=='7'",
+        "/response/docs/[0]/score==999.0",
+        "/response/docs/[1]/id=='8'",
+        "/response/docs/[1]/score==999.0",
+        "/response/docs/[2]/id=='9'",
+        "/response/docs/[2]/score==999.0",
+        "/response/docs/[3]/id=='6'",
+        // original score for the 4th document due to reRankDocs=3 limit
+        "/response/docs/[3]/score==1.0");
   }
 }

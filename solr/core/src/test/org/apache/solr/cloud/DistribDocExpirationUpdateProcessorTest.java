@@ -16,9 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static java.util.Collections.singletonList;
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
@@ -27,10 +24,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.lucene.tests.util.LuceneTestCase.Slow;
+import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -43,18 +40,17 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.ReplicationHandler;
-import org.apache.solr.security.BasicAuthPlugin;
-import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.apache.solr.update.processor.DocExpirationUpdateProcessorFactory;
+import org.apache.solr.util.SecurityJson;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Test of {@link DocExpirationUpdateProcessorFactory} in a cloud setup */
-@Slow // Has to do some sleeping to wait for a future expiration
+@LuceneTestCase.Nightly // Has to do some sleeping to wait for a future expiration
 public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -74,7 +70,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   /** Modifies the request to inlcude authentication params if needed, returns the request */
   private <T extends SolrRequest<?>> T setAuthIfNeeded(T req) {
     if (null != USER) {
-      assert null != PASS;
+      assertNotNull(PASS);
       req.setBasicAuthCredentials(USER, PASS);
     }
     return req;
@@ -90,30 +86,11 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
     COLLECTION = "expiring";
     if (security) {
-      USER = "solr";
-      PASS = "SolrRocksAgain";
+      USER = SecurityJson.USER;
+      PASS = SecurityJson.PASS;
       COLLECTION += "_secure";
 
-      final String SECURITY_JSON =
-          Utils.toJSONString(
-              Map.of(
-                  "authorization",
-                  Map.of(
-                      "class",
-                      RuleBasedAuthorizationPlugin.class.getName(),
-                      "user-role",
-                      Map.of(USER, "admin"),
-                      "permissions",
-                      singletonList(Map.of("name", "all", "role", "admin"))),
-                  "authentication",
-                  Map.of(
-                      "class",
-                      BasicAuthPlugin.class.getName(),
-                      "blockUnknown",
-                      true,
-                      "credentials",
-                      Map.of(USER, getSaltedHashedValue(PASS)))));
-      b.withSecurityJson(SECURITY_JSON);
+      b.withSecurityJson(SecurityJson.SIMPLE);
     }
     b.configure();
 
@@ -129,17 +106,19 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
             (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
   }
 
+  @Test
   public void testNoAuth() throws Exception {
     setupCluster(false);
     runTest();
   }
 
+  @Test
   public void testBasicAuth() throws Exception {
     setupCluster(true);
 
-    // sanity check that our cluster really does require authentication
+    // check that our cluster really does require authentication
     assertEquals(
-        "sanity check of non authenticated request",
+        "check of unauthenticated request",
         401,
         expectThrows(
                 SolrException.class,
@@ -152,7 +131,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
                               params(
                                   "q", "*:*",
                                   "rows", "0",
-                                  "_trace", "no_auth_sanity_check"))
+                                  "_trace", "no_auth_check"))
                           .getResults()
                           .getNumFound();
                 })
@@ -209,20 +188,20 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
           req.process(cluster.getSolrClient(), COLLECTION).getResults().getNumFound());
     }
 
-    // now that we've confrmed the basics work, let's check some fine grain stuff...
+    // now that we've confirmed the basics work, let's check some fine grain stuff...
 
-    // first off, sanity check that this special docId doesn't some how already exist
+    // first off, check that this special docId doesn't somehow already exist
     waitForNoResults(0, params("q", "id:special99", "rows", "0", "_trace", "sanity_check99"));
 
     {
       // force a hard commit on all shards (the prior auto-expire would have only done a soft
-      // commit) so we can ensure our indexVersion won't change uncessisarily on the un-affected
+      // commit) so we can ensure our indexVersion won't change unnecessarily on the un-affected
       // shard when we add & (hard) commit our special doc...
       final UpdateRequest req = setAuthIfNeeded(new UpdateRequest());
       req.commit(cluster.getSolrClient(), COLLECTION);
     }
 
-    // record important data for each replica core so we can check later that it only changes for
+    // record important data for each replica core, so we can check later that it only changes for
     // the replicas of a single shard after we add/expire a single special doc
     log.info("Fetching ReplicaData BEFORE special doc addition/expiration");
     final Map<String, ReplicaData> initReplicaData = getTestDataForAllReplicas();
@@ -237,8 +216,8 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     waitForNoResults(
         180, params("q", "id:special99", "rows", "0", "_trace", "did_special_doc_expire_yet"));
 
-    // now check all of the replicas to verify a few things:
-    // - only the replicas of one shard changed -- no unneccessary churn on other shards
+    // now check all the replicas to verify a few things:
+    // - only the replicas of one shard changed -- no unnecessary churn on other shards
     // - every replica of each single shard should have the same number of docs
     // - the total number of docs should match numDocsThatNeverExpire
     log.info("Fetching ReplicaData AFTER special doc addition/expiration");
@@ -249,7 +228,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     final Set<String> shardsThatChange = new HashSet<>();
 
     int coresCompared = 0;
-    int totalDocsOnAllShards = 0;
+    long totalDocsOnAllShards = 0;
     final DocCollection collectionState =
         cluster.getSolrClient().getClusterState().getCollection(COLLECTION);
     for (Slice shard : collectionState) {
@@ -312,7 +291,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     for (Replica replica : collectionState.getReplicas()) {
 
       String coreName = replica.getCoreName();
-      try (HttpSolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
+      try (SolrClient client = getHttpSolrClient(replica)) {
 
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("command", "indexversion");
@@ -381,8 +360,8 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
         final String coreName,
         final long indexVersion,
         final long numDocs) {
-      assert null != shardName;
-      assert null != coreName;
+      assertNotNull(shardName);
+      assertNotNull(coreName);
 
       this.shardName = shardName;
       this.coreName = coreName;

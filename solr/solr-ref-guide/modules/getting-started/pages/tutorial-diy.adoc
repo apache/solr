@@ -1,4 +1,4 @@
-= Exercise 3 Index Your Own Data
+= Exercise 3: Index Your Own Data
 :experimental:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -20,7 +20,7 @@
 [[exercise-3]]
 == Exercise 3: Index Your Own Data
 
-For this last exercise, work with a dataset of your choice.
+For this exercise, work with a dataset of your choice.
 This can be files on your local hard drive, a set of data you have worked with before, or maybe a sample of the data you intend to index to Solr for your production application.
 
 This exercise is intended to get you thinking about what you will need to do for your application:
@@ -35,9 +35,9 @@ This exercise is intended to get you thinking about what you will need to do for
 Before you get started, create a new collection, named whatever you'd like.
 In this example, the collection will be named "localDocs"; replace that name with whatever name you choose if you want to.
 
-[source,bash]
+[,console]
 ----
-./bin/solr create -c localDocs -s 2 -rf 2
+$ bin/solr create -c localDocs -s 2 -rf 2
 ----
 
 Again, as we saw from Exercise 2 above, this will use the `_default` configset and all the schemaless features it provides.
@@ -49,8 +49,8 @@ You may need to iterate on indexing a few times before you get the schema right.
 Solr has lots of ways to index data.
 Choose one of the approaches below and try it out with your system:
 
-Local Files with `bin/post`::
-If you have a local directory of files, the Post Tool (`bin/post`) can index a directory of files.
+Local Files with `bin/solr post`::
+If you have a local directory of files, the Post Tool (`bin/solr post`) can index a directory of files.
 We saw this in action in our first exercise.
 +
 We used only JSON, XML and CSV in our exercises, but the Post Tool can also handle HTML, PDF, Microsoft Office formats (such as MS Word), plain text, and more.
@@ -58,9 +58,9 @@ We used only JSON, XML and CSV in our exercises, but the Post Tool can also hand
 In this example, assume there is a directory named "Documents" locally.
 To index it, we would issue a command like this (correcting the collection name after the `-c` parameter as needed):
 +
-[source,bash]
+[,console]
 ----
-./bin/post -c localDocs ~/Documents
+$ bin/solr post -c localDocs ~/Documents
 ----
 +
 You may get errors as it works through your documents.
@@ -87,7 +87,7 @@ You can see that has happened by looking at the values for `numDocs` and `maxDoc
 The `maxDoc` value may be larger as the `maxDoc` count includes logically deleted documents that have not yet been physically removed from the index.
 You can re-post the sample files over and over again as much as you want and `numDocs` will never increase, because the new documents will constantly be replacing the old.
 
-Go ahead and edit any of the existing example data files, change some of the data, and re-run the PostTool (`bin/post`).
+Go ahead and edit any of the existing example data files, change some of the data, and re-run the PostTool (`bin/solr post`).
 You'll see your changes reflected in subsequent searches.
 
 === Deleting Data
@@ -97,20 +97,20 @@ Note, however, that merely removing documents doesn't change the underlying fiel
 Essentially, this will allow you to reindex your data after making changes to fields for your needs.
 
 You can delete data by POSTing a delete command to the update URL and specifying the value of the document's unique key field, or a query that matches multiple documents (be careful with that one!).
-We can use `bin/post` to delete documents also if we structure the request properly.
+We can use `bin/solr post` to delete documents also if we structure the request properly.
 
 Execute the following command to delete a specific document:
 
-[source,bash]
+[,console]
 ----
-bin/post -c localDocs -d "<delete><id>SP2514N</id></delete>"
+$ bin/solr post -c localDocs -d "<delete><id>SP2514N</id></delete>"
 ----
 
 To delete all documents, you can use "delete-by-query" command like:
 
-[source,bash]
+[,console]
 ----
-bin/post -c localDocs -d "<delete><query>*:*</query></delete>"
+$ bin/solr post -c localDocs -d "<delete><query>*:*</query></delete>"
 ----
 
 You can also modify the above to only delete documents that match a specific query.
@@ -120,3 +120,5 @@ You can also modify the above to only delete documents that match a specific que
 At this point, you're ready to start working on your own.
 
 Jump ahead to the overall xref:solr-tutorial.adoc#wrapping-up[wrap up] when you're ready to stop Solr and remove all the examples you worked with and start fresh.
+
+Or if you'd like, you could work your way through the remaining exercises.

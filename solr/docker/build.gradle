@@ -24,19 +24,25 @@ description = 'Solr Docker image'
 apply plugin: 'base'
 
 // Solr Docker inputs
-def dockerImageRepo = propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr")
-def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", "${version}")
-def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
-def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'eclipse-temurin:17-jre')
-def officialDockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}")
+def dockerImageSolrDist = "${ -> propertyOrEnvOrDefault("solr.docker.dist", "SOLR_DOCKER_DIST", 'full') }"
+def isDistSlim = {String dist -> dist.toLowerCase(Locale.ROOT) == "slim"}
+def isImageSlim = { -> isDistSlim(dockerImageSolrDist) }
+def distToSuffix = {String dist -> isDistSlim(dist) ? "-slim" : ""}
+def dockerImageDistSuffix = "${ -> distToSuffix(dockerImageSolrDist)}"
+def dockerImageTagSuffix = "${ -> propertyOrEnvOrDefault("solr.docker.imageTagSuffix", "SOLR_DOCKER_IMAGE_TAG_SUFFIX", '')}"
+def dockerImageRepo = "${ -> propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr") }"
+def dockerImageTag = "${ -> propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", project.version + dockerImageDistSuffix) }"
+def dockerImageName = "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}${dockerImageTagSuffix}") }"
+def baseDockerImage = "${ -> propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'eclipse-temurin:17-jre-jammy') }"
+def officialDockerImageName = {String dist -> "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}${distToSuffix(dist)}${dockerImageTagSuffix}") }" }
 
-def releaseGpgFingerprint = propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId',''));
+def releaseGpgFingerprint = "${ -> propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId','')) }"
 
 // Build directory locations
 def imageIdFile = "$buildDir/image-id"
 
 def smokeTestOfficial = "$buildDir/smoke-check-official"
-def imageIdFileOfficial = "$smokeTestOfficial/image-id"
+def imageIdFileOfficial = { String dist -> "$smokeTestOfficial/$dist/image-id" }
 
 configurations {
   packaging {
@@ -48,18 +54,30 @@ configurations {
   packagingOfficial {
     canBeResolved = true
   }
-  solrTgz {
+  solrFullTgz {
     canBeConsumed = false
     canBeResolved = true
   }
-  solrTgzSignature {
+  solrSlimTgz {
+    canBeConsumed = false
+    canBeResolved = true
+  }
+  solrFullTgzSignature {
+    canBeConsumed = false
+    canBeResolved = true
+  }
+  solrSlimTgzSignature {
     canBeConsumed = false
     canBeResolved = true
   }
   dockerImage {
     canBeResolved = true
   }
-  dockerOfficialSmokeCheckImage {
+  dockerOfficialFullSmokeCheckImage {
+    canBeConsumed = false
+    canBeResolved = true
+  }
+  dockerOfficialSlimSmokeCheckImage {
     canBeConsumed = false
     canBeResolved = true
   }
@@ -79,18 +97,27 @@ dependencies {
     builtBy 'createDockerfileLocal'
   }
 
-  packagingOfficial files("${dockerfilesDirPath}/Dockerfile.official") {
-    builtBy 'createDockerfileOfficial'
+  packagingOfficial files("${dockerfilesDirPath}/Dockerfile.official-full") {
+    builtBy 'createDockerfileOfficialFull'
   }
 
-  solrTgz project(path: ":solr:packaging", configuration: "solrTgz")
-  solrTgzSignature project(path: ":solr:packaging", configuration: 'solrTgzSignature')
+  packagingOfficial files("${dockerfilesDirPath}/Dockerfile.official-slim") {
+    builtBy 'createDockerfileOfficialSlim'
+  }
+
+  solrFullTgz project(path: ":solr:packaging", configuration: "solrFullTgz")
+  solrSlimTgz project(path: ":solr:packaging", configuration: "solrSlimTgz")
+  solrFullTgzSignature project(path: ":solr:packaging", configuration: 'solrFullTgzSignature')
+  solrSlimTgzSignature project(path: ":solr:packaging", configuration: 'solrSlimTgzSignature')
 
   dockerImage files(imageIdFile) {
     builtBy 'dockerBuild'
   }
-  dockerOfficialSmokeCheckImage files(imageIdFileOfficial) {
-    builtBy 'testBuildDockerfileOfficial'
+  dockerOfficialFullSmokeCheckImage files(imageIdFileOfficial("Full")) {
+    builtBy 'testBuildDockerfileOfficialFull'
+  }
+  dockerOfficialSlimSmokeCheckImage files(imageIdFileOfficial("Slim")) {
+    builtBy 'testBuildDockerfileOfficialSlim'
   }
 }
 
@@ -110,12 +137,13 @@ def checksum = { file ->
 
 task assemblePackaging(type: Sync) {
   description = 'Assemble docker scripts and Dockerfile for Solr Packaging'
+  dependsOn configurations.packagingLocal
 
   from(projectDir, {
     include "scripts/**"
     include "README.md"
   })
-  from(dockerfilesDirPath, {
+  from(configurations.packagingLocal, {
     include 'Dockerfile.local'
     rename {
       'Dockerfile'
@@ -124,7 +152,7 @@ task assemblePackaging(type: Sync) {
   into packagingDir
 }
 
-task dockerBuild(dependsOn: configurations.solrTgz) {
+task dockerBuild() {
   group = 'Docker'
   description = 'Build Solr docker image'
 
@@ -132,15 +160,18 @@ task dockerBuild(dependsOn: configurations.solrTgz) {
   inputs.properties([
           baseDockerImage: baseDockerImage
   ])
-  inputs.files(configurations.solrTgz)
+  var solrTgzConfiguration = isImageSlim() ? configurations.solrSlimTgz : configurations.solrFullTgz
+  inputs.files(solrTgzConfiguration)
+  inputs.property("isSlimImage", isImageSlim())
+  dependsOn(solrTgzConfiguration)
 
   doLast {
     exec {
-      standardInput = configurations.solrTgz.singleFile.newDataInputStream()
+      standardInput = solrTgzConfiguration.singleFile.newDataInputStream()
       commandLine "docker", "build",
-              "-f", "solr-${version}/docker/Dockerfile",
+              "-f", "solr-${ -> project.version }${dockerImageDistSuffix}/docker/Dockerfile",
               "--iidfile", imageIdFile,
-              "--build-arg", "BASE_IMAGE=${inputs.properties.baseDockerImage}",
+              "--build-arg", "BASE_IMAGE=${ -> inputs.properties.baseDockerImage}",
               "-"
     }
   }
@@ -149,9 +180,10 @@ task dockerBuild(dependsOn: configurations.solrTgz) {
   doLast {
     def dockerImageId = file(imageIdFile).text
     project.logger.lifecycle("Solr Docker Image Created")
-    project.logger.lifecycle("\tID: \t$dockerImageId")
-    project.logger.lifecycle("\tBase Image: \t$baseDockerImage")
-    project.logger.lifecycle("\tSolr Version: \t$version")
+    project.logger.lifecycle("\tID: \t${ -> dockerImageId }")
+    project.logger.lifecycle("\tBase Image: \t${ -> baseDockerImage }")
+    project.logger.lifecycle("\tSolr Version: \t${ -> project.version }")
+    project.logger.lifecycle("\tSolr Distribution: \t${isImageSlim() ? "Slim" : "Full"}")
   }
 
   outputs.files(imageIdFile)
@@ -191,7 +223,13 @@ task testDocker(type: TestDockerImageTask, dependsOn: tasks.dockerBuild) {
 
   // include/exclude options are designed for people who know their customizations will break some tests
   testCasesInclude.value(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.include", "SOLR_DOCKER_TESTS_INCLUDE", ",").split(",")))
-  testCasesExclude.value(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.exclude", "SOLR_DOCKER_TESTS_EXCLUDE", ",").split(",")))
+  var excludeCases = new HashSet(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.exclude", "SOLR_DOCKER_TESTS_EXCLUDE", ",").split(",")))
+  if (isImageSlim()) {
+    // The slim image does not contain the prometheus-exporter.
+    excludeCases.add("prometheus-exporter-standalone")
+    excludeCases.add("prometheus-exporter-cloud")
+  }
+  testCasesExclude.value(excludeCases)
 }
 
 task dockerPush(dependsOn: tasks.dockerTag) {
@@ -236,6 +274,7 @@ ext {
 task createBodySnippetDockerfile(type: Copy) {
   from 'templates/Dockerfile.body.template'
   into "$buildDir/snippets/"
+  outputs.file("$buildDir/snippets/Dockerfile.body.snippet")
   rename { name -> name.replace("template","snippet") }
   filteringCharset 'UTF-8'
   
@@ -253,6 +292,7 @@ ext {
   // where 'FOO' is the key used in 'props' (NOTE the leading and trailing literal '_' characters) 
   dfLocalDetails = [
     name: 'Local',
+    template: 'local',
     desc: 'Dockerfile used to create local Solr docker images directly from Solr release tgz file',
 
     // NOTE: There should be no reason for Dockerfile.local to include unique values
@@ -261,25 +301,43 @@ ext {
     // be defined in the task creation.
     props: [:]
   ]
-  dfOfficialDetails = [
-    name: 'Official',
-    desc: 'Dockerfile used to create official Solr docker images published to hub.docker.io',
+  dfOfficialFullDetails = [
+    name: 'OfficialFull',
+    template: 'official',
+    desc: 'Dockerfile used to create official Full Solr docker images published to hub.docker.io',
     props: [
       // NOTE: Only include values here that are distinct and unique to the Official Dockerfiles
       //
       // Values identical in both Dockerfiles should use consistent names in both templates and
       // be defined in the task creation
-      
-      'SOLR_VERSION': version,
+
       // NOTE: SHA is lazy computed...
-      'SOLR_TGZ_SHA': "${ -> checksum(configurations.solrTgz.singleFile) }",
-      'RELEASE_MANAGER_GPG_FINGERPRINT': "${releaseGpgFingerprint}"
+      'SOLR_TGZ_SHA': "${ -> checksum(configurations.solrFullTgz.singleFile) }",
+      'RELEASE_MANAGER_GPG_FINGERPRINT': "${ -> releaseGpgFingerprint}",
+      'SOLR_DIST': ""
     ]
+  ]
+  dfOfficialSlimDetails = [
+      name: 'OfficialSlim',
+      template: 'official',
+      desc: 'Dockerfile used to create official Slim Solr docker images published to hub.docker.io',
+      props: [
+          // NOTE: Only include values here that are distinct and unique to the Official Dockerfiles
+          //
+          // Values identical in both Dockerfiles should use consistent names in both templates and
+          // be defined in the task creation
+
+          // NOTE: SHA is lazy computed...
+          'SOLR_TGZ_SHA': "${ -> checksum(configurations.solrSlimTgz.singleFile) }",
+          'RELEASE_MANAGER_GPG_FINGERPRINT': "${ -> releaseGpgFingerprint}",
+          'SOLR_DIST': "-slim"
+      ]
   ]
 }
 /*
 This section creates the following gradle tasks:
-- createDockerfileOfficial
+- createDockerfileOfficialFull
+- createDockerfileOfficialSlim
 - createDockerfileLocal
 
 Both will create a self-standing Dockerfile that can be used to build a Solr image.
@@ -289,26 +347,29 @@ These templates can be found in the templates/ directory.
 The snippets of each section (header and body) are saved to build/snippets after they are templated and before they are combined.
 The final Dockerfiles are merely the snippet headers combined with the snippet body.
  */
-[ dfLocalDetails, dfOfficialDetails ].each{ details ->
-  def fileName = "Dockerfile.${ -> details.name.toLowerCase(Locale.ROOT) }"
+[ dfLocalDetails, dfOfficialFullDetails, dfOfficialSlimDetails ].each{ details ->
+  def fileName = "Dockerfile.${ -> details.name.replaceAll("(.)([A-Z])", "\$1-\$2").toLowerCase(Locale.ROOT) }"
   def outFile = file("$dockerfilesDirPath/${fileName}")
-  
-  def props = [
-    // Values defined here should be common (and consistent) across both Dockerfiles
-    'BASE_IMAGE': baseDockerImage,
-    * : details.props
-  ]
+
+
   tasks.create("createDockerfile${details.name}", Copy) {
     description "Creates ${details.desc}"
-    
+
+    def props = [
+          // Values defined here should be common (and consistent) across both Dockerfiles
+          'BASE_IMAGE': baseDockerImage,
+          'SOLR_VERSION': "${ -> project.version}",
+          * : details.props
+      ]
+
     dependsOn tasks.createBodySnippetDockerfile
     inputs.properties(props)
     inputs.file("$buildDir/snippets/Dockerfile.body.snippet")
     outputs.file(outFile)
-    
-    from "templates/${fileName}.header.template"
+
+    from "templates/Dockerfile.${details.template}.header.template"
     into "$buildDir/snippets/"
-    rename { name -> name.replace("template","snippet") }
+    rename { fileName + ".header.snippet" }
     filteringCharset 'UTF-8'
     filter( commentFilter )
     filter( { line ->
@@ -341,121 +402,159 @@ The final Dockerfiles are merely the snippet headers combined with the snippet b
   }
 }
 assemblePackaging.dependsOn tasks.createDockerfileLocal
-tasks.createDockerfileOfficial.dependsOn configurations.solrTgz // to lazy compute SHA
+tasks.createDockerfileOfficialFull.dependsOn configurations.solrFullTgz // to lazy compute SHA
+tasks.createDockerfileOfficialSlim.dependsOn configurations.solrSlimTgz // to lazy compute SHA
+tasks.createDockerfileOfficialSlim.mustRunAfter tasks.createDockerfileOfficialFull // Eliminate a weird warning
+
+task createDockerfileOfficial {
+  dependsOn tasks.createDockerfileOfficialFull
+  dependsOn tasks.createDockerfileOfficialSlim
+}
 
 // sanity check...
 if (''.equals(releaseGpgFingerprint)) {
   gradle.taskGraph.whenReady { graph ->
-    if ( graph.hasTask(createDockerfileOfficial) ) {
+    if ( graph.hasTask(tasks.createDockerfileOfficialFull) || graph.hasTask(tasks.createDockerfileOfficialSlim) ) {
       throw new GradleException("No GPG keyName found, please see help/publishing.txt (GPG key is neccessary to create Dockerfile.official)")
     }
   }
 }
 
-task testBuildDockerfileOfficial(type: Copy) {
-  description = 'Test "docker build" works with our generated Dockerfile.official using Mocked URLs'
+[ 'Full', 'Slim' ].each { variant ->
+  def lowerVariant = variant.toLowerCase(Locale.ROOT)
 
-  dependsOn createDockerfileOfficial
-  dependsOn configurations.solrTgz
-  dependsOn configurations.solrTgzSignature
+  tasks.create("testBuildDockerfileOfficial${variant}", Copy) {
+    description = "Test 'docker build' works with our generated Dockerfile.official-${lowerVariant} using Mocked URLs"
 
-  def mockHttpdHome = file("$smokeTestOfficial/mock-httpd-home");
-  
-  inputs.file("$dockerfilesDirPath/Dockerfile.official")
-  outputs.dir(mockHttpdHome)
-  outputs.file(imageIdFileOfficial)
+    dependsOn tasks.named("createDockerfileOfficial${variant}")
+    def mockHttpdHome = file("$smokeTestOfficial/$lowerVariant/mock-httpd-home");
 
-  from configurations.solrTgzSignature
-  from configurations.solrTgz
-  into mockHttpdHome
-  
-  doLast {
-    // A file to record the container ID of our mock httpd
-    def mockServerIdFile = file("${buildDir}/dockerfile-mock-artifact-server-cid.txt")
-    
-    // if we encounter any problems running our test, we'll fill this in and use it to suppress any
-    // other exceptions we encounter on cleanup...
-    def mainException = null;
-    
-    // TODO: setup a little 'suppressOrThrow(Exception)' closure for reuse below....
+    inputs.file("$dockerfilesDirPath/Dockerfile.official-$lowerVariant")
+    outputs.dir(mockHttpdHome)
+    outputs.file(imageIdFileOfficial(variant))
 
-    try {
-      // run an httpd server to host our artifacts
-      logger.lifecycle('Running mock HTTPD server our testing...');
-      exec {
-        commandLine 'docker', 'run',
-          '--cidfile', mockServerIdFile,
-          '--rm',
-          '-d',
-          '-v', "${mockHttpdHome.absoluteFile}:/data",
-          '-w', '/data',
-          'python:3-alpine', 'python', '-m', 'http.server', '9876'
-      }
+    dependsOn configurations.named("solr${variant}Tgz")
+    dependsOn configurations.named("solr${variant}TgzSignature")
+    from configurations.named("solr${variant}Tgz")
+    from configurations.named("solr${variant}TgzSignature")
+    into mockHttpdHome
+
+    doLast {
+      // A file to record the container ID of our mock httpd
+      def mockServerIdFile = file("$smokeTestOfficial/$lowerVariant/dockerfile-mock-artifact-server-cid.txt")
+
+      // if we encounter any problems running our test, we'll fill this in and use it to suppress any
+      // other exceptions we encounter on cleanup...
+      def mainException = null;
+
+      // TODO: setup a little 'suppressOrThrow(Exception)' closure for reuse below....
+
       try {
-        def mockServerId = mockServerIdFile.text
-        def mockServerIpStdOut = new ByteArrayOutputStream()
-        exec{
-          commandLine 'docker', 'inspect', "--format={{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", mockServerId
-          standardOutput = mockServerIpStdOut
-        }
-        def mockServerIp = mockServerIpStdOut.toString().trim()
-
-        // *NOW* we can actually run our docker build command...
-        logger.lifecycle('Running docker build on Dockerfile.official...');
+        // run an httpd server to host our artifacts
+        logger.lifecycle('Running mock HTTPD server our testing...');
         exec {
-          standardInput = file("${dockerfilesDirPath}/Dockerfile.official").newDataInputStream()
-          commandLine 'docker', 'build',
-            '--add-host', "mock-solr-dl-server:${mockServerIp}",
-            '--no-cache', // force fresh downloads from our current network
-            "--iidfile", imageIdFileOfficial,
-            '--build-arg', "SOLR_CLOSER_URL=http://mock-solr-dl-server:9876/solr-${version}.tgz",
-            '--build-arg', "SOLR_ARCHIVE_URL=http://mock-solr-dl-server:9876/solr-${version}.tgz",
-            '--tag', officialDockerImageName,
-            '-'
+          commandLine 'docker', 'run',
+              '--cidfile', mockServerIdFile,
+              '--rm',
+              '-d',
+              '-v', "${mockHttpdHome.absoluteFile}:/data/${-> project.version}",
+              '-w', '/data',
+              '-p', '9876:9876',
+              'python:3-alpine', 'python', '-m', 'http.server', '9876'
         }
-
-        def officialDockerImageId = file(imageIdFileOfficial).text
-
-        // Print information on the image after it has been created
-        project.logger.lifecycle("\"Official\" Solr Docker Image Tagged")
-        project.logger.lifecycle("\tID: \t$officialDockerImageId")
-        project.logger.lifecycle("\tTag: \t$officialDockerImageName")
-      } finally {
-        // Try to shut down our mock httpd server....
-        if (mockServerIdFile.exists()) {
+        try {
           def mockServerId = mockServerIdFile.text
-          try {
-            exec { commandLine 'docker', 'stop', mockServerId }
-          } catch (Exception e) {
-            logger.error("Unable to stop docker container ${mockServerId}", e)
-            if (null != mainException) {
-              mainException.addSuppressed(e);
-            } else {
-              mainException = e;
-              throw e;
+          def mockServerIpStdOut = new ByteArrayOutputStream()
+          exec {
+            commandLine 'docker', 'inspect', "--format={{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", mockServerId
+            standardOutput = mockServerIpStdOut
+          }
+          def mockServerIp = mockServerIpStdOut.toString().trim()
+
+          // *NOW* we can actually run our docker build command...
+          logger.lifecycle('Running docker build on Dockerfile.official...');
+          def downloadHost = "mock-downloads.apache.org"
+          // We are not signing, so do not use an apache.org host, as that will check the
+          // GPG signature, which will not be created.
+          if (!project(":solr:distribution").ext.withSignedArtifacts) {
+            downloadHost = "mock-downloads.test.org"
+          }
+          exec {
+            standardInput = file("${dockerfilesDirPath}/Dockerfile.official-${lowerVariant}").newDataInputStream()
+            commandLine 'docker', 'build',
+                '--add-host', "${downloadHost}:${mockServerIp}",
+                '--no-cache', // force fresh downloads from our current network
+                "--iidfile", imageIdFileOfficial(variant),
+                '--build-arg', "SOLR_DOWNLOAD_SERVER=http://${downloadHost}:9876",
+                '--tag', officialDockerImageName(variant),
+                '-'
+          }
+
+          def officialDockerImageId = file(imageIdFileOfficial(variant)).text
+
+          // Print information on the image after it has been created
+          project.logger.lifecycle("\"Official $variant\" Solr Docker Image Tagged")
+          project.logger.lifecycle("\tID: \t$officialDockerImageId")
+          project.logger.lifecycle("\tTag: \t${officialDockerImageName(variant)}")
+        } finally {
+          // Try to shut down our mock httpd server....
+          if (mockServerIdFile.exists()) {
+            def mockServerId = mockServerIdFile.text
+            try {
+              exec { commandLine 'docker', 'stop', mockServerId }
+            } catch (Exception e) {
+              logger.error("Unable to stop docker container ${mockServerId}", e)
+              if (null != mainException) {
+                mainException.addSuppressed(e);
+              } else {
+                mainException = e;
+                throw e;
+              }
+            } finally {
+              project.delete(mockServerIdFile)
             }
-          } finally {
-            project.delete(mockServerIdFile)
           }
         }
+      } catch (Exception e) {
+        mainException = e
+        throw e;
       }
-    } catch (Exception e) {
-      mainException = e
-      throw e;
     }
   }
 }
 
-task testDockerfileOfficial(type: TestDockerImageTask, dependsOn: configurations.dockerOfficialSmokeCheckImage) {
-  description = 'Smoke Test Solr docker image built from the official Dockerfile'
+task testBuildDockerfileOfficial {
+  dependsOn tasks.testBuildDockerfileOfficialFull
+  dependsOn tasks.testBuildDockerfileOfficialSlim
+}
 
-  idFile = file(imageIdFileOfficial)
-  outputDir = file("$smokeTestOfficial/test-results")
-  
+task testDockerfileOfficialFull(type: TestDockerImageTask, dependsOn: configurations.dockerOfficialFullSmokeCheckImage) {
+  description = 'Smoke Test Full Solr docker image built from the official Dockerfile'
+
+  idFile = file(imageIdFileOfficial("Full"))
+  outputDir = file("$smokeTestOfficial/full/test-results")
+
   // This test does not respect the include/exclude properties that `testDocker` does.
   // All docker tests will be run, no matter the properties specified.
   testCasesInclude.empty()
   testCasesExclude.empty()
+}
+
+task testDockerfileOfficialSlim(type: TestDockerImageTask, dependsOn: configurations.dockerOfficialSlimSmokeCheckImage) {
+  description = 'Smoke Test Slim Solr docker image built from the official Slim Dockerfile'
+
+  idFile = file(imageIdFileOfficial("Slim"))
+  outputDir = file("$smokeTestOfficial/slim/test-results")
+
+  // This test does not respect the include/exclude properties that `testDocker` does.
+  // All docker tests will be run, no matter the properties specified.
+  testCasesInclude.empty()
+  testCasesExclude = ['prometheus-exporter-cloud', 'prometheus-exporter-standalone']
+}
+
+task testDockerfileOfficial {
+  dependsOn tasks.testDockerfileOfficialFull
+  dependsOn tasks.testDockerfileOfficialSlim
 }
 
 // Re-usable class for running tests...

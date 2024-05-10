@@ -94,6 +94,7 @@ public abstract class TextResponseWriter implements TextWriter {
       this.rawReturnFields = returnFields;
     }
   }
+
   // only for test purposes
   TextResponseWriter(Writer writer, boolean indent) {
     this.writer = writer == null ? null : FastWriter.wrap(writer);
@@ -116,6 +117,7 @@ public abstract class TextResponseWriter implements TextWriter {
   }
 
   /** done with this ResponseWriter... make sure any buffers are flushed to writer */
+  @Override
   public void close() throws IOException {
     if (writer != null) writer.flushBuffer();
   }
@@ -126,6 +128,7 @@ public abstract class TextResponseWriter implements TextWriter {
   }
 
   /** returns the Writer that the response is being written to */
+  @Override
   public Writer getWriter() {
     return writer;
   }
@@ -138,23 +141,28 @@ public abstract class TextResponseWriter implements TextWriter {
     this.level = level;
   }
 
+  @Override
   public int level() {
     return level;
   }
 
+  @Override
   public int incLevel() {
     return ++level;
   }
 
+  @Override
   public int decLevel() {
     return --level;
   }
 
+  @Override
   public TextResponseWriter setIndent(boolean doIndent) {
     this.doIndent = doIndent;
     return this;
   }
 
+  @Override
   public final void writeVal(String name, Object val, boolean raw) throws IOException {
 
     // if there get to be enough types, perhaps hashing on the type
@@ -205,6 +213,7 @@ public abstract class TextResponseWriter implements TextWriter {
       TextWriter.super.writeVal(name, val, raw);
     }
   }
+
   // names are passed when writing primitives like writeInt to allow many different
   // types of formats, including those where the name may come after the value (like
   // some XML formats).

@@ -65,7 +65,7 @@ public class PathHierarchyTokenizerFactoryTest extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  public void testDescendents() throws Exception {
+  public void testDescendents() {
 
     assertQ(
         req("{!field f=cat_path}Books/NonFic"),
@@ -87,7 +87,7 @@ public class PathHierarchyTokenizerFactoryTest extends SolrTestCaseJ4 {
         "//str[@name='id' and .='43']");
   }
 
-  public void testAncestors() throws Exception {
+  public void testAncestors() {
 
     assertQ(
         req("{!field f=cat_ancestor}Books/NonFic/Science"),

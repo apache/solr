@@ -91,7 +91,7 @@ public abstract class SolrParams
   @Override
   public Iterator<Map.Entry<String, String[]>> iterator() {
     Iterator<String> it = getParameterNamesIterator();
-    return new Iterator<Map.Entry<String, String[]>>() {
+    return new Iterator<>() {
       @Override
       public boolean hasNext() {
         return it.hasNext();
@@ -100,7 +100,7 @@ public abstract class SolrParams
       @Override
       public Map.Entry<String, String[]> next() {
         String key = it.next();
-        return new Map.Entry<String, String[]>() {
+        return new Map.Entry<>() {
           @Override
           public String getKey() {
             return key;
@@ -129,6 +129,7 @@ public abstract class SolrParams
   public Stream<Map.Entry<String, String[]>> stream() {
     return StreamSupport.stream(spliterator(), false);
   }
+
   // Do we add Map.forEach equivalent too?  But it eager-fetches the value, and Iterable<Map.Entry>
   // allows the user to only get the value when needed.
 

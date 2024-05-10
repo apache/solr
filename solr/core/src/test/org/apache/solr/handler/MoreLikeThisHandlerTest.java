@@ -19,10 +19,13 @@ package org.apache.solr.handler;
 import java.util.ArrayList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.*;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -38,7 +41,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInterface() throws Exception {
+  public void testInterface() {
     SolrCore core = h.getCore();
 
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -234,10 +237,27 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
           "//result/doc[1]/str[@name='id'][.='45']",
           "//lst[@name='debug']/lst[@name='explain']");
     }
+
+    params.set(FacetComponent.COMPONENT_NAME, "true");
+    params.set("facet.field", "name");
+    try (SolrQueryRequest mltreq = new LocalSolrQueryRequest(core, params)) {
+      assertQ(
+          mltreq,
+          "//result/doc[1]/str[@name='id'][.='45']",
+          "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='name']/int[@name='George'][.='1']");
+    }
+    params.set("facet.field", "{!ex=tg}name");
+    params.set("fq", "{!tag=tg}name:George");
+    try (SolrQueryRequest mltreq = new LocalSolrQueryRequest(core, params)) {
+      assertQ(
+          mltreq,
+          "//result/doc[1]/str[@name='id'][.='45']",
+          "//lst[@name='facet_counts']/lst[@name='facet_fields']/lst[@name='name']/int[@name='George'][.='1']");
+    }
   }
 
   @Test
-  public void testMultifieldSimilarity() throws Exception {
+  public void testMultifieldSimilarity() {
     SolrCore core = h.getCore();
     ModifiableSolrParams params = new ModifiableSolrParams();
 

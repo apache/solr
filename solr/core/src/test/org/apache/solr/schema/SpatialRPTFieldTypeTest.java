@@ -36,7 +36,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   private static final String confDir = collection + "/conf";
 
   @Before
-  private void initManagedSchemaCore() throws Exception {
+  public void initManagedSchemaCore() throws Exception {
     tmpSolrHome = createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     File testHomeConfDir = new File(TEST_HOME(), confDir);
@@ -61,7 +61,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   }
 
   @After
-  private void afterClass() throws Exception {
+  public void afterClass() {
     deleteCore();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
@@ -74,7 +74,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   static final String DISTANCE_MILES = "93.416565";
 
   public void testDistanceUnitsDegrees() throws Exception {
-    setupRPTField("degrees", "true");
+    setupRPTField("degrees");
 
     assertU(adoc("str", "X", "geo", INDEXED_COORDINATES));
     assertU(commit());
@@ -105,7 +105,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   }
 
   public void testDistanceUnitsKilometers() throws Exception {
-    setupRPTField("kilometers", "true");
+    setupRPTField("kilometers");
 
     assertU(adoc("str", "X", "geo", INDEXED_COORDINATES));
     assertU(commit());
@@ -135,15 +135,15 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
         "//result/doc/float[@name='score'][.='" + DISTANCE_MILES + "']");
   }
 
-  public void testJunkValuesForDistanceUnits() throws Exception {
-    Exception ex = expectThrows(Exception.class, () -> setupRPTField("rose", "true"));
+  public void testJunkValuesForDistanceUnits() {
+    Exception ex = expectThrows(Exception.class, () -> setupRPTField("rose"));
     assertTrue(ex.getMessage().startsWith("Must specify distanceUnits as one of"));
   }
 
   public void testMaxDistErrConversion() throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
-    // Delete managed-schema.xml so it won't block parsing a new schema
+    // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile.toPath());
     System.setProperty("managed.schema.mutable", "true");
     initCore(
@@ -159,7 +159,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     IndexSchema oldSchema = h.getCore().getLatestSchema();
 
     SpatialRecursivePrefixTreeFieldType rptFieldType = new SpatialRecursivePrefixTreeFieldType();
-    Map<String, String> rptMap = new HashMap<String, String>();
+    Map<String, String> rptMap = new HashMap<>();
 
     rptFieldType.setTypeName("location_rpt");
     rptMap.put("geo", "true");
@@ -184,7 +184,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   }
 
   public void testGeoDistanceFunctionWithBackCompat() throws Exception {
-    setupRPTField(null, "true");
+    setupRPTField(null);
 
     assertU(adoc("str", "X", "geo", "1,2"));
     assertU(commit());
@@ -197,7 +197,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   }
 
   public void testGeoDistanceFunctionWithKilometers() throws Exception {
-    setupRPTField("kilometers", "true");
+    setupRPTField("kilometers");
 
     assertU(adoc("str", "X", "geo", "1,2"));
     assertU(commit());
@@ -209,7 +209,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   }
 
   public void testGeoDistanceFunctionWithMiles() throws Exception {
-    setupRPTField("miles", "true");
+    setupRPTField("miles");
 
     assertU(adoc("str", "X", "geo", "1,2"));
     assertU(commit());
@@ -223,7 +223,6 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   public void testShapeToFromStringWKT() throws Exception {
     setupRPTField(
         "miles",
-        "true",
         "WKT",
         random().nextBoolean()
             ? new SpatialRecursivePrefixTreeFieldType()
@@ -246,7 +245,6 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   public void testShapeToFromStringGeoJSON() throws Exception {
     setupRPTField(
         "miles",
-        "true",
         "GeoJSON",
         random().nextBoolean()
             ? new SpatialRecursivePrefixTreeFieldType()
@@ -262,11 +260,11 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     assertEquals(json, out);
   }
 
-  private void setupRPTField(String distanceUnits, String geo, String format, FieldType fieldType)
+  private void setupRPTField(String distanceUnits, String format, FieldType fieldType)
       throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema.xml");
-    // Delete managed-schema.xml so it won't block parsing a new schema
+    // Delete managed-schema.xml, so it won't block parsing a new schema
     Files.delete(managedSchemaFile.toPath());
     System.setProperty("managed.schema.mutable", "true");
     initCore(
@@ -284,9 +282,9 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     if (fieldType == null) {
       fieldType = new SpatialRecursivePrefixTreeFieldType();
     }
-    Map<String, String> rptMap = new HashMap<String, String>();
+    Map<String, String> rptMap = new HashMap<>();
     if (distanceUnits != null) rptMap.put("distanceUnits", distanceUnits);
-    if (geo != null) rptMap.put("geo", geo);
+    rptMap.put("geo", "true");
     if (format != null) {
       rptMap.put("format", format);
     }
@@ -312,7 +310,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     assertU(delQ("*:*"));
   }
 
-  private void setupRPTField(String distanceUnits, String geo) throws Exception {
-    setupRPTField(distanceUnits, geo, null, null);
+  private void setupRPTField(String distanceUnits) throws Exception {
+    setupRPTField(distanceUnits, null, null);
   }
 }

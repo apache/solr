@@ -20,11 +20,11 @@ import java.io.File;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -34,7 +34,6 @@ import org.junit.Test;
 @SolrTestCaseJ4.SuppressSSL
 public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
   private static final int MAX_BUFFERED_DOCS = 2, ULOG_NUM_RECORDS_TO_KEEP = 2;
-  private final boolean onlyLeaderIndexes = random().nextBoolean();
 
   public RecoveryAfterSoftCommitTest() {
     sliceCount = 1;

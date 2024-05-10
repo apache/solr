@@ -20,12 +20,12 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import org.apache.http.NoHttpResponseException;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.RTimer;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,8 +37,6 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long sleepMsBeforeHealPartition = 2000L;
-
-  private final boolean onlyLeaderIndexes = random().nextBoolean();
 
   @BeforeClass
   public static void setupSysProps() {
@@ -76,17 +74,17 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     // create a collection that has 2 shard and 2 replicas
     String testCollectionName = "c8n_2x2_commits";
     createCollection(testCollectionName, "conf1", 2, 2);
-    cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 2, 2, 30);
-    assertTrue(
+    assertEquals(
         "Expected 1 replicas for collection "
             + testCollectionName
             + " but found "
             + notLeaders.size()
             + "; clusterState: "
             + printClusterStateInfo(),
-        notLeaders.size() == 1);
+        1,
+        notLeaders.size());
 
     if (log.isInfoEnabled()) {
       log.info("All replicas active for {}", testCollectionName);
@@ -130,17 +128,17 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     // create a collection that has 1 shard and 3 replicas
     String testCollectionName = "c8n_1x3_commits";
     createCollection(testCollectionName, "conf1", 1, 3);
-    cloudClient.setDefaultCollection(testCollectionName);
 
     List<Replica> notLeaders = ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, 30);
-    assertTrue(
+    assertEquals(
         "Expected 2 replicas for collection "
             + testCollectionName
             + " but found "
             + notLeaders.size()
             + "; clusterState: "
             + printClusterStateInfo(),
-        notLeaders.size() == 2);
+        2,
+        notLeaders.size());
 
     log.info("All replicas active for {}", testCollectionName);
 
@@ -192,7 +190,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     String replicaCoreUrl = replica.getCoreUrl();
     log.info("Sending commit request to: {}", replicaCoreUrl);
     final RTimer timer = new RTimer();
-    try (HttpSolrClient client = getHttpSolrClient(replicaCoreUrl)) {
+    try (SolrClient client = getHttpSolrClient(replica)) {
       try {
         client.commit();
 

@@ -20,8 +20,8 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayDeque;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Update;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -47,9 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-/**
- * @lucene.experimental
- */
+/** A Solr client using {@link Http2SolrClient} to send concurrent updates to Solr. */
 public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   private static final long serialVersionUID = 1L;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -64,8 +63,8 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   private boolean shutdownClient;
   private boolean shutdownExecutor;
-  private int pollQueueTime = 250;
-  private int stallTime;
+  private long pollQueueTimeMillis;
+  private long stallTimeMillis;
   private final boolean streamDeletes;
   private volatile boolean closed;
   private volatile CountDownLatch lock = null; // used to block everything
@@ -103,7 +102,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
       return size() == 0;
     }
 
-    public E poll(int timeout, TimeUnit unit) throws InterruptedException {
+    public E poll(long timeout, TimeUnit unit) throws InterruptedException {
       E e = queue.poll(timeout, unit);
       if (e == null) {
         return null;
@@ -146,13 +145,18 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.shutdownClient = builder.closeHttp2Client;
     this.threadCount = builder.threadCount;
     this.queue = new CustomBlockingQueue<>(builder.queueSize, threadCount, END_UPDATE);
-    this.runners = new LinkedList<>();
+    this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
     this.basePath = builder.baseSolrUrl;
-    this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 15000);
-    if (stallTime < pollQueueTime * 2) {
-      throw new RuntimeException(
-          "Invalid stallTime: " + stallTime + "ms, must be 2x > pollQueueTime " + pollQueueTime);
+    this.defaultCollection = builder.defaultCollection;
+    this.pollQueueTimeMillis = builder.pollQueueTimeMillis;
+    this.stallTimeMillis = Integer.getInteger("solr.cloud.client.stallTime", 15000);
+
+    // make sure the stall time is larger than the polling time
+    // to give a chance for the queue to change
+    long minimalStallTimeMillis = pollQueueTimeMillis * 2;
+    if (minimalStallTimeMillis > this.stallTimeMillis) {
+      this.stallTimeMillis = minimalStallTimeMillis;
     }
 
     if (builder.executorService != null) {
@@ -187,7 +191,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         } finally {
           synchronized (runners) {
             // check to see if anything else was added to the queue
-            if (runners.size() == 1 && !queue.isEmpty() && !scheduler.isShutdown()) {
+            if (runners.size() == 1 && !queue.isEmpty() && !ExecutorUtil.isShutdown(scheduler)) {
               // If there is something else to process, keep last runner alive by staying in the
               // loop.
             } else {
@@ -218,7 +222,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
           try {
             Update update;
             notifyQueueAndRunnersIfEmptyQueue();
-            update = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+            update = queue.poll(pollQueueTimeMillis, TimeUnit.MILLISECONDS);
 
             if (update == null) {
               break;
@@ -239,7 +243,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
                 out.flush();
 
                 notifyQueueAndRunnersIfEmptyQueue();
-                upd = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+                upd = queue.poll(pollQueueTimeMillis, TimeUnit.MILLISECONDS);
               }
               responseListener = out.getResponseListener();
             }
@@ -355,6 +359,8 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
       throws SolrServerException, IOException {
+    if (ClientUtils.shouldApplyDefaultCollection(collection, request))
+      collection = defaultCollection;
     if (!(request instanceof UpdateRequest)) {
       request.setBasePath(basePath);
       return client.request(request, collection);
@@ -445,7 +451,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
             } else {
               long currentStallTime =
                   TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastStallTime);
-              if (currentStallTime > stallTime) {
+              if (currentStallTime > stallTimeMillis) {
                 throw new IOException(
                     "Request processing has stalled for "
                         + currentStallTime
@@ -486,7 +492,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         int loopCount = 0;
         while (!runners.isEmpty()) {
 
-          if (scheduler.isShutdown()) break;
+          if (ExecutorUtil.isShutdown(scheduler)) break;
 
           loopCount++;
 
@@ -504,7 +510,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
             } else {
               long currentStallTime =
                   TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastStallTime);
-              if (currentStallTime > stallTime) {
+              if (currentStallTime > stallTimeMillis) {
                 throw new IOException(
                     "Task queue processing has stalled for "
                         + currentStallTime
@@ -556,7 +562,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     long lastStallTime = -1;
     int lastQueueSize = -1;
     while (!queue.isEmpty()) {
-      if (scheduler.isTerminated()) {
+      if (ExecutorUtil.isTerminated(scheduler)) {
         log.warn(
             "The task queue still has elements but the update scheduler {} is terminated. Can't process any more tasks. Queue size: {}, Runners: {}. Current thread Interrupted? {}",
             scheduler,
@@ -598,7 +604,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
           lastStallTime = System.nanoTime();
         } else {
           long currentStallTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - lastStallTime);
-          if (currentStallTime > stallTime) {
+          if (currentStallTime > stallTimeMillis) {
             throw new IOException(
                 "Task queue processing has stalled for "
                     + currentStallTime
@@ -689,33 +695,60 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     }
   }
 
-  /**
-   * @param pollQueueTime time for an open connection to wait for updates when the queue is empty.
-   */
-  public void setPollQueueTime(int pollQueueTime) {
-    this.pollQueueTime = pollQueueTime;
-    // make sure the stall time is larger than the polling time
-    // to give a chance for the queue to change
-    int minimalStallTime = pollQueueTime * 2;
-    if (minimalStallTime > this.stallTime) {
-      this.stallTime = minimalStallTime;
-    }
-  }
-
   /** Constructs {@link ConcurrentUpdateHttp2SolrClient} instances from provided configuration. */
   public static class Builder {
     protected Http2SolrClient client;
     protected String baseSolrUrl;
+    protected String defaultCollection;
     protected int queueSize = 10;
     protected int threadCount;
     protected ExecutorService executorService;
     protected boolean streamDeletes;
     protected boolean closeHttp2Client;
+    private long pollQueueTimeMillis;
 
+    /**
+     * Initialize a Builder object, based on the provided URL and client.
+     *
+     * <p>The provided URL must point to the root Solr path (i.e. "/solr"), for example:
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr", http2Client)
+     *       .withDefaultCollection("core1")
+     *       .build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * @param baseSolrUrl a URL pointing to the root Solr path, typically of the form
+     *     "http[s]://host:port/solr"
+     * @param client a client for this ConcurrentUpdateHttp2SolrClient to use for all requests
+     *     internally. Callers are responsible for closing the provided client (after closing any
+     *     clients created by this builder)
+     */
     public Builder(String baseSolrUrl, Http2SolrClient client) {
       this(baseSolrUrl, client, false);
     }
 
+    /**
+     * Initialize a Builder object, based on the provided arguments.
+     *
+     * <p>The provided URL must point to the root Solr path (i.e. "/solr"), for example:
+     *
+     * <pre>
+     *   SolrClient client = new ConcurrentUpdateHttp2SolrClient.Builder("http://my-solr-server:8983/solr", http2Client)
+     *       .withDefaultCollection("core1")
+     *       .build();
+     *   QueryResponse resp = client.query(new SolrQuery("*:*"));
+     * </pre>
+     *
+     * @param baseSolrUrl a URL pointing to the root Solr path, typically of the form
+     *     "http[s]://host:port/solr"
+     * @param client a client for this ConcurrentUpdateHttp2SolrClient to use for all requests
+     *     internally.
+     * @param closeHttp2Client a boolean flag indicating whether the created
+     *     ConcurrentUpdateHttp2SolrClient should assume responsibility for closing the provided
+     *     'client'
+     */
     public Builder(String baseSolrUrl, Http2SolrClient client, boolean closeHttp2Client) {
       this.baseSolrUrl = baseSolrUrl;
       this.client = client;
@@ -792,6 +825,20 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
      */
     public Builder neverStreamDeletes() {
       this.streamDeletes = false;
+      return this;
+    }
+
+    /** Sets a default for core or collection based requests. */
+    public Builder withDefaultCollection(String defaultCoreOrCollection) {
+      this.defaultCollection = defaultCoreOrCollection;
+      return this;
+    }
+
+    /**
+     * @param pollQueueTime time for an open connection to wait for updates when the queue is empty.
+     */
+    public Builder setPollQueueTime(long pollQueueTime, TimeUnit unit) {
+      this.pollQueueTimeMillis = TimeUnit.MILLISECONDS.convert(pollQueueTime, unit);
       return this;
     }
 

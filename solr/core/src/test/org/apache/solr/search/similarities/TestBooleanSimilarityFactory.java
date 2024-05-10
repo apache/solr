@@ -32,7 +32,7 @@ public class TestBooleanSimilarityFactory extends BaseSimilarityTestCase {
   }
 
   /** Boolean w/ default parameters */
-  public void testDefaults() throws Exception {
+  public void testDefaults() {
     BooleanSimilarity sim = getSimilarity("text", BooleanSimilarity.class);
     assertEquals(BooleanSimilarity.class, sim.getClass());
   }

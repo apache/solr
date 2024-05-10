@@ -234,38 +234,43 @@ http://localhost:8983/solr/gettingstarted/replication?command=restorestatus&wt=x
 The status value can be "In Progress", "success" or "failed".
 If it failed then an "exception" will also be sent in the response.
 
-=== Create Snapshot API
+[[create-snapshot-api]]
+== CREATE: Create a Snapshot
 
 The snapshot functionality is different from the backup functionality as the index files aren't copied anywhere.
 The index files are snapshotted in the same index directory and can be referenced while taking backups.
 
 You can trigger a snapshot command with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
 
-.Create Snapshot API Example
-[source,text]
+[.dynamic-tabs]
+--
+[example.tab-pane#v1createsnapshot]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
 ----
-http://localhost:8983/solr/admin/cores?action=CREATESNAPSHOT&core=techproducts&commitName=commit1
+curl -X POST http://localhost:8983/solr/admin/cores?action=CREATESNAPSHOT&core=techproducts&commitName=commit1
+
 ----
+====
 
-The `CREATESNAPSHOT` request parameters are:
+[example.tab-pane#v2createsnapshot]
+====
+[.tab-label]*V2 API*
 
-`commitName`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-The name to store the snapshot as.
+With the v2 API, the core and snapshot names are part of the path instead of query parameters.
 
-`core`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-The name of the core to perform the snapshot on.
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/techproducts/snapshots/commit1
+----
+====
+--
+
+=== CREATE Parameters
+
+The CREATE action allows the following parameters:
 
 `async`::
 +
@@ -276,28 +281,45 @@ The name of the core to perform the snapshot on.
 +
 Request ID to track this action which will be processed asynchronously.
 
-=== List Snapshot API
+=== CREATE Response
 
-The `LISTSNAPSHOTS` command lists all the taken snapshots for a particular core.
+The response will include the status of the request, the core name, snapshot name, index directory path, snapshot generation, and a list of file names.
+If the status is anything other than "success", an error message will explain why the request failed.
+
+[[list-snapshot-api]]
+== List: List All Snapshots for a Particular Core
 
 You can trigger a list snapshot command with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
 
-.List Snapshot API
-[source,text]
-----
-http://localhost:8983/solr/admin/cores?action=LISTSNAPSHOTS&core=techproducts&commitName=commit1
-----
+[.dynamic-tabs]
+--
+[example.tab-pane#v1listsnapshots]
+====
+[.tab-label]*V1 API*
 
-The list snapshot request parameters are:
+[source,bash]
+----
+curl http://localhost:8983/solr/admin/cores?action=LISTSNAPSHOTS&core=techproducts&commitName=commit1
 
-`core`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-The name of the core to whose snapshots we want to list.
+----
+====
+
+[example.tab-pane#v2listsnapshots]
+====
+[.tab-label]*V2 API*
+
+With the v2 API the core name appears in the path, instead of as a query parameter.
+
+[source,bash]
+----
+curl http://localhost:8983/api/cores/techproducts/snapshots
+----
+====
+--
+
+=== LIST Parameters
+
+The LIST action allows the following parameters:
 
 `async`::
 +
@@ -308,37 +330,45 @@ The name of the core to whose snapshots we want to list.
 +
 Request ID to track this action which will be processed asynchronously.
 
-=== Delete Snapshot API
+=== LIST Response
 
-The `DELETESNAPSHOT` command deletes a snapshot for a particular core.
+The response will include the status of the request and all existing snapshots for the core.
+If the status is anything other than "success", an error message will explain why the request failed.
+
+[[delete-snapshot-api]]
+== DELETE: Delete a Snapshot
 
 You can trigger a delete snapshot with an HTTP command like this (replace "techproducts" with the name of the core you are working with):
 
-.Delete Snapshot API Example
-[source,text]
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletesnapshot]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
 ----
-http://localhost:8983/solr/admin/cores?action=DELETESNAPSHOT&core=techproducts&commitName=commit1
+curl http://localhost:8983/solr/admin/cores?action=DELETESNAPSHOT&core=techproducts&commitName=commit1
+
 ----
+====
 
-The delete snapshot request parameters are:
+[example.tab-pane#v2deletesnapshot]
+====
+[.tab-label]*V2 API*
 
-`commitName`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Specify the commit name to be deleted.
+With the v2 API, the core and snapshot names are part of the path instead of query parameters.
 
-`core`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-The name of the core whose snapshot we want to delete.
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/cores/techproducts/snapshots/commit1
+----
+====
+--
+
+=== DELETE Parameters
+
+The DELETE action allows the following parameters:
 
 `async`::
 +
@@ -348,12 +378,17 @@ The name of the core whose snapshot we want to delete.
 |===
 +
 Request ID to track this action which will be processed asynchronously.
+
+=== DELETE Response
+
+The response will include the status of the request, the core name, and the name of the snapshot that was deleted.
+If the status is anything other than "success", an error message will explain why the request failed.
 
 == Backup/Restore Storage Repositories
 
 Solr provides a repository abstraction to allow users to backup and restore their data to a variety of different storage systems.
 For example, a Solr cluster running on a local filesystem (e.g., EXT3) can store backup data on the same disk, on a remote network-mounted drive, in HDFS, or even in some popular "cloud storage" providers, depending on the 'repository' implementation chosen.
-Solr offers three different repository implementations out of the box (`LocalFileSystemRepository`, `HdfsBackupRepository`, and `GCSBackupRepository`), and allows users to create plugins for their own storage systems as needed.
+Solr offers multiple different repository implementations out of the box (`LocalFileSystemRepository`, `HdfsBackupRepository`, `GCSBackupRepository` and `S3BackupRepository`), and allows users to create plugins for their own storage systems as needed. It is also possible to create a `DelegatingBackupRepository` that delegates to another `BackupRepository` and adds or modifies some behavior on top of it.
 
 Users can define any number of repositories in their `solr.xml` file.
 The backup and restore APIs described above allow users to select which of these definitions they want to use at runtime via the `repository` parameter.
@@ -365,6 +400,17 @@ They may also have a boolean `default` attribute, which may be `true` on at most
 Any children under the `<repository>` tag are passed as additional configuration to the repository, allowing repositories to read their own implementation-specific configuration.
 
 Information on each of the repository implementations provided with Solr is provided below.
+
+By default, all the repository implementations verify the integrity of the index files before they are copied to the destination. However, it is possible to disable this integrity check by setting the optional configuration property `verifyChecksum`.
+
+`verifyChecksum`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
++
+Defines whether the backup repository should check the index files integrity before copying them to the destination. Set `false` to disable the checksum verification, in order to verify the integrity in a different way, for example if the files are encrypted.
 
 === LocalFileSystemRepository
 
@@ -387,14 +433,14 @@ LocalFileSystemRepository accepts the following configuration option:
 |===
 +
 A valid file path (accessible to Solr locally) to use for backup storage and retrieval.
-Used as a fallback when user's don't provide a `location` parameter in their Backup or Restore API commands
+Used as a fallback when users don't provide a `location` parameter in their Backup or Restore API commands.
 
 An example configuration using this property can be found below.
 
 [source,xml]
 ----
 <backup>
-  <repository name="local_repo" class="org.apache.solr.core.backup.repository.LocalFileSytemRepository">
+  <repository name="local_repo" class="org.apache.solr.core.backup.repository.LocalFileSystemRepository">
     <str name="location">/solr/backup_data</str>
   </repository>
 </backup>
@@ -404,8 +450,8 @@ An example configuration using this property can be found below.
 === HdfsBackupRepository
 
 Stores and retrieves backup files from HDFS directories.
-This is provided in the `hdfs` xref:configuration-guide:solr-modules.adoc[Solr Module].
-This plugin must first be xref:configuration-guide:solr-plugins.adoc#installing-plugins[installed] before using.
+
+This is provided via the `hdfs` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 HdfsBackupRepository accepts the following configuration options:
 
@@ -464,8 +510,8 @@ An example configuration using these properties can be found below:
 === GCSBackupRepository
 
 Stores and retrieves backup files in a Google Cloud Storage ("GCS") bucket.
-This is provided in the `gcs-repository` xref:configuration-guide:solr-modules.adoc[Solr Module].
-This plugin must first be xref:configuration-guide:solr-plugins.adoc#installing-plugins[installed] before using.
+
+This is provided via the `gcs-repository` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 GCSBackupRepository accepts the following options for overall configuration:
 
@@ -489,7 +535,7 @@ If both values are absent, the value `solrBackupsBucket` will be used as a defau
 +
 A path on the local filesystem (accessible by Solr) to a https://cloud.google.com/iam/docs/creating-managing-service-account-keys[Google Cloud service account key] file.
 If not specified, GCSBackupRepository will use the value of the `GCS_CREDENTIAL_PATH` environment variable.
-If both values are absent and Solr is running inside GCP, the GCS client will attempt to authenticate using GCP's "Compute Engine Metadata Serve"r or https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity[Workload Identity] features.
+If both values are absent and Solr is running inside GCP, the GCS client will attempt to authenticate using GCP's "Compute Engine Metadata Server" or https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity[Workload Identity] features.
 If both values are absent and Solr is running outside of GCP, it will be unable to authenticate and any backup or restore operations will fail.
 
 `location`::
@@ -654,9 +700,9 @@ An example configuration using the overall and GCS-client properties can be seen
     <str name="location">/default/gcs/backup/location</str>
 
     <int name="gcsClientMaxRetries">5</int>
-    <int name="gcsClientHttpInitialHttpDelayMillis">1500</int>
+    <int name="gcsClientHttpInitialRetryDelayMillis">1500</int>
     <double name="gcsClientHttpRetryDelayMultiplier">1.5</double>
-    <int name="gcsClientMaxHttpRetryDelayMillis">10000</int>
+    <int name="gcsClientHttpMaxRetryDelayMillis">10000</int>
   </repository>
 </backup>
 ----
@@ -664,8 +710,8 @@ An example configuration using the overall and GCS-client properties can be seen
 === S3BackupRepository
 
 Stores and retrieves backup files in an Amazon S3 bucket.
-This is provided in the `s3-repository` xref:configuration-guide:solr-modules.adoc[Solr Module].
-This plugin must first be xref:configuration-guide:solr-plugins.adoc#installing-plugins[installed] before using.
+
+This is provided via the `s3-repository` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
 This plugin uses the https://docs.aws.amazon.com/sdk-for-java/v2/developer-guide/credentials.html[default AWS credentials provider chain], so ensure that your credentials are set appropriately (e.g., via env var, or in `~/.aws/credentials`, etc.).
 

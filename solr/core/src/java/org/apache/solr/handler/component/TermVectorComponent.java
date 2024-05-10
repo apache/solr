@@ -52,6 +52,7 @@ import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.util.SolrResponseUtil;
 
 /**
  * Return term vectors for the documents in a query result set.
@@ -129,8 +130,8 @@ public class TermVectorComponent extends SearchComponent {
       return;
     }
 
-    NamedList<Object> termVectors = new NamedList<>();
-    rb.rsp.add(TERM_VECTORS, termVectors);
+    NamedList<Object> termVectorsNL = new NamedList<>();
+    rb.rsp.add(TERM_VECTORS, termVectorsNL);
 
     IndexSchema schema = rb.req.getSchema();
     SchemaField keyField = schema.getUniqueKeyField();
@@ -235,7 +236,7 @@ public class TermVectorComponent extends SearchComponent {
       warnings.add("noPayloads", noPay);
     }
     if (warnings.size() > 0) {
-      termVectors.add(TV_KEY_WARNINGS, warnings);
+      termVectorsNL.add(TV_KEY_WARNINGS, warnings);
     }
 
     DocListAndSet listAndSet = rb.getResults();
@@ -267,10 +268,10 @@ public class TermVectorComponent extends SearchComponent {
         String uKey = schema.printableUniqueKey(solrDoc);
         assert null != uKey;
         docNL.add("uniqueKey", uKey);
-        termVectors.add(uKey, docNL);
+        termVectorsNL.add(uKey, docNL);
       } else {
         // support for schemas w/o a unique key,
-        termVectors.add("doc-" + docId, docNL);
+        termVectorsNL.add("doc-" + docId, docNL);
       }
 
       if (null != fields) {
@@ -430,17 +431,19 @@ public class TermVectorComponent extends SearchComponent {
         for (ShardResponse srsp : sreq.responses) {
           @SuppressWarnings({"unchecked"})
           NamedList<Object> nl =
-              (NamedList<Object>) srsp.getSolrResponse().getResponse().get(TERM_VECTORS);
+              (NamedList<Object>)
+                  SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, TERM_VECTORS, false);
+          if (nl != null) {
+            // Add metadata (that which isn't a uniqueKey value):
+            Object warningsNL = nl.get(TV_KEY_WARNINGS);
+            // assume if that if warnings is already present; we don't need to merge.
+            if (warningsNL != null && termVectorsNL.indexOf(TV_KEY_WARNINGS, 0) < 0) {
+              termVectorsNL.add(TV_KEY_WARNINGS, warningsNL);
+            }
 
-          // Add metadata (that which isn't a uniqueKey value):
-          Object warningsNL = nl.get(TV_KEY_WARNINGS);
-          // assume if that if warnings is already present; we don't need to merge.
-          if (warningsNL != null && termVectorsNL.indexOf(TV_KEY_WARNINGS, 0) < 0) {
-            termVectorsNL.add(TV_KEY_WARNINGS, warningsNL);
+            // UniqueKey data
+            SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(nl, rb.resultIds, arr);
           }
-
-          // UniqueKey data
-          SolrPluginUtils.copyNamedListIntoArrayByDocPosInResponse(nl, rb.resultIds, arr);
         }
       }
       // remove nulls in case not all docs were able to be retrieved

@@ -27,7 +27,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test that checks that long running queries are exited by Solr using the SolrQueryTimeoutImpl
+ * Test that checks that long-running queries are exited by Solr using the SolrQueryTimeoutImpl
  * implementation.
  */
 public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
@@ -113,7 +113,7 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
                 .getGauge();
     long qrInserts = (long) queryCacheStats.getValue().get("inserts");
 
-    // This gets 0 docs back. Use 10000 instead of 1 for timeAllowed and it gets 100 back and the
+    // This gets 0 docs back. Use 10000 instead of 1 for timeAllowed, and it gets 100 back and the
     // for loop below succeeds.
     String response =
         JQ(req("q", "*:*", "fq", fq, "indent", "true", "timeAllowed", "1", "sleep", sleep));
@@ -151,9 +151,9 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
 
     assertEquals("Should have exactly " + NUM_DOCS, (long) (body.get("numFound")), NUM_DOCS);
     header = (Map<?, ?>) (res.get("responseHeader"));
-    assertTrue(
+    assertNull(
         "Should NOT have partial results",
-        header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null);
+        header.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
   }
 
   // When looking at a problem raised on the user's list I ran across this anomaly with timeAllowed

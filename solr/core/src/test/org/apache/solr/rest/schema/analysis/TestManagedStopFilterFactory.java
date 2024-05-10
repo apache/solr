@@ -36,16 +36,13 @@ import org.junit.Test;
  * <p>PUT: add some words to the current list
  */
 public class TestManagedStopFilterFactory extends RestTestBase {
-  private static File tmpSolrHome;
-  private static File tmpConfDir;
 
   private static final String collection = "collection1";
   private static final String confDir = collection + "/conf";
 
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
+    File tmpSolrHome = createTempDir().toFile();
     FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
@@ -63,11 +60,8 @@ public class TestManagedStopFilterFactory extends RestTestBase {
   }
 
   @After
-  private void after() throws Exception {
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
-    }
+  public void after() throws Exception {
+    solrClientTestRule.reset();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");
 
@@ -197,6 +191,18 @@ public class TestManagedStopFilterFactory extends RestTestBase {
 
     // should fail with 404 as foo doesn't exist
     assertJDelete(endpoint + "/foo", "/error/code==404");
+
+    // test for SOLR-6853 - should be able to delete stopwords with slash
+    assertJPut(
+        endpoint,
+        Utils.toJSONString(Arrays.asList("cheerful/joyful", "sleepy/tired")),
+        "/responseHeader/status==0");
+
+    // verify delete works
+    assertJDelete(endpoint + "/cheerful/joyful", "/responseHeader/status==0");
+
+    // should fail with 404 as some/thing doesn't exist
+    assertJDelete(endpoint + "/cheerful/joyful", "/error/code==404");
   }
 
   /** Can we add and remove stopwords with umlauts */

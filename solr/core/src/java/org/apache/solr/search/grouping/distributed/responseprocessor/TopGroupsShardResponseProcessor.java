@@ -38,12 +38,12 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.Grouping;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import org.apache.solr.search.grouping.distributed.shardresultserializer.TopGroupsResultTransformer;
+import org.apache.solr.util.SolrResponseUtil;
 
 /** Concrete implementation for merging {@link TopGroups} instances from shard responses. */
 public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
@@ -100,9 +100,11 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
             t = ((SolrServerException) t).getCause();
           }
           individualShardInfo.add("error", t.toString());
-          StringWriter trace = new StringWriter();
-          t.printStackTrace(new PrintWriter(trace));
-          individualShardInfo.add("trace", trace.toString());
+          if (!rb.req.getCore().getCoreContainer().hideStackTrace()) {
+            StringWriter trace = new StringWriter();
+            t.printStackTrace(new PrintWriter(trace));
+            individualShardInfo.add("trace", trace.toString());
+          }
         } else {
           // summary for successful shard response is added down below
         }
@@ -115,15 +117,15 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         shardInfo.add(srsp.getShard(), individualShardInfo);
       }
       if (ShardParams.getShardsTolerantAsBool(rb.req.getParams()) && srsp.getException() != null) {
-        rb.rsp
-            .getResponseHeader()
-            .asShallowMap()
-            .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+        rb.rsp.setPartialResults();
         continue; // continue if there was an error and we're tolerant.
       }
       NamedList<NamedList<?>> secondPhaseResult =
-          (NamedList<NamedList<?>>) srsp.getSolrResponse().getResponse().get("secondPhase");
-      if (secondPhaseResult == null) continue;
+          (NamedList<NamedList<?>>)
+              SolrResponseUtil.getSubsectionFromShardResponse(rb, srsp, "secondPhase", false);
+      if (secondPhaseResult == null) {
+        continue;
+      }
       Map<String, ?> result =
           serializer.transformToNative(
               secondPhaseResult, groupSort, withinGroupSort, srsp.getShard());
@@ -209,11 +211,10 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
 
       final TopDocs mergedTopDocs;
       if (withinGroupSort.equals(Sort.RELEVANCE)) {
-        mergedTopDocs = TopDocs.merge(start, topN, topDocs.toArray(new TopDocs[topDocs.size()]));
+        mergedTopDocs = TopDocs.merge(start, topN, topDocs.toArray(new TopDocs[0]));
       } else {
         mergedTopDocs =
-            TopDocs.merge(
-                withinGroupSort, start, topN, topDocs.toArray(new TopFieldDocs[topDocs.size()]));
+            TopDocs.merge(withinGroupSort, start, topN, topDocs.toArray(new TopFieldDocs[0]));
       }
       rb.mergedQueryCommandResults.put(
           entry.getKey(), new QueryCommandResult(mergedTopDocs, mergedMatches, maxScore));

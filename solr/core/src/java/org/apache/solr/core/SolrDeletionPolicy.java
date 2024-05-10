@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Standard Solr deletion policy that allows reserving index commit points for certain amounts of
- * time to support features such as index replication or snapshooting directly out of a live index
+ * time to support features such as index replication or snapshotting directly out of a live index
  * directory.
  *
  * @see org.apache.lucene.index.IndexDeletionPolicy
@@ -98,6 +98,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
       this.commits = commits;
     }
 
+    @Override
     public final String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("num=").append(commits.size());
@@ -128,6 +129,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
       super(commits);
     }
 
+    @Override
     protected void appendDetails(StringBuilder sb, IndexCommit c) {
       super.appendDetails(sb, c);
       try {
@@ -141,7 +143,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
 
   private void updateCommits(List<? extends IndexCommit> commits) {
     // to be safe, we should only call delete on a commit point passed to us
-    // in this specific call (may be across diff IndexWriter instances).
+    // in this specific call (which may be across diff IndexWriter instances).
     // this will happen rarely, so just synchronize everything
     // for safety and to avoid race conditions
 

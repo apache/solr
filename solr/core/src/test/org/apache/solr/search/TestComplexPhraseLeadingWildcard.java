@@ -39,13 +39,13 @@ public class TestComplexPhraseLeadingWildcard extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testReverseWithOriginal() throws Exception {
+  public void testReverseWithOriginal() {
     checkField(withOriginal);
   }
 
   // prefix query won't match without original tokens
   @Test
-  public void testReverseWithoutOriginal() throws Exception {
+  public void testReverseWithoutOriginal() {
     assertQ(
         "prefix query doesn't work without original term",
         req("q", "{!complexphrase inOrder=true}\"on* for*\"", "df", withoutOriginal),
@@ -58,7 +58,7 @@ public class TestComplexPhraseLeadingWildcard extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testWithoutReverse() throws Exception {
+  public void testWithoutReverse() {
     checkField(noReverseText);
   }
 

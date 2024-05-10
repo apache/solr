@@ -61,7 +61,7 @@ At its core, Solr autoscaling provides users with a rule syntax to define prefer
 
 === Other Features & Enhancements
 
-* The xref:query-guide:analytics.adoc[] has been refactored.
+* The analytics query guide has been refactored.
 
 * There were several other new features released in earlier 6.x releases, which you may have missed:
 ** xref:query-guide:learning-to-rank.adoc[]
@@ -230,7 +230,7 @@ Mentions of deprecations are likely superseded by removal in Solr 7, as noted in
 
 Note again that this is not a complete list of all changes that may impact your installation, so a thorough review of CHANGES.txt is highly recommended if upgrading from any version earlier than 6.6.
 
-* The Solr modules `map-reduce`, `morphlines-core` and `morphlines-cell` have been removed.
+* The Solr contribs `map-reduce`, `morphlines-core` and `morphlines-cell` have been removed.
 * JSON Facet API now uses hyper-log-log for numBuckets cardinality calculation and calculates cardinality before filtering buckets by any `mincount` greater than 1.
 * If you use historical dates, specifically on or before the year 1582, you should reindex for better date handling.
 * If you use the JSON Facet API (json.facet) with `method=stream`, you must now set `sort='index asc'` to get the streaming behavior; otherwise it won't stream.

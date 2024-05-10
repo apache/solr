@@ -20,28 +20,28 @@ import static org.apache.solr.common.cloud.ZkStateReader.ALIASES;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.apache.lucene.util.IOUtils;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -57,6 +57,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
@@ -67,7 +68,6 @@ import org.junit.Test;
 public class AliasIntegrationTest extends SolrCloudTestCase {
 
   private CloseableHttpClient httpClient;
-  private CloudSolrClient solrClient;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -78,15 +78,15 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    solrClient = getCloudSolrClient(cluster);
-    httpClient = (CloseableHttpClient) ((CloudLegacySolrClient) solrClient).getHttpClient();
+
+    httpClient =
+        (CloseableHttpClient) ((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient();
   }
 
   @After
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    IOUtils.close(solrClient, httpClient);
 
     cluster.deleteAllCollections(); // note: deletes aliases too
   }
@@ -164,7 +164,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     assertTrue(meta.containsKey("foobar"));
     assertEquals("bazbam", meta.get("foobar"));
 
-    // removal of non existent key should succeed.
+    // removal of non-existent key should succeed.
     aliasesManager.applyModificationAndExportToZk(
         a2 -> a2.cloneWithCollectionAliasProperties("meta1", "foo", null));
 
@@ -203,7 +203,11 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     // now check that an independently constructed ZkStateReader can see what we've done.
     // i.e. the data is really in zookeeper
-    try (SolrZkClient zkClient = new SolrZkClient(cluster.getZkServer().getZkAddress(), 30000)) {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(cluster.getZkServer().getZkAddress())
+            .withTimeout(30000, TimeUnit.MILLISECONDS)
+            .build()) {
       ZkController.createClusterZkNodes(zkClient);
       try (ZkStateReader zkStateReader2 = new ZkStateReader(zkClient)) {
         zkStateReader2.createClusterStateWatchersAndUpdate();
@@ -234,28 +238,51 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   public void testModifyPropertiesV2() throws Exception {
     final String aliasName = getSaferTestName();
     ZkStateReader zkStateReader = createColectionsAndAlias(aliasName);
-    final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
-    // TODO fix Solr test infra so that this /____v2/ becomes /api/
-    HttpPost post = new HttpPost(baseUrl + "/____v2/c");
-    post.setEntity(
+    final String baseUrl =
+        cluster.getRandomJetty(random()).getBaseUrl().toString().replace("/solr", "");
+    String aliasApi = String.format(Locale.ENGLISH, "/api/aliases/%s/properties", aliasName);
+
+    HttpPut withoutBody = new HttpPut(baseUrl + aliasApi);
+    assertEquals(400, httpClient.execute(withoutBody).getStatusLine().getStatusCode());
+
+    HttpPut update = new HttpPut(baseUrl + aliasApi);
+    update.setEntity(
         new StringEntity(
             "{\n"
-                + "\"set-alias-property\" : {\n"
-                + "  \"name\": \""
-                + aliasName
-                + "\",\n"
-                + "  \"properties\" : {\n"
-                + "    \"foo\": \"baz\",\n"
-                + "    \"bar\": \"bam\"\n"
+                + "    \"properties\":\n"
+                + "    {\n"
+                + "        \"foo\": \"baz\",\n"
+                + "        \"bar\": \"bam\"\n"
                 + "    }\n"
-                +
-                // TODO should we use "NOW=" param?  Won't work with v2 and is kinda a hack any way
-                // since intended for distrib
-                "  }\n"
                 + "}",
             ContentType.APPLICATION_JSON));
-    assertSuccess(post);
-    checkFooAndBarMeta(aliasName, zkStateReader);
+    assertSuccess(update);
+    checkFooAndBarMeta(aliasName, zkStateReader, "baz", "bam");
+
+    String aliasPropertyApi =
+        String.format(Locale.ENGLISH, "/api/aliases/%s/properties/%s", aliasName, "foo");
+    HttpPut updateByProperty = new HttpPut(baseUrl + aliasPropertyApi);
+    updateByProperty.setEntity(
+        new StringEntity("{ \"value\": \"zab\" }", ContentType.APPLICATION_JSON));
+    assertSuccess(updateByProperty);
+    checkFooAndBarMeta(aliasName, zkStateReader, "zab", "bam");
+
+    HttpDelete deleteByProperty = new HttpDelete(baseUrl + aliasPropertyApi);
+    assertSuccess(deleteByProperty);
+    checkFooAndBarMeta(aliasName, zkStateReader, null, "bam");
+
+    HttpPut deleteByEmptyValue = new HttpPut(baseUrl + aliasApi);
+    deleteByEmptyValue.setEntity(
+        new StringEntity(
+            "{\n"
+                + "    \"properties\":\n"
+                + "    {\n"
+                + "        \"bar\": \"\"\n"
+                + "    }\n"
+                + "}",
+            ContentType.APPLICATION_JSON));
+    assertSuccess(deleteByEmptyValue);
+    checkFooAndBarMeta(aliasName, zkStateReader, null, null);
   }
 
   @Test
@@ -274,7 +301,19 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
                 + "&property.foo=baz"
                 + "&property.bar=bam");
     assertSuccess(get);
-    checkFooAndBarMeta(aliasName, zkStateReader);
+    checkFooAndBarMeta(aliasName, zkStateReader, "baz", "bam");
+
+    HttpGet remove =
+        new HttpGet(
+            baseUrl
+                + "/admin/collections?action=ALIASPROP"
+                + "&wt=xml"
+                + "&name="
+                + aliasName
+                + "&property.foo="
+                + "&property.bar=bar");
+    assertSuccess(remove);
+    checkFooAndBarMeta(aliasName, zkStateReader, null, "bar");
   }
 
   @Test
@@ -287,20 +326,24 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     setAliasProperty.addProperty("foo", "baz");
     setAliasProperty.addProperty("bar", "bam");
     setAliasProperty.process(cluster.getSolrClient());
-    checkFooAndBarMeta(aliasName, zkStateReader);
+    checkFooAndBarMeta(aliasName, zkStateReader, "baz", "bam");
 
     // now verify we can delete
     setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
     setAliasProperty.addProperty("foo", "");
     setAliasProperty.process(cluster.getSolrClient());
+    checkFooAndBarMeta(aliasName, zkStateReader, null, "bam");
+
     setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
     setAliasProperty.addProperty("bar", null);
     setAliasProperty.process(cluster.getSolrClient());
-    setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
+    checkFooAndBarMeta(aliasName, zkStateReader, null, null);
 
+    setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
     // whitespace value
     setAliasProperty.addProperty("foo", " ");
     setAliasProperty.process(cluster.getSolrClient());
+    checkFooAndBarMeta(aliasName, zkStateReader, " ", null);
   }
 
   @Test
@@ -312,16 +355,16 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     final SolrCloudManager cloudManager =
         cluster.getRandomJetty(random()).getCoreContainer().getZkController().getSolrCloudManager();
 
-    // allthough the purpose of this test is to verify that the ClusterStateProvider API
+    // although the purpose of this test is to verify that the ClusterStateProvider API
     // works as a "black box" for inspecting alias information, we'll be doing some "grey box"
     // introspection of the underlying ZKNodeVersion to first verify that alias updates have
-    // propogated to our randomly selected node before making assertions against the
+    // propagated to our randomly selected node before making assertions against the
     // ClusterStateProvider API...
     //
     // establish a baseline version for future waitForAliasesUpdate calls
     int lastVersion = waitForAliasesUpdate(-1, cloudManager.getClusterStateProvider());
 
-    // create the alias and wait for it to propogate
+    // create the alias and wait for it to propagate
     createColectionsAndAlias(aliasName);
     lastVersion = waitForAliasesUpdate(-1, cloudManager.getClusterStateProvider());
 
@@ -373,7 +416,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
   /**
    * Does a "grey box" assertion that the ClusterStateProvider is a ZkClientClusterStateProvider and
-   * then waits for it's underlying ZkStateReader to see the updated aliases, returning the current
+   * then waits for its underlying ZkStateReader to see the updated aliases, returning the current
    * ZNodeVersion for the aliases
    */
   private int waitForAliasesUpdate(int lastVersion, ClusterStateProvider stateProvider)
@@ -409,14 +452,26 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     return -1;
   }
 
-  private void checkFooAndBarMeta(String aliasName, ZkStateReader zkStateReader) throws Exception {
-    zkStateReader.aliasesManager.update(); // ensure our view is up to date
+  private void checkFooAndBarMeta(
+      String aliasName, ZkStateReader zkStateReader, String fooValue, String barValue)
+      throws Exception {
+    zkStateReader.aliasesManager.update(); // ensure our view is up-to-date
     Map<String, String> meta = zkStateReader.getAliases().getCollectionAliasProperties(aliasName);
     assertNotNull(meta);
-    assertTrue(meta.containsKey("foo"));
-    assertEquals("baz", meta.get("foo"));
-    assertTrue(meta.containsKey("bar"));
-    assertEquals("bam", meta.get("bar"));
+
+    if (fooValue != null) {
+      assertTrue(meta.containsKey("foo"));
+      assertEquals(fooValue, meta.get("foo"));
+    } else {
+      assertFalse(meta.toString(), meta.containsKey("foo"));
+    }
+
+    if (barValue != null) {
+      assertTrue(meta.containsKey("bar"));
+      assertEquals(barValue, meta.get("bar"));
+    } else {
+      assertFalse(meta.toString(), meta.containsKey("bar"));
+    }
   }
 
   private ZkStateReader createColectionsAndAlias(String aliasName)
@@ -462,6 +517,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       }
     }
   }
+
   // Rather a long title, but it's common to recommend when people need to re-index for any reason
   // that they:
   // 1> create a new collection
@@ -546,13 +602,13 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
             .processAndWait(cluster.getSolrClient(), 60);
     assertEquals("Should have failed to delete collection: ", delResp, RequestStatusState.FAILED);
 
-    // assure ourselves that the old colletion is, indeed, still there.
+    // assure ourselves that the old collection is, indeed, still there.
     assertNotNull(
         "collection_old should exist!",
         cluster.getSolrClient().getClusterState().getCollectionOrNull("collection_old"));
 
     // Now we should still succeed using the alias collection_old which points to collection_new
-    // aliase: collection_old -> collection_new, collection_old_reserve -> collection_old ->
+    // alias: collection_old -> collection_new, collection_old_reserve -> collection_old ->
     // collection_new
     // collections: collection_old, collection_new
     res = cluster.getSolrClient().query("collection_old", new SolrQuery("*:*"));
@@ -834,10 +890,10 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
     ///////////////
     // use v2 API
-    new V2Request.Builder("/collections")
+    new V2Request.Builder("/aliases")
         .withMethod(SolrRequest.METHOD.POST)
         .withPayload(
-            "{\"create-alias\": {\"name\": \"testalias6\", collections:[\"collection2\",\"collection1\"]}}")
+            "{\"name\": \"testalias6\", \"collections\": [\"collection2\",\"collection1\"]}")
         .build()
         .process(cluster.getSolrClient());
 
@@ -890,9 +946,14 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       responseConsumer.accept(cluster.getSolrClient().query(collectionList, solrQuery));
     } else {
       // new CloudSolrClient (random shardLeadersOnly)
-      try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
-        if (random().nextBoolean()) {
-          solrClient.setDefaultCollection(collectionList);
+
+      RandomizingCloudSolrClientBuilder builder = new RandomizingCloudSolrClientBuilder(cluster);
+      boolean useDefaultCollection = random().nextBoolean();
+      try (CloudSolrClient solrClient =
+          useDefaultCollection
+              ? builder.withDefaultCollection(collectionList).build()
+              : builder.build()) {
+        if (useDefaultCollection) {
           responseConsumer.accept(solrClient.query(null, solrQuery));
         } else {
           responseConsumer.accept(solrClient.query(collectionList, solrQuery));
@@ -907,12 +968,11 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       // HttpSolrClient
       JettySolrRunner jetty = cluster.getRandomJetty(random());
       if (random().nextBoolean()) {
-        try (HttpSolrClient client =
-            getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + collectionList)) {
+        try (SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString(), collectionList)) {
           responseConsumer.accept(client.query(null, solrQuery));
         }
       } else {
-        try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
+        try (SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
           responseConsumer.accept(client.query(collectionList, solrQuery));
         }
       }

@@ -24,12 +24,13 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
- * Represents a query using the <a href="https://solr.apache.org/guide/json-request-api.html">JSON
- * Query DSL</a>
+ * Represents a query using the <a
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/json-request-api.html">JSON Query
+ * DSL</a>
  *
  * <p>This class doesn't construct the request body itself. It uses a provided String without any
  * modification. Often used in combination with the JSON DSL's <a
- * href="https://solr.apache.org/guide/json-request-api.html#parameter-substitution-macro-expansion">macro
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/json-request-api.html#parameter-substitution-macro-expansion">macro
  * expansion capabilities</a>. The JSON body can contain template parameters which are replaced with
  * values fetched from the {@link SolrParams} used by this request. For a more flexible, guided
  * approach to constructing JSON DSL requests, see {@link JsonQueryRequest}.
@@ -46,6 +47,7 @@ public class DirectJsonQueryRequest extends QueryRequest {
     this.jsonString = jsonString;
   }
 
+  @Override
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
     return new RequestWriter.StringPayloadContentWriter(jsonString, ClientUtils.TEXT_JSON);
   }

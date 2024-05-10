@@ -29,8 +29,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -39,9 +39,9 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -109,7 +109,12 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     assertEquals(1, replicas.size());
     String baseUrl = replicas.iterator().next().getBaseUrl();
     if (!baseUrl.endsWith("/")) baseUrl += "/";
-    try (HttpSolrClient client = getHttpSolrClient(baseUrl + "a1x2", 2000, 5000)) {
+    try (SolrClient client =
+        new HttpSolrClient.Builder(baseUrl)
+            .withDefaultCollection("a1x2")
+            .withConnectionTimeout(2000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(5000, TimeUnit.MILLISECONDS)
+            .build()) {
 
       long expectedTotalRequests = 0;
       Set<String> uniqueCoreNames = new LinkedHashSet<>();
@@ -204,7 +209,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
               overseer.getZkStateReader());
     } else {
       ZkDistributedQueue q = overseer.getStateUpdateQueue();
-      q.offer(Utils.toJSON(m));
+      q.offer(m);
     }
 
     verifyReplicaStatus(
@@ -217,10 +222,13 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     // Query against the node which hosts the down replica
 
     String baseUrl = notLeader.getBaseUrl();
-    if (!baseUrl.endsWith("/")) baseUrl += "/";
-    String path = baseUrl + "football";
-    log.info("Firing queries against path={}", path);
-    try (HttpSolrClient client = getHttpSolrClient(path, 2000, 5000)) {
+    log.info("Firing queries against path={} and collection=football", baseUrl);
+    try (SolrClient client =
+        new HttpSolrClient.Builder(baseUrl)
+            .withDefaultCollection("football")
+            .withConnectionTimeout(2000, TimeUnit.MILLISECONDS)
+            .withSocketTimeout(5000, TimeUnit.MILLISECONDS)
+            .build()) {
 
       SolrCore leaderCore = null;
       for (JettySolrRunner jetty : jettys) {

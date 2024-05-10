@@ -47,12 +47,7 @@ import org.eclipse.jetty.client.util.SPNEGOAuthentication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Kerberos-enabled SolrHttpClientBuilder
- *
- * @deprecated Please consider alternatives involving the new Solr Http2Client
- */
-@Deprecated(since = "9.0")
+/** Kerberos-enabled SolrHttpClientBuilder */
 public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
 
   public static final String LOGIN_CONFIG_PROP = "java.security.auth.login.config";
@@ -75,6 +70,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     return getBuilder(HttpClientUtil.getHttpClientBuilder());
   }
 
+  @Override
   public void close() {
     HttpClientUtil.removeRequestInterceptor(bufferedEntityInterceptor);
   }
@@ -88,6 +84,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
     SPNEGOAuthentication authentication =
         new SPNEGOAuthentication(null) {
 
+          @Override
           public boolean matches(String type, URI uri, String realm) {
             return this.getType().equals(type);
           }
@@ -132,7 +129,7 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
   public void setup(Http2SolrClient http2Client) {
     HttpAuthenticationStore authenticationStore = new HttpAuthenticationStore();
     authenticationStore.addAuthentication(createSPNEGOAuthentication());
-    http2Client.getHttpClient().setAuthenticationStore(authenticationStore);
+    http2Client.setAuthenticationStore(authenticationStore);
     http2Client
         .getProtocolHandlers()
         .put(new WWWAuthenticationProtocolHandler(http2Client.getHttpClient()));
@@ -174,10 +171,12 @@ public class Krb5HttpClientBuilder implements HttpClientBuilderFactory {
         // Get the credentials from the JAAS configuration rather than here
         Credentials useJaasCreds =
             new Credentials() {
+              @Override
               public String getPassword() {
                 return null;
               }
 
+              @Override
               public Principal getUserPrincipal() {
                 return null;
               }

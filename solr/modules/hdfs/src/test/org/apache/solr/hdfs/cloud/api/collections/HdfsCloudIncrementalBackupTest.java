@@ -66,7 +66,6 @@ public class HdfsCloudIncrementalBackupTest extends AbstractIncrementalBackupTes
           + "  <solrcloud>\n"
           + "    <str name=\"host\">127.0.0.1</str>\n"
           + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
-          + "    <str name=\"hostContext\">${hostContext:solr}</str>\n"
           + "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n"
           + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
           + "    <int name=\"leaderVoteWait\">10000</int>\n"
@@ -122,7 +121,7 @@ public class HdfsCloudIncrementalBackupTest extends AbstractIncrementalBackupTes
     System.setProperty("solr.hdfs.home", hdfsUri + "/solr");
     useFactory("solr.StandardDirectoryFactory");
 
-    configureCluster(NUM_SHARDS) // nodes
+    configureCluster(NUM_NODES) // nodes
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(SOLR_XML)

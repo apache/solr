@@ -32,8 +32,9 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 
 /**
- * Represents a query using the <a href="https://solr.apache.org/guide/json-request-api.html">JSON
- * Query DSL</a>
+ * Represents a query using the <a
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/json-request-api.html">JSON Query
+ * DSL</a>
  *
  * <p>This class constructs the request using setters for individual properties. For a more
  * monolithic approach to constructing the JSON request, see {@link DirectJsonQueryRequest}
@@ -421,6 +422,7 @@ public class JsonQueryRequest extends QueryRequest {
     return this;
   }
 
+  @Override
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
     return new RequestWriter.ContentWriter() {
       @Override

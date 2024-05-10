@@ -559,7 +559,7 @@ public class AtomicUpdateDocumentMerger {
 
     if (original.size() > initialSize) { // update only if more are added
       if (original.size() == 1) { // if single value, pass the value instead of List
-        doAdd(toDoc, sif, original.toArray()[0]);
+        doSet(toDoc, sif, original.toArray()[0]);
       } else {
         toDoc.setField(name, original);
       }
@@ -801,7 +801,9 @@ public class AtomicUpdateDocumentMerger {
                   val.equals(rawValue)
                       || val.equals(nativeValue)
                       || (val instanceof String
-                          && DateMathParser.parseMath(null, (String) val).equals(nativeValue)))
+                          && DateMathParser.parseMath(null, (String) val)
+                              .toInstant()
+                              .equals(((Date) nativeValue).toInstant())))
           .findFirst();
     } else if (original.contains(nativeValue)) {
       return Optional.of(nativeValue);

@@ -18,6 +18,22 @@
 
 package org.apache.hadoop.fs;
 
+import org.apache.commons.collections4.map.CaseInsensitiveMap;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.hadoop.classification.InterfaceAudience;
+import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.permission.FsAction;
+import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.io.nativeio.NativeIO;
+import org.apache.hadoop.util.Shell;
+import org.apache.hadoop.util.Shell.ShellCommandExecutor;
+import org.apache.hadoop.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -38,6 +54,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -54,22 +71,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
-
-import org.apache.commons.collections4.map.CaseInsensitiveMap;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.classification.InterfaceStability;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.permission.FsAction;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.io.nativeio.NativeIO;
-import org.apache.hadoop.util.Shell;
-import org.apache.hadoop.util.Shell.ShellCommandExecutor;
-import org.apache.hadoop.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A collection of file-processing util methods
@@ -735,7 +736,7 @@ public class FileUtil {
             try (BufferedReader reader =
                      new BufferedReader(
                          new InputStreamReader(process.getInputStream(),
-                             Charset.forName("UTF-8")))) {
+                             StandardCharsets.UTF_8))) {
               String line;
               while((line = reader.readLine()) != null) {
                 LOG.debug(line);
@@ -758,7 +759,7 @@ public class FileUtil {
             try (BufferedReader reader =
                      new BufferedReader(
                          new InputStreamReader(process.getErrorStream(),
-                             Charset.forName("UTF-8")))) {
+                             StandardCharsets.UTF_8))) {
               String line;
               while((line = reader.readLine()) != null) {
                 LOG.debug(line);
@@ -887,11 +888,14 @@ public class FileUtil {
 
   private static void unTarUsingTar(File inFile, File untarDir,
       boolean gzipped) throws IOException {
-    StringBuffer untarCommand = new StringBuffer();
+    StringBuilder untarCommand = new StringBuilder();
+    // not using canonical path here; this postpones relative path
+    // resolution until bash is executed.
+    final String source = "'" + FileUtil.makeSecureShellPath(inFile) + "'";
     if (gzipped) {
-      untarCommand.append(" gzip -dc '")
-          .append(FileUtil.makeSecureShellPath(inFile))
-          .append("' | (");
+      untarCommand.append(" gzip -dc ")
+          .append(source)
+          .append(" | (");
     }
     untarCommand.append("cd '")
         .append(FileUtil.makeSecureShellPath(untarDir))
@@ -901,15 +905,17 @@ public class FileUtil {
     if (gzipped) {
       untarCommand.append(" -)");
     } else {
-      untarCommand.append(FileUtil.makeSecureShellPath(inFile));
+      untarCommand.append(source);
     }
+    LOG.debug("executing [{}]", untarCommand);
     String[] shellCmd = { "bash", "-c", untarCommand.toString() };
     ShellCommandExecutor shexec = new ShellCommandExecutor(shellCmd);
     shexec.execute();
     int exitcode = shexec.getExitCode();
     if (exitcode != 0) {
       throw new IOException("Error untarring file " + inFile +
-          ". Tar process exited with exit code " + exitcode);
+          ". Tar process exited with exit code " + exitcode
+          + " from command " + untarCommand);
     }
   }
 
@@ -966,6 +972,14 @@ public class FileUtil {
           + " would create entry outside of " + outputDir);
     }
 
+    if (entry.isSymbolicLink() || entry.isLink()) {
+      String canonicalTargetPath = getCanonicalPath(entry.getLinkName(), outputDir);
+      if (!canonicalTargetPath.startsWith(targetDirPath)) {
+        throw new IOException(
+            "expanding " + entry.getName() + " would create entry outside of " + outputDir);
+      }
+    }
+
     if (entry.isDirectory()) {
       File subDir = new File(outputDir, entry.getName());
       if (!subDir.mkdirs() && !subDir.isDirectory()) {
@@ -981,10 +995,12 @@ public class FileUtil {
     }
 
     if (entry.isSymbolicLink()) {
-      // Create symbolic link relative to tar parent dir
-      Files.createSymbolicLink(FileSystems.getDefault()
-              .getPath(outputDir.getPath(), entry.getName()),
-          FileSystems.getDefault().getPath(entry.getLinkName()));
+      // Create symlink with canonical target path to ensure that we don't extract
+      // outside targetDirPath
+      String canonicalTargetPath = getCanonicalPath(entry.getLinkName(), outputDir);
+      Files.createSymbolicLink(
+          FileSystems.getDefault().getPath(outputDir.getPath(), entry.getName()),
+          FileSystems.getDefault().getPath(canonicalTargetPath));
       return;
     }
 
@@ -996,12 +1012,27 @@ public class FileUtil {
     }
 
     if (entry.isLink()) {
-      File src = new File(outputDir, entry.getLinkName());
+      String canonicalTargetPath = getCanonicalPath(entry.getLinkName(), outputDir);
+      File src = new File(canonicalTargetPath);
       HardLink.createHardLink(src, outputFile);
       return;
     }
 
     org.apache.commons.io.FileUtils.copyToFile(tis, outputFile);
+  }
+
+  /**
+   * Gets the canonical path for the given path.
+   *
+   * @param path      The path for which the canonical path needs to be computed.
+   * @param parentDir The parent directory to use if the path is a relative path.
+   * @return The canonical path of the given path.
+   */
+  private static String getCanonicalPath(String path, File parentDir) throws IOException {
+    java.nio.file.Path targetPath = Paths.get(path);
+    return (targetPath.isAbsolute() ?
+        new File(path) :
+        new File(parentDir, path)).getCanonicalPath();
   }
 
   /**
@@ -1868,8 +1899,6 @@ public class FileUtil {
     return write(fileContext, path, charseq, StandardCharsets.UTF_8);
   }
 
-  @InterfaceAudience.LimitedPrivate({"ViewDistributedFileSystem"})
-  @InterfaceStability.Unstable
   /**
    * Used in ViewDistributedFileSystem rename API to get access to the protected
    * API of FileSystem interface. Even though Rename with options API
@@ -1878,6 +1907,8 @@ public class FileUtil {
    * out casting to the specific filesystem. This util method is proposed to get
    * the access to FileSystem#rename with options.
    */
+  @InterfaceAudience.LimitedPrivate({"ViewDistributedFileSystem"})
+  @InterfaceStability.Unstable
   @SuppressWarnings("deprecation")
   public static void rename(FileSystem srcFs, Path src, Path dst,
       final Options.Rename... options) throws IOException {

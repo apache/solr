@@ -29,7 +29,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -80,10 +79,10 @@ public class PeerSyncWithIndexFingerprintCachingTest extends BaseDistributedSear
     IndexFingerprint after = getFingerprint(client0, Long.MAX_VALUE);
 
     // make sure fingerprint before and after deleting are not the same
-    Assert.assertTrue(IndexFingerprint.compare(before, after) != 0);
+    assertTrue(IndexFingerprint.compare(before, after) != 0);
 
-    // replica which missed the delete should be able to sync
-    assertSync(client1, numVersions, true, shardsArr[0]);
+    // replica which missed the delete operation should be able to sync
+    assertSync(client1, numVersions, shardsArr[0]);
     client0.commit();
     client1.commit();
 
@@ -98,7 +97,7 @@ public class PeerSyncWithIndexFingerprintCachingTest extends BaseDistributedSear
     return IndexFingerprint.fromObject(rsp.get("fingerprint"));
   }
 
-  void assertSync(SolrClient client, int numVersions, boolean expectedResult, String... syncWith)
+  void assertSync(SolrClient client, int numVersions, String... syncWith)
       throws IOException, SolrServerException {
     QueryRequest qr =
         new QueryRequest(
@@ -110,6 +109,6 @@ public class PeerSyncWithIndexFingerprintCachingTest extends BaseDistributedSear
                 "sync",
                 StrUtils.join(Arrays.asList(syncWith), ',')));
     NamedList<?> rsp = client.request(qr);
-    assertEquals(expectedResult, rsp.get("sync"));
+    assertEquals(true, rsp.get("sync"));
   }
 }

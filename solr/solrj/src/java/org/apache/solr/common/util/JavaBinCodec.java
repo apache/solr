@@ -37,9 +37,12 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAccumulator;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import org.apache.solr.client.api.util.ReflectWritable;
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
@@ -92,7 +95,7 @@ public class JavaBinCodec implements PushWriter {
       SOLRDOCLST = 12,
       BYTEARR = 13,
       ITERATOR = 14,
-      /** this is a special tag signals an end. No value is associated with it */
+      /* this is a special tag signals an end. No value is associated with it */
       END = 15,
       SOLRINPUTDOC = 16,
       MAP_ENTRY_ITER = 17,
@@ -266,10 +269,11 @@ public class JavaBinCodec implements PushWriter {
         if (writeKnownType(tmpVal)) return;
       }
     }
-    // Fallback to do *something*.
+    // Fallback to do *something*, either use a reflection writer or write as a string
+    // representation.
     // note: if the user of this codec doesn't want this (e.g. UpdateLog) it can supply an
     // ObjectResolver that does something else like throw an exception.
-    writeVal(val.getClass().getName() + ':' + val.toString());
+    writeVal(Utils.getReflectWriter(val));
   }
 
   protected static final Object END_OBJ = new Object();
@@ -389,6 +393,10 @@ public class JavaBinCodec implements PushWriter {
       writeMap((MapWriter) val);
       return true;
     }
+    if (val instanceof ReflectWritable) {
+      writeVal(Utils.getReflectWriter(val));
+      return true;
+    }
     if (val instanceof Map) {
       writeMap((Map) val);
       return true;
@@ -494,6 +502,7 @@ public class JavaBinCodec implements PushWriter {
 
   public final BinEntryWriter ew = new BinEntryWriter();
 
+  @Override
   public void writeMap(MapWriter val) throws IOException {
     writeTag(MAP_ENTRY_ITER);
     val.writeMap(ew);
@@ -528,6 +537,7 @@ public class JavaBinCodec implements PushWriter {
     dis.readFully(arr);
     return arr;
   }
+
   // use this to ignore the writable interface because , child docs will ignore the fl flag
   // is it a good design?
   private boolean ignoreWritable = false;
@@ -568,7 +578,7 @@ public class JavaBinCodec implements PushWriter {
   public SolrDocument readSolrDocument(DataInputInputStream dis) throws IOException {
     tagByte = dis.readByte();
     int size = readSize(dis);
-    SolrDocument doc = new SolrDocument(new LinkedHashMap<>(size));
+    SolrDocument doc = new SolrDocument(CollectionUtil.newLinkedHashMap(size));
     for (int i = 0; i < size; i++) {
       String fieldName;
       Object obj = readVal(dis); // could be a field name, or a child document
@@ -655,7 +665,7 @@ public class JavaBinCodec implements PushWriter {
   }
 
   protected SolrInputDocument createSolrInputDocument(int sz) {
-    return new SolrInputDocument(new LinkedHashMap<>(sz));
+    return new SolrInputDocument(CollectionUtil.newLinkedHashMap(sz));
   }
 
   static final Predicate<CharSequence> IGNORECHILDDOCS =
@@ -691,7 +701,7 @@ public class JavaBinCodec implements PushWriter {
    * @param size expected size, -1 means unknown size
    */
   protected Map<Object, Object> newMap(int size) {
-    return size < 0 ? new LinkedHashMap<>() : new LinkedHashMap<>(size);
+    return size < 0 ? new LinkedHashMap<>() : CollectionUtil.newLinkedHashMap(size);
   }
 
   public Map<Object, Object> readMap(DataInputInputStream dis) throws IOException {
@@ -1093,6 +1103,12 @@ public class JavaBinCodec implements PushWriter {
     } else if (val == END_OBJ) {
       writeTag(END);
       return true;
+    } else if (val instanceof LongAdder) {
+      daos.writeLong(((LongAdder) val).longValue());
+      return true;
+    } else if (val instanceof LongAccumulator) {
+      daos.writeLong(((LongAccumulator) val).longValue());
+      return true;
     }
     return false;
   }
@@ -1187,7 +1203,7 @@ public class JavaBinCodec implements PushWriter {
       writeTag(NULL);
       return;
     }
-    Integer idx = stringsMap == null ? null : stringsMap.get(s);
+    Integer idx = stringsMap == null ? null : stringsMap.get(s.toString());
     if (idx == null) idx = 0;
     writeTag(EXTERN_STRING, idx);
     if (idx == 0) {

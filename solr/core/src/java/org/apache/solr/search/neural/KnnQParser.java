@@ -16,18 +16,28 @@
  */
 package org.apache.solr.search.neural;
 
-import org.apache.commons.lang3.StringUtils;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.QueryUtils;
+import org.apache.solr.search.SyntaxError;
 
 public class KnnQParser extends QParser {
+
+  static final String PRE_FILTER = "preFilter";
+  static final String EXCLUDE_TAGS = "excludeTags";
+  static final String INCLUDE_TAGS = "includeTags";
 
   // retrieve the top K results based on the distance similarity function
   static final String TOP_K = "topK";
@@ -38,7 +48,7 @@ public class KnnQParser extends QParser {
    *
    * @param qstr The part of the query string specific to this parser
    * @param localParams The set of parameters that are specific to this QParser. See
-   *     https://solr.apache.org/guide/local-parameters-in-queries.html
+   *     https://solr.apache.org/guide/solr/latest/query-guide/local-params.html
    * @param params The rest of the {@link SolrParams}
    * @param req The original {@link SolrQueryRequest}.
    */
@@ -47,7 +57,7 @@ public class KnnQParser extends QParser {
   }
 
   @Override
-  public Query parse() {
+  public Query parse() throws SyntaxError {
     String denseVectorField = localParams.get(QueryParsing.F);
     String vectorToSearch = localParams.get(QueryParsing.V);
     int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
@@ -71,46 +81,139 @@ public class KnnQParser extends QParser {
     }
 
     DenseVectorField denseVectorType = (DenseVectorField) fieldType;
-    float[] parsedVectorToSearch = parseVector(vectorToSearch, denseVectorType.getDimension());
-    return denseVectorType.getKnnVectorQuery(schemaField.getName(), parsedVectorToSearch, topK);
+
+    return denseVectorType.getKnnVectorQuery(
+        schemaField.getName(), vectorToSearch, topK, getFilterQuery());
+  }
+
+  private Query getFilterQuery() throws SolrException, SyntaxError {
+
+    // Default behavior of FQ wrapping, and suitability of some local params
+    // depends on wether we are a sub-query or not
+    final boolean isSubQuery = recurseCount != 0;
+
+    // include/exclude tags for global fqs to wrap;
+    // Check these up front for error handling if combined with `fq` local param.
+    final List<String> includedGlobalFQTags = getLocalParamTags(INCLUDE_TAGS);
+    final List<String> excludedGlobalFQTags = getLocalParamTags(EXCLUDE_TAGS);
+    final boolean haveGlobalFQTags =
+        !(includedGlobalFQTags.isEmpty() && excludedGlobalFQTags.isEmpty());
+
+    if (haveGlobalFQTags) {
+      // Some early error handling of incompatible options...
+
+      if (isFilter()) { // this knn query is itself a filter query
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Knn Query Parser used as a filter does not support "
+                + INCLUDE_TAGS
+                + " or "
+                + EXCLUDE_TAGS
+                + " localparams");
+      }
+
+      if (isSubQuery) { // this knn query is a sub-query of a broader query (possibly disjunction)
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Knn Query Parser used as a sub-query does not support "
+                + INCLUDE_TAGS
+                + " or "
+                + EXCLUDE_TAGS
+                + " localparams");
+      }
+    }
+
+    // Explicit local params specifying the filter(s) to wrap
+    final String[] preFilters = getLocalParams().getParams(PRE_FILTER);
+    if (null != preFilters) {
+
+      // We don't particularly care if preFilters is empty, the usage below will still work,
+      // but SolrParams API says it should be null not empty...
+      assert 0 != preFilters.length
+          : "SolrParams.getParams should return null, never zero len array";
+
+      if (haveGlobalFQTags) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "Knn Query Parser does not support combining "
+                + PRE_FILTER
+                + " localparam with either "
+                + INCLUDE_TAGS
+                + " or "
+                + EXCLUDE_TAGS
+                + " localparams");
+      }
+
+      final List<Query> preFilterQueries = new ArrayList<>(preFilters.length);
+      for (String f : preFilters) {
+        final QParser parser = subQuery(f, null);
+        parser.setIsFilter(true);
+
+        // maybe null, ie: `preFilter=""`
+        final Query filter = parser.getQuery();
+        if (null != filter) {
+          preFilterQueries.add(filter);
+        }
+      }
+      try {
+        return req.getSearcher().getProcessedFilter(preFilterQueries).filter;
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+    }
+
+    // No explicit `preFilter` localparams specifying what we should filter on.
+    //
+    // So now, if we're either a filter or a subquery, we have to default to
+    // not wrapping anything...
+    if (isFilter() || isSubQuery) {
+      return null;
+    }
+
+    // At this point we now are a (regular) query and can wrap global `fq` filters...
+    try {
+      // Start by assuming we wrap all global filters,
+      // then adjust our list based on include/exclude tag params
+      List<Query> globalFQs = QueryUtils.parseFilterQueries(req);
+
+      // Adjust our globalFQs based on any include/exclude we may have
+      if (!includedGlobalFQTags.isEmpty()) {
+        // NOTE: Even if no FQs match the specified tag(s) the fact that tags were specified
+        // means we should replace globalFQs (even with a possibly empty list)
+        globalFQs = new ArrayList<>(QueryUtils.getTaggedQueries(req, includedGlobalFQTags));
+      }
+      if (null != excludedGlobalFQTags) {
+        globalFQs.removeAll(QueryUtils.getTaggedQueries(req, excludedGlobalFQTags));
+      }
+
+      return req.getSearcher().getProcessedFilter(globalFQs).filter;
+
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
 
   /**
-   * Parses a String vector.
-   *
-   * @param value with format: [f1, f2, f3, f4...fn]
-   * @return a float array
+   * @return set (possibly empty) of tags specified in the given local param
+   * @see StrUtils#splitSmart
+   * @see QueryUtils#getTaggedQueries
+   * @see #localParams
    */
-  private static float[] parseVector(String value, int dimension) {
-    if (!value.startsWith("[") || !value.endsWith("]")) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "incorrect vector format."
-              + " The expected format is:'[f1,f2..f3]' where each element f is a float");
+  private List<String> getLocalParamTags(final String param) {
+    final String[] strVals = localParams.getParams(param);
+    if (null == strVals) {
+      return Collections.emptyList();
     }
-
-    String[] elements = StringUtils.split(value.substring(1, value.length() - 1), ',');
-    if (elements.length != dimension) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "incorrect vector dimension."
-              + " The vector value has size "
-              + elements.length
-              + " while it is expected a vector with size "
-              + dimension);
-    }
-    float[] vector = new float[dimension];
-    for (int i = 0; i < dimension; i++) {
-      try {
-        vector[i] = Float.parseFloat(elements[i]);
-      } catch (NumberFormatException e) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "incorrect vector element: '"
-                + elements[i]
-                + "'. The expected format is:'[f1,f2..f3]' where each element f is a float");
+    final List<String> tags = new ArrayList<>(strVals.length * 2);
+    for (String val : strVals) {
+      // This ensures parity w/how QParser constructor builds tagMap,
+      // and that empty strings will make it into our List (for "include nothing")
+      if (0 < val.indexOf(',')) {
+        tags.addAll(StrUtils.splitSmart(val, ','));
+      } else {
+        tags.add(val);
       }
     }
-    return vector;
+    return tags;
   }
 }

@@ -47,10 +47,6 @@ public class DeleteNodeTest extends SolrCloudTestCase {
         .configure();
   }
 
-  protected String getSolrXml() {
-    return "solr.xml";
-  }
-
   @Test
   public void test() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
@@ -70,21 +66,22 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     create.setCreateNodeSet(StrUtils.join(l, ','));
     cloudClient.request(create);
     state = cloudClient.getClusterState();
-    String node2bdecommissioned = l.get(0);
+    String nodeToBeDecommissioned = l.get(0);
     // check what replicas are on the node, and whether the call should fail
     boolean shouldFail = false;
     DocCollection docColl = state.getCollection(coll);
     log.info("#### DocCollection: {}", docColl);
-    List<Replica> replicas = docColl.getReplicas(node2bdecommissioned);
+    List<Replica> replicas = docColl.getReplicas(nodeToBeDecommissioned);
     if (replicas != null) {
       for (Replica replica : replicas) {
         String shard =
-            docColl.getShardId(node2bdecommissioned, replica.getStr(ZkStateReader.CORE_NAME_PROP));
+            docColl.getShardId(
+                nodeToBeDecommissioned, replica.getStr(ZkStateReader.CORE_NAME_PROP));
         Slice slice = docColl.getSlice(shard);
         boolean hasOtherNonPullReplicas = false;
         for (Replica r : slice.getReplicas()) {
           if (!r.getName().equals(replica.getName())
-              && !r.getNodeName().equals(node2bdecommissioned)
+              && !r.getNodeName().equals(nodeToBeDecommissioned)
               && r.getType() != Replica.Type.PULL) {
             hasOtherNonPullReplicas = true;
             break;
@@ -96,7 +93,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
         }
       }
     }
-    new CollectionAdminRequest.DeleteNode(node2bdecommissioned).processAsync("003", cloudClient);
+    new CollectionAdminRequest.DeleteNode(nodeToBeDecommissioned).processAsync("003", cloudClient);
     CollectionAdminRequest.RequestStatus requestStatus =
         CollectionAdminRequest.requestStatus("003");
     CollectionAdminRequest.RequestStatusResponse rsp = null;
@@ -113,9 +110,9 @@ public class DeleteNodeTest extends SolrCloudTestCase {
           "####### DocCollection after: {}", cloudClient.getClusterState().getCollection(coll));
     }
     if (shouldFail) {
-      assertTrue(String.valueOf(rsp), rsp.getRequestStatus() == RequestStatusState.FAILED);
+      assertSame(String.valueOf(rsp), rsp.getRequestStatus(), RequestStatusState.FAILED);
     } else {
-      assertFalse(String.valueOf(rsp), rsp.getRequestStatus() == RequestStatusState.FAILED);
+      assertNotSame(String.valueOf(rsp), rsp.getRequestStatus(), RequestStatusState.FAILED);
     }
   }
 }

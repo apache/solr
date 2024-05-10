@@ -36,8 +36,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 
 /**
- * Tests the behavior of <code>field(foo,min|max)</code> on numerious types of multivalued 'foo'
- * fields, as well as the beahvior of sorting on <code>foo asc|desc</code> to implicitly choose the
+ * Tests the behavior of <code>field(foo,min|max)</code> on numerous types of multivalued 'foo'
+ * fields, as well as the behavior of sorting on <code>foo asc|desc</code> to implicitly choose the
  * min|max.
  */
 @SuppressCodecs({"SimpleText"}) // see TestSortedSetSelector
@@ -102,7 +102,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
         if (f.contains("miss")) {
           // if name contains "miss" assert that the missing first/last props match
           // but don't make any asserts about fields w/o that in name
-          // (schema11.xml's strings has some preexisting silliness that don't affect us)
+          // (schema11.xml's strings have some preexisting silliness that don't affect us)
           assertEquals(
               f + " sortMissingFirst is wrong", f.contains("missf"), sf.sortMissingFirst());
           assertEquals(f + " sortMissingLast is wrong", f.contains("missl"), sf.sortMissingLast());
@@ -113,20 +113,20 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
 
   /** Deletes all docs (which may be left over from a previous test */
   @Before
-  public void before() throws Exception {
+  public void before() {
     clearIndex();
     assertU(commit());
   }
 
-  public void testBasics() throws Exception {
+  public void testBasics() {
     testBasics("val_tis_dv", "val_tls_dv", "val_tfs_dv", "val_tds_dv");
     testBasics("val_tis_ni_dv", "val_tls_ni_dv", "val_tfs_ni_dv", "val_tds_ni_dv");
     testBasics("val_is_p", "val_ls_p", "val_fs_p", "val_ds_p");
     testBasics("val_is_ni_p", "val_ls_ni_p", "val_fs_ni_p", "val_ds_ni_p");
   }
 
-  private void testBasics(String intField, String longField, String floatField, String doubleField)
-      throws Exception {
+  private void testBasics(
+      String intField, String longField, String floatField, String doubleField) {
     assertTrue(
         "Unexpected int field",
         h.getCore().getLatestSchema().getField(intField).getType() instanceof IntValueFieldType);
@@ -498,7 +498,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
-  public void testRandom() throws Exception {
+  public void testRandom() {
 
     @SuppressWarnings({"rawtypes"})
     Comparable[] vals = new Comparable[TestUtil.nextInt(random(), 1, 17)];
@@ -634,7 +634,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
       @SuppressWarnings({"rawtypes"}) final Comparable... vals) {
     clearIndex();
 
-    assert 0 < vals.length;
+    assertTrue(0 < vals.length);
     @SuppressWarnings({"rawtypes"})
     Comparable min = vals[0];
     @SuppressWarnings({"rawtypes"})
@@ -713,9 +713,9 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
    * Tests sort order of min/max realtive to other docs w/o any values.
    *
    * @param fieldname The field to test
-   * @param negative a "negative" value for this field (ie: in a function context, is less then the
+   * @param negative a "negative" value for this field (ie: in a function context, is less than the
    *     "0")
-   * @param positive a "positive" value for this field (ie: in a function context, is more then the
+   * @param positive a "positive" value for this field (ie: in a function context, is more than the
    *     "0")
    */
   protected void testSimpleSort(
@@ -765,6 +765,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
         "//result[@numFound='" + numDocs + "']",
         "//result/doc[1]/str[@name='id']='0'");
   }
+
   /** helper for testSimpleSort */
   private static void assertDocWithValsIsLast(final int numDocs, final String sort) {
     assertQ(
@@ -958,7 +959,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
         sf.sortMissingFirst() || sf.sortMissingLast());
 
     // make a copy we can re-order later
-    final List<Object> vals = new ArrayList<Object>(sortedValues.length);
+    final List<Object> vals = new ArrayList<>(sortedValues.length);
     Collections.addAll(vals, sortedValues);
 
     String minFunc = "field(" + f + ",min)";
@@ -1054,7 +1055,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     }
     assertQ(
         req("q", "*:*", "rows", "" + sortedDocs.size(), "sort", sort),
-        xpaths.toArray(new String[xpaths.size()]));
+        xpaths.toArray(new String[0]));
   }
 
   /**
@@ -1069,11 +1070,11 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
    *   <li>If a document has a value in the field, then some random number of values that come
    *       <em>after</em> that value in the original list may also be included in the specified
    *       field.
-   *   <li>Every document in the result will have a randomly asssigned 'id', unique realitive to all
+   *   <li>Every document in the result will have a randomly assigned 'id', unique relative to all
    *       other documents in the result.
    * </ul>
    */
-  private static final List<SolrInputDocument> buildMultiValueSortedDocuments(
+  private static List<SolrInputDocument> buildMultiValueSortedDocuments(
       final String f, final List<Object> vals) {
     // build a list of docIds that we can shuffle (so the id order doesn't match the value order)
     List<Integer> ids = new ArrayList<>(vals.size());

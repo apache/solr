@@ -48,7 +48,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
   private static float expectedLoadBalancerRequestsMaximumFraction = 1.0f;
 
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeTests() {
     expectedLoadBalancerRequestsMinimumAbsolute = random().nextInt(3); // 0 .. 2
     expectedLoadBalancerRequestsMaximumFraction = (1 + random().nextInt(10)) / 10f; // 0.1 .. 1.0
     System.setProperty(
@@ -65,7 +65,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
     System.clearProperty(LOAD_BALANCER_REQUESTS_MAX_FRACTION);
   }
 
-  public void testLoadBalancerRequestsMinMax() throws Exception {
+  public void testLoadBalancerRequestsMinMax() {
     final Path home = TEST_PATH();
     CoreContainer cc = null;
     ShardHandlerFactory factory = null;
@@ -92,7 +92,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
       final QueryRequest queryRequest = null;
       final List<String> urls = new ArrayList<>();
       for (int ii = 0; ii < 10; ++ii) {
-        urls.add(null);
+        urls.add("http://localhost" + ii + ":8983/solr");
       }
 
       // create LBHttpSolrClient request
@@ -124,7 +124,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void getShardsAllowList() throws Exception {
+  public void getShardsAllowList() {
     System.setProperty(TEST_URL_ALLOW_LIST, "http://abc:8983/,http://def:8984/,");
     CoreContainer cc = null;
     ShardHandlerFactory factory = null;
@@ -144,7 +144,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testLiveNodesToHostUrl() throws Exception {
+  public void testLiveNodesToHostUrl() {
     Set<String> liveNodes =
         new HashSet<>(Arrays.asList("1.2.3.4:8983_solr", "1.2.3.4:9000_", "1.2.3.4:9001_solr-2"));
     ClusterState cs = new ClusterState(liveNodes, new HashMap<>());

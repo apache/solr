@@ -31,6 +31,8 @@ import org.apache.solr.client.solrj.response.SpellCheckResponse;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.SpellCheckMergeData;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -38,7 +40,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 
 /**
  * Refer to <a
- * href="https://solr.apache.org/guide/spell-checking.html">https://solr.apache.org/guide/spell-checking.html</a>
+ * href="https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html">https://solr.apache.org/guide/solr/latest/query-guide/spell-checking.html</a>
  * for more details.
  *
  * @since solr 1.3
@@ -48,6 +50,7 @@ public abstract class SolrSpellChecker {
   public static final String DEFAULT_DICTIONARY_NAME = "default";
   public static final String FIELD = "field";
   public static final String FIELD_TYPE = "fieldType";
+
   /** Dictionary name */
   protected String name;
 
@@ -75,6 +78,12 @@ public abstract class SolrSpellChecker {
     }
     return name;
   }
+
+  /** modify the shard request to be used in a distributed environment. */
+  public void modifyRequest(ResponseBuilder rb, ShardRequest sreq) {
+    /* No-Op */
+  }
+
   /** Integrate spelling suggestions from the various shards in a distributed environment. */
   public SpellingResult mergeSuggestions(
       SpellCheckMergeData mergeData, int numSug, int count, boolean extendedResults) {

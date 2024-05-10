@@ -21,10 +21,22 @@ import static org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric
 import static org.apache.solr.common.params.CommonParams.SORT;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
-import org.apache.calcite.linq4j.*;
+import org.apache.calcite.linq4j.AbstractEnumerable;
+import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.calcite.linq4j.QueryProvider;
+import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
@@ -52,10 +64,27 @@ import org.apache.solr.client.solrj.io.eval.NotEvaluator;
 import org.apache.solr.client.solrj.io.eval.OrEvaluator;
 import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
 import org.apache.solr.client.solrj.io.eval.RecursiveBooleanEvaluator;
-import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
+import org.apache.solr.client.solrj.io.stream.FacetStream;
+import org.apache.solr.client.solrj.io.stream.HavingStream;
+import org.apache.solr.client.solrj.io.stream.ParallelStream;
+import org.apache.solr.client.solrj.io.stream.RankStream;
+import org.apache.solr.client.solrj.io.stream.RollupStream;
+import org.apache.solr.client.solrj.io.stream.SortStream;
+import org.apache.solr.client.solrj.io.stream.StatsStream;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.UniqueStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.stream.metrics.*;
+import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
+import org.apache.solr.client.solrj.io.stream.metrics.CountDistinctMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.Metric;
+import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
+import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
@@ -73,10 +102,12 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     this.collection = collection;
   }
 
+  @Override
   public String toString() {
     return "SolrTable {" + collection + "}";
   }
 
+  @Override
   public RelDataType getRowType(RelDataTypeFactory typeFactory) {
     if (protoRowType == null) {
       protoRowType = schema.getRelDataType(collection);
@@ -180,8 +211,9 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     final TupleStream finalStream = tupleStream;
 
-    return new AbstractEnumerable<Object>() {
+    return new AbstractEnumerable<>() {
       // Use original fields list to make sure only the fields specified are enumerated
+      @Override
       public Enumerator<Object> enumerator() {
         return new SolrEnumerator(finalStream, fields);
       }
@@ -851,7 +883,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       }
     }
 
-    return adjustedSorts.toArray(new FieldComparator[adjustedSorts.size()]);
+    return adjustedSorts.toArray(new FieldComparator[0]);
   }
 
   private TupleStream handleStats(
@@ -881,11 +913,13 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     return new StatsStream(zk, collection, solrParams, metrics);
   }
 
+  @Override
   public <T> Queryable<T> asQueryable(
       QueryProvider queryProvider, SchemaPlus schema, String tableName) {
     return new SolrQueryable<>(queryProvider, schema, this, tableName);
   }
 
+  @Override
   public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
     final RelOptCluster cluster = context.getCluster();
     return new SolrTableScan(
@@ -899,6 +933,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
       super(queryProvider, schema, table, tableName);
     }
 
+    @Override
     public Enumerator<T> enumerator() {
       @SuppressWarnings("unchecked")
       final Enumerable<T> enumerable = (Enumerable<T>) getTable().query(getProperties());

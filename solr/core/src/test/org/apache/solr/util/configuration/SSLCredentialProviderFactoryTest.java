@@ -19,10 +19,10 @@ package org.apache.solr.util.configuration;
 
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
 
 import java.util.List;
 import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.configuration.providers.EnvSSLCredentialProvider;
 import org.apache.solr.util.configuration.providers.SysPropSSLCredentialProvider;
 import org.hamcrest.Matcher;
@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 /** */
-public class SSLCredentialProviderFactoryTest {
+public class SSLCredentialProviderFactoryTest extends SolrTestCase {
 
   @Rule
   public TestRule syspropRestore =

@@ -34,7 +34,7 @@ public class TestIBSimilarityFactory extends BaseSimilarityTestCase {
   }
 
   /** spl/df/h2 with default parameters */
-  public void test() throws Exception {
+  public void test() {
     Similarity sim = getSimilarity("text");
     assertEquals(IBSimilarity.class, sim.getClass());
     IBSimilarity ib = (IBSimilarity) sim;
@@ -44,7 +44,7 @@ public class TestIBSimilarityFactory extends BaseSimilarityTestCase {
   }
 
   /** ll/ttf/h3 with parametrized normalization */
-  public void testParameters() throws Exception {
+  public void testParameters() {
     Similarity sim = getSimilarity("text_params");
     assertEquals(IBSimilarity.class, sim.getClass());
     IBSimilarity ib = (IBSimilarity) sim;

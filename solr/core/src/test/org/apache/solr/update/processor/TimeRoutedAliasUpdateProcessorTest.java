@@ -67,7 +67,6 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -85,12 +84,12 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   private CloudSolrClient solrClient;
 
   private int lastDocId = 0;
-  private int numDocsDeletedOrFailed = 0;
+  private long numDocsDeletedOrFailed = 0;
 
   @Before
   public void doBefore() throws Exception {
     configureCluster(4).configure();
-    solrClient = getCloudSolrClient(cluster);
+    solrClient = cluster.getSolrClient();
     // log this to help debug potential causes of problems
     if (log.isInfoEnabled()) {
       log.info("SolrClient: {}", solrClient);
@@ -98,15 +97,6 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     }
   }
 
-  @After
-  public void doAfter() throws Exception {
-    if (null != solrClient) {
-      solrClient.close();
-    }
-    shutdownCluster();
-  }
-
-  @Slow
   @Test
   @LogLevel("org.apache.solr.update.processor.TimeRoutedAlias=DEBUG;org.apache.solr.cloud=DEBUG")
   public void test() throws Exception {
@@ -114,7 +104,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     createConfigSet(configName);
 
     // Start with one collection manually created (and use higher numShards & replicas than we'll
-    // use for others) This tests we may pre-create the collection and it's acceptable.
+    // use for others) This tests we may pre-create the collection, and it's acceptable.
     final String col23rd = alias + TRA + "2017-10-23";
     CollectionAdminRequest.createCollection(col23rd, configName, 2, 2)
         .withProperty(ROUTED_ALIAS_NAME_CORE_PROP, alias)
@@ -126,7 +116,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
         new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
     List<String> expectedConfigSetNames = Arrays.asList("_default", configName);
 
-    // config sets leak between tests so we can't be any more specific than this on the next 2
+    // config sets leak between tests, so we can't be any more specific than this on the next 2
     // asserts
     assertTrue(
         "We expect at least 2 configSets",
@@ -237,7 +227,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     CollectionAdminRequest.setAliasProperty(alias)
         .addProperty(
             TimeRoutedAlias.ROUTER_AUTO_DELETE_AGE,
-            "-1DAY") // thus usually keep 2 collections of a day size
+            "-1DAY") // thus, usually keep 2 collections of a day size
         .process(solrClient);
 
     // add more docs, creating one new collection, but trigger ones prior to
@@ -257,7 +247,6 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
    *
    * @throws Exception when it blows up unexpectedly :)
    */
-  @Slow
   @Test
   @LogLevel("org.apache.solr.update.processor.TrackingUpdateProcessorFactory=DEBUG")
   public void testSliceRouting() throws Exception {
@@ -317,7 +306,6 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   }
 
   @Test
-  @Slow
   public void testPreemptiveCreation() throws Exception {
     String configName = getSaferTestName();
     createConfigSet(configName);
@@ -344,8 +332,8 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
         .setPreemptiveCreateWindow("3HOUR")
         .process(solrClient);
 
-    addOneDocSynchCreation(numShards, alias);
-    addOneDocSynchCreation(numShards, alias2);
+    addOneDocSyncCreation(numShards, alias);
+    addOneDocSyncCreation(numShards, alias2);
 
     List<String> cols;
     ModifiableSolrParams params = params();
@@ -419,7 +407,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     // Some designs contemplated with close hooks were not properly restricted to the core and would
     // have failed after other cores with other TRAs were stopped. Make sure that we don't fall into
     // that trap in the future. The basic problem with a close hook solution is that one either
-    // winds up puttingthe executor on the TRAUP where it's duplicated/initiated for every request,
+    // winds up putting the executor on the TRAUP where it's duplicated/initiated for every request,
     // or putting it at the class level in which case the hook will remove it for all TRA's which
     // can pass a single TRA test nicely but is not safe where multiple TRA's might come and go.
     //
@@ -588,7 +576,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
                 "rows", "0"));
     assertEquals(13, resp.getResults().getNumFound());
 
-    // Sych creation with an interval longer than the time slice for the alias..
+    // Sync creation with an interval longer than the time slice for the alias...
     assertUpdateResponse(
         add(
             alias,
@@ -600,7 +588,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
     // removed support for this case because it created a LOT of complexity for the benefit of
     // attempting to (maybe) not pause again after already hitting a synchronous creation (but only
-    // if asynch gets it done first, otherwise we have a race... not enough benefit to justify the
+    // if async gets it done first), otherwise we have a race... not enough benefit to justify the
     // support/complexity.
     //
     // Now we just let the next doc take care of it...
@@ -697,12 +685,12 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       throws SolrServerException, IOException {
     // In this method we intentionally rely on timing of a race condition but the gap in collection
     // creation time vs requesting the list of aliases and adding a single doc should be very large
-    // (1-2 seconds vs a few ms so we should always win the race) This is necessary  because we are
+    // (1-2 seconds vs a few ms, so we should always win the race). This is necessary because we are
     // testing that we can guard against specific race conditions that happen while a collection is
     // being created. To test this without timing sensitivity we would need a means to pass a
     // semaphore to the server that it can use to delay collection creation
     //
-    // This method must NOT gain any Thread.sleep() statements, nor should it gain any long running
+    // This method must NOT gain any Thread.sleep() statements, nor should it gain any long-running
     // operations
     assertUpdateResponse(
         add(
@@ -723,9 +711,9 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     colsT1 =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
     assertEquals(3, colsT1.size());
-    assertTrue(
+    assertFalse(
         "Preemptive creation appears to not be asynchronous anymore",
-        !colsT1.contains("myalias" + TRA + "2017-10-26"));
+        colsT1.contains("myalias" + TRA + "2017-10-26"));
     assertNumDocs("2017-10-23", 1, alias);
     assertNumDocs("2017-10-24", 1, alias);
     assertNumDocs("2017-10-25", 3, alias);
@@ -751,13 +739,13 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     List<String> cols;
     cols =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assertTrue(
+    assertFalse(
         "Preemptive creation happened twice and created a collection "
             + "further in the future than the configured time slice!",
-        !cols.contains("myalias" + TRA + "2017-10-27"));
+        cols.contains("myalias" + TRA + "2017-10-27"));
 
     validateCollectionCountAndAvailability(
-        alias, 4, "Only 4 cols expected (premptive create happened" + "twice among threads");
+        alias, 4, "Only 4 cols expected (preemptive create happened" + "twice among threads");
     assertEquals(4, cols.size());
     assertNumDocs("2017-10-23", 1, alias);
     assertNumDocs("2017-10-24", 1, alias);
@@ -766,7 +754,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   }
 
   @SuppressWarnings("SameParameterValue")
-  private void addOneDocSynchCreation(int numShards, String alias)
+  private void addOneDocSyncCreation(int numShards, String alias)
       throws SolrServerException, IOException, InterruptedException {
     // cause some collections to be created
     assertUpdateResponse(
@@ -810,7 +798,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       try {
         solrClient.query(col, params("q", "*:*", "rows", "10"));
       } catch (SolrException e) {
-        e.printStackTrace();
+        log.error("Unable to query ", e);
         fail("Unable to query " + col);
       }
     }
@@ -831,7 +819,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       throws SolrServerException, IOException {
     try {
       final UpdateResponse resp = solrClient.add(alias, newDoc(timestamp));
-      // if we have a TolerantUpdateProcessor then we see it there)
+      // if we have a TolerantUpdateProcessor then we see it there
       final Object errors = resp.getResponseHeader().get("errors"); // Tolerant URP
       assertTrue(errors != null && errors.toString().contains(errorMsg));
     } catch (SolrException e) {
@@ -855,19 +843,19 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   }
 
   private void assertInvariants(String... expectedColls) throws IOException, SolrServerException {
-    final int expectNumFound =
+    final long expectNumFound =
         lastDocId - numDocsDeletedOrFailed; // lastDocId is effectively # generated docs
 
     final List<String> cols =
         new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(alias);
-    assert !cols.isEmpty();
+    assertFalse(cols.isEmpty());
 
     assertArrayEquals(
         "expected reverse sorted",
         cols.stream().sorted(Collections.reverseOrder()).toArray(),
         cols.toArray());
 
-    int totalNumFound = 0;
+    long totalNumFound = 0;
     Instant colEndInstant = null; // exclusive end
     for (String col : cols) { // ASSUMPTION: reverse sorted order
       final Instant colStartInstant = TimeRoutedAlias.parseInstantFromCollectionName(alias, col);
@@ -1283,7 +1271,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       CollectionAdminRequest.deleteCollection(collection);
     }
 
-    // now grab the zk data so we can hack in our legacy collections..
+    // now grab the zk data, so we can hack in our legacy collections...
     byte[] data = zkStateReader.getZkClient().getData("/aliases.json", null, null, true);
 
     // some tidbits for handling zk data here are swiped from Aliases.json

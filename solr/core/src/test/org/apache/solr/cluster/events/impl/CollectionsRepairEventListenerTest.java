@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
@@ -35,6 +34,7 @@ import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -50,7 +50,7 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
 
     CountDownLatch completed = new CountDownLatch(1);
 
-    CollectionsRepairWrapperListener(CoreContainer cc, int waitFor) throws Exception {
+    CollectionsRepairWrapperListener(CoreContainer cc, int waitFor) {
       delegate = new CollectionsRepairEventListener(cc);
       delegate.setWaitForSecond(waitFor);
     }
@@ -120,6 +120,7 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
     repairListener.start();
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
@@ -151,7 +152,6 @@ public class CollectionsRepairEventListenerTest extends SolrCloudTestCase {
       nonOverseerJetty = jetty;
       break;
     }
-    String nodeName = nonOverseerJetty.getNodeName();
     cluster.stopJettySolrRunner(nonOverseerJetty);
     cluster.waitForJettyToStop(nonOverseerJetty);
     eventsListener.waitForExpectedEvent(10);

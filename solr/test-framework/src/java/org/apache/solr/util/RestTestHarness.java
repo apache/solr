@@ -18,13 +18,13 @@ package org.apache.solr.util;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -107,6 +107,20 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   }
 
   /**
+   * Processes a HEAD request using a URL path (with no context path) + optional query params and
+   * returns the response content.
+   *
+   * @param request The URL path and optional query params
+   * @return The response to the HEAD request
+   */
+  public String head(String request) throws IOException {
+    HttpHead httpHead = new HttpHead(getBaseURL() + request);
+    return httpClient
+        .execute(httpHead, HttpClientUtil.createNewHttpClientRequestContext())
+        .toString();
+  }
+
+  /**
    * Processes a PUT request using a URL path (with no context path) + optional query params, e.g.
    * "/schema/fields/newfield", PUTs the given content, and returns the response content.
    *
@@ -169,6 +183,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
       throw new RuntimeException("?!? static xpath has bug?", e);
     }
   }
+
   /** Reloads the first core listed in the response to the core admin handler STATUS command */
   @Override
   public void reload() throws Exception {
@@ -194,7 +209,10 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   @Override
   public String update(String xml) {
     try {
-      return query("/update?stream.body=" + URLEncoder.encode(xml, "UTF-8"));
+      HttpPost httpPost = new HttpPost(getBaseURL() + "/update");
+      httpPost.setEntity(
+          new StringEntity(xml, ContentType.create("application/xml", StandardCharsets.UTF_8)));
+      return getResponse(httpPost);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

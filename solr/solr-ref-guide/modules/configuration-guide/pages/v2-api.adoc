@@ -39,7 +39,7 @@ Following are some v2 API URL paths and path prefixes, along with some of the op
 [width="100%",options="header",]
 |===
 |Path prefix |Some Supported Operations
-|`/api/collections` or equivalently: `/api/c` |Create, alias, backup, and restore a collection.
+|`/api/collections` |Create, alias, backup, and restore a collection.
 |`/api/c/_collection-name_/update` |Update requests.
 |`/api/c/_collection-name_/config` |Configuration requests.
 |`/api/c/_collection-name_/schema` |Schema requests.
@@ -77,7 +77,7 @@ Example: `\http://localhost:8983/api/c/gettingstarted/get/_introspect`
 ----
 {
   "spec":[{
-      "documentation":"https://solr.apache.org/guide/real-time-get.html",
+      "documentation":"https://solr.apache.org/guide/solr/latest/configuration-guide/realtime-get.html",
       "description":"RealTime Get allows retrieving documents by ID before the documents have been committed to the index. It is useful when you need access to documents as soon as they are indexed but your commit times are high for other reasons.",
       "methods":["GET"],
       "url":{
@@ -112,13 +112,13 @@ Example of introspect for a POST API: `\http://localhost:8983/api/c/gettingstart
 ----
 {
   "spec":[{
-      "documentation":"https://solr.apache.org/guide/collections-api.html",
+      "documentation":"https://solr.apache.org/guide/solr/latest/configuration-guide/collections-api.html",
       "description":"Several collection-level operations are supported with this endpoint: modify collection attributes; reload a collection; migrate documents to a different collection; rebalance collection leaders; balance properties across shards; and add or delete a replica property.",
       "methods":["POST"],
       "url":{"paths":["/collections/{collection}",
           "/c/{collection}"]},
       "commands":{"modify":{
-          "documentation":"https://solr.apache.org/guide/collections-api.html#modifycollection",
+          "documentation":"https://solr.apache.org/guide/solr/latest/deployment-guide/collection-management.html#modifycollection",
           "description":"Modifies specific attributes of a collection. Multiple attributes can be changed at one time.",
           "type":"object",
           "properties":{

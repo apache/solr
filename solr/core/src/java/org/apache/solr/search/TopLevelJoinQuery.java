@@ -87,6 +87,7 @@ public class TopLevelJoinQuery extends JoinQuery {
 
       final boolean toMultivalued = toSearcher.getSchema().getFieldOrNull(toField).multiValued();
       return new ConstantScoreWeight(this, boost) {
+        @Override
         public Scorer scorer(LeafReaderContext context) throws IOException {
           if (toBitsetBounds.lower == BitsetBounds.NO_MATCHES) {
             return null;
@@ -106,6 +107,7 @@ public class TopLevelJoinQuery extends JoinQuery {
               this.score(),
               scoreMode,
               new TwoPhaseIterator(toApproximation) {
+                @Override
                 public boolean matches() throws IOException {
                   final boolean hasDoc =
                       topLevelToDocValues.advanceExact(docBase + approximation.docID());
@@ -121,12 +123,14 @@ public class TopLevelJoinQuery extends JoinQuery {
                   return false;
                 }
 
+                @Override
                 public float matchCost() {
                   return 10.0F;
                 }
               });
         }
 
+        @Override
         public boolean isCacheable(LeafReaderContext ctx) {
           return false;
         }
@@ -261,6 +265,7 @@ public class TopLevelJoinQuery extends JoinQuery {
       super(joinField, joinField, null, subQuery);
     }
 
+    @Override
     protected BitsetBounds convertFromOrdinalsIntoToField(
         LongBitSet fromOrdBitSet,
         SortedSetDocValues fromDocValues,

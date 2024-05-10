@@ -13,6 +13,8 @@
     "realm": "my-solr-jwt",
     "adminUiScope": "solr:admin",
     "authorizationEndpoint": "http://acmepaymentscorp/oauth/auz/authorize",
+    "tokenEndpoint": "http://acmepaymentscorp/oauth/oauth20/token",
+    "authorizationFlow": "code_pkce",
     "clientId": "solr-cluster"
   }
 }

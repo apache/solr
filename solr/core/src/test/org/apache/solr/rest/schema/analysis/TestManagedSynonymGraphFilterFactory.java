@@ -62,11 +62,8 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
   }
 
   @After
-  private void after() throws Exception {
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
-    }
+  public void after() throws Exception {
+    solrClientTestRule.reset();
     if (null != tmpSolrHome) {
       PathUtils.deleteDirectory(tmpSolrHome.toPath());
     }
@@ -213,7 +210,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
 
     restTestHarness.reload();
 
-    // now query for mad and we should see our test doc
+    // now query for mad, and we should see our test doc
     assertQ(
         "/select?q=" + newFieldName + ":mad",
         "/response/lst[@name='responseHeader']/int[@name='status'] = '0'",
@@ -243,15 +240,26 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
 
     // test for SOLR-6878 - by default, expand is true, but only applies when sending in a list
     List<String> m2mSyns = new ArrayList<>();
-    m2mSyns.addAll(Arrays.asList("funny", "entertaining", "whimiscal", "jocular"));
+    m2mSyns.addAll(Arrays.asList("funny", "entertaining", "whimsical", "jocular"));
     assertJPut(endpoint, toJSONString(m2mSyns), "/responseHeader/status==0");
 
-    assertJQ(endpoint + "/funny", "/funny==['entertaining','funny','jocular','whimiscal']");
+    assertJQ(endpoint + "/funny", "/funny==['entertaining','funny','jocular','whimsical']");
     assertJQ(
         endpoint + "/entertaining",
-        "/entertaining==['entertaining','funny','jocular','whimiscal']");
-    assertJQ(endpoint + "/jocular", "/jocular==['entertaining','funny','jocular','whimiscal']");
-    assertJQ(endpoint + "/whimiscal", "/whimiscal==['entertaining','funny','jocular','whimiscal']");
+        "/entertaining==['entertaining','funny','jocular','whimsical']");
+    assertJQ(endpoint + "/jocular", "/jocular==['entertaining','funny','jocular','whimsical']");
+    assertJQ(endpoint + "/whimsical", "/whimsical==['entertaining','funny','jocular','whimsical']");
+
+    // test for SOLR-6853 - should be able to delete synonyms with slash
+    Map<String, List<String>> slashSyns = new HashMap<>();
+    slashSyns.put("cheerful/joyful", List.of("sleepy/tired"));
+    assertJPut(endpoint, toJSONString(slashSyns), "/responseHeader/status==0");
+
+    // verify delete works
+    assertJDelete(endpoint + "/cheerful/joyful", "/responseHeader/status==0");
+
+    // should fail with 404 as some/thing doesn't exist
+    assertJDelete(endpoint + "/cheerful/joyful", "/error/code==404");
   }
 
   /** Can we add and remove stopwords with umlauts */

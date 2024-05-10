@@ -107,7 +107,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRangeQueries() throws Exception {
+  public void testRangeQueries() {
     // ensure that we aren't losing precision on any fields in addition to testing other non-numeric
     // fields that aren't tested in testRandomRangeQueries()
 
@@ -170,7 +170,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
         fields.add(entry.getKey());
         fields.add(entry.getValue()[j]);
       }
-      assertU(adoc(fields.toArray(new String[fields.size()])));
+      assertU(adoc(fields.toArray(new String[0])));
     }
 
     assertU(commit());
@@ -269,7 +269,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       // wrap in a BQ
       String field = randomKey(norm_fields);
       String value = norm_fields.get(field)[1];
-      // wraping shouldn't affect expected
+      // wrapping shouldn't affect expected
       dbq = "(" + field + ":\"" + value + "\" OR " + dbq + ")";
     }
 
@@ -288,7 +288,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     // NOTE: foo_s supports ranges, but for the arrays below we are only
     // interested in fields that support *equivalent* ranges -- strings
     // are not ordered the same as ints/longs, so we can't test the ranges
-    // for equivilence across diff fields.
+    // for equivalence across diff fields.
     //
     // fields that a normal range query will work correctly on
     String[] norm_fields = {
@@ -771,7 +771,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     Number[] values = new Number[2];
     FieldType ft = h.getCore().getLatestSchema().getField("field_" + fieldName).getType();
     if (ft.getNumberType() == null) {
-      assert ft instanceof StrField;
+      assertTrue(ft instanceof StrField);
       values[0] = randomInt(max);
       values[1] = randomInt(max);
       Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
@@ -958,7 +958,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
   }
 
   private static <X extends Comparable<? super X>, Y> X randomKey(Map<X, Y> map) {
-    assert !map.isEmpty();
+    assertFalse(map.isEmpty());
     List<X> sortedKeys = new ArrayList<>(map.keySet());
     Collections.sort(sortedKeys);
     return sortedKeys.get(random().nextInt(sortedKeys.size()));

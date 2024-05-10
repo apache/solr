@@ -16,7 +16,18 @@
  */
 package org.apache.solr.metrics;
 
-import com.codahale.metrics.*;
+import com.codahale.metrics.Clock;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.ExponentiallyDecayingReservoir;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Reservoir;
+import com.codahale.metrics.SlidingTimeWindowReservoir;
+import com.codahale.metrics.SlidingWindowReservoir;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.UniformReservoir;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
@@ -70,8 +81,10 @@ public class MetricSuppliers {
 
   /** Clock type parameter. */
   public static final String CLOCK = "clock";
+
   /** User-time clock. */
   public static final String CLOCK_USER = "user";
+
   /** CPU-time clock. */
   public static final String CLOCK_CPU = "cpu";
 
@@ -101,7 +114,7 @@ public class MetricSuppliers {
     }
   }
 
-  private static Clock getClock(PluginInfo info, String param) {
+  public static Clock getClock(PluginInfo info, String param) {
     if (info == null) {
       return Clock.defaultClock();
     }
@@ -128,10 +141,13 @@ public class MetricSuppliers {
    * the implementations available in metrics-core.
    */
   public static final String RESERVOIR = "reservoir";
+
   /** Size of reservoir. */
   public static final String RESERVOIR_SIZE = "size";
+
   /** Alpha parameter of {@link ExponentiallyDecayingReservoir}. */
   public static final String RESERVOIR_EDR_ALPHA = "alpha";
+
   /** Time window in seconds of {@link SlidingTimeWindowReservoir}. */
   public static final String RESERVOIR_WINDOW = "window";
 

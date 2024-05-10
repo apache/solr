@@ -103,17 +103,11 @@ public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
         final MergePolicy mp = mpf.getMergePolicy();
         if (wrappingNoCFSRatio != null) {
           assertEquals(
-              "#" + ii + " wrappingNoCFSRatio",
-              wrappingNoCFSRatio.doubleValue(),
-              mp.getNoCFSRatio(),
-              0.0d);
+              "#" + ii + " wrappingNoCFSRatio", wrappingNoCFSRatio, mp.getNoCFSRatio(), 0.0d);
         }
         if (wrappedNoCFSRatio != null) {
           assertEquals(
-              "#" + ii + " wrappedNoCFSRatio",
-              wrappedNoCFSRatio.doubleValue(),
-              mp.getNoCFSRatio(),
-              0.0d);
+              "#" + ii + " wrappedNoCFSRatio", wrappedNoCFSRatio, mp.getNoCFSRatio(), 0.0d);
         }
         assertSame(mp.getClass(), UpgradeIndexMergePolicy.class);
       }

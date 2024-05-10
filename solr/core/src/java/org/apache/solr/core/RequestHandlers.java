@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 public final class RequestHandlers {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected final SolrCore core;
+  private final SolrCore core;
 
   final PluginBag<SolrRequestHandler> handlers;
 
