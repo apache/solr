@@ -30,7 +30,7 @@ import org.junit.rules.TestRule;
 // Tests atomic updates using JSON loader, since the existing
 // tests all use XML format, and there have been some atomic update
 // issues that were specific to the JSONformat.
-public class AtomicUpdatesJsonTest extends SolrTestCaseJ4 {
+public class AtomicUpdateJsonTest extends SolrTestCaseJ4 {
 
   @ClassRule
   public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
@@ -52,7 +52,7 @@ public class AtomicUpdatesJsonTest extends SolrTestCaseJ4 {
     // the schema we loaded shouldn't be usable for child docs,
     // since we're testing JSON loader functionality that only
     // works in that case and is ambiguous if nested docs are supported.
-    assert !h.getCore().getLatestSchema().isUsableForChildDocs();
+    assertFalse(h.getCore().getLatestSchema().isUsableForChildDocs());
   }
 
   @Test
