@@ -159,6 +159,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     public JettySolrRunner jetty;
     public String nodeName;
     public String coreNodeName;
+    /** Core or Collection URL */
     public String url;
     public CloudSolrServerClient client;
     public ZkNodeProps info;
