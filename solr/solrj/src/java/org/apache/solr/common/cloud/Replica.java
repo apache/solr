@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.StrUtils;
@@ -249,7 +251,9 @@ public class Replica extends ZkNodeProps implements MapWriter {
     Objects.requireNonNull(this.collection, "'collection' must not be null");
     Objects.requireNonNull(this.shard, "'shard' must not be null");
     Objects.requireNonNull(this.type, "'type' must not be null");
-    Objects.requireNonNull(this.state, "'state' must not be null");
+    if (perReplicaStatesRef == null) {// PRS collection
+      Objects.requireNonNull(this.state, "'state' must not be null");
+    }
     Objects.requireNonNull(this.node, "'node' must not be null");
 
     String baseUrl = (String) propMap.get(ReplicaStateProps.BASE_URL);
@@ -259,7 +263,9 @@ public class Replica extends ZkNodeProps implements MapWriter {
     propMap.put(ReplicaStateProps.NODE_NAME, node);
     propMap.put(ReplicaStateProps.CORE_NAME, core);
     propMap.put(ReplicaStateProps.TYPE, type.toString());
-    propMap.put(ReplicaStateProps.STATE, state.toString());
+    if (perReplicaStatesRef == null) {//PRS collection
+      propMap.put(ReplicaStateProps.STATE, state.toString());
+    }
   }
 
   public String getCollection() {
@@ -412,8 +418,8 @@ public class Replica extends ZkNodeProps implements MapWriter {
     ew.putIfNotNull(ReplicaStateProps.CORE_NAME, core)
         .putIfNotNull(ReplicaStateProps.NODE_NAME, node)
         .putIfNotNull(ReplicaStateProps.TYPE, type.toString())
-        .putIfNotNull(ReplicaStateProps.STATE, getState().toString())
-        .putIfNotNull(ReplicaStateProps.LEADER, () -> isLeader() ? "true" : null)
+        .putIfNotNull(ReplicaStateProps.STATE, () -> perReplicaStatesRef == null ? getState().toString() : null)
+        .putIfNotNull(ReplicaStateProps.LEADER, () -> perReplicaStatesRef != null || !isLeader() ? null : "true")
         .putIfNotNull(
             ReplicaStateProps.FORCE_SET_STATE, propMap.get(ReplicaStateProps.FORCE_SET_STATE))
         .putIfNotNull(ReplicaStateProps.BASE_URL, propMap.get(ReplicaStateProps.BASE_URL));
