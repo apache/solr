@@ -164,10 +164,11 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     DebugServlet.clear();
     if (rp instanceof XMLResponseParser) {
       DebugServlet.addResponseHeader("Content-Type", "application/xml; charset=UTF-8");
-      DebugServlet.responseBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />";
+      DebugServlet.responseBodyByQueryFragment.put(
+          "", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<response />");
     } else {
       DebugServlet.addResponseHeader("Content-Type", "application/octet-stream");
-      DebugServlet.responseBody = javabinResponse();
+      DebugServlet.responseBodyByQueryFragment.put("", javabinResponse());
     }
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
@@ -189,6 +190,21 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client = builder(getBaseUrl() + DEBUG_SERVLET_PATH).build()) {
       super.testGetById(client);
     }
+  }
+
+  @Test
+  public void testAsyncGet() throws Exception {
+    super.testQueryAsync();
+  }
+
+  @Test
+  public void testAsyncPost() throws Exception {
+    super.testUpdateAsync();
+  }
+
+  @Test
+  public void testAsyncException() throws Exception {
+    super.testAsyncExceptionBase();
   }
 
   @Test

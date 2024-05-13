@@ -59,6 +59,13 @@ Deprecation Removals
 * SOLR-12089: Remove deprecated `breakSugestionTieBreaker` parameter in favor of `breakSuggestionTieBreaker`
   in WordBreakSolrSpellChecker (Andrey Bozhko via Eric Pugh)
 
+* SOLR-14763: Remove deprecated asynchronous request methods from `Http2SolrClient`, `HttpJdkSolrClient` and `LBHttp2SolrClient`
+  in favor of the new CompletableFuture based methods.  Remove the related deprecated interfaces `AsyncListener` and ``Cancellable`
+  (James Dyer)
+
+* SOLR-14115: Remove deprecated zkcli script in favour of equivalent bin/solr sub commmands. (Eric Pugh)
+
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -86,6 +93,51 @@ Other Changes
 
 * SOLR-14410: Switch from SysV init script to systemd service definition (Marius Ghita via janhoy)
 
+* SOLR-17205: De-couple SolrJ required Java version from server Java version (janhoy)
+
+* SOLR-17279: Introduce SecurityJson.java file to Test Framework to consolidate setting up authentication in tests. (Rudy Seitz via Eric Pugh)
+
+==================  9.7.0 ==================
+New Features
+---------------------
+* SOLR-13350: Multithreaded search execution (Ishan Chattopadhyaya, Mark Miller, Christine Poerschke, David Smiley, noble)
+
+* SOLR-17192: Put an UpdateRequestProcessor-enforced soft-limit on the number of fields allowed in a core.  The `NumFieldLimitingUpdateRequestProcessorFactory`
+  limit may be adjusted by raising the factory's `maxFields` setting, toggled in and out of "warning-only" mode using the `warnOnly` setting, or disabled entirely
+  by removing it solrconfig.xml.  The limit is set at 1000 fields in the "_default" configset, but left in warning-only mode. (David Smiley, Eric Pugh,
+  Jason Gerlowski)
+
+Improvements
+---------------------
+* SOLR-16921: use -solrUrl to derive the zk host connection for bin/solr zk subcommands (Eric Pugh)
+
+* SOLR-14115: Add linkconfig, cluster, and updateacls as commands to SolrCLI.  Allow bin/solr commands to have parity with zkcli.sh commands. (Eric Pugh)
+
+* SOLR-17274: Allow JSON atomic updates to use multiple modifiers or a modifier like 'set' as a field name
+  if child docs are not enabled. (Calvin Smith, David Smiley)
+
+Optimizations
+---------------------
+* SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
+  cluster metrics.  AttributeFetcherImpl was improved accordingly.  (Yohann Callea)
+
+Bug Fixes
+---------------------
+* SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
+
+* SOLR-17261: Remove unintended timeout of 60 seconds for core loading. (Houston Putman)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+* SOLR-17248: Refactor ZK related SolrCli tools to separate SolrZkClient and CloudSolrClient instantiation/usage (Lamine Idjeraoui via Eric Pugh)
+
+* SOLR-16505: Use Jetty HTTP2 for index replication and other "recovery" operations
+  (Sanjay Dutt, David Smiley)
+
 ==================  9.6.0 ==================
 New Features
 ---------------------
@@ -94,6 +146,8 @@ New Features
 * SOLR-599: Add a new SolrJ client using the JDK’s built-in Http Client.  (James Dyer)
 
 * SOLR-16403: A new cluster singleton plugin to automatically remove inactive shards. (Paul McArthur, David Smiley)
+
+* SOLR-16466: Admin UI - Make it optional to sort list of commandline args (Shawn Heisey, Vincenzo D'Amore via Christine Poerschke)
 
 Improvements
 ---------------------
@@ -124,6 +178,13 @@ Improvements
 
 * SOLR-17164: Add 2 arg variant of vectorSimilarity() function (Sanjay Dutt, hossman)
 
+* SOLR-17211: New SolrJ JDK client supports Async (James Dyer)
+
+* SOLR-17204: REPLACENODE now supports the source node not being live (Vincent Primault)
+
+* SOLR-14763: Add a CompletableFuture based asynchronous API to Http2SolrClient, HttpJdkSolrClient and LBHttp2SolrClient.
+  The previous asynchronous API is deprecated. (Rishi Sankar, James Dyer)
+
 Optimizations
 ---------------------
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
@@ -133,6 +194,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
+* SOLR-17153: CloudSolrClient could fail a request immediately following a collection creation.  Required double-checking the collection doesn’t exist. (Aparna Suresh via David Smiley)
+
 * SOLR-17152: Better alignment of Admin UI graph (janhoy)
 
 * SOLR-17148: Fixing Config API overlay property enabling or disabling the cache (Sanjay Dutt, hossman, Eric Pugh)
@@ -147,6 +210,9 @@ Bug Fixes
 * SOLR-17198: AffinityPlacementFactory can fail if Shard leadership changes occur while it is collecting metrics.
   (Paul McArthur)
 
+* SOLR-17018: Add QueryLimits support to Learning To Rank rescoring.
+    (Alessandro Benedetti)
+
 * SOLR-14892: Queries with shards.info and shards.tolerant can yield multiple null keys in place of shard names
   (Mathieu Marie, David Smiley)
 
@@ -160,15 +226,30 @@ Bug Fixes
 
 * SOLR-17218: Fix indexFetcher logging to include MDC details (hossman)
 
+* SOLR-17206: Eliminate the possibility of a -1 status code for SolrCloud update requests that are distributed.
+  (Paul McArthur)
+
+* SOLR-17213: Fix spurious warnings about solr url format in Solr CLI when users aren't providing a deprecated solr url.  (Eric Pugh)
+
+* SOLR-17176: Fix log history V2 API serialization (Michael Gibney)
+
+* SOLR-11535: Fix race condition in singleton-per-collection StateWatcher creation (Michael Gibney)
+
+* SOLR-16866: Reorder nested directory deletions to avoid logging spurious NoSuchFileException (Michael Gibney)
+
+* SOLR-17194: Fix CloudHttp2SolrClient doesn't preserve the passed httpClient to Http2ClusterStateProvider when using the internalClientBuilder (Eric Pugh, Lamine Idjeraoui, Houston Putman, Anshum Gupta)
+
 Dependency Upgrades
 ---------------------
-
 * SOLR-17157: Upgrade Lucene to 9.10.0 (hossman, Christine Poerschke)
 
 * SOLR-17214: Update forbiddenapis to 3.7 (hossman)
 
+* GITHUB#2408: Update commons-cli to 1.7 (Eric Pugh)
+
 Other Changes
 ---------------------
+
 * SOLR-17126: Cut over System.getProperty to EnvUtils.getProperty (janhoy)
 
 * SOLR-17066: GenericSolrRequest now has a `setRequiresCollection` setter that allows it to specify whether
@@ -184,6 +265,11 @@ Other Changes
   Krb5HttpClientBuilder and PreemptiveBasicAuthClientBuilderFactory no longer deprecated (janhoy)
 
 * SOLR-17217: Simplify verbose MatcherAssert.assertThat usage in tests (hossman)
+
+* SOLR-17232: PropertiesOutputStream is renamed IndexOutputOutputStream and overrides write(byte[], int, int).
+  (Bruno Roustant)
+
+* SOLR-17222: QueryResponseWriterUtil.NonFlushingStream should support bulk write methods (Michael Gibney)
 
 ==================  9.5.0 ==================
 New Features

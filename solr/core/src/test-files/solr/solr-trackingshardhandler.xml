@@ -24,6 +24,7 @@
   <str name="shareSchema">${shareSchema:false}</str>
   <str name="configSetBaseDir">${configSetBaseDir:configsets}</str>
   <str name="coreRootDirectory">${coreRootDirectory:.}</str>
+  <int name="indexSearcherExecutorThreads">4</int>
 
   <solrcloud>
     <str name="host">127.0.0.1</str>
