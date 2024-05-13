@@ -397,6 +397,9 @@ public class SolrXmlConfig {
               case "replayUpdatesThreads":
                 builder.setReplayUpdatesThreads(it.intVal(-1));
                 break;
+              case "indexSearcherExecutorThreads":
+                builder.setIndexSearcherExecutorThreads(it.intVal(-1));
+                break;
               case "transientCacheSize":
                 log.warn("solr.xml transientCacheSize -- transient cores is deprecated");
                 builder.setTransientCacheSize(it.intVal(-1));

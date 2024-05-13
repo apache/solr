@@ -106,6 +106,8 @@ public class NodeConfig {
 
   private final int replayUpdatesThreads;
 
+  private final int indexSearcherExecutorThreads;
+
   @Deprecated private final int transientCacheSize;
 
   private final boolean useSchemaCache;
@@ -149,6 +151,7 @@ public class NodeConfig {
       CloudConfig cloudConfig,
       Integer coreLoadThreads,
       int replayUpdatesThreads,
+      int indexSearcherExecutorThreads,
       int transientCacheSize,
       boolean useSchemaCache,
       String managementPath,
@@ -189,6 +192,7 @@ public class NodeConfig {
     this.cloudConfig = cloudConfig;
     this.coreLoadThreads = coreLoadThreads;
     this.replayUpdatesThreads = replayUpdatesThreads;
+    this.indexSearcherExecutorThreads = indexSearcherExecutorThreads;
     this.transientCacheSize = transientCacheSize;
     this.useSchemaCache = useSchemaCache;
     this.managementPath = managementPath;
@@ -348,6 +352,10 @@ public class NodeConfig {
 
   public int getReplayUpdatesThreads() {
     return replayUpdatesThreads;
+  }
+
+  public int getIndexSearcherExecutorThreads() {
+    return indexSearcherExecutorThreads;
   }
 
   /**
@@ -648,6 +656,7 @@ public class NodeConfig {
     private CloudConfig cloudConfig;
     private int coreLoadThreads = DEFAULT_CORE_LOAD_THREADS;
     private int replayUpdatesThreads = Runtime.getRuntime().availableProcessors();
+    private int indexSearcherExecutorThreads = DEFAULT_INDEX_SEARCHER_EXECUTOR_THREADS;
     @Deprecated private int transientCacheSize = -1;
     private boolean useSchemaCache = false;
     private String managementPath;
@@ -669,6 +678,8 @@ public class NodeConfig {
     public static final int DEFAULT_CORE_LOAD_THREADS = 3;
     // No:of core load threads in cloud mode is set to a default of 8
     public static final int DEFAULT_CORE_LOAD_THREADS_IN_CLOUD = 8;
+
+    public static final int DEFAULT_INDEX_SEARCHER_EXECUTOR_THREADS = 4;
 
     private static final String DEFAULT_CORESLOCATORCLASS =
         "org.apache.solr.core.CorePropertiesLocator";
@@ -804,6 +815,11 @@ public class NodeConfig {
 
     public NodeConfigBuilder setReplayUpdatesThreads(int replayUpdatesThreads) {
       this.replayUpdatesThreads = replayUpdatesThreads;
+      return this;
+    }
+
+    public NodeConfigBuilder setIndexSearcherExecutorThreads(int indexSearcherExecutorThreads) {
+      this.indexSearcherExecutorThreads = indexSearcherExecutorThreads;
       return this;
     }
 
@@ -961,6 +977,7 @@ public class NodeConfig {
           cloudConfig,
           coreLoadThreads,
           replayUpdatesThreads,
+          indexSearcherExecutorThreads,
           transientCacheSize,
           useSchemaCache,
           managementPath,
