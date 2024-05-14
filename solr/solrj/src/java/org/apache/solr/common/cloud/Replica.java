@@ -346,7 +346,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public Replica copyWith(PerReplicaStates.State state) {
-    log.debug("A replica is updated with new state : {}", state);
+    log.debug("A replica is updated with new PRS state : {}", state);
     Map<String, Object> props = new LinkedHashMap<>(propMap);
     if (state == null) {
       props.put(ReplicaStateProps.STATE, State.DOWN.toString());
@@ -356,6 +356,12 @@ public class Replica extends ZkNodeProps implements MapWriter {
       if (state.isLeader) props.put(ReplicaStateProps.LEADER, "true");
     }
     Replica r = new Replica(name, props, collection, shard);
+    return r;
+  }
+
+  public Replica copyWith(State state) {
+    Replica r = new Replica(name, propMap, collection, shard);
+    r.setState(state);
     return r;
   }
 

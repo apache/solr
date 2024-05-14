@@ -23,8 +23,12 @@ import static org.mockito.Mockito.mock;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -34,7 +38,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -55,21 +61,15 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 @SolrTestCaseJ4.SuppressSSL
-public class ZkControllerTest extends SolrTestCaseJ4 {
+public class ZkControllerTest extends SolrCloudTestCase {
 
   static final int TIMEOUT = 10000;
 
-  @BeforeClass
-  public static void beforeClass() {}
-
-  @AfterClass
-  public static void afterClass() {}
-
+  @Test
   public void testNodeNameUrlConversion() throws Exception {
 
     // nodeName from parts
@@ -186,6 +186,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
   public void testGetHostName() throws Exception {
     Path zkDir = createTempDir("zkData");
 
@@ -215,6 +216,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   }
 
   @LogLevel(value = "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
+  @Test
   public void testPublishAndWaitForDownStates() throws Exception {
 
     /*
@@ -232,9 +234,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
     String nodeName = "127.0.0.1:8983_solr";
 
-    ZkTestServer server = new ZkTestServer(zkDir);
     try {
-      server.run();
+      cluster = configureCluster(1).configure();
 
       AtomicReference<ZkController> zkControllerRef = new AtomicReference<>();
       CoreContainer cc =
@@ -259,9 +260,15 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
       try {
         CloudConfig cloudConfig =
-            new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build();
+            new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr")
+                .setUseDistributedClusterStateUpdates(
+                    Boolean.getBoolean("solr.distributedClusterStateUpdates"))
+                .setUseDistributedCollectionConfigSetExecution(
+                    Boolean.getBoolean("solr.distributedCollectionConfigSetExecution"))
+                .build();
         zkController =
-            new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig, () -> null);
+            new ZkController(
+                cc, cluster.getZkServer().getZkAddress(), TIMEOUT, cloudConfig, () -> null);
         zkControllerRef.set(zkController);
 
         zkController
@@ -294,6 +301,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           zkController.getOverseerJobQueue().offer(Utils.toJSON(m));
         }
 
+        // Add an active replica that shares the same core name, but on a non existent host
         MapWriter propMap =
             ew ->
                 ew.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower())
@@ -315,6 +323,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           zkController.getOverseerJobQueue().offer(propMap);
         }
 
+        // Add an down replica that shares the same core name, also on a non existent host
         propMap =
             ew ->
                 ew.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower())
@@ -335,20 +344,77 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           zkController.getOverseerJobQueue().offer(propMap);
         }
 
-        zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
+        // Add an active replica on the existing host. This replica will exist in the cluster state
+        // but not
+        // on the disk. We are testing that this replica is also put to "DOWN" even though it
+        // doesn't exist locally.
+        propMap =
+            ew ->
+                ew.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower())
+                    .put(COLLECTION_PROP, collectionName)
+                    .put(SHARD_ID_PROP, "shard1")
+                    .put(ZkStateReader.NODE_NAME_PROP, nodeName)
+                    .put(ZkStateReader.CORE_NAME_PROP, collectionName + "-not-on-disk")
+                    .put(ZkStateReader.STATE_PROP, "active");
+        if (zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+          zkController
+              .getDistributedClusterStateUpdater()
+              .doSingleStateUpdate(
+                  DistributedClusterStateUpdater.MutatingCommand.SliceAddReplica,
+                  new ZkNodeProps(propMap),
+                  zkController.getSolrCloudManager(),
+                  zkController.getZkStateReader());
+        } else {
+          zkController.getOverseerJobQueue().offer(propMap);
+        }
 
-        long now = System.nanoTime();
-        long timeout = now + TimeUnit.NANOSECONDS.convert(5, TimeUnit.SECONDS);
+        // Wait for the overseer to process all the replica additions
+        if (!zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+          zkController
+              .getZkStateReader()
+              .waitForState(
+                  collectionName,
+                  10,
+                  TimeUnit.SECONDS,
+                  ((liveNodes, collectionState) ->
+                      Optional.ofNullable(collectionState)
+                              .map(DocCollection::getReplicas)
+                              .map(List::size)
+                              .orElse(0)
+                          == 3));
+        }
+
+        Instant now = Instant.now();
         zkController.publishAndWaitForDownStates(5);
-        assertTrue(
-            "The ZkController.publishAndWaitForDownStates should have timed out but it didn't",
-            System.nanoTime() >= timeout);
+        assertThat(
+            "The ZkController.publishAndWaitForDownStates should not have timed out but it did",
+            Duration.between(now, Instant.now()),
+            Matchers.lessThanOrEqualTo(Duration.ofSeconds(5)));
+
+        zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
+        ClusterState clusterState = zkController.getClusterState();
+
+        Map<String, List<Replica>> replicasOnNode =
+            clusterState.getReplicaNamesPerCollectionOnNode(nodeName);
+        assertNotNull("There should be replicas on the existing node", replicasOnNode);
+        List<Replica> replicas = replicasOnNode.get(collectionName);
+        assertNotNull("There should be replicas for the collection on the existing node", replicas);
+        assertEquals(
+            "Wrong number of replicas for the collection on the existing node", 1, replicas.size());
+        for (Replica replica : replicas) {
+          assertEquals(
+              "Replica "
+                  + replica.getName()
+                  + " is not DOWN, even though it is on the node that should be DOWN",
+              Replica.State.DOWN,
+              replica.getState());
+        }
       } finally {
         if (zkController != null) zkController.close();
         cc.shutdown();
       }
     } finally {
-      server.shutdown();
+      cluster.shutdown();
     }
   }
 
