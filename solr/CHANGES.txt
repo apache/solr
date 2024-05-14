@@ -138,6 +138,8 @@ Other Changes
 * SOLR-16505: Use Jetty HTTP2 for index replication and other "recovery" operations
   (Sanjay Dutt, David Smiley)
 
+* SOLR-16503: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
+
 ==================  9.6.0 ==================
 New Features
 ---------------------
