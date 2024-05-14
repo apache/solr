@@ -257,6 +257,28 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     }
 
     @Override
+    protected Map<Node, WeightedNode> getWeightedNodes(
+        PlacementContext placementContext,
+        Set<Node> nodes,
+        Iterable<SolrCollection> relevantCollections,
+        boolean skipNodesWithErrors)
+        throws PlacementException {
+      Map<Node, WeightedNode> weightedNodes =
+          getBaseWeightedNodes(placementContext, nodes, relevantCollections, skipNodesWithErrors);
+
+      Iterable<SolrCollection> initCollections;
+      if (withCollections.isEmpty() && withCollectionShards.isEmpty()) {
+        initCollections = relevantCollections;
+      } else {
+        // TODO this doesn't scale to many collections
+        initCollections = placementContext.getCluster().collections();
+      }
+      initWeightedNodeReplicas(weightedNodes, initCollections);
+
+      return weightedNodes;
+    }
+
+    @Override
     protected Map<Node, WeightedNode> getBaseWeightedNodes(
         PlacementContext placementContext,
         Set<Node> nodes,
