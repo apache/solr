@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Map;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.MonitorQuery;
+import org.apache.lucene.monitor.QCEVisitor;
 import org.apache.lucene.monitor.QueryDecomposer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.monitor.search.ReverseSearchComponent;
@@ -30,7 +31,7 @@ import org.apache.solr.monitor.search.ReverseSearchComponent;
 public class SolrMonitorQueryDecoder {
 
   private final SolrCore core;
-  public final QueryDecomposer queryDecomposer;
+  private final QueryDecomposer queryDecomposer;
 
   public SolrMonitorQueryDecoder(SolrCore core) {
     this.core = core;
@@ -49,5 +50,14 @@ public class SolrMonitorQueryDecoder {
       return new MonitorQuery(id, query, queryStr, Map.of());
     }
     return new MonitorQuery(id, query, queryStr, Map.of(MonitorFields.PAYLOAD, payload));
+  }
+
+  public QCEVisitor getComponent(MonitorQuery mq, String cacheId) {
+    for (QCEVisitor qce : QCEVisitor.decompose(mq, queryDecomposer)) {
+      if (qce.getCacheId().equals(cacheId)) {
+        return qce;
+      }
+    }
+    throw new IllegalArgumentException("Corrupt monitorQuery value in index");
   }
 }

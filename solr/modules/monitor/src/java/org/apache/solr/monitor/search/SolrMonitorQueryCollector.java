@@ -68,8 +68,7 @@ class SolrMonitorQueryCollector extends DelegatingCollector {
             ? null
             : monitorQueryCache.computeIfStale(dataValues, queryDecoder);
     return (versionedEntry == null || versionedEntry.version != dataValues.getVersion())
-        ? QCEVisitor.getComponent(
-            queryDecoder.decode(dataValues), queryDecoder.queryDecomposer, dataValues.getCacheId())
+        ? queryDecoder.getComponent(queryDecoder.decode(dataValues), dataValues.getCacheId())
         : versionedEntry.entry;
   }
 

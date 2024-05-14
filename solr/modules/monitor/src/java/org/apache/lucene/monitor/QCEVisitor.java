@@ -40,16 +40,6 @@ public class QCEVisitor {
     return cacheEntries;
   }
 
-  public static QCEVisitor getComponent(
-      MonitorQuery mq, QueryDecomposer decomposer, String cacheId) {
-    for (QCEVisitor qce : QCEVisitor.decompose(mq, decomposer)) {
-      if (qce.getCacheId().equals(cacheId)) {
-        return qce;
-      }
-    }
-    throw new IllegalArgumentException("Corrupt monitorQuery value in index");
-  }
-
   public Query getMatchQuery() {
     return qce.matchQuery;
   }

@@ -30,9 +30,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiPredicate;
-import org.apache.lucene.monitor.MonitorQuery;
 import org.apache.lucene.monitor.QCEVisitor;
-import org.apache.lucene.monitor.QueryDecomposer;
 import org.apache.lucene.monitor.QueryTermFilterVisitor;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -81,8 +79,7 @@ public class SharedMonitorCache extends SolrCacheBase
     return mqCacheMap()
         .compute(
             dataValues.getCacheId(),
-            (cacheId, prevEntry) ->
-                compute(cacheId, prevEntry, dataValues, decoder::decode, decoder.queryDecomposer));
+            (cacheId, prevEntry) -> compute(cacheId, prevEntry, dataValues, decoder));
   }
 
   @Override
@@ -278,13 +275,12 @@ public class SharedMonitorCache extends SolrCacheBase
       String cacheId,
       VersionedQueryCacheEntry prevEntry,
       MonitorDataValues dataValues,
-      IOFunction<MonitorDataValues, MonitorQuery> decoder,
-      QueryDecomposer decomposer) {
+      SolrMonitorQueryDecoder decoder) {
     try {
       var version = dataValues.getVersion();
       if (prevEntry == null || version > prevEntry.version) {
-        var monitorQuery = decoder.apply(dataValues);
-        QCEVisitor component = QCEVisitor.getComponent(monitorQuery, decomposer, cacheId);
+        var monitorQuery = decoder.decode(dataValues);
+        QCEVisitor component = decoder.getComponent(monitorQuery, cacheId);
         currentStats.updateAndGet(CurrentStats::miss);
         return new VersionedQueryCacheEntry(component, version);
       }
