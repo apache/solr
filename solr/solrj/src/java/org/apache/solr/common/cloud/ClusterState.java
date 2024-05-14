@@ -179,10 +179,12 @@ public class ClusterState implements MapWriter {
     return Collections.unmodifiableSet(liveNodes);
   }
 
+  @Deprecated
   public String getShardId(String nodeName, String coreName) {
     return getShardId(null, nodeName, coreName);
   }
 
+  @Deprecated
   public String getShardId(String collectionName, String nodeName, String coreName) {
     if (coreName == null || nodeName == null) {
       return null;

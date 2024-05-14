@@ -138,7 +138,8 @@ public class ClusterStateMockUtil {
           break;
         case "s":
           if (collName == null) collName = "collection" + (collectionStates.size() + 1);
-          slice = new Slice(sliceName = "slice" + (slices.size() + 1), new HashMap<>(), null, collName);
+          slice =
+              new Slice(sliceName = "slice" + (slices.size() + 1), new HashMap<>(), null, collName);
           slices.put(slice.getName(), slice);
 
           // hack alert: the DocCollection constructor copies over active slices to its active slice
