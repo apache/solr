@@ -20,7 +20,6 @@
 package org.apache.solr.monitor;
 
 import static org.apache.solr.monitor.MonitorConstants.QUERY_MATCH_TYPE_KEY;
-import static org.apache.solr.monitor.MonitorConstants.REVERSE_SEARCH_PARAM_NAME;
 
 import java.util.List;
 import java.util.Map;
@@ -67,8 +66,8 @@ public class ParallelMonitorSolrQueryTest extends MonitorSolrQueryTest {
           id + " desc",
           CommonParams.JSON,
           read("/monitor/multi-doc-batch.json"),
-          REVERSE_SEARCH_PARAM_NAME,
-          true,
+          CommonParams.QT,
+          "/reverseSearch",
           QUERY_MATCH_TYPE_KEY,
           "simple"
         };
@@ -134,8 +133,8 @@ public class ParallelMonitorSolrQueryTest extends MonitorSolrQueryTest {
           id + " desc",
           CommonParams.JSON,
           read("/monitor/multi-doc-batch.json"),
-          REVERSE_SEARCH_PARAM_NAME,
-          true,
+          CommonParams.QT,
+          "/reverseSearch",
           QUERY_MATCH_TYPE_KEY,
           "simple"
         };
@@ -162,8 +161,8 @@ public class ParallelMonitorSolrQueryTest extends MonitorSolrQueryTest {
           id + " desc",
           CommonParams.JSON,
           read("/monitor/single-doc-batch.json"),
-          REVERSE_SEARCH_PARAM_NAME,
-          true,
+          CommonParams.QT,
+          "/reverseSearch",
           QUERY_MATCH_TYPE_KEY,
           "simple"
         };

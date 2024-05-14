@@ -81,12 +81,21 @@
   <requestDispatcher>
     <httpCaching never304="true"/>
   </requestDispatcher>
-  <requestHandler name="/select" class="org.apache.solr.monitor.search.ReverseSearchHandler"/>
-  <requestHandler name="/query" class="org.apache.solr.monitor.search.ReverseSearchHandler"/>
-  <requestHandler name="/browse" class="solr.SearchHandler"
-                  useParams="query,facets,velocity,browse">
+  <requestHandler name="/reverseSearch" class="org.apache.solr.monitor.search.ReverseSearchHandler"/>
+  <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
+      <str name="wt">json</str>
+      <str name="indent">true</str>
+      <str name="df">id</str>
+    </lst>
+  </requestHandler>
+  <requestHandler name="/query" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <str name="wt">json</str>
+      <str name="indent">true</str>
+      <str name="df">id</str>
     </lst>
   </requestHandler>
   <requestHandler name="/pingQuery" class="solr.SearchHandler">
@@ -112,42 +121,6 @@
     <str name="presearcherType">TermFilteredPresearcher</str>
     <bool name="applyFieldNameAlias">true</bool>
   </searchComponent>
-  <searchComponent name="spellcheck" class="solr.SpellCheckComponent">
-    <str name="queryAnalyzerFieldType">text_general</str>
-  </searchComponent>
-  <searchComponent name="tvComponent"
-                   class="org.apache.solr.handler.component.TermVectorComponent"/>
-  <requestHandler name="/tvrh" class="solr.SearchHandler" startup="lazy">
-    <lst name="defaults">
-      <bool name="tv">true</bool>
-    </lst>
-    <arr name="last-components">
-      <str>tvComponent</str>
-    </arr>
-  </requestHandler>
-  <searchComponent name="terms" class="solr.TermsComponent"/>
-  <requestHandler name="/terms" class="solr.SearchHandler" startup="lazy">
-    <lst name="defaults">
-      <bool name="terms">true</bool>
-      <bool name="distrib">false</bool>
-    </lst>
-    <arr name="last-components">
-      <str>terms</str>
-      <str>tvComponent</str>
-    </arr>
-  </requestHandler>
-  <searchComponent name="elevator" class="solr.QueryElevationComponent">
-    <str name="queryFieldType">string</str>
-  </searchComponent>
-
-  <requestHandler name="/elevate" class="solr.SearchHandler" startup="lazy">
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-    </lst>
-    <arr name="last-components">
-      <str>elevator</str>
-    </arr>
-  </requestHandler>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <updateRequestProcessorChain>
     <processor class="solr.LogUpdateProcessorFactory"/>
@@ -157,12 +130,6 @@
   </updateRequestProcessorChain>
   <queryResponseWriter name="json" class="solr.JSONResponseWriter">
     <str name="content-type">text/plain; charset=UTF-8</str>
-  </queryResponseWriter>
-  <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter" startup="lazy">
-    <str name="template.base.dir">${velocity.template.base.dir:}</str>
-    <str name="solr.resource.loader.enabled">${velocity.solr.resource.loader.enabled:true}</str>
-    <str name="params.resource.loader.enabled">${velocity.params.resource.loader.enabled:false}
-    </str>
   </queryResponseWriter>
   <queryParser name="xmlparser" class="solr.XmlQParserPlugin"/>
 </config>
