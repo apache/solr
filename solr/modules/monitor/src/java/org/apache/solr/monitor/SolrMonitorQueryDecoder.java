@@ -41,7 +41,7 @@ public class SolrMonitorQueryDecoder {
     this.queryDecomposer = rsc.getQueryDecomposer();
   }
 
-  public MonitorQuery decode(MonitorDataValues monitorDataValues) throws IOException {
+  private MonitorQuery decode(MonitorDataValues monitorDataValues) throws IOException {
     String id = monitorDataValues.getQueryId();
     String queryStr = monitorDataValues.getMq();
     var query = SimpleQueryParser.parse(queryStr, core);
@@ -52,8 +52,8 @@ public class SolrMonitorQueryDecoder {
     return new MonitorQuery(id, query, queryStr, Map.of(MonitorFields.PAYLOAD, payload));
   }
 
-  public QCEVisitor getComponent(MonitorQuery mq, String cacheId) {
-    for (QCEVisitor qce : QCEVisitor.decompose(mq, queryDecomposer)) {
+  public QCEVisitor getComponent(MonitorDataValues dataValues, String cacheId) throws IOException {
+    for (QCEVisitor qce : QCEVisitor.decompose(decode(dataValues), queryDecomposer)) {
       if (qce.getCacheId().equals(cacheId)) {
         return qce;
       }

@@ -279,8 +279,7 @@ public class SharedMonitorCache extends SolrCacheBase
     try {
       var version = dataValues.getVersion();
       if (prevEntry == null || version > prevEntry.version) {
-        var monitorQuery = decoder.decode(dataValues);
-        QCEVisitor component = decoder.getComponent(monitorQuery, cacheId);
+        QCEVisitor component = decoder.getComponent(dataValues, cacheId);
         currentStats.updateAndGet(CurrentStats::miss);
         return new VersionedQueryCacheEntry(component, version);
       }
