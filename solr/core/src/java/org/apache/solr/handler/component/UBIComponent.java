@@ -44,12 +44,20 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 
 /**
- * Inspired by the ResponseLogComponent.
+ * User Behavior Insights (UBI) is a open standard for gathering query and event data from users and
+ * storing it in a structured format. UBI can be used for in session personalization, implicit
+ * judgements, powering recommendation systems among others. Learn more about the UBI standard at <a
+ * href="https://github.com/o19s/ubi">https://github.com/o19s/ubi</a>.
  *
- * <p>Adds to the .ubi_queries system collection the original user query and the document IDs that
- * are sent in the query response.
+ * <p>Query data is gathered by this component. Data tracked is the collection name, the end user
+ * query, as json blob, and the resulting document id's.
  *
- * <p>Tracks the collection name, the end user query, as json blob, and the resulting document id's.
+ * <p>Data is written out data to "ubi_queries.jsonl", a JSON with Lines formatted file, or you can
+ * provide a streaming expression that is parsed and loaded by the component to stream query data to
+ * a target of your choice.
+ *
+ * <p>Event data is tracked by letting the user write events directly to the event repository of
+ * your choice, it could be a Solr collection, it could be a file or S3 bucket.
  *
  * <p>Add it to a requestHandler in solrconfig.xml like this:
  *
@@ -72,6 +80,33 @@ import org.noggit.JSONWriter;
  * <pre>ubi=true</pre>
  *
  * query parameter.
+ *
+ * <p>Ideally this component is used with the JSON Query syntax, as that facilitates passing in the
+ * additional data to be tracked with a query. Here is an example:
+ *
+ * <pre>
+ *     {
+ *     "query" : "apple AND ipod",
+ *     "limit":2,
+ *     "start":2,
+ *     "filter": [
+ *        "inStock:true"
+ *      ]
+ *     params: {
+ *       "ubi": "true"
+ *       "query_id": "xyz890",
+ *       "user_query": {
+ *         "query": "Apple iPod",
+ *         "page": 2,
+ *         "in_stock": "true"
+ *       }
+ *     }
+ *   }
+ * </pre>
+ *
+ * Notice that we are enabling UBI query tracking, we are providing an explicit query_id and passing
+ * in the user's specific choices for querying. The user_query parameters are not specific to Solr
+ * syntax, they are defined by the front end user interface.
  */
 public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
