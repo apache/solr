@@ -130,6 +130,8 @@ Bug Fixes
 * SOLR-17049: Actually mark all replicas down at startup and truly wait for them.
   This includes replicas that might not exist anymore locally. (Houston Putman, Vincent Primault)
 
+* SOLR-17263: Fix 'Illegal character in query' exception in HttpJdkSolrClient (Andy Webb)
+
 Dependency Upgrades
 ---------------------
 (No changes)
