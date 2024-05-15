@@ -49,6 +49,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.storage.CompressingDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,6 +91,7 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
     for (MetricsApiCaller caller : callers) {
       caller.call(qTime, metrics, request);
     }
+    getCompressingDirectoryPoolMetrics(metrics);
     getSharedCacheMetrics(metrics, getSolrDispatchFilter(request).getCores(), cacheMetricTypes);
     metrics.add(
         new PrometheusMetric(
@@ -101,6 +103,94 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
       metric.write(printWriter);
     }
     printWriter.flush();
+  }
+
+  private static final String BASE_POOL_DESCRIPTION =
+      "global CompressingDirectory direct ByteBuffers ";
+
+  private void getCompressingDirectoryPoolMetrics(List<PrometheusMetric> metrics) {
+    Map<Integer, long[]> poolStats = CompressingDirectory.getPoolStats();
+    for (Map.Entry<Integer, long[]> e : poolStats.entrySet()) {
+      int blockSize = e.getKey();
+      long[] v = e.getValue();
+      metrics.add(
+          new PrometheusMetric(
+              "direct_pool_" + blockSize + "_created",
+              PrometheusMetricType.COUNTER,
+              BASE_POOL_DESCRIPTION + "created",
+              v[0]));
+      metrics.add(
+          new PrometheusMetric(
+              "direct_pool_" + blockSize + "_size",
+              PrometheusMetricType.GAUGE,
+              BASE_POOL_DESCRIPTION + "pool size",
+              v[1]));
+      metrics.add(
+          new PrometheusMetric(
+              "direct_pool_" + blockSize + "_hits",
+              PrometheusMetricType.COUNTER,
+              BASE_POOL_DESCRIPTION + "reused",
+              v[2]));
+      metrics.add(
+          new PrometheusMetric(
+              "direct_pool_" + blockSize + "_discarded",
+              PrometheusMetricType.COUNTER,
+              BASE_POOL_DESCRIPTION + "discarded (pool overflow)",
+              v[3]));
+      metrics.add(
+          new PrometheusMetric(
+              "direct_pool_" + blockSize + "_outstanding",
+              PrometheusMetricType.GAUGE,
+              BASE_POOL_DESCRIPTION + "outstanding (in use)",
+              v[4]));
+      metrics.add(
+          new PrometheusMetric(
+              "direct_pool_" + blockSize + "_outstanding_max",
+              PrometheusMetricType.GAUGE,
+              BASE_POOL_DESCRIPTION + "outstanding (in use) high water mark",
+              v[5]));
+    }
+    poolStats = CompressingDirectory.getInitPoolStats();
+    for (Map.Entry<Integer, long[]> e : poolStats.entrySet()) {
+      int blockSize = e.getKey();
+      long[] v = e.getValue();
+      metrics.add(
+          new PrometheusMetric(
+              "direct_init_pool_" + blockSize + "_created",
+              PrometheusMetricType.COUNTER,
+              "init " + BASE_POOL_DESCRIPTION + "created",
+              v[0]));
+      metrics.add(
+          new PrometheusMetric(
+              "direct_init_pool_" + blockSize + "_size",
+              PrometheusMetricType.GAUGE,
+              "init " + BASE_POOL_DESCRIPTION + "pool size",
+              v[1]));
+      metrics.add(
+          new PrometheusMetric(
+              "direct_init_pool_" + blockSize + "_hits",
+              PrometheusMetricType.COUNTER,
+              "init " + BASE_POOL_DESCRIPTION + "reused",
+              v[2]));
+      metrics.add(
+          new PrometheusMetric(
+              "direct_init_pool_" + blockSize + "_discarded",
+              PrometheusMetricType.COUNTER,
+              "init " + BASE_POOL_DESCRIPTION + "discarded (pool overflow)",
+              v[3]));
+      metrics.add(
+          new PrometheusMetric(
+              "direct_init_pool_" + blockSize + "_outstanding",
+              PrometheusMetricType.GAUGE,
+              "init " + BASE_POOL_DESCRIPTION + "outstanding (in use)",
+              v[4]));
+      metrics.add(
+          new PrometheusMetric(
+              "direct_init_pool_" + blockSize + "_outstanding_max",
+              PrometheusMetricType.GAUGE,
+              "init " + BASE_POOL_DESCRIPTION + "outstanding (in use) high water mark",
+              v[5]));
+    }
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})

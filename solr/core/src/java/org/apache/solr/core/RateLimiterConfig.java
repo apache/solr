@@ -114,4 +114,17 @@ public class RateLimiterConfig {
 
     return true;
   }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(getClass().getSimpleName());
+    sb.append("{requestType=").append(requestType);
+    sb.append(", allowedRequests=").append(allowedRequests);
+    sb.append(", enabled=").append(isEnabled);
+    sb.append(", guaranteedSlots=").append(guaranteedSlotsThreshold);
+    sb.append(", borrowEnabled=").append(isSlotBorrowingEnabled);
+    sb.append(", waitForSlotMillis=").append(waitForSlotAcquisition);
+    return sb.append('}').toString();
+  }
 }

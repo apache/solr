@@ -37,6 +37,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.OutputStreamDataOutput;
+import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.compress.LZ4;
 import org.apache.solr.core.DirectoryFactory;
 
@@ -121,6 +122,24 @@ public class CompressingDirectory extends FSDirectory
   private static final Map<Integer, DirectBufferPool> POOLS_BY_BLOCK_SIZE_INITIAL =
       new ConcurrentHashMap<>();
 
+  public static Map<Integer, long[]> getPoolStats() {
+    Map<Integer, long[]> ret = CollectionUtil.newHashMap(POOLS_BY_BLOCK_SIZE.size());
+    POOLS_BY_BLOCK_SIZE.forEach(
+        (k, v) -> {
+          ret.put(k, v.getStats());
+        });
+    return ret;
+  }
+
+  public static Map<Integer, long[]> getInitPoolStats() {
+    Map<Integer, long[]> ret = CollectionUtil.newHashMap(POOLS_BY_BLOCK_SIZE_INITIAL.size());
+    POOLS_BY_BLOCK_SIZE_INITIAL.forEach(
+        (k, v) -> {
+          ret.put(k, v.getStats());
+        });
+    return ret;
+  }
+
   private final DirectBufferPool mainBufferPool;
   private final DirectBufferPool initialBlockBufferPool;
 
@@ -130,10 +149,10 @@ public class CompressingDirectory extends FSDirectory
     this.blockSize = (int) (Files.getFileStore(path).getBlockSize());
     mainBufferPool =
         POOLS_BY_BLOCK_SIZE.computeIfAbsent(
-            blockSize, (bs) -> new DirectBufferPool(DEFAULT_MERGE_BUFFER_SIZE, bs, 32));
+            blockSize, (bs) -> new DirectBufferPool(DEFAULT_MERGE_BUFFER_SIZE, bs, 1));
     initialBlockBufferPool =
         POOLS_BY_BLOCK_SIZE_INITIAL.computeIfAbsent(
-            blockSize, (bs) -> new DirectBufferPool(bs, bs, 32));
+            blockSize, (bs) -> new DirectBufferPool(bs, bs, 1));
     this.ioExec = ioExec;
     directoryPath = path;
     this.useAsyncIO = useAsyncIO;
