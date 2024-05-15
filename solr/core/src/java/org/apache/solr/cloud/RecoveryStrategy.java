@@ -62,7 +62,6 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
-import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
@@ -176,10 +175,11 @@ public class RecoveryStrategy implements Runnable, Closeable {
   }
 
   private Http2SolrClient.Builder recoverySolrClientBuilder(String baseUrl, String leaderCoreName) {
-    final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
+    final var recoverySolrClient = cc.getUpdateShardHandler().getRecoveryOnlyHttpClient();
     return new Http2SolrClient.Builder(baseUrl)
         .withDefaultCollection(leaderCoreName)
-        .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient());
+        .withHttpClient(recoverySolrClient)
+        .withListenerFactory(recoverySolrClient.getListenerFactory());
   }
 
   // make sure any threads stop retrying
