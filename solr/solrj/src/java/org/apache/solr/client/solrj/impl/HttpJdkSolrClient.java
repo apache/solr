@@ -260,7 +260,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     validateGetRequest(solrRequest);
     reqb.GET();
     decorateRequest(reqb, solrRequest);
-    reqb.uri(new URI(url + "?" + queryParams));
+    reqb.uri(new URI(url + queryParams.toQueryString()));
     return new PreparedRequest(reqb, null);
   }
 
@@ -324,7 +324,9 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       ModifiableSolrParams requestParams = queryParams;
       queryParams = calculateQueryParams(urlParamNames, requestParams);
       queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), requestParams));
-      bodyPublisher = HttpRequest.BodyPublishers.ofString(requestParams.toString());
+      // note the toQueryString() method adds a leading question mark which needs to be removed here
+      bodyPublisher =
+          HttpRequest.BodyPublishers.ofString(requestParams.toQueryString().substring(1));
     } else {
       bodyPublisher = HttpRequest.BodyPublishers.noBody();
     }
@@ -335,7 +337,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     } else {
       reqb.method("POST", bodyPublisher);
     }
-    URI uriWithQueryParams = new URI(url + "?" + queryParams);
+    URI uriWithQueryParams = new URI(url + queryParams.toQueryString());
     reqb.uri(uriWithQueryParams);
 
     return new PreparedRequest(reqb, contentWritingFuture);
