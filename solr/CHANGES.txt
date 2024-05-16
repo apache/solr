@@ -127,6 +127,8 @@ Bug Fixes
 
 * SOLR-17261: Remove unintended timeout of 60 seconds for core loading. (Houston Putman)
 
+* SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when aliases are used. (Aparna Suresh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -138,11 +140,6 @@ Other Changes
 * SOLR-16505: Use Jetty HTTP2 for index replication and other "recovery" operations
   (Sanjay Dutt, David Smiley)
 
-
-================= 9.6.1 ====================
-Bug Fixes
-------------------
-* SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when aliases are used. (Aparna Suresh)
 
 ==================  9.6.0 ==================
 New Features
