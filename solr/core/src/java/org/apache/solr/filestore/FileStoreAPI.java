@@ -23,38 +23,23 @@ import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.BlobRepository;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.CryptoKeys;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,93 +63,7 @@ public class FileStoreAPI {
     return fileStore;
   }
 
-  /** get a list of nodes randomly shuffled * @lucene.internal */
-  public ArrayList<String> shuffledNodes() {
-    Set<String> liveNodes =
-        coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
-    ArrayList<String> l = new ArrayList<>(liveNodes);
-    l.remove(coreContainer.getZkController().getNodeName());
-    Collections.shuffle(l, BlobRepository.RANDOM);
-    return l;
-  }
-
-  public void validateFiles(List<String> files, boolean validateSignatures, Consumer<String> errs) {
-    for (String path : files) {
-      try {
-        FileStore.FileType type = fileStore.getType(path, true);
-        if (type != FileStore.FileType.FILE) {
-          errs.accept("No such file: " + path);
-          continue;
-        }
-
-        fileStore.get(
-            path,
-            entry -> {
-              if (entry.getMetaData().signatures == null
-                  || entry.getMetaData().signatures.isEmpty()) {
-                errs.accept(path + " has no signature");
-                return;
-              }
-              if (validateSignatures) {
-                try {
-                  fileStore.refresh(KEYS_DIR);
-                  validate(entry.meta.signatures, entry, false);
-                } catch (Exception e) {
-                  log.error("Error validating package artifact", e);
-                  errs.accept(e.getMessage());
-                }
-              }
-            },
-            false);
-      } catch (Exception e) {
-        log.error("Error reading file ", e);
-        errs.accept("Error reading file " + path + " " + e.getMessage());
-      }
-    }
-  }
-
   public class FSWrite {
-
-    static final String TMP_ZK_NODE = "/fileStoreWriteInProgress";
-
-    @EndPoint(
-        path = "/cluster/files/*",
-        method = SolrRequest.METHOD.DELETE,
-        permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
-    public void delete(SolrQueryRequest req, SolrQueryResponse rsp) {
-      if (!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
-        throw new RuntimeException(PackageAPI.ERR_MSG);
-      }
-
-      try {
-        coreContainer
-            .getZkController()
-            .getZkClient()
-            .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL, true);
-        String path = req.getPathTemplateValues().get("*");
-        validateName(path, true);
-        if (coreContainer.getPackageLoader().getPackageAPI().isJarInuse(path)) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "jar in use, can't delete");
-        }
-        FileStore.FileType type = fileStore.getType(path, true);
-        if (type == FileStore.FileType.NOFILE) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST, "Path does not exist: " + path);
-        }
-        fileStore.delete(path);
-      } catch (SolrException e) {
-        throw e;
-      } catch (Exception e) {
-        log.error("Unknown error", e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } finally {
-        try {
-          coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1, true);
-        } catch (Exception e) {
-          log.error("Unexpected error  ", e);
-        }
-      }
-    }
 
     @EndPoint(
         path = "/node/files/*",
@@ -175,129 +74,6 @@ public class FileStoreAPI {
       validateName(path, true);
       fileStore.deleteLocal(path);
     }
-
-    @EndPoint(
-        path = "/cluster/files/*",
-        method = SolrRequest.METHOD.PUT,
-        permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
-    public void upload(SolrQueryRequest req, SolrQueryResponse rsp) {
-      if (!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
-        throw new RuntimeException(PackageAPI.ERR_MSG);
-      }
-      try {
-        coreContainer
-            .getZkController()
-            .getZkClient()
-            .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL, true);
-
-        Iterable<ContentStream> streams = req.getContentStreams();
-        if (streams == null)
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no payload");
-        String path = req.getPathTemplateValues().get("*");
-        if (path == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No path");
-        }
-        validateName(path, true);
-        ContentStream stream = streams.iterator().next();
-        try {
-          byte[] buf = stream.getStream().readAllBytes();
-          List<String> signatures = readSignatures(req, buf);
-          MetaData meta = _createJsonMetaData(buf, signatures);
-          FileStore.FileType type = fileStore.getType(path, true);
-          boolean[] returnAfter = new boolean[] {false};
-          if (type == FileStore.FileType.FILE) {
-            // a file already exist at the same path
-            fileStore.get(
-                path,
-                fileEntry -> {
-                  if (meta.equals(fileEntry.meta)) {
-                    // the file content is same too. this is an idempotent put
-                    // do not throw an error
-                    returnAfter[0] = true;
-                    rsp.add(CommonParams.FILE, path);
-                    rsp.add("message", "File with same metadata exists ");
-                  }
-                },
-                true);
-          }
-          if (returnAfter[0]) return;
-          if (type != FileStore.FileType.NOFILE) {
-            throw new SolrException(
-                SolrException.ErrorCode.BAD_REQUEST, "Path already exists " + path);
-          }
-          fileStore.put(new FileStore.FileEntry(ByteBuffer.wrap(buf), meta, path));
-          rsp.add(CommonParams.FILE, path);
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-        }
-      } catch (InterruptedException e) {
-        log.error("Unexpected error", e);
-      } catch (KeeperException.NodeExistsException e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "A write is already in process , try later");
-      } catch (KeeperException e) {
-        log.error("Unexpected error", e);
-      } finally {
-        try {
-          coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1, true);
-        } catch (Exception e) {
-          log.error("Unexpected error  ", e);
-        }
-      }
-    }
-
-    private List<String> readSignatures(SolrQueryRequest req, byte[] buf)
-        throws SolrException, IOException {
-      String[] signatures = req.getParams().getParams("sig");
-      if (signatures == null || signatures.length == 0) return null;
-      List<String> sigs = Arrays.asList(signatures);
-      fileStore.refresh(KEYS_DIR);
-      validate(sigs, buf);
-      return sigs;
-    }
-
-    private void validate(List<String> sigs, byte[] buf) throws SolrException, IOException {
-      Map<String, byte[]> keys = fileStore.getKeys();
-      if (keys == null || keys.isEmpty()) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "File store does not have any keys");
-      }
-      CryptoKeys cryptoKeys = null;
-      try {
-        cryptoKeys = new CryptoKeys(keys);
-      } catch (Exception e) {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "Error parsing public keys in file store");
-      }
-      for (String sig : sigs) {
-        if (cryptoKeys.verify(sig, ByteBuffer.wrap(buf)) == null) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "Signature does not match any public key : "
-                  + sig
-                  + " len: "
-                  + buf.length
-                  + " content sha512: "
-                  + DigestUtils.sha512Hex(buf));
-        }
-      }
-    }
-  }
-
-  /**
-   * Creates a JSON string with the metadata.
-   *
-   * @lucene.internal
-   */
-  public static MetaData _createJsonMetaData(byte[] buf, List<String> signatures)
-      throws IOException {
-    String sha512 = DigestUtils.sha512Hex(buf);
-    Map<String, Object> vals = new HashMap<>();
-    vals.put(MetaData.SHA512, sha512);
-    if (signatures != null) {
-      vals.put("sig", signatures);
-    }
-    return new MetaData(vals);
   }
 
   public class FSRead {
@@ -406,46 +182,6 @@ public class FileStoreAPI {
                         },
                         false));
       }
-    }
-  }
-
-  public static class MetaData implements MapWriter {
-    public static final String SHA512 = "sha512";
-    String sha512;
-    List<String> signatures;
-    Map<String, Object> otherAttribs;
-
-    @SuppressWarnings("unchecked")
-    public MetaData(Map<String, Object> m) {
-      m = (Map<String, Object>) Utils.getDeepCopy(m, 3);
-      this.sha512 = (String) m.remove(SHA512);
-      this.signatures = (List<String>) m.remove("sig");
-      this.otherAttribs = m;
-    }
-
-    @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-      ew.putIfNotNull("sha512", sha512);
-      ew.putIfNotNull("sig", signatures);
-      if (!otherAttribs.isEmpty()) {
-        otherAttribs.forEach(ew.getBiConsumer());
-      }
-    }
-
-    @Override
-    public int hashCode() {
-      return sha512.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object that) {
-      if (that instanceof MetaData) {
-        MetaData metaData = (MetaData) that;
-        return Objects.equals(sha512, metaData.sha512)
-            && Objects.equals(signatures, metaData.signatures)
-            && Objects.equals(otherAttribs, metaData.otherAttribs);
-      }
-      return false;
     }
   }
 

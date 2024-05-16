@@ -49,8 +49,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.BlobRepository;
+import org.apache.solr.filestore.ClusterFileStoreAPI;
 import org.apache.solr.filestore.DistribFileStore;
-import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
 
@@ -302,7 +302,7 @@ public class PackageUtils {
   }
 
   public static void uploadKey(byte[] bytes, String path, Path home) throws IOException {
-    FileStoreAPI.MetaData meta = FileStoreAPI._createJsonMetaData(bytes, null);
+    ClusterFileStoreAPI.MetaData meta = ClusterFileStoreAPI._createJsonMetaData(bytes, null);
     DistribFileStore._persistToFile(
         home, path, ByteBuffer.wrap(bytes), ByteBuffer.wrap(Utils.toJSON(meta)));
   }

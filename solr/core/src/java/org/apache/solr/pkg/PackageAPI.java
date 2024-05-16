@@ -45,7 +45,7 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.filestore.FileStoreUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrJacksonAnnotationInspector;
@@ -73,10 +73,6 @@ public class PackageAPI {
   public final Read readAPI = new Read();
 
   public PackageAPI(CoreContainer coreContainer, SolrPackageLoader loader) {
-    if (coreContainer.getFileStoreAPI() == null) {
-      throw new IllegalStateException("Must successfully load FileStoreAPI first");
-    }
-
     this.coreContainer = coreContainer;
     this.packageLoader = loader;
     pkgs = new Packages();
@@ -254,7 +250,7 @@ public class PackageAPI {
       }
       // first refresh my own
       packageLoader.notifyListeners(p);
-      for (String s : coreContainer.getFileStoreAPI().shuffledNodes()) {
+      for (String s : FileStoreUtils.shuffledNodes(coreContainer)) {
         Utils.executeGET(
             coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
             coreContainer
@@ -276,8 +272,8 @@ public class PackageAPI {
         payload.addError("No files specified");
         return;
       }
-      FileStoreAPI fileStoreAPI = coreContainer.getFileStoreAPI();
-      fileStoreAPI.validateFiles(add.files, true, s -> payload.addError(s));
+      FileStoreUtils.validateFiles(
+          coreContainer.getFileStore(), add.files, true, s -> payload.addError(s));
       if (payload.hasError()) return;
       Packages[] finalState = new Packages[1];
       try {
@@ -426,7 +422,7 @@ public class PackageAPI {
   }
 
   void notifyAllNodesToSync(int expected) {
-    for (String s : coreContainer.getFileStoreAPI().shuffledNodes()) {
+    for (String s : FileStoreUtils.shuffledNodes(coreContainer)) {
       Utils.executeGET(
           coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
           coreContainer

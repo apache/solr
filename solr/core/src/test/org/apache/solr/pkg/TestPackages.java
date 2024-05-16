@@ -68,7 +68,7 @@ import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.filestore.ClusterFileStoreAPI;
 import org.apache.solr.filestore.TestDistribFileStore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
@@ -121,7 +121,7 @@ public class TestPackages extends SolrCloudTestCase {
     String FILE1 = "/mypkg/runtimelibs.jar";
     String COLLECTION_NAME = "testCoreReloadingPluginColl";
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, ClusterFileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
     postFileAndWait(
         cluster,
         "runtimecode/runtimelibs.jar.bin",
@@ -190,7 +190,7 @@ public class TestPackages extends SolrCloudTestCase {
     String EXPR1 = "/mypkg/expressible.jar";
     String COLLECTION_NAME = "testPluginLoadingColl";
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, ClusterFileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
     postFileAndWait(
         cluster,
         "runtimecode/runtimelibs.jar.bin",
@@ -609,7 +609,7 @@ public class TestPackages extends SolrCloudTestCase {
     expectError(req, cluster.getSolrClient(), errPath, FILE1 + " has no signature");
     // now we upload the keys
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, ClusterFileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
     // and upload the same file with a different name, but it has proper signature
     postFileAndWait(
         cluster,
@@ -756,7 +756,7 @@ public class TestPackages extends SolrCloudTestCase {
 
     String FILE1 = "/schemapkg/schema-plugins.jar";
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, ClusterFileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
     postFileAndWait(
         cluster,
         "runtimecode/schema-plugins.jar.bin",
