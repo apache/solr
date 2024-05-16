@@ -136,13 +136,13 @@ Other Changes
 * SOLR-17248: Refactor ZK related SolrCli tools to separate SolrZkClient and CloudSolrClient instantiation/usage (Lamine Idjeraoui via Eric Pugh)
 
 * SOLR-16505: Use Jetty HTTP2 for index replication and other "recovery" operations
-  (Sanjay Dutt, David Smiley
+  (Sanjay Dutt, David Smiley)
 
 
 ================= 9.6.1 ====================
 Bug Fixes
 ------------------
-* SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for regression when aliases are used. (Aparna Suresh))
+* SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when aliases are used. (Aparna Suresh)
 
 ==================  9.6.0 ==================
 New Features
