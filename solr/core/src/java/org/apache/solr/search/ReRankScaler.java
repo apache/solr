@@ -32,7 +32,7 @@ public class ReRankScaler {
   protected int mainQueryMax = -1;
   protected int reRankQueryMin = -1;
   protected int reRankQueryMax = -1;
-  protected boolean debugQuery;
+  protected boolean explainResults;
   protected ReRankOperator reRankOperator;
   protected ReRankScalerExplain reRankScalerExplain;
   private QueryRescorer replaceRescorer;
@@ -45,11 +45,11 @@ public class ReRankScaler {
       double reRankScaleWeight,
       ReRankOperator reRankOperator,
       QueryRescorer replaceRescorer,
-      boolean debugQuery)
+      boolean explainResults)
       throws SyntaxError {
 
     this.reRankScaleWeight = reRankScaleWeight;
-    this.debugQuery = debugQuery;
+    this.explainResults = explainResults;
     this.reRankScalerExplain = new ReRankScalerExplain(mainScale, reRankScale);
     this.replaceRescorer = replaceRescorer;
     if (reRankOperator != ReRankOperator.ADD
@@ -171,12 +171,12 @@ public class ReRankScaler {
       scaledOriginalScoreMap = originalScoreMap;
     }
 
-    this.reRankSet = debugQuery ? new HashSet<>() : null;
+    this.reRankSet = explainResults ? new HashSet<>() : null;
 
     for (int i = 0; i < howMany; i++) {
       ScoreDoc rescoredDoc = rescoredDocs[i];
       int doc = rescoredDoc.doc;
-      if (debugQuery) {
+      if (explainResults) {
         reRankSet.add(doc);
       }
       float score = rescoredDoc.score;
