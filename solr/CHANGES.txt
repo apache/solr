@@ -54,6 +54,11 @@ Other Changes
 
 * GITHUB#2454: Refactor preparePutOrPost method in HttpJdkSolrClient (Andy Webb)
 
+==================  9.6.1 ==================
+Bug Fixes
+---------------------
+* SOLR-17296: Remove (broken) singlePass attempt when reRankScale + debug is used, and fix underlying NPE. (hossman)
+
 ==================  9.6.0 ==================
 New Features
 ---------------------
