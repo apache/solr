@@ -350,7 +350,7 @@ public class ReRankScaler {
       // probably due to distributed request
       return Explanation.match(
           reRankScore,
-          "ReRank Scaling effects unkown, see SOLR-XXX (consider distrib.singlePass=true)", // nocommit: file new jira w/details
+          "ReRank Scaling effects unkown, consider using distrib.singlePass=true (see https://issues.apache.org/jira/browse/SOLR-17299)",
           reRankQueryExplain);
     } else if (reRankSet.contains(doc)) {
       if (scaleMainScores() && scaleReRankScores()) {
