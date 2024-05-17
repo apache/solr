@@ -97,10 +97,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
         }
       }
       return debugQuery;
-      
-      
     }
-    
+
     public ReRankQParser(
         String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
       super(query, localParams, params, req);
