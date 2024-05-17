@@ -55,7 +55,7 @@ We recommend you read the article https://medium.com/@javachampions/java-is-stil
 
 The Solr project does not endorse any particular provider of Java.
 
-NOTE: While we reference the Java Development (JDK) on this page, any Java Runtime Environment (JRE) associated with the referenced JDKs is acceptable.
+NOTE: While we reference the Java Development Kit (JDK) on this page, any Java Runtime Environment (JRE) associated with the referenced JDKs is acceptable.
 
 == Java and Solr Combinations
 
