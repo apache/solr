@@ -52,6 +52,8 @@ Other Changes
 * SOLR-16505: Use Jetty HTTP2 for index replication and other "recovery" operations
   (Sanjay Dutt, David Smiley)
 
+* GITHUB#2454: Refactor preparePutOrPost method in HttpJdkSolrClient (Andy Webb)
+
 ==================  9.6.0 ==================
 New Features
 ---------------------
