@@ -345,7 +345,14 @@ public class ReRankScaler {
       int doc, Explanation mainQueryExplain, Explanation reRankQueryExplain) {
     float reRankScore = reRankQueryExplain.getDetails()[1].getValue().floatValue();
     float mainScore = mainQueryExplain.getValue().floatValue();
-    if (reRankSet.contains(doc)) {
+    if (null == reRankSet) {
+      // we don't have the data needed to accurately report scaling,
+      // probably due to distributed request
+      return Explanation.match(
+          reRankScore,
+          "ReRank Scaling effects unkown, see SOLR-XXX (consider distrib.singlePass=true)", // nocommit: file new jira w/details
+          reRankQueryExplain);
+    } else if (reRankSet.contains(doc)) {
       if (scaleMainScores() && scaleReRankScores()) {
         if (reRankScore > 0) {
           MinMaxExplain mainScaleExplain = reRankScalerExplain.getMainScaleExplain();

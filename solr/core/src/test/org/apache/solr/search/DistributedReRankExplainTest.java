@@ -30,11 +30,15 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 @SolrTestCaseJ4.SuppressSSL
 public class DistributedReRankExplainTest extends SolrCloudTestCase {
@@ -88,41 +92,79 @@ public class DistributedReRankExplainTest extends SolrCloudTestCase {
   
   @Test
   public void testDebugResults() throws Exception {
-    doTestReRankExplain(params(CommonParams.DEBUG, "results"));
+    doTestReRankExplain(params(CommonParams.DEBUG, CommonParams.RESULTS));
   }
   
   private void doTestReRankExplain(final SolrParams debugParams) throws Exception {
-    CloudSolrClient client = cluster.getSolrClient();
-    Random random = random();
-    ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    String reRank = "{!rerank reRankDocs=10 reRankMainScale=0-10 reRankQuery='test_s:hello'}";
-    solrParams
-        .add("q", "test_s:hello")
-        .add("fl", "id,test_s,score")
-        .add(CommonParams.RQ, reRank);
-    QueryRequest queryRequest = new QueryRequest(SolrParams.wrapDefaults(solrParams, debugParams));
+    final String reRankMainScale = "{!rerank reRankDocs=10 reRankMainScale=0-10 reRankQuery='test_s:hello'}";
+    final String reRankScale = "{!rerank reRankDocs=10 reRankScale=0-10 reRankQuery='test_s:hello'}";
 
-    QueryResponse queryResponse = queryRequest.process(client, COLLECTIONORALIAS);
-    Map<String, Object> debug = queryResponse.getDebugMap();
-    assertNotNull(debug);
-    String explain = debug.get("explain").toString();
-    assertTrue(
-        explain.contains("5.0101576 = combined scaled first and unscaled second pass score "));
-    assertNotNull(queryResponse.getResults().get(0).getFieldValue("test_s"));
+    { // multi-pass reRankMainScale
+      final QueryResponse queryResponse = 
+        doQueryAndCommonChecks(SolrParams.wrapDefaults
+                               (params(CommonParams.RQ, reRankMainScale),
+                                debugParams));
+      final Map<String, Object> debug = queryResponse.getDebugMap();
+      assertNotNull(debug);
+      final String explain = debug.get("explain").toString();
+      assertThat(explain,
+                 containsString("ReRank Scaling effects unkown"));
+    }
+    
+    { // single-pass reRankMainScale
+      final QueryResponse queryResponse = 
+        doQueryAndCommonChecks(SolrParams.wrapDefaults
+                               (params(CommonParams.RQ, reRankMainScale,
+                                       ShardParams.DISTRIB_SINGLE_PASS, "true"),
+                                debugParams));
+      final Map<String, Object> debug = queryResponse.getDebugMap();
+      assertNotNull(debug);
+      final String explain = debug.get("explain").toString();
+      assertThat(explain,
+                 containsString("5.0101576 = combined scaled first and unscaled second pass score "));
+      assertThat(
+                 explain,
+                 not(containsString("ReRank Scaling effects unkown")));
+    }
 
-    solrParams = new ModifiableSolrParams();
-    reRank = "{!rerank reRankDocs=10 reRankScale=0-10 reRankQuery='test_s:hello'}";
-    solrParams
-        .add("q", "test_s:hello")
-        .add("fl", "id,test_s,score")
-        .add(CommonParams.RQ, reRank);
-    queryRequest = new QueryRequest(SolrParams.wrapDefaults(solrParams, debugParams));
-    queryResponse = queryRequest.process(client, COLLECTIONORALIAS);
-    debug = queryResponse.getDebugMap();
-    assertNotNull(debug);
-    explain = debug.get("explain").toString();
-    assertTrue(
-        explain.contains("10.005078 = combined unscaled first and scaled second pass score "));
+    { // multi-pass reRankMainScale
+      final QueryResponse queryResponse = 
+        doQueryAndCommonChecks(SolrParams.wrapDefaults
+                               (params(CommonParams.RQ, reRankScale),
+                                debugParams));
+      final Map<String, Object> debug = queryResponse.getDebugMap();
+      assertNotNull(debug);
+      final String explain = debug.get("explain").toString();
+      assertThat(explain,
+                 containsString("ReRank Scaling effects unkown"));
+    }
+    
+    { // single-pass reRankMainScale
+      final QueryResponse queryResponse = 
+        doQueryAndCommonChecks(SolrParams.wrapDefaults
+                               (params(CommonParams.RQ, reRankScale,
+                                       ShardParams.DISTRIB_SINGLE_PASS, "true"),
+                                debugParams));
+      final Map<String, Object> debug = queryResponse.getDebugMap();
+      assertNotNull(debug);
+      final String explain = debug.get("explain").toString();
+      assertThat(
+                 explain,
+                 containsString("10.005078 = combined unscaled first and scaled second pass score "));
+      assertThat(
+                 explain,
+                 not(containsString("ReRank Scaling effects unkown")));
+    }
+  }
+
+  private QueryResponse doQueryAndCommonChecks(final SolrParams params) throws Exception {
+    final CloudSolrClient client = cluster.getSolrClient();
+    final QueryRequest queryRequest =
+      new QueryRequest(SolrParams.wrapDefaults(params, params(CommonParams.Q, "test_s:hello",
+                                                              "fl", "id,test_s,score")));
+
+    final QueryResponse queryResponse = queryRequest.process(client, COLLECTIONORALIAS);
     assertNotNull(queryResponse.getResults().get(0).getFieldValue("test_s"));
+    return queryResponse;
   }
 }
