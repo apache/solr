@@ -16,6 +16,8 @@ Bug Fixes
 
 * SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when aliases are used. (Aparna Suresh)
 
+* SOLR-17296: Remove (broken) singlePass attempt when reRankScale + debug is used, and fix underlying NPE. (hossman)
+
 Dependency Upgrades
 ---------------------
 (No changes)

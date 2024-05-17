@@ -89,7 +89,6 @@ import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.RankQuery;
-import org.apache.solr.search.ReRankQParserPlugin;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
@@ -779,7 +778,6 @@ public class QueryComponent extends SearchComponent {
     boolean distribSinglePass = rb.req.getParams().getBool(ShardParams.DISTRIB_SINGLE_PASS, false);
 
     if (distribSinglePass
-        || singlePassExplain(rb.req.getParams())
         || (fields != null
             && fields.wantsField(keyFieldName)
             && fields.getRequestedFieldNames() != null
@@ -859,36 +857,6 @@ public class QueryComponent extends SearchComponent {
     if (additionalAdded) sreq.params.add(CommonParams.FL, additionalFL.toString());
 
     rb.addRequest(this, sreq);
-  }
-
-  private boolean singlePassExplain(SolrParams params) {
-
-    /*
-     * Currently there is only one explain that requires a single pass
-     * and that is the reRank when scaling is used.
-     */
-
-    String rankQuery = params.get(CommonParams.RQ);
-    if (rankQuery != null) {
-      if (rankQuery.contains(ReRankQParserPlugin.RERANK_MAIN_SCALE)
-          || rankQuery.contains(ReRankQParserPlugin.RERANK_SCALE)) {
-        boolean debugQuery = params.getBool(CommonParams.DEBUG_QUERY, false);
-        if (debugQuery) {
-          return true;
-        } else {
-          String[] debugParams = params.getParams(CommonParams.DEBUG);
-          if (debugParams != null) {
-            for (String debugParam : debugParams) {
-              if (debugParam.equals("true")) {
-                return true;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    return false;
   }
 
   protected boolean addFL(StringBuilder fl, String field, boolean additionalAdded) {
