@@ -363,6 +363,7 @@ public class SyncStrategy {
               try (SolrClient client =
                   new Http2SolrClient.Builder(baseUrl)
                       .withHttpClient(solrClient)
+                      .withListenerFactory(solrClient.getListenerFactory())
                       .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
                       .withIdleTimeout(120000, TimeUnit.MILLISECONDS)
                       .build()) {
