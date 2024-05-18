@@ -127,6 +127,13 @@ Bug Fixes
 
 * SOLR-17261: Remove unintended timeout of 60 seconds for core loading. (Houston Putman)
 
+* SOLR-17049: Actually mark all replicas down at startup and truly wait for them.
+  This includes replicas that might not exist anymore locally. (Houston Putman, Vincent Primault)
+
+* SOLR-17263: Fix 'Illegal character in query' exception in HttpJdkSolrClient (Andy Webb)
+
+* SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when aliases are used. (Aparna Suresh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -138,7 +145,15 @@ Other Changes
 * SOLR-16505: Use Jetty HTTP2 for index replication and other "recovery" operations
   (Sanjay Dutt, David Smiley)
 
+* GITHUB#2454: Refactor preparePutOrPost method in HttpJdkSolrClient (Andy Webb)
+
 * SOLR-16503: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
+
+==================  9.6.1 ==================
+Bug Fixes
+---------------------
+* SOLR-17296: Remove (broken) singlePass attempt when reRankScale + debug is used, and fix underlying NPE. (hossman)
+>>>>>>> main
 
 ==================  9.6.0 ==================
 New Features
