@@ -245,10 +245,13 @@ public class SolrRequestInfo {
   public QueryLimits getLimits() {
     // make sure the ThreadCpuTime is always initialized
     getThreadCpuTimer();
-    return req == null || rsp == null
-        ? QueryLimits.NONE
-        : (QueryLimits)
-            req.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(req, rsp));
+    return req == null || rsp == null ? QueryLimits.NONE : getQueryLimits(req, rsp);
+  }
+
+  public static QueryLimits getQueryLimits(SolrQueryRequest request, SolrQueryResponse response) {
+    request.getContext().computeIfAbsent(CPU_TIMER_KEY, k -> new ThreadCpuTimer());
+    return (QueryLimits)
+        request.getContext().computeIfAbsent(LIMITS_KEY, (k) -> new QueryLimits(request, response));
   }
 
   /**

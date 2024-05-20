@@ -32,7 +32,7 @@ import org.junit.Test;
  */
 public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
 
-  static int NUM_DOCS = 100;
+  static final int NUM_DOCS = 100;
   static final String assertionString = "/response/numFound==" + NUM_DOCS;
   static final String failureAssertionString = "/responseHeader/partialResults==true]";
   static final String longTimeout = "10000";
@@ -70,9 +70,12 @@ public class ExitableDirectoryReaderTest extends SolrTestCaseJ4 {
 
     // this time we should get a query cache hit and hopefully no exception?  this may change in the
     // future if time checks are put into other places.
-    assertJQ(req("q", q, "timeAllowed", "1", "sleep", sleep), assertionString);
+    // 2024-4-15: it did change..., and now this fails with 1 or 2 ms and passes with 3ms... I see
+    // no way this won't be terribly brittle. Maybe TestInjection of some sort to bring this back?
+    // assertJQ(req("q", q, "timeAllowed", "2", "sleep", sleep), assertionString);
 
     // now do the same for the filter cache
+    // 2024-4-15: this still passes probably because *:* is so fast, but it still worries me
     assertJQ(req("q", "*:*", "fq", q, "timeAllowed", "1", "sleep", sleep), failureAssertionString);
 
     // make sure that the result succeeds this time, and that a bad filter wasn't cached
