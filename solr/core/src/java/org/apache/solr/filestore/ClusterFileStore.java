@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ClusterFileStoreApis;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -92,7 +91,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       }
       validateName(filePath, true);
       try {
-        byte[] buf = IOUtils.toByteArray(requestBody);
+        byte[] buf = requestBody.readAllBytes();
         List<String> signatures = readSignatures(sig, buf);
         FileStoreAPI.MetaData meta = _createJsonMetaData(buf, signatures);
         FileStore.FileType type = fileStore.getType(filePath, true);
