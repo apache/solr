@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -73,13 +72,8 @@ public class RecoveryZkTestWithAuth extends SolrCloudTestCase {
       UpdateRequest commitReq = new UpdateRequest();
       withBasicAuth(commitReq);
       for (int i = 0; i < 500; i++) {
-        SolrInputDocument doc = new SolrInputDocument();
-        String[] fields = {"id", i + "", "name", "name = " + i};
-        for (int j = 0; j < fields.length; j += 2) {
-          doc.addField(fields[j], fields[j + 1]);
-        }
         UpdateRequest req = new UpdateRequest();
-        withBasicAuth(req).add(doc);
+        withBasicAuth(req).add(sdoc("id", i, "name", "name = " + i));
         req.process(solrClient, collection);
         if (i % 10 == 0) {
           commitReq.commit(solrClient, collection);
