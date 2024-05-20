@@ -27,17 +27,14 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.ClusterFileStoreApis;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UploadToFileStoreResponse;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.pkg.PackageAPI;
@@ -50,9 +47,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO JEGERLOW NOCOMMIT Rename this class to be more in line with other JAX-RS implementation
-// classes.
-public class ClusterFileStoreAPI extends JerseyResource implements ClusterFileStoreApis {
+public class ClusterFileStore extends JerseyResource implements ClusterFileStoreApis {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String FILESTORE_DIRECTORY = "filestore";
   public static final String TRUSTED_DIR = "_trusted_";
@@ -65,7 +60,7 @@ public class ClusterFileStoreAPI extends JerseyResource implements ClusterFileSt
   private final FileStore fileStore;
 
   @Inject
-  public ClusterFileStoreAPI(
+  public ClusterFileStore(
       CoreContainer coreContainer,
       DistribFileStore fileStore,
       SolrQueryRequest req,
@@ -100,7 +95,7 @@ public class ClusterFileStoreAPI extends JerseyResource implements ClusterFileSt
       try {
         byte[] buf = IOUtils.toByteArray(requestBody);
         List<String> signatures = readSignatures(sig, buf);
-        MetaData meta = _createJsonMetaData(buf, signatures);
+        FileStoreAPI.MetaData meta = _createJsonMetaData(buf, signatures);
         FileStore.FileType type = fileStore.getType(filePath, true);
         if (type == FileStore.FileType.FILE) {
           // a file already exist at the same path
@@ -226,57 +221,15 @@ public class ClusterFileStoreAPI extends JerseyResource implements ClusterFileSt
    *
    * @lucene.internal
    */
-  public static MetaData _createJsonMetaData(byte[] buf, List<String> signatures)
+  public static FileStoreAPI.MetaData _createJsonMetaData(byte[] buf, List<String> signatures)
       throws IOException {
     String sha512 = DigestUtils.sha512Hex(buf);
     Map<String, Object> vals = new HashMap<>();
-    vals.put(MetaData.SHA512, sha512);
+    vals.put(FileStoreAPI.MetaData.SHA512, sha512);
     if (signatures != null) {
       vals.put("sig", signatures);
     }
-    return new MetaData(vals);
-  }
-
-  // TODO JEGERLOW NOCOMMIT - nuke the 'writeMap'/MapWriter aspect of this once I can validate its
-  // not used.
-  public static class MetaData implements MapWriter {
-    public static final String SHA512 = "sha512";
-    String sha512;
-    List<String> signatures;
-    Map<String, Object> otherAttribs;
-
-    @SuppressWarnings("unchecked")
-    public MetaData(Map<String, Object> m) {
-      m = (Map<String, Object>) Utils.getDeepCopy(m, 3);
-      this.sha512 = (String) m.remove(SHA512);
-      this.signatures = (List<String>) m.remove("sig");
-      this.otherAttribs = m;
-    }
-
-    @Override
-    public void writeMap(EntryWriter ew) throws IOException {
-      ew.putIfNotNull("sha512", sha512);
-      ew.putIfNotNull("sig", signatures);
-      if (!otherAttribs.isEmpty()) {
-        otherAttribs.forEach(ew.getBiConsumer());
-      }
-    }
-
-    @Override
-    public int hashCode() {
-      return sha512.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object that) {
-      if (that instanceof MetaData) {
-        MetaData metaData = (MetaData) that;
-        return Objects.equals(sha512, metaData.sha512)
-            && Objects.equals(signatures, metaData.signatures)
-            && Objects.equals(otherAttribs, metaData.otherAttribs);
-      }
-      return false;
-    }
+    return new FileStoreAPI.MetaData(vals);
   }
 
   static final String INVALIDCHARS = " /\\#&*\n\t%@~`=+^$><?{}[]|:;!";

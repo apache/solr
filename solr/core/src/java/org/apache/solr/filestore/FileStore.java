@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.filestore.ClusterFileStoreAPI.MetaData;
+import org.apache.solr.filestore.FileStoreAPI.MetaData;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 
 /** The interface to be implemented by any package store provider * @lucene.experimental */

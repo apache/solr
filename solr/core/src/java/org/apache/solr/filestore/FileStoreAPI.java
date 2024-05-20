@@ -26,14 +26,17 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -182,6 +185,46 @@ public class FileStoreAPI {
                         },
                         false));
       }
+    }
+  }
+
+  public static class MetaData implements MapWriter {
+    public static final String SHA512 = "sha512";
+    String sha512;
+    List<String> signatures;
+    Map<String, Object> otherAttribs;
+
+    @SuppressWarnings("unchecked")
+    public MetaData(Map<String, Object> m) {
+      m = (Map<String, Object>) Utils.getDeepCopy(m, 3);
+      this.sha512 = (String) m.remove(SHA512);
+      this.signatures = (List<String>) m.remove("sig");
+      this.otherAttribs = m;
+    }
+
+    @Override
+    public void writeMap(EntryWriter ew) throws IOException {
+      ew.putIfNotNull("sha512", sha512);
+      ew.putIfNotNull("sig", signatures);
+      if (!otherAttribs.isEmpty()) {
+        otherAttribs.forEach(ew.getBiConsumer());
+      }
+    }
+
+    @Override
+    public int hashCode() {
+      return sha512.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+      if (that instanceof MetaData) {
+        MetaData metaData = (MetaData) that;
+        return Objects.equals(sha512, metaData.sha512)
+            && Objects.equals(signatures, metaData.signatures)
+            && Objects.equals(otherAttribs, metaData.otherAttribs);
+      }
+      return false;
     }
   }
 

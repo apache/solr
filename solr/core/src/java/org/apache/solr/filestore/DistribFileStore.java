@@ -54,7 +54,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrPaths;
-import org.apache.solr.filestore.ClusterFileStoreAPI.MetaData;
+import org.apache.solr.filestore.FileStoreAPI.MetaData;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ByteBufferInputStream;
@@ -289,7 +289,6 @@ public class DistribFileStore implements FileStore {
           return realPath().toFile().length();
         }
 
-        // TODO JEGERLOW NOCOMMIT - make sure this isn't called and nuke
         @Override
         public void writeMap(EntryWriter ew) throws IOException {
           MetaData metaData = readMetaData();
@@ -587,7 +586,7 @@ public class DistribFileStore implements FileStore {
   }
 
   public static synchronized Path getFileStoreDirPath(Path solrHome) {
-    var path = solrHome.resolve(ClusterFileStoreAPI.FILESTORE_DIRECTORY);
+    var path = solrHome.resolve(ClusterFileStore.FILESTORE_DIRECTORY);
     if (!Files.exists(path)) {
       try {
         Files.createDirectories(path);
@@ -636,7 +635,7 @@ public class DistribFileStore implements FileStore {
   // reads local keys file
   private static Map<String, byte[]> _getKeys(Path solrHome) throws IOException {
     Map<String, byte[]> result = new HashMap<>();
-    Path keysDir = _getRealPath(ClusterFileStoreAPI.KEYS_DIR, solrHome);
+    Path keysDir = _getRealPath(ClusterFileStore.KEYS_DIR, solrHome);
 
     File[] keyFiles = keysDir.toFile().listFiles();
     if (keyFiles == null) return result;

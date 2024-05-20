@@ -104,7 +104,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
-import org.apache.solr.filestore.ClusterFileStoreAPI;
+import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.filestore.FileStore;
 import org.apache.solr.filestore.FileStoreAPI;
@@ -301,7 +301,7 @@ public class CoreContainer {
 
   private DistribFileStore fileStore;
   private FileStoreAPI fileStoreAPI;
-  private ClusterFileStoreAPI clusterFileStoreAPI;
+  private ClusterFileStore clusterFileStoreAPI;
   private SolrPackageLoader packageLoader;
 
   private final Set<Path> allowPaths;
@@ -864,11 +864,10 @@ public class CoreContainer {
       pkiAuthenticationSecurityBuilder.initializeMetrics(solrMetricsContext, "/authentication/pki");
 
       fileStore = new DistribFileStore(this);
-      fileStoreAPI =
-          new FileStoreAPI(this); // TODO NOCOMMIT - should this just consume the DistribFileStore?
+      fileStoreAPI = new FileStoreAPI(this);
       registerV2ApiIfEnabled(fileStoreAPI.readAPI);
       registerV2ApiIfEnabled(fileStoreAPI.writeAPI);
-      registerV2ApiIfEnabled(ClusterFileStoreAPI.class);
+      registerV2ApiIfEnabled(ClusterFileStore.class);
 
       packageLoader = new SolrPackageLoader(this);
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);

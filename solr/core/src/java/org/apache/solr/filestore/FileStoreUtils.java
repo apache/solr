@@ -67,7 +67,7 @@ public class FileStoreUtils {
               }
               if (validateSignatures) {
                 try {
-                  fileStore.refresh(ClusterFileStoreAPI.KEYS_DIR);
+                  fileStore.refresh(ClusterFileStore.KEYS_DIR);
                   validate(fileStore, entry.meta.signatures, entry, false);
                 } catch (Exception e) {
                   log.error("Error validating package artifact", e);
@@ -96,7 +96,7 @@ public class FileStoreUtils {
     if (!isFirstAttempt) {
       // we are retrying because last validation failed.
       // get all keys again and try again
-      fileStore.refresh(ClusterFileStoreAPI.KEYS_DIR);
+      fileStore.refresh(ClusterFileStore.KEYS_DIR);
     }
 
     Map<String, byte[]> keys = fileStore.getKeys();
