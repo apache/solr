@@ -44,7 +44,7 @@ public class RecoveryZkTestWithAuth extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     cluster =
-        configureCluster(2)
+        configureCluster(1)
             .addConfig("conf", configset("cloud-minimal"))
             .withSecurityJson(SecurityJson.SIMPLE)
             .configure();

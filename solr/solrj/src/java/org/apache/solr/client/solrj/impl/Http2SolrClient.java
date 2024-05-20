@@ -145,6 +145,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     assert ObjectReleaseTracker.track(this);
   }
 
+  @Deprecated(since = "9.7")
   public void addListenerFactory(HttpListenerFactory factory) {
     this.listenerFactory.add(factory);
   }
