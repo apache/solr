@@ -16,41 +16,36 @@ public interface LeafSorter {
 final class SegmentTimeLeafSorter implements LeafSorter {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private static final String TIME_FIELD = "timestamp";
-    private static final SegmentSort defaultSortOptions = SegmentSort.NONE;
+    private static final SegmentSort DEFAULT_SORT_OPTIONS = SegmentSort.NONE;
 
     private SegmentSort sortOptions;
     private Comparator<LeafReader> leafSorter;
 
     public SegmentTimeLeafSorter() {
-        this.sortOptions = defaultSortOptions;
-        this.leafSorter = null;
+        this(DEFAULT_SORT_OPTIONS);
     }
     public SegmentTimeLeafSorter(SegmentSort sortOptions) {
         this.sortOptions = sortOptions;
-        this.leafSorter = null;
     }
 
     @Override
     public Comparator<LeafReader> getLeafSorter() {
-        if (leafSorter != null) {
-            return leafSorter;
-        }
-        if (SegmentSort.NONE == sortOptions) {
-            return null;
-        }
-        boolean ascSort = SegmentSort.TIME_ASC == sortOptions;
-        long missingValue = ascSort? Long.MAX_VALUE : Long.MIN_VALUE;
-        leafSorter = Comparator.comparingLong(r -> {
-            try {
-                return Long.parseLong(((SegmentReader) r).getSegmentInfo().info.getDiagnostics().get(TIME_FIELD));
-            } catch (Exception e) {
-                log.error("Error getting time stamp for SegmentReader", e);
-                return missingValue;
+        if (leafSorter == null) {
+            if (SegmentSort.NONE == sortOptions) {
+                return null;
             }
-        });
-        if (!ascSort) {
-            leafSorter = leafSorter.reversed();
-        }
+            boolean ascSort = SegmentSort.TIME_ASC == sortOptions;
+            long missingValue = ascSort? Long.MAX_VALUE : Long.MIN_VALUE;
+            leafSorter = Comparator.comparingLong(r -> {
+                try {
+                    return Long.parseLong(((SegmentReader) r).getSegmentInfo().info.getDiagnostics().get(TIME_FIELD));
+                } catch (Exception e) {
+                    log.error("Error getting time stamp for SegmentReader", e);
+                    return missingValue;
+                }
+            });
+            return ascSort? leafSorter : leafSorter.reversed();
+        };
         return leafSorter;
     }
 
