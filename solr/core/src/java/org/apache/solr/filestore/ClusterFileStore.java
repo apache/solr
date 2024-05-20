@@ -76,7 +76,6 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
   public UploadToFileStoreResponse uploadFile(
       String filePath, List<String> sig, InputStream requestBody) {
     final var response = instantiateJerseyResponse(UploadToFileStoreResponse.class);
-    log.info("JEGERLOW: Path is: {}", filePath);
     if (!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
       throw new RuntimeException(PackageAPI.ERR_MSG);
     }

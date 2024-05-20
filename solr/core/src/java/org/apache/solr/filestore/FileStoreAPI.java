@@ -59,11 +59,7 @@ public class FileStoreAPI {
 
   public FileStoreAPI(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
-    fileStore = new DistribFileStore(coreContainer);
-  }
-
-  public FileStore getFileStore() {
-    return fileStore;
+    fileStore = coreContainer.getFileStore();
   }
 
   public class FSWrite {
