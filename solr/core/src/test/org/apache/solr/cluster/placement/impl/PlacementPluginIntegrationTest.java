@@ -138,6 +138,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     CollectionAdminResponse rsp =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .process(cluster.getSolrClient());
     assertTrue(rsp.isSuccess());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
@@ -307,6 +308,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     CollectionAdminResponse rsp =
         CollectionAdminRequest.createCollection(SECONDARY_COLLECTION, "conf", 1, 3)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .process(cluster.getSolrClient());
     assertTrue(rsp.isSuccess());
     cluster.waitForActiveCollection(SECONDARY_COLLECTION, 1, 3);
@@ -316,6 +318,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
 
     rsp =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .setCreateNodeSet(String.join(",", nodeSet))
             .process(cluster.getSolrClient());
     assertTrue(rsp.isSuccess());
@@ -409,6 +412,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     try {
       CollectionAdminResponse rsp =
           CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)
+              .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
               .process(cluster.getSolrClient());
       fail("should have failed due to no nodes with the types: " + rsp);
     } catch (Exception e) {
@@ -419,6 +423,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     System.setProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP, "type_0");
     CollectionAdminResponse rsp =
         CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .process(cluster.getSolrClient());
 
     System.clearProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP);
@@ -428,6 +433,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   public void testAttributeFetcherImpl() throws Exception {
     CollectionAdminResponse rsp =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .process(cluster.getSolrClient());
     assertTrue(rsp.isSuccess());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);

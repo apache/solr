@@ -78,6 +78,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       String COLLECTION_NAME = "test_coll";
       String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.getSyntheticCollectionName("conf");
       CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 2, 2)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
       UpdateRequest ur = new UpdateRequest();
@@ -128,6 +129,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       for (int j = 1; j <= 10; j++) {
         String collname = COLLECTION_NAME + "_" + j;
         CollectionAdminRequest.createCollection(collname, "conf", 2, 2)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .process(cluster.getSolrClient());
         cluster.waitForActiveCollection(collname, 2, 4);
         UpdateRequest ur = new UpdateRequest();
@@ -201,6 +203,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("manipulateJetty"));
     try {
       CollectionAdminRequest.createCollection(COLL, "conf", 1, 1, 0, 1)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLL, 1, 2);
       DocCollection docColl =
@@ -510,6 +513,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       for (int i = 0; i < COLLECTION_COUNT; i++) {
         String collectionName = COLLECTION_PREFIX + i;
         CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
+            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .setCreateNodeSet(String.join(",", dataNodes)) // only put data onto the 2 data nodes
             .process(cluster.getSolrClient());
         cluster.waitForActiveCollection(collectionName, 2, 2);
@@ -603,9 +607,13 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             .collect(Collectors.toUnmodifiableList());
 
     try {
-      CollectionAdminRequest.createCollection("c1", "conf1", 2, 1).process(cluster.getSolrClient());
+      CollectionAdminRequest.createCollection("c1", "conf1", 2, 1)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .process(cluster.getSolrClient());
       cluster.waitForActiveCollection("c1", 2, 2);
-      CollectionAdminRequest.createCollection("c2", "conf2", 2, 1).process(cluster.getSolrClient());
+      CollectionAdminRequest.createCollection("c2", "conf2", 2, 1)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .process(cluster.getSolrClient());
       cluster.waitForActiveCollection("c2", 2, 2);
 
       System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
@@ -655,7 +663,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
 
     try {
       CloudSolrClient client = cluster.getSolrClient();
-      CollectionAdminRequest.createCollection(TEST_COLLECTION_1, "conf1", 1, 2).process(client);
+      CollectionAdminRequest.createCollection(TEST_COLLECTION_1, "conf1", 1, 2)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .process(client);
       cluster.waitForActiveCollection(TEST_COLLECTION_1, 1, 2);
       System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
       JettySolrRunner coordinatorJetty;
@@ -679,7 +689,9 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       assertTrue(zkWatchAccessor.getWatchedCollections().contains(TEST_COLLECTION_1));
 
       // add another collection
-      CollectionAdminRequest.createCollection(TEST_COLLECTION_2, "conf1", 1, 2).process(client);
+      CollectionAdminRequest.createCollection(TEST_COLLECTION_2, "conf1", 1, 2)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .process(client);
       cluster.waitForActiveCollection(TEST_COLLECTION_2, 1, 2);
       new QueryRequest(new SolrQuery("*:*"))
           .setPreferredNodes(List.of(coordinatorJetty.getNodeName()))
@@ -731,6 +743,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
 
       final String COLLECTION_NAME = "c1";
       CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 1, 1)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
 

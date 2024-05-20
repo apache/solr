@@ -68,6 +68,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "config", 1, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     cluster

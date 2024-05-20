@@ -62,6 +62,7 @@ public class ApiToolTest extends SolrCloudTestCase {
   public void testQueryResponse() throws Exception {
     int docCount = 1000;
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "config", 2, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 

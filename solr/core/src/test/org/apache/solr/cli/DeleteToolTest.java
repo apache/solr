@@ -50,6 +50,7 @@ public class DeleteToolTest extends SolrCloudTestCase {
     withBasicAuth(
             CollectionAdminRequest.createCollection(
                 "testDeleteCollectionWithBasicAuth", "conf", 1, 1))
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), 10);
     waitForState(
         "Expected collection to be created with 1 shard and 1 replicas",
@@ -77,6 +78,7 @@ public class DeleteToolTest extends SolrCloudTestCase {
     withBasicAuth(
             CollectionAdminRequest.createCollection(
                 "testFailsToDeleteProtectedCollection", "conf", 1, 1))
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), 10);
     waitForState(
         "Expected collection to be created with 1 shard and 1 replicas",

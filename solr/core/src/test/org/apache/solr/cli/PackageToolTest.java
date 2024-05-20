@@ -142,8 +142,10 @@ public class PackageToolTest extends SolrCloudTestCase {
         });
 
     withBasicAuth(CollectionAdminRequest.createCollection("abc", "conf1", 1, 1))
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), 10);
     withBasicAuth(CollectionAdminRequest.createCollection("def", "conf3", 1, 1))
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), 10);
 
     String rhPath = "/mypath2";

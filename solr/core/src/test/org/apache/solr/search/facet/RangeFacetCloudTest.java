@@ -98,6 +98,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     assertEquals(
         0,
         (CollectionAdminRequest.createCollection(COLLECTION, CONF, numShards, numReplicas)
+                .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
                 .setProperties(
                     Collections.singletonMap(CoreAdminParams.CONFIG, "solrconfig-minimal.xml"))
                 .process(cluster.getSolrClient()))

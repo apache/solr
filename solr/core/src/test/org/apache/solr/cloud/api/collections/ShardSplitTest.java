@@ -145,6 +145,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
         CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1);
     // we want to create the leader on a fixed node so that we know which one to restart later
     create.setCreateNodeSet(nodeName);
+    create.setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
     create.process(cloudClient);
 
     ZkStateReader.from(cloudClient)
@@ -419,6 +420,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(
             collectionName, "conf1", 1, 2, 0, 2); // TODO tlog replicas disabled right now.
+    create.setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
     create.process(cloudClient);
 
     ZkStateReader.from(cloudClient)
@@ -683,6 +685,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     String collectionName = "testSplitLocking";
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 2);
+    create.setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
     create.process(cloudClient);
 
     ZkStateReader.from(cloudClient)

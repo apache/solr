@@ -124,6 +124,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     String coll = getSaferTestName();
     CollectionAdminRequest.createCollection(coll, "conf1", 1, nodes)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(coll, 1, nodes); // 1 replica per node
 
