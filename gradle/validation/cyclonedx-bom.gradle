@@ -19,23 +19,46 @@
 
 // If -Pvalidation.cyclonedx-bom=true is set the CycloneDX BOM generation will also run as part of the check task.
 
-configure(rootProject) {
-  cyclonedxBom {
-    includeConfigs = ["runtimeClasspath"]
-    skipConfigs = ["compileClasspath", "testCompileClasspath"]
-    projectType = "application"
-    schemaVersion = "1.4"
-    destination = file("build/reports")
-    outputName = "cyclonedx-bom"
-    outputFormat = "all"
-    includeBomSerialNumber = true
-  }
 
-  // Unless explicitly enabled, do not attach owasp to check. It has a large download
-  // footprint and takes a significant amount of time. This should be enabled for
-  // nightly CI runs only, I think.
-  if (propertyOrDefault("validation.cyclonedx-bom", false).toBoolean()) {
-    check.dependsOn cyclonedxBom
+allprojects { prj ->
+  plugins.withType(JavaPlugin) {
+    prj.apply plugin: 'org.cyclonedx.bom'
+
+    ext {
+      sbomDir = layout.buildDirectory.dir("sbom")
+    }
+
+    configurations {
+      sbom
+    }
+
+    def baseName = prj.archivesBaseName + "-" + version + "-cyclonedx-bom"
+
+    cyclonedxBom {
+      includeConfigs = ["runtimeClasspath"]
+      skipConfigs = ["compileClasspath", "testCompileClasspath"]
+      projectType = "library"
+      destination = sbomDir.map(Directory::getAsFile)
+      outputName = baseName
+      outputFormat = "all"
+      includeBomSerialNumber = true
+      componentVersion = version
+    }
+    assemble.dependsOn cyclonedxBom
+
+    ext {
+      sbomXmlArtifact = artifacts.add('sbom', sbomDir.map(d -> d.file(baseName + ".xml"))) {
+        type 'cyclonedx-bom'
+        extension = 'xml'
+        classifier = 'cyclonedx-bom'
+        builtBy cyclonedxBom
+      }
+      sbomJsonArtifact = artifacts.add('sbom', sbomDir.map(d -> d.file(baseName + ".json"))) {
+        type 'cyclonedx-bom'
+        extension = 'json'
+        classifier = 'cyclonedx-bom'
+        builtBy cyclonedxBom
+      }
+    }
   }
 }
-
