@@ -33,6 +33,8 @@ public class RateLimiterPayload implements ReflectMapWriter {
 
   @JsonProperty public Integer slotAcquisitionTimeoutInMS;
 
+  @JsonProperty public String type;
+
   public RateLimiterPayload copy() {
     RateLimiterPayload result = new RateLimiterPayload();
 
@@ -41,6 +43,7 @@ public class RateLimiterPayload implements ReflectMapWriter {
     result.allowedRequests = allowedRequests;
     result.slotBorrowingEnabled = slotBorrowingEnabled;
     result.slotAcquisitionTimeoutInMS = slotAcquisitionTimeoutInMS;
+    result.type = type;
 
     return result;
   }

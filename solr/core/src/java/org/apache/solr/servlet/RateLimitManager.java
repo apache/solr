@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.servlet.http.HttpServletRequest;
@@ -31,6 +32,7 @@ import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.core.RateLimiterConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +66,7 @@ public class RateLimitManager implements ClusterPropertiesListener {
   @Override
   public boolean onChange(Map<String, Object> properties) {
 
+    // TODO support for other types
     // Hack: We only support query rate limiting for now
     QueryRateLimiter queryRateLimiter =
         (QueryRateLimiter) getRequestRateLimiter(SolrRequest.SolrRequestType.QUERY);
@@ -198,9 +201,11 @@ public class RateLimitManager implements ClusterPropertiesListener {
 
     public RateLimitManager build() {
       RateLimitManager rateLimitManager = new RateLimitManager();
+      List<RateLimiterConfig> cfgs = QueryRateLimiter.constructQueryRateLimiterConfig(solrZkClient);
 
-      rateLimitManager.registerRequestRateLimiter(
-          new QueryRateLimiter(solrZkClient), SolrRequest.SolrRequestType.QUERY);
+      for (RateLimiterConfig cfg : cfgs) {
+        rateLimitManager.registerRequestRateLimiter(new QueryRateLimiter(cfg), cfg.requestType);
+      }
 
       return rateLimitManager;
     }
