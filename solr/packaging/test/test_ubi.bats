@@ -30,9 +30,9 @@ teardown() {
 }
 
 @test "Run set up process" {
-  solr start -c -e films
+  solr start -c -e techproducts
   
-  run solr healthcheck -c films
+  run solr healthcheck -c techproducts
   refute_output --partial 'error'
 
   # No luck with this
@@ -44,7 +44,7 @@ teardown() {
       "class": "solr.UBIComponent",
       "defaults":{ }
     }
-  }' "http://localhost:${SOLR_PORT}/api/collections/films/config"
+  }' "http://localhost:${SOLR_PORT}/api/collections/techproducts/config"
 
   assert_output --partial '"status":0'
   
@@ -54,7 +54,7 @@ teardown() {
       "class": "solr.SearchHandler",
       "last-components":["ubi"]
     }
-  }' "http://localhost:${SOLR_PORT}/api/collections/films/config"
+  }' "http://localhost:${SOLR_PORT}/api/collections/techproducts/config"
   
   assert_output --partial '"status":0'
   
@@ -64,30 +64,34 @@ teardown() {
       "class": "solr.SearchHandler",
       "last-components":["ubi"]
     }
-  }' "http://localhost:${SOLR_PORT}/api/collections/films/config"  
+  }' "http://localhost:${SOLR_PORT}/api/collections/techproducts/config"  
   
   assert_output --partial '"status":0'
 
   # Simple ubi enabled query
-  run curl "http://localhost:${SOLR_PORT}/solr/films/select?q=*:*&rows=3&ubi=true"
+  run curl "http://localhost:${SOLR_PORT}/solr/techproducts/select?q=*:*&rows=3&ubi=true"
   assert_output --partial '"status":0'
   assert_output --partial '"query_id":"1234'
   
   
-  # Rich ubi enabled query
+  # Rich UBI user query tracking enabled query
   run curl -X POST -H 'Content-type:application/json' -d '{
-    "query" : "*:*",
+    "query" : "ram OR memory",
+    "filter": [
+        "inStock:true"
+    ],
     "limit":2,
-    params: {
-      "ubi": "true"
+    "params": {
+      "ubi": "true",
       "query_id": "xyz890",
       "user_query": {
-        "query": "hot air",
-        "page": 2,
-        "filter": "inStock:true"
+        "query": "RAM memory",
+        "experiment": "supersecret",
+        "page": 1,
+        "filter": "productStatus:available"
       }            
     }
-  }' "http://localhost:${SOLR_PORT}/solr/films/query" 
+  }' "http://localhost:${SOLR_PORT}/solr/techproducts/query" 
   assert_output --partial '"query_id":"xyz890"'
   
   # No luck on getting the logs to read. 
