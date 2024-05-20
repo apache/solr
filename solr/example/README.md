@@ -22,7 +22,7 @@ This directory contains Solr examples. Each example is contained in a
 separate directory. To run a specific example, do:
 
 ```
-  bin/solr -e <EXAMPLE> where <EXAMPLE> is one of:
+  bin/solr start -e <EXAMPLE> where <EXAMPLE> is one of:
 
     cloud        : SolrCloud example
     schemaless   : Schema-less example (schema is inferred from data during indexing)
@@ -33,7 +33,7 @@ separate directory. To run a specific example, do:
 For instance, if you want to run the SolrCloud example, do:
 
 ```
-  bin/solr -e cloud
+  bin/solr start -e cloud
 ```
 
 To see all the options available when starting Solr:
@@ -48,10 +48,10 @@ After starting a Solr example, direct your Web browser to:
   http://localhost:8983/solr/
 ```
 
-To add documents to the index, use bin/post, for example:
+To add documents to the index, use bin/solr post, for example:
 
 ```
-     bin/post -c techproducts example/exampledocs/*.xml
+     bin/solr post -c techproducts example/exampledocs/*.xml
 ```
 
 (where "techproducts" is the Solr core name)

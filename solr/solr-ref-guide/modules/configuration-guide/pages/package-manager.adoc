@@ -46,7 +46,7 @@ To enable it, start all Solr nodes with the `-Denable.packages=true` parameter.
 
 [source,bash]
 ----
-$ bin/solr -c -Denable.packages=true
+$ bin/solr start -c -Denable.packages=true
 ----
 
 WARNING: There are security consequences to enabling the package manager.
@@ -216,3 +216,5 @@ Also, it is critical to protect ZooKeeper from unauthorized write access.
 Also, keep in mind, that it is possible to install *any* package from a repository once it has been added.
 If you want to use some packages in production, a best practice is to setup your own repository and add that to Solr instead of adding a generic third-party repository that is beyond your administrative control.
 You might want to re-sign packages from a third-party repository using your own private keys and host them at your own repository.
+
+To use the package tool with Basic Auth protected Solr installation pass in the credentials via `-credentials username:password`.

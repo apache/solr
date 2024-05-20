@@ -82,24 +82,6 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   private StreamingResponseCallback callback;
   private Set<String> queryParams;
 
-  protected boolean usev2;
-  protected boolean useBinaryV2;
-
-  /**
-   * If set to true, every request that implements {@link V2RequestSupport} will be converted to a
-   * V2 API call
-   */
-  public SolrRequest<T> setUseV2(boolean flag) {
-    this.usev2 = flag;
-    return this;
-  }
-
-  /** If set to true use javabin instead of json (default) */
-  public SolrRequest<T> setUseBinaryV2(boolean flag) {
-    this.useBinaryV2 = flag;
-    return this;
-  }
-
   public SolrRequest<T> setPreferredNodes(List<String> nodes) {
     this.preferredNodes = nodes;
     return this;
@@ -192,6 +174,19 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public abstract String getRequestType();
 
   public abstract SolrParams getParams();
+
+  /**
+   * Determines whether this request should use or ignore any specified collections (esp. {@link
+   * SolrClient#defaultCollection})
+   *
+   * <p>Many Solr requests target a particular core or collection. But not all of them - many Solr
+   * APIs (e.g. security or other admin APIs) are agnostic of collections entirely. This method
+   * gives these requests a way to opt out of using {@link SolrClient#defaultCollection} or other
+   * specified collections.
+   */
+  public boolean requiresCollection() {
+    return false;
+  }
 
   /**
    * @deprecated Please use {@link SolrRequest#getContentWriter(String)} instead.

@@ -39,7 +39,7 @@ teardown() {
 @test "Check help command" {
 
   run solr post
-  assert_output --partial 'Failed to parse command-line arguments due to: Missing required option: url'
+  assert_output --partial 'Must specify either -url or -c parameter'
   
   run solr post -h
   assert_output --partial 'usage: post'
@@ -63,11 +63,22 @@ teardown() {
   refute_output --partial 'ERROR'
 }
 
+@test "basic post with collection instead of url parameter" {
+  
+  run solr create -c monitors_c_param -d _default
+  assert_output --partial "Created collection 'monitors_c_param'"
+  
+  run solr post -type application/xml -c monitors_c_param ${SOLR_TIP}/example/exampledocs/monitor.xml
+
+  assert_output --partial '1 files indexed.'
+  refute_output --partial 'ERROR'
+}
+
 @test "basic post WITHOUT a type specified" {
   
   solr create -c monitors_no_type -d _default
   
-  run solr post -url http://localhost:${SOLR_PORT}/solr/monitors_no_type/update -commit ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post -url http://localhost:${SOLR_PORT}/solr/monitors_no_type/update ${SOLR_TIP}/example/exampledocs/monitor.xml
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
@@ -76,7 +87,7 @@ teardown() {
   
   solr create -c books_no_type -d _default
   
-  run solr post -url http://localhost:${SOLR_PORT}/solr/books_no_type/update -commit ${SOLR_TIP}/example/exampledocs/books.json
+  run solr post -url http://localhost:${SOLR_PORT}/solr/books_no_type/update ${SOLR_TIP}/example/exampledocs/books.json
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
@@ -85,7 +96,7 @@ teardown() {
   
   solr create -c books_csv_no_type -d _default
   
-  run solr post -url http://localhost:${SOLR_PORT}/solr/books_csv_no_type/update -commit ${SOLR_TIP}/example/exampledocs/books.csv
+  run solr post -url http://localhost:${SOLR_PORT}/solr/books_csv_no_type/update ${SOLR_TIP}/example/exampledocs/books.csv
 
   assert_output --partial '1 files indexed.'
   refute_output --partial 'ERROR'
@@ -93,12 +104,22 @@ teardown() {
   assert_output --partial '"numFound":10'  
 }
 
+@test "crawling a directory as a dry-run" {
+  
+  # We filter to xml,json,and csv as we don't want to invoke the Extract handler, and are running it as a dry run
+  run solr post --dry-run -filetypes xml,json,csv -url http://localhost:${SOLR_PORT}/solr/foobar/update -skipcommit ${SOLR_TIP}/example/exampledocs
+
+  assert_output --partial 'Dry run complete. 16 would have been indexed.' 
+  refute_output --partial '16 files indexed.'
+  refute_output --partial 'ERROR'
+}
+
 @test "crawling a directory" {
   
   solr create -c mixed_content -d _default
   
   # We filter to xml,json,and csv as we don't want to invoke the Extract handler.
-  run solr post -filetypes xml,json,csv -url http://localhost:${SOLR_PORT}/solr/mixed_content/update -commit ${SOLR_TIP}/example/exampledocs
+  run solr post -filetypes xml,json,csv -url http://localhost:${SOLR_PORT}/solr/mixed_content/update ${SOLR_TIP}/example/exampledocs
 
   assert_output --partial '16 files indexed.'
   refute_output --partial 'ERROR'
@@ -118,19 +139,19 @@ teardown() {
     }
   }' "http://localhost:${SOLR_PORT}/solr/webcrawl/config"
   
-  run solr post -mode web -url http://localhost:${SOLR_PORT}/webcrawl/update -recursive 1 -delay 1 https://solr.apache.org
+  run solr post -mode web --solr-update-url http://localhost:${SOLR_PORT}/webcrawl/update -recursive 1 -delay 1 https://solr.apache.org
   assert_output --partial 'Entering crawl at level 0'
 }
 
-@test "commit and optimize and delete" {
+@test "skipcommit and optimize and delete" {
   
   run solr create -c monitors2 -d _default
   assert_output --partial "Created collection 'monitors2'"
   
-  run solr post -url http://localhost:${SOLR_PORT}/solr/monitors2/update -type application/xml -commit -optimize ${SOLR_TIP}/example/exampledocs/monitor.xml
+  run solr post -url http://localhost:${SOLR_PORT}/solr/monitors2/update -type application/xml -skipcommit -optimize ${SOLR_TIP}/example/exampledocs/monitor.xml
 
   assert_output --partial '1 files indexed.'
-  assert_output --partial 'COMMITting Solr index'
+  refute_output --partial 'COMMITting Solr index'
   assert_output --partial 'Performing an OPTIMIZE'
   refute_output --partial 'ERROR'
 
@@ -141,18 +162,18 @@ teardown() {
   run solr create -c test_args -d _default
   assert_output --partial "Created collection 'test_args'"
   
-  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -type application/xml -out -commit "<delete><query>*:*</query></delete>"
+  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -type application/xml -out "<delete><query>*:*</query></delete>"
   assert_output --partial '<int name="status">0</int>'
   
   # confirm default type
-  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -out -commit "{'delete': {'query': '*:*'}}"
+  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -out "{'delete': {'query': '*:*'}}"
   assert_output --partial '"status":0'
   
   # confirm we don't get back output without -out
-  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -commit "{'delete': {'query': '*:*'}}"
+  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args "{'delete': {'query': '*:*'}}"
   refute_output --partial '"status":0'
   
-  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -commit -type text/csv -out $'id,value\nROW1,0.47'
+  run solr post -url http://localhost:${SOLR_PORT}/solr/test_args/update -mode args -type text/csv -out $'id,value\nROW1,0.47'
   assert_output --partial '"status":0'
   run curl "http://localhost:${SOLR_PORT}/solr/test_args/select?q=id:ROW1"
   assert_output --partial '"numFound":1'

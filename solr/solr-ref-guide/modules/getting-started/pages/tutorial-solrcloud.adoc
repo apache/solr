@@ -51,7 +51,7 @@ To get started, simply do:
 
 [,console]
 ----
-$ bin/solr -e cloud
+$ bin/solr start -e cloud
 ----
 
 This starts an interactive session to walk you through the steps of setting up a simple SolrCloud cluster with embedded ZooKeeper.
@@ -165,7 +165,7 @@ You can also get SolrCloud started with all the defaults instead of the interact
 
 [,console]
 ----
-$ bin/solr -e cloud -noprompt
+$ bin/solr start -e cloud -noprompt
 ----
 
 === Restarting Nodes
@@ -190,17 +190,17 @@ Notice that you need to specify the ZooKeeper address (`-z localhost:9983`) when
 === Adding a Node to a Cluster
 
 Adding a node to an existing cluster is a bit advanced and involves a little more understanding of Solr.
-Once you startup a SolrCloud cluster using the startup scripts, you can add a new node to it by:
+Once you start a SolrCloud cluster using the startup scripts, you can add a new node to it by:
 
 [,console]
 ----
 $ mkdir <solr.home for new Solr node>
-$ bin/solr start -cloud -s solr.home/solr -p <port num> -z <zk hosts string>
+$ bin/solr start -cloud -s <solr.home>/solr -p <port num> -z <zk hosts string>
 ----
 
 Notice that the above requires you to create a Solr home directory.
 
-Example (with directory structure) that adds a node to an example started with "bin/solr -e cloud":
+Example (with directory structure) that adds a node to an example started with "bin/solr start -e cloud":
 
 [,console]
 ----

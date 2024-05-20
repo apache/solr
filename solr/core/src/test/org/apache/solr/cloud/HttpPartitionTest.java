@@ -52,7 +52,6 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -245,14 +244,9 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     CoreContainer coreContainer = replicaJetty.getCoreContainer();
     ZkCoreNodeProps replicaCoreNodeProps = new ZkCoreNodeProps(notLeader);
     String coreName = replicaCoreNodeProps.getCoreName();
-    Long maxVersionBefore = null;
     try (SolrCore core = coreContainer.getCore(coreName)) {
       assertNotNull("Core '" + coreName + "' not found for replica: " + notLeader.getName(), core);
-      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-      maxVersionBefore = ulog.getCurrentMaxVersion();
     }
-    assertNotNull("max version bucket seed not set for core " + coreName, maxVersionBefore);
-    log.info("Looked up max version bucket seed {} for core {}", maxVersionBefore, coreName);
 
     // now up the stakes and do more docs
     int numDocs = TEST_NIGHTLY ? 1000 : 105;
@@ -285,19 +279,6 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 2, maxWaitSecsToSeeAllActive);
-
-    try (SolrCore core = coreContainer.getCore(coreName)) {
-      assertNotNull("Core '" + coreName + "' not found for replica: " + notLeader.getName(), core);
-      Long currentMaxVersion = core.getUpdateHandler().getUpdateLog().getCurrentMaxVersion();
-      log.info(
-          "After recovery, looked up NEW max version bucket seed {} for core {}, was: {}",
-          currentMaxVersion,
-          coreName,
-          maxVersionBefore);
-      assertTrue(
-          "max version bucket seed not updated after recovery!",
-          currentMaxVersion > maxVersionBefore);
-    }
 
     // verify all docs received
     assertDocsExistInAllReplicas(notLeaders, testCollectionName, 1, numDocs + 3);
@@ -542,8 +523,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
   protected SolrClient getHttpSolrClient(Replica replica, String collection) {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-    String url = zkProps.getBaseUrl() + "/" + collection;
-    return getHttpSolrClient(url);
+    return getHttpSolrClient(zkProps.getBaseUrl(), collection);
   }
 
   // Send doc directly to a server (without going through proxy)

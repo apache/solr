@@ -165,7 +165,7 @@ image::math-expressions/linear.png[]
 === Residuals
 
 The difference between the observed value and the predicted value is known as the residual.
-There isn't a specific function to calculate the residuals but vector math can used to perform the calculation.
+There isn't a specific function to calculate the residuals but vector math can be used to perform the calculation.
 
 In the example below the predictions are stored in variable `p`.
 The `ebeSubtract` function is then used to subtract the predictions from the actual `response_d` values stored in variable `y`.

@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -39,6 +40,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.util.FileTypeMagicUtil;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -60,7 +62,7 @@ public class ZkConfigSetService extends ConfigSetService {
     this.zkClient = cc.getZkController().getZkClient();
   }
 
-  /** This is for ZkCLI and some tests */
+  /** This is for some tests */
   public ZkConfigSetService(SolrZkClient zkClient) {
     super(null, false);
     this.zkController = null;
@@ -199,6 +201,15 @@ public class ZkConfigSetService extends ConfigSetService {
     try {
       if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
         log.warn("Not including uploading file to config, as it is a forbidden type: {}", fileName);
+      } else if (FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
+        String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(data);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            String.format(
+                Locale.ROOT,
+                "Not uploading file %s to config, as it matched the MAGIC signature of a forbidden mime type %s",
+                fileName,
+                mimeType));
       } else {
         // if overwriteOnExists is true then zkClient#makePath failOnExists is set to false
         zkClient.makePath(filePath, data, CreateMode.PERSISTENT, null, !overwriteOnExists, true);
@@ -340,7 +351,15 @@ public class ZkConfigSetService extends ConfigSetService {
     } else {
       log.debug("Copying zk node {} to {}", fromZkFilePath, toZkFilePath);
       byte[] data = zkClient.getData(fromZkFilePath, null, null, true);
-      zkClient.makePath(toZkFilePath, data, true);
+      if (!FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
+        zkClient.makePath(toZkFilePath, data, true);
+      } else {
+        String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(data);
+        log.warn(
+            "Skipping copy of file {} in ZK, as it matched the MAGIC signature of a forbidden mime type {}",
+            fromZkFilePath,
+            mimeType);
+      }
     }
   }
 

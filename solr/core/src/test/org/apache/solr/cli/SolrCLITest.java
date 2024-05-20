@@ -26,6 +26,8 @@ public class SolrCLITest extends SolrTestCase {
     assertEquals(SolrCLI.normalizeSolrUrl("http://localhost:8983/solr/"), "http://localhost:8983");
     assertEquals(SolrCLI.normalizeSolrUrl("http://localhost:8983/"), "http://localhost:8983");
     assertEquals(SolrCLI.normalizeSolrUrl("http://localhost:8983"), "http://localhost:8983");
+    assertEquals(
+        SolrCLI.normalizeSolrUrl("http://localhost:8983/solr/", false), "http://localhost:8983");
   }
 
   @Test
@@ -43,4 +45,7 @@ public class SolrCLITest extends SolrTestCase {
     assertEquals(
         "106751991167 days, 7 hours, 12 minutes, 56 seconds", SolrCLI.uptime(Long.MAX_VALUE));
   }
+
+  @Test
+  public void testGetCredentials() {}
 }

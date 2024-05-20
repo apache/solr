@@ -25,6 +25,12 @@ solrAdminServices.factory('System',
     ['$resource', function($resource) {
       return $resource('admin/metrics', {"wt":"json", "nodes": "@nodes", "prefix":"@prefix", "_":Date.now()});
     }])
+.factory('CollectionsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.CollectionsApi();
+    })
 .factory('Collections',
   ['$resource', function($resource) {
     return $resource('admin/collections',

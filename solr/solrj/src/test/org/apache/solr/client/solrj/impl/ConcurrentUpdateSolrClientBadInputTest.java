@@ -35,15 +35,14 @@ public class ConcurrentUpdateSolrClientBadInputTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    JettyConfig jettyConfig =
-        JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    createAndStartJetty(legacyExampleCollection1SolrHome(), JettyConfig.builder().build());
   }
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
     try (SolrClient client =
-        new ConcurrentUpdateSolrClient.Builder(getBaseUrl() + "/" + ANY_COLLECTION)
+        new ConcurrentUpdateSolrClient.Builder(getBaseUrl())
+            .withDefaultCollection(ANY_COLLECTION)
             .withQueueSize(ANY_QUEUE_SIZE)
             .withThreadCount(ANY_MAX_NUM_THREADS)
             .build()) {

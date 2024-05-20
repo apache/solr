@@ -64,8 +64,20 @@ public final class ReplicationTestHelper {
     return jetty;
   }
 
+  /**
+   * @param baseUrl the root URL for a Solr node
+   */
   public static SolrClient createNewSolrClient(String baseUrl) {
+    return createNewSolrClient(baseUrl, null);
+  }
+
+  /**
+   * @param baseUrl the root URL for a Solr node
+   * @param collectionOrCore an optional default collection/core for the created client
+   */
+  public static SolrClient createNewSolrClient(String baseUrl, String collectionOrCore) {
     return new HttpSolrClient.Builder(baseUrl)
+        .withDefaultCollection(collectionOrCore)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
         .build();
@@ -91,7 +103,8 @@ public final class ReplicationTestHelper {
         if (null != port) {
           line = line.replace("TEST_PORT", port.toString());
         }
-        line = line.replace("COMPRESSION", internalCompression ? "internal" : "false");
+        String externalCompression = LuceneTestCase.random().nextBoolean() ? "external" : "false";
+        line = line.replace("COMPRESSION", internalCompression ? "internal" : externalCompression);
         out.write(line);
       }
     }

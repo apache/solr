@@ -145,6 +145,6 @@ public class MultipleFieldComparator implements StreamComparator {
       }
     }
 
-    return new MultipleFieldComparator(newComps.toArray(new StreamComparator[newComps.size()]));
+    return new MultipleFieldComparator(newComps.toArray(new StreamComparator[0]));
   }
 }

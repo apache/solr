@@ -418,6 +418,8 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   /**
    * Generates an HttpSolrClient, either by using the test framework helper method or by direct
    * instantiation (determined randomly)
+   *
+   * @param url the base URL of a Solr node. Should not contain a collection or core name
    */
   public static SolrClient getRandomizedHttpSolrClient(String url) {
     // NOTE: at the moment, SolrTestCaseJ4 already returns "new HttpSolrClient" most of the time,

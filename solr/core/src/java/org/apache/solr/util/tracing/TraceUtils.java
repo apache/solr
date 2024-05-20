@@ -25,12 +25,14 @@ import io.opentelemetry.api.trace.TraceId;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapPropagator;
+import io.opentelemetry.context.propagation.TextMapSetter;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.servlet.http.HttpServletRequest;
-import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.http.HttpRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.eclipse.jetty.client.api.Request;
 
 /** Utilities for distributed tracing. */
 public class TraceUtils {
@@ -144,9 +146,20 @@ public class TraceUtils {
     return textMapPropagator.extract(Context.current(), req, new HttpServletRequestGetter());
   }
 
-  public static void injectContextIntoRequest(SolrRequest<?> req) {
+  private static final TextMapSetter<Request> REQUEST_INJECTOR =
+      (req, k, v) -> req.headers(httpFields -> httpFields.put(k, v));
+
+  public static void injectTraceContext(Request req) {
     TextMapPropagator textMapPropagator = getTextMapPropagator();
-    textMapPropagator.inject(Context.current(), req, new SolrRequestSetter());
+    textMapPropagator.inject(Context.current(), req, REQUEST_INJECTOR);
+  }
+
+  private static final TextMapSetter<HttpRequest> HTTP_REQUEST_INJECTOR =
+      (req, k, v) -> req.setHeader(k, v);
+
+  public static void injectTraceContext(HttpRequest req) {
+    TextMapPropagator textMapPropagator = getTextMapPropagator();
+    textMapPropagator.inject(Context.current(), req, HTTP_REQUEST_INJECTOR);
   }
 
   public static Span startHttpRequestSpan(HttpServletRequest request, Context context) {
@@ -171,5 +184,14 @@ public class TraceUtils {
       req.getSpan().setAttribute(TAG_OPS, ops);
       req.getSpan().setAttribute(TAG_CLASS, clazz);
     }
+  }
+
+  public static Span startCollectionApiCommandSpan(
+      String name, String collection, boolean isAsync) {
+    Tracer tracer = getGlobalTracer();
+    SpanKind kind = isAsync ? SpanKind.PRODUCER : SpanKind.CLIENT;
+    SpanBuilder spanBuilder =
+        tracer.spanBuilder(name).setSpanKind(kind).setAttribute(TAG_DB, collection);
+    return spanBuilder.startSpan();
   }
 }

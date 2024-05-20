@@ -55,25 +55,25 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.AllCoresStatusAPI;
-import org.apache.solr.handler.admin.api.BackupCoreAPI;
 import org.apache.solr.handler.admin.api.CoreSnapshot;
 import org.apache.solr.handler.admin.api.CreateCoreAPI;
+import org.apache.solr.handler.admin.api.CreateCoreBackup;
+import org.apache.solr.handler.admin.api.GetNodeCommandStatus;
 import org.apache.solr.handler.admin.api.InstallCoreData;
-import org.apache.solr.handler.admin.api.MergeIndexesAPI;
+import org.apache.solr.handler.admin.api.MergeIndexes;
 import org.apache.solr.handler.admin.api.OverseerOperationAPI;
 import org.apache.solr.handler.admin.api.PrepareCoreRecoveryAPI;
 import org.apache.solr.handler.admin.api.RejoinLeaderElectionAPI;
 import org.apache.solr.handler.admin.api.ReloadCore;
-import org.apache.solr.handler.admin.api.RenameCoreAPI;
+import org.apache.solr.handler.admin.api.RenameCore;
 import org.apache.solr.handler.admin.api.RequestApplyCoreUpdatesAPI;
 import org.apache.solr.handler.admin.api.RequestBufferUpdatesAPI;
-import org.apache.solr.handler.admin.api.RequestCoreCommandStatusAPI;
 import org.apache.solr.handler.admin.api.RequestCoreRecoveryAPI;
 import org.apache.solr.handler.admin.api.RequestSyncShardAPI;
 import org.apache.solr.handler.admin.api.RestoreCore;
 import org.apache.solr.handler.admin.api.SingleCoreStatusAPI;
 import org.apache.solr.handler.admin.api.SplitCoreAPI;
-import org.apache.solr.handler.admin.api.SwapCoresAPI;
+import org.apache.solr.handler.admin.api.SwapCores;
 import org.apache.solr.handler.admin.api.UnloadCore;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -383,11 +383,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     apis.addAll(AnnotatedApi.getApis(new CreateCoreAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SwapCoresAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new RenameCoreAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new MergeIndexesAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new SplitCoreAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new RequestCoreCommandStatusAPI(this)));
     // Internal APIs
     apis.addAll(AnnotatedApi.getApis(new RequestCoreRecoveryAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new PrepareCoreRecoveryAPI(this)));
@@ -403,10 +399,14 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     return List.of(
         CoreSnapshot.class,
         InstallCoreData.class,
-        BackupCoreAPI.class,
+        CreateCoreBackup.class,
         RestoreCore.class,
         ReloadCore.class,
-        UnloadCore.class);
+        UnloadCore.class,
+        SwapCores.class,
+        RenameCore.class,
+        MergeIndexes.class,
+        GetNodeCommandStatus.class);
   }
 
   public interface CoreAdminOp {
@@ -443,7 +443,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     // We keep the number number of max threads very low to have throttling for expensive tasks
     private ExecutorService expensiveExecutor =
         ExecutorUtil.newMDCAwareCachedThreadPool(
-            5, new SolrNamedThreadFactory("parallelCoreAdminAPIExpensiveExecutor"));
+            5,
+            Integer.MAX_VALUE,
+            new SolrNamedThreadFactory("parallelCoreAdminAPIExpensiveExecutor"));
 
     public CoreAdminAsyncTracker() {
       HashMap<String, Map<String, TaskObject>> map = new HashMap<>(3, 1.0f);

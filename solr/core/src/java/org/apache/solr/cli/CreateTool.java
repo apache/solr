@@ -21,11 +21,9 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
@@ -35,7 +33,6 @@ import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
@@ -97,7 +94,7 @@ public class CreateTool extends ToolBase {
             .build(),
         Option.builder("d")
             .longOpt("confdir")
-            .argName("NAME")
+            .argName("DIR")
             .hasArg()
             .required(false)
             .desc(
@@ -112,15 +109,15 @@ public class CreateTool extends ToolBase {
             .required(false)
             .desc("Configuration name; default is the collection name.")
             .build(),
+        SolrCLI.OPTION_CREDENTIALS,
         SolrCLI.OPTION_VERBOSE);
   }
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
 
-    try (var solrClient = SolrCLI.getSolrClient(solrUrl)) {
+    try (var solrClient = SolrCLI.getSolrClient(cli)) {
       if (SolrCLI.isCloudMode(solrClient)) {
         createCollection(cli);
       } else {
@@ -155,7 +152,8 @@ public class CreateTool extends ToolBase {
     // convert raw JSON into user-friendly output
     coreRootDirectory = (String) systemInfo.get("core_root");
 
-    if (SolrCLI.safeCheckCoreExists(solrUrl, coreName)) {
+    if (SolrCLI.safeCheckCoreExists(
+        solrUrl, coreName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
       throw new IllegalArgumentException(
           "\nCore '"
               + coreName
@@ -197,14 +195,15 @@ public class CreateTool extends ToolBase {
   }
 
   protected void createCollection(CommandLine cli) throws Exception {
+    Http2SolrClient.Builder builder =
+        new Http2SolrClient.Builder()
+            .withIdleTimeout(30, TimeUnit.SECONDS)
+            .withConnectionTimeout(15, TimeUnit.SECONDS)
+            .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
+            .withOptionalBasicAuthCredentials(
+                cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()));
     String zkHost = SolrCLI.getZkHost(cli);
-    try (CloudSolrClient cloudSolrClient =
-        new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-            .withInternalClientBuilder(
-                new Http2SolrClient.Builder()
-                    .withIdleTimeout(30, TimeUnit.SECONDS)
-                    .withConnectionTimeout(15, TimeUnit.SECONDS))
-            .build()) {
+    try (CloudSolrClient cloudSolrClient = SolrCLI.getCloudHttp2SolrClient(zkHost, builder)) {
       echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
       cloudSolrClient.connect();
       createCollection(cloudSolrClient, cli);
@@ -275,7 +274,8 @@ public class CreateTool extends ToolBase {
     }
 
     // since creating a collection is a heavy-weight operation, check for existence first
-    if (SolrCLI.safeCheckCollectionExists(solrUrl, collectionName)) {
+    if (SolrCLI.safeCheckCollectionExists(
+        solrUrl, collectionName, cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt()))) {
       throw new IllegalStateException(
           "\nCollection '"
               + collectionName

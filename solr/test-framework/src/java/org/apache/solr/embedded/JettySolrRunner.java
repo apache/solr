@@ -383,7 +383,9 @@ public class JettySolrRunner {
 
             @Override
             public synchronized void lifeCycleStopped(LifeCycle arg0) {
-              coreContainerProvider.close();
+              if (coreContainerProvider != null) {
+                coreContainerProvider.close();
+              }
             }
 
             @Override
@@ -832,10 +834,7 @@ public class JettySolrRunner {
     this.proxyPort = proxyPort;
   }
 
-  /**
-   * Returns a base URL consisting of the protocol, host, and port for a Connector in use by the
-   * Jetty Server contained in this runner.
-   */
+  /** Returns a base URL like {@code http://localhost:8983/solr} */
   public URL getBaseUrl() {
     try {
       return new URL(protocol, host, jettyPort, "/solr");

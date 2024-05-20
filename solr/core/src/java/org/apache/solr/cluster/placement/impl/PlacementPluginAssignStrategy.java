@@ -193,9 +193,7 @@ public class PlacementPluginAssignStrategy implements Assign.AssignStrategy {
             placementContext.getCluster().getCollection(assignRequest.collectionName),
             new HashSet<>(assignRequest.shardNames),
             nodes,
-            assignRequest.numNrtReplicas,
-            assignRequest.numTlogReplicas,
-            assignRequest.numPullReplicas);
+            assignRequest.numReplicas);
     final List<ReplicaPosition> replicaPositions = new ArrayList<>();
     ArrayList<Node> nodeList = new ArrayList<>(request.getTargetNodes());
     for (String shard : request.getShardNames()) {

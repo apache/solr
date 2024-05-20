@@ -25,8 +25,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 
+import jakarta.inject.Inject;
 import java.util.Map;
-import javax.inject.Inject;
 import org.apache.solr.client.api.endpoint.DeleteReplicaPropertyApi;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;

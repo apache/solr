@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CollectionsController',
-    function($scope, $routeParams, $location, $timeout, Collections, Zookeeper, Constants, ConfigSets){
+    function($scope, $routeParams, $location, $timeout, Collections, CollectionsV2, Zookeeper, Constants, ConfigSets){
       $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
 
       $scope.refresh = function() {
@@ -215,16 +215,16 @@ solrAdminApp.controller('CollectionsController',
             alert("No collection selected.");
             return;
         }
-        Collections.reload({name: $scope.collection.name},
-          function(successData) {
-            $scope.reloadSuccess = true;
-            $timeout(function() {$scope.reloadSuccess=false}, 1000);
-          },
-          function(failureData) {
-            $scope.reloadFailure = true;
-            $timeout(function() {$scope.reloadFailure=false}, 1000);
-            $location.path("/~collections");
-          });
+        CollectionsV2.reloadCollection($scope.collection.name, function(error, data,response) {
+           if (error) {
+               $scope.reloadFailure = true;
+               $timeout(function() {$scope.reloadFailure=false}, 1000);
+               $location.path("/~collections");
+           } else {
+               $scope.reloadSuccess = true;
+               $timeout(function() {$scope.reloadSuccess=false}, 1000);
+           }
+        });
       };
 
       $scope.toggleAddReplica = function(shard) {
