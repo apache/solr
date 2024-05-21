@@ -250,13 +250,13 @@ public class PackageAPI {
       }
       // first refresh my own
       packageLoader.notifyListeners(p);
-      for (String s : FileStoreUtils.shuffledNodes(coreContainer)) {
+      for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
         Utils.executeGET(
             coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
             coreContainer
                     .getZkController()
                     .zkStateReader
-                    .getBaseUrlForNodeName(s)
+                    .getBaseUrlForNodeName(liveNode)
                     .replace("/solr", "/api")
                 + "/cluster/package?wt=javabin&omitHeader=true&refreshPackage="
                 + p,
@@ -422,13 +422,13 @@ public class PackageAPI {
   }
 
   void notifyAllNodesToSync(int expected) {
-    for (String s : FileStoreUtils.shuffledNodes(coreContainer)) {
+    for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
       Utils.executeGET(
           coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
           coreContainer
                   .getZkController()
                   .zkStateReader
-                  .getBaseUrlForNodeName(s)
+                  .getBaseUrlForNodeName(liveNode)
                   .replace("/solr", "/api")
               + "/cluster/package?wt=javabin&omitHeader=true&expectedVersion"
               + expected,

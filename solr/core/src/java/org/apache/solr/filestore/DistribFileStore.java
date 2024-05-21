@@ -217,8 +217,9 @@ public class DistribFileStore implements FileStore {
     }
 
     boolean fetchFromAnyNode() {
-      ArrayList<String> l = FileStoreUtils.shuffledNodes(coreContainer);
-      for (String liveNode : l) {
+      ArrayList<String> nodesToAttemptFetchFrom =
+          FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer);
+      for (String liveNode : nodesToAttemptFetchFrom) {
         try {
           String baseurl =
               coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(liveNode);
@@ -356,7 +357,7 @@ public class DistribFileStore implements FileStore {
     }
     tmpFiles.put(info.path, info);
 
-    List<String> nodes = FileStoreUtils.shuffledNodes(coreContainer);
+    List<String> nodes = FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer);
     int i = 0;
     int FETCHFROM_SRC = 50;
     String myNodeName = coreContainer.getZkController().getNodeName();
@@ -499,7 +500,7 @@ public class DistribFileStore implements FileStore {
   @Override
   public void delete(String path) {
     deleteLocal(path);
-    List<String> nodes = FileStoreUtils.shuffledNodes(coreContainer);
+    List<String> nodes = FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer);
     HttpClient client = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
     for (String node : nodes) {
       String baseUrl =

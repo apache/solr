@@ -37,8 +37,8 @@ import org.slf4j.LoggerFactory;
 public class FileStoreUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /** get a list of nodes randomly shuffled * @lucene.internal */
-  public static ArrayList<String> shuffledNodes(CoreContainer coreContainer) {
+  /** Returns a shuffled list of all live nodes except the current host */
+  public static ArrayList<String> fetchAndShuffleRemoteLiveNodes(CoreContainer coreContainer) {
     Set<String> liveNodes =
         coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
@@ -86,7 +86,7 @@ public class FileStoreUtils {
   /**
    * Validate a file for signature
    *
-   * @param sigs the signatures. atleast one should succeed
+   * @param sigs the signatures, at least one should succeed
    * @param entry The file details
    * @param isFirstAttempt If there is a failure
    */
