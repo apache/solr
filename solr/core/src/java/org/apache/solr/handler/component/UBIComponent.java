@@ -61,8 +61,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * User Behavior Insights (UBI) is an open standard for gathering query and event data from users and
- * storing it in a structured format. UBI can be used for in session personalization, implicit
+ * User Behavior Insights (UBI) is an open standard for gathering query and event data from users
+ * and storing it in a structured format. UBI can be used for in session personalization, implicit
  * judgements, powering recommendation systems among others. Learn more about the UBI standard at <a
  * href="https://github.com/o19s/ubi">https://github.com/o19s/ubi</a>.
  *
@@ -323,7 +323,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       streamContext.setSolrClientCache(solrClientCache);
       stream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(stream);
-      
+
       // assertEquals(4, tuples.size());
       // pushBackStream.open();
     }
