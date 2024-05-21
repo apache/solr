@@ -1331,10 +1331,22 @@ public class ZkStateReader implements SolrCloseable {
    * Returns the baseURL corresponding to a given node's nodeName -- NOTE: does not (currently)
    * imply that the nodeName (or resulting baseURL) exists in the cluster.
    *
-   * @lucene.experimental
+   * @param nodeName name of the node
+   * @return url that looks like {@code https://localhost:8983/solr}
    */
   public String getBaseUrlForNodeName(final String nodeName) {
     return Utils.getBaseUrlForNodeName(nodeName, getClusterProperty(URL_SCHEME, "http"));
+  }
+
+  /**
+   * Returns the V2 baseURL corresponding to a given node's nodeName -- NOTE: does not (currently)
+   * imply that the nodeName (or resulting baseURL) exists in the cluster.
+   *
+   * @param nodeName name of the node
+   * @return url that looks like {@code https://localhost:8983/api}
+   */
+  public String getBaseUrlV2ForNodeName(final String nodeName) {
+    return Utils.getBaseUrlForNodeName(nodeName, getClusterProperty(URL_SCHEME, "http"), true);
   }
 
   /** Watches a single collection's state.json. */
