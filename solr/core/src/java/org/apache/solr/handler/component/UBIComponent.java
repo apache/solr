@@ -188,19 +188,17 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       String streamQueriesExpressionFile = initArgs.get("streamQueriesExpressionFile");
 
       if (streamQueriesExpressionFile != null) {
-        System.out.println("got" + streamQueriesExpressionFile);
 
-        String exprFile = streamQueriesExpressionFile;
-
-        LineNumberReader bufferedReader = null;
-        boolean verbose = false;
+        LineNumberReader bufferedReader;
 
         try {
           bufferedReader =
               new LineNumberReader(
-                  new InputStreamReader(core.getResourceLoader().openResource(exprFile)));
+                  new InputStreamReader(
+                      core.getResourceLoader().openResource(streamQueriesExpressionFile),
+                      StandardCharsets.UTF_8));
 
-          String args[] = {}; // maybe we have variables?
+          String[] args = {}; // maybe we have variables?
           String expr = readExpression(bufferedReader, args);
 
           bufferedReader.close();
@@ -222,20 +220,11 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
           // not sure i need this?  Except maybe we assume let?
           Map params = validateLetAndGetParams(stream, expr);
 
-
-
         } catch (IOException ioe) {
           throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR, "Error reading file " + exprFile, ioe);
-        } finally {
-
-         // if (pushBackStream != null) {
-            //try {
-              //pushBackStream.close();
-            //} catch (IOException e) {
-             // e.printStackTrace();
-            //}
-       //   }
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Error reading file " + streamQueriesExpressionFile,
+              ioe);
         }
       }
     }
@@ -320,23 +309,25 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       writer.flush();
     }
 
-    if (streamFactory != null){
-    //streamFactory.withFunctionName("stdin", StandardInStream.class);
+    if (streamFactory != null) {
+      // streamFactory.withFunctionName("stdin", StandardInStream.class);
       TupleStream stream = null;
-      //PushBackStream pushBackStream = null;
+      // PushBackStream pushBackStream = null;
       stream = constructStream(streamFactory, streamExpression);
 
-      //Map params = validateLetAndGetParams(stream, expr);
+      // Map params = validateLetAndGetParams(stream, expr);
 
-      //pushBackStream = new PushBackStream(stream);
+      // pushBackStream = new PushBackStream(stream);
 
       StreamContext streamContext = new StreamContext();
       streamContext.setSolrClientCache(solrClientCache);
       stream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(stream);
-      System.out.println("tuples:" + tuples);
-      //assertEquals(4, tuples.size());
-      //pushBackStream.open();
+      if (log.isInfoEnabled()) {
+        log.info("tuples:" + tuples);
+      }
+      // assertEquals(4, tuples.size());
+      // pushBackStream.open();
     }
   }
 
@@ -362,7 +353,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     return t;
   }
 
-  public static String readExpression(LineNumberReader bufferedReader, String args[])
+  public static String readExpression(LineNumberReader bufferedReader, String[] args)
       throws IOException {
 
     StringBuilder exprBuff = new StringBuilder();
