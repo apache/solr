@@ -23,6 +23,9 @@ Improvements
 * SOLR-17274: Allow JSON atomic updates to use multiple modifiers or a modifier like 'set' as a field name
   if child docs are not enabled. (Calvin Smith, David Smiley)
 
+* SOLR-17300: Http2SolrClient.Builder.withHttpClient now copies HttpListenerFactory (e.g. for auth, metrics, traces, etc.)
+  (Sanjay Dutt, David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather

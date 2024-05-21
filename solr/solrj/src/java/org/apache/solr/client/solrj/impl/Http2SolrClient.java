@@ -147,12 +147,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
     assert ObjectReleaseTracker.track(this);
   }
 
+  @Deprecated(since = "9.7")
   public void addListenerFactory(HttpListenerFactory factory) {
     this.listenerFactory.add(factory);
-  }
-
-  public List<HttpListenerFactory> getListenerFactory() {
-    return listenerFactory;
   }
 
   // internal usage only
@@ -898,11 +895,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     protected Long keyStoreReloadIntervalSecs;
 
-    public Http2SolrClient.Builder withListenerFactory(List<HttpListenerFactory> listenerFactory) {
-      this.listenerFactory = listenerFactory;
-      return this;
-    }
-
     private List<HttpListenerFactory> listenerFactory;
 
     public Builder() {
@@ -951,6 +943,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
     public Builder(String baseSolrUrl) {
       super();
       this.baseSolrUrl = baseSolrUrl;
+    }
+
+    public Http2SolrClient.Builder withListenerFactory(List<HttpListenerFactory> listenerFactory) {
+      this.listenerFactory = listenerFactory;
+      return this;
     }
 
     public HttpSolrClientBuilderBase<Http2SolrClient.Builder, Http2SolrClient> withSSLConfig(
@@ -1127,6 +1124,10 @@ public class Http2SolrClient extends HttpSolrClientBase {
       }
       if (this.defaultCollection == null) {
         this.defaultCollection = http2SolrClient.defaultCollection;
+      }
+      if (this.listenerFactory == null) {
+        this.listenerFactory = new ArrayList<HttpListenerFactory>();
+        http2SolrClient.listenerFactory.forEach(this.listenerFactory::add);
       }
       return this;
     }
