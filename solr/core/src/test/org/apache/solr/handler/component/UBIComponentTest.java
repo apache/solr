@@ -90,11 +90,19 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExternallyGeneratedQueryId() {
+  public void testPassedInQueryId() {
     assertQ(
-        "Make sure we generate a query id",
+        "Make sure we reuse a passed in query id",
         req("qt", "/withubi", "q", "aa", "rows", "0", "ubi", "true", "query_id", "123abc"),
         "//lst[@name='ubi']/str[@name='query_id'][.='123abc']");
+  }
+
+  @Test
+  public void testGenerateQueryId() {
+    assertQ(
+        "Make sure we reuse a passed in query id",
+        req("qt", "/withubi", "q", "aa", "rows", "0", "ubi", "true"),
+        "//lst[@name='ubi']/str[@name='query_id'][.='1234']");
   }
 
   @Test
@@ -114,8 +122,8 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
                 + "    'limit': 2,\n"
                 + "    'params': {\n"
                 + "    'df': 'subject',\n"
-                + "        'qt': '/withubi',\n"
-                + "        'ubi': 'true'\n"
+                + "    'qt': '/withubi',\n"
+                + "    'ubi': 'true'\n"
                 + "   }\n"
                 + "}"),
         "response/numFound==3",
@@ -123,8 +131,9 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
 
     String lastLine = readLastLineOfFile(ubiQueriesLog);
 
-    String json = "{\"query_id\":\"1234\",\"user_query\":null,\"doc_ids\":\"1,two\"}";
-    assertJSONEquals(json, lastLine);
+    String jsonlLogLine =
+        "{\"query_id\":\"1234\",\"user_query\":null,\"query_attributes\":null,\"doc_ids\":\"1,two\"}";
+    assertJSONEquals(jsonlLogLine, lastLine);
 
     assertJQ(
         req(
@@ -140,8 +149,8 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
                 + "        'df': 'subject',\n"
                 + "        'ubi': 'true',\n"
                 + "        'query_id': 'xjy-42-1rj'\n"
-                + "        'user_query': {\n"
-                + "            'query': 'aa',\n"
+                + "        'user_query': 'aa'\n"
+                + "        'query_attributes': {\n"
                 + "            'page': 2,\n"
                 + "            'filter': 'inStock:true',\n"
                 + "        }\n"
@@ -152,9 +161,9 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
 
     lastLine = readLastLineOfFile(ubiQueriesLog);
 
-    json =
-        "{\"query_id\":\"xjy-42-1rj\",\"user_query\":{\"query\":\"aa\",\"page\":2,\"filter\":\"inStock:true\"},\"doc_ids\":\"1,two\"}";
-    assertJSONEquals(json, lastLine);
+    jsonlLogLine =
+        "{\"query_id\":\"xjy-42-1rj\",\"user_query\":\"aa\",\"query_attributes\":{\"page\":2,\"filter\":\"inStock:true\"},\"doc_ids\":\"1,two\"}";
+    assertJSONEquals(jsonlLogLine, lastLine);
   }
 
   @Test

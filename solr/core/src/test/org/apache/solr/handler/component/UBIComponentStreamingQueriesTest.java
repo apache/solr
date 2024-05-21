@@ -125,9 +125,9 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
 
     // query our collection to generate a UBI event and then confirm it was recorded.
 
-    Map userQuery = new HashMap();
-    userQuery.put("query", "hot air");
-    userQuery.put("results_wanted", 1);
+    String userQuery = "hot air";
+    Map queryAttributes = new HashMap();
+    queryAttributes.put("results_wanted", 1);
 
     final JsonQueryRequest req =
         new JsonQueryRequest()
@@ -135,7 +135,8 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
             .setLimit(1)
             .withParam("ubi", "true")
             .withParam("query_id", "123")
-            .withParam("user_query", userQuery);
+            .withParam("user_query", userQuery)
+            .withParam("query_attributes", queryAttributes);
 
     // Randomly grab a client, it shouldn't matter which is used to generate the query event.
     SolrClient client = getRandClient();

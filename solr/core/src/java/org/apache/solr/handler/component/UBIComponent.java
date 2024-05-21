@@ -129,6 +129,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
   public static final String COMPONENT_NAME = "ubi";
   public static final String QUERY_ID = "query_id";
+  public static final String QUERY_ATTRIBUTES = "query_attributes";
   public static final String USER_QUERY = "user_query";
   public static final String UBI_QUERY_JSONL_LOG = "ubi_queries.jsonl";
 
@@ -253,9 +254,11 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     }
 
     // See if the user passed in a user query as a query parameter
-    Object userQuery = params.get(USER_QUERY);
+    String userQuery = params.get(USER_QUERY);
 
-    if (userQuery != null && userQuery.toString().startsWith("{")) {
+    Object queryAttributes = params.get(QUERY_ATTRIBUTES);
+
+    if (queryAttributes != null && queryAttributes.toString().startsWith("{")) {
       // Look up the original nested JSON format, typically passed in
       // via the JSON formatted query.
       @SuppressWarnings("rawtypes")
@@ -263,8 +266,8 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       if (jsonProperties.containsKey("params")) {
         @SuppressWarnings("rawtypes")
         Map paramsProperties = (Map) jsonProperties.get("params");
-        if (paramsProperties.containsKey("user_query")) {
-          userQuery = paramsProperties.get("user_query");
+        if (paramsProperties.containsKey(QUERY_ATTRIBUTES)) {
+          queryAttributes = paramsProperties.get(QUERY_ATTRIBUTES);
         }
       }
     }
@@ -273,14 +276,15 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
     DocList docs = rc.getDocList();
 
-    processIds(rb, docs, queryId, userQuery, schema, searcher);
+    processIds(rb, docs, queryId, userQuery, queryAttributes, schema, searcher);
   }
 
   protected void processIds(
       ResponseBuilder rb,
       DocList dl,
       String queryId,
-      Object userQuery,
+      String userQuery,
+      Object queryAttributes,
       IndexSchema schema,
       SolrIndexSearcher searcher)
       throws IOException {
@@ -295,11 +299,12 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     String docIds = sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "";
     SimpleOrderedMap<String> ubiResponseInfo = new SimpleOrderedMap<>();
     SimpleOrderedMap<Object> ubiQueryLogInfo = new SimpleOrderedMap<>();
-    ubiResponseInfo.add("query_id", queryId);
+    ubiResponseInfo.add(QUERY_ID, queryId);
     rb.rsp.add("ubi", ubiResponseInfo);
 
-    ubiQueryLogInfo.add("query_id", queryId);
-    ubiQueryLogInfo.add("user_query", userQuery);
+    ubiQueryLogInfo.add(QUERY_ID, queryId);
+    ubiQueryLogInfo.add(USER_QUERY, userQuery);
+    ubiQueryLogInfo.add(QUERY_ATTRIBUTES, queryAttributes);
     ubiQueryLogInfo.add("doc_ids", docIds);
 
     if (writer != null) {
