@@ -34,7 +34,9 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
-  <searchComponent name="ubi" class="org.apache.solr.handler.component.UBIComponent" />
+  <searchComponent name="ubi" class="org.apache.solr.handler.component.UBIComponent" >
+    <!--str name="streamQueriesExpressionFile">ubi-query-pipeline.expr</str-->
+  </searchComponent>
 
   <!-- Log retrievedDocs -->
   <requestHandler name="/withubi" class="org.apache.solr.handler.component.SearchHandler">

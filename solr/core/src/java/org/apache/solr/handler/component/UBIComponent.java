@@ -17,21 +17,43 @@
 package org.apache.solr.handler.component;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.client.solrj.io.Lang;
+import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.LetStream;
+import org.apache.solr.client.solrj.io.stream.PushBackStream;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.ResultContext;
@@ -42,6 +64,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * User Behavior Insights (UBI) is a open standard for gathering query and event data from users and
@@ -117,27 +141,45 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
   protected PluginInfo info = PluginInfo.EMPTY_INFO;
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CharArr charArr = new CharArr(1024 * 2);
   JSONWriter jsonWriter = new JSONWriter(charArr, -1);
   private Writer writer;
   OutputStream fos;
 
+  private StreamFactory streamFactory;
+  private StreamExpression streamExpression;
+
+  protected SolrParams initArgs;
+  private SolrClientCache solrClientCache;
+
   @Override
+  public void init(NamedList<?> args) {
+    this.initArgs = args.toSolrParams();
+  }
+
+  @Override
+  @SuppressWarnings({"rawtypes"})
   public void inform(SolrCore core) {
     List<PluginInfo> children = info.getChildren("ubi");
-    String j = EnvUtils.getProperty("solr.log.dir");
-    String ubiQueryJSONLLog = EnvUtils.getProperty("solr.log.dir") + "/" + UBI_QUERY_JSONL_LOG;
-    try {
-      fos = new BufferedOutputStream(new FileOutputStream(ubiQueryJSONLLog));
-    } catch (FileNotFoundException exception) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Error creating file  " + ubiQueryJSONLLog,
-          exception);
+    String defaultZkhost = null;
+    CoreContainer coreContainer = core.getCoreContainer();
+    this.solrClientCache = coreContainer.getSolrClientCache();
+    if (coreContainer.isZooKeeperAware()) {
+      defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
     }
-    writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
 
     if (children.isEmpty()) {
+      String ubiQueryJSONLLog = EnvUtils.getProperty("solr.log.dir") + "/" + UBI_QUERY_JSONL_LOG;
+      try {
+        fos = new BufferedOutputStream(new FileOutputStream(ubiQueryJSONLLog));
+      } catch (FileNotFoundException exception) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Error creating file  " + ubiQueryJSONLLog,
+            exception);
+      }
+      writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
       // DefaultSolrHighlighter defHighlighter = new DefaultSolrHighlighter(core);
       // defHighlighter.init(PluginInfo.EMPTY_INFO);
       // solrConfigHighlighter = defHighlighter;
@@ -146,6 +188,63 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       //         core.createInitInstance(
       //                 children.get(0), SolrHighlighter.class, null,
       // DefaultSolrHighlighter.class.getName());
+    }
+    // do i need this check?
+    if (initArgs != null) {
+      log.info("Initializing UBIComponent");
+      String streamQueriesExpressionFile = initArgs.get("streamQueriesExpressionFile");
+
+      if (streamQueriesExpressionFile != null) {
+        System.out.println("got" + streamQueriesExpressionFile);
+
+        String exprFile = streamQueriesExpressionFile;
+
+        LineNumberReader bufferedReader = null;
+        boolean verbose = false;
+
+        try {
+          bufferedReader =
+              new LineNumberReader(
+                  new InputStreamReader(core.getResourceLoader().openResource(exprFile)));
+
+          String args[] = {}; // maybe we have variables?
+          String expr = readExpression(bufferedReader, args);
+
+          bufferedReader.close();
+
+          streamExpression = StreamExpressionParser.parse(expr);
+          streamFactory = new StreamFactory();
+
+          String defaultZk = null;
+          String[] outputHeaders = null;
+          String delim = "  ";
+          String arrayDelim = "|";
+          boolean includeHeaders = false;
+          streamFactory.withDefaultZkHost(defaultZkhost);
+
+          Lang.register(streamFactory);
+
+          TupleStream stream = constructStream(streamFactory, streamExpression);
+
+          // not sure i need this?  Except maybe we assume let?
+          Map params = validateLetAndGetParams(stream, expr);
+
+
+
+        } catch (IOException ioe) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR, "Error reading file " + exprFile, ioe);
+        } finally {
+
+         // if (pushBackStream != null) {
+            //try {
+              //pushBackStream.close();
+            //} catch (IOException e) {
+             // e.printStackTrace();
+            //}
+       //   }
+        }
+      }
     }
   }
 
@@ -221,10 +320,109 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     ubiQueryLogInfo.add("user_query", userQuery);
     ubiQueryLogInfo.add("doc_ids", docIds);
 
-    jsonWriter.write(ubiQueryLogInfo);
-    writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
-    writer.append('\n');
-    writer.flush();
+    if (writer != null) {
+      jsonWriter.write(ubiQueryLogInfo);
+      writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
+      writer.append('\n');
+      writer.flush();
+    }
+
+    if (streamFactory != null){
+    //streamFactory.withFunctionName("stdin", StandardInStream.class);
+      TupleStream stream = null;
+      //PushBackStream pushBackStream = null;
+      stream = constructStream(streamFactory, streamExpression);
+
+      //Map params = validateLetAndGetParams(stream, expr);
+
+      //pushBackStream = new PushBackStream(stream);
+
+      StreamContext streamContext = new StreamContext();
+      streamContext.setSolrClientCache(solrClientCache);
+      stream.setStreamContext(streamContext);
+      List<Tuple> tuples = getTuples(stream);
+      System.out.println("tuples:" + tuples);
+      //assertEquals(4, tuples.size());
+      //pushBackStream.open();
+    }
+  }
+
+  protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
+    tupleStream.open();
+    List<Tuple> tuples = new ArrayList<>();
+    for (; ; ) {
+      Tuple t = tupleStream.read();
+      if (t.EOF) {
+        break;
+      } else {
+        tuples.add(t);
+      }
+    }
+    tupleStream.close();
+    return tuples;
+  }
+
+  protected Tuple getTuple(TupleStream tupleStream) throws IOException {
+    tupleStream.open();
+    Tuple t = tupleStream.read();
+    tupleStream.close();
+    return t;
+  }
+
+  public static String readExpression(LineNumberReader bufferedReader, String args[])
+      throws IOException {
+
+    StringBuilder exprBuff = new StringBuilder();
+
+    boolean comment = false;
+    while (true) {
+      String line = bufferedReader.readLine();
+      if (line == null) {
+        break;
+      }
+
+      if (line.indexOf("/*") == 0) {
+        comment = true;
+        continue;
+      }
+
+      if (line.indexOf("*/") == 0) {
+        comment = false;
+        continue;
+      }
+
+      if (comment || line.startsWith("#") || line.startsWith("//")) {
+        continue;
+      }
+
+      // Substitute parameters
+
+      if (line.length() > 0) {
+        for (int i = 1; i < args.length; i++) {
+          String arg = args[i];
+          line = line.replace("$" + i, arg);
+        }
+      }
+
+      exprBuff.append(line);
+    }
+
+    return exprBuff.toString();
+  }
+
+  public static TupleStream constructStream(
+      StreamFactory streamFactory, StreamExpression streamExpression) throws IOException {
+    return streamFactory.constructStream(streamExpression);
+  }
+
+  @SuppressWarnings({"rawtypes"})
+  public static Map validateLetAndGetParams(TupleStream stream, String expr) throws IOException {
+    if (stream instanceof LetStream) {
+      LetStream mainStream = (LetStream) stream;
+      return mainStream.getLetParams();
+    } else {
+      throw new IOException("No enclosing let function found in expression:" + expr);
+    }
   }
 
   @Override

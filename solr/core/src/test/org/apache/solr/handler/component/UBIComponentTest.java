@@ -35,7 +35,7 @@ public class UBIComponentTest extends SolrTestCaseJ4 {
 
     System.setProperty("solr.log.dir", createTempDir("solr_logs").toString());
 
-    initCore("solrconfig-ubi-component.xml", "schema12.xml");
+    initCore("solrconfig-ubi-local-component.xml", "schema12.xml");
     assertNull(h.validateUpdate(adoc("id", "1", "subject", "aa")));
     assertNull(h.validateUpdate(adoc("id", "two", "subject", "aa")));
     assertNull(h.validateUpdate(adoc("id", "3", "subject", "aa")));
