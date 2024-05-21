@@ -694,9 +694,14 @@ public class SolrResourceLoader
     }
   }
 
+  void initConfig(SolrConfig config) {
+    assert this.config == null || this.config == config;
+    this.config = config;
+  }
+
   void initCore(SolrCore core) {
+    initConfig(core.getSolrConfig());
     this.coreName = core.getName();
-    this.config = core.getSolrConfig();
     this.coreId = core.uniqueId;
     this.coreContainer = core.getCoreContainer();
     SolrCore.Provider coreProvider = core.coreProvider;

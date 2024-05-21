@@ -390,6 +390,9 @@ public class SolrConfig implements MapSerializable {
 
       solrRequestParsers = new SolrRequestParsers(this);
       log.debug("Loaded SolrConfig: {}", name);
+
+      // make resource loader aware of the config early on
+      this.resourceLoader.initConfig(this);
     } finally {
       ConfigNode.SUBSTITUTES.remove();
     }
