@@ -137,6 +137,8 @@ Bug Fixes
 
 * SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when aliases are used. (Aparna Suresh)
 
+* SOLR-16659: Properly construct V2 base urls instead of replacing substring "/solr" with "/api" (Andrey Bozhko)
+
 Dependency Upgrades
 ---------------------
 (No changes)
