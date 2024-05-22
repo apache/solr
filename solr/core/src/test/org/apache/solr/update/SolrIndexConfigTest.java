@@ -296,6 +296,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
     assertNotNull(iwc.getLeafSorter());
     SegmentTimeLeafSorter expected = new SegmentTimeLeafSorter(SegmentSort.valueOf(solrIndexConfig.segmentSort.toUpperCase()));
+    assertEquals(expected.getSortOptions(), SegmentSort.TIME_DESC);
     assertEquals(expected.getLeafSorter().getClass(), iwc.getLeafSorter().getClass());
   }
 }
