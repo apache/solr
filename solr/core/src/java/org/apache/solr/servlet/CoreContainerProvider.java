@@ -141,17 +141,15 @@ public class CoreContainerProvider implements ServletContextListener {
   }
 
   private void checkReady() throws UnavailableException {
-    final String msg;
+    // TODO throw AlreadyClosedException instead?
     if (cores == null) {
-      msg = "CoreContainer is not ready. Impossible?";
-      assert false : msg;
-    } else if (cores.isShutDown()) {
-      msg = "Error processing the request. CoreContainer has shut down.";
-    } else {
-      return;
+      // cores could be null if it didn't start properly or if it's completely shut down.
+      // It appears impossible that it'd be null if it didn't even try to start yet.
+      final String msg = "Error processing the request. CoreContainer has shut down.";
+      log.error(msg);
+      throw new UnavailableException(msg);
     }
-    log.error(msg);
-    throw new UnavailableException(msg);
+    assert !cores.isShutDown(); // shutdown sequence initiates *here*, thus will be nulled first
   }
 
   public void close() {

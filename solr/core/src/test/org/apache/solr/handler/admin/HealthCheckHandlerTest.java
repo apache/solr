@@ -134,10 +134,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       assertEquals("Exception code should be 404", 404, thrown.code());
       assertTrue(
           "Should have seen an exception containing the an error",
-          thrown
-              .getMessage()
-              .contains(
-                  "Error processing the request. CoreContainer is either not initialized or shutting down."));
+          thrown.getMessage().contains("CoreContainer has shut down"));
     } finally {
       newJetty.stop();
     }
