@@ -116,6 +116,9 @@ Improvements
 * SOLR-17274: Allow JSON atomic updates to use multiple modifiers or a modifier like 'set' as a field name
   if child docs are not enabled. (Calvin Smith, David Smiley)
 
+* SOLR-17300: Http2SolrClient.Builder.withHttpClient now copies HttpListenerFactory (e.g. for auth, metrics, traces, etc.)
+  (Sanjay Dutt, David Smiley)
+
 Optimizations
 ---------------------
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
@@ -130,6 +133,12 @@ Bug Fixes
 * SOLR-17049: Actually mark all replicas down at startup and truly wait for them.
   This includes replicas that might not exist anymore locally. (Houston Putman, Vincent Primault)
 
+* SOLR-17263: Fix 'Illegal character in query' exception in HttpJdkSolrClient (Andy Webb)
+
+* SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when aliases are used. (Aparna Suresh)
+
+* PR-2475: Fixed node listing bug in Admin UI when different hostnames start with the same front part. (@hgdharold via Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -140,6 +149,13 @@ Other Changes
 
 * SOLR-16505: Use Jetty HTTP2 for index replication and other "recovery" operations
   (Sanjay Dutt, David Smiley)
+
+* GITHUB#2454: Refactor preparePutOrPost method in HttpJdkSolrClient (Andy Webb)
+
+==================  9.6.1 ==================
+Bug Fixes
+---------------------
+* SOLR-17296: Remove (broken) singlePass attempt when reRankScale + debug is used, and fix underlying NPE. (hossman)
 
 ==================  9.6.0 ==================
 New Features
