@@ -21,10 +21,8 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.core.ConfigSetService;
@@ -81,22 +79,12 @@ public class ConfigSetUploadTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
     String zkHost = SolrCLI.getZkHost(cli);
-    if (zkHost == null) {
-      throw new IllegalStateException(
-          "Solr at "
-              + cli.getOptionValue("solr-url")
-              + " is running in standalone server mode, upconfig can only be used when running in SolrCloud mode.\n");
-    }
 
     final String solrInstallDir = System.getProperty("solr.install.dir");
     Path solrInstallDirPath = Paths.get(solrInstallDir);
 
     String confName = cli.getOptionValue("confname");
-    try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkHost)
-            .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
+    try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
       final Path configsetsDirPath = SolrCLI.getConfigSetsDir(solrInstallDirPath);

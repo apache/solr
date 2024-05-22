@@ -135,7 +135,9 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.httpClient = createHttpClient(builder);
       this.closeClient = true;
     }
-
+    if (builder.listenerFactory != null) {
+      this.listenerFactory.addAll(builder.listenerFactory);
+    }
     updateDefaultMimeTypeForParser();
 
     this.httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
@@ -143,6 +145,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     assert ObjectReleaseTracker.track(this);
   }
 
+  @Deprecated(since = "9.7")
   public void addListenerFactory(HttpListenerFactory factory) {
     this.listenerFactory.add(factory);
   }
@@ -845,6 +848,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     protected Long keyStoreReloadIntervalSecs;
 
+    private List<HttpListenerFactory> listenerFactory;
+
     public Builder() {
       super();
     }
@@ -867,6 +872,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
     public Builder(String baseSolrUrl) {
       super();
       this.baseSolrUrl = baseSolrUrl;
+    }
+
+    public Http2SolrClient.Builder withListenerFactory(List<HttpListenerFactory> listenerFactory) {
+      this.listenerFactory = listenerFactory;
+      return this;
     }
 
     public HttpSolrClientBuilderBase<Http2SolrClient.Builder, Http2SolrClient> withSSLConfig(
@@ -1040,6 +1050,10 @@ public class Http2SolrClient extends HttpSolrClientBase {
       }
       if (this.urlParamNames == null) {
         this.urlParamNames = http2SolrClient.urlParamNames;
+      }
+      if (this.listenerFactory == null) {
+        this.listenerFactory = new ArrayList<HttpListenerFactory>();
+        http2SolrClient.listenerFactory.forEach(this.listenerFactory::add);
       }
       return this;
     }

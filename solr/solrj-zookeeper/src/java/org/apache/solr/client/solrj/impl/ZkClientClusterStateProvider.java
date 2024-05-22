@@ -144,21 +144,10 @@ public class ZkClientClusterStateProvider
   @Override
   public ClusterState.CollectionRef getState(String collection) {
     ClusterState clusterState = getZkStateReader().getClusterState();
-    if (clusterState == null) {
-      return null;
-    }
-
-    ClusterState.CollectionRef collectionRef = clusterState.getCollectionRef(collection);
-    if (collectionRef == null) {
-      // force update collection
-      try {
-        getZkStateReader().forceUpdateCollection(collection);
-        return getZkStateReader().getClusterState().getCollectionRef(collection);
-      } catch (KeeperException | InterruptedException e) {
-        return null;
-      }
+    if (clusterState != null) {
+      return clusterState.getCollectionRef(collection);
     } else {
-      return collectionRef;
+      return null;
     }
   }
 
