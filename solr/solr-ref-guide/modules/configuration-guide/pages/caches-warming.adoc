@@ -94,12 +94,12 @@ Details of each cache are described below.
 This cache holds parsed queries paired with an unordered set of all documents that match it.
 Unless such a set is trivially small, the set implementation is a bitset.
 
-The most typical way Solr uses the `filterCache` is to cache results of each `fq` search parameter, though there are some other cases as well.
+The most typical way Solr uses the `filterCache` is to cache results of each `fq` search parameter, though there are some other use cases as well.
 Subsequent queries using the same parameter filter query result in cache hits and rapid returns of results.
 See xref:query-guide:common-query-parameters.adoc#fq-filter-query-parameter[fq (Filter Query) Parameter] for a detailed discussion of `fq`.
 
 [TIP]
-Use of this cache can be disabled for a `fq` using the xref:query-guide:common-query-parameters.adoc#cache-local-parameter[`cache` local parameter].
+Use of this cache can be disabled for a specific query's `fq` using the xref:query-guide:common-query-parameters.adoc#cache-local-parameter[`cache` local parameter].
 
 Another Solr feature using this cache is the `filter(...)` syntax in the default Lucene query parser.
 
