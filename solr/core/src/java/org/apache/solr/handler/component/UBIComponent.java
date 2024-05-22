@@ -161,6 +161,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     this.solrClientCache = coreContainer.getSolrClientCache();
     if (coreContainer.isZooKeeperAware()) {
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
+    } else {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "UBI is SolrCloud only feature.");
     }
 
     if (children.isEmpty()) {
@@ -174,15 +177,8 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
             exception);
       }
       writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
-      // DefaultSolrHighlighter defHighlighter = new DefaultSolrHighlighter(core);
-      // defHighlighter.init(PluginInfo.EMPTY_INFO);
-      // solrConfigHighlighter = defHighlighter;
-    } else {
-      // solrConfigHighlighter =
-      //         core.createInitInstance(
-      //                 children.get(0), SolrHighlighter.class, null,
-      // DefaultSolrHighlighter.class.getName());
     }
+
     // do I need this check?
     if (initArgs != null) {
       log.info("Initializing UBIComponent");
@@ -207,12 +203,8 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
           streamExpression = StreamExpressionParser.parse(expr);
           streamFactory = new StreamFactory();
 
-          String defaultZk = null;
-          String[] outputHeaders = null;
-          String delim = "  ";
-          String arrayDelim = "|";
-          boolean includeHeaders = false;
           streamFactory.withDefaultZkHost(defaultZkhost);
+          // streamFactory.withCollectionZkHost("ubi", zkHost);
 
           Lang.register(streamFactory);
 
@@ -316,18 +308,26 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
     if (streamFactory != null) {
       // streamFactory.withFunctionName("stdin", StandardInStream.class);
+      StreamContext streamContext = new StreamContext();
+      streamContext.setSolrClientCache(solrClientCache);
       TupleStream stream = null;
       // PushBackStream pushBackStream = null;
-      stream = constructStream(streamFactory, streamExpression);
+      // stream = constructStream(streamFactory, streamExpression);
+      stream = streamFactory.constructStream(streamExpression);
+      stream.setStreamContext(streamContext);
 
       // Map params = validateLetAndGetParams(stream, expr);
 
       // pushBackStream = new PushBackStream(stream);
 
-      StreamContext streamContext = new StreamContext();
-      streamContext.setSolrClientCache(solrClientCache);
-      stream.setStreamContext(streamContext);
       List<Tuple> tuples = getTuples(stream);
+
+      for (Tuple tuple : tuples) {
+        System.out.println(tuple.getString("worker"));
+        System.out.println(tuple.getString("totalIndexed"));
+      }
+
+      System.out.println("Total tuples returned " + tuples.size());
 
       // assertEquals(4, tuples.size());
       // pushBackStream.open();

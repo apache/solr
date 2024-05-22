@@ -17,12 +17,20 @@
 
 package org.apache.solr.handler.component;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.io.Lang;
+import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.UpdateStream;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
@@ -53,6 +61,8 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
    */
   private static final List<SolrClient> CLIENTS = new ArrayList<>(7);
 
+  private static String zkHost;
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("solr.log.dir", createTempDir("solr_logs").toString());
@@ -68,6 +78,8 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
         .addConfig("ubi-enabled", configset("ubi-enabled"))
         .addConfig("ubi", configset("_default"))
         .configure();
+
+    zkHost = cluster.getZkServer().getZkAddress();
 
     CLIENTS.add(cluster.getSolrClient());
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
@@ -112,14 +124,71 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     assertEquals("commit failed", 0, cluster.getSolrClient().commit(COLLECTION).getStatus());
   }
 
+  public void testUsingStreamingExpressionDirectly() throws Exception {
+    TupleStream stream;
+    List<Tuple> tuples;
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+
+    streamContext.setSolrClientCache(solrClientCache);
+
+    StreamFactory streamFactory = new StreamFactory().withCollectionZkHost("ubi", zkHost);
+
+    Lang.register(streamFactory);
+
+    String clause = getClause();
+    stream = streamFactory.constructStream(clause);
+    stream.setStreamContext(streamContext);
+    tuples = getTuples(stream);
+    stream.close();
+    solrClientCache.close();
+
+    assertEquals("Total tuples returned",1,tuples.size());
+    Tuple tuple = tuples.get(0);
+    assertEquals("1",tuple.getString(UpdateStream.BATCH_INDEXED_FIELD_NAME));
+    assertEquals("1",tuple.getString("totalIndexed"));
+
+    // Check the UBI collection
+    final JsonQueryRequest requestUBI = new JsonQueryRequest().setQuery("id:4.0").setLimit(1);
+
+    // Randomly grab a client, it shouldn't matter which is used to check UBI event.
+    SolrClient client = getRandClient();
+    final QueryResponse responseUBI = requestUBI.process(client, UBI_COLLECTION);
+    try {
+      assertEquals(0, responseUBI.getStatus());
+      assertEquals(1, responseUBI.getResults().getNumFound());
+    } catch (AssertionError e) {
+      throw new AssertionError(responseUBI + " + " + client + " => " + e.getMessage(), e);
+    }
+  }
+
+  private List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
+    tupleStream.open();
+    List<Tuple> tuples = new ArrayList<>();
+    for (; ; ) {
+      Tuple t = tupleStream.read();
+      // log.info(" ... {}", t.fields);
+      if (t.EOF) {
+        break;
+      } else {
+        tuples.add(t);
+      }
+    }
+    tupleStream.close();
+    return tuples;
+  }
+
+  private static String getClause() {
+    String clause = "commit(ubi,update(ubi,tuple(id=add(1,3), name_s=bob)))";
+    return clause;
+  }
+
   @SuppressWarnings({"rawtypes", "unchecked"})
   public void testRandomDocs() throws Exception {
 
     final UpdateRequest ureq = new UpdateRequest();
-    for (int i = 0; i < 1; i++) {
 
-      ureq.add(sdoc("id", i, "data_s", "data:" + i));
-    }
+    ureq.add(sdoc("id", 1, "data_s", "data_1"));
     assertEquals("add failed", 0, ureq.process(getRandClient(), COLLECTION).getStatus());
     assertEquals("commit failed", 0, getRandClient().commit(COLLECTION).getStatus());
 
@@ -131,7 +200,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
 
     final JsonQueryRequest req =
         new JsonQueryRequest()
-            .setQuery("id:1")
+            .setQuery("*:*")
             .setLimit(1)
             .withParam("ubi", "true")
             .withParam("query_id", "123")

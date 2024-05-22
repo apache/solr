@@ -13,8 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#commit(ubi,
+#  update(ubi,
+#    tuple(id=49,a_i=1,b_i=5)
+#  )
+#)
+
 let(cli-zkhost="localhost:9983",    
-    commit(ubi,
+   commit(ubi,
     update(ubi,
            tuple(id=49,a_i=1,b_i=5))
            )
