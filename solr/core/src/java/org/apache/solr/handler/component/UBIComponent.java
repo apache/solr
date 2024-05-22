@@ -161,9 +161,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     this.solrClientCache = coreContainer.getSolrClientCache();
     if (coreContainer.isZooKeeperAware()) {
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
-    } else {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "UBI is SolrCloud only feature.");
     }
 
     if (children.isEmpty()) {
@@ -182,43 +179,47 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     // do I need this check?
     if (initArgs != null) {
       log.info("Initializing UBIComponent");
-      String streamQueriesExpressionFile = initArgs.get("streamQueriesExpressionFile");
+      if (coreContainer.isZooKeeperAware()) {
+        String streamQueriesExpressionFile = initArgs.get("streamQueriesExpressionFile");
 
-      if (streamQueriesExpressionFile != null) {
+        if (streamQueriesExpressionFile != null) {
 
-        LineNumberReader bufferedReader;
+          LineNumberReader bufferedReader;
 
-        try {
-          bufferedReader =
-              new LineNumberReader(
-                  new InputStreamReader(
-                      core.getResourceLoader().openResource(streamQueriesExpressionFile),
-                      StandardCharsets.UTF_8));
+          try {
+            bufferedReader =
+                new LineNumberReader(
+                    new InputStreamReader(
+                        core.getResourceLoader().openResource(streamQueriesExpressionFile),
+                        StandardCharsets.UTF_8));
 
-          String[] args = {}; // maybe we have variables?
-          String expr = readExpression(bufferedReader, args);
+            String[] args = {}; // maybe we have variables?
+            String expr = readExpression(bufferedReader, args);
 
-          bufferedReader.close();
+            bufferedReader.close();
 
-          streamExpression = StreamExpressionParser.parse(expr);
-          streamFactory = new StreamFactory();
+            streamExpression = StreamExpressionParser.parse(expr);
+            streamFactory = new StreamFactory();
 
-          streamFactory.withDefaultZkHost(defaultZkhost);
-          // streamFactory.withCollectionZkHost("ubi", zkHost);
+            streamFactory.withDefaultZkHost(defaultZkhost);
+            // streamFactory.withCollectionZkHost("ubi", zkHost);
 
-          Lang.register(streamFactory);
+            Lang.register(streamFactory);
 
-          TupleStream stream = constructStream(streamFactory, streamExpression);
+            TupleStream stream = constructStream(streamFactory, streamExpression);
 
-          // not sure if I need this?  Except maybe, we assume let?
-          Map params = validateLetAndGetParams(stream, expr);
+            // not sure if I need this?  Except maybe, we assume let?
+            Map params = validateLetAndGetParams(stream, expr);
 
-        } catch (IOException ioe) {
-          throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Error reading file " + streamQueriesExpressionFile,
-              ioe);
+          } catch (IOException ioe) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Error reading file " + streamQueriesExpressionFile,
+                ioe);
+          }
         }
+      } else {
+        log.info("Streaming UBI query data collection is only available in SolrCloud mode.");
       }
     }
   }
