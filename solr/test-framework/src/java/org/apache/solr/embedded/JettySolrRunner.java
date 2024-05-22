@@ -47,6 +47,7 @@ import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
+import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -145,8 +146,6 @@ public class JettySolrRunner {
   private String host;
 
   private volatile boolean started = false;
-
-  private CoreContainerProvider coreContainerProvider;
 
   public static class DebugFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -379,20 +378,8 @@ public class JettySolrRunner {
           new LifeCycle.Listener() {
 
             @Override
-            public void lifeCycleStopping(LifeCycle arg0) {}
-
-            @Override
-            public synchronized void lifeCycleStopped(LifeCycle arg0) {
-              if (coreContainerProvider != null) {
-                coreContainerProvider.close();
-              }
-            }
-
-            @Override
-            public void lifeCycleStarting(LifeCycle arg0) {}
-
-            @Override
             public synchronized void lifeCycleStarted(LifeCycle arg0) {
+              // awkwardly, parts of Solr want to know the port but we don't know that until now
               jettyPort = getFirstConnectorPort();
               int port = jettyPort;
               if (proxyPort != -1) port = proxyPort;
@@ -403,9 +390,13 @@ public class JettySolrRunner {
               root.getServletContext()
                   .setAttribute(SolrDispatchFilter.SOLRHOME_ATTRIBUTE, solrHome);
               SSLConfigurationsFactory.current().init(); // normally happens in jetty-ssl.xml
-              coreContainerProvider = new CoreContainerProvider();
-              coreContainerProvider.init(root.getServletContext());
+
               log.info("Jetty properties: {}", nodeProperties);
+
+              final var provider = new CoreContainerProvider();
+              // since Jetty already started, we must init manually
+              provider.contextInitialized(new ServletContextEvent(root.getServletContext()));
+              root.addEventListener(provider); // Jetty will close it later
 
               debugFilter =
                   root.addFilter(DebugFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
