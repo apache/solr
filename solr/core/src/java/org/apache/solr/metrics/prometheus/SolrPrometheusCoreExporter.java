@@ -34,16 +34,6 @@ import org.apache.solr.metrics.prometheus.core.SolrCoreTlogMetric;
 public class SolrPrometheusCoreExporter extends SolrPrometheusExporter {
   public final String coreName;
   public final boolean cloudMode;
-  public static final String ADMIN = "ADMIN";
-  public static final String QUERY = "QUERY";
-  public static final String UPDATE = "UPDATE";
-  public static final String REPLICATION = "REPLICATION";
-  public static final String TLOG = "TLOG";
-  public static final String CACHE = "CACHE";
-  public static final String SEARCHER = "SEARCHER";
-  public static final String HIGHLIGHTER = "HIGHLIGHTER";
-  public static final String INDEX = "INDEX";
-  public static final String CORE = "CORE";
 
   public SolrPrometheusCoreExporter(String coreName, boolean cloudMode) {
     super();
@@ -66,7 +56,7 @@ public class SolrPrometheusCoreExporter extends SolrPrometheusExporter {
 
   private SolrCoreMetric categorizeCoreMetric(Metric dropwizardMetric, String metricName) {
     String metricCategory = metricName.split("\\.")[0];
-    switch (metricCategory) {
+    switch (CoreCategory.valueOf(metricCategory)) {
       case ADMIN:
       case QUERY:
       case UPDATE:

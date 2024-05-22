@@ -14,23 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.core;
+package org.apache.solr.metrics.prometheus;
 
-import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
-
-public class SolrCoreNoOpMetric extends SolrCoreMetric {
-
-  public SolrCoreNoOpMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+public interface PrometheusExporterInfo {
+  /** Category of prefix Solr Core dropwizard handler metric names */
+  enum CoreCategory {
+    ADMIN,
+    QUERY,
+    UPDATE,
+    REPLICATION,
+    TLOG,
+    CACHE,
+    SEARCHER,
+    HIGHLIGHTER,
+    INDEX,
+    CORE
   }
-
-  @Override
-  public SolrCoreMetric parseLabels() {
-    return this;
-  }
-
-  @Override
-  public void toPrometheus(SolrPrometheusCoreExporter solrPrometheusCoreExporter) {}
 }

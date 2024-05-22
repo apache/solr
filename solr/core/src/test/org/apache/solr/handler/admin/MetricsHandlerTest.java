@@ -703,9 +703,9 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     NamedList<?> values = resp.getValues();
     assertNotNull(values.get("metrics"));
     values = (NamedList<?>) values.get("metrics");
-    SolrPrometheusExporter registry = (SolrPrometheusExporter) values.get("solr.core.collection1");
-    assertNotNull(registry);
-    MetricSnapshots actualSnapshots = registry.collect();
+    SolrPrometheusExporter exporter = (SolrPrometheusExporter) values.get("solr.core.collection1");
+    assertNotNull(exporter);
+    MetricSnapshots actualSnapshots = exporter.collect();
     assertNotNull(actualSnapshots);
 
     Optional<MetricSnapshot> actualSnapshot =

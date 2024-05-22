@@ -21,8 +21,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.Timer;
-import io.prometheus.metrics.model.snapshots.Labels;
-import java.util.ArrayList;
+import java.util.Map;
 import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
 
 /** Dropwizard metrics of name ADMIN/QUERY/UPDATE/REPLICATION.* */
@@ -43,47 +42,35 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
     String category = parsedMetric[0];
     String handler = parsedMetric[1];
     String type = parsedMetric[2];
-    labels.put("category", category);
-    labels.put("type", type);
-    labels.put("handler", handler);
+    labels.putAll(Map.of("category", category, "type", type, "handler", handler));
     return this;
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusCoreExporter solrPrometheusCoreRegistry) {
+  public void toPrometheus(SolrPrometheusCoreExporter solrPrometheusCoreExporter) {
     if (dropwizardMetric instanceof Meter) {
-      solrPrometheusCoreRegistry.exportMeter(
-          CORE_REQUESTS_TOTAL,
-          (Meter) dropwizardMetric,
-          Labels.of(new ArrayList<>(labels.keySet()), new ArrayList<>(labels.values())));
+      solrPrometheusCoreExporter.exportMeter(
+          CORE_REQUESTS_TOTAL, (Meter) dropwizardMetric, getLabels());
     } else if (dropwizardMetric instanceof Counter) {
       if (metricName.endsWith("requests")) {
-        solrPrometheusCoreRegistry.exportCounter(
-            CORE_REQUESTS_TOTAL,
-            (Counter) dropwizardMetric,
-            Labels.of(new ArrayList<>(labels.keySet()), new ArrayList<>(labels.values())));
+        solrPrometheusCoreExporter.exportCounter(
+            CORE_REQUESTS_TOTAL, (Counter) dropwizardMetric, getLabels());
       } else if (metricName.endsWith("totalTime")) {
         // Do not need type label for total time
         labels.remove("type");
-        solrPrometheusCoreRegistry.exportCounter(
-            CORE_REQUESTS_TOTAL_TIME,
-            (Counter) dropwizardMetric,
-            Labels.of(new ArrayList<>(labels.keySet()), new ArrayList<>(labels.values())));
+        solrPrometheusCoreExporter.exportCounter(
+            CORE_REQUESTS_TOTAL_TIME, (Counter) dropwizardMetric, getLabels());
       }
     } else if (dropwizardMetric instanceof Gauge) {
       if (!metricName.endsWith("handlerStart")) {
-        solrPrometheusCoreRegistry.exportGauge(
-            CORE_REQUESTS_UPDATE_HANDLER,
-            (Gauge<?>) dropwizardMetric,
-            Labels.of(new ArrayList<>(labels.keySet()), new ArrayList<>(labels.values())));
+        solrPrometheusCoreExporter.exportGauge(
+            CORE_REQUESTS_UPDATE_HANDLER, (Gauge<?>) dropwizardMetric, getLabels());
       }
     } else if (dropwizardMetric instanceof Timer) {
       // Do not need type label for request times
       labels.remove("type");
-      solrPrometheusCoreRegistry.exportTimer(
-          CORE_REQUEST_TIMES,
-          (Timer) dropwizardMetric,
-          Labels.of(new ArrayList<>(labels.keySet()), new ArrayList<>(labels.values())));
+      solrPrometheusCoreExporter.exportTimer(
+          CORE_REQUEST_TIMES, (Timer) dropwizardMetric, getLabels());
     }
   }
 }

@@ -35,8 +35,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.PlatformManagedObject;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +45,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
@@ -56,7 +53,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.AggregateMetric;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,71 +163,6 @@ public class MetricUtils {
           }
           consumer.accept(doc);
         });
-  }
-
-  /**
-   * Provides a representation of the given Dropwizard metric registry as {@link
-   * SolrPrometheusCoreExporter}-s. Only those metrics are converted which match at least one of the
-   * given MetricFilter instances.
-   *
-   * @param registry the {@link MetricRegistry} to be converted
-   * @param shouldMatchFilters a list of {@link MetricFilter} instances. A metric must match <em>any
-   *     one</em> of the filters from this list to be included in the output
-   * @param mustMatchFilter a {@link MetricFilter}. A metric <em>must</em> match this filter to be
-   *     included in the output.
-   * @param propertyFilter limit what properties of a metric are returned
-   * @param skipHistograms discard any {@link Histogram}-s and histogram parts of {@link Timer}-s.
-   * @param skipAggregateValues discard internal values of {@link AggregateMetric}-s.
-   * @param compact use compact representation for counters and gauges.
-   * @param consumer consumer that accepts produced {@link SolrPrometheusCoreExporter}-s
-   */
-  public static void toPrometheusRegistry(
-      MetricRegistry registry,
-      String registryName,
-      List<MetricFilter> shouldMatchFilters,
-      MetricFilter mustMatchFilter,
-      Predicate<CharSequence> propertyFilter,
-      boolean skipHistograms,
-      boolean skipAggregateValues,
-      boolean compact,
-      Consumer<SolrPrometheusCoreExporter> consumer) {
-    String coreName;
-    boolean cloudMode = false;
-    Map<String, Metric> dropwizardMetrics = registry.getMetrics();
-    String[] rawParsedRegistry = registryName.split("\\.");
-    List<String> parsedRegistry = new ArrayList<>(Arrays.asList(rawParsedRegistry));
-
-    if (parsedRegistry.size() == 3) {
-      coreName = parsedRegistry.get(2);
-    } else if (parsedRegistry.size() == 5) {
-      coreName = parsedRegistry.stream().skip(1).collect(Collectors.joining("_"));
-      cloudMode = true;
-    } else {
-      coreName = registryName;
-    }
-
-    SolrPrometheusCoreExporter solrPrometheusCoreExporter =
-        new SolrPrometheusCoreExporter(coreName, cloudMode);
-
-    toMaps(
-        registry,
-        shouldMatchFilters,
-        mustMatchFilter,
-        propertyFilter,
-        skipHistograms,
-        skipAggregateValues,
-        compact,
-        false,
-        (metricName, metric) -> {
-          try {
-            Metric dropwizardMetric = dropwizardMetrics.get(metricName);
-            solrPrometheusCoreExporter.exportDropwizardMetric(dropwizardMetric, metricName);
-          } catch (Exception e) {
-            // Do not fail entirely for metrics exporting. Log and try to export next metric
-            log.warn("Error occurred exporting Dropwizard Metric to Prometheus", e);
-          }
-        });
-    consumer.accept(solrPrometheusCoreExporter);
   }
 
   /**

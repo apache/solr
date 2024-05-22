@@ -47,14 +47,14 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
     Labels expectedLabels = Labels.of("test", "test-value");
 
-    SolrPrometheusCoreExporter registry = new SolrPrometheusCoreExporter("collection1", false);
+    SolrPrometheusCoreExporter exporter = new SolrPrometheusCoreExporter("collection1", false);
     CounterSnapshot.CounterDataPointSnapshot counterDatapoint =
-        registry.createCounterDatapoint(1.234, expectedLabels);
+        exporter.createCounterDatapoint(1.234, expectedLabels);
     GaugeSnapshot.GaugeDataPointSnapshot gaugeDataPoint =
-        registry.createGaugeDatapoint(9.876, expectedLabels);
-    registry.collectCounterDatapoint("test_counter_metric_name", counterDatapoint);
-    registry.collectGaugeDatapoint("test_gauge_metric_name", gaugeDataPoint);
-    registries.add("solr.core.collection1", registry);
+        exporter.createGaugeDatapoint(9.876, expectedLabels);
+    exporter.collectCounterDatapoint("test_counter_metric_name", counterDatapoint);
+    exporter.collectGaugeDatapoint("test_gauge_metric_name", gaugeDataPoint);
+    registries.add("solr.core.collection1", exporter);
     rsp.add("metrics", registries);
 
     w.write(byteOut, req, rsp);

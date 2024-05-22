@@ -35,7 +35,7 @@ import java.util.Map;
  * {@link com.codahale.metrics.Metric} to {@link MetricSnapshot} to be outputted for {@link
  * org.apache.solr.response.PrometheusResponseWriter}
  */
-public abstract class SolrPrometheusExporter {
+public abstract class SolrPrometheusExporter implements PrometheusExporterInfo {
   protected final Map<String, List<CounterSnapshot.CounterDataPointSnapshot>> metricCounters;
   protected final Map<String, List<GaugeSnapshot.GaugeDataPointSnapshot>> metricGauges;
 

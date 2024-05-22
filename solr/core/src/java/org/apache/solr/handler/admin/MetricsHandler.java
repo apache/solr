@@ -51,6 +51,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
@@ -118,8 +119,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     }
   }
 
-  private void handleRequest(SolrParams params, BiConsumer<String, Object> consumer)
-      throws Exception {
+  private void handleRequest(SolrParams params, BiConsumer<String, Object> consumer) {
     NamedList<Object> response;
 
     if (!enabled) {
@@ -128,7 +128,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     }
 
     if (PROMETHEUS_METRICS_WT.equals(params.get(CommonParams.WT))) {
-      response = handlePrometheusRegistry(params);
+      response = handlePrometheusExport(params);
       consumer.accept("metrics", response);
       return;
     }
@@ -179,7 +179,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     return response;
   }
 
-  private NamedList<Object> handlePrometheusRegistry(SolrParams params) {
+  private NamedList<Object> handlePrometheusExport(SolrParams params) {
     NamedList<Object> response = new SimpleOrderedMap<>();
     MetricFilter mustMatchFilter = parseMustMatchFilter(params);
     Predicate<CharSequence> propertyFilter = parsePropertyFilter(params);
@@ -192,7 +192,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       MetricRegistry dropwizardRegistry = metricManager.registry(registryName);
       // Currently only export Solr Core registries
       if (registryName.startsWith("solr.core")) {
-        MetricUtils.toPrometheusRegistry(
+        PrometheusResponseWriter.toPrometheus(
             dropwizardRegistry,
             registryName,
             metricFilters,
