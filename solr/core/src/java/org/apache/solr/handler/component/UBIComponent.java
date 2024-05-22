@@ -321,16 +321,6 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       // pushBackStream = new PushBackStream(stream);
 
       List<Tuple> tuples = getTuples(stream);
-
-      for (Tuple tuple : tuples) {
-        System.out.println(tuple.getString("worker"));
-        System.out.println(tuple.getString("totalIndexed"));
-      }
-
-      System.out.println("Total tuples returned " + tuples.size());
-
-      // assertEquals(4, tuples.size());
-      // pushBackStream.open();
     }
   }
 

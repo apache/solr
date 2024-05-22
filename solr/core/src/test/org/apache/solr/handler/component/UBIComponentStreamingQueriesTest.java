@@ -143,10 +143,10 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     stream.close();
     solrClientCache.close();
 
-    assertEquals("Total tuples returned",1,tuples.size());
+    assertEquals("Total tuples returned", 1, tuples.size());
     Tuple tuple = tuples.get(0);
-    assertEquals("1",tuple.getString(UpdateStream.BATCH_INDEXED_FIELD_NAME));
-    assertEquals("1",tuple.getString("totalIndexed"));
+    assertEquals("1", tuple.getString(UpdateStream.BATCH_INDEXED_FIELD_NAME));
+    assertEquals("1", tuple.getString("totalIndexed"));
 
     // Check the UBI collection
     final JsonQueryRequest requestUBI = new JsonQueryRequest().setQuery("id:4.0").setLimit(1);
