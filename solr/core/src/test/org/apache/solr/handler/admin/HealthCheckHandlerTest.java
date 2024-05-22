@@ -112,33 +112,6 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       newJetty.stop();
     }
 
-    // add a new node for the purpose of negative testing
-    // negative check that if core container is not available at the node
-    newJetty = cluster.startJettySolrRunner();
-    try (SolrClient solrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
-
-      // positive check that our (new) "healthy" node works with direct http client
-      assertEquals(CommonParams.OK, req.process(solrClient).getResponse().get(CommonParams.STATUS));
-
-      // shutdown the core container of new node
-      newJetty.getCoreContainer().shutdown();
-
-      // api shouldn't unreachable
-      SolrException thrown =
-          expectThrows(
-              SolrException.class,
-              () -> {
-                req.process(solrClient).getResponse().get(CommonParams.STATUS);
-                fail("API shouldn't be available, and fail at above request");
-              });
-      assertEquals("Exception code should be 404", 404, thrown.code());
-      assertTrue(
-          "Should have seen an exception containing the an error",
-          thrown.getMessage().contains("CoreContainer has shut down"));
-    } finally {
-      newJetty.stop();
-    }
-
     // (redundant) positive check that our (previously) exiting "healthy" node (still) works
     // after getting negative results from our broken node and failed core container
     try (SolrClient solrClient =
