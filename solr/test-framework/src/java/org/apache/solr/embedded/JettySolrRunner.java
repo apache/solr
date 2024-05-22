@@ -473,15 +473,14 @@ public class JettySolrRunner {
    * @return the {@link CoreContainer} for this node
    */
   public CoreContainer getCoreContainer() {
+    final var solrDispatchFilter = getSolrDispatchFilter();
+    if (solrDispatchFilter == null) {
+      return null;
+    }
     try {
-      if (getSolrDispatchFilter() == null || getSolrDispatchFilter().getCores() == null) {
-        return null;
-      }
-      return getSolrDispatchFilter().getCores();
+      return solrDispatchFilter.getCores();
     } catch (UnavailableException e) {
-      // Since this is only used in tests, this is just a straight-up failure
-      // If this is converted for other use something else might be better here
-      throw new RuntimeException(e);
+      return null;
     }
   }
 
@@ -900,11 +899,7 @@ public class JettySolrRunner {
       } catch (UnavailableException e) {
         throw new IllegalStateException("The CoreContainer is unavailable!");
       }
-      if (cores != null) {
-        cores.waitForLoadingCoresToFinish(timeoutMs);
-      } else {
-        throw new IllegalStateException("The CoreContainer is not set!");
-      }
+      cores.waitForLoadingCoresToFinish(timeoutMs);
     } else {
       throw new IllegalStateException("The dispatchFilter is not set!");
     }

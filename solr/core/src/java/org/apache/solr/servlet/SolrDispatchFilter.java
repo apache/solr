@@ -159,7 +159,6 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
   }
 
   /** The CoreContainer. It's ready for use, albeit could shut down whenever. Never null. */
-  // TODO update callers to skip pointless null checks
   public CoreContainer getCores() throws UnavailableException {
     return containerProvider.getCoreContainer();
   }
