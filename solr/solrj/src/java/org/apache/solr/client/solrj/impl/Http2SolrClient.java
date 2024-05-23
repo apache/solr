@@ -112,8 +112,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   private final HttpClient httpClient;
 
-  private SSLConfig sslConfig;
-
   private List<HttpListenerFactory> listenerFactory = new ArrayList<>();
   private final AsyncTracker asyncTracker = new AsyncTracker();
 
@@ -342,7 +340,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
           && Objects.equals(origCollection, collection);
     }
 
-    public void write(byte b[]) throws IOException {
+    public void write(byte[] b) throws IOException {
       this.content.getOutputStream().write(b);
     }
 
@@ -424,7 +422,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
     if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest)) {
       collection = defaultCollection;
     }
-    MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
     CompletableFuture<NamedList<Object>> future = new CompletableFuture<>();
     final MakeRequestReturnValue mrrv;
     final String url;
@@ -435,13 +432,14 @@ public class Http2SolrClient extends HttpSolrClientBase {
       future.completeExceptionally(e);
       return future;
     }
-    final ResponseParser parser =
-        solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
     mrrv.request
         .onRequestQueued(asyncTracker.queuedListener)
         .onComplete(asyncTracker.completeListener)
         .send(
             new InputStreamResponseListener() {
+              // MDC snapshot from requestAsync's thread
+              MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
+
               @Override
               public void onHeaders(Response response) {
                 super.onHeaders(response);
@@ -500,7 +498,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     Request req = null;
     try {
       InputStreamResponseListener listener = new InputStreamReleaseTrackingResponseListener();
-      req = makeRequestAndSend(solrRequest, url, listener, false);
+      req = sendRequest(makeRequest(solrRequest, url, false), listener);
       Response response = listener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
       url = req.getURI().toString();
       InputStream is = listener.getInputStream();
@@ -598,10 +596,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     Map<String, String> headers = solrRequest.getHeaders();
     if (headers != null) {
-      req.headers(
-          h ->
-              headers.entrySet().stream()
-                  .forEach(entry -> h.add(entry.getKey(), entry.getValue())));
+      req.headers(h -> headers.forEach(h::add));
     }
   }
 
@@ -624,12 +619,6 @@ public class Http2SolrClient extends HttpSolrClientBase {
       this.contentWriter = null;
       this.requestContent = null;
     }
-  }
-
-  private Request makeRequestAndSend(
-      SolrRequest<?> solrRequest, String url, InputStreamResponseListener listener, boolean isAsync)
-      throws IOException, SolrServerException {
-    return sendRequest(makeRequest(solrRequest, url, isAsync), listener);
   }
 
   private MakeRequestReturnValue makeRequest(
