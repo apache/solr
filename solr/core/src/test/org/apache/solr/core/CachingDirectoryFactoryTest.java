@@ -94,7 +94,9 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
       df.remove(pathAString, addIfTrue(deleteAfter, pathAString, removeAfter.getAsBoolean()));
       df.doneWithDirectory(a);
       df.release(a);
-      assertTrue(pathA.toFile().exists()); // we know there are subdirs that should prevent removal
+      assertTrue(
+          "The path " + pathA + " should exist because it has subdirs that prevent removal",
+          pathA.toFile().exists()); // we know there are subdirs that should prevent removal
       Collections.shuffle(Arrays.asList(subdirs), r);
       for (Map.Entry<String, Directory> e : subdirs) {
         boolean after = removeAfter.getAsBoolean();
@@ -105,18 +107,26 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
         df.release(d);
         boolean exists = Path.of(pathString).toFile().exists();
         if (after) {
-          assertTrue(exists);
+          assertTrue(
+              "Path " + pathString + " should be removed after, but it no longer exists", exists);
         } else {
-          assertFalse(exists);
+          assertFalse(
+              "Path " + pathString + " should not wait to be removed, but it still exists", exists);
         }
       }
       if (alwaysBefore) {
-        assertTrue(deleteAfter.isEmpty());
+        assertTrue(
+            "The directory should always be deleted before, but it has items that it should be deleted after",
+            deleteAfter.isEmpty());
       }
       if (deleteAfter.isEmpty()) {
-        assertTrue(PathUtils.isEmpty(tmpDir));
+        assertTrue(
+            "There are no subdirs to delete afterwards, therefore the directory should have been emptied",
+            PathUtils.isEmpty(tmpDir));
       } else {
-        assertTrue(pathA.toFile().exists()); // parent must still be present
+        assertTrue(
+            "There are subdirs to wait on, so the parent directory should still exist",
+            pathA.toFile().exists()); // parent must still be present
         for (Map.Entry<String, Directory> e : subdirs) {
           String pathString = e.getKey();
           boolean exists = new File(pathString).exists();
@@ -128,7 +138,7 @@ public class CachingDirectoryFactoryTest extends SolrTestCaseJ4 {
         }
       }
     }
-    assertTrue(PathUtils.isEmpty(tmpDir));
+    assertTrue("Dir " + tmpDir + " should be empty at the end", PathUtils.isEmpty(tmpDir));
   }
 
   private static boolean addIfTrue(Set<String> deleteAfter, String path, boolean after) {
