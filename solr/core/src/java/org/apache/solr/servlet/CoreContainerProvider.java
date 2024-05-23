@@ -89,23 +89,17 @@ public class CoreContainerProvider implements ServletContextListener {
   private RateLimitManager rateLimitManager;
   private String registryName;
 
-  /** Acquires an instance from the context, waiting if necessary. */
-  public static CoreContainerProvider serviceForContext(ServletContext ctx)
-      throws InterruptedException {
-    long startWait = System.nanoTime();
-    synchronized (ctx) {
-      CoreContainerProvider provider;
-      while ((provider =
-              (CoreContainerProvider) ctx.getAttribute(CoreContainerProvider.class.getName()))
-          == null) {
-        ctx.wait(1_000);
-        final int seconds = (int) ((System.nanoTime() - startWait) / 1_000_000_000);
-        if (seconds >= 2 && log.isInfoEnabled()) {
-          log.info("Still waiting for CoreContainer startup ({} seconds elapsed)", seconds);
-        }
-      }
-      return provider;
+  /**
+   * Acquires an instance from the context. Never null.
+   *
+   * @throws IllegalStateException if not present.
+   */
+  public static CoreContainerProvider serviceForContext(ServletContext ctx) {
+    var provider = (CoreContainerProvider) ctx.getAttribute(CoreContainerProvider.class.getName());
+    if (provider == null) {
+      throw new IllegalStateException("CoreContainer failed to initialize");
     }
+    return provider;
   }
 
   @Override
@@ -113,15 +107,12 @@ public class CoreContainerProvider implements ServletContextListener {
     final var ctx = event.getServletContext();
     init(ctx);
     ctx.setAttribute(CoreContainerProvider.class.getName(), this);
-    // let serviceForContext() know
-    synchronized (ctx) {
-      ctx.notifyAll();
-    }
   }
 
   @Override
   public void contextDestroyed(ServletContextEvent sce) {
     close();
+    // could remove ourselves from ctx but why bother
   }
 
   /**
@@ -152,7 +143,7 @@ public class CoreContainerProvider implements ServletContextListener {
     assert !cores.isShutDown(); // shutdown sequence initiates *here*, thus will be nulled first
   }
 
-  public void close() {
+  private void close() {
     CoreContainer cc = cores;
 
     // Mark Miller suggested that we should be publishing that we are down before anything else
@@ -191,9 +182,9 @@ public class CoreContainerProvider implements ServletContextListener {
     }
   }
 
-  public void init(ServletContext servletContext) {
+  private void init(ServletContext servletContext) {
     if (log.isTraceEnabled()) {
-      log.trace("CoreService.init(): {}", this.getClass().getClassLoader());
+      log.trace("init(): {}", this.getClass().getClassLoader());
     }
     CoreContainer coresInit = null;
     try {
@@ -266,7 +257,7 @@ public class CoreContainerProvider implements ServletContextListener {
         throw (Error) t;
       }
     } finally {
-      log.trace("SolrDispatchFilter.init() done");
+      log.trace("init() done");
       this.cores = coresInit; // crucially final assignment
     }
   }

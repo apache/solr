@@ -371,6 +371,7 @@ public class JettySolrRunner {
       root.setResourceBase(".");
 
       root.addEventListener(
+          // Install CCP first.  Subclass CCP to do some pre-initialization
           new CoreContainerProvider() {
             @Override
             public void contextInitialized(ServletContextEvent event) {

@@ -143,9 +143,6 @@ public class SolrDispatchFilter extends BaseSolrFilter implements PathExcluder {
       }
 
       configExcludes(this, config.getInitParameter("excludePatterns"));
-    } catch (InterruptedException e) {
-      throw new ServletException("Interrupted while fetching core service");
-
     } catch (Throwable t) {
       // catch this so our filter still works
       log.error("Could not start Dispatch Filter.", t);
