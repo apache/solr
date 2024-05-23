@@ -63,6 +63,9 @@ Deprecation Removals
   in favor of the new CompletableFuture based methods.  Remove the related deprecated interfaces `AsyncListener` and ``Cancellable`
   (James Dyer)
 
+* SOLR-14115: Remove deprecated zkcli script in favour of equivalent bin/solr sub commmands. (Eric Pugh)
+
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -91,6 +94,72 @@ Other Changes
 * SOLR-14410: Switch from SysV init script to systemd service definition (Marius Ghita via janhoy)
 
 * SOLR-17205: De-couple SolrJ required Java version from server Java version (janhoy)
+
+* SOLR-17279: Introduce SecurityJson.java file to Test Framework to consolidate setting up authentication in tests. (Rudy Seitz via Eric Pugh)
+
+==================  9.7.0 ==================
+New Features
+---------------------
+* SOLR-13350: Multithreaded search execution (Ishan Chattopadhyaya, Mark Miller, Christine Poerschke, David Smiley, noble)
+
+* SOLR-17192: Put an UpdateRequestProcessor-enforced soft-limit on the number of fields allowed in a core.  The `NumFieldLimitingUpdateRequestProcessorFactory`
+  limit may be adjusted by raising the factory's `maxFields` setting, toggled in and out of "warning-only" mode using the `warnOnly` setting, or disabled entirely
+  by removing it solrconfig.xml.  The limit is set at 1000 fields in the "_default" configset, but left in warning-only mode. (David Smiley, Eric Pugh,
+  Jason Gerlowski)
+
+Improvements
+---------------------
+* SOLR-16921: use -solrUrl to derive the zk host connection for bin/solr zk subcommands (Eric Pugh)
+
+* SOLR-14115: Add linkconfig, cluster, and updateacls as commands to SolrCLI.  Allow bin/solr commands to have parity with zkcli.sh commands. (Eric Pugh)
+
+* SOLR-17274: Allow JSON atomic updates to use multiple modifiers or a modifier like 'set' as a field name
+  if child docs are not enabled. (Calvin Smith, David Smiley)
+
+* SOLR-17300: Http2SolrClient.Builder.withHttpClient now copies HttpListenerFactory (e.g. for auth, metrics, traces, etc.)
+  (Sanjay Dutt, David Smiley)
+
+Optimizations
+---------------------
+* SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
+  cluster metrics.  AttributeFetcherImpl was improved accordingly.  (Yohann Callea)
+
+Bug Fixes
+---------------------
+* SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
+
+* SOLR-17261: Remove unintended timeout of 60 seconds for core loading. (Houston Putman)
+
+* SOLR-17049: Actually mark all replicas down at startup and truly wait for them.
+  This includes replicas that might not exist anymore locally. (Houston Putman, Vincent Primault)
+
+* SOLR-17263: Fix 'Illegal character in query' exception in HttpJdkSolrClient (Andy Webb)
+
+* SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when aliases are used. (Aparna Suresh)
+
+* PR-2475: Fixed node listing bug in Admin UI when different hostnames start with the same front part. (@hgdharold via Eric Pugh)
+
+* SOLR-16659: Properly construct V2 base urls instead of replacing substring "/solr" with "/api" (Andrey Bozhko via Eric Pugh)
+
+Dependency Upgrades
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+* SOLR-17248: Refactor ZK related SolrCli tools to separate SolrZkClient and CloudSolrClient instantiation/usage (Lamine Idjeraoui via Eric Pugh)
+
+* SOLR-16505: Use Jetty HTTP2 for index replication and other "recovery" operations
+  (Sanjay Dutt, David Smiley)
+
+* GITHUB#2454: Refactor preparePutOrPost method in HttpJdkSolrClient (Andy Webb)
+
+==================  9.6.1 ==================
+Bug Fixes
+---------------------
+* SOLR-17296: Remove (broken) singlePass attempt when reRankScale + debug is used, and fix underlying NPE. (hossman)
+
+* SOLR-17307: Use the system file separator instead of an explicit '/' in CachingDirectoryFactory (Houston Putman, hossman)
 
 ==================  9.6.0 ==================
 New Features

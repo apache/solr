@@ -30,6 +30,7 @@
   <str name="coreSorter">testCoreSorter</str>
   <int name="transientCacheSize">66</int>
   <int name="replayUpdatesThreads">100</int>
+  <int name="indexSearcherExecutorThreads">7</int>
   <int name="maxBooleanClauses">42</int>
   <bool name="hideStackTrace">true</bool>
 
