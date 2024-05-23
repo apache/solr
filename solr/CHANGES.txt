@@ -65,6 +65,7 @@ Deprecation Removals
 
 * SOLR-14115: Remove deprecated zkcli script in favour of equivalent bin/solr sub commmands. (Eric Pugh)
 
+* SOLR-17284: Remove deprecated BlobRepository in favour of FileStore. (Eric Pugh)
 
 Dependency Upgrades
 ---------------------
