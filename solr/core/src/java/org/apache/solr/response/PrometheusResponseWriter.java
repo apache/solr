@@ -27,7 +27,6 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -55,10 +54,8 @@ public class PrometheusResponseWriter extends RawResponseWriter {
     NamedList<Object> prometheusRegistries =
         (NamedList<Object>) response.getValues().get("metrics");
     var prometheusTextFormatWriter = new PrometheusTextFormatWriter(false);
-    for (Iterator<Map.Entry<String, Object>> iter = prometheusRegistries.iterator();
-        iter.hasNext(); ) {
-      SolrPrometheusCoreExporter prometheusExporter =
-          (SolrPrometheusCoreExporter) iter.next().getValue();
+    for (Map.Entry<String, Object> prometheusRegistry : prometheusRegistries) {
+      var prometheusExporter = (SolrPrometheusCoreExporter) prometheusRegistry.getValue();
       prometheusTextFormatWriter.write(out, prometheusExporter.collect());
     }
   }

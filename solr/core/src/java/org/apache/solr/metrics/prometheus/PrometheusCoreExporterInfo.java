@@ -33,6 +33,5 @@ public interface PrometheusCoreExporterInfo {
     CORE
   }
 
-  String PROMETHEUS_CLOUD_CORE_REGEX = "^core_(.*)_(shard[0-9]+)_(replica_n[0-9]+)$";
-  Pattern PROMETHEUS_CLOUD_CORE_PATTERN = Pattern.compile(PROMETHEUS_CLOUD_CORE_REGEX);
+  Pattern CLOUD_CORE_PATTERN = Pattern.compile("^core_(.*)_(shard[0-9]+)_(replica_n[0-9]+)$");
 }

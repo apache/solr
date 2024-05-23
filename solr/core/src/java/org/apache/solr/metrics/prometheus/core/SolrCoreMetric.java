@@ -16,7 +16,7 @@
  */
 package org.apache.solr.metrics.prometheus.core;
 
-import static org.apache.solr.metrics.prometheus.PrometheusCoreExporterInfo.PROMETHEUS_CLOUD_CORE_PATTERN;
+import static org.apache.solr.metrics.prometheus.PrometheusCoreExporterInfo.CLOUD_CORE_PATTERN;
 
 import com.codahale.metrics.Metric;
 import io.prometheus.metrics.model.snapshots.Labels;
@@ -60,7 +60,7 @@ public abstract class SolrCoreMetric {
   public abstract void toPrometheus(SolrPrometheusCoreExporter exporter);
 
   private void appendCloudModeLabels() {
-    Matcher m = PROMETHEUS_CLOUD_CORE_PATTERN.matcher(coreName);
+    Matcher m = CLOUD_CORE_PATTERN.matcher(coreName);
     if (m.find()) {
       labels.put("collection", m.group(1));
       labels.put("shard", m.group(2));
