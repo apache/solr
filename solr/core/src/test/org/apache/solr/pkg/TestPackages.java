@@ -691,8 +691,7 @@ public class TestPackages extends SolrCloudTestCase {
     // So far we have been verifying the details with  ZK directly
     // use the package read API to verify with each node that it has the correct data
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      String path =
-          jetty.getBaseUrl().toString().replace("/solr", "/api") + "/cluster/package?wt=javabin";
+      String path = jetty.getBaseURLV2().toString() + "/cluster/package?wt=javabin";
       TestDistribFileStore.assertResponseValues(
           10,
           new Callable<NavigableObject>() {
