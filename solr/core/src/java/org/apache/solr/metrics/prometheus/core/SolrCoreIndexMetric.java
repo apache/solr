@@ -35,11 +35,10 @@ public class SolrCoreIndexMetric extends SolrCoreMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusCoreExporter solrPrometheusCoreExporter) {
+  public void toPrometheus(SolrPrometheusCoreExporter exporter) {
     if (dropwizardMetric instanceof Gauge) {
       if (metricName.endsWith("sizeInBytes")) {
-        solrPrometheusCoreExporter.exportGauge(
-            CORE_INDEX_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
+        exporter.exportGauge(CORE_INDEX_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
       }
     }
   }

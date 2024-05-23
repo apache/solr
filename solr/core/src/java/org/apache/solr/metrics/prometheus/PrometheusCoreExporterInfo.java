@@ -16,7 +16,9 @@
  */
 package org.apache.solr.metrics.prometheus;
 
-public interface PrometheusExporterInfo {
+import java.util.regex.Pattern;
+
+public interface PrometheusCoreExporterInfo {
   /** Category of prefix Solr Core dropwizard handler metric names */
   enum CoreCategory {
     ADMIN,
@@ -30,4 +32,7 @@ public interface PrometheusExporterInfo {
     INDEX,
     CORE
   }
+
+  String PROMETHEUS_CLOUD_CORE_REGEX = "^core_(.*)_(shard[0-9]+)_(replica_n[0-9]+)$";
+  Pattern PROMETHEUS_CLOUD_CORE_PATTERN = Pattern.compile(PROMETHEUS_CLOUD_CORE_REGEX);
 }

@@ -54,11 +54,11 @@ public class PrometheusResponseWriter extends RawResponseWriter {
       throws IOException {
     NamedList<Object> prometheusRegistries =
         (NamedList<Object>) response.getValues().get("metrics");
-    Iterator<Map.Entry<String, Object>> it = prometheusRegistries.iterator();
     var prometheusTextFormatWriter = new PrometheusTextFormatWriter(false);
-    while (it.hasNext()) {
-      Map.Entry<String, Object> entry = it.next();
-      SolrPrometheusCoreExporter prometheusExporter = (SolrPrometheusCoreExporter) entry.getValue();
+    for (Iterator<Map.Entry<String, Object>> iter = prometheusRegistries.iterator();
+        iter.hasNext(); ) {
+      SolrPrometheusCoreExporter prometheusExporter =
+          (SolrPrometheusCoreExporter) iter.next().getValue();
       prometheusTextFormatWriter.write(out, prometheusExporter.collect());
     }
   }

@@ -16,13 +16,14 @@
  */
 package org.apache.solr.metrics.prometheus.core;
 
+import static org.apache.solr.metrics.prometheus.PrometheusCoreExporterInfo.PROMETHEUS_CLOUD_CORE_PATTERN;
+
 import com.codahale.metrics.Metric;
 import io.prometheus.metrics.model.snapshots.Labels;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
 
@@ -56,16 +57,14 @@ public abstract class SolrCoreMetric {
 
   public abstract SolrCoreMetric parseLabels();
 
-  public abstract void toPrometheus(SolrPrometheusCoreExporter solrPrometheusCoreExporter);
+  public abstract void toPrometheus(SolrPrometheusCoreExporter exporter);
 
   private void appendCloudModeLabels() {
-    Pattern p = Pattern.compile("^core_(.*)_(shard[0-9]+)_(replica_n[0-9]+)");
-    Matcher m = p.matcher(coreName);
+    Matcher m = PROMETHEUS_CLOUD_CORE_PATTERN.matcher(coreName);
     if (m.find()) {
-      String collectionName = m.group(1);
-      String shard = m.group(2);
-      String replica = m.group(3);
-      labels.putAll(Map.of("collection", collectionName, "shard", shard, "replica", replica));
+      labels.put("collection", m.group(1));
+      labels.put("shard", m.group(2));
+      labels.put("replica", m.group(3));
     } else {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,

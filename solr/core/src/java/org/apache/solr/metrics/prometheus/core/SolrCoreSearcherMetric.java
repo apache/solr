@@ -38,25 +38,21 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
   public SolrCoreMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
     if (!(dropwizardMetric instanceof Counter)) {
-      String type = parsedMetric[2];
-      labels.put("type", type);
+      labels.put("type", parsedMetric[2]);
     }
     return this;
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusCoreExporter solrPrometheusCoreExporter) {
+  public void toPrometheus(SolrPrometheusCoreExporter exporter) {
     if (dropwizardMetric instanceof Gauge) {
       if (metricName.endsWith("liveDocsCache")) {
-        solrPrometheusCoreExporter.exportGauge(
-            CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
+        exporter.exportGauge(CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
       } else {
-        solrPrometheusCoreExporter.exportGauge(
-            CORE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
+        exporter.exportGauge(CORE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
       }
     } else if (dropwizardMetric instanceof Timer) {
-      solrPrometheusCoreExporter.exportTimer(
-          CORE_SEARCHER_TIMES, (Timer) dropwizardMetric, getLabels());
+      exporter.exportTimer(CORE_SEARCHER_TIMES, (Timer) dropwizardMetric, getLabels());
     }
   }
 }

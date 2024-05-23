@@ -33,17 +33,15 @@ public class SolrCoreTlogMetric extends SolrCoreMetric {
   public SolrCoreMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
     if (dropwizardMetric instanceof Meter) {
-      String item = parsedMetric[1];
-      labels.put("item", item);
+      labels.put("item", parsedMetric[1]);
     }
     return this;
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusCoreExporter solrPrometheusCoreExporter) {
+  public void toPrometheus(SolrPrometheusCoreExporter exporter) {
     if (dropwizardMetric instanceof Meter) {
-      solrPrometheusCoreExporter.exportMeter(
-          CORE_TLOG_METRICS, (Meter) dropwizardMetric, getLabels());
+      exporter.exportMeter(CORE_TLOG_METRICS, (Meter) dropwizardMetric, getLabels());
     }
   }
 }

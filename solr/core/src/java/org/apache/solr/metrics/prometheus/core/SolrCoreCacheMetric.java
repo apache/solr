@@ -33,17 +33,15 @@ public class SolrCoreCacheMetric extends SolrCoreMetric {
   public SolrCoreMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
     if (dropwizardMetric instanceof Gauge) {
-      String cacheType = parsedMetric[2];
-      labels.put("cacheType", cacheType);
+      labels.put("cacheType", parsedMetric[2]);
     }
     return this;
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusCoreExporter solrPrometheusCoreExporter) {
+  public void toPrometheus(SolrPrometheusCoreExporter exporter) {
     if (dropwizardMetric instanceof Gauge) {
-      solrPrometheusCoreExporter.exportGauge(
-          CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
+      exporter.exportGauge(CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
     }
   }
 }

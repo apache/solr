@@ -32,5 +32,5 @@ public class SolrCoreNoOpMetric extends SolrCoreMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusCoreExporter solrPrometheusCoreExporter) {}
+  public void toPrometheus(SolrPrometheusCoreExporter exporter) {}
 }

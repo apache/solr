@@ -76,6 +76,6 @@ public class SolrCoreMetricTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void toPrometheus(SolrPrometheusCoreExporter solrPrometheusCoreExporter) {}
+    public void toPrometheus(SolrPrometheusCoreExporter exporter) {}
   }
 }
