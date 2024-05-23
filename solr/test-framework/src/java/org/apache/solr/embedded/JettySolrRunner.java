@@ -91,7 +91,6 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.Source;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ReservedThreadExecutor;
@@ -393,42 +392,23 @@ public class JettySolrRunner {
               super.contextInitialized(event);
             }
           });
-      // TODO the below could be done immediately; not be an event listener
-      server.addEventListener(
-          new LifeCycle.Listener() {
 
-            @Override
-            public synchronized void lifeCycleStarted(LifeCycle arg0) {
-              debugFilter =
-                  root.addFilter(DebugFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
-              extraFilters = new ArrayList<>();
-              for (Map.Entry<Class<? extends Filter>, String> entry :
-                  config.extraFilters.entrySet()) {
-                extraFilters.add(
-                    root.addFilter(
-                        entry.getKey(), entry.getValue(), EnumSet.of(DispatcherType.REQUEST)));
-              }
+      debugFilter = root.addFilter(DebugFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+      extraFilters = new ArrayList<>();
+      for (Map.Entry<Class<? extends Filter>, String> entry : config.extraFilters.entrySet()) {
+        extraFilters.add(
+            root.addFilter(entry.getKey(), entry.getValue(), EnumSet.of(DispatcherType.REQUEST)));
+      }
 
-              for (Map.Entry<ServletHolder, String> entry : config.extraServlets.entrySet()) {
-                root.addServlet(entry.getKey(), entry.getValue());
-              }
-              dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
-              dispatchFilter.setHeldClass(SolrDispatchFilter.class);
-              dispatchFilter.setInitParameter("excludePatterns", excludePatterns);
-              // Map dispatchFilter in same path as in web.xml
-              root.addFilter(dispatchFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
+      for (Map.Entry<ServletHolder, String> entry : config.extraServlets.entrySet()) {
+        root.addServlet(entry.getKey(), entry.getValue());
+      }
+      dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+      dispatchFilter.setHeldClass(SolrDispatchFilter.class);
+      dispatchFilter.setInitParameter("excludePatterns", excludePatterns);
+      // Map dispatchFilter in same path as in web.xml
+      root.addFilter(dispatchFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
 
-              synchronized (JettySolrRunner.this) {
-                waitOnSolr = true;
-                JettySolrRunner.this.notify();
-              }
-            }
-
-            @Override
-            public void lifeCycleFailure(LifeCycle arg0, Throwable arg1) {
-              System.clearProperty("hostPort");
-            }
-          });
       // Default servlet as a fall-through
       root.addServlet(Servlet404.class, "/");
       chain = root;
@@ -445,6 +425,7 @@ public class JettySolrRunner {
       rwh.addRule(new RewritePatternRule("/api/*", "/solr/____v2"));
       chain = rwh;
     }
+
     GzipHandler gzipHandler = new GzipHandler();
     gzipHandler.setHandler(chain);
 
@@ -547,15 +528,7 @@ public class JettySolrRunner {
           server.start();
         }
       }
-      synchronized (JettySolrRunner.this) {
-        int cnt = 0;
-        while (!waitOnSolr || !dispatchFilter.isRunning()) {
-          this.wait(100);
-          if (cnt++ == 15) {
-            throw new RuntimeException("Jetty/Solr unresponsive");
-          }
-        }
-      }
+      assert dispatchFilter.isRunning();
 
       if (config.waitForLoadingCoresToFinishMs != null
           && config.waitForLoadingCoresToFinishMs > 0L) {
@@ -652,20 +625,10 @@ public class JettySolrRunner {
     Map<String, String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
     try {
-      Filter filter = dispatchFilter.getFilter();
       QueuedThreadPool qtp = (QueuedThreadPool) server.getThreadPool();
       ReservedThreadExecutor rte = qtp.getBean(ReservedThreadExecutor.class);
 
       server.stop();
-
-      if (server.getState().equals(Server.FAILED)) {
-        filter.destroy();
-        if (extraFilters != null) {
-          for (FilterHolder f : extraFilters) {
-            f.getFilter().destroy();
-          }
-        }
-      }
 
       // stop timeout is 0, so we will interrupt right away
       while (!qtp.isStopped()) {
