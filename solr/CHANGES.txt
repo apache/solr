@@ -23,6 +23,8 @@ Dependency Upgrades
 (No changes)
 
 
+* SOLR-17307: Use the system file separator instead of an explicit '/' in CachingDirectoryFactory (Houston Putman, hossman)
+
 ==================  9.6.0 ==================
 New Features
 ---------------------
