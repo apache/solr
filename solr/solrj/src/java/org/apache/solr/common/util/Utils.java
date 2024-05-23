@@ -717,10 +717,30 @@ public class Utils {
     return (at == -1) ? (urlScheme + "://" + url) : urlScheme + url.substring(at);
   }
 
+  /**
+   * Construct a V1 base url for the Solr node, given its name (e.g., 'app-node-1:8983_solr') and a
+   * URL scheme.
+   *
+   * @param nodeName name of the Solr node
+   * @param urlScheme scheme for the base url ('http' or 'https')
+   * @return url that looks like {@code https://app-node-1:8983/solr}
+   * @throws IllegalArgumentException if the provided node name is malformed
+   */
   public static String getBaseUrlForNodeName(final String nodeName, final String urlScheme) {
     return getBaseUrlForNodeName(nodeName, urlScheme, false);
   }
 
+  /**
+   * Construct a V1 or a V2 base url for the Solr node, given its name (e.g.,
+   * 'app-node-1:8983_solr') and a URL scheme.
+   *
+   * @param nodeName name of the Solr node
+   * @param urlScheme scheme for the base url ('http' or 'https')
+   * @param isV2 whether a V2 url should be constructed
+   * @return url that looks like {@code https://app-node-1:8983/api} (V2) or {@code
+   *     https://app-node-1:8983/solr} (V1)
+   * @throws IllegalArgumentException if the provided node name is malformed
+   */
   public static String getBaseUrlForNodeName(
       final String nodeName, final String urlScheme, boolean isV2) {
     final int colonAt = nodeName.indexOf(':');

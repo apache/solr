@@ -46,6 +46,8 @@ Bug Fixes
 
 * PR-2475: Fixed node listing bug in Admin UI when different hostnames start with the same front part. (@hgdharold via Eric Pugh)
 
+* SOLR-16659: Properly construct V2 base urls instead of replacing substring "/solr" with "/api" (Andrey Bozhko via Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
