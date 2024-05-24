@@ -155,6 +155,8 @@ Other Changes
 
 * GITHUB#2454: Refactor preparePutOrPost method in HttpJdkSolrClient (Andy Webb)
 
+* SOLR-16503: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
+
 ==================  9.6.1 ==================
 Bug Fixes
 ---------------------
