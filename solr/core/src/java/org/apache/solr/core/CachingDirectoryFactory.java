@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.DirectoryStream;
@@ -362,10 +363,10 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   }
 
   private static boolean isSubPath(CacheValue cacheValue, CacheValue otherCacheValue) {
-    int one = cacheValue.path.lastIndexOf('/');
-    int two = otherCacheValue.path.lastIndexOf('/');
+    int one = cacheValue.path.lastIndexOf(File.separatorChar);
+    int two = otherCacheValue.path.lastIndexOf(File.separatorChar);
 
-    return otherCacheValue.path.startsWith(cacheValue.path + "/") && two > one;
+    return otherCacheValue.path.startsWith(cacheValue.path + File.separatorChar) && two > one;
   }
 
   @Override

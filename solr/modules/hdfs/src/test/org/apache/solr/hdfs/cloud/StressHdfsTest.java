@@ -251,4 +251,8 @@ public class StressHdfsTest extends AbstractBasicDistributedZkTestBase {
       }
     }
   }
+
+  protected String getBaseUrl(SolrClient client) {
+    return ((HttpSolrClient) client).getBaseURL();
+  }
 }

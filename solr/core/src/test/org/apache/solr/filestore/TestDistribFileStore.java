@@ -169,7 +169,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
                     return true;
                   });
       for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-        String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
+        String baseUrl = jettySolrRunner.getBaseURLV2().toString();
         String url = baseUrl + "/node/files/package/mypkg/v1.0?wt=javabin";
         assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
       }
@@ -196,7 +196,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       boolean verifyContent)
       throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-      String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
+      String baseUrl = jettySolrRunner.getBaseURLV2().toString();
       String url = baseUrl + "/node/files" + path + "?wt=javabin&meta=true";
       assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
 

@@ -344,8 +344,8 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     Map<?, ?> r = null;
 
     String uri =
-        cluster.getJettySolrRunners().get(0).getBaseUrl().toString().replace("/solr", "")
-            + "/api/cluster/replicas/migrate";
+        cluster.getJettySolrRunners().get(0).getBaseURLV2().toString()
+            + "/cluster/replicas/migrate";
     try {
       httpRequest = new HttpPost(uri);
 

@@ -269,8 +269,6 @@ public class IndexFetcher {
     Http2SolrClient httpClient =
         new Http2SolrClient.Builder(leaderBaseUrl)
             .withHttpClient(updateShardHandler.getRecoveryOnlyHttpClient())
-            .withListenerFactory(
-                updateShardHandler.getRecoveryOnlyHttpClient().getListenerFactory())
             .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
             .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)

@@ -1277,9 +1277,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    String baseUrl =
-        ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.getSolrClient()).getBaseURL();
-    baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
+    String baseUrl = shardToJetty.get(SHARD1).get(0).jetty.getBaseUrl().toString();
 
     try (SolrClient baseServer =
         new HttpSolrClient.Builder(baseUrl)

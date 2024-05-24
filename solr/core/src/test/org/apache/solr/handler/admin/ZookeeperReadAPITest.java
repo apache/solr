@@ -52,8 +52,10 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
     super.setUp();
 
     baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
-    basezk = baseUrl.toString().replace("/solr", "/api") + "/cluster/zookeeper/data";
-    basezkls = baseUrl.toString().replace("/solr", "/api") + "/cluster/zookeeper/children";
+
+    String baseUrlV2 = cluster.getJettySolrRunner(0).getBaseURLV2().toString();
+    basezk = baseUrlV2 + "/cluster/zookeeper/data";
+    basezkls = baseUrlV2 + "/cluster/zookeeper/children";
   }
 
   @After

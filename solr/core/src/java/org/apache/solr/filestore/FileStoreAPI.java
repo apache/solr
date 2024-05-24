@@ -45,7 +45,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.BlobRepository;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.pkg.PackageAPI;
@@ -84,7 +83,7 @@ public class FileStoreAPI {
         coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     l.remove(coreContainer.getZkController().getNodeName());
-    Collections.shuffle(l, BlobRepository.RANDOM);
+    Collections.shuffle(l, Utils.RANDOM);
     return l;
   }
 

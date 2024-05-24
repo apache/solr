@@ -374,7 +374,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
     if (request instanceof V2Request) {
       if (System.getProperty("solr.v2RealPath") == null || ((V2Request) request).isForceV2()) {
-        basePath = baseUrl.replace("/solr", "/api");
+        basePath = changeV2RequestEndpoint(baseUrl);
       } else {
         basePath = baseUrl + "/____v2";
       }
@@ -801,6 +801,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return invariantParams;
   }
 
+  /** Typically looks like {@code http://localhost:8983/solr} (no core or collection) */
   public String getBaseURL() {
     return baseUrl;
   }

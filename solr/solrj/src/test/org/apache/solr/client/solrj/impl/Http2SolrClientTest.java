@@ -130,7 +130,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     DebugServlet.clear();
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
-    q.setParam("a", "\u1234");
+    q.setParam("a", MUST_ENCODE);
     Http2SolrClient.Builder b =
         new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE);
     if (rp != null) {
@@ -233,7 +233,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).build()) {
-      testUpdate(client, WT.JAVABIN, "application/javabin", "\u1234");
+      testUpdate(client, WT.JAVABIN, "application/javabin", MUST_ENCODE);
     }
   }
 
@@ -246,7 +246,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
             .withRequestWriter(new RequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build()) {
-      testUpdate(client, WT.XML, "application/xml; charset=UTF-8", "\u1234");
+      testUpdate(client, WT.XML, "application/xml; charset=UTF-8", MUST_ENCODE);
     }
   }
 
@@ -259,7 +259,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
             .withRequestWriter(new BinaryRequestWriter())
             .withResponseParser(new BinaryResponseParser())
             .build()) {
-      testUpdate(client, WT.JAVABIN, "application/javabin", "\u1234");
+      testUpdate(client, WT.JAVABIN, "application/javabin", MUST_ENCODE);
     }
   }
 
