@@ -55,8 +55,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
       "solrconfig-concurrentmergescheduler.xml";
   private static final String solrConfigFileNameSortingMergePolicyFactory =
       "solrconfig-sortingmergepolicyfactory.xml";
-  private static final String solrConfigFileNameSegmentSort =
-      "solrconfig-segmentsort.xml";
+  private static final String solrConfigFileNameSegmentSort = "solrconfig-segmentsort.xml";
   private static final String schemaFileName = "schema.xml";
 
   private static boolean compoundMergePolicySort = false;
@@ -270,12 +269,12 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   }
 
   /*
-     No leaf sorter configuration
-   */
+    No leaf sorter configuration
+  */
 
   public void testNoneSegmentSort() throws Exception {
     SolrConfig solrConfig =
-            new SolrConfig(instanceDir, solrConfigFileNameSortingMergePolicyFactory);
+        new SolrConfig(instanceDir, solrConfigFileNameSortingMergePolicyFactory);
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
     assertNotNull(solrIndexConfig);
     assertNull(solrIndexConfig.segmentSort);
@@ -284,18 +283,18 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   }
 
   /*
-     Leaf sorter configuration to sort by segment timestamp
-   */
+    Leaf sorter configuration to sort by segment timestamp
+  */
 
   public void testSegmentSort() throws Exception {
-    SolrConfig solrConfig =
-            new SolrConfig(instanceDir, solrConfigFileNameSegmentSort);
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameSegmentSort);
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
     assertNotNull(solrIndexConfig);
     assertNotNull(solrIndexConfig.segmentSort);
     IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
     assertNotNull(iwc.getLeafSorter());
-    SegmentTimeLeafSorter expected = new SegmentTimeLeafSorter(SegmentSort.valueOf(solrIndexConfig.segmentSort.toUpperCase()));
+    SegmentTimeLeafSorter expected =
+        new SegmentTimeLeafSorter(SegmentSort.valueOf(solrIndexConfig.segmentSort));
     assertEquals(expected.getSortOptions(), SegmentSort.TIME_DESC);
     assertEquals(expected.getLeafSorter().getClass(), iwc.getLeafSorter().getClass());
   }

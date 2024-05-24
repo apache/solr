@@ -25,8 +25,12 @@ import java.util.Comparator;
 import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.common.ConfigNode;
@@ -68,6 +72,7 @@ public class SolrIndexConfig implements MapSerializable {
   public final int ramPerThreadHardLimitMB;
 
   public String segmentSort;
+
   /**
    * When using a custom merge policy that allows triggering synchronous merges on commit (see
    * {@link MergePolicy#findFullFlushMerges(org.apache.lucene.index.MergeTrigger,
@@ -117,6 +122,7 @@ public class SolrIndexConfig implements MapSerializable {
   public SolrIndexConfig(SolrConfig cfg, SolrIndexConfig def) {
     this(cfg.get("indexConfig"), def);
   }
+
   /**
    * Constructs a SolrIndexConfig which parses the Lucene related config params in solrconfig.xml
    *
@@ -208,7 +214,7 @@ public class SolrIndexConfig implements MapSerializable {
     map.put("writeLockTimeout", writeLockTimeout);
     map.put("lockType", lockType);
     map.put("infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
-    if(segmentSort != null) {
+    if (segmentSort != null) {
       map.put("segmentSort", segmentSort);
     }
     if (mergeSchedulerInfo != null) {
@@ -290,16 +296,18 @@ public class SolrIndexConfig implements MapSerializable {
 
     if (segmentSort != null) {
       try {
-           SegmentSort sortEnum = SegmentSort.valueOf(segmentSort.toUpperCase());
-           LeafSorter sorter = new SegmentTimeLeafSorter(sortEnum);
-           Comparator<LeafReader> leafSorter = sorter.getLeafSorter();
-           if (leafSorter != null) {
-             iwc.setLeafSorter(leafSorter);
-             log.debug("Segment sort enabled:  {}", sorter.toString());
-           }
-       } catch (IllegalArgumentException e) {
-          log.error("Invalid segmentSort option: ", segmentSort);
-       }
+        SegmentSort sortEnum = SegmentSort.valueOf(segmentSort);
+        LeafSorter sorter = new SegmentTimeLeafSorter(sortEnum);
+        Comparator<LeafReader> leafSorter = sorter.getLeafSorter();
+        if (leafSorter != null) {
+          iwc.setLeafSorter(leafSorter);
+          if (log.isDebugEnabled()) {
+            log.debug("Segment sort enabled:  {}", sorter.toString());
+          }
+        }
+      } catch (IllegalArgumentException e) {
+        log.error("Invalid segmentSort option: ", segmentSort);
+      }
     }
     return iwc;
   }

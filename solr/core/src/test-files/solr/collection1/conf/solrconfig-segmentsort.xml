@@ -23,7 +23,7 @@
     <schemaFactory class="ClassicIndexSchemaFactory"/>
 
     <indexConfig>
-        <segmentSort>time_desc</segmentSort>
+        <segmentSort>TIME_DESC</segmentSort>
     </indexConfig>
 
 </config>
