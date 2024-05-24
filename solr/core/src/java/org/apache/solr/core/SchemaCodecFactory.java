@@ -151,7 +151,7 @@ public class SchemaCodecFactory extends CodecFactory implements SolrCoreAware {
   }
 
   /**
-   * This class exists because Lucene95HnswVectorsFormat's getMaxDimensions method is final and we
+   * This class exists because Lucene99HnswVectorsFormat's getMaxDimensions method is final and we
    * need to workaround that constraint to allow more than the default number of dimensions
    */
   private static final class SolrDelegatingKnnVectorsFormat extends KnnVectorsFormat {
