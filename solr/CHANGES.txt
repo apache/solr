@@ -161,7 +161,6 @@ Other Changes
 Bug Fixes
 ---------------------
 * SOLR-17296: Remove (broken) singlePass attempt when reRankScale + debug is used, and fix underlying NPE. (hossman)
->>>>>>> main
 
 * SOLR-17307: Use the system file separator instead of an explicit '/' in CachingDirectoryFactory (Houston Putman, hossman)
 
