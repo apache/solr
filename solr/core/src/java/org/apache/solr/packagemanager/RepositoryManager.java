@@ -50,7 +50,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.BlobRepository;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
@@ -193,8 +193,7 @@ public class RepositoryManager {
       }
       String manifestJson = getMapper().writeValueAsString(release.manifest);
       String manifestSHA512 =
-          BlobRepository.sha512Digest(
-              ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
+          Utils.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
       PackageUtils.postFile(
           solrClient,
           ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)),

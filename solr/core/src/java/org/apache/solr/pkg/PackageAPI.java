@@ -253,11 +253,7 @@ public class PackageAPI {
       for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
         Utils.executeGET(
             coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-            coreContainer
-                    .getZkController()
-                    .zkStateReader
-                    .getBaseUrlForNodeName(liveNode)
-                    .replace("/solr", "/api")
+            coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode)
                 + "/cluster/package?wt=javabin&omitHeader=true&refreshPackage="
                 + p,
             Utils.JAVABINCONSUMER);
@@ -425,11 +421,7 @@ public class PackageAPI {
     for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
       Utils.executeGET(
           coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-          coreContainer
-                  .getZkController()
-                  .zkStateReader
-                  .getBaseUrlForNodeName(liveNode)
-                  .replace("/solr", "/api")
+          coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode)
               + "/cluster/package?wt=javabin&omitHeader=true&expectedVersion"
               + expected,
           Utils.JAVABINCONSUMER);

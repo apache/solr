@@ -27,7 +27,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.BlobRepository;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.CryptoKeys;
 import org.slf4j.Logger;
@@ -43,7 +43,7 @@ public class FileStoreUtils {
         coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList<>(liveNodes);
     l.remove(coreContainer.getZkController().getNodeName());
-    Collections.shuffle(l, BlobRepository.RANDOM);
+    Collections.shuffle(l, Utils.RANDOM);
     return l;
   }
 
