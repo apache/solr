@@ -21,6 +21,8 @@ import static org.apache.solr.cli.SolrCLI.findTool;
 import static org.apache.solr.cli.SolrCLI.parseCmdLine;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.io.StringReader;
@@ -152,8 +154,13 @@ public class StreamToolTest extends SolrCloudTestCase {
     assertEquals("test1|3|111.32322|test3", s);
   }
 
-  //@Test
-  public void offtestRunEchoStream() throws Exception {
+  @Test
+  public void testRunEchoStream() throws Exception {
+
+    File expressionFile = File.createTempFile("expression", ".expr");
+    FileWriter writer = new FileWriter(expressionFile);
+    writer.write("let(echo(Hello))");
+    writer.close();
 
     String[] args = {
       "stream",
@@ -162,7 +169,7 @@ public class StreamToolTest extends SolrCloudTestCase {
       "-credentials",
       SecurityJson.USER_PASS,
       "-verbose",
-      "echo(hello)"
+      expressionFile.getAbsolutePath()
     };
 
     assertEquals(0, runTool(args));
