@@ -18,6 +18,9 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -122,9 +125,31 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     assertEquals(
         "DBQ failed", 0, cluster.getSolrClient().deleteByQuery(COLLECTION, "*:*").getStatus());
     assertEquals("commit failed", 0, cluster.getSolrClient().commit(COLLECTION).getStatus());
+    assertEquals(
+        "DBQ failed", 0, cluster.getSolrClient().deleteByQuery(UBI_COLLECTION, "*:*").getStatus());
+    assertEquals("commit failed", 0, cluster.getSolrClient().commit(UBI_COLLECTION).getStatus());
+  }
+
+  public void testWritingStreamingExpression() {
+    UBIQuery ubiQuery = new UBIQuery("5678");
+    ubiQuery.setUserQuery("Apple Memory");
+
+    String clause = getClause(ubiQuery);
+    assertEquals(
+        "Check the decoded version for ease of comparison",
+        "commit(ubi,update(ubi,tuple(id=4.0,query_id=5678,user_query=Apple Memory)))",
+        URLDecoder.decode(clause, StandardCharsets.UTF_8));
+    assertEquals(
+        "Verify the encoded version",
+        "commit%28ubi%2Cupdate%28ubi%2Ctuple%28id%3D4.0%2Cquery_id%3D5678%2Cuser_query%3DApple+Memory%29%29%29",
+        clause);
   }
 
   public void testUsingStreamingExpressionDirectly() throws Exception {
+
+    UBIQuery ubiQuery = new UBIQuery("5678");
+    ubiQuery.setUserQuery("Apple Memory");
+
     TupleStream stream;
     List<Tuple> tuples;
     StreamContext streamContext = new StreamContext();
@@ -136,7 +161,7 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
 
     Lang.register(streamFactory);
 
-    String clause = getClause();
+    String clause = getClause(ubiQuery);
     stream = streamFactory.constructStream(clause);
     stream.setStreamContext(streamContext);
     tuples = getTuples(stream);
@@ -178,7 +203,14 @@ public class UBIComponentStreamingQueriesTest extends SolrCloudTestCase {
     return tuples;
   }
 
+  private static String getClause(UBIQuery ubiQuery) {
+    String clause = "commit(ubi,update(ubi,tuple(id=4.0," + ubiQuery.toTuple() + ")))";
+    clause = URLEncoder.encode(clause, StandardCharsets.UTF_8);
+    return clause;
+  }
+
   private static String getClause() {
+
     String clause = "commit(ubi,update(ubi,tuple(id=add(1,3), name_s=bob)))";
     return clause;
   }

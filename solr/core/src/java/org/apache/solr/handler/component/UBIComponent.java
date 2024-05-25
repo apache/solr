@@ -163,6 +163,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       defaultZkhost = core.getCoreContainer().getZkController().getZkServerAddress();
     }
 
+    // we should provide a way to specify your own file.
     if (children.isEmpty()) {
       String ubiQueryJSONLLog = EnvUtils.getProperty("solr.log.dir") + "/" + UBI_QUERY_JSONL_LOG;
       try {
@@ -240,14 +241,9 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       return;
     }
 
-    String queryId = params.get(QUERY_ID, null);
+    UBIQuery ubiQuery = new UBIQuery(params.get(QUERY_ID));
 
-    if (queryId == null) {
-      queryId = "1234";
-    }
-
-    // See if the user passed in a user query as a query parameter
-    String userQuery = params.get(USER_QUERY);
+    ubiQuery.setUserQuery(params.get(USER_QUERY));
 
     Object queryAttributes = params.get(QUERY_ATTRIBUTES);
 
@@ -261,6 +257,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
         Map paramsProperties = (Map) jsonProperties.get("params");
         if (paramsProperties.containsKey(QUERY_ATTRIBUTES)) {
           queryAttributes = paramsProperties.get(QUERY_ATTRIBUTES);
+          ubiQuery.setQueryAttributes(queryAttributes);
         }
       }
     }
@@ -269,15 +266,13 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
     DocList docs = rc.getDocList();
 
-    processIds(rb, docs, queryId, userQuery, queryAttributes, schema, searcher);
+    processIds(rb, docs, ubiQuery, schema, searcher);
   }
 
   protected void processIds(
       ResponseBuilder rb,
       DocList dl,
-      String queryId,
-      String userQuery,
-      Object queryAttributes,
+      UBIQuery ubiQuery,
       IndexSchema schema,
       SolrIndexSearcher searcher)
       throws IOException {
@@ -292,12 +287,13 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     String docIds = sb.length() > 0 ? sb.substring(0, sb.length() - 1) : "";
     SimpleOrderedMap<String> ubiResponseInfo = new SimpleOrderedMap<>();
     SimpleOrderedMap<Object> ubiQueryLogInfo = new SimpleOrderedMap<>();
-    ubiResponseInfo.add(QUERY_ID, queryId);
+    ubiResponseInfo.add(QUERY_ID, ubiQuery.getQueryId());
     rb.rsp.add("ubi", ubiResponseInfo);
 
-    ubiQueryLogInfo.add(QUERY_ID, queryId);
-    ubiQueryLogInfo.add(USER_QUERY, userQuery);
-    ubiQueryLogInfo.add(QUERY_ATTRIBUTES, queryAttributes);
+    // Maybe ubiQueryLogInfo should be a ubiQuery?  But what about the doc_ids?
+    ubiQueryLogInfo.add(QUERY_ID, ubiQuery.getQueryId());
+    ubiQueryLogInfo.add(USER_QUERY, ubiQuery.getUserQuery());
+    ubiQueryLogInfo.add(QUERY_ATTRIBUTES, ubiQuery.getQueryAttributes());
     ubiQueryLogInfo.add("doc_ids", docIds);
 
     if (writer != null) {
@@ -311,7 +307,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       // streamFactory.withFunctionName("stdin", StandardInStream.class);
       StreamContext streamContext = new StreamContext();
       streamContext.setSolrClientCache(solrClientCache);
-      TupleStream stream = null;
+      TupleStream stream;
       // PushBackStream pushBackStream = null;
       // stream = constructStream(streamFactory, streamExpression);
       stream = streamFactory.constructStream(streamExpression);
