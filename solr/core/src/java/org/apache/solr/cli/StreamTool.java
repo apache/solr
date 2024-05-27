@@ -161,10 +161,7 @@ public class StreamTool extends ToolBase {
 
       if (zkHost != null) {
         echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
-        long start = System.currentTimeMillis();
         solrClientCache.getCloudSolrClient(zkHost);
-        long end = System.currentTimeMillis();
-        echoIfVerbose("Connected in " + (end - start), cli);
       }
 
       StreamContext streamContext = new StreamContext();
