@@ -28,6 +28,10 @@ To start another Solr node and have it join the cluster alongside the first node
 ----
 $ bin/solr start -c -z localhost:9983 -p 8984
 ----
+[,PowerShell]
+----
+$ bin\solr.cmd start -c -z localhost:9983 -p 8984
+----
 
 
 == Create a collection
@@ -45,6 +49,21 @@ $ curl --request POST \
   "replicationFactor": 1
 }'
 ----
+[,PowerShell]
+----
+$url = "http://localhost:8983/api/collections"
+$headers = @{
+    'Content-Type' = 'application/json'
+}
+$body = @{
+    'name' = 'techproducts'
+    'numShards' = 1
+    'replicationFactor' = 1
+} | ConvertTo-Json
+
+Invoke-RestMethod -Method Post -Uri $url -Headers $headers -Body $body
+----
+
 
 == Define a schema
 
@@ -69,6 +88,28 @@ $ curl --request POST \
   ]
 }'
 ----
+[,PowerShell]
+----
+$headers = @{
+    'Content-Type' = 'application/json'
+}
+
+$body = "{
+`"add-field`": [
+{`"name`": `"name`", `"type`": `"text_general`", `"multiValued`": false},
+{`"name`": `"cat`", `"type`": `"string`", `"multiValued`": true},
+{`"name`": `"manu`", `"type`": `"string`"},
+{`"name`": `"features`", `"type`": `"text_general`", `"multiValued`": true},
+{`"name`": `"weight`", `"type`": `"pfloat`"},
+{`"name`": `"price`", `"type`": `"pfloat`"},
+{`"name`": `"popularity`", `"type`": `"pint`"},
+{`"name`": `"inStock`", `"type`": `"boolean`", `"stored`": true},
+{`"name`": `"store`", `"type`": `"location`"}
+]
+}"
+
+Invoke-RestMethod -Uri 'http://localhost:8983/api/collections/techproducts/schema' -Method 'POST' -Headers $headers -Body $body
+----
 
 ## Index some documents
 
@@ -91,6 +132,28 @@ $ curl --request POST \
     "price" : 12.50,
     "pages_i" : 384
   }'
+----
+[,PowerShell]
+----
+$url = 'http://localhost:8983/api/collections/techproducts/update'
+$headers = @{
+    'Content-Type' = 'application/json'
+}
+
+$body = @{
+    "id" = "978-0641723445"
+    "cat" = @("book", "hardcover")
+    "name" = "The Lightning Thief"
+    "author" = "Rick Riordan"
+    "series_t" = "Percy Jackson and the Olympians"
+    "sequence_i" = 1
+    "genre_s" = "fantasy"
+    "inStock" = $true
+    "price" = 12.50
+    "pages_i" = 384
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri $url -Method Post -Body $body -Headers $headers
 ----
 
 Multiple documents can be indexed in the same request:
@@ -128,6 +191,41 @@ $ curl --request POST \
   }
 ]'
 ----
+[,PowerShell]
+----
+$body = '[
+{
+"id" : "978-0641723445",
+"cat" : ["book","hardcover"],
+"name" : "The Lightning Thief",
+"author" : "Rick Riordan",
+"series_t" : "Percy Jackson and the Olympians",
+"sequence_i" : 1,
+"genre_s" : "fantasy",
+"inStock" : true,
+"price" : 12.50,
+"pages_i" : 384
+}
+,
+{
+"id" : "978-1423103349",
+"cat" : ["book","paperback"],
+"name" : "The Sea of Monsters",
+"author" : "Rick Riordan",
+"series_t" : "Percy Jackson and the Olympians",
+"sequence_i" : 2,
+"genre_s" : "fantasy",
+"inStock" : true,
+"price" : 6.49,
+"pages_i" : 304
+}
+]'
+
+$url = "http://localhost:8983/api/collections/techproducts/update"
+$contentType = "application/json"
+
+Invoke-RestMethod -Method Post -Uri $url -Body $body -ContentType $contentType
+----
 
 A file containing the documents can be indexed as follows:
 
@@ -138,6 +236,15 @@ $ curl -H "Content-Type: application/json" \
        -d @example/exampledocs/books.json \
        --url 'http://localhost:8983/api/collections/techproducts/update?commit=true'
 ----
+[,PowerShell]
+----
+$headers = @{
+    'Content-Type' = 'application/json'
+}
+$uri = 'http://localhost:8983/api/collections/techproducts/update?commit=true'
+$rsp = Invoke-WebRequest -Uri $uri -Method Post -Headers $headers -InFile .\example\exampledocs\books.json
+$rsp.Content
+----
 
 == Commit the Changes
 After documents are indexed into a collection, they are not immediately available for searching. In order to have them searchable, a commit operation (also called `refresh` in other search engines like OpenSearch etc.) is needed. Commits can be scheduled at periodic intervals using auto-commits as follows.
@@ -146,6 +253,19 @@ After documents are indexed into a collection, they are not immediately availabl
 ----
 $ curl -X POST -H 'Content-type: application/json' -d '{"set-property":{"updateHandler.autoCommit.maxTime":15000}}' http://localhost:8983/api/collections/techproducts/config
 ----
+[,PowerShell]
+----
+$headers = @{
+    'Content-Type' = 'application/json'
+}
+$body = @{
+     'set-property' = @{
+         'updateHandler.autoCommit.maxTime' = 15000
+     }
+ } | ConvertTo-Json
+$response = Invoke-WebRequest -Uri "http://localhost:8983/api/collections/techproducts/config" -Method Post -Headers $headers -Body $body
+$response.Content
+----
 
 == Make some Basic search queries
 You can now try searching your documents like:
@@ -153,4 +273,9 @@ You can now try searching your documents like:
 [source]
 ----
 curl 'http://localhost:8983/solr/techproducts/select?q=name%3Alightning'
+----
+[,PowerShell]
+----
+$rsp=Invoke-WebRequest -Uri 'http://localhost:8983/solr/techproducts/select?q=name%3Alightning' -Method Get
+$rsp.Content
 ----
