@@ -268,6 +268,7 @@ IF "%1"=="restart" goto set_script_cmd
 IF "%1"=="healthcheck" goto run_solrcli
 IF "%1"=="create" goto run_solrcli
 IF "%1"=="delete" goto run_solrcli
+IF "%1"=="stream" goto run_solrcli
 IF "%1"=="postlogs" goto run_solrcli
 IF "%1"=="zk" (
   set SCRIPT_CMD=zk
