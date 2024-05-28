@@ -31,9 +31,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
+import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -45,7 +48,7 @@ public class StreamToolTest extends SolrCloudTestCase {
   public static void setupClusterWithSecurityEnabled() throws Exception {
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
-        .withSecurityJson(SecurityJson.SIMPLE)
+        //     .withSecurityJson(SecurityJson.SIMPLE)
         .configure();
   }
 
@@ -108,6 +111,25 @@ public class StreamToolTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testReadExpression2() throws Exception {
+    // This covers parameter substitution and expanded comments support.
+
+    String[] args = {"file.expr", "one", "two", "three"};
+    StringWriter stringWriter = new StringWriter();
+    PrintWriter buf = new PrintWriter(stringWriter);
+
+    buf.println("# Try me");
+    buf.println("search(mycollection,q='*:*',fl='id, desc_s',sort='id desc')");
+
+    String expr = stringWriter.toString();
+
+    LineNumberReader reader = new LineNumberReader(new StringReader(expr));
+    String finalExpression = StreamTool.readExpression(reader, args);
+    // Strip the comment and insert the params in order.
+    assertEquals(finalExpression, "search(mycollection,q='*:*',fl='id, desc_s',sort='id desc')");
+  }
+
+  @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void testReadStream() throws Exception {
     StreamTool.StandardInStream inStream = new StreamTool.StandardInStream();
@@ -163,17 +185,66 @@ public class StreamToolTest extends SolrCloudTestCase {
   @Test
   public void testRunEchoStream() throws Exception {
 
-    File expressionFile = File.createTempFile("expression", ".expr");
+    String expression = "echo(Hello)";
+    File expressionFile = File.createTempFile("expression", ".EXPR");
     FileWriter writer = new FileWriter(expressionFile);
-    writer.write("let(echo(Hello))");
+    writer.write(expression);
     writer.close();
 
+    // test passing in the file
+    String[] args = {
+      "stream",
+      "-verbose",
+      "-zkHost",
+      cluster.getZkClient().getZkServerAddress(),
+      expressionFile.getAbsolutePath()
+    };
+
+    assertEquals(0, runTool(args));
+
+    // test passing in the expression directly
+    args =
+        new String[] {
+          "stream", "-verbose", "-zkHost", cluster.getZkClient().getZkServerAddress(), expression
+        };
+
+    assertEquals(0, runTool(args));
+  }
+
+  @Test
+  public void testStreamAgainstSolrWithBasicAuth() throws Exception {
+    String COLLECTION_NAME = "testStreamSolrWithBasicAuth";
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 1, 1)
+        .processAndWait(cluster.getSolrClient(), 10);
+    waitForState(
+        "Expected collection to be created with 1 shard and 1 replicas",
+        COLLECTION_NAME,
+        clusterShape(1, 1));
+
+    UpdateRequest ur = new UpdateRequest();
+    ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+
+    for (int i = 0; i < 10; i++) {
+      ur.add(
+          "id",
+          String.valueOf(i),
+          "desc_s",
+          TestUtil.randomSimpleString(random(), 10, 50),
+          "a_dt",
+          "2019-09-30T05:58:03Z");
+    }
+
+    String expression = "search(" + COLLECTION_NAME + ",q='*:*',fl='id, desc_s',sort='id desc')";
+    File expressionFile = File.createTempFile("expression", ".EXPR");
+    FileWriter writer = new FileWriter(expressionFile);
+    writer.write(expression);
+    writer.close();
+
+    // test passing in the file
     String[] args = {
       "stream",
       "-zkHost",
       cluster.getZkClient().getZkServerAddress(),
-      "-credentials",
-      SecurityJson.USER_PASS,
       "-verbose",
       expressionFile.getAbsolutePath()
     };

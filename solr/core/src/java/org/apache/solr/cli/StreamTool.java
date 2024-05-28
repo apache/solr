@@ -23,11 +23,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.PrintStream;
+import java.io.Reader;
+import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -112,8 +115,10 @@ public class StreamTool extends ToolBase {
     // not sure I need verbose however.
     verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
 
-    String exprFile = cli.getArgs()[0];
-    SolrClientCache solrClientCache = null;
+    String expressionArgument = cli.getArgs()[0];
+    // Http2SolrClient solrClient = (Http2SolrClient) SolrCLI.getSolrClient(cli);
+    // SolrClientCache solrClientCache = new SolrClientCache(solrClient);
+    SolrClientCache solrClientCache = new SolrClientCache();
     TupleStream stream;
     PushBackStream pushBackStream = null;
     LineNumberReader bufferedReader = null;
@@ -132,11 +137,16 @@ public class StreamTool extends ToolBase {
     System.setErr(filterOut);
 
     try {
+      // Read from the commandline either the file param or the actual expression
+      Reader inputStream =
+          expressionArgument.toLowerCase(Locale.ROOT).endsWith("expr")
+              ? new InputStreamReader(
+                  new FileInputStream(expressionArgument), Charset.defaultCharset())
+              : new StringReader(expressionArgument);
 
-      bufferedReader =
-          new LineNumberReader(
-              new InputStreamReader(new FileInputStream(exprFile), Charset.defaultCharset()));
+      bufferedReader = new LineNumberReader(inputStream);
       String expr = readExpression(bufferedReader, cli.getArgs());
+      echoIfVerbose("Running Expression: " + expr, cli);
       StreamExpression streamExpression = StreamExpressionParser.parse(expr);
       StreamFactory streamFactory = new StreamFactory();
 
@@ -151,14 +161,15 @@ public class StreamTool extends ToolBase {
 
       pushBackStream = new PushBackStream(stream);
 
-      // Now we can run the stream and return the results.
       solrClientCache = new SolrClientCache();
 
+      // unsure of need for this.
       if (zkHost != null) {
         echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
         solrClientCache.getCloudSolrClient(zkHost);
       }
 
+      // Now we can run the stream and return the results.
       StreamContext streamContext = new StreamContext();
       streamContext.setSolrClientCache(solrClientCache);
       System.setProperty("COMMAND_LINE_EXPRESSION", "true");
