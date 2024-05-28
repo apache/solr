@@ -24,12 +24,7 @@ import org.apache.lucene.index.SegmentReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public interface LeafSorter {
-
-  Comparator<LeafReader> getLeafSorter();
-}
-
-final class SegmentTimeLeafSorter implements LeafSorter {
+final class SegmentTimeLeafSorterSupplier implements LeafSorterSupplier {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String TIME_FIELD = "timestamp";
   private static final SegmentSort DEFAULT_SORT_OPTIONS = SegmentSort.NONE;
@@ -37,11 +32,11 @@ final class SegmentTimeLeafSorter implements LeafSorter {
   private SegmentSort sortOptions;
   private Comparator<LeafReader> leafSorter;
 
-  public SegmentTimeLeafSorter() {
+  public SegmentTimeLeafSorterSupplier() {
     this(DEFAULT_SORT_OPTIONS);
   }
 
-  public SegmentTimeLeafSorter(SegmentSort sortOptions) {
+  public SegmentTimeLeafSorterSupplier(SegmentSort sortOptions) {
     this.sortOptions = sortOptions;
   }
 

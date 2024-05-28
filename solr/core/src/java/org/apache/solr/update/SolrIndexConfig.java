@@ -297,16 +297,16 @@ public class SolrIndexConfig implements MapSerializable {
     if (segmentSort != null) {
       try {
         SegmentSort sortEnum = SegmentSort.valueOf(segmentSort);
-        LeafSorter sorter = new SegmentTimeLeafSorter(sortEnum);
+        LeafSorterSupplier sorter = new SegmentTimeLeafSorterSupplier(sortEnum);
         Comparator<LeafReader> leafSorter = sorter.getLeafSorter();
         if (leafSorter != null) {
           iwc.setLeafSorter(leafSorter);
           if (log.isDebugEnabled()) {
-            log.debug("Segment sort enabled:  {}", sorter.toString());
+            log.debug("Segment sort enabled:  {}", sorter);
           }
         }
       } catch (IllegalArgumentException e) {
-        log.error("Invalid segmentSort option: ", segmentSort);
+        throw new IllegalArgumentException("Invalid segmentSort option: " + segmentSort);
       }
     }
     return iwc;
