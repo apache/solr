@@ -404,7 +404,6 @@ public class StreamTool extends ToolBase {
       if (line.length() > 0) {
         for (int i = 1; i < args.length; i++) {
           String arg = args[i];
-          System.out.println("arg:" + arg);
           line = line.replace("$" + i, arg);
         }
       }
