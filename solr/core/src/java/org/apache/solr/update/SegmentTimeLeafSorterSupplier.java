@@ -72,9 +72,7 @@ final class SegmentTimeLeafSorterSupplier implements LeafSorterSupplier {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder(50);
-    sb.append("SegmentTimeLeafSorter{");
-    sb.append(sortOptions.toString());
-    sb.append('}');
+    sb.append("SegmentTimeLeafSorter{").append(sortOptions).append('}');
     return sb.toString();
   }
 }
