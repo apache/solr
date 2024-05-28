@@ -25,11 +25,12 @@ allprojects {
   tasks.withType(Test) { Test task ->
     afterTest { desc, result ->
       if (result.resultType == TestResult.ResultType.FAILURE) {
+        def testOrClassName = desc.name == "classMethod" ? desc.className : "${desc.className}.${desc.name}"
         failedTests << [
             "name": "${desc.className}.${desc.name}",
             "project": "${test.project.path}",
             "output": file("${task.testOutputsDir}/${ErrorReportingTestListener.getOutputLogName(desc.parent)}"),
-            "reproduce": "gradlew ${project.path}:test --tests \"${desc.className}.${desc.name}\" ${task.project.testOptionsForReproduceLine}"
+            "reproduce": "gradlew ${project.path}:test --tests \"$testOrClassName\" ${task.project.testOptionsForReproduceLine}"
         ]
       }
     }
