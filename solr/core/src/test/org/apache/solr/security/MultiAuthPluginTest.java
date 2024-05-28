@@ -112,7 +112,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       securityConfHandler.securityConfEdited();
 
       // verify "WWW-Authenticate" headers are returned
-      testWWWAuthenticateHeaders(httpClient, baseUrl);
+      verifyWWWAuthenticateHeaders(httpClient, baseUrl);
 
       verifySecurityStatus(
           httpClient,
@@ -278,7 +278,8 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
     return statusCode;
   }
 
-  private void testWWWAuthenticateHeaders(HttpClient httpClient, String baseUrl) throws Exception {
+  private void verifyWWWAuthenticateHeaders(HttpClient httpClient, String baseUrl)
+      throws Exception {
     HttpGet httpGet = new HttpGet(baseUrl + "/admin/info/system");
     HttpResponse response = httpClient.execute(httpGet);
     Header[] headers = response.getHeaders(HttpHeaders.WWW_AUTHENTICATE);
