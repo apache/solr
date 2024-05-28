@@ -137,6 +137,8 @@ Bug Fixes
 
 * SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when aliases are used. (Aparna Suresh)
 
+* SOLR-17304: Respect PKG_VERSIONS constraints in params.json when loading the schema plugins (Andrey Bozhko)
+
 Dependency Upgrades
 ---------------------
 (No changes)
