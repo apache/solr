@@ -25,9 +25,7 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
-import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
@@ -332,12 +330,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       }
     }
     return queryModParams;
-  }
-
-  static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
-    URL oldURL = new URL(basePath);
-    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
-    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
   }
 
   protected HttpRequestBase createMethod(SolrRequest<?> request, String collection)
@@ -788,6 +780,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return invariantParams;
   }
 
+  /** Typically looks like {@code http://localhost:8983/solr} (no core or collection) */
   public String getBaseURL() {
     return baseUrl;
   }
