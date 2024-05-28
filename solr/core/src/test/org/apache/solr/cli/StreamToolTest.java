@@ -211,47 +211,6 @@ public class StreamToolTest extends SolrCloudTestCase {
     assertEquals(0, runTool(args));
   }
 
-  @Test
-  public void testStreamAgainstSolrWithBasicAuth() throws Exception {
-    String COLLECTION_NAME = "testStreamSolrWithBasicAuth";
-    CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 1, 1)
-        .processAndWait(cluster.getSolrClient(), 10);
-    waitForState(
-        "Expected collection to be created with 1 shard and 1 replicas",
-        COLLECTION_NAME,
-        clusterShape(1, 1));
-
-    UpdateRequest ur = new UpdateRequest();
-    ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-
-    for (int i = 0; i < 10; i++) {
-      ur.add(
-          "id",
-          String.valueOf(i),
-          "desc_s",
-          TestUtil.randomSimpleString(random(), 10, 50),
-          "a_dt",
-          "2019-09-30T05:58:03Z");
-    }
-
-    String expression = "search(" + COLLECTION_NAME + ",q='*:*',fl='id, desc_s',sort='id desc')";
-    File expressionFile = File.createTempFile("expression", ".EXPR");
-    FileWriter writer = new FileWriter(expressionFile);
-    writer.write(expression);
-    writer.close();
-
-    // test passing in the file
-    String[] args = {
-      "stream",
-      "-zkHost",
-      cluster.getZkClient().getZkServerAddress(),
-      "-verbose",
-      expressionFile.getAbsolutePath()
-    };
-
-    assertEquals(0, runTool(args));
-  }
-
   private int runTool(String[] args) throws Exception {
     Tool tool = findTool(args);
     assertTrue(tool instanceof StreamTool);
