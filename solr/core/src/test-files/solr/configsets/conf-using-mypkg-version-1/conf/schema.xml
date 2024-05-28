@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="minimal" version="1.1">
+<schema name="schema-with-dependency-on-mypkg" version="1.1">
 
   <uniqueKey>id</uniqueKey>
 

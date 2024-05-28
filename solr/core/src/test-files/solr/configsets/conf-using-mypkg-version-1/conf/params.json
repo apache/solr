@@ -1,7 +1,7 @@
 {
   "params": {
     "PKG_VERSIONS": {
-      "mypkg": "1"
+      "mypkg": "v1"
     }
   }
 }
