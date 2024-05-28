@@ -66,7 +66,6 @@ public class StreamToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings({"unchecked", "rawtypes"})
   public void testGetOutputFields() {
     String[] args =
         new String[] {
@@ -76,6 +75,7 @@ public class StreamToolTest extends SolrCloudTestCase {
     CommandLine cli =
         SolrCLI.processCommandLineArgs(streamTool.getName(), streamTool.getOptions(), args);
     String[] outputFields = StreamTool.getOutputFields(cli);
+    assert outputFields != null;
     assertEquals(outputFields.length, 4);
     assertEquals(outputFields[0], "field9");
     assertEquals(outputFields[1], "field2");
