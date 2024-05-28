@@ -16,10 +16,7 @@
  */
 package org.apache.solr.common.params;
 
-/**
- * Defines the request parameters used by all combiners.
- * 
- */
+/** Defines the request parameters used by all combiners. */
 public interface CombinerParams {
   String COMBINER = "combiner";
 
@@ -33,8 +30,7 @@ public interface CombinerParams {
 
   int COMBINER_UP_TO_DEFAULT = 100;
 
-  String COMBINER_RRF_K = COMBINER + "." + RECIPROCAl_RANK_FUSION+".k";
+  String COMBINER_RRF_K = COMBINER + "." + RECIPROCAl_RANK_FUSION + ".k";
 
   int COMBINER_RRF_K_DEFAULT = 60;
-
 }

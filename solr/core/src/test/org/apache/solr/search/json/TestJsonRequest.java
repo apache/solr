@@ -16,26 +16,20 @@
  */
 package org.apache.solr.search.json;
 
-import static org.hamcrest.core.StringContains.containsString;
-
+import java.util.Arrays;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.DocSet;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Arrays;
 
 @LuceneTestCase.SuppressCodecs({
   "Lucene3x",
@@ -99,8 +93,10 @@ public class TestJsonRequest extends SolrTestCaseHS {
     ignoreException("Expected JSON");
 
     client.testJQ(
-            params("json", "{ \"queries\": { \"lexical\": { \"lucene\": { \"query\": \"id:(1 OR 2 OR 3 OR 4)\" } }, \"neural\": { \"knn\": { \"f\": \"vector\", \"topK\": 10, \"query\": \"[1.5,2.5,3.5,4.5]\" } }}, \"limit\": 10, \"fields\": [id,score], \"params\":{\"combiner.upTo\": 5}}"),
-            "response/numFound==5");
+        params(
+            "json",
+            "{ \"queries\": { \"lexical\": { \"lucene\": { \"query\": \"id:(1 OR 2 OR 3 OR 4)\" } }, \"neural\": { \"knn\": { \"f\": \"vector\", \"topK\": 10, \"query\": \"[1.5,2.5,3.5,4.5]\" } }}, \"limit\": 10, \"fields\": [id,score], \"params\":{\"combiner.upTo\": 5}}"),
+        "response/numFound==5");
   }
 
   private static void doParamRefDslTest(Client client) throws Exception {
@@ -375,14 +371,56 @@ public class TestJsonRequest extends SolrTestCaseHS {
 
   private static void addDocs(Client client) throws Exception {
     client.deleteByQuery("*:*", null);
-    client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY", "vector", Arrays.asList(1f, 2f, 3f, 4f)), null);
-    client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ", "vector",Arrays.asList(1.2f, 2.2f, 3.2f, 4.2f)), null);
+    client.add(
+        sdoc("id", "1", "cat_s", "A", "where_s", "NY", "vector", Arrays.asList(1f, 2f, 3f, 4f)),
+        null);
+    client.add(
+        sdoc(
+            "id",
+            "2",
+            "cat_s",
+            "B",
+            "where_s",
+            "NJ",
+            "vector",
+            Arrays.asList(1.2f, 2.2f, 3.2f, 4.2f)),
+        null);
     client.add(sdoc("id", "3"), null);
     client.commit();
-    client.add(sdoc("id", "4", "cat_s", "A", "where_s", "NJ", "vector",Arrays.asList(1.4f, 2.4f, 3.4f, 4.4f)), null);
-    client.add(sdoc("id", "5", "cat_s", "B", "where_s", "NJ", "vector",Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f)), null);
+    client.add(
+        sdoc(
+            "id",
+            "4",
+            "cat_s",
+            "A",
+            "where_s",
+            "NJ",
+            "vector",
+            Arrays.asList(1.4f, 2.4f, 3.4f, 4.4f)),
+        null);
+    client.add(
+        sdoc(
+            "id",
+            "5",
+            "cat_s",
+            "B",
+            "where_s",
+            "NJ",
+            "vector",
+            Arrays.asList(1.5f, 2.5f, 3.5f, 4.5f)),
+        null);
     client.commit();
-    client.add(sdoc("id", "6", "cat_s", "B", "where_s", "NY", "vector",Arrays.asList(1.6f, 2.6f, 3.6f, 4.6f)), null);
+    client.add(
+        sdoc(
+            "id",
+            "6",
+            "cat_s",
+            "B",
+            "where_s",
+            "NY",
+            "vector",
+            Arrays.asList(1.6f, 2.6f, 3.6f, 4.6f)),
+        null);
     client.commit();
   }
 }

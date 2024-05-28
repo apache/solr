@@ -17,12 +17,12 @@
 
 package org.apache.solr.search.combining;
 
+import static org.apache.solr.common.params.CombinerParams.RECIPROCAl_RANK_FUSION;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.search.QueryResult;
-
-import static org.apache.solr.common.params.CombinerParams.RECIPROCAl_RANK_FUSION;
 
 /**
  * Combining considers two or more query results: resultA, resultB ...<br>
@@ -32,13 +32,13 @@ import static org.apache.solr.common.params.CombinerParams.RECIPROCAl_RANK_FUSIO
  * This list is created by combining elements from the lists la and lb as described by the
  * implementation algorithm.<br>
  */
-public abstract class Combiner {
-  
+public abstract class QueriesCombiner {
+
   protected int upTo;
 
-  public Combiner(SolrParams requestParams) {
-    this.upTo = requestParams.getInt(
-            CombinerParams.COMBINER_UP_TO, CombinerParams.COMBINER_UP_TO_DEFAULT);
+  public QueriesCombiner(SolrParams requestParams) {
+    this.upTo =
+        requestParams.getInt(CombinerParams.COMBINER_UP_TO, CombinerParams.COMBINER_UP_TO_DEFAULT);
   }
 
   public abstract QueryResult combine(QueryResult[] queryResults);
@@ -62,10 +62,9 @@ public abstract class Combiner {
     combinedResult.setNextCursorMark(queryResults[0].getNextCursorMark());
     return combinedResult;
   }
-  
-  public static Combiner getImplementation(SolrParams requestParams) {
-    String algorithm = requestParams.get(
-            CombinerParams.COMBINER_ALGORITHM, RECIPROCAl_RANK_FUSION);
+
+  public static QueriesCombiner getImplementation(SolrParams requestParams) {
+    String algorithm = requestParams.get(CombinerParams.COMBINER_ALGORITHM, RECIPROCAl_RANK_FUSION);
     switch (algorithm) {
       case RECIPROCAl_RANK_FUSION:
         return new ReciprocalRankFusion(requestParams);

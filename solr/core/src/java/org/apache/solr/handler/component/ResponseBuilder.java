@@ -43,6 +43,7 @@ import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.SortSpec;
+import org.apache.solr.search.combining.QueriesCombiner;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import org.apache.solr.util.RTimer;
@@ -79,7 +80,9 @@ public class ResponseBuilder {
   private QParser qparser = null;
   private String queryString = null;
   private Query query = null;
+  QueriesCombiner queriesCombiningStrategy;
   private List<Query> queriesToCombine = null;
+  boolean isCombined;
   private List<Query> filters = null;
   private SortSpec sortSpec = null;
   private GroupingSpecification groupingSpec;
@@ -385,6 +388,10 @@ public class ResponseBuilder {
 
   public void setQueriesToCombine(List<Query> queries) {
     this.queriesToCombine = queries;
+  }
+
+  public boolean isCombinedSearch() {
+    return isCombined;
   }
 
   public DocListAndSet getResults() {
