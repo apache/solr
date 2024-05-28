@@ -41,7 +41,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -116,7 +115,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
     String basePath = solrRequest.getBasePath() == null ? serverBaseUrl : solrRequest.getBasePath();
     if (collection != null) basePath += "/" + collection;
 
-    if (solrRequest instanceof V2Request) {
+    if (isV2ApiRequest(solrRequest)) {
       if (System.getProperty("solr.v2RealPath") == null) {
         basePath = changeV2RequestEndpoint(basePath);
       } else {
@@ -402,7 +401,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
   }
 
   public boolean isV2ApiRequest(final SolrRequest<?> request) {
-    return request instanceof V2Request || request.getPath().contains("/____v2");
+    return request.getApiVersion() == SolrRequest.ApiVersion.V2;
   }
 
   public String getBaseURL() {

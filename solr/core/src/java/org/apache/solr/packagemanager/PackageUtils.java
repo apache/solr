@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -96,7 +97,7 @@ public class PackageUtils {
       params.add("sig", sig);
     }
     GenericSolrRequest request =
-        new GenericSolrRequest(SolrRequest.METHOD.PUT, resource, params) {
+        new GenericV2SolrRequest(SolrRequest.METHOD.PUT, resource, params) {
           @Override
           public RequestWriter.ContentWriter getContentWriter(String expectedType) {
             return new RequestWriter.ContentWriter() {
@@ -204,7 +205,7 @@ public class PackageUtils {
       SolrClient solrClient, String manifestFilePath, String expectedSHA512)
       throws IOException, SolrServerException {
     GenericSolrRequest request =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, "/api/node/files" + manifestFilePath);
+        new GenericV2SolrRequest(SolrRequest.METHOD.GET, "/api/node/files" + manifestFilePath);
     request.setResponseParser(new JsonMapResponseParser());
     NamedList<Object> response = solrClient.request(request);
     String manifestJson = (String) response.get("response");
