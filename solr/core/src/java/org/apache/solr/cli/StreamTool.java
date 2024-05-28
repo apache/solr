@@ -28,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
@@ -36,7 +35,6 @@ import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.stream.LetStream;
 import org.apache.solr.client.solrj.io.stream.PushBackStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
@@ -108,7 +106,7 @@ public class StreamTool extends ToolBase {
 
     String zkHost = SolrCLI.getZkHost(cli);
     String[] outputHeaders;
-    String arrayDelim = cli.getOptionValue("array-delimiter", "|");
+    String arrayDelimiter = cli.getOptionValue("array-delimiter", "|");
     String delimiter = cli.getOptionValue("delimiter", "   ");
     boolean includeHeaders = cli.hasOption("header");
     // not sure I need verbose however.
@@ -148,8 +146,6 @@ public class StreamTool extends ToolBase {
 
       streamFactory.withFunctionName("stdin", StandardInStream.class);
       stream = constructStream(streamFactory, streamExpression);
-
-      Map params = validateLetAndGetParams(stream, expr);
 
       outputHeaders = getOutputFields(cli);
 
@@ -215,7 +211,7 @@ public class StreamTool extends ToolBase {
             if (o != null) {
               if (o instanceof List) {
                 List outfields = (List) o;
-                outLine.append(listToString(outfields, arrayDelim));
+                outLine.append(listToString(outfields, arrayDelimiter));
               } else {
                 outLine.append(o);
               }
@@ -315,16 +311,6 @@ public class StreamTool extends ToolBase {
     @Override
     public StreamComparator getStreamSort() {
       return null;
-    }
-  }
-
-  @SuppressWarnings({"rawtypes"})
-  public static Map validateLetAndGetParams(TupleStream stream, String expr) throws IOException {
-    if (stream instanceof LetStream) {
-      LetStream mainStream = (LetStream) stream;
-      return mainStream.getLetParams();
-    } else {
-      throw new IOException("No enclosing let function found in expression:" + expr);
     }
   }
 
