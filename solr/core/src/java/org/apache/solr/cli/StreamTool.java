@@ -115,6 +115,18 @@ public class StreamTool extends ToolBase {
     // not sure I need verbose however.
     verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
 
+    System.out.println("HERE WE GO");
+    System.out.print(cli.getArgList());
+    System.out.println(cli.getArgs());
+
+    for (var arg : cli.getArgList()) {
+      System.out.println("Printing from getArgList" + arg);
+    }
+
+    for (var arg : cli.getArgs()) {
+      System.out.println("Printing from getArgs" + arg);
+    }
+
     String expressionArgument = cli.getArgs()[0];
     // Http2SolrClient solrClient = (Http2SolrClient) SolrCLI.getSolrClient(cli);
     // SolrClientCache solrClientCache = new SolrClientCache(solrClient);
@@ -124,17 +136,17 @@ public class StreamTool extends ToolBase {
     LineNumberReader bufferedReader = null;
 
     // likewise not sure...
-    PrintStream filterOut =
-        new PrintStream(System.err) {
-          @Override
-          public void println(String l) {
-            if (!l.startsWith("SLF4J")) {
-              super.println(l);
-            }
-          }
-        };
-
-    System.setErr(filterOut);
+//    PrintStream filterOut =
+//        new PrintStream(System.err) {
+//          @Override
+//          public void println(String l) {
+//            if (!l.startsWith("SLF4J")) {
+//              super.println(l);
+//            }
+//          }
+//        };
+//
+//    System.setErr(filterOut);
 
     try {
       // Read from the commandline either the file param or the actual expression
@@ -405,6 +417,7 @@ public class StreamTool extends ToolBase {
       if (line.length() > 0) {
         for (int i = 1; i < args.length; i++) {
           String arg = args[i];
+          System.out.println("arg:" + arg);
           line = line.replace("$" + i, arg);
         }
       }

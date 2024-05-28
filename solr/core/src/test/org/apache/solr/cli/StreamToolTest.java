@@ -31,25 +31,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
-import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class StreamToolTest extends SolrCloudTestCase {
 
-  private static final String collectionName = "testCreateCollectionWithBasicAuth";
-
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
-    configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
-        //     .withSecurityJson(SecurityJson.SIMPLE)
-        .configure();
+    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
   @Test
@@ -114,12 +105,12 @@ public class StreamToolTest extends SolrCloudTestCase {
   public void testReadExpression2() throws Exception {
     // This covers parameter substitution and expanded comments support.
 
-    String[] args = {"file.expr", "one", "two", "three"};
+    String[] args = {"file.expr", "id", "desc_s", "desc"};
     StringWriter stringWriter = new StringWriter();
     PrintWriter buf = new PrintWriter(stringWriter);
 
     buf.println("# Try me");
-    buf.println("search(mycollection,q='*:*',fl='id, desc_s',sort='id desc')");
+    buf.println("search(mycollection,q='*:*',fl='$1, $2',sort='id $3')");
 
     String expr = stringWriter.toString();
 
