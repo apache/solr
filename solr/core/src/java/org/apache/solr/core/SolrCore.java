@@ -1077,17 +1077,17 @@ public class SolrCore implements SolrInfoBean, Closeable {
       this.configSet = configSet;
       this.coreDescriptor = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
       this.name = Objects.requireNonNull(coreDescriptor.getName());
-      coreProvider = new Provider(coreContainer, getName(), uniqueId);
+      this.coreProvider = new Provider(coreContainer, getName(), uniqueId);
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
-      this.resourceLoader.initCore(this);
+      this.resourceLoader.setSolrCore(this);
       IndexSchema schema = configSet.getIndexSchema();
 
       this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
-      solrMetricsContext = coreMetricManager.getSolrMetricsContext();
+      this.solrMetricsContext = coreMetricManager.getSolrMetricsContext();
       this.coreMetricManager.loadReporters();
 
       if (updateHandler == null) {
