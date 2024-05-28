@@ -24,11 +24,14 @@ import java.io.File;
 import java.io.FileWriter;
 import org.apache.commons.cli.CommandLine;
 import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;
@@ -64,7 +67,8 @@ public class StreamToolBasicAuthTest extends SolrCloudTestCase {
     UpdateRequest ur = new UpdateRequest();
     ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
 
-    for (int i = 0; i < 10; i++) {
+    int docCount = 11;
+    for (int i = 0; i < docCount; i++) {
       withBasicAuth(ur)
           .add(
               "id",
@@ -74,14 +78,22 @@ public class StreamToolBasicAuthTest extends SolrCloudTestCase {
               "a_dt",
               "2019-09-30T05:58:03Z");
     }
+    ur.process(cluster.getSolrClient(), COLLECTION_NAME);
 
-    String expression = "search(" + COLLECTION_NAME + ",q='*:*',fl='id, desc_s',sort='id desc')";
+    // Validate the basic auth lifecycle is working
+    QueryRequest qr = new QueryRequest(new SolrQuery("*:*").setRows(0));
+    QueryResponse qresp = withBasicAuth(qr).process(cluster.getSolrClient(), COLLECTION_NAME);
+
+    assertEquals(docCount, qresp.getResults().getNumFound());
+
+    String expression =
+        "search(" + COLLECTION_NAME + ",q=\"*:*\",fl=\"id, desc_s\",sort=\"id desc\")";
     File expressionFile = File.createTempFile("expression", ".EXPR");
     FileWriter writer = new FileWriter(expressionFile);
     writer.write(expression);
     writer.close();
 
-    // test passing in the file
+    // test that basic auth lifecycle works with streaming expressions
     String[] args = {
       "stream",
       "-zkHost",

@@ -20,7 +20,7 @@ load bats_helper
 setup_file() {
   common_clean_setup
   solr start -c -e techproducts
-  # solr auth enable -type basicAuth -credentials name:password
+  solr auth enable -type basicAuth -credentials name:password
 }
 
 teardown_file() {
@@ -49,8 +49,8 @@ teardown() {
   echo ')' >> "${solr_stream_file}"
               
   
-  run solr stream -header ${solr_stream_file}
-  # run solr stream -header -credentials name:password ${solr_stream_file}
+  #run solr stream -header ${solr_stream_file}
+  run solr stream -header -credentials name:password ${solr_stream_file}
 
   assert_output --partial 'name   price'
   assert_output --partial 'CORSAIR  XMS'
@@ -67,7 +67,7 @@ teardown() {
   echo ')' >> "${solr_stream_file}"
               
   
-  run solr stream -header ${solr_stream_file} apple asc
+  run solr stream -header -credentials name:password ${solr_stream_file} apple asc
 
   assert_output --partial 'name   price'
   assert_output --partial 'Apple 60 GB iPod'

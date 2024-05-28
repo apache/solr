@@ -115,41 +115,30 @@ public class StreamTool extends ToolBase {
     // not sure I need verbose however.
     verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
 
-    System.out.println("HERE WE GO");
-    System.out.print(cli.getArgList());
-    System.out.println(cli.getArgs());
-
-    for (var arg : cli.getArgList()) {
-      System.out.println("Printing from getArgList" + arg);
-    }
-
-    for (var arg : cli.getArgs()) {
-      System.out.println("Printing from getArgs" + arg);
-    }
-
     String expressionArgument = cli.getArgs()[0];
-    // Http2SolrClient solrClient = (Http2SolrClient) SolrCLI.getSolrClient(cli);
-    // SolrClientCache solrClientCache = new SolrClientCache(solrClient);
+
     SolrClientCache solrClientCache = new SolrClientCache();
+    solrClientCache.setBasicAuthCredentials(cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
+
     TupleStream stream;
     PushBackStream pushBackStream = null;
     LineNumberReader bufferedReader = null;
 
     // likewise not sure...
-//    PrintStream filterOut =
-//        new PrintStream(System.err) {
-//          @Override
-//          public void println(String l) {
-//            if (!l.startsWith("SLF4J")) {
-//              super.println(l);
-//            }
-//          }
-//        };
-//
-//    System.setErr(filterOut);
+    //    PrintStream filterOut =
+    //        new PrintStream(System.err) {
+    //          @Override
+    //          public void println(String l) {
+    //            if (!l.startsWith("SLF4J")) {
+    //              super.println(l);
+    //            }
+    //          }
+    //        };
+    //
+    //    System.setErr(filterOut);
 
     try {
-      // Read from the commandline either the file param or the actual expression
+      // Read from the command line either the file name to read from or the actual streaming expression text
       Reader inputStream =
           expressionArgument.toLowerCase(Locale.ROOT).endsWith("expr")
               ? new InputStreamReader(
@@ -172,8 +161,6 @@ public class StreamTool extends ToolBase {
       outputHeaders = getOutputFields(cli);
 
       pushBackStream = new PushBackStream(stream);
-
-      solrClientCache = new SolrClientCache();
 
       // unsure of need for this.
       if (zkHost != null) {
