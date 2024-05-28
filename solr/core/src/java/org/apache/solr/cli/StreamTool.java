@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -77,19 +78,19 @@ public class StreamTool extends ToolBase {
             .desc(
                 "The fields in the tuples to output. (defaults to fields in the first tuple of result set).")
             .build(),
-        Option.builder("h")
+        Option.builder()
             .longOpt("header")
             .required(false)
             .desc("Whether or not to include a header line. (default=false)")
             .build(),
-        Option.builder("d")
+        Option.builder()
             .longOpt("delimiter")
             .argName("CHARACTER")
             .hasArg()
             .required(false)
             .desc("The output delimiter. (default=tab).")
             .build(),
-        Option.builder("a")
+        Option.builder()
             .longOpt("array-delimiter")
             .argName("CHARACTER")
             .hasArg()
@@ -141,8 +142,7 @@ public class StreamTool extends ToolBase {
       StreamExpression streamExpression = StreamExpressionParser.parse(expr);
       StreamFactory streamFactory = new StreamFactory();
 
-      // do i need this?
-      streamFactory.withDefaultZkHost("localhost:8983");
+      streamFactory.withDefaultZkHost(zkHost);
 
       Lang.register(streamFactory);
 
@@ -151,8 +151,7 @@ public class StreamTool extends ToolBase {
 
       Map params = validateLetAndGetParams(stream, expr);
 
-      streamFactory.withDefaultZkHost(zkHost);
-      outputHeaders = getOutputFields(params);
+      outputHeaders = getOutputFields(cli);
 
       pushBackStream = new PushBackStream(stream);
 
@@ -275,7 +274,7 @@ public class StreamTool extends ToolBase {
 
     @Override
     public void open() {
-      reader = new BufferedReader(new InputStreamReader(inputStream));
+      reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
     }
 
     @Override
@@ -329,11 +328,10 @@ public class StreamTool extends ToolBase {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  public static String[] getOutputFields(Map params) {
-    if (params.containsKey(OUTPUT_FIELDS)) {
+  public static String[] getOutputFields(CommandLine cli) {
+    if (cli.hasOption("fields")) {
 
-      String fl = params.get(OUTPUT_FIELDS).toString();
+      String fl = cli.getOptionValue("fields");
       String[] flArray = fl.split(",");
       String[] outputHeaders = new String[flArray.length];
 

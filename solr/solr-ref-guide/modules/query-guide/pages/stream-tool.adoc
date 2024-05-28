@@ -1,0 +1,76 @@
+= Stream Tool
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Stream tool allows you to run a xref:streaming-expressions.adoc[] and see the results from the command line.
+It is very similar to the xref:stream-screen.adoc[], but is part of the `bin/solr` CLI.
+
+To run it, open a window and enter:
+
+[,console]
+----
+$ bin/solr stream -header --delimiter=\| search(techproducts,q="name:memory",fl="name,price",sort="price desc")
+----
+
+This will run the provide streaming expression on the `techproducts` collection and produce:  
+
+[,console]
+----
+name|price
+CORSAIR  XMS 2GB (2 x 1GB) 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) Dual Channel Kit System Memory - Retail|185.0
+CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - Retail|74.99
+A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - OEM|
+----
+
+TIP: Notice how we used the pipe character (|) as the delimiter?  It required a backslash for escaping it so it wouldn't be treated as a pipe.
+
+You can also specify a file containing your streaming expression.
+
+Assuming you have create the file `stream.expr` with the contents:
+
+----
+# Stream a search
+let(
+  search(
+    techproducts,
+    q="name:memory",
+    fl="name,price",
+    sort="price desc")
+  )
+)
+----
+
+Then you can run it, specifying you want a header row:
+
+[,console]
+----
+$ bin/solr stream -header stream.expr
+----
+
+And this will produce:
+
+[,console]
+----
+name   price
+CORSAIR  XMS 2GB (2 x 1GB) 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) Dual Channel Kit System Memory - Retail   185.0
+CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - Retail   74.99
+A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - OEM
+----
+
+
+
+The `-help` (or simply `-h`) option will output information on its usage (i.e., `bin/solr stream -help)`.

@@ -68,9 +68,14 @@ public class StreamToolTest extends SolrCloudTestCase {
   @Test
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void testGetOutputFields() {
-    HashMap params = new HashMap();
-    params.put(StreamTool.OUTPUT_FIELDS, "field9, field2, field3, field4");
-    String[] outputFields = StreamTool.getOutputFields(params);
+    String[] args =
+        new String[] {
+          "--fields", "field9, field2, field3, field4",
+        };
+    StreamTool streamTool = new StreamTool();
+    CommandLine cli =
+        SolrCLI.processCommandLineArgs(streamTool.getName(), streamTool.getOptions(), args);
+    String[] outputFields = StreamTool.getOutputFields(cli);
     assertEquals(outputFields.length, 4);
     assertEquals(outputFields[0], "field9");
     assertEquals(outputFields[1], "field2");
@@ -89,6 +94,7 @@ public class StreamToolTest extends SolrCloudTestCase {
     buf.println("Multi-line comment Comment...");
     buf.println("*/");
     buf.println("// Single line comment");
+    buf.println("# Single line comment");
     buf.println("let(a=$1, b=$2,");
     buf.println("search($3))");
     buf.println(")");
