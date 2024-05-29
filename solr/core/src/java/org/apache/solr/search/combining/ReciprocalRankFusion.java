@@ -30,6 +30,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryResult;
+import org.apache.solr.search.SortedIntDocSet;
 
 /**
  * Reciprocal Rank Fusion (RRF) is an algorithm that takes in input multiple ranked results to
@@ -95,6 +96,8 @@ public class ReciprocalRankFusion extends QueriesCombiner {
             combinedResultScores[0],
             GREATER_THAN_OR_EQUAL_TO);
     rrfResult.setDocList(combinedResultSlice);
+    SortedIntDocSet docSet = new SortedIntDocSet(combinedResultsDocIDs, combinedResultsLength);
+    rrfResult.setDocSet(docSet);
     return rrfResult;
   }
 }

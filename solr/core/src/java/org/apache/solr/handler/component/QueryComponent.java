@@ -177,9 +177,9 @@ public class QueryComponent extends SearchComponent {
     // get it from the response builder to give a different component a chance
     // to set it.
     List<String> unparsedQueries = new LinkedList<>();
-    String[] queriesKeys = params.getParams(CombinerParams.COMBINER_QUERIES_KEYS);
-    rb.isCombined = queriesKeys.length > 1;
+    rb.isCombined = params.getBool(CombinerParams.COMBINER, false);
     if (rb.isCombinedSearch()) {
+      String[] queriesKeys = params.getParams(CombinerParams.COMBINER_QUERIES_KEYS);
       rb.queriesCombiningStrategy = QueriesCombiner.getImplementation(params);
       for (String queryKey : queriesKeys) {
         unparsedQueries.add(params.get(queryKey));
@@ -193,10 +193,10 @@ public class QueryComponent extends SearchComponent {
       }
       unparsedQueries.add(queryString);
     }
-    
+
     try {
       List<Query> parsedQueries = new LinkedList<>();
-      for(String unparsedQuery:unparsedQueries){
+      for (String unparsedQuery : unparsedQueries) {
         QParser parser = QParser.getParser(unparsedQuery, defType, req);
         Query q = parser.getQuery();
         if (q == null) {
@@ -207,7 +207,7 @@ public class QueryComponent extends SearchComponent {
         rb.setSortSpec(parser.getSortSpec(true));
         rb.setQparser(parser);
       }
-      if(rb.isCombinedSearch()){
+      if (rb.isCombinedSearch()) {
         rb.setQueriesToCombine(parsedQueries);
       } else {
         rb.setQuery(parsedQueries.get(0));
@@ -232,7 +232,7 @@ public class QueryComponent extends SearchComponent {
               SolrException.ErrorCode.BAD_REQUEST, "rq parameter must be a RankQuery");
         }
       }
-      
+
       String[] fqs = req.getParams().getParams(CommonParams.FQ);
       if (fqs != null && fqs.length != 0) {
         List<Query> filters = rb.getFilters();
@@ -398,6 +398,7 @@ public class QueryComponent extends SearchComponent {
 
     List<Query> queries = rb.getQueriesToCombine();
     if (!rb.isCombinedSearch()) {
+      queries = new ArrayList<>(1);
       queries.add(rb.getQuery());
     }
     QueryResult[] results = new QueryResult[queries.size()];
@@ -473,8 +474,10 @@ public class QueryComponent extends SearchComponent {
       results[resultIndex] = result;
       resultIndex++;
     }
-    QueryResult combined = rb.queriesCombiningStrategy.combine(results);
-    addCombinedResultsToResponse(rb,combined);
+    if (rb.isCombinedSearch()) {
+      QueryResult combined = rb.queriesCombiningStrategy.combine(results);
+      addCombinedResultsToResponse(rb, combined);
+    }
   }
 
   private int getMinExactCount(SolrParams params) {
