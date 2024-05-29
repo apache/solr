@@ -111,6 +111,8 @@ public interface FileStore {
 
   interface FileDetails extends MapWriter {
 
+    String getSimpleName();
+
     MetaData getMetaData();
 
     Date getTimeStamp();

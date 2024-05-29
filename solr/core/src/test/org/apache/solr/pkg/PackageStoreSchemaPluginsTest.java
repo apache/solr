@@ -34,7 +34,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.filestore.ClusterFileStore;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -68,7 +68,7 @@ public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
         .configure();
 
     client = cluster.getSolrClient();
-    uploadKey(KEY_PAIR.getPublic().getEncoded(), FileStoreAPI.KEYS_DIR + "/pub.der", cluster);
+    uploadKey(KEY_PAIR.getPublic().getEncoded(), ClusterFileStore.KEYS_DIR + "/pub.der", cluster);
   }
 
   @After
@@ -158,8 +158,8 @@ public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
   }
 
   private void reloadCollection() throws Exception {
-    var createRequest = CollectionAdminRequest.reloadCollection("coll");
-    processRequest(client, createRequest);
+    var reloadRequest = CollectionAdminRequest.reloadCollection("coll");
+    processRequest(client, reloadRequest);
   }
 
   private static void processRequest(SolrClient client, SolrRequest<?> request) throws Exception {

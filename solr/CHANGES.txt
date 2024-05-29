@@ -108,6 +108,9 @@ New Features
   by removing it solrconfig.xml.  The limit is set at 1000 fields in the "_default" configset, but left in warning-only mode. (David Smiley, Eric Pugh,
   Jason Gerlowski)
 
+* SOLR-17277: Circuit breakers may now be configured in a "soft" or "warnOnly" mode in order to more easily test out new thresholds.  Soft breakers will log out a
+  message on each relevant request when tripped, but will not otherwise impact or short circuit the requests.  (Jason Gerlowski)
+
 Improvements
 ---------------------
 * SOLR-16921: use -solrUrl to derive the zk host connection for bin/solr zk subcommands (Eric Pugh)
