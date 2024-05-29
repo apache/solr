@@ -67,7 +67,7 @@ Deprecation Removals
 
 * SOLR-17284: Remove deprecated BlobRepository in favour of FileStore. (Eric Pugh)
 
-* SOLR-17313: Remove deprecated class SolrLogPostTool.  bin/solr post has replaced this. (Eric Pugh)
+* SOLR-17313: Remove deprecated class SolrLogPostTool.  PostLogsTool and the bin/solr post command has replaced this. (Eric Pugh)
 
 Dependency Upgrades
 ---------------------
