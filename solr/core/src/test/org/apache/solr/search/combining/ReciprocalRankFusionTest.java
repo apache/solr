@@ -181,13 +181,13 @@ public class ReciprocalRankFusionTest extends SolrTestCase {
   }
 
   @Test
-  public void combining_noExplicitUpTo_shouldCombineUpTo100() {//TO DO
-    int[] expectedDocIds = new int[]{7,6,8,3,9,4,5,1,2,0};
-    float[] expectedScores = new float[]{1f/61+1f/61+1f/63,
-            1f/62+1f/62+1f/64,
-            1f/63+1f/63+1f/65,
+  public void combining_noExplicitUpTo_shouldCombineUpTo100() {
+    int[] expectedDocIds = new int[]{7,3,6,9,8,4,5,1,2,0};
+    float[] expectedScores = new float[]{1f/61+1f/63,
             1f/65+1f/61,
+            1f/62+1f/64,
             1f/64+1f/62,
+            1f/63+1f/65,
             1f/67+1f/66,
             1f/66+1f/70,
             1f/69+1f/67,
@@ -198,10 +198,10 @@ public class ReciprocalRankFusionTest extends SolrTestCase {
 
     toTest = new ReciprocalRankFusion(params);
 
-    QueryResult[] resultsToCombine = new QueryResult[]{a,b,partial};
+    QueryResult[] resultsToCombine = new QueryResult[]{a,b};
     QueryResult combined = toTest.combine(resultsToCombine);
 
-    assertThat(combined.isPartialResults(), is(true));
+    assertThat(combined.isPartialResults(), is(false));
     DocIterator docs = combined.getDocList().iterator();
 
     int i=0;
@@ -214,26 +214,27 @@ public class ReciprocalRankFusionTest extends SolrTestCase {
 
   @Test
   public void combining_kParameter_shouldAffectScoring() {//TO DO
-    int[] expectedDocIds = new int[]{7,6,8,3,9,4,5,1,2,0};
-    float[] expectedScores = new float[]{1f/61+1f/61+1f/63,
-            1f/62+1f/62+1f/64,
-            1f/63+1f/63+1f/65,
-            1f/65+1f/61,
-            1f/64+1f/62,
-            1f/67+1f/66,
-            1f/66+1f/70,
-            1f/69+1f/67,
-            1f/68+1f/69,
-            1f/70+1f/68};
+    int[] expectedDocIds = new int[]{7,3,6,9,8,4,5,1,2,0};
+    float[] expectedScores = new float[]{1f/11+1f/13,
+            1f/15+1f/11,
+            1f/12+1f/14,
+            1f/14+1f/12,
+            1f/13+1f/15,
+            1f/17+1f/16,
+            1f/16+1f/20,
+            1f/19+1f/17,
+            1f/18+1f/19,
+            1f/20+1f/18};
 
     ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(COMBINER_RRF_K, "10");
 
     toTest = new ReciprocalRankFusion(params);
 
-    QueryResult[] resultsToCombine = new QueryResult[]{a,b,partial};
+    QueryResult[] resultsToCombine = new QueryResult[]{a,b};
     QueryResult combined = toTest.combine(resultsToCombine);
 
-    assertThat(combined.isPartialResults(), is(true));
+    assertThat(combined.isPartialResults(), is(false));
     DocIterator docs = combined.getDocList().iterator();
 
     int i=0;
