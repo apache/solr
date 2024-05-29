@@ -157,6 +157,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       Slice slice = getRandomEntry(slices);
       Replica replica = getRandomEntry(slice.getReplicas());
       JettySolrRunner jetty = miniCluster.getReplicaJetty(replica);
+      req = new QueryRequest(); // TODO Remove when SOLR-17314 resolved
       // Use the replica's core URL to avoid ZK communication
       try (SolrClient client =
           new HttpSolrClient.Builder(replica.getBaseUrl())
@@ -207,6 +208,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       Slice disconnectedSlice = getRandomEntry(slices);
       Replica disconnectedReplica = getRandomEntry(disconnectedSlice.getReplicas());
       JettySolrRunner disconnectedJetty = miniCluster.getReplicaJetty(disconnectedReplica);
+      req = new QueryRequest(params); // TODO See SOLR-17314
       // Use the replica's core URL to avoid ZK communication
       try (SolrClient solrClient =
           new HttpSolrClient.Builder(disconnectedReplica.getBaseUrl())
@@ -267,6 +269,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
         connectedSlice = getRandomEntry(slices);
       }
       Replica connectedReplica = connectedSlice.getReplicas().iterator().next();
+      req = new QueryRequest(params);
       try (SolrClient solrClient =
           new HttpSolrClient.Builder(connectedReplica.getBaseUrl())
               .withDefaultCollection(connectedReplica.getCoreName())

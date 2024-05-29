@@ -115,12 +115,13 @@ public class TestCloudDeduplication extends SolrCloudTestCase {
 
     // query our collection and confirm no duplicates on the signature field (using faceting)
     // Check every (node) for consistency...
-    final JsonQueryRequest req =
-        new JsonQueryRequest()
-            .setQuery("*:*")
-            .setLimit(0)
-            .withFacet("data_facet", new TermsFacetMap("data_s").setLimit(uniqueMod + 1));
+
     for (SolrClient client : CLIENTS) {
+      final JsonQueryRequest req =
+          new JsonQueryRequest()
+              .setQuery("*:*")
+              .setLimit(0)
+              .withFacet("data_facet", new TermsFacetMap("data_s").setLimit(uniqueMod + 1));
       final QueryResponse rsp = req.process(client, COLLECTION);
       try {
         assertEquals(0, rsp.getStatus());
