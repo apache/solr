@@ -38,7 +38,7 @@ A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory
 
 TIP: Notice how we used the pipe character (|) as the delimiter?  It required a backslash for escaping it so it wouldn't be treated as a pipe.
 
-You can also specify a file containing your streaming expression.
+You can also specify a file with the suffix `.expr` containing your streaming expression.
 
 Assuming you have create the file `stream.expr` with the contents:
 
@@ -74,3 +74,12 @@ A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory
 
 
 The `-help` (or simply `-h`) option will output information on its usage (i.e., `bin/solr stream -help)`.
+
+
+You can do variable interpolation via having `$1`, `$2` etc in your streaming expression, and then passing those values.
+
+[,console]
+----
+$ bin/solr stream echo($1) "Hello World"
+Hello World
+----
