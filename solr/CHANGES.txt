@@ -51,6 +51,8 @@ Bug Fixes
 
 * SOLR-16659: Properly construct V2 base urls instead of replacing substring "/solr" with "/api" (Andrey Bozhko via Eric Pugh)
 
+* SOLR-17247: 'WWW-Authenticate' headers missing in MultiAuthPlugin (Lamine Idjeraoui via Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
