@@ -38,15 +38,6 @@ Bug Fixes
 ---------------------
 * SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
 
-* SOLR-17261: Remove unintended timeout of 60 seconds for core loading. (Houston Putman)
-
-* SOLR-17049: Actually mark all replicas down at startup and truly wait for them.
-  This includes replicas that might not exist anymore locally. (Houston Putman, Vincent Primault)
-
-* SOLR-17263: Fix 'Illegal character in query' exception in HttpJdkSolrClient (Andy Webb)
-
-* SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when aliases are used. (Aparna Suresh)
-
 * PR-2475: Fixed node listing bug in Admin UI when different hostnames start with the same front part. (@hgdharold via Eric Pugh)
 
 * SOLR-16659: Properly construct V2 base urls instead of replacing substring "/solr" with "/api" (Andrey Bozhko via Eric Pugh)
@@ -71,9 +62,22 @@ Other Changes
 ==================  9.6.1 ==================
 Bug Fixes
 ---------------------
+* SOLR-17261: Remove unintended timeout of 60 seconds for core loading. (Houston Putman)
+
+* SOLR-17049: Actually mark all replicas down at startup and truly wait for them.
+  This includes replicas that might not exist anymore locally. (Houston Putman, Vincent Primault)
+
+* SOLR-17263: Fix 'Illegal character in query' exception in HttpJdkSolrClient (Andy Webb)
+
+* SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when aliases are used. (Aparna Suresh)
+
 * SOLR-17296: Remove (broken) singlePass attempt when reRankScale + debug is used, and fix underlying NPE. (hossman)
 
 * SOLR-17307: Use the system file separator instead of an explicit '/' in CachingDirectoryFactory (Houston Putman, hossman)
+
+Dependency Upgrades
+---------------------
+* PR#2308: Update dependency org.apache.commons:commons-compress to v1.26.1 (solrbot)
 
 ==================  9.6.0 ==================
 New Features
