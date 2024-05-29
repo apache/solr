@@ -18,7 +18,11 @@ package org.apache.solr.core;
 
 import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 
 /** Tests specifying a custom ShardHandlerFactory */
@@ -33,5 +37,26 @@ public class TestShardHandlerFactory extends SolrTestCaseJ4 {
     assertEquals("myMagicRequiredValue", args.get("myMagicRequiredParameter"));
     factory.close();
     cc.shutdown();
+  }
+
+  /** Test {@link ShardHandler#setShardAttributesToParams */
+  public void testSetShardAttributesToParams() {
+    ModifiableSolrParams modifiable = new ModifiableSolrParams();
+    var dummyIndent = "Dummy-Indent";
+
+    modifiable.set(ShardParams.SHARDS, "dummyValue");
+    modifiable.set(CommonParams.HEADER_ECHO_PARAMS, "dummyValue");
+    modifiable.set(CommonParams.INDENT, dummyIndent);
+
+    ShardHandler.setShardAttributesToParams(modifiable, 2);
+
+    assertEquals(Boolean.FALSE.toString(), modifiable.get(CommonParams.DISTRIB));
+    assertEquals("2", modifiable.get(ShardParams.SHARDS_PURPOSE));
+    assertEquals(Boolean.FALSE.toString(), modifiable.get(CommonParams.OMIT_HEADER));
+    assertEquals(Boolean.TRUE.toString(), modifiable.get(ShardParams.IS_SHARD));
+
+    assertNull(modifiable.get(CommonParams.HEADER_ECHO_PARAMS));
+    assertNull(modifiable.get(ShardParams.SHARDS));
+    assertNull(modifiable.get(CommonParams.INDENT));
   }
 }
