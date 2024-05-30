@@ -28,6 +28,7 @@ allprojects {
         failedTests << [
             "name": "${desc.className}.${desc.name}",
             "project": "${test.project.path}",
+            "historyUrl": "https://ge.apache.org/scans/tests?search.rootProjectNames=solr-root&tests.container=$desc.className&tests.test=$desc.name",
             "output": file("${task.testOutputsDir}/${ErrorReportingTestListener.getOutputLogName(desc.parent)}"),
             "reproduce": "gradlew ${project.path}:test --tests \"${desc.className}.${desc.name}\" ${task.project.testOptionsForReproduceLine}"
         ]
@@ -39,6 +40,7 @@ allprojects {
         failedTests << [
             "name": "${desc.name}",
             "project": "${test.project.path}",
+            "historyUrl": "https://ge.apache.org/scans/tests?search.rootProjectNames=solr-root&tests.container=$desc.className",
             "output": file("${task.testOutputsDir}/${ErrorReportingTestListener.getOutputLogName(desc)}"),
             "reproduce": "gradlew ${project.path}:test --tests \"${desc.name}\" ${task.project.testOptionsForReproduceLine}"
         ]
@@ -48,14 +50,17 @@ allprojects {
 }
 
 gradle.buildFinished { result ->
-  if (failedTests) {
-    def formatted = failedTests
-      .sort { a, b -> b.project.compareTo(a.project) }
-      .collect { e -> String.format(Locale.ROOT,
-          "  - %s (%s)\n    Test output: %s\n    Reproduce with: %s\n",
-          e.name, e.project, e.output, e.reproduce) }
-      .join("\n")
+  if (!failedTests) return
+  def formatted = failedTests
+      .sort { a, b -> b.project <=> a.project }
+      .collect { e -> """
+  - ${e.name} (${e.project})
+    Test history: ${e.historyUrl}
+    Test output: ${e.output}
+    Reproduce with: ${e.reproduce}
+""" // In Groovy there is no incidental leading whitespace, so must fully left justify
+      }
+      .join()
 
-    logger.error("\nERROR: The following test(s) have failed:\n${formatted}")
-  }
+  logger.error("ERROR: The following test(s) have failed:${formatted}")
 }
