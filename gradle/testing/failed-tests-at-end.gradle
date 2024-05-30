@@ -21,29 +21,31 @@ import org.apache.lucene.gradle.ErrorReportingTestListener
 
 def failedTests = []
 
+def genFailInfo(def task, TestDescriptor desc) {
+  boolean isSuite = (desc.name == 'classMethod')
+  def name = isSuite ? desc.className : "${desc.className}.${desc.name}"
+  def historyUrl = "https://ge.apache.org/scans/tests?search.rootProjectNames=solr-root&tests.container=$desc.className"
+  if (!isSuite) { // is test method specific
+    historyUrl += "&tests.test=$desc.name"
+    historyUrl += " http://fucit.org/solr-jenkins-reports/history-trend-of-recent-failures.html#series/$name"
+  }
+  def logName = ErrorReportingTestListener.getOutputLogName(desc.parent ?: desc)
+  def output = file("${task.testOutputsDir}/${logName}")
+  def repro = "gradlew ${task.project.path}:test --tests \"${name}\" ${task.project.testOptionsForReproduceLine}"
+  return ["name": name, "project": "${task.project.path}", "historyUrl": historyUrl, "output": output, "reproduce": repro]
+}
+
 allprojects {
   tasks.withType(Test) { Test task ->
     afterTest { desc, result ->
       if (result.resultType == TestResult.ResultType.FAILURE) {
-        failedTests << [
-            "name": "${desc.className}.${desc.name}",
-            "project": "${test.project.path}",
-            "historyUrl": "https://ge.apache.org/scans/tests?search.rootProjectNames=solr-root&tests.container=$desc.className&tests.test=$desc.name",
-            "output": file("${task.testOutputsDir}/${ErrorReportingTestListener.getOutputLogName(desc.parent)}"),
-            "reproduce": "gradlew ${project.path}:test --tests \"${desc.className}.${desc.name}\" ${task.project.testOptionsForReproduceLine}"
-        ]
+        failedTests << genFailInfo(task, desc)
       }
     }
 
     afterSuite { desc, result ->
       if (result.exceptions) {
-        failedTests << [
-            "name": "${desc.name}",
-            "project": "${test.project.path}",
-            "historyUrl": "https://ge.apache.org/scans/tests?search.rootProjectNames=solr-root&tests.container=$desc.className",
-            "output": file("${task.testOutputsDir}/${ErrorReportingTestListener.getOutputLogName(desc)}"),
-            "reproduce": "gradlew ${project.path}:test --tests \"${desc.name}\" ${task.project.testOptionsForReproduceLine}"
-        ]
+        failedTests << genFailInfo(task, desc)
       }
     }
   }
