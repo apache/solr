@@ -39,8 +39,9 @@ public class TestShardHandlerFactory extends SolrTestCaseJ4 {
     cc.shutdown();
   }
 
-  /** Test {@link ShardHandler#setShardAttributesToParams */
+  /** Test {@link ShardHandler#setShardAttributesToParams} */
   public void testSetShardAttributesToParams() {
+    // NOTE: the value of this test is really questionable; we should feel free to remove it
     ModifiableSolrParams modifiable = new ModifiableSolrParams();
     var dummyIndent = "Dummy-Indent";
 
