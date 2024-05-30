@@ -83,8 +83,9 @@ public class TestDistribFileStore extends SolrCloudTestCase {
             .addConfig("conf", configset("cloud-minimal"))
             .configure();
     try {
+
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
-      uploadKey(derFile, ClusterFileStore.KEYS_DIR + "/pub_key512.der", cluster);
+      uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
 
       try {
         postFile(
