@@ -87,7 +87,6 @@ public class CombiningIntegrationTest extends KnnBaseTest {
         "//result/doc[3]/str[@name='id'][.='10']",
         "//result/doc[4]/str[@name='id'][.='3']");
   }
-
   @Test
   public void reciprocalRankFusion_faceting_shouldReturnFacetsOnCombinedResults() {
     final String facet_xpath = "//lst[@name='facet_fields']/lst[@name='id']/int";

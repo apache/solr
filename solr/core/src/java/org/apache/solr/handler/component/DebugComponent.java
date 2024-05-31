@@ -88,14 +88,27 @@ public class DebugComponent extends SearchComponent {
         results = rb.getResults().docList;
       }
 
-      NamedList<Object> stdinfo =
-          SolrPluginUtils.doStandardDebug(
-              rb.req,
-              rb.getQueryString(),
-              rb.wrap(rb.getQuery()),
-              results,
-              rb.isDebugQuery(),
-              rb.isDebugResults());
+
+      NamedList<Object> stdinfo;
+      if (!rb.isCombinedSearch()) {
+        stdinfo = SolrPluginUtils.doStandardDebug(
+                rb.req,
+                rb.getQueryString(),
+                rb.wrap(rb.getQuery()),
+                results,
+                rb.isDebugQuery(),
+                rb.isDebugResults());
+      } else {
+        stdinfo = SolrPluginUtils.doCombinedSearchDebug(
+                rb.req,
+                rb.queriesCombiningStrategy,
+                rb.getQueriesString(),
+                rb.getQueriesParsers(),
+                rb.getQueriesToCombine(),
+                rb.getResultsPerQuery(),
+                rb.isDebugQuery(),
+                rb.isDebugResults());
+      }
 
       NamedList<Object> info = rb.getDebugInfo();
       if (info == null) {

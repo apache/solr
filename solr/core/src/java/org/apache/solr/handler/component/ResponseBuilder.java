@@ -36,6 +36,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
+import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
@@ -80,9 +81,6 @@ public class ResponseBuilder {
   private QParser qparser = null;
   private String queryString = null;
   private Query query = null;
-  QueriesCombiner queriesCombiningStrategy;
-  private List<Query> queriesToCombine = null;
-  boolean isCombined;
   private List<Query> filters = null;
   private SortSpec sortSpec = null;
   private GroupingSpecification groupingSpec;
@@ -101,6 +99,16 @@ public class ResponseBuilder {
   public List<SearchComponent> components;
 
   SolrRequestInfo requestInfo;
+
+  /**
+   * Query Combination
+   */
+  QueriesCombiner queriesCombiningStrategy;
+  private List<String> queriesString = null;
+  private List<Query> queriesToCombine = null;
+  private List<QParser> queriesParsers = null;
+  private List<DocList> resultsPerQuery = null;
+  boolean isCombined;
 
   public ResponseBuilder(
       SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
@@ -382,12 +390,36 @@ public class ResponseBuilder {
     this.query = query;
   }
 
+  public List<String> getQueriesString() {
+    return queriesString;
+  }
+
+  public void setQueriesString(List<String> queriesString) {
+    this.queriesString = queriesString;
+  }
+
   public List<Query> getQueriesToCombine() {
     return queriesToCombine;
   }
 
   public void setQueriesToCombine(List<Query> queries) {
     this.queriesToCombine = queries;
+  }
+
+  public List<QParser> getQueriesParsers() {
+    return queriesParsers;
+  }
+
+  public void setQueriesParsers(List<QParser> queriesParsers) {
+    this.queriesParsers = queriesParsers;
+  }
+
+  public List<DocList> getResultsPerQuery() {
+    return resultsPerQuery;
+  }
+
+  public void setResultsPerQuery(List<DocList> resultsPerQuery) {
+    this.resultsPerQuery = resultsPerQuery;
   }
 
   public boolean isCombinedSearch() {

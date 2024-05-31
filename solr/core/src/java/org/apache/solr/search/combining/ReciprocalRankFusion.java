@@ -19,17 +19,29 @@ package org.apache.solr.search.combining;
 
 import static org.apache.lucene.search.TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QueryResult;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortedIntDocSet;
 
 /**
@@ -57,12 +69,18 @@ public class ReciprocalRankFusion extends QueriesCombiner {
   @Override
   public QueryResult combine(QueryResult[] queryResults) {
     QueryResult rrfResult = initCombinedResult(queryResults);
-
+    List<DocList> queriesResultsDocLists = new ArrayList<>(queryResults.length);
+    for(QueryResult singleQuery:queryResults){
+      queriesResultsDocLists.add(singleQuery.getDocList());
+    }
+    combineResults(rrfResult, queriesResultsDocLists,null);
+    return rrfResult;
+  }
+  
+  private void combineResults(QueryResult combinedResults, List<DocList> queriesResults, Map<Integer, Integer[]> docIdToRankPositions){
     HashMap<Integer, Float> docIdToScore = new HashMap<>();
-
-    for (QueryResult singleQuery : queryResults) {
-      DocList docList = singleQuery.getDocList();
-      DocIterator iterator = docList.iterator();
+    for (DocList singleQuery : queriesResults) {
+      DocIterator iterator = singleQuery.iterator();
       int ranking = 1;
       while (iterator.hasNext() && ranking <= upTo) {
         int docId = iterator.nextDoc();
@@ -71,9 +89,13 @@ public class ReciprocalRankFusion extends QueriesCombiner {
         ranking++;
       }
     }
+
+    
+    
+    
     Stream<Map.Entry<Integer, Float>> sortedResults =
-        docIdToScore.entrySet().stream()
-            .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()));
+            docIdToScore.entrySet().stream()
+                    .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()));
 
     int combinedResultsLength = docIdToScore.size();
     int[] combinedResultsDocIDs = new int[combinedResultsLength];
@@ -85,19 +107,83 @@ public class ReciprocalRankFusion extends QueriesCombiner {
       combinedResultScores[i] = scoredDoc.getValue();
       i++;
     }
-
+    boolean prepareForExplainability = docIdToRankPositions != null;
+    if (prepareForExplainability) {
+      for(int docID:combinedResultsDocIDs){
+        docIdToRankPositions.put(docID, new Integer[queriesResults.size()]);
+      }
+      for (int j=0;j<queriesResults.size();j++) {
+        DocIterator iterator = queriesResults.get(j).iterator();
+        int ranking = 1;
+        while (iterator.hasNext() && ranking <= upTo) {
+          int docId = iterator.nextDoc();
+          docIdToRankPositions.get(docId)[j]=ranking;
+          ranking++;
+        }
+      }
+    }
+    
     DocSlice combinedResultSlice =
-        new DocSlice(
-            0,
-            combinedResultsLength,
-            combinedResultsDocIDs,
-            combinedResultScores,
-            combinedResultsLength,
-            combinedResultScores[0],
-            GREATER_THAN_OR_EQUAL_TO);
-    rrfResult.setDocList(combinedResultSlice);
+            new DocSlice(
+                    0,
+                    combinedResultsLength,
+                    combinedResultsDocIDs,
+                    combinedResultScores,
+                    combinedResultsLength,
+                    combinedResultScores[0],
+                    GREATER_THAN_OR_EQUAL_TO);
+    combinedResults.setDocList(combinedResultSlice);
     SortedIntDocSet docSet = new SortedIntDocSet(combinedResultsDocIDs, combinedResultsLength);
-    rrfResult.setDocSet(docSet);
-    return rrfResult;
+    combinedResults.setDocSet(docSet);
+  }
+
+  public NamedList<Explanation> getExplanations(
+          String[] queriesKeys, List<Query> queriesToCombine, List<DocList> resultsPerQuery, SolrIndexSearcher searcher, IndexSchema schema) throws IOException {
+    NamedList<Explanation> docIdsExplanations = new SimpleOrderedMap<>();
+    Map<Integer, Integer[]> docIdToRankPositions = new HashMap<>();
+    QueryResult combinedResult = new QueryResult();
+    combineResults(combinedResult, resultsPerQuery, docIdToRankPositions);
+    DocList combinedDocList = combinedResult.getDocList();
+    //explain each result
+    DocIterator iterator = combinedDocList.iterator();
+    for (int i = 0; i < combinedDocList.size(); i++) {
+      int docId = iterator.nextDoc();
+      Integer[] rankPositions = docIdToRankPositions.get(docId);
+      Document doc = searcher.doc(docId);
+      String strid = schema.printableUniqueKey(doc);
+      List<Explanation> originalExplanations = new ArrayList<>(queriesKeys.length);
+      for (int queryIndex = 0; queryIndex < queriesKeys.length; queryIndex++) {
+        Explanation originalFullExplain = searcher.explain(queriesToCombine.get(queryIndex), docId);
+        Explanation originalQuery = Explanation.match(originalFullExplain.getValue(), queriesKeys[queryIndex], originalFullExplain);
+        originalExplanations.add(originalQuery);
+      }
+      Explanation fullDocIdExplanation = Explanation.match(iterator.score(), getReciprocalRankFusionExplain(queriesKeys, rankPositions), originalExplanations);
+      docIdsExplanations.add(strid, fullDocIdExplanation);
+    }
+    return docIdsExplanations;
+  }
+
+  private String getReciprocalRankFusionExplain(String[] queriesKeys, Integer[] rankPositions) {
+    StringBuilder explainDescription = new StringBuilder();
+    StringJoiner scoreComponents = new StringJoiner(" + ");
+    for (Integer rank : rankPositions) {
+      if (rank != null) {
+        scoreComponents.add("1/(" + k + "+" + rank + ")");
+      }
+    }
+    explainDescription.append(scoreComponents);
+    explainDescription.append(" because its ranking positions were: ");
+    StringJoiner rankingComponents = new StringJoiner(", ");
+    for (int i = 0; i < queriesKeys.length; i++) {
+
+      Integer rank = rankPositions[i];
+      if (rank == null) {
+        rankingComponents.add("not in the results for query(" + queriesKeys[i] + ")");
+      } else {
+        rankingComponents.add(rank + " for query(" + queriesKeys[i] + ")");
+      }
+    }
+    explainDescription.append(rankingComponents);
+    return explainDescription.toString();
   }
 }

@@ -196,6 +196,8 @@ public class QueryComponent extends SearchComponent {
 
     try {
       List<Query> parsedQueries = new LinkedList<>();
+      List<String> queriesString = new LinkedList<>();
+      List<QParser> queriesParsers = new LinkedList<>();
       for (String unparsedQuery : unparsedQueries) {
         QParser parser = QParser.getParser(unparsedQuery, defType, req);
         Query q = parser.getQuery();
@@ -204,11 +206,16 @@ public class QueryComponent extends SearchComponent {
           q = new MatchNoDocsQuery();
         }
         parsedQueries.add(q);
+        queriesString.add(parser.getString());
+        queriesParsers.add(parser);
         rb.setSortSpec(parser.getSortSpec(true));
         rb.setQparser(parser);
       }
       if (rb.isCombinedSearch()) {
+        rb.setQueriesString(queriesString);
         rb.setQueriesToCombine(parsedQueries);
+        rb.setQueriesParsers(queriesParsers);
+        rb.setQparser(null);
       } else {
         rb.setQuery(parsedQueries.get(0));
       }
@@ -477,6 +484,11 @@ public class QueryComponent extends SearchComponent {
     if (rb.isCombinedSearch()) {
       QueryResult combined = rb.queriesCombiningStrategy.combine(results);
       addCombinedResultsToResponse(rb, combined);
+      List<DocList> resultDocLists = new ArrayList<>(results.length);
+      for(QueryResult result:results){
+        resultDocLists.add(result.getDocList());
+      }
+      rb.setResultsPerQuery(resultDocLists);
     }
   }
 
