@@ -118,7 +118,7 @@ public class SolrCLI implements CLIO {
           .deprecated(
               DeprecatedAttributes.builder()
                   .setForRemoval(true)
-                  .setSince("9.6")
+                  .setSince("9.7")
                   .setDescription("Use --solr-url instead")
                   .get())
           .argName("HOST")
