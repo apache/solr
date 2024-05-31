@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -62,6 +63,7 @@ public class CircuitBreakerRegistry implements Closeable {
   public static final String SYSPROP_QUERY_MEM = SYSPROP_PREFIX + "query.mem";
   public static final String SYSPROP_QUERY_LOADAVG = SYSPROP_PREFIX + "query.loadavg";
   public static final String SYSPROP_WARN_ONLY_SUFFIX = ".warnonly";
+  private static final Map<String, Long> circuitBreakerTrippedMetrics = new ConcurrentHashMap<>();
 
   public CircuitBreakerRegistry(CoreContainer coreContainer) {
     initGlobal(coreContainer);
@@ -192,6 +194,7 @@ public class CircuitBreakerRegistry implements Closeable {
     List<CircuitBreaker> triggeredCircuitBreakers = null;
     for (CircuitBreaker circuitBreaker : breakersOfType) {
       if (circuitBreaker.isTripped()) {
+        incrementTripped(requestType, circuitBreaker);
         if (triggeredCircuitBreakers == null) {
           triggeredCircuitBreakers = new ArrayList<>();
         }
@@ -201,6 +204,18 @@ public class CircuitBreakerRegistry implements Closeable {
     }
 
     return triggeredCircuitBreakers;
+  }
+
+  private void incrementTripped(SolrRequestType requestType, CircuitBreaker circuitBreaker) {
+    String metricKey =
+        circuitBreaker.getClass().getSimpleName()
+            + "_"
+            + requestType.name().toLowerCase(Locale.ROOT);
+    circuitBreakerTrippedMetrics.merge(metricKey, 1L, Long::sum);
+  }
+
+  public static Map<String, Long> getTimesTrippedMetrics() {
+    return Map.copyOf(circuitBreakerTrippedMetrics);
   }
 
   /**

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.servlet;
 
+import static org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry.getTimesTrippedMetrics;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
@@ -92,6 +94,7 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
       caller.call(qTime, metrics, request);
     }
     getCompressingDirectoryPoolMetrics(metrics);
+    getCircuitBreakerMetrics(metrics);
     getSharedCacheMetrics(metrics, getSolrDispatchFilter(request).getCores(), cacheMetricTypes);
     metrics.add(
         new PrometheusMetric(
@@ -191,6 +194,19 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
               "init " + BASE_POOL_DESCRIPTION + "outstanding (in use) high water mark",
               v[5]));
     }
+  }
+
+  private void getCircuitBreakerMetrics(List<PrometheusMetric> metrics) {
+    getTimesTrippedMetrics()
+        .forEach(
+            (k, v) -> {
+              metrics.add(
+                  new PrometheusMetric(
+                      "times_tripped" + k,
+                      PrometheusMetricType.COUNTER,
+                      "number of times circuit has been tripped",
+                      v));
+            });
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
