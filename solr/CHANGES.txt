@@ -36,7 +36,7 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-17959: Add alwaysStopwords option to edismax (Andy Webb)
 
 Optimizations
 ---------------------
