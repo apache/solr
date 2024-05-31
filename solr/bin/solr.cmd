@@ -250,6 +250,7 @@ IF "%1"=="-help" goto run_solrcli
 IF "%1"=="-usage" goto run_solrcli
 IF "%1"=="-h" goto run_solrcli
 IF "%1"=="--help" goto run_solrcli
+IF "%1"=="-help" goto run_solrcli
 IF "%1"=="/?" goto run_solrcli
 IF "%1"=="status" goto get_status
 IF "%1"=="version" goto run_solrcli
@@ -291,6 +292,7 @@ IF "%FIRST_ARG%"=="-help" goto run_solrcli
 IF "%FIRST_ARG%"=="-usage" goto run_solrcli
 IF "%FIRST_ARG%"=="-h" goto run_solrcli
 IF "%FIRST_ARG%"=="--help" goto run_solrcli
+IF "%FIRST_ARG%"=="-help" goto run_solrcli
 IF "%FIRST_ARG%"=="/?" goto run_solrcli
 IF "%SCRIPT_CMD%"=="start" goto start_usage
 IF "%SCRIPT_CMD%"=="restart" goto start_usage
@@ -558,7 +560,9 @@ IF "%1"=="--port" goto set_port
 IF "%1"=="-z" goto set_zookeeper
 IF "%1"=="--zk-host" goto set_zookeeper
 IF "%1"=="-zkHost" goto set_zookeeper
+IF "%1"=="--zkHost" goto set_zookeeper
 IF "%1"=="-s" goto set_solr_url
+IF "%1"=="--solr-url" goto set_solr_url
 IF "%1"=="-solrUrl" goto set_solr_url
 IF "%1"=="-a" goto set_addl_opts
 IF "%1"=="--additional-options" goto set_addl_opts
@@ -1379,6 +1383,8 @@ goto done
 IF [%1]==[] goto run_config
 IF "%1"=="-z" goto set_config_zk
 IF "%1"=="--zk-host" goto set_config_zk
+IF "%1"=="-zkHost" goto set_config_zk
+IF "%1"=="--zkHhost" goto set_config_zk
 IF "%1"=="-s" goto set_config_url_scheme
 IF "%1"=="-scheme" goto set_config_url_scheme
 set "CONFIG_ARGS=!CONFIG_ARGS! %1"
