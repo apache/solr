@@ -19,24 +19,18 @@ package org.apache.solr.search.combining;
 
 import static org.apache.solr.common.params.CombinerParams.RECIPROCAl_RANK_FUSION;
 
-import org.apache.lucene.document.Document;
+import java.io.IOException;
+import java.util.List;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.SolrIndexSearcher;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Combining considers two or more query results: resultA, resultB ...<br>
@@ -78,8 +72,13 @@ public abstract class QueriesCombiner {
   }
 
   public abstract NamedList<Explanation> getExplanations(
-          String[] queriesKeys, List<Query> queriesToCombine, List<DocList> resultsPerQuery, SolrIndexSearcher searcher, IndexSchema schema) throws IOException;
-  
+      String[] queriesKeys,
+      List<Query> queriesToCombine,
+      List<DocList> resultsPerQuery,
+      SolrIndexSearcher searcher,
+      IndexSchema schema)
+      throws IOException;
+
   public static QueriesCombiner getImplementation(SolrParams requestParams) {
     String algorithm = requestParams.get(CombinerParams.COMBINER_ALGORITHM, RECIPROCAl_RANK_FUSION);
     switch (algorithm) {

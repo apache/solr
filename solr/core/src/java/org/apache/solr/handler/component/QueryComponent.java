@@ -485,7 +485,7 @@ public class QueryComponent extends SearchComponent {
       QueryResult combined = rb.queriesCombiningStrategy.combine(results);
       addCombinedResultsToResponse(rb, combined);
       List<DocList> resultDocLists = new ArrayList<>(results.length);
-      for(QueryResult result:results){
+      for (QueryResult result : results) {
         resultDocLists.add(result.getDocList());
       }
       rb.setResultsPerQuery(resultDocLists);

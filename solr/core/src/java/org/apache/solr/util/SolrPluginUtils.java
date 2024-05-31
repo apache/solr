@@ -280,8 +280,9 @@ public class SolrPluginUtils {
     return debugInterests;
   }
 
-  /**\
-   * 
+  /**
+   * \
+   *
    * @param req bla
    * @param queriesCombiningStrategy bla
    * @param userQueries bla
@@ -294,18 +295,19 @@ public class SolrPluginUtils {
    * @throws IOException a
    */
   public static NamedList<Object> doCombinedSearchDebug(
-          SolrQueryRequest req,
-          QueriesCombiner queriesCombiningStrategy,
-          List<String> userQueries,
-          List<QParser> queryParsers,
-          List<Query> queries,
-          List<DocList> resultsPerQuery,
-          boolean dbgQuery,
-          boolean dbgResults)
-          throws IOException {
+      SolrQueryRequest req,
+      QueriesCombiner queriesCombiningStrategy,
+      List<String> userQueries,
+      List<QParser> queryParsers,
+      List<Query> queries,
+      List<DocList> resultsPerQuery,
+      boolean dbgQuery,
+      boolean dbgResults)
+      throws IOException {
     NamedList<Object> dbg = new SimpleOrderedMap<>();
-    doCombinedSearchQueryDebug(req,userQueries, queryParsers, queries, dbgQuery, dbg);
-    doCombinedSearchResultsDebug(req, queriesCombiningStrategy,queries, resultsPerQuery, dbgResults, dbg);
+    doCombinedSearchQueryDebug(req, userQueries, queryParsers, queries, dbgQuery, dbg);
+    doCombinedSearchResultsDebug(
+        req, queriesCombiningStrategy, queries, resultsPerQuery, dbgResults, dbg);
     return dbg;
   }
 
@@ -348,16 +350,16 @@ public class SolrPluginUtils {
   }
 
   public static void doCombinedSearchQueryDebug(
-          SolrQueryRequest req,
-          List<String> userQueries,
-          List<QParser> queryParsers,
-          List<Query> queries,
-          boolean dbgQuery,
-          NamedList<Object> dbg) {
+      SolrQueryRequest req,
+      List<String> userQueries,
+      List<QParser> queryParsers,
+      List<Query> queries,
+      boolean dbgQuery,
+      NamedList<Object> dbg) {
     if (dbgQuery) {
       NamedList<NamedList<Object>> queriesDebug = new SimpleOrderedMap<>();
       String[] queriesKeys = req.getParams().getParams(CombinerParams.COMBINER_QUERIES_KEYS);
-      for (int i=0; i<queries.size(); i++) {
+      for (int i = 0; i < queries.size(); i++) {
         NamedList<Object> singleQueryDebug = new SimpleOrderedMap<>();
         singleQueryDebug.add("querystring", userQueries.get(i));
         singleQueryDebug.add("queryparser", queryParsers.get(i).getClass().getSimpleName());
@@ -368,7 +370,7 @@ public class SolrPluginUtils {
       dbg.add("queriesToCombine", queriesDebug);
     }
   }
-  
+
   public static void doStandardQueryDebug(
       SolrQueryRequest req,
       String userQuery,
@@ -390,24 +392,31 @@ public class SolrPluginUtils {
   }
 
   public static void doCombinedSearchResultsDebug(
-          SolrQueryRequest req, QueriesCombiner combiner, List<Query> queriesToCombine, List<DocList> resultsPerQuery, boolean dbgResults, NamedList<Object> dbg)
-          throws IOException {
+      SolrQueryRequest req,
+      QueriesCombiner combiner,
+      List<Query> queriesToCombine,
+      List<DocList> resultsPerQuery,
+      boolean dbgResults,
+      NamedList<Object> dbg)
+      throws IOException {
     if (dbgResults) {
       SolrIndexSearcher searcher = req.getSearcher();
       IndexSchema schema = searcher.getSchema();
       String[] queriesKeys = req.getParams().getParams(CombinerParams.COMBINER_QUERIES_KEYS);
-      
+
       boolean explainStruct = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT, false);
 
       if (resultsPerQuery != null) {
-        NamedList<Explanation> explain = combiner.getExplanations(queriesKeys, queriesToCombine, resultsPerQuery, searcher, schema);
+        NamedList<Explanation> explain =
+            combiner.getExplanations(
+                queriesKeys, queriesToCombine, resultsPerQuery, searcher, schema);
         dbg.add(
-                "explain",
-                explainStruct ? explanationsToNamedLists(explain) : explanationsToStrings(explain));
+            "explain",
+            explainStruct ? explanationsToNamedLists(explain) : explanationsToStrings(explain));
       }
     }
   }
-  
+
   public static void doStandardResultsDebug(
       SolrQueryRequest req, Query query, DocList results, boolean dbgResults, NamedList<Object> dbg)
       throws IOException {
@@ -755,7 +764,8 @@ public class SolrPluginUtils {
   }
 
   /**
-   * Recursively walks the "from" query pulling out sub-queriesToCombine and adding them to the "to" query.
+   * Recursively walks the "from" query pulling out sub-queriesToCombine and adding them to the "to"
+   * query.
    *
    * <p>Boosts are multiplied as needed. Sub-BooleanQueryies which are not optional will not be
    * flattened. From will be mangled durring the walk, so do not attempt to reuse it.

@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
@@ -70,14 +69,17 @@ public class ReciprocalRankFusion extends QueriesCombiner {
   public QueryResult combine(QueryResult[] queryResults) {
     QueryResult rrfResult = initCombinedResult(queryResults);
     List<DocList> queriesResultsDocLists = new ArrayList<>(queryResults.length);
-    for(QueryResult singleQuery:queryResults){
+    for (QueryResult singleQuery : queryResults) {
       queriesResultsDocLists.add(singleQuery.getDocList());
     }
-    combineResults(rrfResult, queriesResultsDocLists,null);
+    combineResults(rrfResult, queriesResultsDocLists, null);
     return rrfResult;
   }
-  
-  private void combineResults(QueryResult combinedResults, List<DocList> queriesResults, Map<Integer, Integer[]> docIdToRankPositions){
+
+  private void combineResults(
+      QueryResult combinedResults,
+      List<DocList> queriesResults,
+      Map<Integer, Integer[]> docIdToRankPositions) {
     HashMap<Integer, Float> docIdToScore = new HashMap<>();
     for (DocList singleQuery : queriesResults) {
       DocIterator iterator = singleQuery.iterator();
@@ -90,12 +92,9 @@ public class ReciprocalRankFusion extends QueriesCombiner {
       }
     }
 
-    
-    
-    
     Stream<Map.Entry<Integer, Float>> sortedResults =
-            docIdToScore.entrySet().stream()
-                    .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()));
+        docIdToScore.entrySet().stream()
+            .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()));
 
     int combinedResultsLength = docIdToScore.size();
     int[] combinedResultsDocIDs = new int[combinedResultsLength];
@@ -109,42 +108,47 @@ public class ReciprocalRankFusion extends QueriesCombiner {
     }
     boolean prepareForExplainability = docIdToRankPositions != null;
     if (prepareForExplainability) {
-      for(int docID:combinedResultsDocIDs){
+      for (int docID : combinedResultsDocIDs) {
         docIdToRankPositions.put(docID, new Integer[queriesResults.size()]);
       }
-      for (int j=0;j<queriesResults.size();j++) {
+      for (int j = 0; j < queriesResults.size(); j++) {
         DocIterator iterator = queriesResults.get(j).iterator();
         int ranking = 1;
         while (iterator.hasNext() && ranking <= upTo) {
           int docId = iterator.nextDoc();
-          docIdToRankPositions.get(docId)[j]=ranking;
+          docIdToRankPositions.get(docId)[j] = ranking;
           ranking++;
         }
       }
     }
-    
+
     DocSlice combinedResultSlice =
-            new DocSlice(
-                    0,
-                    combinedResultsLength,
-                    combinedResultsDocIDs,
-                    combinedResultScores,
-                    combinedResultsLength,
-                    combinedResultScores[0],
-                    GREATER_THAN_OR_EQUAL_TO);
+        new DocSlice(
+            0,
+            combinedResultsLength,
+            combinedResultsDocIDs,
+            combinedResultScores,
+            combinedResultsLength,
+            combinedResultScores[0],
+            GREATER_THAN_OR_EQUAL_TO);
     combinedResults.setDocList(combinedResultSlice);
     SortedIntDocSet docSet = new SortedIntDocSet(combinedResultsDocIDs, combinedResultsLength);
     combinedResults.setDocSet(docSet);
   }
 
   public NamedList<Explanation> getExplanations(
-          String[] queriesKeys, List<Query> queriesToCombine, List<DocList> resultsPerQuery, SolrIndexSearcher searcher, IndexSchema schema) throws IOException {
+      String[] queriesKeys,
+      List<Query> queriesToCombine,
+      List<DocList> resultsPerQuery,
+      SolrIndexSearcher searcher,
+      IndexSchema schema)
+      throws IOException {
     NamedList<Explanation> docIdsExplanations = new SimpleOrderedMap<>();
     Map<Integer, Integer[]> docIdToRankPositions = new HashMap<>();
     QueryResult combinedResult = new QueryResult();
     combineResults(combinedResult, resultsPerQuery, docIdToRankPositions);
     DocList combinedDocList = combinedResult.getDocList();
-    //explain each result
+    // explain each result
     DocIterator iterator = combinedDocList.iterator();
     for (int i = 0; i < combinedDocList.size(); i++) {
       int docId = iterator.nextDoc();
@@ -154,10 +158,16 @@ public class ReciprocalRankFusion extends QueriesCombiner {
       List<Explanation> originalExplanations = new ArrayList<>(queriesKeys.length);
       for (int queryIndex = 0; queryIndex < queriesKeys.length; queryIndex++) {
         Explanation originalFullExplain = searcher.explain(queriesToCombine.get(queryIndex), docId);
-        Explanation originalQuery = Explanation.match(originalFullExplain.getValue(), queriesKeys[queryIndex], originalFullExplain);
+        Explanation originalQuery =
+            Explanation.match(
+                originalFullExplain.getValue(), queriesKeys[queryIndex], originalFullExplain);
         originalExplanations.add(originalQuery);
       }
-      Explanation fullDocIdExplanation = Explanation.match(iterator.score(), getReciprocalRankFusionExplain(queriesKeys, rankPositions), originalExplanations);
+      Explanation fullDocIdExplanation =
+          Explanation.match(
+              iterator.score(),
+              getReciprocalRankFusionExplain(queriesKeys, rankPositions),
+              originalExplanations);
       docIdsExplanations.add(strid, fullDocIdExplanation);
     }
     return docIdsExplanations;

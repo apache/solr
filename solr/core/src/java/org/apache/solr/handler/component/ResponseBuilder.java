@@ -100,10 +100,9 @@ public class ResponseBuilder {
 
   SolrRequestInfo requestInfo;
 
-  /**
-   * Query Combination
-   */
+  /** Query Combination */
   QueriesCombiner queriesCombiningStrategy;
+
   private List<String> queriesString = null;
   private List<Query> queriesToCombine = null;
   private List<QParser> queriesParsers = null;

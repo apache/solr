@@ -88,10 +88,10 @@ public class DebugComponent extends SearchComponent {
         results = rb.getResults().docList;
       }
 
-
       NamedList<Object> stdinfo;
       if (!rb.isCombinedSearch()) {
-        stdinfo = SolrPluginUtils.doStandardDebug(
+        stdinfo =
+            SolrPluginUtils.doStandardDebug(
                 rb.req,
                 rb.getQueryString(),
                 rb.wrap(rb.getQuery()),
@@ -99,7 +99,8 @@ public class DebugComponent extends SearchComponent {
                 rb.isDebugQuery(),
                 rb.isDebugResults());
       } else {
-        stdinfo = SolrPluginUtils.doCombinedSearchDebug(
+        stdinfo =
+            SolrPluginUtils.doCombinedSearchDebug(
                 rb.req,
                 rb.queriesCombiningStrategy,
                 rb.getQueriesString(),

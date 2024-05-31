@@ -16,22 +16,14 @@
  */
 package org.apache.solr.search.neural;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.request.SolrQueryRequest;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import static org.apache.solr.search.neural.KnnQParser.DEFAULT_TOP_K;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrInputDocument;
+import org.junit.After;
+import org.junit.Before;
 
 public class KnnBaseTest extends SolrTestCaseJ4 {
   String IDField = "id";

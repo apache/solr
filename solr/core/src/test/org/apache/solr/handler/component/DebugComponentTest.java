@@ -40,9 +40,18 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "1", "title", "this is a title.", "inStock_b1", "true"));
     assertU(adoc("id", "2", "title", "this is another title.", "inStock_b1", "true"));
     assertU(adoc("id", "3", "title", "Mary had a little lamb.", "inStock_b1", "false"));
-    assertU(adoc("id", "4", "title", "Vegeta is the prince of all saiyans.", "inStock_b1", "false"));
-    assertU(adoc("id", "5", "title", "Kakaroth aka Son Goku is a legendary saiyan warrior", "inStock_b1", "false"));
-    assertU(adoc("id", "6", "title", "Gohan is the first saiyan-human hybrid.", "inStock_b1", "false"));
+    assertU(
+        adoc("id", "4", "title", "Vegeta is the prince of all saiyans.", "inStock_b1", "false"));
+    assertU(
+        adoc(
+            "id",
+            "5",
+            "title",
+            "Kakaroth aka Son Goku is a legendary saiyan warrior",
+            "inStock_b1",
+            "false"));
+    assertU(
+        adoc("id", "6", "title", "Gohan is the first saiyan-human hybrid.", "inStock_b1", "false"));
     assertU(commit());
   }
 
@@ -292,47 +301,48 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
   public void reciprocalRankFusion_debugQuery_shouldReturnExplainabilitySnippet() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
     assertQ(
-            req(
-                    CommonParams.JSON,
-                    "{ \"queries\":{"
-                            + " \"lexical\": { \"lucene\": { \"query\": \"id:(10^=2 OR 2^=1)\" }},"
-                            + " \"vector-based\": { \"knn\": { \"f\": \"vector\", \"topK\": 5, \"query\": \"" + vectorToSearch + "\" }}"
-                            + "},"
-                            + " \"limit\": 10,"
-                            + " \"fields\": [id,score],"
-                            + " \"params\":{\"combiner\": true, \"debug\": \"query\" }}"),
-            "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='lexical']/str[@name='querystring']='id:(10^=2 OR 2^=1)'",
-            "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='lexical']/str[@name='queryparser']='LuceneQParser'",
-            "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='lexical']/str[@name='parsedquery']='ConstantScore(id:10)^2.0 ConstantScore(id:2)^1.0'",
-            "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='lexical']/str[@name='parsedquery_toString']='(ConstantScore(id:10))^2.0 (ConstantScore(id:2))^1.0'",
-            "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='vector-based']/str[@name='querystring']='[1.0, 2.0, 3.0, 4.0]'",
-            "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='vector-based']/str[@name='queryparser']='KnnQParser'",
-            "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='vector-based']/str[@name='parsedquery']='KnnFloatVectorQuery(KnnFloatVectorQuery:vector[1.0,...][5])'",
-            "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='vector-based']/str[@name='parsedquery_toString']='KnnFloatVectorQuery:vector[1.0,...][5]'"
-    );
+        req(
+            CommonParams.JSON,
+            "{ \"queries\":{"
+                + " \"lexical\": { \"lucene\": { \"query\": \"id:(10^=2 OR 2^=1)\" }},"
+                + " \"vector-based\": { \"knn\": { \"f\": \"vector\", \"topK\": 5, \"query\": \""
+                + vectorToSearch
+                + "\" }}"
+                + "},"
+                + " \"limit\": 10,"
+                + " \"fields\": [id,score],"
+                + " \"params\":{\"combiner\": true, \"debug\": \"query\" }}"),
+        "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='lexical']/str[@name='querystring']='id:(10^=2 OR 2^=1)'",
+        "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='lexical']/str[@name='queryparser']='LuceneQParser'",
+        "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='lexical']/str[@name='parsedquery']='ConstantScore(id:10)^2.0 ConstantScore(id:2)^1.0'",
+        "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='lexical']/str[@name='parsedquery_toString']='(ConstantScore(id:10))^2.0 (ConstantScore(id:2))^1.0'",
+        "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='vector-based']/str[@name='querystring']='[1.0, 2.0, 3.0, 4.0]'",
+        "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='vector-based']/str[@name='queryparser']='KnnQParser'",
+        "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='vector-based']/str[@name='parsedquery']='KnnFloatVectorQuery(KnnFloatVectorQuery:vector[1.0,...][5])'",
+        "//lst[@name='debug']/lst[@name='queriesToCombine']/lst[@name='vector-based']/str[@name='parsedquery_toString']='KnnFloatVectorQuery:vector[1.0,...][5]'");
   }
 
   @Test
-  public void reciprocalRankFusion_debugResults_shouldReturnReciprocalRankFusionExplainabilitySnippet() {
+  public void
+      reciprocalRankFusion_debugResults_shouldReturnReciprocalRankFusionExplainabilitySnippet() {
     // lexical Ranking: [5,3]
     // lexical2 Ranking: [4,5,3]
     assertQ(
-            req(
-                    CommonParams.JSON,
-                    "{ \"queries\":{"
-                            + " \"lexical\": { \"lucene\": { \"query\": \"id:(5^=1.2 OR 3^=1.1)\" }},"
-                            + " \"lexical2\": { \"lucene\": { \"query\": \"id:(4^=2.3 OR 5^=2.2 OR 3^=2.1)\" }}"
-                            + "},"
-                            + " \"limit\": 10,"
-                            + " \"fields\": [id,score],"
-                            + " \"params\":{\"combiner\": true, \"debug\": \"results\", \"debug.explain.structured\": true}}"),
-            "//lst[@name='debug']/lst[@name='explain']/lst[@name='5']/float[@name='value']='0.032522473'",
-            "//lst[@name='debug']/lst[@name='explain']/lst[@name='5']/str[@name='description']='1/(60+1) + 1/(60+2) because its ranking positions were: 1 for query(lexical), 2 for query(lexical2)'",
-            "//lst[@name='debug']/lst[@name='explain']/lst[@name='3']/float[@name='value']='0.032002047'",
-            "//lst[@name='debug']/lst[@name='explain']/lst[@name='3']/str[@name='description']='1/(60+2) + 1/(60+3) because its ranking positions were: 2 for query(lexical), 3 for query(lexical2)'",
-            "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/float[@name='value']='0.016393442'",
-            "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/str[@name='description']='1/(60+1) because its ranking positions were: not in the results for query(lexical), 1 for query(lexical2)'"
-    );
+        req(
+            CommonParams.JSON,
+            "{ \"queries\":{"
+                + " \"lexical\": { \"lucene\": { \"query\": \"id:(5^=1.2 OR 3^=1.1)\" }},"
+                + " \"lexical2\": { \"lucene\": { \"query\": \"id:(4^=2.3 OR 5^=2.2 OR 3^=2.1)\" }}"
+                + "},"
+                + " \"limit\": 10,"
+                + " \"fields\": [id,score],"
+                + " \"params\":{\"combiner\": true, \"debug\": \"results\", \"debug.explain.structured\": true}}"),
+        "//lst[@name='debug']/lst[@name='explain']/lst[@name='5']/float[@name='value']='0.032522473'",
+        "//lst[@name='debug']/lst[@name='explain']/lst[@name='5']/str[@name='description']='1/(60+1) + 1/(60+2) because its ranking positions were: 1 for query(lexical), 2 for query(lexical2)'",
+        "//lst[@name='debug']/lst[@name='explain']/lst[@name='3']/float[@name='value']='0.032002047'",
+        "//lst[@name='debug']/lst[@name='explain']/lst[@name='3']/str[@name='description']='1/(60+2) + 1/(60+3) because its ranking positions were: 2 for query(lexical), 3 for query(lexical2)'",
+        "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/float[@name='value']='0.016393442'",
+        "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/str[@name='description']='1/(60+1) because its ranking positions were: not in the results for query(lexical), 1 for query(lexical2)'");
   }
 
   @Test
@@ -340,21 +350,20 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
     // lexical Ranking: [5,3]
     // lexical2 Ranking: [4,5,3]
     assertQ(
-            req(
-                    CommonParams.JSON,
-                    "{ \"queries\":{"
-                            + " \"lexical\": { \"lucene\": { \"query\": \"id:(5^=1.2 OR 3^=1.1)\" }},"
-                            + " \"lexical2\": { \"lucene\": { \"query\": \"id:(4^=2.3 OR 5^=2.2 OR 3^=2.1)\" }}"
-                            + "},"
-                            + " \"limit\": 10,"
-                            + " \"fields\": [id,score],"
-                            + " \"params\":{\"combiner\": true, \"debug\": \"results\", \"debug.explain.structured\": true}}"),
-          "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/arr[@name='details']/lst[1]/str[@name='description']='lexical'",
-            "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/arr[@name='details']/lst[2]/str[@name='description']='lexical2'",
-            "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/arr[@name='details']/lst[1]/arr[@name='details']/lst[1]/bool[@name='match']='false'",
-            "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/arr[@name='details']/lst[2]/arr[@name='details']/lst[1]/bool[@name='match']='true'",
-            "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/arr[@name='details']/lst[2]/arr[@name='details']/lst[1]/float[@name='value']='2.3'"
-    );
+        req(
+            CommonParams.JSON,
+            "{ \"queries\":{"
+                + " \"lexical\": { \"lucene\": { \"query\": \"id:(5^=1.2 OR 3^=1.1)\" }},"
+                + " \"lexical2\": { \"lucene\": { \"query\": \"id:(4^=2.3 OR 5^=2.2 OR 3^=2.1)\" }}"
+                + "},"
+                + " \"limit\": 10,"
+                + " \"fields\": [id,score],"
+                + " \"params\":{\"combiner\": true, \"debug\": \"results\", \"debug.explain.structured\": true}}"),
+        "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/arr[@name='details']/lst[1]/str[@name='description']='lexical'",
+        "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/arr[@name='details']/lst[2]/str[@name='description']='lexical2'",
+        "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/arr[@name='details']/lst[1]/arr[@name='details']/lst[1]/bool[@name='match']='false'",
+        "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/arr[@name='details']/lst[2]/arr[@name='details']/lst[1]/bool[@name='match']='true'",
+        "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/arr[@name='details']/lst[2]/arr[@name='details']/lst[1]/float[@name='value']='2.3'");
   }
 
   @SuppressWarnings("unchecked")
