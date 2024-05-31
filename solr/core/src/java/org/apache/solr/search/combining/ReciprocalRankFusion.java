@@ -146,6 +146,7 @@ public class ReciprocalRankFusion extends QueriesCombiner {
     return docIdToRanks;
   }
 
+  @Override
   public NamedList<Explanation> getExplanations(
       String[] queryKeys,
       List<Query> queries,
