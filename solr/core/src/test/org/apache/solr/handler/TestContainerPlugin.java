@@ -572,7 +572,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   public void waitForAllNodesToSync(String path, Map<String, Object> expected) throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-      String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
+      String baseUrl = jettySolrRunner.getBaseURLV2().toString();
       String url = baseUrl + path + "?wt=javabin";
       TestDistribFileStore.assertResponseValues(1, new Fetcher(url, jettySolrRunner), expected);
     }
