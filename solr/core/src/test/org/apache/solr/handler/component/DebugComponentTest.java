@@ -338,11 +338,11 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
                 + " \"fields\": [id,score],"
                 + " \"params\":{\"combiner\": true, \"debug\": \"results\", \"debug.explain.structured\": true}}"),
         "//lst[@name='debug']/lst[@name='explain']/lst[@name='5']/float[@name='value']='0.032522473'",
-        "//lst[@name='debug']/lst[@name='explain']/lst[@name='5']/str[@name='description']='1/(60+1) + 1/(60+2) because its ranking positions were: 1 for query(lexical), 2 for query(lexical2)'",
+        "//lst[@name='debug']/lst[@name='explain']/lst[@name='5']/str[@name='description']='1/(60+1) + 1/(60+2) because its ranks were: 1 for query(lexical), 2 for query(lexical2)'",
         "//lst[@name='debug']/lst[@name='explain']/lst[@name='3']/float[@name='value']='0.032002047'",
-        "//lst[@name='debug']/lst[@name='explain']/lst[@name='3']/str[@name='description']='1/(60+2) + 1/(60+3) because its ranking positions were: 2 for query(lexical), 3 for query(lexical2)'",
+        "//lst[@name='debug']/lst[@name='explain']/lst[@name='3']/str[@name='description']='1/(60+2) + 1/(60+3) because its ranks were: 2 for query(lexical), 3 for query(lexical2)'",
         "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/float[@name='value']='0.016393442'",
-        "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/str[@name='description']='1/(60+1) because its ranking positions were: not in the results for query(lexical), 1 for query(lexical2)'");
+        "//lst[@name='debug']/lst[@name='explain']/lst[@name='4']/str[@name='description']='1/(60+1) because its ranks were: not in the results for query(lexical), 1 for query(lexical2)'");
   }
 
   @Test

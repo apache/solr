@@ -22,7 +22,7 @@ public interface CombinerParams {
 
   String COMBINER_ALGORITHM = COMBINER + ".algorithm";
 
-  String COMBINER_QUERIES_KEYS = COMBINER + ".queriesKeys";
+  String COMBINER_KEYS = COMBINER + ".keys";
 
   String RECIPROCAl_RANK_FUSION = "rrf";
 

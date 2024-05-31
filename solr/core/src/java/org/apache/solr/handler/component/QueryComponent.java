@@ -179,9 +179,9 @@ public class QueryComponent extends SearchComponent {
     List<String> unparsedQueries = new LinkedList<>();
     rb.isCombined = params.getBool(CombinerParams.COMBINER, false);
     if (rb.isCombinedSearch()) {
-      String[] queriesKeys = params.getParams(CombinerParams.COMBINER_QUERIES_KEYS);
+      String[] queriesToCombineKeys = params.getParams(CombinerParams.COMBINER_KEYS);
       rb.queriesCombiningStrategy = QueriesCombiner.getImplementation(params);
-      for (String queryKey : queriesKeys) {
+      for (String queryKey : queriesToCombineKeys) {
         unparsedQueries.add(params.get(queryKey));
       }
     } else {
@@ -196,8 +196,8 @@ public class QueryComponent extends SearchComponent {
 
     try {
       List<Query> parsedQueries = new LinkedList<>();
-      List<String> queriesString = new LinkedList<>();
-      List<QParser> queriesParsers = new LinkedList<>();
+      List<String> expandedUnparsedQueries = new LinkedList<>();
+      List<QParser> parsers = new LinkedList<>();
       for (String unparsedQuery : unparsedQueries) {
         QParser parser = QParser.getParser(unparsedQuery, defType, req);
         Query q = parser.getQuery();
@@ -206,16 +206,16 @@ public class QueryComponent extends SearchComponent {
           q = new MatchNoDocsQuery();
         }
         parsedQueries.add(q);
-        queriesString.add(parser.getString());
-        queriesParsers.add(parser);
+        expandedUnparsedQueries.add(parser.getString());
+        parsers.add(parser);
         rb.setSortSpec(parser.getSortSpec(true));
         rb.setQparser(parser);
       }
       if (rb.isCombinedSearch()) {
-        rb.setQueriesString(queriesString);
+        rb.setUnparsedQueriesToCombine(expandedUnparsedQueries);
         rb.setQueriesToCombine(parsedQueries);
-        rb.setQueriesParsers(queriesParsers);
-        rb.setQparser(null);
+        rb.setQueriesToCombineParsers(parsers);
+        rb.setQparser(null); // a parser is set for each query to combine
       } else {
         rb.setQuery(parsedQueries.get(0));
       }
@@ -488,7 +488,7 @@ public class QueryComponent extends SearchComponent {
       for (QueryResult result : results) {
         resultDocLists.add(result.getDocList());
       }
-      rb.setResultsPerQuery(resultDocLists);
+      rb.setResultsPerQueryToCombine(resultDocLists);
     }
   }
 

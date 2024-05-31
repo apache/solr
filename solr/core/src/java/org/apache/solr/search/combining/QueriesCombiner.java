@@ -33,7 +33,7 @@ import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.SolrIndexSearcher;
 
 /**
- * Combining considers two or more query results: resultA, resultB ...<br>
+ * Combining considers two or more query rankedLists: resultA, resultB ...<br>
  * For a given query, each query result is a ranked list of documents La = (a1,a2,...), Lb = (b1,
  * b2, ...)...<br>
  * A combining algorithm creates a unique ranked list I = (i1, i2, ...).<br>
@@ -49,31 +49,31 @@ public abstract class QueriesCombiner {
         requestParams.getInt(CombinerParams.COMBINER_UP_TO, CombinerParams.COMBINER_UP_TO_DEFAULT);
   }
 
-  public abstract QueryResult combine(QueryResult[] queryResults);
+  public abstract QueryResult combine(QueryResult[] rankedLists);
 
-  QueryResult initCombinedResult(QueryResult[] queryResults) {
-    QueryResult combinedResult = new QueryResult();
+  QueryResult initCombinedResult(QueryResult[] rankedLists) {
+    QueryResult combinedRankedList = new QueryResult();
     boolean partialResults = false;
-    for (QueryResult result : queryResults) {
+    for (QueryResult result : rankedLists) {
       partialResults |= result.isPartialResults();
     }
-    combinedResult.setPartialResults(partialResults);
+    combinedRankedList.setPartialResults(partialResults);
 
     boolean segmentTerminatedEarly = false;
-    for (QueryResult result : queryResults) {
+    for (QueryResult result : rankedLists) {
       if (result.getSegmentTerminatedEarly() != null) {
         segmentTerminatedEarly |= result.getSegmentTerminatedEarly();
       }
     }
-    combinedResult.setSegmentTerminatedEarly(segmentTerminatedEarly);
+    combinedRankedList.setSegmentTerminatedEarly(segmentTerminatedEarly);
 
-    combinedResult.setNextCursorMark(queryResults[0].getNextCursorMark());
-    return combinedResult;
+    combinedRankedList.setNextCursorMark(rankedLists[0].getNextCursorMark());
+    return combinedRankedList;
   }
 
   public abstract NamedList<Explanation> getExplanations(
-      String[] queriesKeys,
-      List<Query> queriesToCombine,
+      String[] queryKeys,
+      List<Query> queries,
       List<DocList> resultsPerQuery,
       SolrIndexSearcher searcher,
       IndexSchema schema)

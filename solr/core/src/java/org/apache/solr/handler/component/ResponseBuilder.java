@@ -103,10 +103,10 @@ public class ResponseBuilder {
   /** Query Combination */
   QueriesCombiner queriesCombiningStrategy;
 
-  private List<String> queriesString = null;
+  private List<String> unparsedQueriesToCombine = null;
   private List<Query> queriesToCombine = null;
-  private List<QParser> queriesParsers = null;
-  private List<DocList> resultsPerQuery = null;
+  private List<QParser> queriesToCombineParsers = null;
+  private List<DocList> resultsPerQueryToCombine = null;
   boolean isCombined;
 
   public ResponseBuilder(
@@ -389,12 +389,12 @@ public class ResponseBuilder {
     this.query = query;
   }
 
-  public List<String> getQueriesString() {
-    return queriesString;
+  public List<String> getUnparsedQueriesToCombine() {
+    return unparsedQueriesToCombine;
   }
 
-  public void setQueriesString(List<String> queriesString) {
-    this.queriesString = queriesString;
+  public void setUnparsedQueriesToCombine(List<String> queriesString) {
+    this.unparsedQueriesToCombine = queriesString;
   }
 
   public List<Query> getQueriesToCombine() {
@@ -405,20 +405,20 @@ public class ResponseBuilder {
     this.queriesToCombine = queries;
   }
 
-  public List<QParser> getQueriesParsers() {
-    return queriesParsers;
+  public List<QParser> getQueriesToCombineParsers() {
+    return queriesToCombineParsers;
   }
 
-  public void setQueriesParsers(List<QParser> queriesParsers) {
-    this.queriesParsers = queriesParsers;
+  public void setQueriesToCombineParsers(List<QParser> queriesParsers) {
+    this.queriesToCombineParsers = queriesParsers;
   }
 
-  public List<DocList> getResultsPerQuery() {
-    return resultsPerQuery;
+  public List<DocList> getResultsPerQueryToCombine() {
+    return resultsPerQueryToCombine;
   }
 
-  public void setResultsPerQuery(List<DocList> resultsPerQuery) {
-    this.resultsPerQuery = resultsPerQuery;
+  public void setResultsPerQueryToCombine(List<DocList> resultsPerQuery) {
+    this.resultsPerQueryToCombine = resultsPerQuery;
   }
 
   public boolean isCombinedSearch() {

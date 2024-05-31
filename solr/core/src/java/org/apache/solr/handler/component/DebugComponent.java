@@ -103,10 +103,10 @@ public class DebugComponent extends SearchComponent {
             SolrPluginUtils.doCombinedSearchDebug(
                 rb.req,
                 rb.queriesCombiningStrategy,
-                rb.getQueriesString(),
-                rb.getQueriesParsers(),
+                rb.getUnparsedQueriesToCombine(),
+                rb.getQueriesToCombineParsers(),
                 rb.getQueriesToCombine(),
-                rb.getResultsPerQuery(),
+                rb.getResultsPerQueryToCombine(),
                 rb.isDebugQuery(),
                 rb.isDebugResults());
       }

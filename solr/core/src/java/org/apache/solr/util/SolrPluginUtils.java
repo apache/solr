@@ -281,18 +281,18 @@ public class SolrPluginUtils {
   }
 
   /**
-   * \
+   * Returns a NamedList containing many "standard" pieces of debugging information.
    *
-   * @param req bla
-   * @param queriesCombiningStrategy bla
-   * @param userQueries bla
-   * @param queryParsers bla
-   * @param queries a
-   * @param resultsPerQuery a
-   * @param dbgQuery a
-   * @param dbgResults a
-   * @return a
-   * @throws IOException a
+   * @param req the request we are dealing with
+   * @param queriesCombiningStrategy the algorithm to use when combining queries
+   * @param userQueries the users queries as a string, after any basic preprocessing has been done
+   * @param queryParsers the query parsers associated to each query
+   * @param queries the queries built from the userQueries
+   * @param resultsPerQuery the results for each query
+   * @param dbgQuery debug the query
+   * @param dbgResults debug the results
+   * @return The debug info
+   * @throws IOException if there was an IO error
    */
   public static NamedList<Object> doCombinedSearchDebug(
       SolrQueryRequest req,
@@ -358,14 +358,14 @@ public class SolrPluginUtils {
       NamedList<Object> dbg) {
     if (dbgQuery) {
       NamedList<NamedList<Object>> queriesDebug = new SimpleOrderedMap<>();
-      String[] queriesKeys = req.getParams().getParams(CombinerParams.COMBINER_QUERIES_KEYS);
+      String[] queryKeys = req.getParams().getParams(CombinerParams.COMBINER_KEYS);
       for (int i = 0; i < queries.size(); i++) {
         NamedList<Object> singleQueryDebug = new SimpleOrderedMap<>();
         singleQueryDebug.add("querystring", userQueries.get(i));
         singleQueryDebug.add("queryparser", queryParsers.get(i).getClass().getSimpleName());
         singleQueryDebug.add("parsedquery", QueryParsing.toString(queries.get(i), req.getSchema()));
         singleQueryDebug.add("parsedquery_toString", queries.get(i).toString());
-        queriesDebug.add(queriesKeys[i], singleQueryDebug);
+        queriesDebug.add(queryKeys[i], singleQueryDebug);
       }
       dbg.add("queriesToCombine", queriesDebug);
     }
@@ -393,7 +393,7 @@ public class SolrPluginUtils {
 
   public static void doCombinedSearchResultsDebug(
       SolrQueryRequest req,
-      QueriesCombiner combiner,
+      QueriesCombiner queriesCombiningStrategy,
       List<Query> queriesToCombine,
       List<DocList> resultsPerQuery,
       boolean dbgResults,
@@ -402,14 +402,13 @@ public class SolrPluginUtils {
     if (dbgResults) {
       SolrIndexSearcher searcher = req.getSearcher();
       IndexSchema schema = searcher.getSchema();
-      String[] queriesKeys = req.getParams().getParams(CombinerParams.COMBINER_QUERIES_KEYS);
-
+      String[] querykeys = req.getParams().getParams(CombinerParams.COMBINER_KEYS);
       boolean explainStruct = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT, false);
 
       if (resultsPerQuery != null) {
         NamedList<Explanation> explain =
-            combiner.getExplanations(
-                queriesKeys, queriesToCombine, resultsPerQuery, searcher, schema);
+            queriesCombiningStrategy.getExplanations(
+                querykeys, queriesToCombine, resultsPerQuery, searcher, schema);
         dbg.add(
             "explain",
             explainStruct ? explanationsToNamedLists(explain) : explanationsToStrings(explain));

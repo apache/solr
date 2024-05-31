@@ -44,13 +44,13 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortedIntDocSet;
 
 /**
- * Reciprocal Rank Fusion (RRF) is an algorithm that takes in input multiple ranked results to
+ * Reciprocal Rank Fusion (RRF) is an algorithm that takes in input multiple ranked rankedLists to
  * produce a unified result set. Examples of use cases where RRF can be used include hybrid search
  * and multiple Knn vector queries executed concurrently. RRF is based on the concept of reciprocal
- * rank, which is the inverse of the rank position of a document in a ranked list of search results.
- * The combination of search results happens taking into account the position of the items in the
- * original rankings, and giving higher score to items that are ranked higher in multiple lists. RRF
- * was introduced the first time by Cormack et al. in [1].<br>
+ * rank, which is the inverse of the rank position of a document in a ranked list of search
+ * rankedLists. The combination of search rankedLists happens taking into account the position of
+ * the items in the original rankings, and giving higher score to items that are ranked higher in
+ * multiple lists. RRF was introduced the first time by Cormack et al. in [1].<br>
  *
  * <p>[1] Cormack, Gordon V. et al. “Reciprocal rank fusion outperforms condorcet and individual
  * rank learning methods.” Proceedings of the 32nd international ACM SIGIR conference on Research
@@ -66,134 +66,142 @@ public class ReciprocalRankFusion extends QueriesCombiner {
   }
 
   @Override
-  public QueryResult combine(QueryResult[] queryResults) {
-    QueryResult rrfResult = initCombinedResult(queryResults);
-    List<DocList> queriesResultsDocLists = new ArrayList<>(queryResults.length);
-    for (QueryResult singleQuery : queryResults) {
-      queriesResultsDocLists.add(singleQuery.getDocList());
+  public QueryResult combine(QueryResult[] rankedLists) {
+    QueryResult combinedRankedList = initCombinedResult(rankedLists);
+    List<DocList> docLists = new ArrayList<>(rankedLists.length);
+    for (QueryResult rankedList : rankedLists) {
+      docLists.add(rankedList.getDocList());
     }
-    combineResults(rrfResult, queriesResultsDocLists, null);
-    return rrfResult;
+    combineResults(combinedRankedList, docLists, false);
+    return combinedRankedList;
   }
 
-  private void combineResults(
-      QueryResult combinedResults,
-      List<DocList> queriesResults,
-      Map<Integer, Integer[]> docIdToRankPositions) {
+  private Map<Integer, Integer[]> combineResults(
+      QueryResult combinedRankedList,
+      List<DocList> rankedLists,
+      boolean saveRankPositionsForExplain) {
+    Map<Integer, Integer[]> docIdToRanks = null;
     HashMap<Integer, Float> docIdToScore = new HashMap<>();
-    for (DocList singleQuery : queriesResults) {
-      DocIterator iterator = singleQuery.iterator();
+    for (DocList rankedList : rankedLists) {
+      DocIterator docs = rankedList.iterator();
       int ranking = 1;
-      while (iterator.hasNext() && ranking <= upTo) {
-        int docId = iterator.nextDoc();
+      while (docs.hasNext() && ranking <= upTo) {
+        int docId = docs.nextDoc();
         float rrfScore = 1f / (k + ranking);
         docIdToScore.compute(docId, (id, score) -> (score == null) ? rrfScore : score + rrfScore);
         ranking++;
       }
     }
-
-    Stream<Map.Entry<Integer, Float>> sortedResults =
+    Stream<Map.Entry<Integer, Float>> sortedByScoreDescending =
         docIdToScore.entrySet().stream()
             .sorted(Collections.reverseOrder(Map.Entry.comparingByValue()));
 
     int combinedResultsLength = docIdToScore.size();
-    int[] combinedResultsDocIDs = new int[combinedResultsLength];
+    int[] combinedResultsDocIds = new int[combinedResultsLength];
     float[] combinedResultScores = new float[combinedResultsLength];
 
     int i = 0;
-    for (Map.Entry<Integer, Float> scoredDoc : sortedResults.collect(Collectors.toList())) {
-      combinedResultsDocIDs[i] = scoredDoc.getKey();
+    for (Map.Entry<Integer, Float> scoredDoc :
+        sortedByScoreDescending.collect(Collectors.toList())) {
+      combinedResultsDocIds[i] = scoredDoc.getKey();
       combinedResultScores[i] = scoredDoc.getValue();
       i++;
     }
-    boolean prepareForExplainability = docIdToRankPositions != null;
-    if (prepareForExplainability) {
-      for (int docID : combinedResultsDocIDs) {
-        docIdToRankPositions.put(docID, new Integer[queriesResults.size()]);
-      }
-      for (int j = 0; j < queriesResults.size(); j++) {
-        DocIterator iterator = queriesResults.get(j).iterator();
-        int ranking = 1;
-        while (iterator.hasNext() && ranking <= upTo) {
-          int docId = iterator.nextDoc();
-          docIdToRankPositions.get(docId)[j] = ranking;
-          ranking++;
-        }
-      }
+
+    if (saveRankPositionsForExplain) {
+      docIdToRanks = getRanks(rankedLists, combinedResultsDocIds);
     }
 
     DocSlice combinedResultSlice =
         new DocSlice(
             0,
             combinedResultsLength,
-            combinedResultsDocIDs,
+            combinedResultsDocIds,
             combinedResultScores,
             combinedResultsLength,
             combinedResultScores[0],
             GREATER_THAN_OR_EQUAL_TO);
-    combinedResults.setDocList(combinedResultSlice);
-    SortedIntDocSet docSet = new SortedIntDocSet(combinedResultsDocIDs, combinedResultsLength);
-    combinedResults.setDocSet(docSet);
+    combinedRankedList.setDocList(combinedResultSlice);
+    SortedIntDocSet docSet = new SortedIntDocSet(combinedResultsDocIds, combinedResultsLength);
+    combinedRankedList.setDocSet(docSet);
+
+    return docIdToRanks;
+  }
+
+  private Map<Integer, Integer[]> getRanks(List<DocList> docLists, int[] combinedResultsDocIDs) {
+    Map<Integer, Integer[]> docIdToRanks;
+    docIdToRanks = new HashMap<>();
+    for (int docID : combinedResultsDocIDs) {
+      docIdToRanks.put(docID, new Integer[docLists.size()]);
+    }
+    for (int j = 0; j < docLists.size(); j++) {
+      DocIterator iterator = docLists.get(j).iterator();
+      int rank = 1;
+      while (iterator.hasNext() && rank <= upTo) {
+        int docId = iterator.nextDoc();
+        docIdToRanks.get(docId)[j] = rank;
+        rank++;
+      }
+    }
+    return docIdToRanks;
   }
 
   public NamedList<Explanation> getExplanations(
-      String[] queriesKeys,
-      List<Query> queriesToCombine,
-      List<DocList> resultsPerQuery,
+      String[] queryKeys,
+      List<Query> queries,
+      List<DocList> rankedLists,
       SolrIndexSearcher searcher,
       IndexSchema schema)
       throws IOException {
     NamedList<Explanation> docIdsExplanations = new SimpleOrderedMap<>();
-    Map<Integer, Integer[]> docIdToRankPositions = new HashMap<>();
-    QueryResult combinedResult = new QueryResult();
-    combineResults(combinedResult, resultsPerQuery, docIdToRankPositions);
-    DocList combinedDocList = combinedResult.getDocList();
+    QueryResult combinedRankedList = new QueryResult();
+    Map<Integer, Integer[]> docIdToRanks = combineResults(combinedRankedList, rankedLists, true);
+    DocList combinedDocList = combinedRankedList.getDocList();
     // explain each result
     DocIterator iterator = combinedDocList.iterator();
     for (int i = 0; i < combinedDocList.size(); i++) {
       int docId = iterator.nextDoc();
-      Integer[] rankPositions = docIdToRankPositions.get(docId);
+      Integer[] rankPerQuery = docIdToRanks.get(docId);
       Document doc = searcher.doc(docId);
-      String strid = schema.printableUniqueKey(doc);
-      List<Explanation> originalExplanations = new ArrayList<>(queriesKeys.length);
-      for (int queryIndex = 0; queryIndex < queriesKeys.length; queryIndex++) {
-        Explanation originalFullExplain = searcher.explain(queriesToCombine.get(queryIndex), docId);
-        Explanation originalQuery =
+      String docUniqueKey = schema.printableUniqueKey(doc);
+      List<Explanation> originalExplanations = new ArrayList<>(queryKeys.length);
+      for (int queryIndex = 0; queryIndex < queryKeys.length; queryIndex++) {
+        Explanation originalQueryExplain = searcher.explain(queries.get(queryIndex), docId);
+        Explanation originalQueryExplainWithKey =
             Explanation.match(
-                originalFullExplain.getValue(), queriesKeys[queryIndex], originalFullExplain);
-        originalExplanations.add(originalQuery);
+                originalQueryExplain.getValue(), queryKeys[queryIndex], originalQueryExplain);
+        originalExplanations.add(originalQueryExplainWithKey);
       }
       Explanation fullDocIdExplanation =
           Explanation.match(
               iterator.score(),
-              getReciprocalRankFusionExplain(queriesKeys, rankPositions),
+              getReciprocalRankFusionExplain(queryKeys, rankPerQuery),
               originalExplanations);
-      docIdsExplanations.add(strid, fullDocIdExplanation);
+      docIdsExplanations.add(docUniqueKey, fullDocIdExplanation);
     }
     return docIdsExplanations;
   }
 
-  private String getReciprocalRankFusionExplain(String[] queriesKeys, Integer[] rankPositions) {
-    StringBuilder explainDescription = new StringBuilder();
+  private String getReciprocalRankFusionExplain(String[] queryKeys, Integer[] rankPerQuery) {
+    StringBuilder reciprocalRankFusionExplain = new StringBuilder();
     StringJoiner scoreComponents = new StringJoiner(" + ");
-    for (Integer rank : rankPositions) {
+    for (Integer rank : rankPerQuery) {
       if (rank != null) {
         scoreComponents.add("1/(" + k + "+" + rank + ")");
       }
     }
-    explainDescription.append(scoreComponents);
-    explainDescription.append(" because its ranking positions were: ");
-    StringJoiner rankingComponents = new StringJoiner(", ");
-    for (int i = 0; i < queriesKeys.length; i++) {
-
-      Integer rank = rankPositions[i];
+    reciprocalRankFusionExplain.append(scoreComponents);
+    reciprocalRankFusionExplain.append(" because its ranks were: ");
+    StringJoiner rankComponents = new StringJoiner(", ");
+    for (int i = 0; i < queryKeys.length; i++) {
+      Integer rank = rankPerQuery[i];
       if (rank == null) {
-        rankingComponents.add("not in the results for query(" + queriesKeys[i] + ")");
+        rankComponents.add("not in the results for query(" + queryKeys[i] + ")");
       } else {
-        rankingComponents.add(rank + " for query(" + queriesKeys[i] + ")");
+        rankComponents.add(rank + " for query(" + queryKeys[i] + ")");
       }
     }
-    explainDescription.append(rankingComponents);
-    return explainDescription.toString();
+    reciprocalRankFusionExplain.append(rankComponents);
+    return reciprocalRankFusionExplain.toString();
   }
 }
