@@ -89,7 +89,7 @@ public class SolrCLI implements CLIO {
           .deprecated(
               DeprecatedAttributes.builder()
                   .setForRemoval(true)
-                  .setSince("9.6")
+                  .setSince("9.7")
                   .setDescription("Use --zk-host instead")
                   .get())
           .argName("HOST")
