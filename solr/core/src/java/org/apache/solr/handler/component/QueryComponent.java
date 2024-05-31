@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -176,15 +175,17 @@ public class QueryComponent extends SearchComponent {
 
     // get it from the response builder to give a different component a chance
     // to set it.
-    List<String> unparsedQueries = new LinkedList<>();
+    List<String> unparsedQueries;
     rb.isCombined = params.getBool(CombinerParams.COMBINER, false);
     if (rb.isCombinedSearch()) {
       String[] queriesToCombineKeys = params.getParams(CombinerParams.COMBINER_KEYS);
+      unparsedQueries = new ArrayList<>(queriesToCombineKeys.length);
       rb.queriesCombiningStrategy = QueriesCombiner.getImplementation(params);
       for (String queryKey : queriesToCombineKeys) {
         unparsedQueries.add(params.get(queryKey));
       }
     } else {
+      unparsedQueries = new ArrayList<>(1);
       String queryString = rb.getQueryString();
       if (queryString == null) {
         // this is the normal way it's set.
@@ -195,9 +196,9 @@ public class QueryComponent extends SearchComponent {
     }
 
     try {
-      List<Query> parsedQueries = new LinkedList<>();
-      List<String> expandedUnparsedQueries = new LinkedList<>();
-      List<QParser> parsers = new LinkedList<>();
+      List<Query> parsedQueries = new ArrayList<>(unparsedQueries.size());
+      List<String> expandedUnparsedQueries = new ArrayList<>(unparsedQueries.size());
+      List<QParser> parsers = new ArrayList<>(unparsedQueries.size());
       for (String unparsedQuery : unparsedQueries) {
         QParser parser = QParser.getParser(unparsedQuery, defType, req);
         Query q = parser.getQuery();
