@@ -31,7 +31,7 @@ def genFailInfo(def task, TestDescriptor desc) {
   }
   def logName = ErrorReportingTestListener.getOutputLogName(desc.parent ?: desc)
   def output = file("${task.testOutputsDir}/${logName}")
-  def repro = "gradlew ${task.project.path}:test --tests \"${name}\" ${task.project.testOptionsForReproduceLine}"
+  def repro = "./gradlew ${task.project.path}:test --tests \"${name}\" ${task.project.testOptionsForReproduceLine}"
   return ["name": name, "project": "${task.project.path}", "historyUrl": historyUrl, "output": output, "reproduce": repro]
 }
 
