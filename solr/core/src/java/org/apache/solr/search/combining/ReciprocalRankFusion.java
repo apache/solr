@@ -44,11 +44,11 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortedIntDocSet;
 
 /**
- * Reciprocal Rank Fusion (RRF) is an algorithm that takes in input multiple ranked rankedLists to
+ * Reciprocal Rank Fusion (RRF) is an algorithm that takes in input multiple ranked lists to
  * produce a unified result set. Examples of use cases where RRF can be used include hybrid search
  * and multiple Knn vector queries executed concurrently. RRF is based on the concept of reciprocal
- * rank, which is the inverse of the rank position of a document in a ranked list of search
- * rankedLists. The combination of search rankedLists happens taking into account the position of
+ * rank, which is the inverse of the rank of a document in a ranked list of search
+ * results. The combination of search results happens taking into account the position of
  * the items in the original rankings, and giving higher score to items that are ranked higher in
  * multiple lists. RRF was introduced the first time by Cormack et al. in [1].<br>
  *
