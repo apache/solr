@@ -1410,7 +1410,7 @@ if [ $# -gt 0 ]; then
             SOLR_LOG_LEVEL=WARN
             shift
         ;;
-        --all)
+        --all|-all)
             stop_all=true
             shift
         ;;
