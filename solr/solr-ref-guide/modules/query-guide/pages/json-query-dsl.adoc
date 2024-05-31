@@ -314,7 +314,7 @@ Example of referencing <<Additional Queries,additional queries>>, <<Tagging in J
 ----
 curl -X POST http://localhost:8983/solr/techproducts/query -d '
 {
-    "queriesToCombine": {
+    "queries": {
        "query_filters":[                                            // 1.
            {"#size_tag":{"field":{"f":"size","query":"XL"}}},
            {"#color_tag":{"field":{"f":"color","query":"Red"}}}     // 2.
@@ -383,7 +383,7 @@ These queries don't impact the query result until explicit referencing.
 ----
 curl -X POST http://localhost:8983/solr/techproducts/query -d '
 {
-    "queriesToCombine": {
+    "queries": {
         "electronic": {"field": {"f":"cat", "query":"electronics"}},
         "manufacturers": [
            "manu:apple",

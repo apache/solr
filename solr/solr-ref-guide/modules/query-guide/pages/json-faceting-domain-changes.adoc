@@ -87,7 +87,7 @@ Here is the example of referencing DSL queries:
 curl http://localhost:8983/solr/techproducts/query -d '
 {
   "query": "*:*",
-  "queriesToCombine": {
+  "queries": {
       "sample_filtrs":[
            {"field":{"f":"text", "query":"usb"}},
            {"field":{"f":"text", "query":"lcd"}}

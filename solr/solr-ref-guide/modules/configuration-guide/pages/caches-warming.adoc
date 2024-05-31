@@ -359,7 +359,7 @@ To add a set of warming queries, use the `add-listener` command. (You may wish t
 ----
 {
   "add-listener": {
-    "name": "my-warming-queriesToCombine",
+    "name": "my-warming-queries",
     "event": "newSearcher",
     "class": "solr.QuerySenderListener",
     "queries": [
@@ -377,7 +377,7 @@ To update a set, use the `update-listener` command. Note that the whole set will
 ----
 {
   "update-listener": {
-    "name": "my-warming-queriesToCombine",
+    "name": "my-warming-queries",
     "event": "newSearcher",
     "class": "solr.QuerySenderListener",
     "queries": [
@@ -397,7 +397,7 @@ To delete a set of queries, use `delete-listener`:
 [source,json]
 ----
 {
-  "delete-listener": "my-warming-queriesToCombine"
+  "delete-listener": "my-warming-queries"
 }
 ----
 
