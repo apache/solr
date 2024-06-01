@@ -85,6 +85,8 @@ Bug Fixes
 
 * SOLR-17255: Fix bugs in SolrParams.toLocalParamsString() (hossman)
 
+* SOLR-17118: Simplify CoreContainerProvider initialization and JettySolrRunner. Avoid deadlock/hang. (David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
