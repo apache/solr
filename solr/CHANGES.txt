@@ -140,6 +140,8 @@ Bug Fixes
 
 * SOLR-17247: 'WWW-Authenticate' headers missing in MultiAuthPlugin (Lamine Idjeraoui via Eric Pugh)
 
+* SOLR-17118: Simplify CoreContainerProvider initialization and JettySolrRunner. Avoid deadlock/hang. (David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
