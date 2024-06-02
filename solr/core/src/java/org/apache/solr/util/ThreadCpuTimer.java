@@ -19,24 +19,19 @@ package org.apache.solr.util;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import net.jcip.annotations.NotThreadSafe;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Allows tracking information about the current thread using the JVM's built-in management bean
- * {@link java.lang.management.ThreadMXBean}.
- *
- * <p>Calling code should create an instance of this class when starting the operation, and then can
- * get the {@link #getElapsedCpuMs()} at any time thereafter.
- *
- * <p>This class is irrevocably not thread safe. Never allow instances of this class to be exposed
- * to more than one thread. Acquiring an external lock will not be sufficient. This class can be
- * considered "lock-hostile" due to its caching of timing information for a specific thread.
+ * {@link java.lang.management.ThreadMXBean}. Methods on this class are safe for use on any thread,
+ * but will return different values for different threads by design.
  */
-@NotThreadSafe
 public class ThreadCpuTimer {
   private static final long UNSUPPORTED = -1;
   public static final String CPU_TIME = "cpuTime";
@@ -59,14 +54,14 @@ public class ThreadCpuTimer {
     }
   }
 
-  private final long startCpuTimeNanos;
+  private static final ThreadLocal<Map<String, AtomicLong>> threadLocalTimer =
+      ThreadLocal.withInitial(ConcurrentHashMap::new);
 
-  /**
-   * Create an instance to track the current thread's usage of CPU. Usage information can later be
-   * retrieved by calling {@link #getElapsedCpuMs()}. Timing starts immediately upon construction.
-   */
-  public ThreadCpuTimer() {
-    this.startCpuTimeNanos = getThreadTotalCpuNs();
+  /* no instances shall be created. */
+  private ThreadCpuTimer() {}
+
+  public static void beginContext(String context) {
+    readNSAndReset(context);
   }
 
   public static boolean isSupported() {
@@ -74,47 +69,47 @@ public class ThreadCpuTimer {
   }
 
   /**
-   * Return CPU time consumed by this thread since the construction of this timer object.
+   * Get the number of nanoseconds since the last time <strong>this thread</strong> took a reading
+   * for the supplied context.
    *
-   * @return current value, or {@link #UNSUPPORTED} if not supported.
+   * @param context An arbitrary name that code can supply to avoid clashing with other usages.
+   * @return An optional long which may be empty if
+   *     java.lang.management.ManagementFactory#getThreadMXBean() is unsupported or otherwise
+   *     unavailable.
    */
-  public long getElapsedCpuNs() {
-    return this.startCpuTimeNanos != UNSUPPORTED
-        ? getThreadTotalCpuNs() - this.startCpuTimeNanos
-        : UNSUPPORTED;
-  }
-
-  /**
-   * Get the cpu time for the current thread since {@link Thread#start()} without throwing an
-   * exception.
-   *
-   * @see ThreadMXBean#getCurrentThreadCpuTime() for important details
-   * @return the number of nanoseconds of cpu consumed by this thread since {@code Thread.start()}.
-   */
-  private long getThreadTotalCpuNs() {
-    if (THREAD_MX_BEAN != null) {
-      return THREAD_MX_BEAN.getCurrentThreadCpuTime();
+  public static Optional<Long> readNSAndReset(String context) {
+    if (THREAD_MX_BEAN == null) {
+      return Optional.empty();
     } else {
-      return UNSUPPORTED;
+      AtomicLong threadCpuTime =
+          threadLocalTimer
+              .get()
+              .computeIfAbsent(
+                  context, (ctx) -> new AtomicLong(THREAD_MX_BEAN.getCurrentThreadCpuTime()));
+      long currentThreadCpuTime = THREAD_MX_BEAN.getCurrentThreadCpuTime();
+      long result = currentThreadCpuTime - threadCpuTime.get();
+      threadCpuTime.set(currentThreadCpuTime);
+      return Optional.of(result);
     }
   }
 
+  public static Optional<Long> readMSandReset(String context) {
+    return readNSAndReset(context)
+        .map((cpuTimeNs) -> TimeUnit.MILLISECONDS.convert(cpuTimeNs, TimeUnit.NANOSECONDS));
+  }
+
   /**
-   * Get the CPU usage information for the current thread since it created this {@link
-   * ThreadCpuTimer}. The result is undefined if called by any other thread.
-   *
-   * @return the thread's cpu since the creation of this {@link ThreadCpuTimer} instance. If the
-   *     VM's cpu tracking is disabled, returned value will be {@link #UNSUPPORTED}.
+   * Cleanup method. This should be called at the very end of a request thread when it's absolutely
+   * sure no code will attempt a new reading.
    */
-  public Optional<Long> getElapsedCpuMs() {
-    long cpuTimeNs = getElapsedCpuNs();
-    return cpuTimeNs != UNSUPPORTED
-        ? Optional.of(TimeUnit.MILLISECONDS.convert(cpuTimeNs, TimeUnit.NANOSECONDS))
-        : Optional.empty();
+  public static void reset() {
+    threadLocalTimer.get().clear();
   }
 
   @Override
   public String toString() {
-    return getElapsedCpuMs().map(String::valueOf).orElse("UNSUPPORTED");
+    return THREAD_MX_BEAN == null
+        ? "UNSUPPORTED"
+        : "Timing contexts:" + threadLocalTimer.get().toString();
   }
 }

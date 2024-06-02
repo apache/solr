@@ -32,13 +32,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.search.QueryLimit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,7 +154,7 @@ public class TestInjection {
 
   public static volatile AtomicInteger countDocSetDelays = new AtomicInteger(0);
 
-  public static volatile QueryTimeout queryTimeout = null;
+  public static volatile QueryLimit queryTimeout = null;
 
   public static volatile boolean failInExecutePlanAction = false;
 
