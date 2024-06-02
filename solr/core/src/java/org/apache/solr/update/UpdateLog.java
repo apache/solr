@@ -373,11 +373,48 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    */
   public void init(UpdateHandler uhandler, SolrCore core) {
     dataDir = core.getUlogDir();
-
     this.uhandler = uhandler;
+
+    // on a reopen, return early; less work to do.
+    // note: that method can update this.dataDir
+    if (initCheckRepoen(core)) return;
+
+    initTlogDir();
 
     usableForChildDocs = core.getLatestSchema().isUsableForChildDocs();
 
+    try {
+      versionInfo = new VersionInfo(this, numVersionBuckets);
+    } catch (SolrException e) {
+      log.error("Unable to use updateLog: ", e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Unable to use updateLog: " + e.getMessage(), e);
+    }
+
+    // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
+    try (RecentUpdates startingUpdates = getRecentUpdates()) {
+      startingVersions = startingUpdates.getVersions(numRecordsToKeep);
+
+      // populate recent deletes list (since we can't get that info from the index)
+      for (int i = startingUpdates.deleteList.size() - 1; i >= 0; i--) {
+        DeleteUpdate du = startingUpdates.deleteList.get(i);
+        oldDeletes.put(new BytesRef(du.id), new LogPtr(-1, du.version));
+      }
+
+      // populate recent deleteByQuery commands
+      for (int i = startingUpdates.deleteByQueryList.size() - 1; i >= 0; i--) {
+        Update update = startingUpdates.deleteByQueryList.get(i);
+        @SuppressWarnings({"unchecked"})
+        List<Object> dbq = (List<Object>) update.log.lookup(update.pointer);
+        long version = (Long) dbq.get(1);
+        String q = (String) dbq.get(2);
+        trackDeleteByQuery(q, version);
+      }
+    }
+    core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
+  }
+
+  protected boolean initCheckRepoen(SolrCore core) {
     if (dataDir.equals(lastDataDir)) {
       versionInfo.reload();
       core.getCoreMetricManager()
@@ -389,9 +426,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             tlogDir,
             id);
       }
-      return;
+      return true;
     }
     lastDataDir = dataDir;
+    return false;
+  }
+
+  protected void initTlogDir() {
     tlogDir = Path.of(dataDir, TLOG_NAME);
     try {
       Files.createDirectories(tlogDir);
@@ -441,36 +482,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       newestLogsOnStartup.addFirst(ll);
       if (newestLogsOnStartup.size() >= 2) break;
     }
-
-    try {
-      versionInfo = new VersionInfo(this, numVersionBuckets);
-    } catch (SolrException e) {
-      log.error("Unable to use updateLog: ", e);
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Unable to use updateLog: " + e.getMessage(), e);
-    }
-
-    // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
-    try (RecentUpdates startingUpdates = getRecentUpdates()) {
-      startingVersions = startingUpdates.getVersions(numRecordsToKeep);
-
-      // populate recent deletes list (since we can't get that info from the index)
-      for (int i = startingUpdates.deleteList.size() - 1; i >= 0; i--) {
-        DeleteUpdate du = startingUpdates.deleteList.get(i);
-        oldDeletes.put(new BytesRef(du.id), new LogPtr(-1, du.version));
-      }
-
-      // populate recent deleteByQuery commands
-      for (int i = startingUpdates.deleteByQueryList.size() - 1; i >= 0; i--) {
-        Update update = startingUpdates.deleteByQueryList.get(i);
-        @SuppressWarnings({"unchecked"})
-        List<Object> dbq = (List<Object>) update.log.lookup(update.pointer);
-        long version = (Long) dbq.get(1);
-        String q = (String) dbq.get(2);
-        trackDeleteByQuery(q, version);
-      }
-    }
-    core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
   }
 
   @Override

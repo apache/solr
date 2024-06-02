@@ -30,19 +30,15 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.ipc.RemoteException;
-import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.hdfs.util.HdfsUtil;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.TransactionLog;
-import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
-import org.apache.solr.update.VersionInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,31 +77,15 @@ public class HdfsUpdateLog extends UpdateLog {
     log.info("Initializing HdfsUpdateLog: tlogDfsReplication={}", tlogDfsReplication);
   }
 
-  private Configuration getConf(Path path) {
-    Configuration conf = new Configuration();
-    if (confDir != null) {
-      HdfsUtil.addHdfsResources(conf, confDir);
-    }
-
-    String fsScheme = path.toUri().getScheme();
-    if (fsScheme != null) {
-      conf.setBoolean("fs." + fsScheme + ".impl.disable.cache", true);
-    }
-    return conf;
-  }
-
   @Override
-  public void init(UpdateHandler uhandler, SolrCore core) {
-
-    // ulogDir from CoreDescriptor overrides
-    String ulogDir = core.getCoreDescriptor().getUlogDir();
-
-    this.uhandler = uhandler;
-
+  protected boolean initCheckRepoen(SolrCore core) {
     synchronized (fsLock) {
       // just like dataDir, we do not allow
       // moving the tlog dir on reload
       if (fs == null) {
+        // ulogDir from CoreDescriptor overrides
+        String ulogDir = core.getCoreDescriptor().getUlogDir();
+
         if (ulogDir != null) {
           dataDir = ulogDir;
         }
@@ -134,11 +114,27 @@ public class HdfsUpdateLog extends UpdateLog {
               hdfsTlogDir,
               id);
         }
-        versionInfo.reload();
-        return;
+        return true; // fast return
       }
     }
+    return false; // more work to do
+  }
 
+  private Configuration getConf(Path path) {
+    Configuration conf = new Configuration();
+    if (confDir != null) {
+      HdfsUtil.addHdfsResources(conf, confDir);
+    }
+
+    String fsScheme = path.toUri().getScheme();
+    if (fsScheme != null) {
+      conf.setBoolean("fs." + fsScheme + ".impl.disable.cache", true);
+    }
+    return conf;
+  }
+
+  @Override
+  protected void initTlogDir() {
     hdfsTlogDir = new Path(dataDir, TLOG_NAME);
     while (true) {
       try {
@@ -215,40 +211,6 @@ public class HdfsUpdateLog extends UpdateLog {
         ll.closeOutput();
       }
     }
-
-    try {
-      versionInfo = new VersionInfo(this, numVersionBuckets);
-    } catch (SolrException e) {
-      log.error("Unable to use updateLog: ", e);
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Unable to use updateLog: " + e.getMessage(), e);
-    }
-
-    // TODO: these startingVersions assume that we successfully recover from all
-    // non-complete tlogs.
-    try (RecentUpdates startingUpdates = getRecentUpdates()) {
-      startingVersions = startingUpdates.getVersions(getNumRecordsToKeep());
-
-      // populate recent deletes list (since we can't get that info from the
-      // index)
-      for (int i = startingUpdates.deleteList.size() - 1; i >= 0; i--) {
-        DeleteUpdate du = startingUpdates.deleteList.get(i);
-        oldDeletes.put(new BytesRef(du.id), new LogPtr(-1, du.version));
-      }
-
-      // populate recent deleteByQuery commands
-      for (int i = startingUpdates.deleteByQueryList.size() - 1; i >= 0; i--) {
-        Update update = startingUpdates.deleteByQueryList.get(i);
-        @SuppressWarnings({"unchecked"})
-        List<Object> dbq = (List<Object>) update.log.lookup(update.pointer);
-        long version = (Long) dbq.get(1);
-        String q = (String) dbq.get(2);
-        trackDeleteByQuery(q, version);
-      }
-    }
-
-    // initialize metrics
-    core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
   }
 
   @Override
