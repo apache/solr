@@ -5,6 +5,9 @@ import java.util.Map;
 import java.util.Properties;
 import org.apache.solr.cloud.ZkController;
 
+/**
+ * A core descriptor used by {@link SyntheticSolrCore}
+ */
 public class SyntheticCoreDescriptor extends CoreDescriptor {
   public SyntheticCoreDescriptor(
       String syntheticCoreName,

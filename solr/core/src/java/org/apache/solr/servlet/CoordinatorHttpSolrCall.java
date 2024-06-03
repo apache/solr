@@ -81,7 +81,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     String syntheticCoreName = factory.collectionVsCoreNameMapping.get(collectionName);
     if (syntheticCoreName != null) {
       SolrCore syntheticCore = solrCall.cores.getCore(syntheticCoreName);
-      setMDCLoggingContext(collectionName);
+      setMdcLoggingContext(collectionName);
       return syntheticCore;
     } else {
       // first time loading this collection
@@ -131,7 +131,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
                   }
                 });
       }
-      setMDCLoggingContext(collectionName);
+      setMdcLoggingContext(collectionName);
       if (log.isDebugEnabled()) {
         log.debug("coordinator node, returns synthetic core: {}", syntheticCore.getName());
       }
@@ -189,7 +189,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
    * Overrides the MDC context as the core set was synthetic core, which does not reflect the
    * collection being operated on
    */
-  private static void setMDCLoggingContext(String collectionName) {
+  private static void setMdcLoggingContext(String collectionName) {
     MDCLoggingContext.setCollection(collectionName);
 
     // below is irrelevant for call to coordinator
