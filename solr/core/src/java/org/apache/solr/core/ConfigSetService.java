@@ -251,19 +251,8 @@ public abstract class ConfigSetService {
    * @return a ConfigSet
    */
   public final ConfigSet loadConfigSet(CoreDescriptor dcore) {
-    return loadConfigSet(dcore, null);
-  }
 
-  /**
-   * Load the ConfigSet for a core with an explicit config set name
-   *
-   * @param dcore the core's CoreDescriptor
-   * @param configSetName an optional and explicit config set name
-   * @return a ConfigSet
-   */
-  final ConfigSet loadConfigSet(CoreDescriptor dcore, String configSetName) {
-
-    SolrResourceLoader coreLoader = createCoreResourceLoader(dcore, configSetName);
+    SolrResourceLoader coreLoader = createCoreResourceLoader(dcore);
 
     try {
       // ConfigSet properties are loaded from ConfigSetProperties.DEFAULT_FILENAME file.
@@ -401,21 +390,6 @@ public abstract class ConfigSetService {
    * @return a SolrResourceLoader
    */
   protected abstract SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd);
-
-  /**
-   * Create a SolrResourceLoader for a core with the provided configSetName.
-   *
-   * <p>By default, this will just call {@link
-   * ConfigSetService#createConfigSetService(CoreContainer)}. Child implementation might override
-   * this to make use of the configSetName directly
-   *
-   * @param cd the core's CoreDescriptor
-   * @param configSetName an optional config set name
-   * @return a SolrResourceLoader
-   */
-  protected SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd, String configSetName) {
-    return createCoreResourceLoader(cd);
-  }
 
   /**
    * Return a name for the ConfigSet for a core to be used for printing/diagnostic purposes.

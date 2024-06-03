@@ -45,15 +45,15 @@ public class SyntheticSolrCore extends SolrCore {
     coreProps.put(CoreAdminParams.COLLECTION, syntheticCoreName);
 
     CoreDescriptor syntheticCoreDescriptor =
-        new CoreDescriptor(
+        new SyntheticCoreDescriptor(
             syntheticCoreName,
             Paths.get(coreContainer.getSolrHome() + "/" + syntheticCoreName),
             coreProps,
             coreContainer.getContainerProperties(),
             coreContainer.getZkController());
-
+    syntheticCoreDescriptor.setConfigSet(configSetName);
     ConfigSet coreConfig =
-        coreContainer.getConfigSetService().loadConfigSet(syntheticCoreDescriptor, configSetName);
+        coreContainer.getConfigSetService().loadConfigSet(syntheticCoreDescriptor);
     syntheticCoreDescriptor.setConfigSetTrusted(coreConfig.isTrusted());
     SyntheticSolrCore syntheticCore =
         new SyntheticSolrCore(coreContainer, syntheticCoreDescriptor, coreConfig);

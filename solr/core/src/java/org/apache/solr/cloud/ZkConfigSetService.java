@@ -40,6 +40,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SyntheticCoreDescriptor;
 import org.apache.solr.util.FileTypeMagicUtil;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -69,52 +70,42 @@ public class ZkConfigSetService extends ConfigSetService {
     this.zkClient = zkClient;
   }
 
-  /**
-   * Do not perform Zk operations if configSetName is provided.
-   *
-   * <p>This is only used by {@link org.apache.solr.core.SyntheticSolrCore}, which is not registered
-   * with Zookeeper
-   */
-  @Override
-  protected SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd, String configSetName) {
-    return configSetName != null
-        ? new ZkSolrResourceLoader(
-            cd.getInstanceDir(), configSetName, parentLoader.getClassLoader(), zkController)
-        : createCoreResourceLoader(cd);
-  }
-
   @Override
   public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
-    final String colName = cd.getCollectionName();
-
-    // For back compat with cores that can create collections without the collections API
-    try {
-      if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + colName, true)) {
-        // TODO remove this functionality or maybe move to a CLI mechanism
-        log.warn(
-            "Auto-creating collection (in ZK) from core descriptor (on disk).  This feature may go away!");
-        CreateCollectionCmd.createCollectionZkNode(
-            zkController.getSolrCloudManager().getDistribStateManager(),
-            colName,
-            cd.getCloudDescriptor().getParams(),
-            zkController.getCoreContainer().getConfigSetService());
+    if (!(cd
+        instanceof
+        SyntheticCoreDescriptor)) { // for SyntheticSolrCore, we do not want to register it against
+      // ZK
+      final String colName = cd.getCollectionName();
+      // For back compat with cores that can create collections without the collections API
+      try {
+        if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + colName, true)) {
+          // TODO remove this functionality or maybe move to a CLI mechanism
+          log.warn(
+              "Auto-creating collection (in ZK) from core descriptor (on disk).  This feature may go away!");
+          CreateCollectionCmd.createCollectionZkNode(
+              zkController.getSolrCloudManager().getDistribStateManager(),
+              colName,
+              cd.getCloudDescriptor().getParams(),
+              zkController.getCoreContainer().getConfigSetService());
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new ZooKeeperException(
+            SolrException.ErrorCode.SERVER_ERROR, "Interrupted auto-creating collection", e);
+      } catch (KeeperException e) {
+        throw new ZooKeeperException(
+            SolrException.ErrorCode.SERVER_ERROR, "Failure auto-creating collection", e);
       }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ZooKeeperException(
-          SolrException.ErrorCode.SERVER_ERROR, "Interrupted auto-creating collection", e);
-    } catch (KeeperException e) {
-      throw new ZooKeeperException(
-          SolrException.ErrorCode.SERVER_ERROR, "Failure auto-creating collection", e);
+
+      // The configSet is read from ZK and populated.  Ignore CD's pre-existing configSet; only
+      // populated in standalone
+      String configSetName = zkController.getClusterState().getCollection(colName).getConfigName();
+      cd.setConfigSet(configSetName);
     }
 
-    // The configSet is read from ZK and populated.  Ignore CD's pre-existing configSet; only
-    // populated in standalone
-    String configSetName = zkController.getClusterState().getCollection(colName).getConfigName();
-    cd.setConfigSet(configSetName);
-
     return new ZkSolrResourceLoader(
-        cd.getInstanceDir(), configSetName, parentLoader.getClassLoader(), zkController);
+        cd.getInstanceDir(), cd.getConfigSet(), parentLoader.getClassLoader(), zkController);
   }
 
   @Override
