@@ -42,7 +42,7 @@ public class NodeValueFetcherTest extends SolrCloudTestCase {
 
     numShards = random().nextInt(3) + 3;
     numReplicas = random().nextInt(2) + 2;
-    int numNodes = random().nextInt(2) + 2;
+    int numNodes = random().nextInt(2) + 1;
 
     configureCluster(numNodes).configure();
   }
@@ -67,7 +67,7 @@ public class NodeValueFetcherTest extends SolrCloudTestCase {
     CloudLegacySolrClient solrClient = (CloudLegacySolrClient) cluster.getSolrClient();
     int totalCores = 0;
 
-    // Sum all the cores of the collection by fetching tags all all nodes.
+    // Sum all the cores of the collection by fetching tags of all nodes.
     // We should get same number than when we created the collection
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
       String node = runner.getNodeName();

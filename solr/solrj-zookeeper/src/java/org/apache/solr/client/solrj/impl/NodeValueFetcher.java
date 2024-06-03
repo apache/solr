@@ -130,7 +130,7 @@ public class NodeValueFetcher {
   private void getRemoteTags(
       Set<String> requestedTagNames, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
 
-    // First resolve the name into actual Tags instances
+    // First resolve names into actual Tags instances
     EnumSet<Tags> requestedTags = EnumSet.noneOf(Tags.class);
     for (Tags t : Tags.values()) {
       if (requestedTagNames.contains(t.tagName)) {
