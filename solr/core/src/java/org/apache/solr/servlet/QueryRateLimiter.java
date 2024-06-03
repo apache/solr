@@ -22,6 +22,7 @@ import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -61,38 +62,41 @@ public class QueryRateLimiter extends RequestRateLimiter {
   // To be used in initialization
   @SuppressWarnings({"unchecked"})
   static List<RateLimiterConfig> constructQueryRateLimiterConfig(SolrZkClient zkClient) {
-    List<RateLimiterConfig> cfgs = new ArrayList<>();
     try {
       if (zkClient == null) {
-        cfgs.add(new RateLimiterConfig());
-        return cfgs;
+        return Collections.singletonList(new RateLimiterConfig());
       }
 
       Map<String, Object> clusterPropsJson =
           (Map<String, Object>)
               Utils.fromJSON(zkClient.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true));
-      Object o = clusterPropsJson.get(RL_CONFIG_KEY);
-      if (o == null) {
-        cfgs.add(new RateLimiterConfig());
-        return cfgs;
-      }
-      if (o instanceof List) {
-        for (Object c : ((List<Object>) o)) {
-          cfgs.add(parseConfig(c));
-        }
-      } else {
-        cfgs.add(parseConfig(o));
-      }
-      return cfgs;
+      return parseConfigs(clusterPropsJson);
     } catch (KeeperException.NoNodeException e) {
-      cfgs.add(new RateLimiterConfig());
-      return cfgs;
+      return Collections.singletonList(new RateLimiterConfig());
     } catch (KeeperException | InterruptedException e) {
       throw new RuntimeException(
           "Error reading cluster property", SolrZkClient.checkInterrupted(e));
     } catch (IOException e) {
       throw new RuntimeException("Encountered an IOException " + e.getMessage());
     }
+  }
+
+  static List<RateLimiterConfig> parseConfigs(Map<String, Object> clusterPropsJson)
+      throws IOException {
+    List<RateLimiterConfig> cfgs = new ArrayList<>();
+    Object o = clusterPropsJson.get(RL_CONFIG_KEY);
+    if (o == null) {
+      cfgs.add(new RateLimiterConfig());
+      return cfgs;
+    }
+    if (o instanceof List) {
+      for (Object c : ((List<Object>) o)) {
+        cfgs.add(parseConfig(c));
+      }
+    } else {
+      cfgs.add(parseConfig(o));
+    }
+    return cfgs;
   }
 
   private static RateLimiterConfig parseConfig(Object o) throws IOException {
