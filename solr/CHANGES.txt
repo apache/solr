@@ -230,7 +230,7 @@ Optimizations
 
 * GITHUB#2217: Scale to 10K+ collections better in ZkStateReader.refreshCollectionsList (David Smiley)
 
-* SOLR-17099: snitch does not return spurious tags (Pierre Salagnac)
+* SOLR-17099: Do not return spurious tags when fetching metrics from a Solr node to another (Pierre Salagnac)
 
 Bug Fixes
 ---------------------
