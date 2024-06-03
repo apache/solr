@@ -65,14 +65,7 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
       if (s == null) return QUERY;
 
       s = s.toUpperCase(Locale.ROOT);
-      if (QUERY.toString().equals(s)) return QUERY;
-      if (UPDATE.toString().equals(s)) return UPDATE;
-      if (ADMIN.toString().equals(s)) return ADMIN;
-      if (STREAMING.toString().equals(s)) return STREAMING;
-      if (UNSPECIFIED.toString().equals(s)) return UNSPECIFIED;
-      else {
-        throw new RuntimeException("Unknown request type : " + s);
-      }
+      return Enum.valueOf(SolrRequestType.class, s);
     }
   };
 
