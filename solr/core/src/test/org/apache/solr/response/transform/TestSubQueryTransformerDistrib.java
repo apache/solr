@@ -49,6 +49,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
@@ -134,6 +135,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("serial")
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   @Test
   public void test() throws Exception {
     int peopleMultiplier = atLeast(1);

@@ -29,6 +29,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -86,6 +87,7 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public void testAdminUI() throws Exception {
     // Not an extensive test, but it does connect to Solr and verify the Admin ui shows up.
     String adminPath = "http://127.0.0.1:" + port + "/solr/";

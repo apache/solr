@@ -43,6 +43,7 @@ import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -385,6 +386,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     }
 
     /** parse a locale from a language+country+variant spec */
+    @SuppressForbidden(reason = " java.net.URL is Legacy API")
     protected Locale parseLocale(String language, String country, String variant) {
       if (language == null && country == null && variant == null) {
         return Locale.ROOT;

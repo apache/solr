@@ -30,6 +30,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -64,6 +65,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
 
   // https://issues.apache.org/jira/browse/SOLR-16019
   @Test
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public void testWrongUtf8InQ() throws Exception {
     var baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     var request =

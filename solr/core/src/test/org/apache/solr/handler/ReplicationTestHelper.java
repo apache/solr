@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.FileUtils;
@@ -152,6 +153,7 @@ public final class ReplicationTestHelper {
 
   // Simple function to wrap the invocation of replication commands on the various
   // jetty servers.
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public static void invokeReplicationCommand(String baseUrl, String pCommand) throws IOException {
     // String leaderUrl = buildUrl(pJettyPort) + "/" + DEFAULT_TEST_CORENAME +
     // ReplicationHandler.PATH+"?command=" + pCommand;
@@ -218,6 +220,7 @@ public final class ReplicationTestHelper {
     SolrTestCaseJ4.assertEquals("OK", response.get("status"));
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public static void pullFromTo(String srcUrl, String destUrl) throws IOException {
     URL url;
     InputStream stream;

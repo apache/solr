@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -82,6 +83,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     assertTrue(content.contains("1234"));
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   private String attemptHttpGet(String getUrl) throws IOException {
     Object obj = new URL(getUrl).getContent();
     if (obj instanceof InputStream) {

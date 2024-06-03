@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.security.spec.InvalidKeySpecException;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.util.CryptoKeys;
 
@@ -41,6 +42,7 @@ public class SolrNodeKeyPair {
     return keyPair;
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   private static CryptoKeys.RSAKeyPair createKeyPair(CloudConfig config) {
     if (config == null) {
       return new CryptoKeys.RSAKeyPair();

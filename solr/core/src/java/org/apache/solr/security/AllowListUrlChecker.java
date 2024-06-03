@@ -20,6 +20,7 @@ package org.apache.solr.security;
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,6 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.NodeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -187,6 +189,7 @@ public class AllowListUrlChecker {
     return hostPorts;
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   private static String parseHostPort(String url) throws MalformedURLException {
     // Parse the host and port.
     // It doesn't really matter which protocol we set here because we are not going to use it.
@@ -198,9 +201,9 @@ public class AllowListUrlChecker {
       if (!protocolMatcher.group(1).startsWith("http")) {
         url = "http" + protocolMatcher.group(2);
       }
-      u = new URL(url);
+      u = URI.create(url).toURL();
     } else {
-      u = new URL("http://" + url);
+      u = URI.create("http://" + url).toURL();
     }
     if (u.getHost() == null || u.getPort() < 0) {
       throw new MalformedURLException("Invalid host or port in '" + url + "'");

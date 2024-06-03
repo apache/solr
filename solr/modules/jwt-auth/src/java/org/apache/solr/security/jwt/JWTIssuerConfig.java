@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.jose4j.http.Get;
 import org.jose4j.http.SimpleResponse;
@@ -112,6 +113,7 @@ public class JWTIssuerConfig {
    *
    * @throws SolrException if issuer is missing
    */
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public void init() {
     if (!isValid()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Configuration is not valid");
@@ -466,6 +468,7 @@ public class JWTIssuerConfig {
      *
      * @param url the Url to connect to for JWK details.
      */
+    @SuppressForbidden(reason = " java.net.URL is Legacy API")
     private HttpsJwks create(String url) {
       final URL jwksUrl;
       try {
@@ -505,6 +508,7 @@ public class JWTIssuerConfig {
       this.securityConf = securityConf;
     }
 
+    @SuppressForbidden(reason = " java.net.URL is Legacy API")
     public static WellKnownDiscoveryConfig parse(String urlString) throws MalformedURLException {
       return parse(new URL(urlString), null);
     }

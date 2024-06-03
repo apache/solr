@@ -23,10 +23,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.SuppressForbidden;
 
 public class BreakIteratorBoundaryScanner extends SolrBoundaryScanner {
 
   @Override
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   protected BoundaryScanner get(String fieldName, SolrParams params) {
     // construct Locale
     String language = params.getFieldParam(fieldName, HighlightParams.BS_LANGUAGE);

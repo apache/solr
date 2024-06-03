@@ -22,7 +22,7 @@ plugins {
   id 'base'
   id 'com.palantir.consistent-versions' version '2.16.0'
   id 'org.owasp.dependencycheck' version '9.0.8'
-  id 'ca.cutterslade.analyze' version '1.9.1'
+  id 'ca.cutterslade.analyze' version '1.9.2'
   id 'de.thetaphi.forbiddenapis' version '3.7' apply false
   id 'de.undercouch.download' version '5.5.0' apply false
   id 'net.ltgt.errorprone' version '3.1.0' apply false
@@ -31,8 +31,8 @@ plugins {
 }
 
 // Declare default Java versions for the entire project and for SolrJ separately
-rootProject.ext.minJavaVersionDefault = JavaVersion.VERSION_11
-rootProject.ext.minJavaVersionSolrJ = JavaVersion.VERSION_11
+rootProject.ext.minJavaVersionDefault = JavaVersion.VERSION_21
+rootProject.ext.minJavaVersionSolrJ = JavaVersion.VERSION_21
 
 apply from: file('gradle/globals.gradle')
 

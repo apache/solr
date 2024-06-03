@@ -41,6 +41,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
@@ -144,6 +145,7 @@ public class CollationField extends FieldType {
    * Create a locale from language, with optional country and variant. Then return the appropriate
    * collator for the locale.
    */
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   private Collator createFromLocale(String language, String country, String variant) {
     Locale locale;
 

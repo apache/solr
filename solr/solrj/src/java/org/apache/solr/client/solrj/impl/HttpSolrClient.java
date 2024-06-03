@@ -87,6 +87,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -334,6 +335,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     return queryModParams;
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
     URL oldURL = new URL(basePath);
     String newPath = oldURL.getPath().replaceFirst("/solr", "/api");

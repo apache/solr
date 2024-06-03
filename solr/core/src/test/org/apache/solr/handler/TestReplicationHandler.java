@@ -28,6 +28,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -41,7 +42,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -86,7 +86,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since 1.4
  */
-@LuceneTestCase.Nightly
+// @LuceneTestCase.Nightly
 @SuppressSSL // Currently, unknown why SSL does not work with this test
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
@@ -844,7 +844,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
             + "/"
             + DEFAULT_TEST_CORENAME
             + ReplicationHandler.PATH;
-    URL url = new URL(leaderUrl);
+    URI uri = new URI(leaderUrl);
+    URL url = uri.toURL();
     InputStream stream = url.openStream();
     stream.close();
 

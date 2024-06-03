@@ -92,6 +92,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public void testURLStream() throws IOException {
     File file = new File(createTempDir().toFile(), "README");
 
@@ -123,6 +124,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public void testURLStreamGZIP() throws IOException {
     File file = new File(createTempDir().toFile(), "README.gz");
 
@@ -150,6 +152,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public void testURLStreamCSVGZIPExtention() throws IOException {
     File file = new File(createTempDir().toFile(), "README.CSV.gz");
 
@@ -177,6 +180,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public void testURLStreamJSONGZIPExtention() throws IOException {
     File file = new File(createTempDir().toFile(), "README.json.gzip");
 

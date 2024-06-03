@@ -61,6 +61,7 @@ import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuditEvent.RequestType;
 import org.apache.solr.security.AuditLoggerPlugin.JSONAuditEventFormatter;
@@ -251,6 +252,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public void illegalAdminPathError() throws Exception {
     setupCluster(false, null, false);
     String baseUrl = testHarness.get().cluster.getJettySolrRunner(0).getBaseURLV2().toString();

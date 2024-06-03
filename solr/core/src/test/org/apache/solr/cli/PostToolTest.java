@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;
@@ -165,10 +166,10 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressForbidden(reason = "URL is deprecated in Java 21")
   public void testComputeFullUrl() throws IOException {
 
     PostTool webPostTool = new PostTool();
-
     assertEquals(
         "http://[ff01::114]/index.html",
         webPostTool.computeFullUrl(new URL("http://[ff01::114]/"), "/index.html"));
@@ -210,6 +211,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressForbidden(reason = "URL is deprecated in Java 21")
   public void testAppendUrlPath() throws MalformedURLException {
     assertEquals(
         new URL("http://[ff01::114]/a?foo=bar"),
@@ -226,6 +228,7 @@ public class PostToolTest extends SolrCloudTestCase {
     assertEquals("application/json", PostTool.guessType(f));
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   @Test
   public void testDoFilesMode() throws MalformedURLException {
     PostTool postTool = new PostTool();
@@ -248,6 +251,7 @@ public class PostToolTest extends SolrCloudTestCase {
     assertTrue(postTool.recursionPossible(new String[] {doc.toString(), dir.toString()}));
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   @Test
   public void testRecursionAppliesToFilesMode() throws MalformedURLException {
     PostTool postTool = new PostTool();
@@ -260,6 +264,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public void testDoWebMode() throws IOException, URISyntaxException {
     PostTool postTool = new PostTool();
     postTool.pageFetcher = new MockPageFetcher();
@@ -284,6 +289,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public void testRobotsExclusion() throws IOException, URISyntaxException {
     PostTool postTool = new PostTool();
     postTool.pageFetcher = new MockPageFetcher();

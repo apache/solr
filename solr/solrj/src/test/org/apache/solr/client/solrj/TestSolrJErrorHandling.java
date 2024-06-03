@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -272,6 +273,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   }
 
   @Test
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public void testHttpURLConnection() throws Exception {
 
     // sometimes succeeds with this size, but larger can cause OOM from command line

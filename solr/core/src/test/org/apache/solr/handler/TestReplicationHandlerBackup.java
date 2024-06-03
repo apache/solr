@@ -43,6 +43,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.FileUtils;
@@ -250,6 +251,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public static void runBackupCommand(JettySolrRunner leaderJetty, String cmd, String params)
       throws IOException {
     String leaderUrl =

@@ -21,6 +21,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
@@ -49,6 +50,7 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public void testMultiCollectionQuery() throws Exception {
     createCollection("collection1", "conf1");
     // Test against all nodes (two of them host the collection, one of them will

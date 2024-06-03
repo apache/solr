@@ -69,6 +69,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -450,6 +451,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("deprecation")
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   private void queryWithShardsPreferenceRules(CloudSolrClient cloudClient, String collectionName)
       throws Exception {
     SolrQuery qRequest = new SolrQuery("*:*");

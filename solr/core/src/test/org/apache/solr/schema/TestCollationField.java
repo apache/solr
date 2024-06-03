@@ -23,6 +23,7 @@ import java.text.Collator;
 import java.text.RuleBasedCollator;
 import java.util.Locale;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.BeforeClass;
 
 /** Tests {@link CollationField} with TermQueries, RangeQueries, and sort order. */
@@ -53,6 +54,7 @@ public class TestCollationField extends SolrTestCaseJ4 {
    * are largish files, and jvm-specific (as our documentation says, you should always look out for
    * jvm differences with collation). So it's preferable to create this file on-the-fly.
    */
+  @SuppressForbidden(reason = "Locale deprecated in Java 21")
   public static String setupSolrHome() throws Exception {
     // make a solr home underneath the test's TEMP_DIR
     Path tmpFile = createTempDir("collation1");

@@ -22,9 +22,11 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.Assert;
 
 public class TestRestoreCoreUtil {
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   public static boolean fetchRestoreStatus(String baseUrl, String coreName) throws IOException {
     String leaderUrl =
         baseUrl

@@ -47,6 +47,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 
 public abstract class HttpSolrClientBase extends SolrClient {
@@ -131,6 +132,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
     return basePath + path;
   }
 
+  @SuppressForbidden(reason = "Thread sleep")
   protected String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
     URL oldURL = new URL(basePath);
     String newPath = oldURL.getPath().replaceFirst("/solr", "/api");

@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
@@ -73,6 +74,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     waitForNewOverseer(seconds, s -> Objects.equals(s, expected), failOnIntermediateTransition);
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   private JettySolrRunner getOverseerJetty() throws Exception {
     String overseer = getLeaderNode(zkClient());
     URL overseerUrl = new URL("http://" + overseer.substring(0, overseer.indexOf('_')));

@@ -39,6 +39,7 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -249,6 +250,8 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
    * @param rsp The solr response
    * @return The list of initialized script engines.
    */
+  @SuppressWarnings("removal")
+  @SuppressForbidden(reason = "Java21")
   private List<EngineInfo> initEngines(SolrQueryRequest req, SolrQueryResponse rsp)
       throws SolrException {
 
@@ -428,6 +431,8 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
      * Result value is computed from the return value of the script function if: it exists, is
      * non-null, and can be cast to a java Boolean.
      */
+    @SuppressWarnings("removal")
+    @SuppressForbidden(reason = "Java21")
     private boolean invokeFunction(String name, Object... cmd) {
       return AccessController.doPrivileged(
           new PrivilegedAction<Boolean>() {
@@ -513,6 +518,13 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
   }
 
   // sandbox for script code: zero permissions
-  private static final AccessControlContext SCRIPT_SANDBOX =
-      new AccessControlContext(new ProtectionDomain[] {new ProtectionDomain(null, null)});
+  @SuppressWarnings("removal")
+  @SuppressForbidden(reason = "AccessControlContext deprecated in java21")
+  private static final AccessControlContext SCRIPT_SANDBOX = getScriptSandbox();
+
+  @SuppressForbidden(reason = "AccessControlContext deprecated in java21")
+  @SuppressWarnings("removal")
+  private static AccessControlContext getScriptSandbox() {
+    return new AccessControlContext(new ProtectionDomain[] {new ProtectionDomain(null, null)});
+  }
 }

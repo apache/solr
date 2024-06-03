@@ -60,6 +60,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.CryptoKeys;
@@ -388,6 +389,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     }
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   private Pair<String, Integer> get(String url, String token) throws IOException {
     URL createUrl = new URL(url);
     HttpURLConnection createConn = (HttpURLConnection) createUrl.openConnection();
@@ -401,6 +403,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return new Pair<>(result, code);
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   private Map<String, String> getHeaders(String url, String token) throws IOException {
     URL createUrl = new URL(url);
     HttpURLConnection conn = (HttpURLConnection) createUrl.openConnection();
@@ -414,6 +417,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return result;
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   private Pair<String, Integer> post(String url, String json, String token) throws IOException {
     URL createUrl = new URL(url);
     HttpURLConnection con = (HttpURLConnection) createUrl.openConnection();

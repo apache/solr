@@ -56,6 +56,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.RequestHandlers;
 import org.apache.solr.core.SolrConfig;
@@ -194,6 +195,7 @@ public class SolrRequestParsers {
     return buildRequestFrom(core, params, streams, new RTimerTree(), null, principal);
   }
 
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   private SolrQueryRequest buildRequestFrom(
       SolrCore core,
       SolrParams params,

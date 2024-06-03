@@ -71,6 +71,7 @@ import org.apache.commons.cli.Option;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RTimer;
 import org.w3c.dom.Document;
@@ -256,10 +257,12 @@ public class PostTool extends ToolBase {
     solrUpdateUrl = null;
     if (cli.hasOption("url")) {
       String url = cli.getOptionValue("url");
-      solrUpdateUrl = new URL(url);
+      URI uri = new URI(url);
+      solrUpdateUrl = uri.toURL();
     } else if (cli.hasOption("c")) {
       String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("c") + "/update";
-      solrUpdateUrl = new URL(url);
+      URI uri = new URI(url);
+      solrUpdateUrl = uri.toURL();
     } else {
       throw new IllegalArgumentException(
           "Must specify either -url or -c parameter to post documents.");
@@ -601,6 +604,7 @@ public class PostTool extends ToolBase {
    * @param out output stream to write to
    * @return number of pages crawled on this level and below
    */
+  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   protected int webCrawl(int level, OutputStream out) {
     int numPages = 0;
     LinkedHashSet<URI> stack = backlog.get(level);
@@ -624,13 +628,14 @@ public class PostTool extends ToolBase {
         if (result.httpStatus == 200) {
           url = (result.redirectUrl != null) ? result.redirectUrl : url;
           URL postUrl =
-              new URL(
-                  appendParam(
-                      solrUpdateUrl.toString(),
-                      "literal.id="
-                          + URLEncoder.encode(url.toString(), UTF_8)
-                          + "&literal.url="
-                          + URLEncoder.encode(url.toString(), UTF_8)));
+              new URI(
+                      appendParam(
+                          solrUpdateUrl.toString(),
+                          "literal.id="
+                              + URLEncoder.encode(url.toString(), UTF_8)
+                              + "&literal.url="
+                              + URLEncoder.encode(url.toString(), UTF_8)))
+                  .toURL();
           ByteBuffer content = result.content;
           boolean success =
               postData(
@@ -797,7 +802,7 @@ public class PostTool extends ToolBase {
       if (type.equals("application/json") && !PostTool.FORMAT_SOLR.equals(format)) {
         suffix = "/json/docs";
         String urlStr = appendUrlPath(solrUpdateUrl, suffix).toString();
-        url = new URL(urlStr);
+        url = URI.create(urlStr).toURL();
       } else if (type.equals("application/xml")
           || type.equals("text/csv")
           || type.equals("application/json")) {
@@ -815,7 +820,7 @@ public class PostTool extends ToolBase {
           urlStr =
               appendParam(urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
         }
-        url = new URL(urlStr);
+        url = URI.create(urlStr).toURL();
       }
     } else {
       if (type == null) {
@@ -861,13 +866,14 @@ public class PostTool extends ToolBase {
    * @return the final URL version
    */
   protected static URL appendUrlPath(URL url, String append) throws MalformedURLException {
-    return new URL(
-        url.getProtocol()
-            + "://"
-            + url.getAuthority()
-            + url.getPath()
-            + append
-            + (url.getQuery() != null ? "?" + url.getQuery() : ""));
+    return URI.create(
+            url.getProtocol()
+                + "://"
+                + url.getAuthority()
+                + url.getPath()
+                + append
+                + (url.getQuery() != null ? "?" + url.getQuery() : ""))
+        .toURL();
   }
 
   /**
@@ -1200,7 +1206,7 @@ public class PostTool extends ToolBase {
         disallows = new ArrayList<>();
         URL urlRobot;
         try {
-          urlRobot = new URL(strRobot);
+          urlRobot = URI.create(strRobot).toURL();
           disallows = parseRobotsTxt(urlRobot.openStream());
         } catch (MalformedURLException e) {
           return true; // We cannot trust this robots URL, should not happen
@@ -1258,8 +1264,7 @@ public class PostTool extends ToolBase {
 
       try {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        URL extractUrl = new URL(appendParam(postUrl.toString(), "extractOnly=true"));
-        extractUrl = new URL(appendParam(extractUrl.toString(), "wt=xml"));
+        URL extractUrl = URI.create(appendParam(postUrl.toString(), "extractOnly=true")).toURL();
         boolean success = postData(is, null, os, type, extractUrl);
         if (success) {
           Document d = makeDom(os.toByteArray());

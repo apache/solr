@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
 
@@ -305,6 +306,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         "//int[@name='int2_i'][.='" + value + "']");
   }
 
+  @SuppressForbidden(reason = "Locale is deprecated in Java 21")
   public void testParseIntNonRootLocale() throws Exception {
     final DecimalFormatSymbols ru_RU = DecimalFormatSymbols.getInstance(new Locale("ru", "RU"));
     final char groupChar = ru_RU.getGroupingSeparator();
@@ -420,6 +422,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         "//long[@name='long2_l'][.='" + value + "']");
   }
 
+  @SuppressForbidden(reason = "Locale is deprecated in Java 21")
   public void testParseLongNonRootLocale() throws Exception {
     final DecimalFormatSymbols ru_RU = DecimalFormatSymbols.getInstance(new Locale("ru", "RU"));
     final char groupChar = ru_RU.getGroupingSeparator();
@@ -517,6 +520,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         "//float[@name='float2_f'][.='" + value + "']");
   }
 
+  @SuppressForbidden(reason = "Locale is deprecated in Java 21")
   public void testParseFloatNonRootLocale() throws Exception {
     final DecimalFormatSymbols fr_FR = DecimalFormatSymbols.getInstance(new Locale("fr", "FR"));
     final char groupChar = fr_FR.getGroupingSeparator();
@@ -635,6 +639,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         "//double[@name='double2_d'][.='" + value + "']");
   }
 
+  @SuppressForbidden(reason = "Locale is deprecated in Java 21")
   public void testParseDoubleNonRootLocale() throws Exception {
     final DecimalFormatSymbols fr_FR = DecimalFormatSymbols.getInstance(new Locale("fr", "FR"));
     final char groupChar = fr_FR.getGroupingSeparator();
