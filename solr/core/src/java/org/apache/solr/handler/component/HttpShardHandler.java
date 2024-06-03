@@ -202,7 +202,12 @@ public class HttpShardHandler extends ShardHandler {
    */
   @Override
   public ShardResponse takeCompletedIncludingErrors() {
-    return take(false);
+    return take(false, -1);
+  }
+
+  @Override
+  public ShardResponse takeCompletedIncludingErrorsWithTimeout(long maxAllowedTimeInMillis) {
+    return take(false, maxAllowedTimeInMillis);
   }
 
   /**
@@ -211,14 +216,23 @@ public class HttpShardHandler extends ShardHandler {
    */
   @Override
   public ShardResponse takeCompletedOrError() {
-    return take(true);
+    return take(true, -1);
   }
 
-  private ShardResponse take(boolean bailOnError) {
+  private ShardResponse take(boolean bailOnError, long maxAllowedTimeInMillis) {
     try {
+      long deadline = System.nanoTime();
+      if (maxAllowedTimeInMillis > 0) {
+        deadline += TimeUnit.MILLISECONDS.toNanos(maxAllowedTimeInMillis);
+      } else {
+        deadline = System.nanoTime() + TimeUnit.DAYS.toNanos(1);
+      }
+
+      ShardResponse previousResponse = null;
       while (pending.get() > 0) {
-        ShardResponse rsp = responses.take();
-        responseFutureMap.remove(rsp);
+        long waitTime = deadline - System.nanoTime();
+        ShardResponse rsp = responses.poll(waitTime, TimeUnit.NANOSECONDS);
+        if (rsp == null) return previousResponse;
 
         pending.decrementAndGet();
         if (bailOnError && rsp.getException() != null)
@@ -228,6 +242,7 @@ public class HttpShardHandler extends ShardHandler {
         // for a request was received.  Otherwise we might return the same
         // request more than once.
         rsp.getShardRequest().responses.add(rsp);
+        previousResponse = rsp;
         if (rsp.getShardRequest().responses.size() == rsp.getShardRequest().actualShards.length) {
           return rsp;
         }
@@ -381,5 +396,15 @@ public class HttpShardHandler extends ShardHandler {
   @Override
   public ShardHandlerFactory getShardHandlerFactory() {
     return httpShardHandlerFactory;
+  }
+
+  // test helper function
+  void setPendingRequest(int val) {
+    this.pending.set(val);
+  }
+
+  // test helper function
+  void setResponse(ShardResponse shardResponse) {
+    this.responses.add(shardResponse);
   }
 }

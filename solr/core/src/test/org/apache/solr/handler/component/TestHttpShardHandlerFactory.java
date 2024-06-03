@@ -27,10 +27,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -153,5 +156,64 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
     assertThat(hostSet, hasItem("1.2.3.4:8983"));
     assertThat(hostSet, hasItem("1.2.3.4:9000"));
     assertThat(hostSet, hasItem("1.2.3.4:9001"));
+  }
+
+  public void testHttpShardHandlerWithResponse() {
+    HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
+    HttpShardHandler shardHandler = (HttpShardHandler) httpShardHandlerFactory.getShardHandler();
+
+    long timeAllowedInMillis = -1;
+    // setting one pending request.
+    shardHandler.setPendingRequest(1);
+
+    ShardResponse shardResponse = new ShardResponse();
+    shardResponse.setShard("shard_1");
+    ShardRequest shardRequest = new ShardRequest();
+    // one shard
+    shardRequest.actualShards = new String[] {"shard_1"};
+    shardResponse.setShardRequest(shardRequest);
+
+    ExecutorService exec = ExecutorUtil.newMDCAwareCachedThreadPool("timeAllowedTest");
+    try {
+      // generating shardresponse for one shard
+      exec.submit(() -> shardHandler.setResponse(shardResponse));
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(exec);
+    }
+    ShardResponse gotResponse =
+            shardHandler.takeCompletedIncludingErrorsWithTimeout(timeAllowedInMillis);
+
+    assertEquals(shardResponse, gotResponse);
+  }
+
+  @Test
+  public void testHttpShardHandlerWithPartialResponse() {
+    HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
+    HttpShardHandler shardHandler = (HttpShardHandler) httpShardHandlerFactory.getShardHandler();
+
+    long timeAllowedInMillis = 100;
+    // setting two pending requests.
+    shardHandler.setPendingRequest(2);
+
+    ShardResponse shardResponse = new ShardResponse();
+    shardResponse.setShard("shard_1");
+    ShardRequest shardRequest = new ShardRequest();
+    // two shards
+    shardRequest.actualShards = new String[] {"shard_1", "shard_2"};
+    shardResponse.setShardRequest(shardRequest);
+
+    ExecutorService exec = ExecutorUtil.newMDCAwareCachedThreadPool("timeAllowedTest");
+    try {
+      // generating shardresponse for one shard only
+      exec.submit(() -> shardHandler.setResponse(shardResponse));
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(exec);
+    }
+
+    // partial response
+    ShardResponse gotResponse =
+            shardHandler.takeCompletedIncludingErrorsWithTimeout(timeAllowedInMillis);
+
+    assertEquals(shardResponse, gotResponse);
   }
 }

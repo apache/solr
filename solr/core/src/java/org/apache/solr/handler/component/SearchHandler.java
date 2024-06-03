@@ -492,6 +492,7 @@ public class SearchHandler extends RequestHandlerBase
       }
     } else {
       // a distributed request
+      long maxTimeAllowed = req.getParams().getLong(CommonParams.TIME_ALLOWED, -1);
 
       if (rb.outgoing == null) {
         rb.outgoing = new ArrayList<>();
@@ -557,7 +558,7 @@ public class SearchHandler extends RequestHandlerBase
           while (rb.outgoing.size() == 0) {
             ShardResponse srsp =
                 tolerant
-                    ? shardHandler1.takeCompletedIncludingErrors()
+                    ? shardHandler1.takeCompletedIncludingErrorsWithTimeout(maxTimeAllowed)
                     : shardHandler1.takeCompletedOrError();
             if (srsp == null) break; // no more requests to wait for
 
