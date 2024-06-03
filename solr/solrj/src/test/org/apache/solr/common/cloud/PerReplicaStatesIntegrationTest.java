@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 /** This test would be faster if we simulated the zk state instead. */
 @LogLevel(
     "org.apache.solr.common.cloud.ZkStateReader=DEBUG;"
+        + "org.apache.solr.cloud.overseer.ZkStateWriter=DEBUG;"
         + "org.apache.solr.handler.admin.CollectionsHandler=DEBUG;"
         + "org.apache.solr.common.cloud.PerReplicaStatesOps=DEBUG;"
         + "org.apache.solr.cloud.Overseer=INFO;"
@@ -315,7 +316,8 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(PRS_COLL, "conf", 10, 1)
           .setPerReplicaState(Boolean.TRUE)
           .process(cluster.getSolrClient());
-      stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
+      String PRS_PATH = DocCollection.getCollectionPath(PRS_COLL);
+      stat = cluster.getZkClient().exists(PRS_PATH, null, true);
       // +1 after all replica are added with on state.json write to CreateCollectionCmd.setData()
       assertEquals(1, stat.getVersion());
       // For each replica:
@@ -330,7 +332,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
           CollectionAdminRequest.addReplicaToShard(PRS_COLL, "shard1")
               .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(PRS_COLL, 10, 11);
-      stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
+      stat = cluster.getZkClient().exists(PRS_PATH, null, true);
       // For the new replica:
       // +2 for state.json overseer writes, even though there's no longer PRS updates from
       // overseer, current code would still do a "TOUCH" on the PRS entry
@@ -350,7 +352,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       CollectionAdminRequest.deleteReplica(PRS_COLL, "shard1", addedReplica.getName())
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(PRS_COLL, 10, 10);
-      stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
+      stat = cluster.getZkClient().exists(PRS_PATH, null, true);
       // For replica deletion
       // +1 for ZkController#unregister, which delete the PRS entry from data node
       // overseer, current code would still do a "TOUCH" on the PRS entry
@@ -359,11 +361,49 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       for (JettySolrRunner j : cluster.getJettySolrRunners()) {
         j.stop();
         j.start(true);
-        stat = cluster.getZkClient().exists(DocCollection.getCollectionPath(PRS_COLL), null, true);
+        stat = cluster.getZkClient().exists(PRS_PATH, null, true);
         // ensure restart does not update the state.json, after addReplica/deleteReplica, 2 more
         // updates hence at version 3 on state.json version
         assertEquals(3, stat.getVersion());
       }
+
+      // test for leader election
+      Replica leader =
+          cluster.getZkStateReader().clusterState.getCollection(PRS_COLL).getLeader("shard2");
+
+      JettySolrRunner j2 = cluster.startJettySolrRunner();
+      response =
+          CollectionAdminRequest.addReplicaToShard(PRS_COLL, "shard2")
+              .setNode(j2.getNodeName())
+              .process(cluster.getSolrClient());
+
+      // wait for the new replica to be active
+      cluster.waitForActiveCollection(PRS_COLL, 10, 11);
+      stat = cluster.getZkClient().exists(PRS_PATH, null, true);
+      // +1 for a new replica
+      assertEquals(4, stat.getVersion());
+      DocCollection c = cluster.getZkStateReader().getCollection(PRS_COLL);
+      Replica newreplica = c.getReplica((s, replica) -> replica.node.equals(j2.getNodeName()));
+
+      // let's stop the old leader
+      JettySolrRunner oldJetty = cluster.getReplicaJetty(leader);
+      oldJetty.stop();
+
+      cluster
+          .getZkStateReader()
+          .waitForState(
+              PRS_COLL,
+              10,
+              TimeUnit.SECONDS,
+              (liveNodes, collectionState) ->
+                  PerReplicaStatesOps.fetch(PRS_PATH, cluster.getZkClient(), null)
+                      .states
+                      .get(newreplica.name)
+                      .isLeader);
+      PerReplicaStates prs = PerReplicaStatesOps.fetch(PRS_PATH, cluster.getZkClient(), null);
+      stat = cluster.getZkClient().exists(PRS_PATH, null, true);
+      // the version should not have updated
+      assertEquals(4, stat.getVersion());
     } finally {
       cluster.shutdown();
     }
