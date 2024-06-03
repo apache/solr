@@ -499,6 +499,17 @@ The output will include feature values as a comma-separated list, resembling the
   }}
 ----
 
+=== Running a Rerank Query and Query Limits
+
+Apache Solr allows to define Query Limits to interrupt particularly expensive queries (xref:query-guide:common-query-parameters.adoc#timeallowed-parameter[Time Allowed], xref:query-guide:common-query-parameters.adoc#cpuallowed-parameter[Cpu Allowed]).
+
+If a query limit is exceeded while reranking, the rescoring is aborted and fully reverted.
+
+The original ranked list is returned and the response marked with the responseHeader 'partialResults'.
+The details of what limit was exceeded is returned in the responseHeader 'partialResultsDetails'.
+
+See xref:query-guide:common-query-parameters.adoc#partialresults-parameter[Partial Results Parameter] for more details on how to handle partial results.
+
 === Running a Rerank Query Interleaving Two Models
 
 To rerank the results of a query, interleaving two models (myModelA, myModelB) add the `rq` parameter to your search, passing two models in input, for example:
@@ -811,8 +822,8 @@ Related links:
 * {solr-javadocs}/modules/ltr/org/apache/solr/ltr/feature/Feature.html[Feature javadocs]
 * {solr-javadocs}/modules/ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer javadocs]
 * {solr-javadocs}/modules/ltr/org/apache/solr/ltr/interleaving/Interleaving.html[Interleaving javadocs]
-* https://cwiki.apache.org/confluence/display/solr/HowToContribute
-* https://cwiki.apache.org/confluence/display/LUCENE/HowToContribute
+* https://github.com/apache/solr/blob/main/CONTRIBUTING.md[Contributing to Solr]
+* https://github.com/apache/lucene/blob/main/CONTRIBUTING.md[Contributing to Lucene]
 
 == LTR Examples
 

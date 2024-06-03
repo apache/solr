@@ -219,7 +219,7 @@ All of the sample URLs in this section assume you are running Solr's "techproduc
 
 [source,bash]
 ----
-bin/solr -e techproducts
+bin/solr start -e techproducts
 ----
 
 Results for the word "video" using the standard query parser, and we assume "df" is pointing to a field to search:

@@ -214,9 +214,6 @@ set HADOOP_CREDSTORE_PASSWORD="credStorePass123"
 
 === Configure ZooKeeper
 
-NOTE: ZooKeeper does not support encrypted communication with clients like Solr.
-There are several related JIRA tickets where SSL support is being planned/worked on: https://issues.apache.org/jira/browse/ZOOKEEPER-235[ZOOKEEPER-235]; https://issues.apache.org/jira/browse/ZOOKEEPER-236[ZOOKEEPER-236]; https://issues.apache.org/jira/browse/ZOOKEEPER-1000[ZOOKEEPER-1000]; and https://issues.apache.org/jira/browse/ZOOKEEPER-2120[ZOOKEEPER-2120].
-
 After creating the keystore described above and before you start any SolrCloud nodes, you must configure your Solr cluster properties in ZooKeeper so that Solr nodes know to communicate via SSL.
 
 This section assumes you have created and started an external ZooKeeper.
@@ -232,7 +229,7 @@ The examples below use the `zkcli` tool that comes with Solr to do this.
 [.tab-label]**nix Command*
 [source,terminal]
 ----
-$ server/scripts/cloud-scripts/zkcli.sh -zkhost server1:2181,server2:2181,server3:2181 -cmd clusterprop -name urlScheme -val https
+$ bin/solr cluster -property urlSchema -value https -z server1:2181,server2:2181,server3:2181
 ----
 ====
 
@@ -241,7 +238,7 @@ $ server/scripts/cloud-scripts/zkcli.sh -zkhost server1:2181,server2:2181,server
 [.tab-label]*Windows Command*
 [source,powershell]
 ----
-C:\> server\scripts\cloud-scripts\zkcli.bat -zkhost server1:2181,server2:2181,server3:2181 -cmd clusterprop -name urlScheme -val https
+C:\> bin/solr.cmd -property urlSchema -value https -z server1:2181,server2:2181,server3:2181
 ----
 =====
 --
@@ -278,7 +275,7 @@ Customize the values for the parameters shown as needed and add any used in your
 [.tab-label]**nix Command*
 [source,terminal]
 ----
-$ bin/solr -p 8984
+$ bin/solr start -p 8984
 ----
 ====
 
@@ -308,7 +305,7 @@ If you created the SSL key without all DNS names or IP addresses on which Solr n
 [.tab-label]*\*nix*
 [source,terminal]
 ----
-$ bin/solr -cloud -s cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
+$ bin/solr start -cloud -s cloud/node1 -z server1:2181,server2:2181,server3:2181 -p 8984
 ----
 ====
 

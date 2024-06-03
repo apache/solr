@@ -21,10 +21,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.logging.jul.JulWatcher;
 import org.apache.solr.logging.log4j2.Log4j2Watcher;
@@ -75,7 +78,16 @@ public abstract class LogWatcher<E> {
    * instance to multiple callers, we should guard against modification.
    */
   private static SolrDocument unmodifiable(SolrDocument doc) {
-    return new SolrDocument(Collections.unmodifiableMap(doc.getFieldValueMap()));
+    LinkedHashMap<String, Object> map = CollectionUtil.newLinkedHashMap(doc.size());
+    for (Map.Entry<String, Object> e : doc) {
+      Object v = e.getValue();
+      if (v instanceof Collection) {
+        map.put(e.getKey(), Collections.unmodifiableCollection((Collection<?>) v));
+      } else {
+        map.put(e.getKey(), v);
+      }
+    }
+    return new SolrDocument(Collections.unmodifiableMap(map));
   }
 
   public long getLastEvent() {

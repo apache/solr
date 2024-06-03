@@ -75,7 +75,6 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.util.LogLevel;
-import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -140,7 +139,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     String COLLECTION = getSaferTestName();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
     UpdateRequest req = new UpdateRequest();
@@ -158,7 +156,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void testOverwriteOption() throws Exception {
 
     CollectionAdminRequest.createCollection("overwrite", "conf", 1, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
     cluster.waitForActiveCollection("overwrite", 1, 1);
 
@@ -189,12 +186,10 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     String COLLECTION2 = "2nd_collection";
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
     CollectionAdminRequest.createCollection(COLLECTION2, "conf", 2, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION2, 2, 2);
 
@@ -250,7 +245,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   @Test
   public void testRouting() throws Exception {
     CollectionAdminRequest.createCollection("routing_collection", "conf", 2, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("routing_collection", 2, 2);
 
@@ -443,7 +437,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // For this case every shard should have all its cores on the same node.
     // Hence the below configuration for our collection
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, liveNodes)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
     cluster.waitForActiveCollection(collectionName, liveNodes, liveNodes * liveNodes);
     // Add some new documents
@@ -518,7 +511,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // For testing replica.type, we want to have all replica types available for the collection
     CollectionAdminRequest.createCollection(
             collectionName, "conf", 1, liveNodes / 3, liveNodes / 3, liveNodes / 3)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
     cluster.waitForActiveCollection(collectionName, 1, liveNodes);
 
@@ -719,11 +711,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
       String async1 =
           CollectionAdminRequest.createCollection("multicollection1", "conf", 2, 1)
-              .setPerReplicaState(USE_PER_REPLICA_STATE)
               .processAsync(client);
       String async2 =
           CollectionAdminRequest.createCollection("multicollection2", "conf", 2, 1)
-              .setPerReplicaState(USE_PER_REPLICA_STATE)
               .processAsync(client);
 
       CollectionAdminRequest.waitForAsyncRequest(async1, client, TIMEOUT);
@@ -859,11 +849,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
           ZkClientClusterStateProvider.from(client)) {
         zkClientClusterStateProvider.setZkConnectTimeout(1000 * 60);
         SolrException ex = expectThrows(SolrException.class, client::connect);
-        MatcherAssert.assertThat(
+        assertThat(
             "Wrong error message for empty chRoot",
             ex.getMessage(),
             Matchers.containsString("cluster not found/not ready"));
-        MatcherAssert.assertThat(
+        assertThat(
             "Wrong node missing message for empty chRoot",
             ex.getMessage(),
             Matchers.containsString(
@@ -893,7 +883,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     String collection = getSaferTestName();
 
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collection, 2, 2);
 
@@ -946,7 +935,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     String COLLECTION = getSaferTestName();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
     CloudSolrClient client = httpBasedCloudSolrClient;
@@ -1046,9 +1034,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     while (it.hasNext()) {
       Map.Entry<String, LBSolrClient.Req> entry = it.next();
       assertEquals(
-          "wrong number of servers: " + entry.getValue().getServers(),
+          "wrong number of servers: " + entry.getValue().getEndpoints(),
           1,
-          entry.getValue().getServers().size());
+          entry.getValue().getEndpoints().size());
     }
   }
 
@@ -1158,7 +1146,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void testPing() throws Exception {
     final String testCollection = "ping_test";
     CollectionAdminRequest.createCollection(testCollection, "conf", 2, 1)
-        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(testCollection, 2, 2);
     final SolrClient clientUnderTest = getRandomClient();

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.SolrCloudTestCase.configurePrsDefault;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +39,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.BackupStatusChecker;
 import org.apache.solr.handler.ReplicationHandler;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -64,6 +67,11 @@ public abstract class AbstractBasicDistributedZk2TestBase extends AbstractFullDi
   protected boolean useTlogReplicas() {
     return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug
     // and it's TestInjection use
+  }
+
+  @BeforeClass
+  public static void _setPrsDefault() {
+    configurePrsDefault();
   }
 
   @Test

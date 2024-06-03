@@ -54,7 +54,6 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -96,7 +95,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
             "j+Rflxi64tXdqosIhbusqi6GTwZq8znunC/dzwcWW0/dHlFGKDurOaE1Nz9FSPJuXbHkVLj638yZ0Lp1ssnoYA==");
         fail("should have failed because of wrong signature ");
       } catch (RemoteExecutionException e) {
-        MatcherAssert.assertThat(e.getMessage(), containsString("Signature does not match"));
+        assertThat(e.getMessage(), containsString("Signature does not match"));
       }
 
       postFile(
@@ -170,7 +169,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
                     return true;
                   });
       for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-        String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
+        String baseUrl = jettySolrRunner.getBaseURLV2().toString();
         String url = baseUrl + "/node/files/package/mypkg/v1.0?wt=javabin";
         assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
       }
@@ -197,7 +196,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       boolean verifyContent)
       throws Exception {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-      String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
+      String baseUrl = jettySolrRunner.getBaseURLV2().toString();
       String url = baseUrl + "/node/files" + path + "?wt=javabin&meta=true";
       assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
 

@@ -17,9 +17,7 @@
 package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.FAILURE;
 import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.params.CommonParams.STATUS;
 
 import com.codahale.metrics.Counter;
 import java.io.PrintWriter;
@@ -67,9 +65,10 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.util.ThreadStats;
+import org.apache.solr.util.ThreadCpuTimer;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -117,7 +116,7 @@ public class SearchHandler extends RequestHandlerBase
   private SolrCore core;
 
   protected List<String> getDefaultComponents() {
-    ArrayList<String> names = new ArrayList<>(8);
+    ArrayList<String> names = new ArrayList<>(9);
     names.add(QueryComponent.COMPONENT_NAME);
     names.add(FacetComponent.COMPONENT_NAME);
     names.add(FacetModule.COMPONENT_NAME);
@@ -380,15 +379,7 @@ public class SearchHandler extends RequestHandlerBase
         trippedCircuitBreakers = circuitBreakerRegistry.checkTripped(SolrRequestType.QUERY);
       }
 
-      if (trippedCircuitBreakers != null) {
-        String errorMessage = CircuitBreakerRegistry.toErrorMessage(trippedCircuitBreakers);
-        rsp.add(STATUS, FAILURE);
-        rsp.setException(
-            new SolrException(
-                CircuitBreaker.getExceptionErrorCode(),
-                "Circuit Breakers tripped " + errorMessage));
-        return true;
-      }
+      return CircuitBreakerUtils.reportErrorIfBreakersTripped(rsp, trippedCircuitBreakers);
     }
     return false;
   }
@@ -497,10 +488,7 @@ public class SearchHandler extends RequestHandlerBase
           debug.add("explain", new NamedList<>());
           rb.rsp.add("debug", debug);
         }
-        rb.rsp
-            .getResponseHeader()
-            .asShallowMap()
-            .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+        rb.rsp.setPartialResults();
       }
     } else {
       // a distributed request
@@ -538,7 +526,7 @@ public class SearchHandler extends RequestHandlerBase
             // TODO: map from shard to address[]
             for (String shard : sreq.actualShards) {
               ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
-              params.setShardAttributesToParams(sreq.purpose);
+              ShardHandler.setShardAttributesToParams(params, sreq.purpose);
 
               // Distributed request -- need to send queryID as a part of the distributed request
               params.setNonNull(ShardParams.QUERY_ID, rb.queryID);
@@ -593,9 +581,7 @@ public class SearchHandler extends RequestHandlerBase
                 if (allShardsFailed) {
                   throwSolrException(srsp.getException());
                 } else {
-                  rsp.getResponseHeader()
-                      .asShallowMap()
-                      .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+                  rsp.setPartialResults();
                 }
               }
             }
@@ -622,8 +608,8 @@ public class SearchHandler extends RequestHandlerBase
       } while (nextStage != Integer.MAX_VALUE);
 
       if (publishCpuTime) {
-        rsp.getResponseHeader().add(ThreadStats.CPU_TIME, totalShardCpuTime);
-        rsp.addToLog(ThreadStats.CPU_TIME, totalShardCpuTime);
+        rsp.getResponseHeader().add(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
+        rsp.addToLog(ThreadCpuTimer.CPU_TIME, totalShardCpuTime);
       }
     }
 
@@ -677,7 +663,7 @@ public class SearchHandler extends RequestHandlerBase
             (SimpleOrderedMap<Object>)
                 response.getSolrResponse().getResponse().get(SolrQueryResponse.RESPONSE_HEADER_KEY);
         if (header != null) {
-          Long shardCpuTime = (Long) header.get(ThreadStats.CPU_TIME);
+          Long shardCpuTime = (Long) header.get(ThreadCpuTimer.CPU_TIME);
           if (shardCpuTime != null) {
             totalShardCpuTime += shardCpuTime;
           }

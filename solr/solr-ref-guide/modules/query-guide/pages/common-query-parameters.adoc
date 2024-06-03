@@ -20,99 +20,115 @@ Several query parsers share supported query parameters.
 
 The following sections describe Solr's common query parameters, which are supported by the xref:configuration-guide:requesthandlers-searchcomponents.adoc#search-handlers[search request handlers].
 
+
 == defType Parameter
 
-The defType parameter selects the query parser that Solr should use to process the main query parameter (`q`) in the request.
-For example:
+[%autowidth,frame=none]
+|===
+|Optional |Default: `lucene`
+|===
 
-`defType=dismax`
+The `defType` parameter selects the xref:query-syntax-and-parsers.adoc[query parser] to process the main query parameter (`q`) in the request. Acceptable values include: `lucene` (xref:standard-query-parser.adoc[]), `dismax` (xref:dismax-query-parser.adoc[]), `edismax` (xref:edismax-query-parser.adoc[]), or one of the xref:query-syntax-and-parsers.adoc[other query parsers].
 
-If no `defType` parameter is specified, then by default, the xref:standard-query-parser.adoc[] is used.
-(e.g., `defType=lucene`)
 
 == sort Parameter
 
-The `sort` parameter arranges search results in either ascending (`asc`) or descending (`desc`) order.
-The parameter can be used with either numerical or alphabetical content.
-The directions can be entered in either all lowercase or all uppercase letters (i.e., both `asc` and `ASC` are accepted).
+[%autowidth,frame=none]
+|===
+|Optional |Default: `score desc`
+|===
 
-Solr can sort query responses according to:
+The `sort` parameter specifies the order of the returned documents.
 
-* Document scores
-* xref:function-queries.adoc#sort-by-function[Function results]
-* The value of any primitive field (numerics, string, boolean, dates, etc.) which has `docValues="true"` (or `multiValued="false"` and `indexed="true"`, in which case the indexed terms will be used to build DocValue like structures on the fly at runtime)
-* A SortableTextField which implicitly uses `docValues="true"` by default to allow sorting on the original input string regardless of the analyzers used for Searching.
-* A single-valued TextField that uses an analyzer (such as the KeywordTokenizer) that produces only a single term per document.
-TextField does not support `docValues="true"`, but a DocValue-like structure will be built on the fly at runtime.
-** *NOTE:* If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, xref:indexing-guide:copy-fields.adoc[use a `copyField` directive] in the Schema to clone the field.
-Then search on the field and sort on its clone.
-
-In the case of primitive fields, or SortableTextFields, that are `multiValued="true"` the representative value used for each doc when sorting depends on the sort direction: The minimum value in each document is used for ascending (`asc`) sorting, while the maximal value in each document is used for descending (`desc`) sorting.
-This default behavior is equivalent to explicitly sorting using the 2 argument xref:function-queries.adoc#field-function[`field()`] function: `sort=field(name,min) asc` and `sort=field(name,max) desc`
-
-The table below explains how Solr responds to various settings of the `sort` parameter.
+Here are some sample sort values:
 
 [%autowidth.stretch,options="header"]
 |===
-|Example |Result
-| |If the sort parameter is omitted, sorting is performed as though the parameter were set to `score desc`.
-|score desc |Sorts in descending order from the highest score to the lowest score.
-|price asc |Sorts in ascending order of the price field
-|div(popularity,price) desc |Sorts in descending order of the result of the function `popularity / price`
-|inStock desc, price asc |Sorts by the contents of the `inStock` field in descending order, then when multiple documents have the same value for the `inStock` field, those results are sorted in ascending order by the contents of the price field.
-|categories asc, price asc |Sorts by the lowest value of the (multivalued) `categories` field in ascending order, then when multiple documents have the same lowest `categories` value, those results are sorted in ascending order by the contents of the price field.
+| Example                      | Result
+| `score desc`                 | Sorts in descending order from the highest score to the lowest score.
+| `price asc`                  | Sorts in ascending order of the price field, from lowest to highest.
+| `div(popularity,price) desc` | Sorts in descending order of the result of the function `popularity / price`.
+| `inStock desc, price asc`    | Sorts by the contents of the `inStock` field in descending order, then when multiple documents have the same value for the `inStock` field, those results are sorted in ascending order by the contents of the `price` field.
+| `categories asc`             | Since `categories` is a multivalued field and we are sorting ascending, this sorts by the lowest value of the `categories` field in ascending order. This is equivalent to `field(categories,min) asc`
 |===
 
-Regarding the sort parameter's arguments:
+More specifically, Solr can sort query responses according to:
 
-* A sort ordering must include a field name (or `score` as a pseudo field), followed by whitespace (escaped as + or `%20` in URL strings), followed by a sort direction (`asc` or `desc`).
+* Document score
+* xref:function-queries.adoc#sort-by-function[Function results]
+* Single-valued primitive fields (numerics, string, boolean, dates, etc.) which have `docValues="true"` (or `indexed="true"`, in which case the indexed terms will be used to build DocValue like structures on the fly at runtime).
+* Single-valued SortableTextField which implicitly uses `docValues="true"` by default to allow sorting on the original input string regardless of the analyzers used for Searching.
+* Single-valued TextField which have an analyzer (such as the KeywordTokenizer) that produces only a single term per document.
+Since TextField does not support `docValues="true"`, a DocValue-like structure will be built on the fly at runtime.
+** *NOTE:* If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, xref:indexing-guide:copy-fields.adoc[use a `copyField` directive] in the Schema to clone the field.
+Then search on the field and sort on its clone.
+* Multi-valued primitive fields with `docValues="true"` or SortableTextFields. In this case, a representative value is used for each document, depending on the sort direction. When ascending, the minimum value is used. When descending, the maximum value is used. This is equivalent to explicitly sorting using the 2 argument xref:function-queries.adoc#field-function[`field()`] function: `sort=field(name,min) asc` and `sort=field(name,max) desc`.
 
-* Multiple sort orderings can be separated by a comma, using this syntax: `sort=<field name>+<direction>,<field name>+<direction>],...`
-** When more than one sort criteria is provided, the second entry will only be used if the first entry results in a tie.
-If there is a third entry, it will only be used if the first AND second entries are tied.
-And so on.
-** If documents tie in all of the explicit sort criteria, Solr uses each document's Lucene document ID as the final tie-breaker.
+You can specify multiple sort orderings by separating them with commas, e.g. `inStock desc, price asc`.
+When multiple sort criteria are provided, the second entry will only be used if the first entry results
+in a tie. If there is a third entry, it will only be used if the first AND second entries are tied. And
+so on.
+
+If documents tie in all of the explicit sort criteria, Solr uses each document's Lucene document ID as the final tie-breaker.
 This internal property is subject to change during segment merges and document updates, which can lead to unexpected result ordering changes.
 Users looking to avoid this behavior can define an additional sort criteria on a unique or rarely-shared field such as `id` to prevent ties from occurring (e.g., `price desc,id asc`).
 
+NOTE: A sort ordering must always include a field name (or `score` as a pseudo field), followed by whitespace (escaped as + or `%20` in URL strings), followed by a sort direction (`asc` or `desc`, case insensitive).
+
 == start Parameter
 
-When specified, the `start` parameter specifies an offset into a query's result set and instructs Solr to begin displaying results from this offset.
+[%autowidth,frame=none]
+|===
+|Optional |Default: `0`
+|===
 
-The default value is `0`.
-In other words, by default, Solr returns results without an offset, beginning where the results themselves begin.
+The `start` parameter specifies an offset into a query's result set and instructs Solr to begin displaying results from this offset.
 
-Setting the `start` parameter to some other number, such as `3`, causes Solr to skip over the preceding records and start at the document identified by the offset.
+In other words, setting the `start` parameter to a number other than 0, such as 3, causes Solr to skip over the first 3 records and start at the document identified by the offset.
 
 You can use the `start` parameter this way for paging.
 For example, if the `rows` parameter is set to 10, you could display three successive pages of results by setting start to 0, then re-issuing the same query and setting start to 10, then issuing the query again and setting start to 20.
 
 == rows Parameter
 
-You can use the `rows` parameter to paginate results from a query.
-The parameter specifies the maximum number of documents from the complete result set that Solr should return to the client at one time.
+[%autowidth,frame=none]
+|===
+|Optional |Default: `10`
+|===
 
-The default value is `10`.
-That is, by default, Solr returns 10 documents at a time in response to a query.
+The `rows` parameter specifies the number of documents from the complete result to return in the response.
+You can use the `rows` parameter to paginate results from a query.
 
 == canCancel Parameter
 
-This parameter defines if this query is cancellable during execution using the
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
+
+The `canCancel` parameter specifies if the query can be cancelled during its execution using the
 xref:deployment-guide:task-management.adoc[task management] interface.
 
 == queryUUID Parameter
 
-For cancellable queries, this allows specifying a custom UUID to identify the query with.
-If `canCancel` is specified and `queryUUID` is not set, an auto generated UUID will be assigned to the query.
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
 
-If `queryUUID` is specified, this UUID will be used for identifying the query.
-Note that if using `queryUUID`, the responsibility of ensuring uniqueness of the UUID lies with the caller.
-If a query UUID is reused while the original query UUID is still active, it will cause an exception to be throws for the second query.
+For cancellable queries, the `queryUUID` parameter allows specifying a custom UUID to identify the query with. Otherwise an auto-generated UUID will be assigned.
 
-It is recommended that the user either uses all custom UUIDs or depends completely on the system to generate UUID.
-Mixing the two can lead to conflict of UUIDs.
+When using `queryUUID`, the responsibility of ensuring uniqueness of the UUID lies with the caller.
+If a query UUID is reused while the original query UUID is still active, it will cause an exception to be thrown for the second query.
+
+It is recommended that to either use all custom UUIDs or depends completely on the system to generate UUID to avoid UUID conflicts.
 
 == fq (Filter Query) Parameter
+
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
 
 The `fq` parameter defines a query that can be used to restrict the superset of documents that can be returned, without influencing score.
 It can be very useful for speeding up complex queries, since the queries specified with `fq` are cached independently of the main query.
@@ -179,6 +195,11 @@ fq={!frange cache=false l=10 u=100}mul(popularity,price)
 fq={!frange cache=false cost=200 l=0}pow(mul(sum(1, query('tag:smartphone')), div(1,avg_rating)), 2.3)
 
 == fl (Field List) Parameter
+
+[%autowidth,frame=none]
+|===
+|Optional |Default: `*`
+|===
 
 The `fl` parameter limits the information included in a query response to a specified list of fields.
 The fields must be either `stored="true"` or `docValues="true"``.`
@@ -256,6 +277,11 @@ fl=id,sales_price:price,secret_sauce:prod(price,popularity),why_score:[explain s
 
 == debug Parameter
 
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
+
 The `debug` parameter can be specified multiple times and supports the following arguments:
 
 * `debug=query`: return debug information about the query only.
@@ -271,20 +297,43 @@ The default behavior is not to include debugging information.
 
 == explainOther Parameter
 
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
+
 The `explainOther` parameter specifies a Lucene query in order to identify a set of documents.
 If this parameter is included and is set to a non-blank value, the query will return debugging information, along with the "explain info" of each document that matches the Lucene query, relative to the main query (which is specified by the `q` parameter).
 For example:
 
 [source,text]
 ----
-q=supervillains&debugQuery=on&explainOther=id:juggernaut
+q=supervillains&debug=all&explainOther=id:juggernaut
 ----
 
 The query above allows you to examine the scoring explain info of the top matching documents, compare it to the explain info for documents matching `id:juggernaut`, and determine why the rankings are not as you expect.
 
 The default value of this parameter is blank, which causes no extra "explain info" to be returned.
 
+== partialResults Parameter
+
+[%autowidth,frame=none]
+|===
+|Optional |Default: `true`
+|===
+
+This parameter controls Solr's behavior when a query execution limit is reached (e.g. `timeAllowed` or `cpuAllowed`).
+
+When this parameter is set to `true` (default) then even though reaching a limit terminates further query processing  Solr will still attempt to return partial results collected so far. These results may be incomplete in a non-deterministic way (e.g. only some matching documents, documents without fields, missing facets or pivots, no spellcheck results, etc).
+
+When this parameter is set to `false` then reaching a limit will generate an exception and any partial results collected so far will be discarded.
+
 == timeAllowed Parameter
+
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
 
 This parameter specifies the amount of time, in milliseconds, allowed for a search to complete.
 If this time expires before the search is complete, any partial results will be returned, but values such as `numFound`, xref:faceting.adoc[facet] counts, and result xref:stats-component.adoc[stats] may not be accurate for the entire result set.
@@ -322,9 +371,28 @@ As this check is periodically performed, the actual time for which a request can
 If the request consumes more time in other stages, custom components, etc., this parameter is not expected to abort the request.
 Regular search and the JSON Facet component abandon requests in accordance with this parameter.
 
+== cpuAllowed Parameter
+
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
+
+This parameter specifies the amount of CPU time, in milliseconds, allowed for a search to complete.
+In contrast to the `timeAllowed` this parameter monitors the actual CPU usage by the thread that executes the query. The same CPU usage limit is applied to the query coordinator as to each replica that participates in the distributed search (although reaching this limit first in the query coordinator is unlikely).
+Should any replica locally exceed the allowed CPU time the whole distributed search will be terminated (by canceling requests to other shards).
+
+Note: the same CPU limit is applied to each stage in the distributed query processing. Typically this involves two or more stages (e.g. getting top document id-s, retrieving their fields, additional stages may be required for faceting, grouping, etc).
+For example, setting `cpuAllowed=500` gives a limit of at most 500 ms of CPU time for each of these stages - meaning that the total CPU usage by the query may reach a multiple of the `cpuAllowed` value depending on the number of stages.
+
+All other considerations regarding partial results listed for the `timeAllowed` parameter apply here, too.
+
 == segmentTerminateEarly Parameter
 
-This parameter may be set to either `true` or `false`.
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
 
 If set to `true`, and if xref:configuration-guide:index-segments-merging.adoc#mergepolicyfactory[the mergePolicyFactory] for this collection is a {solr-javadocs}/core/org/apache/solr/index/SortingMergePolicyFactory.html[`SortingMergePolicyFactory`] which uses a `sort` option compatible with <<sort Parameter,the sort parameter>> specified for this query, then Solr will be able to skip documents on a per-segment basis that are definitively not candidates for the current page of results.
 
@@ -332,18 +400,24 @@ If early termination is used, a `segmentTerminatedEarly` header will be included
 
 Similar to using <<timeAllowed Parameter,the `timeAllowed` Parameter>>, when early segment termination happens values such as `numFound`, xref:faceting.adoc[Facet] counts, and result xref:stats-component.adoc[Stats] may not be accurate for the entire result set.
 
-The default value of this parameter is `false`.
-
 == omitHeader Parameter
 
-This parameter may be set to either `true` or `false`.
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
 
-If set to `true`, this parameter excludes the header from the returned results.
+If set to `true`, the `omitHeader` parameter excludes the header from the returned results.
 The header contains information about the request, such as the time it took to complete.
-The default value for this parameter is `false`.
+
 When using parameters such as <<timeallowed-parameter,`timeAllowed`>>, and xref:deployment-guide:solrcloud-distributed-requests.adoc#shards-tolerant-parameter[`shards.tolerant`], which can lead to partial results, it is advisable to keep the header, so that the `partialResults` flag can be checked, and values such as `numFound`, `nextCursorMark`, xref:faceting.adoc[Facet] counts, and result xref:stats-component.adoc[Stats] can be interpreted in the context of partial results.
 
 == wt Parameter
+
+[%autowidth,frame=none]
+|===
+|Optional |Default: `json`
+|===
 
 The `wt` parameter selects the Response Writer that Solr should use to format the query's response.
 For detailed descriptions of Response Writers, see xref:response-writers.adoc[].
@@ -352,8 +426,13 @@ If you do not define the `wt` parameter in your queries, JSON will be returned a
 
 == logParamsList Parameter
 
+[%autowidth,frame=none]
+|===
+|Optional |Default: all parameters
+|===
+
 By default, Solr logs all query parameters on each request.
-This parameter allows users to override this behavior, by specifying a comma-separated "allowlist" of parameter names that should be logged.
+The `logParamsList` parameter allows users to override this behavior, by specifying a comma-separated "allowlist" of parameter names that should be logged.
 This may help control logging to only those parameters considered important to your organization.
 
 NOTE: `logParamsList` only governs the logging of query parameters.
@@ -370,6 +449,11 @@ If no parameters should be logged, you can send `logParamsList` as empty (i.e., 
 TIP: This parameter not only applies to query requests, but to any kind of request to Solr.
 
 == echoParams Parameter
+
+[%autowidth,frame=none]
+|===
+|Optional |Default: `none` or default in `solrconfig.xml`
+|===
 
 The `echoParams` parameter controls what information about request parameters is included in the response header.
 
@@ -434,6 +518,12 @@ This is what happens if a similar request is sent that adds `echoParams=all` to 
 ----
 
 == minExactCount Parameter
+
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
+
 When this parameter is used, Solr will count the number of hits accurately at least until this value.
 After that, Solr can skip over documents that don't have a score high enough to enter in the top N.
 This can greatly improve performance of search queries.

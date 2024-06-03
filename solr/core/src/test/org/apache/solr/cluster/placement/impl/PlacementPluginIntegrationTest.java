@@ -59,7 +59,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -108,7 +107,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testDefaultConfiguration() {
     CoreContainer cc = createCoreContainer(TEST_PATH(), "<solr></solr>");
-    MatcherAssert.assertThat(
+    assertThat(
         cc.getPlacementPluginFactory().createPluginInstance(),
         instanceOf(SimplePlacementFactory.SimplePlacementPlugin.class));
     cc.shutdown();
@@ -118,7 +117,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   public void testConfigurationInSystemProps() {
     System.setProperty(PlacementPluginFactoryLoader.PLACEMENTPLUGIN_DEFAULT_SYSPROP, "random");
     CoreContainer cc = createCoreContainer(TEST_PATH(), "<solr></solr>");
-    MatcherAssert.assertThat(
+    assertThat(
         cc.getPlacementPluginFactory().createPluginInstance(),
         instanceOf(RandomPlacementFactory.RandomPlacementPlugin.class));
     cc.shutdown();

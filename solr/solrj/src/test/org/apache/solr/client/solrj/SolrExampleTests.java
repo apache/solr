@@ -76,7 +76,6 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.util.RTimer;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONParser;
@@ -720,7 +719,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
     SolrException ex = expectThrows(SolrException.class, () -> client.query(query));
     assertEquals(400, ex.code());
-    MatcherAssert.assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
+    assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
 
     // the df=text here is a kluge for the test to supply a default field in case there is none in
     // schema.xml. alternatively, the resulting assertion could be modified to assert that no
@@ -3032,9 +3031,9 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     q.addSort("id", SolrQuery.ORDER.desc);
 
     SolrDocumentList results = client.query(q).getResults();
-    MatcherAssert.assertThat(results.getNumFound(), is(1L));
+    assertThat(results.getNumFound(), is(1L));
     SolrDocument foundDoc = results.get(0);
-    MatcherAssert.assertThat(foundDoc.getFieldValue("title_s"), is("i am a child free doc"));
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a child free doc"));
 
     // Rewrite child free doc
     docToUpdate.setField("title_s", "i am a parent");
@@ -3050,11 +3049,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     results = client.query(q).getResults();
 
-    MatcherAssert.assertThat(results.getNumFound(), is(2L));
+    assertThat(results.getNumFound(), is(2L));
     foundDoc = results.get(0);
-    MatcherAssert.assertThat(foundDoc.getFieldValue("title_s"), is("i am a parent"));
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a parent"));
     foundDoc = results.get(1);
-    MatcherAssert.assertThat(foundDoc.getFieldValue("title_s"), is("i am a child"));
+    assertThat(foundDoc.getFieldValue("title_s"), is("i am a child"));
   }
 
   @Test
@@ -3092,13 +3091,13 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     SolrQuery q = new SolrQuery("*:*");
     SolrDocumentList results = client.query(q).getResults();
-    MatcherAssert.assertThat(results.getNumFound(), is(4L));
+    assertThat(results.getNumFound(), is(4L));
 
     client.deleteById("p0");
     client.commit();
 
     results = client.query(q).getResults();
-    MatcherAssert.assertThat(
+    assertThat(
         "All the children are expected to be deleted together with parent",
         results.getNumFound(),
         is(0L));
