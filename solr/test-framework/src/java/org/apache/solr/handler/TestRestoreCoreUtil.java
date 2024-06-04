@@ -26,7 +26,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.Assert;
 
 public class TestRestoreCoreUtil {
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public static boolean fetchRestoreStatus(String baseUrl, String coreName) throws IOException {
     String leaderUrl =
         baseUrl

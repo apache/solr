@@ -74,7 +74,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     waitForNewOverseer(seconds, s -> Objects.equals(s, expected), failOnIntermediateTransition);
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private JettySolrRunner getOverseerJetty() throws Exception {
     String overseer = getLeaderNode(zkClient());
     URL overseerUrl = new URL("http://" + overseer.substring(0, overseer.indexOf('_')));

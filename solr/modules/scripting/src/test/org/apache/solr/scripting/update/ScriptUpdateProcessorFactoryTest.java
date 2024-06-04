@@ -235,7 +235,7 @@ public class ScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
   }
 
   @SuppressWarnings("removal")
-  @SuppressForbidden(reason = "Locale is deprecated in Java 21")
+  @SuppressForbidden(reason = "SecurityManager deprecated since Java 17")
   public void testScriptSandbox() throws Exception {
     assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
     expectThrows(

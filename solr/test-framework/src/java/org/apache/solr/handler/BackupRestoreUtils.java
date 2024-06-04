@@ -109,7 +109,7 @@ public class BackupRestoreUtils extends SolrTestCase {
     executeHttpRequest(leaderUrl);
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   static void executeHttpRequest(String requestUrl) throws IOException {
     URL url = new URL(requestUrl);
     try (InputStream stream = url.openStream()) {

@@ -604,7 +604,7 @@ public class PostTool extends ToolBase {
    * @param out output stream to write to
    * @return number of pages crawled on this level and below
    */
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   protected int webCrawl(int level, OutputStream out) {
     int numPages = 0;
     LinkedHashSet<URI> stack = backlog.get(level);

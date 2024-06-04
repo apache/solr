@@ -386,7 +386,7 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     }
 
     /** parse a locale from a language+country+variant spec */
-    @SuppressForbidden(reason = " java.net.URL is Legacy API")
+    @SuppressForbidden(reason = "Locale(String) deprecated since Java 20")
     protected Locale parseLocale(String language, String country, String variant) {
       if (language == null && country == null && variant == null) {
         return Locale.ROOT;

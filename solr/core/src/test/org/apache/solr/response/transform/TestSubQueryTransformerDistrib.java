@@ -135,7 +135,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("serial")
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   @Test
   public void test() throws Exception {
     int peopleMultiplier = atLeast(1);

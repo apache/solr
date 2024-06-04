@@ -145,7 +145,7 @@ public class CollationField extends FieldType {
    * Create a locale from language, with optional country and variant. Then return the appropriate
    * collator for the locale.
    */
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "Locale(String) deprecated since Java 20")
   private Collator createFromLocale(String language, String country, String variant) {
     Locale locale;
 

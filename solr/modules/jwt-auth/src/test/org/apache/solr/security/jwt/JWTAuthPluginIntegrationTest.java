@@ -389,7 +389,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     }
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private Pair<String, Integer> get(String url, String token) throws IOException {
     URL createUrl = new URL(url);
     HttpURLConnection createConn = (HttpURLConnection) createUrl.openConnection();
@@ -403,7 +403,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return new Pair<>(result, code);
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private Map<String, String> getHeaders(String url, String token) throws IOException {
     URL createUrl = new URL(url);
     HttpURLConnection conn = (HttpURLConnection) createUrl.openConnection();
@@ -417,7 +417,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return result;
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private Pair<String, Integer> post(String url, String json, String token) throws IOException {
     URL createUrl = new URL(url);
     HttpURLConnection con = (HttpURLConnection) createUrl.openConnection();

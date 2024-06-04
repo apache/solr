@@ -30,7 +30,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.NodeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -189,7 +188,6 @@ public class AllowListUrlChecker {
     return hostPorts;
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
   private static String parseHostPort(String url) throws MalformedURLException {
     // Parse the host and port.
     // It doesn't really matter which protocol we set here because we are not going to use it.

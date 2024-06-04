@@ -323,7 +323,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     return docCollection;
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   protected JettySolrRunner getJettyForReplica(Replica replica) throws Exception {
     String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     assertNotNull(replicaBaseUrl);
@@ -334,7 +334,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     return proxy;
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   protected SocketProxy getProxyForReplica(Replica replica) throws Exception {
     String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     assertNotNull(replicaBaseUrl);

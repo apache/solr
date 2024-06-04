@@ -73,7 +73,7 @@ public class OpenNLPLangDetectUpdateProcessor extends LanguageIdentifierUpdatePr
     return languages;
   }
 
-  @SuppressForbidden(reason = "Locale is deprecated in Java 21")
+  @SuppressForbidden(reason = "Locale(String) deprecated since Java 20")
   private static Map<String, String> make_ISO639_map() {
     Map<String, String> map = new HashMap<>();
     for (String lang : Locale.getISOLanguages()) {

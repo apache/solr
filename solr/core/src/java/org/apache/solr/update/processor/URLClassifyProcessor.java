@@ -195,7 +195,7 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
    * @param url The input url
    * @return The URL object representing the canonical URL
    */
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public URL getCanonicalUrl(URL url) throws MalformedURLException {
     // NOTE: Do we want to make sure this URL is normalized? (Christian thinks we should)
     String urlString = url.toString();

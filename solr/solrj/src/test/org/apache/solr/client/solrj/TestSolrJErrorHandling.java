@@ -273,7 +273,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   }
 
   @Test
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void testHttpURLConnection() throws Exception {
 
     // sometimes succeeds with this size, but larger can cause OOM from command line

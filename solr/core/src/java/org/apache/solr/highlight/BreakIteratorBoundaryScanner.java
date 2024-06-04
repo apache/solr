@@ -28,7 +28,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 public class BreakIteratorBoundaryScanner extends SolrBoundaryScanner {
 
   @Override
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "Locale(String) deprecated since Java 20")
   protected BoundaryScanner get(String fieldName, SolrParams params) {
     // construct Locale
     String language = params.getFieldParam(fieldName, HighlightParams.BS_LANGUAGE);

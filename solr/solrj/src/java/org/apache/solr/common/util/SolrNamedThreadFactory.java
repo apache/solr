@@ -27,7 +27,7 @@ public class SolrNamedThreadFactory implements ThreadFactory {
   private final String prefix;
 
   @SuppressWarnings("removal")
-  @SuppressForbidden(reason = "Thread sleep")
+  @SuppressForbidden(reason = "SecurityManager deprecated since Java 17")
   public SolrNamedThreadFactory(String namePrefix) {
     SecurityManager s = System.getSecurityManager();
     group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();

@@ -83,7 +83,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     assertTrue(content.contains("1234"));
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private String attemptHttpGet(String getUrl) throws IOException {
     Object obj = new URL(getUrl).getContent();
     if (obj instanceof InputStream) {

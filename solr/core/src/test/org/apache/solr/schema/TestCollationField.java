@@ -54,7 +54,7 @@ public class TestCollationField extends SolrTestCaseJ4 {
    * are largish files, and jvm-specific (as our documentation says, you should always look out for
    * jvm differences with collation). So it's preferable to create this file on-the-fly.
    */
-  @SuppressForbidden(reason = "Locale deprecated in Java 21")
+  @SuppressForbidden(reason = "Locale(String, String) deprecated since Java 20")
   public static String setupSolrHome() throws Exception {
     // make a solr home underneath the test's TEMP_DIR
     Path tmpFile = createTempDir("collation1");

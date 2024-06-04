@@ -87,7 +87,7 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void testAdminUI() throws Exception {
     // Not an extensive test, but it does connect to Solr and verify the Admin ui shows up.
     String adminPath = "http://127.0.0.1:" + port + "/solr/";

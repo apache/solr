@@ -251,7 +251,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
    * @return The list of initialized script engines.
    */
   @SuppressWarnings("removal")
-  @SuppressForbidden(reason = "Java21")
+  @SuppressForbidden(reason = "AccessController deprecated since Java 17")
   private List<EngineInfo> initEngines(SolrQueryRequest req, SolrQueryResponse rsp)
       throws SolrException {
 
@@ -432,7 +432,7 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
      * non-null, and can be cast to a java Boolean.
      */
     @SuppressWarnings("removal")
-    @SuppressForbidden(reason = "Java21")
+    @SuppressForbidden(reason = "AccessController deprecated since Java 17")
     private boolean invokeFunction(String name, Object... cmd) {
       return AccessController.doPrivileged(
           new PrivilegedAction<Boolean>() {
@@ -519,10 +519,10 @@ public class ScriptUpdateProcessorFactory extends UpdateRequestProcessorFactory
 
   // sandbox for script code: zero permissions
   @SuppressWarnings("removal")
-  @SuppressForbidden(reason = "AccessControlContext deprecated in java21")
+  @SuppressForbidden(reason = "AccessControlContext deprecated since java 17")
   private static final AccessControlContext SCRIPT_SANDBOX = getScriptSandbox();
 
-  @SuppressForbidden(reason = "AccessControlContext deprecated in java21")
+  @SuppressForbidden(reason = "AccessControlContext deprecated since java 17")
   @SuppressWarnings("removal")
   private static AccessControlContext getScriptSandbox() {
     return new AccessControlContext(new ProtectionDomain[] {new ProtectionDomain(null, null)});

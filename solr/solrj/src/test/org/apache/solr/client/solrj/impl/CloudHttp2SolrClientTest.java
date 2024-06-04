@@ -459,7 +459,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("deprecation")
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private void queryWithShardsPreferenceRules(CloudSolrClient cloudClient, String collectionName)
       throws Exception {
     SolrQuery qRequest = new SolrQuery("*:*");

@@ -166,7 +166,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressForbidden(reason = "URL is deprecated in Java 21")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void testComputeFullUrl() throws IOException {
 
     PostTool webPostTool = new PostTool();
@@ -211,7 +211,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressForbidden(reason = "URL is deprecated in Java 21")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void testAppendUrlPath() throws MalformedURLException {
     assertEquals(
         new URL("http://[ff01::114]/a?foo=bar"),
@@ -228,7 +228,7 @@ public class PostToolTest extends SolrCloudTestCase {
     assertEquals("application/json", PostTool.guessType(f));
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   @Test
   public void testDoFilesMode() throws MalformedURLException {
     PostTool postTool = new PostTool();
@@ -251,7 +251,7 @@ public class PostToolTest extends SolrCloudTestCase {
     assertTrue(postTool.recursionPossible(new String[] {doc.toString(), dir.toString()}));
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   @Test
   public void testRecursionAppliesToFilesMode() throws MalformedURLException {
     PostTool postTool = new PostTool();
@@ -264,7 +264,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void testDoWebMode() throws IOException, URISyntaxException {
     PostTool postTool = new PostTool();
     postTool.pageFetcher = new MockPageFetcher();
@@ -289,7 +289,7 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void testRobotsExclusion() throws IOException, URISyntaxException {
     PostTool postTool = new PostTool();
     postTool.pageFetcher = new MockPageFetcher();

@@ -42,7 +42,7 @@ public class SolrNodeKeyPair {
     return keyPair;
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private static CryptoKeys.RSAKeyPair createKeyPair(CloudConfig config) {
     if (config == null) {
       return new CryptoKeys.RSAKeyPair();

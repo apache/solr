@@ -83,7 +83,7 @@ public class DefaultPackageRepository extends PackageRepository {
   }
 
   @Override
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public Path download(String artifactName) throws SolrException, IOException {
     Path tmpDirectory = Files.createTempDirectory("solr-packages");
     tmpDirectory.toFile().deleteOnExit();

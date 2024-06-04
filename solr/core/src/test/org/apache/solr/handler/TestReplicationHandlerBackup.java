@@ -251,7 +251,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public static void runBackupCommand(JettySolrRunner leaderJetty, String cmd, String params)
       throws IOException {
     String leaderUrl =

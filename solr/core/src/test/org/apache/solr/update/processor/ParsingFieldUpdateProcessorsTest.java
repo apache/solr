@@ -306,7 +306,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         "//int[@name='int2_i'][.='" + value + "']");
   }
 
-  @SuppressForbidden(reason = "Locale is deprecated in Java 21")
+  @SuppressForbidden(reason = "Locale(String, String) deprecated since Java 20")
   public void testParseIntNonRootLocale() throws Exception {
     final DecimalFormatSymbols ru_RU = DecimalFormatSymbols.getInstance(new Locale("ru", "RU"));
     final char groupChar = ru_RU.getGroupingSeparator();
@@ -422,7 +422,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         "//long[@name='long2_l'][.='" + value + "']");
   }
 
-  @SuppressForbidden(reason = "Locale is deprecated in Java 21")
+  @SuppressForbidden(reason = "Locale(String,String) deprecated since Java 20")
   public void testParseLongNonRootLocale() throws Exception {
     final DecimalFormatSymbols ru_RU = DecimalFormatSymbols.getInstance(new Locale("ru", "RU"));
     final char groupChar = ru_RU.getGroupingSeparator();
@@ -520,7 +520,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         "//float[@name='float2_f'][.='" + value + "']");
   }
 
-  @SuppressForbidden(reason = "Locale is deprecated in Java 21")
+  @SuppressForbidden(reason = "Locale(String,String) deprecated since Java 20")
   public void testParseFloatNonRootLocale() throws Exception {
     final DecimalFormatSymbols fr_FR = DecimalFormatSymbols.getInstance(new Locale("fr", "FR"));
     final char groupChar = fr_FR.getGroupingSeparator();
@@ -639,7 +639,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
         "//double[@name='double2_d'][.='" + value + "']");
   }
 
-  @SuppressForbidden(reason = "Locale is deprecated in Java 21")
+  @SuppressForbidden(reason = "Locale(String) deprecated since Java 20")
   public void testParseDoubleNonRootLocale() throws Exception {
     final DecimalFormatSymbols fr_FR = DecimalFormatSymbols.getInstance(new Locale("fr", "FR"));
     final char groupChar = fr_FR.getGroupingSeparator();

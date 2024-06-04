@@ -252,7 +252,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void illegalAdminPathError() throws Exception {
     setupCluster(false, null, false);
     String baseUrl = testHarness.get().cluster.getJettySolrRunner(0).getBaseURLV2().toString();

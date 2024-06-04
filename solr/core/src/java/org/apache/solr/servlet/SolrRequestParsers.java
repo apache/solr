@@ -195,7 +195,7 @@ public class SolrRequestParsers {
     return buildRequestFrom(core, params, streams, new RTimerTree(), null, principal);
   }
 
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private SolrQueryRequest buildRequestFrom(
       SolrCore core,
       SolrParams params,

@@ -103,7 +103,7 @@ public class ClientUtils {
     return basePath + path;
   }
 
-  @SuppressForbidden(reason = "Deprecated in Java 21")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
     URL oldURL = new URL(basePath);
     String newPath = oldURL.getPath().replaceFirst("/solr", "/api");

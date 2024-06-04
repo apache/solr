@@ -113,7 +113,7 @@ public class JWTIssuerConfig {
    *
    * @throws SolrException if issuer is missing
    */
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void init() {
     if (!isValid()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Configuration is not valid");
@@ -468,7 +468,7 @@ public class JWTIssuerConfig {
      *
      * @param url the Url to connect to for JWK details.
      */
-    @SuppressForbidden(reason = " java.net.URL is Legacy API")
+    @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
     private HttpsJwks create(String url) {
       final URL jwksUrl;
       try {
@@ -508,7 +508,7 @@ public class JWTIssuerConfig {
       this.securityConf = securityConf;
     }
 
-    @SuppressForbidden(reason = " java.net.URL is Legacy API")
+    @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
     public static WellKnownDiscoveryConfig parse(String urlString) throws MalformedURLException {
       return parse(new URL(urlString), null);
     }

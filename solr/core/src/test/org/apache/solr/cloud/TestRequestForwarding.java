@@ -50,7 +50,7 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void testMultiCollectionQuery() throws Exception {
     createCollection("collection1", "conf1");
     // Test against all nodes (two of them host the collection, one of them will

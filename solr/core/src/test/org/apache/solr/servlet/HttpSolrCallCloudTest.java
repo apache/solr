@@ -65,7 +65,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
 
   // https://issues.apache.org/jira/browse/SOLR-16019
   @Test
-  @SuppressForbidden(reason = " java.net.URL is Legacy API")
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void testWrongUtf8InQ() throws Exception {
     var baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     var request =

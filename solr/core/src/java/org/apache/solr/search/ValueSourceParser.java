@@ -187,7 +187,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         "threadid",
         new ValueSourceParser() {
           @Override
-          @SuppressForbidden(reason = "Thread#getId is deprecated in Java 21")
+          @SuppressForbidden(reason = "Thread#getId deprecated since Java 19")
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
             return new LongConstValueSource(Thread.currentThread().getId());
           }
