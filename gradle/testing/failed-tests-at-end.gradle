@@ -19,7 +19,7 @@ import org.apache.lucene.gradle.ErrorReportingTestListener
 
 // Display all failed tests at the end of the build.
 
-def failedTests = []
+def failedTests = new LinkedHashSet() // for dedupe due to weird afterTest classMethod issue
 
 def genFailInfo(def task, TestDescriptor desc) {
   boolean isSuite = (desc.name == 'classMethod')
