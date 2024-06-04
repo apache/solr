@@ -159,6 +159,10 @@ public class SliceMutator {
       log.error("Could not mark shard leader for non existing collection: {}", collectionName);
       return ZkStateWriter.NO_OP;
     }
+    if (coll.isPerReplicaState()) {
+      log.debug("Do not mark shard leader for PRS collection: {}", collectionName);
+      return ZkStateWriter.NO_OP;
+    }
 
     Map<String, Slice> slices = coll.getSlicesMap();
     Slice slice = slices.get(sliceName);

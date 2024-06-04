@@ -65,7 +65,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     // This attempt will succeed since there will be enough time to connect
     System.setProperty("waitForZk", "20");
     restartSolrAndZk();
-    waitForLiveNodes(2);
+    waitForLiveNodes(cluster.getJettySolrRunners().size());
     waitForState("Timeout waiting for " + coll, coll, clusterShape(2, 2));
     QueryResponse rsp =
         new QueryRequest(new SolrQuery("*:*")).process(cluster.getSolrClient(), coll);

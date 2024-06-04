@@ -61,21 +61,28 @@ public class CircuitBreakerRegistry implements Closeable {
   public static final String SYSPROP_QUERY_CPU = SYSPROP_PREFIX + "query.cpu";
   public static final String SYSPROP_QUERY_MEM = SYSPROP_PREFIX + "query.mem";
   public static final String SYSPROP_QUERY_LOADAVG = SYSPROP_PREFIX + "query.loadavg";
+  public static final String SYSPROP_WARN_ONLY_SUFFIX = ".warnonly";
 
   public CircuitBreakerRegistry(CoreContainer coreContainer) {
     initGlobal(coreContainer);
   }
 
-  private static void initGlobal(CoreContainer coreContainer) {
+  public static List<CircuitBreaker> parseCircuitBreakersFromProperties(
+      CoreContainer coreContainer) {
     // Read system properties to register global circuit breakers for update and query:
     // Example: solr.circuitbreaker.update.cpu = 50
+    final var parsedBreakers = new ArrayList<CircuitBreaker>();
     EnvUtils.getProperties().keySet().stream()
         .map(SYSPROP_REGEX::matcher)
-        .filter(Matcher::matches)
-        .collect(Collectors.groupingBy(m -> m.group(2) + ":" + System.getProperty(m.group(0))))
+        .filter(Matcher::matches) // 0=solr.circuitbreaker.(update|query).(cpu|mem|loadavg),
+        // 1=update|query, 2=cpu|mem|loadavg
+        .collect(Collectors.groupingBy(m -> buildCircuitBreakerKey(m.group(2), m.group(0))))
         .forEach(
             (breakerAndValue, breakers) -> {
               CircuitBreaker breaker;
+              // See 'buildCircuitBreakerKey' for format
+              // 0=metric name (e.g. loadavg), 1=threshold value (e.g. 70), 2=warnOnly flag (e.g.
+              // "false")
               String[] breakerAndValueArr = breakerAndValue.split(":");
               switch (breakerAndValueArr[0]) {
                 case "cpu":
@@ -97,16 +104,30 @@ public class CircuitBreakerRegistry implements Closeable {
                   throw new IllegalArgumentException(
                       "Unknown circuit breaker type: " + breakerAndValueArr[0]);
               }
+              breaker.setWarnOnly(Boolean.parseBoolean(breakerAndValueArr[2]));
               breaker.setRequestTypes(
                   breakers.stream().map(m -> m.group(1)).collect(Collectors.toList()));
-              registerGlobal(breaker);
-              if (log.isInfoEnabled()) {
-                log.info(
-                    "Registered global circuit breaker {} for request type(s) {}",
-                    breakerAndValue,
-                    breaker.getRequestTypes());
-              }
+              parsedBreakers.add(breaker);
             });
+    return parsedBreakers;
+  }
+
+  private static String buildCircuitBreakerKey(String metricType, String thresholdProp) {
+    final var warnOnly = EnvUtils.getProperty(thresholdProp + SYSPROP_WARN_ONLY_SUFFIX, "false");
+    return metricType + ":" + System.getProperty(thresholdProp) + ":" + warnOnly;
+  }
+
+  private static void initGlobal(CoreContainer coreContainer) {
+    final var parsedBreakers = parseCircuitBreakersFromProperties(coreContainer);
+    for (CircuitBreaker breaker : parsedBreakers) {
+      registerGlobal(breaker);
+      if (log.isInfoEnabled()) {
+        log.info(
+            "Registered global circuit breaker {} for request type(s) {}",
+            breaker,
+            breaker.getRequestTypes());
+      }
+    }
   }
 
   /** List all registered circuit breakers for global context */

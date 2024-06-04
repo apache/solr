@@ -426,7 +426,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     final MakeRequestReturnValue mrrv;
     final String url;
     try {
-      url = getRequestPath(solrRequest, collection);
+      url = getRequestUrl(solrRequest, collection);
       mrrv = makeRequest(solrRequest, url, true);
     } catch (SolrServerException | IOException e) {
       future.completeExceptionally(e);
@@ -493,7 +493,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest)) {
       collection = defaultCollection;
     }
-    String url = getRequestPath(solrRequest, collection);
+    String url = getRequestUrl(solrRequest, collection);
     Throwable abortCause = null;
     Request req = null;
     try {
