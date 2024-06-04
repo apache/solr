@@ -60,11 +60,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     index(id, Integer.toString(4), MonitorFields.MONITOR_QUERY, "content_s:\"elevator stairs\"");
     index(id, Integer.toString(5), MonitorFields.MONITOR_QUERY, "other_content_s:\"solr is cool\"");
     index(id, Integer.toString(6), MonitorFields.MONITOR_QUERY, "other_content_s:\"solr is lame\"");
-    index(
-        id,
-        Integer.toString(7),
-        MonitorFields.MONITOR_QUERY,
-        "content_s:something");
+    index(id, Integer.toString(7), MonitorFields.MONITOR_QUERY, "content_s:something");
     commit();
     handle.clear();
     handle.put("responseHeader", SKIP);

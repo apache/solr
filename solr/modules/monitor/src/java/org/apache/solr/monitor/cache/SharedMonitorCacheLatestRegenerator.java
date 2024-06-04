@@ -22,9 +22,9 @@ package org.apache.solr.monitor.cache;
 import java.io.IOException;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.monitor.MonitorDataValues;
 import org.apache.solr.monitor.SolrMonitorQueryDecoder;
 import org.apache.solr.search.CacheRegenerator;
@@ -89,6 +89,6 @@ public class SharedMonitorCacheLatestRegenerator implements CacheRegenerator {
 
   private static Query versionRangeQuery(SharedMonitorCache cache) {
     return LongPoint.newRangeQuery(
-        MonitorFields.VERSION, cache.versionHighWaterMark, Long.MAX_VALUE);
+        CommonParams.VERSION_FIELD, cache.versionHighWaterMark, Long.MAX_VALUE);
   }
 }

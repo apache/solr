@@ -21,7 +21,6 @@ package org.apache.solr.monitor;
 
 import java.io.IOException;
 import java.util.Map;
-import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.monitor.MonitorQuery;
 import org.apache.lucene.monitor.QCEVisitor;
 import org.apache.lucene.monitor.QueryDecomposer;
@@ -45,11 +44,7 @@ public class SolrMonitorQueryDecoder {
     String id = monitorDataValues.getQueryId();
     String queryStr = monitorDataValues.getMq();
     var query = SimpleQueryParser.parse(queryStr, core);
-    String payload = monitorDataValues.getPayload();
-    if (payload == null) {
-      return new MonitorQuery(id, query, queryStr, Map.of());
-    }
-    return new MonitorQuery(id, query, queryStr, Map.of(MonitorFields.PAYLOAD, payload));
+    return new MonitorQuery(id, query, queryStr, Map.of());
   }
 
   public QCEVisitor getComponent(MonitorDataValues dataValues, String cacheId) throws IOException {

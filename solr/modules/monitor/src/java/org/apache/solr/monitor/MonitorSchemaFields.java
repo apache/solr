@@ -28,13 +28,11 @@ public class MonitorSchemaFields {
   private final SchemaField cacheId;
   private final SchemaField queryId;
   private final SchemaField monitorQuery;
-  private final SchemaField payload;
 
   public MonitorSchemaFields(IndexSchema indexSchema) {
     this.cacheId = indexSchema.getField(MonitorFields.CACHE_ID);
     this.queryId = indexSchema.getField(MonitorFields.QUERY_ID);
     this.monitorQuery = indexSchema.getField(MonitorFields.MONITOR_QUERY);
-    this.payload = indexSchema.getField(MonitorFields.PAYLOAD);
   }
 
   public SchemaField getCacheId() {
@@ -47,9 +45,5 @@ public class MonitorSchemaFields {
 
   public SchemaField getMonitorQuery() {
     return monitorQuery;
-  }
-
-  public SchemaField getPayload() {
-    return payload;
   }
 }

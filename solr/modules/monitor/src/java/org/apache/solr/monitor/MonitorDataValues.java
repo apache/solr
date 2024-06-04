@@ -26,13 +26,13 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.solr.common.params.CommonParams;
 
 public class MonitorDataValues {
 
   private SortedDocValues queryIdIt;
   private SortedDocValues cacheIdIt;
   private SortedDocValues mqIt;
-  private SortedDocValues payloadIt;
   private NumericDocValues versionIt;
   private int currentDoc = DocIdSetIterator.NO_MORE_DOCS;
   private LeafReader reader;
@@ -42,8 +42,7 @@ public class MonitorDataValues {
     cacheIdIt = reader.getSortedDocValues(MonitorFields.CACHE_ID);
     queryIdIt = reader.getSortedDocValues(MonitorFields.QUERY_ID);
     mqIt = reader.getSortedDocValues(MonitorFields.MONITOR_QUERY);
-    payloadIt = reader.getSortedDocValues(MonitorFields.PAYLOAD);
-    versionIt = reader.getNumericDocValues(MonitorFields.VERSION);
+    versionIt = reader.getNumericDocValues(CommonParams.VERSION_FIELD);
     currentDoc = DocIdSetIterator.NO_MORE_DOCS;
   }
 
@@ -66,16 +65,6 @@ public class MonitorDataValues {
       return mqIt.lookupOrd(mqIt.ordValue()).utf8ToString();
     }
     return reader.document(currentDoc).get(MonitorFields.MONITOR_QUERY);
-  }
-
-  public String getPayload() throws IOException {
-    if (payloadIt != null) {
-      if (payloadIt.advanceExact(currentDoc)) {
-        return payloadIt.lookupOrd(payloadIt.ordValue()).utf8ToString();
-      }
-      return null;
-    }
-    return reader.document(currentDoc).get(MonitorFields.PAYLOAD);
   }
 
   public long getVersion() throws IOException {

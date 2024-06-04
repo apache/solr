@@ -71,7 +71,7 @@ public class AliasingPresearcher extends Presearcher {
   private Document alias(Document in) {
     Document out = new Document();
     for (var field : in) {
-      if (!MonitorFields.RESERVED_MONITOR_FIELDS.contains(field.name())
+      if (!MonitorFields.ANYTOKEN_FIELD.equals(field.name())
           && field instanceof Field
           && ((Field) field).tokenStreamValue() != null) {
         out.add(

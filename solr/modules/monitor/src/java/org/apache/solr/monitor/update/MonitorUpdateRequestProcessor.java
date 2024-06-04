@@ -80,53 +80,42 @@ public class MonitorUpdateRequestProcessor extends UpdateRequestProcessor {
     var queryId =
         (String) solrInputDocument.getFieldValue(indexSchema.getUniqueKeyField().getName());
     var queryFieldValue = solrInputDocument.getFieldValue(MonitorFields.MONITOR_QUERY);
-    if (queryFieldValue != null) {
-      var payload =
-          Optional.ofNullable(solrInputDocument.getFieldValue(MonitorFields.PAYLOAD))
-              .map(Object::toString)
-              .orElse(null);
-      List<SolrInputDocument> children =
-          Optional.of(queryFieldValue)
-              .filter(String.class::isInstance)
-              .map(String.class::cast)
-              .map(
-                  queryStr ->
-                      new MonitorQuery(
-                          queryId, SimpleQueryParser.parse(queryStr, core), queryStr, Map.of()))
-              .stream()
-              .flatMap(monitorQuery -> decompose(monitorQuery, payload))
-              .map(this::toSolrInputDoc)
-              .collect(Collectors.toList());
-      if (children.isEmpty()) {
-        throw new SolrException(
-            SolrException.ErrorCode.INVALID_STATE, "Query could not be decomposed");
-      }
-      SolrInputDocument firstChild = children.get(0);
-      if (solrInputDocument.hasChildDocuments()) {
-        solrInputDocument.getChildDocuments().clear();
-      }
-      solrInputDocument.addChildDocuments(children.stream().skip(1).collect(Collectors.toList()));
-      if (solrInputDocument.hasChildDocuments()) {
-        solrInputDocument
-            .getChildDocuments()
-            .forEach(
-                child ->
-                    solrInputDocument.forEach(
-                        field -> {
-                          if (!MonitorFields.RESERVED_MONITOR_FIELDS.contains(field.getName())) {
-                            child.addField(field.getName(), field.getValue());
-                          }
-                        }));
-        solrInputDocument
-            .getChildDocuments()
-            .forEach(
-                child ->
-                    child.setField(
-                        indexSchema.getUniqueKeyField().getName(),
-                        child.getFieldValue(MonitorFields.CACHE_ID)));
-      }
-      copyFirstChildToParent(solrInputDocument, firstChild);
+    if (queryFieldValue == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          MonitorFields.MONITOR_QUERY + " field missing from request.");
     }
+    List<SolrInputDocument> children =
+        Optional.of(queryFieldValue)
+            .filter(String.class::isInstance)
+            .map(String.class::cast)
+            .map(
+                queryStr ->
+                    new MonitorQuery(
+                        queryId, SimpleQueryParser.parse(queryStr, core), queryStr, Map.of()))
+            .stream()
+            .flatMap(this::decompose)
+            .map(this::toSolrInputDoc)
+            .collect(Collectors.toList());
+    if (children.isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.INVALID_STATE, "Query could not be decomposed");
+    }
+    SolrInputDocument firstChild = children.get(0);
+    if (solrInputDocument.hasChildDocuments()) {
+      solrInputDocument.getChildDocuments().clear();
+    }
+    solrInputDocument.addChildDocuments(children.stream().skip(1).collect(Collectors.toList()));
+    if (solrInputDocument.hasChildDocuments()) {
+      solrInputDocument
+          .getChildDocuments()
+          .forEach(
+              child ->
+                  child.setField(
+                      indexSchema.getUniqueKeyField().getName(),
+                      child.getFieldValue(MonitorFields.CACHE_ID)));
+    }
+    copyFirstChildToParent(solrInputDocument, firstChild);
     super.processAdd(cmd);
   }
 
@@ -134,12 +123,12 @@ public class MonitorUpdateRequestProcessor extends UpdateRequestProcessor {
     parent.setField(
         indexSchema.getUniqueKeyField().getName(),
         firstChild.getFieldValue(MonitorFields.CACHE_ID));
-    for (var firstBornInputField : firstChild) {
-      parent.setField(firstBornInputField.getName(), firstBornInputField.getValue());
+    for (var firstChildField : firstChild) {
+      parent.setField(firstChildField.getName(), firstChildField.getValue());
     }
   }
 
-  private Stream<Document> decompose(MonitorQuery monitorQuery, String payload) {
+  private Stream<Document> decompose(MonitorQuery monitorQuery) {
     return QCEVisitor.decompose(monitorQuery, queryDecomposer).stream()
         .map(
             qce -> {
@@ -149,9 +138,6 @@ public class MonitorUpdateRequestProcessor extends UpdateRequestProcessor {
               doc.add(monitorSchemaFields.getCacheId().createField(qce.getCacheId()));
               doc.add(
                   monitorSchemaFields.getMonitorQuery().createField(monitorQuery.getQueryString()));
-              if (payload != null) {
-                doc.add(monitorSchemaFields.getPayload().createField(payload));
-              }
               return doc;
             });
   }
