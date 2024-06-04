@@ -72,6 +72,7 @@ import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.backup.BackupManager;
@@ -203,7 +204,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
           Assign.getLiveOrLiveAndCreateNodeSetList(
               zkStateReader.getClusterState().getLiveNodes(),
               message,
-              CollectionHandlingUtils.RANDOM,
+              Utils.RANDOM,
               container.getZkController().getSolrCloudManager().getDistribStateManager());
     }
 

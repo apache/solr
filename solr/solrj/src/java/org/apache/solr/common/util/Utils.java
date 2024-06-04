@@ -55,6 +55,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -90,6 +91,19 @@ import org.slf4j.LoggerFactory;
 public class Utils {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static final Random RANDOM;
+
+  static {
+    // We try to make things reproducible in the context of our tests by initializing the random
+    // instance based on the current seed
+    String seed = System.getProperty("tests.seed");
+    if (seed == null) {
+      RANDOM = new Random();
+    } else {
+      RANDOM = new Random(seed.hashCode());
+    }
+  }
 
   @SuppressWarnings({"rawtypes"})
   public static Map getDeepCopy(Map<?, ?> map, int maxDepth) {

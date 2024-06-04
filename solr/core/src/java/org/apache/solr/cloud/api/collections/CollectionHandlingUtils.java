@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -121,19 +120,6 @@ public class CollectionHandlingUtils {
               null,
               CollectionStateProps.PULL_REPLICAS,
               "0"));
-
-  public static final Random RANDOM;
-
-  static {
-    // We try to make things reproducible in the context of our tests by initializing the random
-    // instance based on the current seed
-    String seed = System.getProperty("tests.seed");
-    if (seed == null) {
-      RANDOM = new Random();
-    } else {
-      RANDOM = new Random(seed.hashCode());
-    }
-  }
 
   static boolean waitForCoreNodeGone(
       String collectionName,
