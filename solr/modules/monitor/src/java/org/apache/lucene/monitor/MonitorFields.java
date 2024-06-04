@@ -28,6 +28,6 @@ public class MonitorFields {
   public static final String MONITOR_QUERY = QueryIndex.FIELDS.mq + "_";
   public static final String ANYTOKEN_FIELD = TermFilteredPresearcher.ANYTOKEN_FIELD;
 
-  public static final Set<String> REQUIRED_MONITOR_FIELDS =
+  public static final Set<String> REQUIRED_MONITOR_SCHEMA_FIELDS =
       Set.of(QUERY_ID, CACHE_ID, MONITOR_QUERY);
 }

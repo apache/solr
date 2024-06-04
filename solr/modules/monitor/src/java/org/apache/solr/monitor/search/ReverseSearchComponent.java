@@ -223,7 +223,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
       }
     }
 
-    for (String fieldName : MonitorFields.REQUIRED_MONITOR_FIELDS) {
+    for (String fieldName : MonitorFields.REQUIRED_MONITOR_SCHEMA_FIELDS) {
       var field = schema.getFieldOrNull(fieldName);
       if (field == null) {
         throw new IllegalStateException(

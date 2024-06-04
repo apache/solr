@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.analysis.Analyzer;
@@ -44,6 +45,7 @@ import org.apache.lucene.monitor.QueryDecomposer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.monitor.MonitorSchemaFields;
@@ -60,6 +62,7 @@ public class MonitorUpdateRequestProcessor extends UpdateRequestProcessor {
   private final QueryDecomposer queryDecomposer;
   private final Presearcher presearcher;
   private final MonitorSchemaFields monitorSchemaFields;
+  private final Set<String> allowedFieldNames;
 
   public MonitorUpdateRequestProcessor(
       UpdateRequestProcessor next,
@@ -72,18 +75,39 @@ public class MonitorUpdateRequestProcessor extends UpdateRequestProcessor {
     this.queryDecomposer = queryDecomposer;
     this.presearcher = presearcher;
     this.monitorSchemaFields = new MonitorSchemaFields(indexSchema);
+    this.allowedFieldNames =
+        Set.of(
+            MonitorFields.MONITOR_QUERY,
+            indexSchema.getUniqueKeyField().getName(),
+            CommonParams.VERSION_FIELD);
   }
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
     var solrInputDocument = cmd.getSolrInputDocument();
-    var queryId =
-        (String) solrInputDocument.getFieldValue(indexSchema.getUniqueKeyField().getName());
+    String idFieldName = indexSchema.getUniqueKeyField().getName();
+    var queryId = (String) solrInputDocument.getFieldValue(idFieldName);
     var queryFieldValue = solrInputDocument.getFieldValue(MonitorFields.MONITOR_QUERY);
     if (queryFieldValue == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          MonitorFields.MONITOR_QUERY + " field missing from request.");
+          "Document is missing mandatory "
+              + MonitorFields.MONITOR_QUERY
+              + " field which is required by "
+              + getClass().getSimpleName()
+              + ".");
+    }
+    var unsupportedFields =
+        solrInputDocument.getFieldNames().stream()
+            .filter(name -> !allowedFieldNames.contains(name))
+            .collect(Collectors.joining(", "));
+    if (!unsupportedFields.isEmpty()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Request contains fields not supported by "
+              + getClass().getSimpleName()
+              + ": "
+              + unsupportedFields);
     }
     List<SolrInputDocument> children =
         Optional.of(queryFieldValue)
@@ -110,10 +134,7 @@ public class MonitorUpdateRequestProcessor extends UpdateRequestProcessor {
       solrInputDocument
           .getChildDocuments()
           .forEach(
-              child ->
-                  child.setField(
-                      indexSchema.getUniqueKeyField().getName(),
-                      child.getFieldValue(MonitorFields.CACHE_ID)));
+              child -> child.setField(idFieldName, child.getFieldValue(MonitorFields.CACHE_ID)));
     }
     copyFirstChildToParent(solrInputDocument, firstChild);
     super.processAdd(cmd);

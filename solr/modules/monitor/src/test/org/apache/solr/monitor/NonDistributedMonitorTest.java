@@ -26,8 +26,10 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import org.apache.lucene.monitor.MonitorFields;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -100,5 +102,45 @@ public class NonDistributedMonitorTest extends SolrTestCaseJ4 {
         };
 
     assertQ(req(params), "//*[@numFound='2']");
+  }
+
+  @Test
+  public void missingQueryFieldTest() {
+    String monitorChain = "monitor";
+    var ex = assertThrows(SolrException.class, () -> addDoc(adoc("id", "1"), monitorChain));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    String lowerCaseMessage = ex.getMessage().toLowerCase(Locale.ROOT);
+    assertTrue(lowerCaseMessage.contains("missing"));
+    assertTrue(lowerCaseMessage.contains("mandatory"));
+    assertTrue(ex.getMessage().contains(MonitorFields.MONITOR_QUERY));
+    assertTrue(lowerCaseMessage.contains("field"));
+  }
+
+  @Test
+  public void unsupportedFieldTest() {
+    String monitorChain = "monitor";
+    String unsupportedField1 = "unsupported2_s";
+    String unsupportedField2 = "unsupported2_s";
+    var ex =
+        assertThrows(
+            SolrException.class,
+            () ->
+                addDoc(
+                    adoc(
+                        "id",
+                        "1",
+                        MonitorFields.MONITOR_QUERY,
+                        "content_s:test",
+                        unsupportedField1,
+                        "a",
+                        unsupportedField2,
+                        "b"),
+                    monitorChain));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    String lowerCaseMessage = ex.getMessage().toLowerCase(Locale.ROOT);
+    assertTrue(lowerCaseMessage.contains("unsupported"));
+    assertTrue(lowerCaseMessage.contains("fields"));
+    assertTrue(lowerCaseMessage.contains(unsupportedField1));
+    assertTrue(lowerCaseMessage.contains(unsupportedField2));
   }
 }
