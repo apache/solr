@@ -274,12 +274,14 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     return getParams() == null ? null : getParams().get("collection");
   }
 
+  @Deprecated // SOLR-17256 Slated for removal in Solr 10; only used internally
   public void setBasePath(String path) {
     if (path.endsWith("/")) path = path.substring(0, path.length() - 1);
 
     this.basePath = path;
   }
 
+  @Deprecated // SOLR-17256 Slated for removal in Solr 10; only used internally
   public String getBasePath() {
     return basePath;
   }
