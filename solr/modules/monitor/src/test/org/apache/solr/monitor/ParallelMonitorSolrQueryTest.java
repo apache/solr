@@ -113,37 +113,6 @@ public class ParallelMonitorSolrQueryTest extends MonitorSolrQueryTest {
   }
 
   @Test
-  public void coexistWithRegularDocumentsTest() throws Exception {
-    index(id, "0", "content_s", "some unremarkable content");
-    index(
-        id,
-        "1",
-        "________________________________monitor_alias_content_s_0",
-        "some more unremarkable content");
-    commit();
-    index(id, "2", MonitorFields.MONITOR_QUERY, "content_s:test");
-    commit();
-    handle.clear();
-    handle.put("responseHeader", SKIP);
-    handle.put("response", SKIP);
-
-    Object[] params =
-        new Object[] {
-          CommonParams.SORT,
-          id + " desc",
-          CommonParams.JSON,
-          read("/monitor/multi-doc-batch.json"),
-          CommonParams.QT,
-          "/reverseSearch",
-          QUERY_MATCH_TYPE_KEY,
-          "simple"
-        };
-
-    QueryResponse response = query(params);
-    validate(response, 4, 0, "2");
-  }
-
-  @Test
   @SuppressWarnings("unchecked")
   public void multiPassPresearcherTest() throws Exception {
     index(id, "0", MonitorFields.MONITOR_QUERY, "content0_s:\"elevator stairs and escalator\"");

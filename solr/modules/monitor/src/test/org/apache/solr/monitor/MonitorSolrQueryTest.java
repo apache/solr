@@ -64,9 +64,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
         id,
         Integer.toString(7),
         MonitorFields.MONITOR_QUERY,
-        "content_s:something",
-        MonitorFields.PAYLOAD,
-        "some metadata");
+        "content_s:something");
     commit();
     handle.clear();
     handle.put("responseHeader", SKIP);

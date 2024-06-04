@@ -27,8 +27,7 @@
 
   <field name="date" type="pdate" indexed="true" stored="true" multiValued="false"
     required="false"/>
-  <dynamicField name="*_s" type="text" indexed="true" stored="true"/>
-  <dynamicField name="*_s_0" type="text" indexed="true" stored="true"/>
+  <dynamicField name="*_s" type="text" indexed="true" stored="true" termVectors="true"/>
   <dynamicField name="*_sds" type="text" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_sds_dv" type="string"        indexed="true"  stored="true" multiValued="true" docValues="true"/>
   <dynamicField name="*_offset_s" type="text" indexed="true" storeOffsetsWithPositions="true"/>
