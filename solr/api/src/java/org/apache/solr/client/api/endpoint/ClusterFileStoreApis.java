@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.api.endpoint;
 
+import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.extensions.Extension;
@@ -31,8 +33,6 @@ import java.util.List;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UploadToFileStoreResponse;
 
-import static org.apache.solr.client.api.util.Constants.GENERIC_ENTITY_PROPERTY;
-
 @Path("/cluster")
 public interface ClusterFileStoreApis {
   // TODO Better understand the purpose of the 'sig' parameter and improve docs here.
@@ -45,7 +45,15 @@ public interface ClusterFileStoreApis {
       @Parameter(description = "File store path") @PathParam("filePath") String filePath,
       @Parameter(description = "Signature(s) for the file being uploaded") @QueryParam("sig")
           List<String> sig,
-      @Parameter(description = "File content to be stored in the filestore") @RequestBody(required = true, extensions = {@Extension(properties = {@ExtensionProperty(name = GENERIC_ENTITY_PROPERTY, value = "true")})})
+      @Parameter(description = "File content to be stored in the filestore")
+          @RequestBody(
+              required = true,
+              extensions = {
+                @Extension(
+                    properties = {
+                      @ExtensionProperty(name = GENERIC_ENTITY_PROPERTY, value = "true")
+                    })
+              })
           InputStream requestBody);
 
   @DELETE
