@@ -789,6 +789,7 @@ public class JettySolrRunner {
       throw new RuntimeException(e);
     }
   }
+
   @SuppressForbidden(reason = "Deprecated in Java 21")
   public URL getBaseURLV2() {
     try {

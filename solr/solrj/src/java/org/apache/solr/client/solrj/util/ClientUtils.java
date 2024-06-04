@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.XML;
 
 /**
@@ -102,6 +103,7 @@ public class ClientUtils {
     return basePath + path;
   }
 
+  @SuppressForbidden(reason = "Deprecated in Java 21")
   private static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
     URL oldURL = new URL(basePath);
     String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
