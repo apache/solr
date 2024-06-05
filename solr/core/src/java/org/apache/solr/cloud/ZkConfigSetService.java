@@ -72,35 +72,12 @@ public class ZkConfigSetService extends ConfigSetService {
 
   @Override
   public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
-    if (!(cd
-        instanceof
-        SyntheticCoreDescriptor)) { // for SyntheticSolrCore, we do not want to register it against
-      // ZK
-      final String colName = cd.getCollectionName();
-      // For back compat with cores that can create collections without the collections API
-      try {
-        if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + colName, true)) {
-          // TODO remove this functionality or maybe move to a CLI mechanism
-          log.warn(
-              "Auto-creating collection (in ZK) from core descriptor (on disk).  This feature may go away!");
-          CreateCollectionCmd.createCollectionZkNode(
-              zkController.getSolrCloudManager().getDistribStateManager(),
-              colName,
-              cd.getCloudDescriptor().getParams(),
-              zkController.getCoreContainer().getConfigSetService());
-        }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new ZooKeeperException(
-            SolrException.ErrorCode.SERVER_ERROR, "Interrupted auto-creating collection", e);
-      } catch (KeeperException e) {
-        throw new ZooKeeperException(
-            SolrException.ErrorCode.SERVER_ERROR, "Failure auto-creating collection", e);
-      }
-
-      // The configSet is read from ZK and populated.  Ignore CD's pre-existing configSet; only
-      // populated in standalone
-      String configSetName = zkController.getClusterState().getCollection(colName).getConfigName();
+    // The configSet is read from ZK and populated.  Ignore CD's pre-existing configSet; only
+    // populated in standalone
+    // TODO cd.getConfigSet() is always null. Except that it's explicitly set by {@link org.apache.solr.core.SyntheticSolrCore}
+    // we should consider setting it as a part of CoreDescriptor discovery process.
+    if (cd.getConfigSet() == null) {
+      String configSetName = zkController.getClusterState().getCollection(cd.getCollectionName()).getConfigName();
       cd.setConfigSet(configSetName);
     }
 

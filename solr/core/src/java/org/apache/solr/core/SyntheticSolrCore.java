@@ -45,7 +45,7 @@ public class SyntheticSolrCore extends SolrCore {
     coreProps.put(CoreAdminParams.COLLECTION, syntheticCoreName);
 
     CoreDescriptor syntheticCoreDescriptor =
-        new SyntheticCoreDescriptor(
+        new CoreDescriptor(
             syntheticCoreName,
             Paths.get(coreContainer.getSolrHome() + "/" + syntheticCoreName),
             coreProps,
