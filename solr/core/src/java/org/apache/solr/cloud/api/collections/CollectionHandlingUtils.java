@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -126,19 +125,6 @@ public class CollectionHandlingUtils {
           replicaType == Replica.Type.defaultType() ? "1" : "0");
     }
     return propsAndDefaults;
-  }
-
-  public static final Random RANDOM;
-
-  static {
-    // We try to make things reproducible in the context of our tests by initializing the random
-    // instance based on the current seed
-    String seed = System.getProperty("tests.seed");
-    if (seed == null) {
-      RANDOM = new Random();
-    } else {
-      RANDOM = new Random(seed.hashCode());
-    }
   }
 
   /** Returns names of properties that are used to specify a number of replicas of a given type. */

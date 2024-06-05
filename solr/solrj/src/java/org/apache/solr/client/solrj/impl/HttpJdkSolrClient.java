@@ -198,7 +198,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest)) {
       collection = defaultCollection;
     }
-    String url = getRequestPath(solrRequest, collection);
+    String url = getRequestUrl(solrRequest, collection);
     ResponseParser parserToUse = responseParser(solrRequest);
     ModifiableSolrParams queryParams = initalizeSolrParams(solrRequest, parserToUse);
     var reqb = HttpRequest.newBuilder();
@@ -238,7 +238,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     validateGetRequest(solrRequest);
     reqb.GET();
     decorateRequest(reqb, solrRequest);
-    reqb.uri(new URI(url + "?" + queryParams));
+    reqb.uri(new URI(url + queryParams.toQueryString()));
     return new PreparedRequest(reqb, null);
   }
 
@@ -298,13 +298,17 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
       InputStream is = streams.iterator().next().getStream();
       bodyPublisher = HttpRequest.BodyPublishers.ofInputStream(() -> is);
-    } else if (queryParams != null && urlParamNames != null) {
-      ModifiableSolrParams requestParams = queryParams;
-      queryParams = calculateQueryParams(urlParamNames, requestParams);
-      queryParams.add(calculateQueryParams(solrRequest.getQueryParams(), requestParams));
-      bodyPublisher = HttpRequest.BodyPublishers.ofString(requestParams.toString());
     } else {
-      bodyPublisher = HttpRequest.BodyPublishers.noBody();
+      // move any params specified in urlParamNames or solrRequest from queryParams into urlParams
+      ModifiableSolrParams urlParams = calculateQueryParams(urlParamNames, queryParams);
+      urlParams.add(calculateQueryParams(solrRequest.getQueryParams(), queryParams));
+
+      // put the remaining params in the request body
+      // note the toQueryString() method adds a leading question mark which needs to be removed here
+      bodyPublisher = HttpRequest.BodyPublishers.ofString(queryParams.toQueryString().substring(1));
+
+      // replace queryParams with the selected set
+      queryParams = urlParams;
     }
 
     decorateRequest(reqb, solrRequest);
@@ -313,7 +317,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     } else {
       reqb.method("POST", bodyPublisher);
     }
-    URI uriWithQueryParams = new URI(url + "?" + queryParams);
+    URI uriWithQueryParams = new URI(url + queryParams.toQueryString());
     reqb.uri(uriWithQueryParams);
 
     return new PreparedRequest(reqb, contentWritingFuture);
