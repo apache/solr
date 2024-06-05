@@ -51,6 +51,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -251,7 +252,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   protected Collection<String> globalStrings;
 
   protected String dataDir;
-  protected String lastDataDir;
 
   protected VersionInfo versionInfo;
 
@@ -348,66 +348,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     } else return def;
   }
 
-  /**
-   * This method initializes {@link #tlogDir}; it must be called <i>after</i> {@link
-   * #init(PluginInfo)} is called, so that {@link #dataDir} will be already initialized, if
-   * applicable, and <i>before</i> {@link #init(UpdateHandler, SolrCore)} is called on a new
-   * instance, to ensure that {@link #tlogDir} (and default {@link #dataDir}, if necessary) are
-   * initialized.
-   */
-  public void initTlogDir(SolrCore core) {
-    // ulogDir from CoreDescriptor (`core.properties`) overrides
-    String ulogDir = core.getCoreDescriptor().getUlogDir();
-    if (ulogDir != null) {
-      dataDir = ulogDir;
-    }
-
-    if (dataDir == null || dataDir.isEmpty()) {
-      // NOTE: this method is called from within `UpdateHandler` ctor, and this method is called
-      // _after_ `init(PluginInfo)`; so if ulogDir is specified in `<updateLog>` element of
-      // `solrconfig.xml`, `dataDir` will _not_ be null here.
-      dataDir = core.getDataDir();
-    }
-
-    Path instancePath = core.getInstancePath();
-
-    Path dataDirPath = Path.of(dataDir);
-    if (!dataDirPath.isAbsolute()) {
-      Path absolute = instancePath.resolve(dataDir);
-      if (!absolute.normalize().startsWith(instancePath.normalize())) {
-        // relative path spec should not be able to escape core-scoped instanceDir
-        throw new SolrException(
-            ErrorCode.SERVER_ERROR, "Illegal relative ulog dir spec: " + dataDir);
-      }
-      dataDirPath = absolute;
-      dataDir = dataDirPath.toString();
-    }
-
-    // intentionally use assert side-effect assignment here. `Path.startsWith()` fails if the
-    // argument is a different class, which is the case for `SolrCore.getInstancePath()`,
-    // strictly in tests (lucene test-framework `FilterPath`).
-    assert (instancePath = Path.of(instancePath.toUri())).getClass()
-        == (dataDirPath = Path.of(dataDirPath.toUri())).getClass();
-
-    tlogDir = ulogToTlogDir(core.getName(), dataDirPath, instancePath, core.getDataDir());
-
-    // usage of tlog dir almost entirely bypasses `Directory` API; we only need to do this so that
-    // we can remove the tlog dir via `DirectoryFactory.remove()`, which understands how to delete
-    // in filesystem-specific ways.
-    DirectoryFactory df = core.getDirectoryFactory();
-    Directory d;
-    try {
-      d =
-          df.get(
-              tlogDir.toAbsolutePath().toString(),
-              DirectoryFactory.DirContext.DEFAULT,
-              DirectoryFactory.LOCK_TYPE_NONE);
-      this.releaseTlogDir = () -> df.release(d);
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
   public static Path ulogToTlogDir(
       String coreName, Path ulogDirPath, Path instancePath, String coreDataDir) {
     boolean unscopedDataDir =
@@ -455,6 +395,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         numVersionBuckets);
   }
 
+  private final AtomicBoolean initialized = new AtomicBoolean();
+
   /**
    * This must be called when a new log is created, or for an existing log whenever the core or
    * update handler changes. It is called from the ctor of the specified {@link UpdateHandler}, so
@@ -464,23 +406,159 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    */
   public void init(UpdateHandler uhandler, SolrCore core) {
     this.uhandler = uhandler;
+    String lastDataDir = dataDir;
 
-    usableForChildDocs = core.getLatestSchema().isUsableForChildDocs();
+    // ulogDir from CoreDescriptor overrides
+    String ulogDir = core.getCoreDescriptor().getUlogDir();
 
-    if (dataDir.equals(lastDataDir)) {
+    // just like dataDir, we do not allow
+    // moving the tlog dir on reload
+    if (ulogDir != null) {
+      dataDir = ulogDir;
+    }
+
+    if (dataDir == null || dataDir.length() == 0) {
+      // NOTE: this method is called from within `UpdateHandler` ctor, and this method is called
+      // _after_ `init(PluginInfo)`; so if ulogDir is specified in `<updateLog>` element of
+      // `solrconfig.xml`, `dataDir` will _not_ be null here.
+      dataDir = core.getDataDir();
+    }
+
+    dataDir = resolveDataDir(core, dataDir);
+
+    // on a reopen, return early; less work to do.
+    if (!initialized.compareAndSet(false, true)) {
+      // TODO: why do we need fancy concurrency constructs here? I don't see where this would
+      //  actually be called concurrently. Could `TestHdfsUpdateLog.testFSThreadSafety()`
+      //  (introduced by SOLR-7113) in fact be the only place that requires this? Or perhaps we
+      //  need the `init(UpdateHandler, SolrCore)` method in its entirety (or some large portion of
+      //  it) to synchronize on `this`, to ensure visibility of non-final fields that are
+      //  initialized?
+      if (debug) {
+        log.debug(
+            "UpdateHandler init: tlogDir={}, next id={}  this is a reopen or double init ... nothing else to do.",
+            getTlogDir(),
+            id);
+      }
       versionInfo.reload();
       core.getCoreMetricManager()
           .registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
-
-      if (debug) {
-        log.debug(
-            "UpdateHandler init: tlogDir={}, next id={} this is a reopen...nothing else to do",
-            tlogDir,
-            id);
+      if (lastDataDir != null && !lastDataDir.equals(dataDir)) {
+        throw new IllegalStateException(
+            "dataDir should not change on reload! expected " + lastDataDir + ", found " + dataDir);
       }
       return;
     }
-    lastDataDir = dataDir;
+
+    initTlogDir(core);
+
+    usableForChildDocs = core.getLatestSchema().isUsableForChildDocs();
+
+    try {
+      versionInfo = new VersionInfo(this, numVersionBuckets);
+    } catch (SolrException e) {
+      log.error("Unable to use updateLog: ", e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Unable to use updateLog: " + e.getMessage(), e);
+    }
+
+    // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
+    try (RecentUpdates startingUpdates = getRecentUpdates()) {
+      startingVersions = startingUpdates.getVersions(numRecordsToKeep);
+
+      // populate recent deletes list (since we can't get that info from the index)
+      for (int i = startingUpdates.deleteList.size() - 1; i >= 0; i--) {
+        DeleteUpdate du = startingUpdates.deleteList.get(i);
+        oldDeletes.put(new BytesRef(du.id), new LogPtr(-1, du.version));
+      }
+
+      // populate recent deleteByQuery commands
+      for (int i = startingUpdates.deleteByQueryList.size() - 1; i >= 0; i--) {
+        Update update = startingUpdates.deleteByQueryList.get(i);
+        @SuppressWarnings({"unchecked"})
+        List<Object> dbq = (List<Object>) update.log.lookup(update.pointer);
+        long version = (Long) dbq.get(1);
+        String q = (String) dbq.get(2);
+        trackDeleteByQuery(q, version);
+      }
+    }
+    core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
+  }
+
+  protected final void maybeClearLog(SolrCore core) {
+    if (!core.isReloaded() && !core.getDirectoryFactory().isPersistent()) {
+      clearLog();
+    }
+  }
+
+  /**
+   * Resolves any relative path wrt the highest core-scoped level (whatever that means for a
+   * particular implementation). For most filesystems, this will be the core instanceDir, but there
+   * are other cases; e.g., HdfsUpdateLog will resolve paths relative to the core dataDir.
+   *
+   * <p>If the input path is already absolute, it will be returned unmodified.
+   *
+   * <p>This method should return the final, absolute, normalized path that defines the location of
+   * the ulog dataDir. It should <i>not</i> bother to resolve the tlog dir, nor do any work
+   * associated with initializing the tlog dir or its contents. Tlog dir initialization takes place
+   * later (if necessary) in {@link #initTlogDir(SolrCore)}.
+   */
+  protected String resolveDataDir(SolrCore core, String path) {
+    if (Path.of(path).isAbsolute()) {
+      return path;
+    }
+    Path instancePath = core.getInstancePath();
+    Path absolute = instancePath.resolve(path);
+    if (!absolute.normalize().startsWith(instancePath.normalize())) {
+      // relative path spec should not be able to escape core-scoped instanceDir
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Illegal relative ulog dir spec: " + path);
+    }
+    return absolute.toString();
+  }
+
+  /**
+   * Based on {@link #dataDir} (whose initialization must be complete before this method is called),
+   * this method is responsible for, in order:
+   *
+   * <ol>
+   *   <li>resolving the tlog dir (in an implementation-dependent way)
+   *   <li>clearing any existing entries (if applicable) by calling {@link #maybeClearLog(SolrCore)}
+   *   <li>actually creating tlog files (and handling any existing tlog files, if necessary)
+   * </ol>
+   *
+   * <p>Note: implementations of this method <i>must</i> call {@link #maybeClearLog(SolrCore)} after
+   * resolving the tlog dir, and before creating any (or handling any existing) tlog files.
+   */
+  protected void initTlogDir(SolrCore core) {
+    Path instancePath = core.getInstancePath();
+
+    Path dataDirPath = Path.of(dataDir);
+
+    // intentionally use assert side-effect assignment here. `Path.startsWith()` fails if the
+    // argument is a different class, which is the case for `SolrCore.getInstancePath()`,
+    // strictly in tests (lucene test-framework `FilterPath`).
+    assert (instancePath = Path.of(instancePath.toUri())).getClass()
+        == (dataDirPath = Path.of(dataDirPath.toUri())).getClass();
+
+    tlogDir = ulogToTlogDir(core.getName(), dataDirPath, instancePath, core.getDataDir());
+
+    maybeClearLog(core);
+
+    // usage of tlog dir almost entirely bypasses `Directory` API; we only need to do this so that
+    // we can remove the tlog dir via `DirectoryFactory.remove()`, which understands how to delete
+    // in filesystem-specific ways.
+    DirectoryFactory df = core.getDirectoryFactory();
+    Directory d;
+    try {
+      d =
+          df.get(
+              tlogDir.toAbsolutePath().toString(),
+              DirectoryFactory.DirContext.DEFAULT,
+              DirectoryFactory.LOCK_TYPE_NONE);
+      this.releaseTlogDir = () -> df.release(d);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
 
     try {
       Files.createDirectories(tlogDir);
@@ -530,36 +608,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       newestLogsOnStartup.addFirst(ll);
       if (newestLogsOnStartup.size() >= 2) break;
     }
-
-    try {
-      versionInfo = new VersionInfo(this, numVersionBuckets);
-    } catch (SolrException e) {
-      log.error("Unable to use updateLog: ", e);
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Unable to use updateLog: " + e.getMessage(), e);
-    }
-
-    // TODO: these startingVersions assume that we successfully recover from all non-complete tlogs.
-    try (RecentUpdates startingUpdates = getRecentUpdates()) {
-      startingVersions = startingUpdates.getVersions(numRecordsToKeep);
-
-      // populate recent deletes list (since we can't get that info from the index)
-      for (int i = startingUpdates.deleteList.size() - 1; i >= 0; i--) {
-        DeleteUpdate du = startingUpdates.deleteList.get(i);
-        oldDeletes.put(new BytesRef(du.id), new LogPtr(-1, du.version));
-      }
-
-      // populate recent deleteByQuery commands
-      for (int i = startingUpdates.deleteByQueryList.size() - 1; i >= 0; i--) {
-        Update update = startingUpdates.deleteByQueryList.get(i);
-        @SuppressWarnings({"unchecked"})
-        List<Object> dbq = (List<Object>) update.log.lookup(update.pointer);
-        long version = (Long) dbq.get(1);
-        String q = (String) dbq.get(2);
-        trackDeleteByQuery(q, version);
-      }
-    }
-    core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
   }
 
   @Override
