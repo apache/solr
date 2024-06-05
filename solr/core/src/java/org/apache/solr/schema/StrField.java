@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
@@ -34,9 +33,9 @@ import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryUtils;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 public class StrField extends PrimitiveFieldType {
@@ -81,21 +80,7 @@ public class StrField extends PrimitiveFieldType {
     if (query instanceof PrefixQuery && parser != null) {
       final var minPrefixLength =
           parser.getReq().getCore().getSolrConfig().prefixQueryMinPrefixLength;
-      // TODO Should we provide a query-param to disable the limit on a request-by-request basis?  I
-      // can imagine scenarios where advanced users may want to enforce the limit on most fields,
-      // but ignore it for a few fields that they know to be low-cardinality and therefore "less
-      // risky"
-      if (termStr.length() < minPrefixLength) {
-        final var message =
-            String.format(
-                Locale.ROOT,
-                "Query [%s] does not meet the minimum prefix length [%d] (actual=[%d]).  Please try with a larger prefix, or adjust %s in your solrconfig.xml",
-                query,
-                minPrefixLength,
-                termStr.length(),
-                SolrConfig.MIN_PREFIX_LENGTH);
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, message);
-      }
+      QueryUtils.ensurePrefixQueryObeysMinimumPrefixLength(query, termStr, minPrefixLength);
     }
     return query;
   }
