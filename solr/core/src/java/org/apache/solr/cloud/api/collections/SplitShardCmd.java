@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.RANDOM;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -555,7 +554,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
                   Assign.getLiveOrLiveAndCreateNodeSetList(
                       clusterState.getLiveNodes(),
                       message,
-                      RANDOM,
+                      Utils.RANDOM,
                       ccc.getSolrCloudManager().getDistribStateManager()))
               .build();
       Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());

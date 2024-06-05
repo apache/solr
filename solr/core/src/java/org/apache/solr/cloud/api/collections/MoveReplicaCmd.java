@@ -138,7 +138,7 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
                 + " does not have any replica belonging to shard: "
                 + shardId);
       }
-      Collections.shuffle(sliceReplicas, CollectionHandlingUtils.RANDOM);
+      Collections.shuffle(sliceReplicas, Utils.RANDOM);
       replica = sliceReplicas.iterator().next();
     }
 

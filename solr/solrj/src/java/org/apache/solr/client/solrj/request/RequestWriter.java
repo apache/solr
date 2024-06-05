@@ -89,6 +89,7 @@ public class RequestWriter {
         && updateRequest.getDocIterator() == null;
   }
 
+  @Deprecated // SOLR-17256 Slated for removal in Solr 10; only used internally
   public String getPath(SolrRequest<?> req) {
     return req.getPath();
   }

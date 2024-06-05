@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -102,11 +103,12 @@ public class NodeValueFetcher {
     }
   }
 
-  private void getRemoteInfo(
-      String solrNode, Set<String> requestedTags, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
-    if (!(ctx).isNodeAlive(solrNode)) return;
+  /** Retrieve values that match JVM system properties and metrics. */
+  private void getRemotePropertiesAndMetrics(
+      Set<String> requestedTagNames, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
+
     Map<String, Set<Object>> metricsKeyVsTag = new HashMap<>();
-    for (String tag : requestedTags) {
+    for (String tag : requestedTagNames) {
       if (tag.startsWith(SYSPROP)) {
         metricsKeyVsTag
             .computeIfAbsent(
@@ -120,28 +122,42 @@ public class NodeValueFetcher {
       }
     }
     if (!metricsKeyVsTag.isEmpty()) {
-      SolrClientNodeStateProvider.fetchReplicaMetrics(solrNode, ctx, metricsKeyVsTag);
+      SolrClientNodeStateProvider.fetchReplicaMetrics(ctx.getNode(), ctx, metricsKeyVsTag);
+    }
+  }
+
+  /** Retrieve values of well known tags, as defined in {@link Tags}. */
+  private void getRemoteTags(
+      Set<String> requestedTagNames, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
+
+    // First resolve names into actual Tags instances
+    EnumSet<Tags> requestedTags = EnumSet.noneOf(Tags.class);
+    for (Tags t : Tags.values()) {
+      if (requestedTagNames.contains(t.tagName)) {
+        requestedTags.add(t);
+      }
+    }
+    if (requestedTags.isEmpty()) {
+      return;
     }
 
     Set<String> groups = new HashSet<>();
     List<String> prefixes = new ArrayList<>();
-    for (Tags t : Tags.values()) {
-      if (requestedTags.contains(t.tagName)) {
-        groups.add(t.group);
-        prefixes.add(t.prefix);
-      }
+    for (Tags t : requestedTags) {
+      groups.add(t.group);
+      prefixes.add(t.prefix);
     }
-    if (groups.isEmpty() || prefixes.isEmpty()) return;
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("group", StrUtils.join(groups, ','));
     params.add("prefix", StrUtils.join(prefixes, ','));
 
     try {
-      SimpleSolrResponse rsp = ctx.invokeWithRetry(solrNode, CommonParams.METRICS_PATH, params);
+      SimpleSolrResponse rsp =
+          ctx.invokeWithRetry(ctx.getNode(), CommonParams.METRICS_PATH, params);
       NamedList<?> metrics = (NamedList<?>) rsp.getResponse().get("metrics");
       if (metrics != null) {
-        for (Tags t : Tags.values()) {
+        for (Tags t : requestedTags) {
           ctx.tags.put(t.tagName, t.extractResult(metrics));
         }
       }
@@ -150,19 +166,26 @@ public class NodeValueFetcher {
     }
   }
 
-  public void getTags(
-      String solrNode, Set<String> requestedTags, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
+  public void getTags(Set<String> requestedTags, SolrClientNodeStateProvider.RemoteCallCtx ctx) {
+
     try {
-      if (requestedTags.contains(NODE)) ctx.tags.put(NODE, solrNode);
+      if (requestedTags.contains(NODE)) ctx.tags.put(NODE, ctx.getNode());
       if (requestedTags.contains(HOST)) {
-        Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
+        Matcher hostAndPortMatcher = hostAndPortPattern.matcher(ctx.getNode());
         if (hostAndPortMatcher.find()) ctx.tags.put(HOST, hostAndPortMatcher.group(1));
       }
       if (requestedTags.contains(PORT)) {
-        Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
+        Matcher hostAndPortMatcher = hostAndPortPattern.matcher(ctx.getNode());
         if (hostAndPortMatcher.find()) ctx.tags.put(PORT, hostAndPortMatcher.group(2));
       }
-      getRemoteInfo(solrNode, requestedTags, ctx);
+
+      if (!ctx.isNodeAlive(ctx.getNode())) {
+        // Don't try to reach out to the node if we already know it is down
+        return;
+      }
+
+      getRemotePropertiesAndMetrics(requestedTags, ctx);
+      getRemoteTags(requestedTags, ctx);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
