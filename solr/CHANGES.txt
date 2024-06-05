@@ -130,6 +130,8 @@ Optimizations
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
   cluster metrics.  AttributeFetcherImpl was improved accordingly.  (Yohann Callea)
 
+* SOLR-17099: Do not return spurious tags when fetching metrics from a Solr node to another. (Pierre Salagnac)
+
 Bug Fixes
 ---------------------
 * SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
@@ -141,6 +143,8 @@ Bug Fixes
 * SOLR-17247: 'WWW-Authenticate' headers missing in MultiAuthPlugin (Lamine Idjeraoui via Eric Pugh)
 
 * SOLR-17304: Respect PKG_VERSIONS constraints in params.json when loading the schema plugins (Andrey Bozhko)
+
+* SOLR-17118: Simplify CoreContainerProvider initialization and JettySolrRunner. Avoid deadlock/hang. (David Smiley)
 
 Dependency Upgrades
 ---------------------
@@ -229,7 +233,6 @@ Optimizations
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
 
 * GITHUB#2217: Scale to 10K+ collections better in ZkStateReader.refreshCollectionsList (David Smiley)
-
 
 Bug Fixes
 ---------------------

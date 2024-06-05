@@ -1242,6 +1242,7 @@ public class CoreContainer {
     return isShutDown;
   }
 
+  /** Close / shut down. Only called by {@link org.apache.solr.servlet.CoreContainerProvider}. */
   public void shutdown() {
 
     ZkController zkController = getZkController();
