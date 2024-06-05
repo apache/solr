@@ -26,12 +26,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetProperties;
@@ -40,7 +37,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.core.SyntheticCoreDescriptor;
 import org.apache.solr.util.FileTypeMagicUtil;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -74,10 +70,12 @@ public class ZkConfigSetService extends ConfigSetService {
   public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
     // The configSet is read from ZK and populated.  Ignore CD's pre-existing configSet; only
     // populated in standalone
-    // TODO cd.getConfigSet() is always null. Except that it's explicitly set by {@link org.apache.solr.core.SyntheticSolrCore}
+    // TODO cd.getConfigSet() is always null. Except that it's explicitly set by
+    // {@link org.apache.solr.core.SyntheticSolrCore}
     // we should consider setting it as a part of CoreDescriptor discovery process.
     if (cd.getConfigSet() == null) {
-      String configSetName = zkController.getClusterState().getCollection(cd.getCollectionName()).getConfigName();
+      String configSetName =
+          zkController.getClusterState().getCollection(cd.getCollectionName()).getConfigName();
       cd.setConfigSet(configSetName);
     }
 
