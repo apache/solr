@@ -15,10 +15,7 @@
  * limitations under the License.
  */
 
-// This adds CycloneDX BOM generation of project dependencies
-
-// If -Pvalidation.cyclonedx-bom=true is set the CycloneDX BOM generation will also run as part of the check task.
-
+// This adds CycloneDX BOM (SBOM) generation for all Solr Maven artifacts
 
 allprojects { prj ->
   plugins.withType(JavaPlugin) {
@@ -32,7 +29,7 @@ allprojects { prj ->
       sbom
     }
 
-    def baseName = prj.archivesBaseName + "-" + version + "-cyclonedx-bom"
+    def baseName = prj.archivesBaseName + "-" + version + "-cyclonedx"
 
     cyclonedxBom {
       includeConfigs = ["runtimeClasspath"]
@@ -48,15 +45,15 @@ allprojects { prj ->
 
     ext {
       sbomXmlArtifact = artifacts.add('sbom', sbomDir.map(d -> d.file(baseName + ".xml"))) {
-        type 'cyclonedx-bom'
+        type 'cyclonedx'
         extension = 'xml'
-        classifier = 'cyclonedx-bom'
+        classifier = 'cyclonedx'
         builtBy cyclonedxBom
       }
       sbomJsonArtifact = artifacts.add('sbom', sbomDir.map(d -> d.file(baseName + ".json"))) {
-        type 'cyclonedx-bom'
+        type 'cyclonedx'
         extension = 'json'
-        classifier = 'cyclonedx-bom'
+        classifier = 'cyclonedx'
         builtBy cyclonedxBom
       }
     }

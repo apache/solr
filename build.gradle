@@ -135,7 +135,7 @@ apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/java/jar-manifest.gradle')
 
 // Publishing and releasing
-apply from: file('gradle/validation/cyclonedx-bom.gradle')
+apply from: file('gradle/maven/cyclonedx-bom.gradle')
 apply from: file('gradle/maven/defaults-maven.gradle')
 
 // IDE support, settings and specials.
