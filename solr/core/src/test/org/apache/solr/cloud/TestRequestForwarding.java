@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.net.URI;
 import java.net.URL;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;

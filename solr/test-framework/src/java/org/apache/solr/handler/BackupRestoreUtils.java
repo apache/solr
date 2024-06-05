@@ -20,6 +20,7 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +33,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,9 +109,8 @@ public class BackupRestoreUtils extends SolrTestCase {
     executeHttpRequest(leaderUrl);
   }
 
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   static void executeHttpRequest(String requestUrl) throws IOException {
-    URL url = new URL(requestUrl);
+    URL url = URI.create(requestUrl).toURL();
     try (InputStream stream = url.openStream()) {
       assert stream != null;
     }

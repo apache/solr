@@ -71,7 +71,6 @@ import org.apache.commons.cli.Option;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RTimer;
 import org.w3c.dom.Document;
@@ -257,12 +256,10 @@ public class PostTool extends ToolBase {
     solrUpdateUrl = null;
     if (cli.hasOption("url")) {
       String url = cli.getOptionValue("url");
-      URI uri = new URI(url);
-      solrUpdateUrl = uri.toURL();
+      solrUpdateUrl = URI.create(url).toURL();
     } else if (cli.hasOption("c")) {
       String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("c") + "/update";
-      URI uri = new URI(url);
-      solrUpdateUrl = uri.toURL();
+      solrUpdateUrl = URI.create(url).toURL();
     } else {
       throw new IllegalArgumentException(
           "Must specify either -url or -c parameter to post documents.");
@@ -604,7 +601,6 @@ public class PostTool extends ToolBase {
    * @param out output stream to write to
    * @return number of pages crawled on this level and below
    */
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   protected int webCrawl(int level, OutputStream out) {
     int numPages = 0;
     LinkedHashSet<URI> stack = backlog.get(level);

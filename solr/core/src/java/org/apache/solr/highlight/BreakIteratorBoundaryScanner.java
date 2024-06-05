@@ -23,12 +23,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.SuppressForbidden;
 
 public class BreakIteratorBoundaryScanner extends SolrBoundaryScanner {
 
   @Override
-  @SuppressForbidden(reason = "Locale(String) deprecated since Java 20")
   protected BoundaryScanner get(String fieldName, SolrParams params) {
     // construct Locale
     String language = params.getFieldParam(fieldName, HighlightParams.BS_LANGUAGE);
@@ -42,7 +40,7 @@ public class BreakIteratorBoundaryScanner extends SolrBoundaryScanner {
     }
     Locale locale = null;
     if (language != null) {
-      locale = country == null ? new Locale(language) : new Locale(language, country);
+      locale = country == null ? Locale.of(language) : Locale.of(language, country);
     } else {
       locale = Locale.ROOT;
     }

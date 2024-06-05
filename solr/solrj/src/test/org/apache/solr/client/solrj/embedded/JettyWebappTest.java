@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.io.File;
 import java.io.InputStream;
-import java.net.URL;
+import java.net.URI;
 import java.util.Locale;
 import java.util.Random;
 import org.apache.http.Header;
@@ -29,7 +29,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -87,11 +86,10 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void testAdminUI() throws Exception {
     // Not an extensive test, but it does connect to Solr and verify the Admin ui shows up.
     String adminPath = "http://127.0.0.1:" + port + "/solr/";
-    try (InputStream is = new URL(adminPath).openStream()) {
+    try (InputStream is = URI.create(adminPath).toURL().openStream()) {
       assertNotNull(is.readAllBytes()); // real error will be an exception
     }
 

@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -39,7 +40,6 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.jose4j.http.Get;
 import org.jose4j.http.SimpleResponse;
@@ -113,14 +113,13 @@ public class JWTIssuerConfig {
    *
    * @throws SolrException if issuer is missing
    */
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void init() {
     if (!isValid()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Configuration is not valid");
     }
     if (wellKnownUrl != null) {
       try {
-        wellKnownDiscoveryConfig = fetchWellKnown(new URL(wellKnownUrl));
+        wellKnownDiscoveryConfig = fetchWellKnown(URI.create(wellKnownUrl).toURL());
       } catch (MalformedURLException e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -468,11 +467,10 @@ public class JWTIssuerConfig {
      *
      * @param url the Url to connect to for JWK details.
      */
-    @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
     private HttpsJwks create(String url) {
       final URL jwksUrl;
       try {
-        jwksUrl = new URL(url);
+        jwksUrl = URI.create(url).toURL();
         checkAllowOutboundHttpConnections(PARAM_JWKS_URL, jwksUrl);
       } catch (MalformedURLException e) {
         throw new SolrException(
@@ -508,9 +506,8 @@ public class JWTIssuerConfig {
       this.securityConf = securityConf;
     }
 
-    @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
     public static WellKnownDiscoveryConfig parse(String urlString) throws MalformedURLException {
-      return parse(new URL(urlString), null);
+      return parse(URI.create(urlString).toURL(), null);
     }
 
     /**

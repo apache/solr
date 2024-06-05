@@ -20,6 +20,7 @@ import static org.apache.solr.client.solrj.impl.CloudSolrClient.RouteResponse;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,7 +66,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -459,7 +459,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("deprecation")
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private void queryWithShardsPreferenceRules(CloudSolrClient cloudClient, String collectionName)
       throws Exception {
     SolrQuery qRequest = new SolrQuery("*:*");
@@ -501,7 +500,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     // Make sure the distributed queries were directed to a single node only
     Set<Integer> ports = new HashSet<Integer>();
     for (String shardAddr : shardAddresses) {
-      URL url = new URL(shardAddr);
+      URL url = URI.create(shardAddr).toURL();
       ports.add(url.getPort());
     }
 

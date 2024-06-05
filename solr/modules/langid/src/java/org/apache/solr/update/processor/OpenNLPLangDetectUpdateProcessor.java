@@ -26,7 +26,6 @@ import java.util.Map;
 import opennlp.tools.langdetect.Language;
 import opennlp.tools.langdetect.LanguageDetectorME;
 import opennlp.tools.langdetect.LanguageDetectorModel;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
@@ -73,11 +72,10 @@ public class OpenNLPLangDetectUpdateProcessor extends LanguageIdentifierUpdatePr
     return languages;
   }
 
-  @SuppressForbidden(reason = "Locale(String) deprecated since Java 20")
   private static Map<String, String> make_ISO639_map() {
     Map<String, String> map = new HashMap<>();
     for (String lang : Locale.getISOLanguages()) {
-      Locale locale = new Locale(lang);
+      Locale locale = Locale.of(lang);
       map.put(locale.getISO3Language(), locale.getLanguage());
     }
     return map;

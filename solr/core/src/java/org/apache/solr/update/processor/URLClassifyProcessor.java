@@ -26,7 +26,6 @@ import java.util.Locale;
 import java.util.Objects;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -195,12 +194,11 @@ public class URLClassifyProcessor extends UpdateRequestProcessor {
    * @param url The input url
    * @return The URL object representing the canonical URL
    */
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public URL getCanonicalUrl(URL url) throws MalformedURLException {
     // NOTE: Do we want to make sure this URL is normalized? (Christian thinks we should)
     String urlString = url.toString();
     String lps = landingPageSuffix(url);
-    return new URL(urlString.replaceFirst("/" + lps + "$", "/"));
+    return URI.create(urlString.replaceFirst("/" + lps + "$", "/")).toURL();
   }
 
   /**

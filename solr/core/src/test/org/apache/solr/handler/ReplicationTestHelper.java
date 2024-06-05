@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -39,7 +40,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.FileUtils;
@@ -153,12 +153,11 @@ public final class ReplicationTestHelper {
 
   // Simple function to wrap the invocation of replication commands on the various
   // jetty servers.
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public static void invokeReplicationCommand(String baseUrl, String pCommand) throws IOException {
     // String leaderUrl = buildUrl(pJettyPort) + "/" + DEFAULT_TEST_CORENAME +
     // ReplicationHandler.PATH+"?command=" + pCommand;
     String url = baseUrl + ReplicationHandler.PATH + "?command=" + pCommand;
-    URL u = new URL(url);
+    URL u = URI.create(url).toURL();
     InputStream stream = u.openStream();
     stream.close();
   }
@@ -220,7 +219,6 @@ public final class ReplicationTestHelper {
     SolrTestCaseJ4.assertEquals("OK", response.get("status"));
   }
 
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public static void pullFromTo(String srcUrl, String destUrl) throws IOException {
     URL url;
     InputStream stream;
@@ -230,7 +228,7 @@ public final class ReplicationTestHelper {
             + "?wait=true&command=fetchindex&leaderUrl="
             + srcUrl
             + ReplicationHandler.PATH;
-    url = new URL(leaderUrl);
+    url = URI.create(leaderUrl).toURL();
     stream = url.openStream();
     stream.close();
   }

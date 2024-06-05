@@ -23,7 +23,6 @@ import java.text.Collator;
 import java.text.RuleBasedCollator;
 import java.util.Locale;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.BeforeClass;
 
 /** Tests {@link CollationField} with TermQueries, RangeQueries, and sort order. */
@@ -54,7 +53,6 @@ public class TestCollationField extends SolrTestCaseJ4 {
    * are largish files, and jvm-specific (as our documentation says, you should always look out for
    * jvm differences with collation). So it's preferable to create this file on-the-fly.
    */
-  @SuppressForbidden(reason = "Locale(String, String) deprecated since Java 20")
   public static String setupSolrHome() throws Exception {
     // make a solr home underneath the test's TEMP_DIR
     Path tmpFile = createTempDir("collation1");
@@ -77,7 +75,7 @@ public class TestCollationField extends SolrTestCaseJ4 {
 
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat
     RuleBasedCollator baseCollator =
-        (RuleBasedCollator) Collator.getInstance(new Locale("de", "DE"));
+        (RuleBasedCollator) Collator.getInstance(Locale.of("de", "DE"));
 
     String DIN5007_2_tailorings =
         "& ae , a\u0308 & AE , A\u0308"

@@ -43,7 +43,6 @@ import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -386,7 +385,6 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     }
 
     /** parse a locale from a language+country+variant spec */
-    @SuppressForbidden(reason = "Locale(String) deprecated since Java 20")
     protected Locale parseLocale(String language, String country, String variant) {
       if (language == null && country == null && variant == null) {
         return Locale.ROOT;
@@ -396,11 +394,11 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       } else if (country == null && variant != null) {
         throw new IllegalArgumentException("To specify variant, country is required");
       } else if (country != null && variant != null) {
-        return new Locale(language, country, variant);
+        return Locale.of(language, country, variant);
       } else if (country != null) {
-        return new Locale(language, country);
+        return Locale.of(language, country);
       } else {
-        return new Locale(language);
+        return Locale.of(language);
       }
     }
 

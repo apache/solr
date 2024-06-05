@@ -76,7 +76,6 @@ import org.apache.lucene.search.spell.LevenshteinDistance;
 import org.apache.lucene.search.spell.NGramDistance;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.CurrencyFieldType;
@@ -187,9 +186,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         "threadid",
         new ValueSourceParser() {
           @Override
-          @SuppressForbidden(reason = "Thread#getId deprecated since Java 19")
           public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-            return new LongConstValueSource(Thread.currentThread().getId());
+            return new LongConstValueSource(Thread.currentThread().threadId());
           }
         });
     addParser(

@@ -39,7 +39,7 @@ import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -61,7 +61,6 @@ import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuditEvent.RequestType;
 import org.apache.solr.security.AuditLoggerPlugin.JSONAuditEventFormatter;
@@ -252,14 +251,13 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void illegalAdminPathError() throws Exception {
     setupCluster(false, null, false);
     String baseUrl = testHarness.get().cluster.getJettySolrRunner(0).getBaseURLV2().toString();
     expectThrows(
         FileNotFoundException.class,
         () -> {
-          try (InputStream is = new URL(baseUrl + "/node/foo").openStream()) {
+          try (InputStream is = URI.create(baseUrl + "/node/foo").toURL().openStream()) {
             new String(is.readAllBytes(), StandardCharsets.UTF_8);
           }
         });

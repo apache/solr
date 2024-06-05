@@ -40,7 +40,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -323,26 +322,24 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     return docCollection;
   }
 
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   protected JettySolrRunner getJettyForReplica(Replica replica) throws Exception {
     String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     assertNotNull(replicaBaseUrl);
-    URL baseUrl = new URL(replicaBaseUrl);
+    URL baseUrl = URI.create(replicaBaseUrl).toURL();
 
     JettySolrRunner proxy = jettys.get(baseUrl.toURI());
     assertNotNull("No proxy found for " + baseUrl + "!", proxy);
     return proxy;
   }
 
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   protected SocketProxy getProxyForReplica(Replica replica) throws Exception {
     String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     assertNotNull(replicaBaseUrl);
-    URL baseUrl = new URL(replicaBaseUrl);
+    URL baseUrl = URI.create(replicaBaseUrl).toURL();
 
     SocketProxy proxy = proxies.get(baseUrl.toURI());
     if (proxy == null && !baseUrl.toExternalForm().endsWith("/")) {
-      baseUrl = new URL(baseUrl.toExternalForm() + "/");
+      baseUrl = URI.create(baseUrl.toExternalForm() + "/").toURL();
       proxy = proxies.get(baseUrl.toURI());
     }
     assertNotNull("No proxy found for " + baseUrl + "!", proxy);

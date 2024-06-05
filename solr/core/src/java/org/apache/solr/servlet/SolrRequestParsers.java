@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PushbackInputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
@@ -56,7 +56,6 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.RequestHandlers;
 import org.apache.solr.core.SolrConfig;
@@ -195,7 +194,6 @@ public class SolrRequestParsers {
     return buildRequestFrom(core, params, streams, new RTimerTree(), null, principal);
   }
 
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private SolrQueryRequest buildRequestFrom(
       SolrCore core,
       SolrParams params,
@@ -214,7 +212,7 @@ public class SolrRequestParsers {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Remote Streaming is disabled.");
       }
       for (final String url : strs) {
-        ContentStreamBase stream = new ContentStreamBase.URLStream(new URL(url));
+        ContentStreamBase stream = new ContentStreamBase.URLStream(URI.create(url).toURL());
         if (contentType != null) {
           stream.setContentType(contentType);
         }

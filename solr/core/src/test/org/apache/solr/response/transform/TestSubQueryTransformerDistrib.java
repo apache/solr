@@ -23,6 +23,7 @@ import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHas
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
@@ -49,7 +50,6 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
@@ -135,7 +135,6 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
   }
 
   @SuppressWarnings("serial")
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   @Test
   public void test() throws Exception {
     int peopleMultiplier = atLeast(1);
@@ -211,12 +210,13 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
 
     params.set("wt", "json");
     final URL node =
-        new URL(
-            cluster.getRandomJetty(random()).getBaseUrl().toString()
-                + "/"
-                + people
-                + "/select"
-                + params.toQueryString());
+        URI.create(
+                cluster.getRandomJetty(random()).getBaseUrl().toString()
+                    + "/"
+                    + people
+                    + "/select"
+                    + params.toQueryString())
+            .toURL();
 
     final URLConnection urlConnectionWithoutAuth = node.openConnection();
     assertThrows(Exception.class, () -> urlConnectionWithoutAuth.getInputStream());

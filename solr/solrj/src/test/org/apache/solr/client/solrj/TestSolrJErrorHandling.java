@@ -24,6 +24,7 @@ import java.io.OutputStreamWriter;
 import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.net.Socket;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -42,7 +43,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -273,7 +273,6 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   }
 
   @Test
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void testHttpURLConnection() throws Exception {
 
     // sometimes succeeds with this size, but larger can cause OOM from command line
@@ -282,7 +281,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     String urlString = getCoreUrl() + "/update";
 
     HttpURLConnection conn = null;
-    URL url = new URL(urlString);
+    URL url = URI.create(urlString).toURL();
 
     conn = (HttpURLConnection) url.openConnection();
     conn.setRequestMethod("POST");

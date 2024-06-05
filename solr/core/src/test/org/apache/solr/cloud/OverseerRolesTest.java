@@ -20,6 +20,7 @@ import static org.apache.solr.cloud.OverseerCollectionConfigSetProcessor.getLead
 import static org.apache.solr.cloud.OverseerTaskProcessor.getSortedElectionNodes;
 
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
@@ -27,7 +28,6 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
@@ -74,10 +74,9 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     waitForNewOverseer(seconds, s -> Objects.equals(s, expected), failOnIntermediateTransition);
   }
 
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private JettySolrRunner getOverseerJetty() throws Exception {
     String overseer = getLeaderNode(zkClient());
-    URL overseerUrl = new URL("http://" + overseer.substring(0, overseer.indexOf('_')));
+    URL overseerUrl = URI.create("http://" + overseer.substring(0, overseer.indexOf('_'))).toURL();
     int hostPort = overseerUrl.getPort();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       try {

@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -60,7 +61,6 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.CryptoKeys;
@@ -389,9 +389,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     }
   }
 
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private Pair<String, Integer> get(String url, String token) throws IOException {
-    URL createUrl = new URL(url);
+    URL createUrl = URI.create(url).toURL();
     HttpURLConnection createConn = (HttpURLConnection) createUrl.openConnection();
     if (token != null) createConn.setRequestProperty("Authorization", "Bearer " + token);
     BufferedReader br2 =
@@ -403,9 +402,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return new Pair<>(result, code);
   }
 
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private Map<String, String> getHeaders(String url, String token) throws IOException {
-    URL createUrl = new URL(url);
+    URL createUrl = URI.create(url).toURL();
     HttpURLConnection conn = (HttpURLConnection) createUrl.openConnection();
     if (token != null) conn.setRequestProperty("Authorization", "Bearer " + token);
     conn.connect();
@@ -417,9 +415,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return result;
   }
 
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   private Pair<String, Integer> post(String url, String json, String token) throws IOException {
-    URL createUrl = new URL(url);
+    URL createUrl = URI.create(url).toURL();
     HttpURLConnection con = (HttpURLConnection) createUrl.openConnection();
     con.setRequestMethod("POST");
     con.setRequestProperty(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());

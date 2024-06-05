@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -43,7 +44,6 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.FileUtils;
@@ -251,7 +251,6 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
   }
 
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public static void runBackupCommand(JettySolrRunner leaderJetty, String cmd, String params)
       throws IOException {
     String leaderUrl =
@@ -262,7 +261,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
             + "?wt=xml&command="
             + cmd
             + params;
-    URL url = new URL(leaderUrl);
+    URL url = URI.create(leaderUrl).toURL();
     try (InputStream stream = url.openStream()) {
       assert stream != null;
     }

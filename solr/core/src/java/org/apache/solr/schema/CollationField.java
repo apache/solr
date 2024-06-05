@@ -41,7 +41,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
@@ -145,16 +144,15 @@ public class CollationField extends FieldType {
    * Create a locale from language, with optional country and variant. Then return the appropriate
    * collator for the locale.
    */
-  @SuppressForbidden(reason = "Locale(String) deprecated since Java 20")
   private Collator createFromLocale(String language, String country, String variant) {
     Locale locale;
 
     if (language != null && country == null && variant != null)
       throw new SolrException(ErrorCode.SERVER_ERROR, "To specify variant, country is required");
     else if (language != null && country != null && variant != null)
-      locale = new Locale(language, country, variant);
-    else if (language != null && country != null) locale = new Locale(language, country);
-    else locale = new Locale(language);
+      locale = Locale.of(language, country, variant);
+    else if (language != null && country != null) locale = Locale.of(language, country);
+    else locale = Locale.of(language);
 
     return Collator.getInstance(locale);
   }

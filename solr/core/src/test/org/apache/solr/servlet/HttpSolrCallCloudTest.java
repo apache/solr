@@ -18,7 +18,7 @@
 package org.apache.solr.servlet;
 
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 import javax.servlet.ReadListener;
@@ -30,7 +30,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -65,11 +64,11 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
 
   // https://issues.apache.org/jira/browse/SOLR-16019
   @Test
-  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public void testWrongUtf8InQ() throws Exception {
     var baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     var request =
-        new URL(baseUrl.toString() + "/" + COLLECTION + "/select?q=%C0"); // Illegal UTF-8 string
+        URI.create(baseUrl.toString() + "/" + COLLECTION + "/select?q=%C0")
+            .toURL(); // Illegal UTF-8 string
     var connection = (HttpURLConnection) request.openConnection();
     assertEquals(400, connection.getResponseCode());
   }
