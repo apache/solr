@@ -1641,6 +1641,44 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
         clusterBuilder.buildLiveNodes());
   }
 
+  @Test
+  public void testBalancingAvoidMultiReplicaOnNode() throws Exception {
+    // Cluster nodes and their attributes
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(4);
+    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+
+    // The collection already exists with shards and replicas
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder("a");
+    // Note that the collection as defined below is in a state that would NOT be returned by the
+    // placement plugin: shard 1 has two replicas on node 0. The plugin should still be able to
+    // place additional replicas as long as they don't break the rules.
+    List<List<String>> shardsReplicas =
+        List.of(List.of("NRT 0", "NRT 0", "NRT 2", "NRT 2"));
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    // Add another collection
+    collectionBuilder = Builders.newCollectionBuilder("b");
+    shardsReplicas =
+        List.of(List.of("NRT 1", "NRT 1", "NRT 3", "NRT 3"));
+    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    clusterBuilder.addCollection(collectionBuilder);
+
+    BalanceRequestImpl balanceRequest =
+        new BalanceRequestImpl(new HashSet<>(clusterBuilder.buildLiveNodes()));
+    BalancePlan balancePlan =
+        plugin.computeBalancing(balanceRequest, clusterBuilder.buildPlacementContext());
+
+    // Each expected placement is represented as a string "col shard replica-type fromNode ->
+    // toNode"
+    Set<String> expectedPlacements = Set.of("a 1 NRT 0 -> 1", "a 1 NRT 2 -> 3", "b 1 NRT 3 -> 2", "b 1 NRT 1 -> 0");
+    verifyBalancing(
+        expectedPlacements,
+        balancePlan,
+        collectionBuilder.getShardBuilders(),
+        clusterBuilder.buildLiveNodes());
+  }
+
   /** Tests replica balancing across all nodes in a cluster */
   @Test
   public void testBalancingExistingMetrics() throws Exception {
