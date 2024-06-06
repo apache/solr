@@ -54,6 +54,8 @@ Bug Fixes
 
 * SOLR-17304: PKG_VERSIONS not honored when loading the schema plugins (#2471)
 
+* SOLR-17317: v2 APIs no longer return the incorrect content-type when 'wt=json' specified (Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 (No changes)
