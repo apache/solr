@@ -20,6 +20,7 @@ package org.apache.solr.security;
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashSet;
@@ -198,9 +199,9 @@ public class AllowListUrlChecker {
       if (!protocolMatcher.group(1).startsWith("http")) {
         url = "http" + protocolMatcher.group(2);
       }
-      u = new URL(url);
+      u = URI.create(url).toURL();
     } else {
-      u = new URL("http://" + url);
+      u = URI.create("http://" + url).toURL();
     }
     if (u.getHost() == null || u.getPort() < 0) {
       throw new MalformedURLException("Invalid host or port in '" + url + "'");

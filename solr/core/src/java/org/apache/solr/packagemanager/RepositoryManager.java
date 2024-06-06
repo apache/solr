@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -133,7 +133,7 @@ public class RepositoryManager {
           true);
     }
 
-    try (InputStream is = new URL(uri + "/publickey.der").openStream()) {
+    try (InputStream is = new URI(uri + "/publickey.der").toURL().openStream()) {
       addKey(is.readAllBytes(), repoName + ".der");
     }
   }

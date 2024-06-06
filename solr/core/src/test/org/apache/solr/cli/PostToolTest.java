@@ -171,19 +171,24 @@ public class PostToolTest extends SolrCloudTestCase {
 
     assertEquals(
         "http://[ff01::114]/index.html",
-        webPostTool.computeFullUrl(new URL("http://[ff01::114]/"), "/index.html"));
+        webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "/index.html"));
     assertEquals(
         "http://[ff01::114]/index.html",
-        webPostTool.computeFullUrl(new URL("http://[ff01::114]/foo/bar/"), "/index.html"));
+        webPostTool.computeFullUrl(
+            URI.create("http://[ff01::114]/foo/bar/").toURL(), "/index.html"));
     assertEquals(
         "http://[ff01::114]/fil.html",
-        webPostTool.computeFullUrl(new URL("http://[ff01::114]/foo.htm?baz#hello"), "fil.html"));
+        webPostTool.computeFullUrl(
+            URI.create("http://[ff01::114]/foo.htm?baz#hello").toURL(), "fil.html"));
     //    TODO: How to know what is the base if URL path ends with "foo"??
     //    assertEquals("http://[ff01::114]/fil.html", t_web.computeFullUrl(new
     // URL("http://[ff01::114]/foo?baz#hello"), "fil.html"));
-    assertNull(webPostTool.computeFullUrl(new URL("http://[ff01::114]/"), "fil.jpg"));
-    assertNull(webPostTool.computeFullUrl(new URL("http://[ff01::114]/"), "mailto:hello@foo.bar"));
-    assertNull(webPostTool.computeFullUrl(new URL("http://[ff01::114]/"), "ftp://server/file"));
+    assertNull(webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "fil.jpg"));
+    assertNull(
+        webPostTool.computeFullUrl(
+            URI.create("http://[ff01::114]/").toURL(), "mailto:hello@foo.bar"));
+    assertNull(
+        webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "ftp://server/file"));
   }
 
   @Test
@@ -212,8 +217,8 @@ public class PostToolTest extends SolrCloudTestCase {
   @Test
   public void testAppendUrlPath() throws MalformedURLException {
     assertEquals(
-        new URL("http://[ff01::114]/a?foo=bar"),
-        PostTool.appendUrlPath(new URL("http://[ff01::114]?foo=bar"), "/a"));
+        URI.create("http://[ff01::114]/a?foo=bar").toURL(),
+        PostTool.appendUrlPath(URI.create("http://[ff01::114]?foo=bar").toURL(), "/a"));
   }
 
   @Test
@@ -231,7 +236,7 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.recursive = 0;
     postTool.dryRun = true;
-    postTool.solrUpdateUrl = new URL("http://localhost:8983/solr/fake/update");
+    postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update").toURL();
     File dir = getFile("exampledocs");
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
@@ -253,7 +258,7 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.recursive = 1; // This is the default
     postTool.dryRun = true;
-    postTool.solrUpdateUrl = new URL("http://localhost:8983/solr/fake/update");
+    postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update").toURL();
     File dir = getFile("exampledocs");
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
@@ -264,7 +269,8 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.pageFetcher = new MockPageFetcher();
     postTool.dryRun = true;
-    postTool.solrUpdateUrl = new URL("http://user:password@localhost:5150/solr/fake/update");
+    postTool.solrUpdateUrl =
+        URI.create("http://user:password@localhost:5150/solr/fake/update").toURL();
 
     // Uses mock pageFetcher
     postTool.delay = 0;
@@ -289,8 +295,11 @@ public class PostToolTest extends SolrCloudTestCase {
     postTool.pageFetcher = new MockPageFetcher();
     postTool.dryRun = true;
 
-    assertFalse(postTool.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/")));
-    assertTrue(postTool.pageFetcher.isDisallowedByRobots(new URL("http://[ff01::114]/disallowed")));
+    assertFalse(
+        postTool.pageFetcher.isDisallowedByRobots(URI.create("http://[ff01::114]/").toURL()));
+    assertTrue(
+        postTool.pageFetcher.isDisallowedByRobots(
+            URI.create("http://[ff01::114]/disallowed").toURL()));
     assertEquals(
         "There should be two entries parsed from robots.txt",
         2,
