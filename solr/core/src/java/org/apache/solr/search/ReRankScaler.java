@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.QueryRescorer;
 import org.apache.lucene.search.ScoreDoc;
 
 public class ReRankScaler {

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryRescorer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
