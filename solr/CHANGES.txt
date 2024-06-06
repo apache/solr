@@ -48,6 +48,12 @@ Bug Fixes
 
 * SOLR-17247: 'WWW-Authenticate' headers missing in MultiAuthPlugin (Lamine Idjeraoui via Eric Pugh)
 
+* SOLR-17304: Respect PKG_VERSIONS constraints in params.json when loading the schema plugins (Andrey Bozhko)
+
+* SOLR-17118: Simplify CoreContainerProvider initialization and JettySolrRunner. Avoid deadlock/hang. (David Smiley)
+
+* SOLR-17304: PKG_VERSIONS not honored when loading the schema plugins (#2471)
+
 Dependency Upgrades
 ---------------------
 (No changes)
