@@ -21,6 +21,11 @@ This page covers how to upgrade an existing Solr cluster that was installed usin
 IMPORTANT: The steps outlined on this page assume you use the default service name of `solr`.
 If you use an alternate service name or Solr installation directory, some of the paths and commands mentioned below will have to be modified accordingly.
 
+NOTE: Previous versions of this reference guide mentioned an {lucene-javadocs}/core/org/apache/lucene/index/IndexUpgrader.html[IndexUpgraderTool] that is made available by the Lucene project, and that can be used to upgrade Solr index files offline if desired.
+Users with a business requirement that necessitates its use may use this tool as before, however it's not needed in the vast majority of upgrade workflows.
+The documentation below assumes the tool is not in use.
+
+
 == Planning Your Upgrade
 
 Here is a checklist of things you need to prepare before starting the upgrade process:
