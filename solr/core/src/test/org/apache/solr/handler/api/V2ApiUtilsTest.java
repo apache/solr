@@ -56,5 +56,9 @@ public class V2ApiUtilsTest extends SolrTestCaseJ4 {
 
     params.set("wt", "javabin");
     assertEquals(BINARY_CONTENT_TYPE_V2, V2ApiUtils.getMediaTypeFromWtParam(params, null));
+
+    // Defaults to, well the default, whenever an unknown/unexpected/typo'd 'wt' is provided
+    params.set("wt", "josn");
+    assertEquals("someDefault", V2ApiUtils.getMediaTypeFromWtParam(params, "someDefault"));
   }
 }
