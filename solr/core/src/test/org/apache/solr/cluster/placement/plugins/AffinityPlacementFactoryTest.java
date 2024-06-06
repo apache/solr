@@ -1650,17 +1650,19 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
     // The collection already exists with shards and replicas
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder("a");
     // Note that the collection as defined below is in a state that would NOT be returned by the
-    // placement plugin: shard 1 has two replicas on node 0. The plugin should still be able to
-    // place additional replicas as long as they don't break the rules.
-    List<List<String>> shardsReplicas =
-        List.of(List.of("NRT 0", "NRT 0", "NRT 2", "NRT 2"));
+    // placement plugin: shard 1 has two replicas on node 0 and two replicas on node 2.
+    // The plugin should still be able to place additional replicas as long as they don't break the
+    // rules.
+    List<List<String>> shardsReplicas = List.of(List.of("NRT 0", "NRT 0", "NRT 2", "NRT 2"));
     collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
     clusterBuilder.addCollection(collectionBuilder);
 
-    // Add another collection
+    // Add another collection. Note that this is also unbalanced with two replicas on node 1 and two
+    // replicas on node 3.
+    // The intent of this test is to demonstrate that the plugin can move replicas so that
+    // a given node does not have more than one replica of a given shard.
     collectionBuilder = Builders.newCollectionBuilder("b");
-    shardsReplicas =
-        List.of(List.of("NRT 1", "NRT 1", "NRT 3", "NRT 3"));
+    shardsReplicas = List.of(List.of("NRT 1", "NRT 1", "NRT 3", "NRT 3"));
     collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
     clusterBuilder.addCollection(collectionBuilder);
 
@@ -1671,7 +1673,8 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
 
     // Each expected placement is represented as a string "col shard replica-type fromNode ->
     // toNode"
-    Set<String> expectedPlacements = Set.of("a 1 NRT 0 -> 1", "a 1 NRT 2 -> 3", "b 1 NRT 3 -> 2", "b 1 NRT 1 -> 0");
+    Set<String> expectedPlacements =
+        Set.of("a 1 NRT 0 -> 1", "a 1 NRT 2 -> 3", "b 1 NRT 3 -> 2", "b 1 NRT 1 -> 0");
     verifyBalancing(
         expectedPlacements,
         balancePlan,
