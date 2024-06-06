@@ -148,6 +148,8 @@ Bug Fixes
 
 * SOLR-17118: Simplify CoreContainerProvider initialization and JettySolrRunner. Avoid deadlock/hang. (David Smiley)
 
+* SOLR-17317: v2 APIs no longer return the incorrect content-type when 'wt=json' specified (Jason Gerlowski)
+
 Dependency Upgrades
 ---------------------
 (No changes)
