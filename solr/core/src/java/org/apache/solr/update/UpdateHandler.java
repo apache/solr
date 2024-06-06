@@ -106,10 +106,37 @@ public abstract class UpdateHandler implements SolrInfoBean {
   }
 
   public UpdateHandler(SolrCore core) {
-    this(core, null);
+    this(core, null, true);
   }
 
   public UpdateHandler(SolrCore core, UpdateLog updateLog) {
+    this(core, updateLog, true);
+  }
+
+  /**
+   * Subclasses should call this ctor, with `initUlog=false` and should then, as the last action in
+   * the subclass ctor, call {@link #initUlog(boolean)}.
+   *
+   * <p>NOTE: as an abstract class, if subclasses are supposed to always call this with
+   * `initUlog=false`, we could simply never init ulog in this method, and avoid the extra arg. But
+   * the arg is present for 3 reasons:
+   *
+   * <ol>
+   *   <li>for backward compatibility with subclasses (plugins) that may have called {@link
+   *       UpdateHandler} ctor with the assumption that {@link #ulog} <i>will</i> be initialized
+   *   <li>to force subclass implementations to be aware that they must init {@link #ulog}
+   *   <li>because it's likely that deferring ulog init until the last action of the top-level ctor
+   *       is actually unnecessary (see below)
+   * </ol>
+   *
+   * <p>As noted in a comment in {@link DirectUpdateHandler2#DirectUpdateHandler2(SolrCore,
+   * UpdateHandler)}, it's unclear why we are advised to defer ulog init until the last action of
+   * the top-level ctor, as opposed to simply delegating init to the base-class {@link
+   * UpdateHandler} ctor. If we were to follow this approach, this "extra-arg" ctor could be removed
+   * in favor of {@link #UpdateHandler(SolrCore, UpdateLog)}, initializing any non-null {@link
+   * #ulog} (and removing the {@link #initUlog(boolean)} helper method as well).
+   */
+  public UpdateHandler(SolrCore core, UpdateLog updateLog, boolean initUlog) {
     this.core = core;
     idField = core.getLatestSchema().getUniqueKeyField();
     idFieldType = idField != null ? idField.getType() : null;
@@ -139,15 +166,36 @@ public abstract class UpdateHandler implements SolrInfoBean {
       }
       ulog.init(ulogPluginInfo);
 
-      try {
-        ulog.init(this, core);
-      } catch (Throwable t) {
-        ulog.close(false, false);
-        throw t;
+      if (initUlog) {
+        initUlog(true);
       }
     } else {
-      // `ulog.init(UpdateHandler, SolrCore)` is deferred until the end of subclass ctor.
       ulog = updateLog;
+      if (updateLog != null && initUlog) {
+        initUlog(false);
+      }
+    }
+  }
+
+  /**
+   * Helper method to init {@link #ulog}. As discussed in the javadocs for {@link
+   * #UpdateHandler(SolrCore, UpdateLog, boolean)}, this should be called as the last action of each
+   * top-level ctor.
+   *
+   * @param closeOnError if the calling context is responsible for creating {@link #ulog}, then we
+   *     should respond to an init failure by closing {@link #ulog}, and this param should be set to
+   *     <code>true</code>. If the calling context is <i>not</i> responsible for creating {@link
+   *     #ulog}, then references exist elsewhere and we should not close on init error (set this
+   *     param to <code>false</code>).
+   */
+  protected final void initUlog(boolean closeOnError) {
+    try {
+      ulog.init(this, core);
+    } catch (Throwable t) {
+      if (closeOnError) {
+        ulog.close(false, false);
+      }
+      throw t;
     }
   }
 
