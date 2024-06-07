@@ -151,7 +151,16 @@ public abstract class QueryRescorer extends Rescorer {
 
     Arrays.sort(hits, sortDocComparator);
 
-    return new TopDocs(firstPassTopDocs.totalHits, hits);
+    // convert back to Lucene ScoreDoc list
+    ArrayList<org.apache.lucene.search.ScoreDoc> luceneHits = new ArrayList<org.apache.lucene.search.ScoreDoc>();
+    for(int i=0; i<hits.length; i++) {
+      org.apache.lucene.search.ScoreDoc luceneHit = (org.apache.lucene.search.ScoreDoc) hits[i];
+      luceneHits.add(luceneHit);
+    }
+    org.apache.lucene.search.ScoreDoc[] lHits = new org.apache.lucene.search.ScoreDoc[luceneHits.size()];
+    lHits = luceneHits.toArray(lHits);
+
+    return new TopDocs(firstPassTopDocs.totalHits, lHits);
   }
 
   @Override
