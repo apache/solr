@@ -16,9 +16,9 @@
  */
 package org.apache.solr.search;
 
-public class ScoreDoc extends org.apache.lucene.search.ScoreDoc {
+public class ScoreDocI extends org.apache.lucene.search.ScoreDoc {
 
-  public ScoreDoc(int doc, float score) {
+  public ScoreDocI(int doc, float score) {
     super(doc, score);
   }
 

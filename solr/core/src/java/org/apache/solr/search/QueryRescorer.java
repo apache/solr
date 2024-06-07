@@ -54,21 +54,21 @@ public abstract class QueryRescorer extends Rescorer {
     // convert Lucene ScoreDoc list to Solr ScoreDoc list (the latter supports index attribute)
     // and record original order in each hit's index attribute
     // NB code below relies on hits being in docId order so the order is about to be lost
-    ArrayList<ScoreDoc> solrHits = new ArrayList<ScoreDoc>();
+    ArrayList<ScoreDocI> solrHits = new ArrayList<ScoreDocI>();
     for(int i=0; i<firstPassTopDocs.scoreDocs.length; i++) {
-      ScoreDoc hit = (ScoreDoc) firstPassTopDocs.scoreDocs[i];
+      ScoreDocI hit = (ScoreDocI) firstPassTopDocs.scoreDocs[i];
       hit.index=i;
       solrHits.add(hit);
     }
 
-    ScoreDoc[] hits = new ScoreDoc[solrHits.size()];
+    ScoreDocI[] hits = new ScoreDocI[solrHits.size()];
     hits = solrHits.toArray(hits);
 
     Arrays.sort(
         hits,
-        new Comparator<ScoreDoc>() {
+        new Comparator<ScoreDocI>() {
           @Override
-          public int compare(ScoreDoc a, ScoreDoc b) {
+          public int compare(ScoreDocI a, ScoreDocI b) {
             return a.doc - b.doc;
           }
         });
@@ -86,7 +86,7 @@ public abstract class QueryRescorer extends Rescorer {
     Scorer scorer = null;
 
     while (hitUpto < hits.length) {
-      ScoreDoc hit = hits[hitUpto];
+      ScoreDocI hit = hits[hitUpto];
       int docID = hit.doc;
       LeafReaderContext readerContext = null;
       while (docID >= endDoc) {
@@ -124,10 +124,10 @@ public abstract class QueryRescorer extends Rescorer {
       hitUpto++;
     }
 
-    Comparator<ScoreDoc> sortDocComparator =
-        new Comparator<ScoreDoc>() {
+    Comparator<ScoreDocI> sortDocComparator =
+        new Comparator<ScoreDocI>() {
           @Override
-          public int compare(ScoreDoc a, ScoreDoc b) {
+          public int compare(ScoreDocI a, ScoreDocI b) {
             // Sort by score descending, then original order as
             // recorded in index attribute above
             if (a.score > b.score) {
@@ -144,7 +144,7 @@ public abstract class QueryRescorer extends Rescorer {
 
     if (topN < hits.length) {
       ArrayUtil.select(hits, 0, hits.length, topN, sortDocComparator);
-      ScoreDoc[] subset = new ScoreDoc[topN];
+      ScoreDocI[] subset = new ScoreDocI[topN];
       System.arraycopy(hits, 0, subset, 0, topN);
       hits = subset;
     }
@@ -152,12 +152,12 @@ public abstract class QueryRescorer extends Rescorer {
     Arrays.sort(hits, sortDocComparator);
 
     // convert back to Lucene ScoreDoc list
-    ArrayList<org.apache.lucene.search.ScoreDoc> luceneHits = new ArrayList<org.apache.lucene.search.ScoreDoc>();
+    ArrayList<ScoreDoc> luceneHits = new ArrayList<ScoreDoc>();
     for(int i=0; i<hits.length; i++) {
-      org.apache.lucene.search.ScoreDoc luceneHit = (org.apache.lucene.search.ScoreDoc) hits[i];
+      ScoreDoc luceneHit = (ScoreDoc) hits[i];
       luceneHits.add(luceneHit);
     }
-    org.apache.lucene.search.ScoreDoc[] lHits = new org.apache.lucene.search.ScoreDoc[luceneHits.size()];
+    ScoreDoc[] lHits = new ScoreDoc[luceneHits.size()];
     lHits = luceneHits.toArray(lHits);
 
     return new TopDocs(firstPassTopDocs.totalHits, lHits);
