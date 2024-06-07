@@ -67,6 +67,8 @@ Deprecation Removals
 
 * SOLR-17284: Remove deprecated BlobRepository in favour of FileStore. (Eric Pugh)
 
+* SOLR-17313: Remove deprecated class SolrLogPostTool.  PostLogsTool and the bin/solr post command has replaced this. (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -108,8 +110,13 @@ New Features
   by removing it solrconfig.xml.  The limit is set at 1000 fields in the "_default" configset, but left in warning-only mode. (David Smiley, Eric Pugh,
   Jason Gerlowski)
 
+* SOLR-17277: Circuit breakers may now be configured in a "soft" or "warnOnly" mode in order to more easily test out new thresholds.  Soft breakers will log out a
+  message on each relevant request when tripped, but will not otherwise impact or short circuit the requests.  (Jason Gerlowski)
+
 Improvements
 ---------------------
+* SOLR-17137: Enable Prometheus exporter to communicate with SSL protected Solr. (Eivind Bergstøl via Eric Pugh)
+
 * SOLR-16921: use -solrUrl to derive the zk host connection for bin/solr zk subcommands (Eric Pugh)
 
 * SOLR-14115: Add linkconfig, cluster, and updateacls as commands to SolrCLI.  Allow bin/solr commands to have parity with zkcli.sh commands. (Eric Pugh)
@@ -125,22 +132,23 @@ Optimizations
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
   cluster metrics.  AttributeFetcherImpl was improved accordingly.  (Yohann Callea)
 
+* SOLR-17099: Do not return spurious tags when fetching metrics from a Solr node to another. (Pierre Salagnac)
+
 Bug Fixes
 ---------------------
 * SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
 
-* SOLR-17261: Remove unintended timeout of 60 seconds for core loading. (Houston Putman)
-
-* SOLR-17049: Actually mark all replicas down at startup and truly wait for them.
-  This includes replicas that might not exist anymore locally. (Houston Putman, Vincent Primault)
-
-* SOLR-17263: Fix 'Illegal character in query' exception in HttpJdkSolrClient (Andy Webb)
-
-* SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when aliases are used. (Aparna Suresh)
-
 * PR-2475: Fixed node listing bug in Admin UI when different hostnames start with the same front part. (@hgdharold via Eric Pugh)
 
 * SOLR-16659: Properly construct V2 base urls instead of replacing substring "/solr" with "/api" (Andrey Bozhko via Eric Pugh)
+
+* SOLR-17247: 'WWW-Authenticate' headers missing in MultiAuthPlugin (Lamine Idjeraoui via Eric Pugh)
+
+* SOLR-17304: Respect PKG_VERSIONS constraints in params.json when loading the schema plugins (Andrey Bozhko)
+
+* SOLR-17118: Simplify CoreContainerProvider initialization and JettySolrRunner. Avoid deadlock/hang. (David Smiley)
+
+* SOLR-17317: v2 APIs no longer return the incorrect content-type when 'wt=json' specified (Jason Gerlowski)
 
 Dependency Upgrades
 ---------------------
@@ -160,9 +168,22 @@ Other Changes
 ==================  9.6.1 ==================
 Bug Fixes
 ---------------------
+* SOLR-17261: Remove unintended timeout of 60 seconds for core loading. (Houston Putman)
+
+* SOLR-17049: Actually mark all replicas down at startup and truly wait for them.
+  This includes replicas that might not exist anymore locally. (Houston Putman, Vincent Primault)
+
+* SOLR-17263: Fix 'Illegal character in query' exception in HttpJdkSolrClient (Andy Webb)
+
+* SOLR-17275: SolrJ ZkClientClusterStateProvider, revert SOLR-17153 for perf regression when aliases are used. (Aparna Suresh)
+
 * SOLR-17296: Remove (broken) singlePass attempt when reRankScale + debug is used, and fix underlying NPE. (hossman)
 
 * SOLR-17307: Use the system file separator instead of an explicit '/' in CachingDirectoryFactory (Houston Putman, hossman)
+
+Dependency Upgrades
+---------------------
+* PR#2308: Update dependency org.apache.commons:commons-compress to v1.26.1 (solrbot)
 
 ==================  9.6.0 ==================
 New Features
@@ -216,7 +237,6 @@ Optimizations
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
 
 * GITHUB#2217: Scale to 10K+ collections better in ZkStateReader.refreshCollectionsList (David Smiley)
-
 
 Bug Fixes
 ---------------------
