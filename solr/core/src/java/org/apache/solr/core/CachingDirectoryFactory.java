@@ -139,7 +139,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       cacheValue.doneWithDir = true;
       log.debug("Done with dir: {}", cacheValue);
       if (cacheValue.refCnt == 0 && !closed) {
-        boolean cl = closeCacheValue(cacheValue);
+        boolean cl = closeCacheValue(cacheValue, null);
         if (cl) {
           removeFromCache(cacheValue);
         }
@@ -198,7 +198,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
           for (CacheValue v : val.closeEntries) {
             assert v.refCnt == 0 : val.refCnt;
             log.debug("Closing directory when closing factory: {}", v.path);
-            boolean cl = closeCacheValue(v);
+            boolean cl = closeCacheValue(v, closedDirs);
             if (cl) {
               closedDirs.add(v);
             }
@@ -231,7 +231,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
   // be sure the method is called with the sync lock on this object
   // returns true if we closed the cacheValue, false if it will be closed later
-  private boolean closeCacheValue(CacheValue cacheValue) {
+  private boolean closeCacheValue(CacheValue cacheValue, Set<CacheValue> deferRemove) {
     log.debug("looking to close {} {}", cacheValue.path, cacheValue.closeEntries);
     List<CloseListener> listeners = closeListeners.remove(cacheValue.directory);
     if (listeners != null) {
@@ -279,7 +279,11 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       } else {
         // this was a deferred close, so it's our responsibility to remove it from cache
         assert val.closeEntries.isEmpty();
-        removeFromCache(val);
+        if (deferRemove == null) {
+          removeFromCache(val);
+        } else {
+          deferRemove.add(val);
+        }
       }
     }
 
@@ -500,7 +504,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       assert cacheValue.refCnt >= 0 : cacheValue.refCnt;
 
       if (cacheValue.refCnt == 0 && cacheValue.doneWithDir && !closed) {
-        boolean cl = closeCacheValue(cacheValue);
+        boolean cl = closeCacheValue(cacheValue, null);
         if (cl) {
           removeFromCache(cacheValue);
         }
