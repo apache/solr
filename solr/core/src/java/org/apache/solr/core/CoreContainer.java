@@ -444,7 +444,7 @@ public class CoreContainer {
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
 
     this.collectorExecutor =
-        ExecutorUtil.newMDCAwareCachedThreadPool(
+        ExecutorUtil.newMDCAwareFixedThreadPool(
             cfg.getIndexSearcherExecutorThreads(), // thread count
             cfg.getIndexSearcherExecutorThreads() * 1000, // queue size
             new SolrNamedThreadFactory("searcherCollector"));
