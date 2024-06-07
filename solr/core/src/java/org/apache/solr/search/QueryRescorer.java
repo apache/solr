@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -24,6 +25,8 @@ import java.util.List;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.ArrayUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link Rescorer} that uses a provided Query to assign scores to the first-pass hits.
@@ -31,6 +34,8 @@ import org.apache.lucene.util.ArrayUtil;
  * @lucene.experimental
  */
 public abstract class QueryRescorer extends Rescorer {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Query query;
 
@@ -56,7 +61,10 @@ public abstract class QueryRescorer extends Rescorer {
     // NB code below relies on hits being in docId order so the order is about to be lost
     ArrayList<ScoreDocI> solrHits = new ArrayList<ScoreDocI>();
     for(int i=0; i<firstPassTopDocs.scoreDocs.length; i++) {
-      ScoreDocI hit = (ScoreDocI) firstPassTopDocs.scoreDocs[i];
+      log.info(firstPassTopDocs.scoreDocs[i].getClass().getName() + " " + firstPassTopDocs.scoreDocs[i].toString());
+      // entries might be FieldDocs so we need to cast to ScoreDoc first
+      // - but that class is worth looking at as it can store sort information
+      ScoreDocI hit = (ScoreDocI) (ScoreDoc) firstPassTopDocs.scoreDocs[i];
       hit.index=i;
       solrHits.add(hit);
     }
