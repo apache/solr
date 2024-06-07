@@ -16,7 +16,12 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.INDENT;
+
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 
 public abstract class ShardHandler {
   public abstract void prepDistributed(ResponseBuilder rb);
@@ -30,4 +35,14 @@ public abstract class ShardHandler {
   public abstract void cancelAll();
 
   public abstract ShardHandlerFactory getShardHandlerFactory();
+
+  public static void setShardAttributesToParams(ModifiableSolrParams params, int purpose) {
+    params.remove(ShardParams.SHARDS); // not a top-level request
+    params.set(DISTRIB, Boolean.FALSE.toString()); // not a top-level request
+    params.remove(INDENT);
+    params.remove(CommonParams.HEADER_ECHO_PARAMS);
+    params.set(ShardParams.IS_SHARD, true); // a sub (shard) request
+    params.set(ShardParams.SHARDS_PURPOSE, purpose);
+    params.set(CommonParams.OMIT_HEADER, false);
+  }
 }

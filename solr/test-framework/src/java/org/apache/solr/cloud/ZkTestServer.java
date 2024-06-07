@@ -786,7 +786,7 @@ public class ZkTestServer {
     if (log.isInfoEnabled()) {
       log.info("put {} to {}", file.toAbsolutePath(), destPath);
     }
-    zkClient.makePath(destPath, file, false, true);
+    zkClient.makePath(destPath, Files.readAllBytes(file), false, true);
   }
 
   // static to share with distrib test

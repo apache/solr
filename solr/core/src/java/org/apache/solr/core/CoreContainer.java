@@ -49,6 +49,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
@@ -175,6 +176,10 @@ public class CoreContainer {
 
   final SolrCores solrCores;
 
+  public Executor getCollectorExecutor() {
+    return collectorExecutor;
+  }
+
   public static class CoreLoadFailure {
 
     public final CoreDescriptor cd;
@@ -246,8 +251,6 @@ public class CoreContainer {
 
   private volatile String hostName;
 
-  private final BlobRepository blobRepository = new BlobRepository(this);
-
   private volatile boolean asyncSolrCoreLoad;
 
   protected volatile SecurityConfHandler securityConfHandler;
@@ -277,6 +280,8 @@ public class CoreContainer {
   private final ObjectCache objectCache = new ObjectCache();
 
   public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
+
+  private final ExecutorService collectorExecutor;
 
   private final ClusterSingletons clusterSingletons =
       new ClusterSingletons(
@@ -432,6 +437,12 @@ public class CoreContainer {
     this.allowPaths = allowPathBuilder.build();
 
     this.allowListUrlChecker = AllowListUrlChecker.create(config);
+
+    this.collectorExecutor =
+        ExecutorUtil.newMDCAwareCachedThreadPool(
+            cfg.getIndexSearcherExecutorThreads(), // thread count
+            cfg.getIndexSearcherExecutorThreads() * 1000, // queue size
+            new SolrNamedThreadFactory("searcherCollector"));
   }
 
   @SuppressWarnings({"unchecked"})
@@ -657,6 +668,7 @@ public class CoreContainer {
     distributedCollectionCommandRunner = Optional.empty();
     allowPaths = null;
     allowListUrlChecker = null;
+    collectorExecutor = null;
   }
 
   public static CoreContainer createAndLoad(Path solrHome) {
@@ -1081,9 +1093,9 @@ public class CoreContainer {
     } finally {
       if (asyncSolrCoreLoad) {
         coreContainerWorkExecutor.submit(
-            () -> ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor));
+            () -> ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor));
       } else {
-        ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor);
+        ExecutorUtil.shutdownAndAwaitTerminationForever(coreLoadExecutor);
       }
     }
 
@@ -1230,6 +1242,7 @@ public class CoreContainer {
     return isShutDown;
   }
 
+  /** Close / shut down. Only called by {@link org.apache.solr.servlet.CoreContainerProvider}. */
   public void shutdown() {
 
     ZkController zkController = getZkController();
@@ -1248,6 +1261,7 @@ public class CoreContainer {
     }
 
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerAsyncTaskExecutor);
+    ExecutorUtil.shutdownAndAwaitTermination(collectorExecutor);
     ExecutorService customThreadPool =
         ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("closeThreadPool"));
 
@@ -2302,10 +2316,6 @@ public class CoreContainer {
     }
 
     return core;
-  }
-
-  public BlobRepository getBlobRepository() {
-    return blobRepository;
   }
 
   /**

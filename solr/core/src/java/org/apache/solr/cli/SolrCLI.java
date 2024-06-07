@@ -54,11 +54,13 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -248,6 +250,9 @@ public class SolrCLI implements CLIO {
     else if ("mv".equals(toolType)) return new ZkMvTool();
     else if ("cp".equals(toolType)) return new ZkCpTool();
     else if ("ls".equals(toolType)) return new ZkLsTool();
+    else if ("cluster".equals(toolType)) return new ClusterTool();
+    else if ("updateacls".equals(toolType)) return new UpdateACLTool();
+    else if ("linkconfig".equals(toolType)) return new LinkConfigTool();
     else if ("mkroot".equals(toolType)) return new ZkMkrootTool();
     else if ("assert".equals(toolType)) return new AssertTool();
     else if ("auth".equals(toolType)) return new AuthTool();
@@ -554,9 +559,7 @@ public class SolrCLI implements CLIO {
                     + ".");
       } else {
 
-        try (CloudSolrClient cloudSolrClient =
-            new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
-                .build()) {
+        try (CloudSolrClient cloudSolrClient = getCloudHttp2SolrClient(zkHost)) {
           cloudSolrClient.connect();
           Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
           if (liveNodes.isEmpty())
@@ -605,6 +608,34 @@ public class SolrCLI implements CLIO {
     }
 
     return zkHost;
+  }
+
+  public static SolrZkClient getSolrZkClient(CommandLine cli) throws Exception {
+    return getSolrZkClient(cli, getZkHost(cli));
+  }
+
+  public static SolrZkClient getSolrZkClient(CommandLine cli, String zkHost) throws Exception {
+    if (zkHost == null) {
+      throw new IllegalStateException(
+          "Solr at "
+              + cli.getOptionValue("solrUrl")
+              + " is running in standalone server mode, this command can only be used when running in SolrCloud mode.\n");
+    }
+    return new SolrZkClient.Builder()
+        .withUrl(zkHost)
+        .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
+        .build();
+  }
+
+  public static CloudHttp2SolrClient getCloudHttp2SolrClient(String zkHost) {
+    return getCloudHttp2SolrClient(zkHost, null);
+  }
+
+  public static CloudHttp2SolrClient getCloudHttp2SolrClient(
+      String zkHost, Http2SolrClient.Builder builder) {
+    return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+        .withInternalClientBuilder(builder)
+        .build();
   }
 
   public static boolean safeCheckCollectionExists(

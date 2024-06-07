@@ -175,10 +175,9 @@ public class DistribFileStore implements FileStore {
 
     private boolean fetchFileFromNodeAndPersist(String fromNode) {
       log.info("fetching a file {} from {} ", path, fromNode);
-      String url =
-          coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(fromNode);
-      if (url == null) throw new SolrException(BAD_REQUEST, "No such node");
-      String baseUrl = url.replace("/solr", "/api");
+      String baseUrl =
+          coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(fromNode);
+      if (baseUrl == null) throw new SolrException(BAD_REQUEST, "No such node");
 
       ByteBuffer metadata = null;
       Map<?, ?> m = null;
@@ -220,10 +219,9 @@ public class DistribFileStore implements FileStore {
       ArrayList<String> l = coreContainer.getFileStoreAPI().shuffledNodes();
       for (String liveNode : l) {
         try {
-          String baseurl =
-              coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(liveNode);
-          String url = baseurl.replace("/solr", "/api");
-          String reqUrl = url + "/node/files" + path + "?meta=true&wt=javabin&omitHeader=true";
+          String baseUrl =
+              coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(liveNode);
+          String reqUrl = baseUrl + "/node/files" + path + "?meta=true&wt=javabin&omitHeader=true";
           boolean nodeHasBlob = false;
           Object nl =
               Utils.executeGET(
@@ -362,8 +360,8 @@ public class DistribFileStore implements FileStore {
     try {
       for (String node : nodes) {
         String baseUrl =
-            coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(node);
-        String url = baseUrl.replace("/solr", "/api") + "/node/files" + info.path + "?getFrom=";
+            coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
+        String url = baseUrl + "/node/files" + info.path + "?getFrom=";
         if (i < FETCHFROM_SRC) {
           // this is to protect very large clusters from overwhelming a single node
           // the first FETCHFROM_SRC nodes will be asked to fetch from this node.
@@ -502,8 +500,8 @@ public class DistribFileStore implements FileStore {
     HttpClient client = coreContainer.getUpdateShardHandler().getDefaultHttpClient();
     for (String node : nodes) {
       String baseUrl =
-          coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(node);
-      String url = baseUrl.replace("/solr", "/api") + "/node/files" + path;
+          coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
+      String url = baseUrl + "/node/files" + path;
       HttpDelete del = new HttpDelete(url);
       // invoke delete command on all nodes asynchronously
       coreContainer.runAsync(() -> Utils.executeHttpMethod(client, url, null, del));
