@@ -16,11 +16,24 @@
  */
 package org.apache.solr.search;
 
+
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.TopDocsCollector;
+import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.handler.component.MergeStrategy;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
 
 public class RankQueryTest extends SolrTestCaseJ4 {
 
@@ -105,5 +118,66 @@ public class RankQueryTest extends SolrTestCaseJ4 {
         "//result/doc[3]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='6']",
         "//result/doc[1]/str[@name='id'][.='5']");
+  }
+
+  // The following static classes are intended to ensure that support of covariant
+  // ScoreDocs is supported in rank queries. MyRankQuery will fail to compile
+  // if covariant ScoreDocs are not supported because it returns a TopDocsCollector
+  // for MyScoreDoc (a subtype of ScoreDoc).
+  static class MyScoreDoc extends ScoreDoc {
+    public int someOtherField = 0;
+    public MyScoreDoc(int doc, float score, int someOtherField) {
+      super(doc, score, -1);
+      this.someOtherField = someOtherField;
+    }
+  }
+  
+  static class MyTopDocsCollector extends TopDocsCollector<MyScoreDoc> {
+    public MyTopDocsCollector(PriorityQueue<MyScoreDoc> pq) {
+      super(pq);
+    }
+    
+    @Override 
+    public ScoreMode scoreMode() {
+      return ScoreMode.COMPLETE;
+    }
+
+    @Override
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      return null;
+    }
+  }
+
+  static class MyRankQuery extends RankQuery {
+
+    @Override 
+    public TopDocsCollector<? extends ScoreDoc> getTopDocsCollector(
+      int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
+      return new MyTopDocsCollector(null);
+    }
+
+    @Override 
+    public MergeStrategy getMergeStrategy() {
+      return null;
+    }
+
+    @Override 
+    public RankQuery wrap(Query mainQuery) {
+      return this;
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+    }
+
+    @Override 
+    public int hashCode() {
+      return 1;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return true;
+    }
   }
 }
