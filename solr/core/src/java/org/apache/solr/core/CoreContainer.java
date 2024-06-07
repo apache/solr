@@ -106,6 +106,9 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
+import org.apache.solr.filestore.ClusterFileStore;
+import org.apache.solr.filestore.DistribFileStore;
+import org.apache.solr.filestore.FileStore;
 import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.handler.ClusterAPI;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -298,7 +301,9 @@ public class CoreContainer {
   private volatile ClusterEventProducer clusterEventProducer;
   private DelegatingPlacementPluginFactory placementPluginFactory;
 
+  private DistribFileStore fileStore;
   private FileStoreAPI fileStoreAPI;
+  private ClusterFileStore clusterFileStoreAPI;
   private SolrPackageLoader packageLoader;
 
   private final Set<Path> allowPaths;
@@ -727,8 +732,8 @@ public class CoreContainer {
     return packageLoader;
   }
 
-  public FileStoreAPI getFileStoreAPI() {
-    return fileStoreAPI;
+  public FileStore getFileStore() {
+    return fileStore;
   }
 
   public SolrCache<?, ?> getCache(String name) {
@@ -860,9 +865,11 @@ public class CoreContainer {
               (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       pkiAuthenticationSecurityBuilder.initializeMetrics(solrMetricsContext, "/authentication/pki");
 
+      fileStore = new DistribFileStore(this);
       fileStoreAPI = new FileStoreAPI(this);
       registerV2ApiIfEnabled(fileStoreAPI.readAPI);
       registerV2ApiIfEnabled(fileStoreAPI.writeAPI);
+      registerV2ApiIfEnabled(ClusterFileStore.class);
 
       packageLoader = new SolrPackageLoader(this);
       registerV2ApiIfEnabled(packageLoader.getPackageAPI().editAPI);
@@ -1151,6 +1158,15 @@ public class CoreContainer {
                 protected void configure() {
                   bindFactory(new InjectionFactories.SingletonFactory<>(nodeKeyPair))
                       .to(SolrNodeKeyPair.class)
+                      .in(Singleton.class);
+                }
+              })
+          .register(
+              new AbstractBinder() {
+                @Override
+                protected void configure() {
+                  bindFactory(new InjectionFactories.SingletonFactory<>(fileStore))
+                      .to(DistribFileStore.class)
                       .in(Singleton.class);
                 }
               })

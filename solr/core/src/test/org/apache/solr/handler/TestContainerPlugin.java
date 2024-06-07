@@ -53,7 +53,7 @@ import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.filestore.FileStoreAPI;
+import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.TestDistribFileStore;
 import org.apache.solr.filestore.TestDistribFileStore.Fetcher;
 import org.apache.solr.pkg.PackageAPI;
@@ -295,7 +295,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     int version = phaser.getPhase();
 
     byte[] derFile = readFile("cryptokeys/pub_key512.der");
-    uploadKey(derFile, FileStoreAPI.KEYS_DIR + "/pub_key512.der", cluster);
+    uploadKey(derFile, ClusterFileStore.KEYS_DIR + "/pub_key512.der", cluster);
     TestPackages.postFileAndWait(
         cluster,
         "runtimecode/containerplugin.v.1.jar.bin",

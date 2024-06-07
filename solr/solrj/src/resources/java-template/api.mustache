@@ -17,6 +17,9 @@
 
 package {{package}};
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -156,6 +159,19 @@ public class {{classname}} {
                 {{#vendorExtensions.x-genericEntity}}
                 if (requestBody instanceof String) {
                     return new RequestWriter.StringPayloadContentWriter((String) requestBody, expectedType);
+                } else if (requestBody instanceof InputStream) {
+                    final var inputStream = (InputStream) requestBody;
+                    return new RequestWriter.ContentWriter() {
+                        @Override
+                        public void write(OutputStream os) throws IOException {
+                            inputStream.transferTo(os);
+                        }
+
+                        @Override
+                        public String getContentType() {
+                            return expectedType;
+                        }
+                    };
                 }
                 {{/vendorExtensions.x-genericEntity}}
                 return new JacksonContentWriter(expectedType, requestBody);
