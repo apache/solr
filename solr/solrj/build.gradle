@@ -136,6 +136,7 @@ openApiGenerate {
   generateModelTests = false
   generateApiDocumentation = false
   generateModelDocumentation = false
+  cleanupOutput = true
   additionalProperties = ["modelPackage": "org.apache.solr.client.api.model"]
 }
 
