@@ -67,6 +67,8 @@ Deprecation Removals
 
 * SOLR-17284: Remove deprecated BlobRepository in favour of FileStore. (Eric Pugh)
 
+* SOLR-17313: Remove deprecated class SolrLogPostTool.  PostLogsTool and the bin/solr post command has replaced this. (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -142,7 +144,11 @@ Bug Fixes
 
 * SOLR-17247: 'WWW-Authenticate' headers missing in MultiAuthPlugin (Lamine Idjeraoui via Eric Pugh)
 
+* SOLR-17304: Respect PKG_VERSIONS constraints in params.json when loading the schema plugins (Andrey Bozhko)
+
 * SOLR-17118: Simplify CoreContainerProvider initialization and JettySolrRunner. Avoid deadlock/hang. (David Smiley)
+
+* SOLR-17317: v2 APIs no longer return the incorrect content-type when 'wt=json' specified (Jason Gerlowski)
 
 Dependency Upgrades
 ---------------------
