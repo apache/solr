@@ -67,6 +67,8 @@ Deprecation Removals
 
 * SOLR-17284: Remove deprecated BlobRepository in favour of FileStore. (Eric Pugh)
 
+* SOLR-17313: Remove deprecated class SolrLogPostTool.  PostLogsTool and the bin/solr post command has replaced this. (Eric Pugh)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -113,6 +115,8 @@ New Features
 
 Improvements
 ---------------------
+* SOLR-17137: Enable Prometheus exporter to communicate with SSL protected Solr. (Eivind Bergstøl via Eric Pugh)
+
 * SOLR-16921: use -solrUrl to derive the zk host connection for bin/solr zk subcommands (Eric Pugh)
 
 * SOLR-14115: Add linkconfig, cluster, and updateacls as commands to SolrCLI.  Allow bin/solr commands to have parity with zkcli.sh commands. (Eric Pugh)
@@ -128,6 +132,8 @@ Optimizations
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
   cluster metrics.  AttributeFetcherImpl was improved accordingly.  (Yohann Callea)
 
+* SOLR-17099: Do not return spurious tags when fetching metrics from a Solr node to another. (Pierre Salagnac)
+
 Bug Fixes
 ---------------------
 * SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
@@ -137,6 +143,12 @@ Bug Fixes
 * SOLR-16659: Properly construct V2 base urls instead of replacing substring "/solr" with "/api" (Andrey Bozhko via Eric Pugh)
 
 * SOLR-17247: 'WWW-Authenticate' headers missing in MultiAuthPlugin (Lamine Idjeraoui via Eric Pugh)
+
+* SOLR-17304: Respect PKG_VERSIONS constraints in params.json when loading the schema plugins (Andrey Bozhko)
+
+* SOLR-17118: Simplify CoreContainerProvider initialization and JettySolrRunner. Avoid deadlock/hang. (David Smiley)
+
+* SOLR-17317: v2 APIs no longer return the incorrect content-type when 'wt=json' specified (Jason Gerlowski)
 
 Dependency Upgrades
 ---------------------
@@ -225,7 +237,6 @@ Optimizations
 * SOLR-17144: Close searcherExecutor thread per core after 1 minute (Pierre Salagnac, Christine Poerschke)
 
 * GITHUB#2217: Scale to 10K+ collections better in ZkStateReader.refreshCollectionsList (David Smiley)
-
 
 Bug Fixes
 ---------------------

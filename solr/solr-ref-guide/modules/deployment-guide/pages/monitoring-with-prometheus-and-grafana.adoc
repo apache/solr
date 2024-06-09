@@ -183,6 +183,17 @@ A unique ID for the cluster to monitor. This ID will be added to all metrics as 
 Specify the credentials in the format `username:password`. Example: `--credentials solr:SolrRocks`.
 
 
+`-ssl`, `--ssl-enabled`, `$SSL_ENABLED`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+
+Enable mTLS connection to Solr. Expects following env variables: SOLR_SSL_KEY_STORE, SOLR_SSL_KEY_STORE_PASSWORD, SOLR_SSL_TRUST_STORE, SOLR_SSL_TRUST_STORE_PASSWORD. Example: `--ssl-enabled`
+The environment variables are the same that Solr uses to enable mTLS.
+
 === Environment Variable Options
 
 The `./bin` scripts provided with the Prometheus Exporter support the use of custom java options through the following environment variables:
