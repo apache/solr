@@ -109,7 +109,6 @@ public class PackageToolTest extends SolrCloudTestCase {
         new String[] {
           "--solr-url",
           solrUrl,
-
           "add-repo",
           "fullstory",
           "http://localhost:" + repositoryServer.getPort(),
@@ -119,7 +118,9 @@ public class PackageToolTest extends SolrCloudTestCase {
 
     run(
         tool,
-        new String[] {"--solr-url", solrUrl, "list-available", "--credentials", SecurityJson.USER_PASS});
+        new String[] {
+          "--solr-url", solrUrl, "list-available", "--credentials", SecurityJson.USER_PASS
+        });
 
     run(
         tool,
@@ -134,7 +135,9 @@ public class PackageToolTest extends SolrCloudTestCase {
 
     run(
         tool,
-        new String[] {"--solr-url", solrUrl, "list-installed", "--credentials", SecurityJson.USER_PASS});
+        new String[] {
+          "--solr-url", solrUrl, "list-installed", "--credentials", SecurityJson.USER_PASS
+        });
 
     withBasicAuth(CollectionAdminRequest.createCollection("abc", "conf1", 1, 1))
         .processAndWait(cluster.getSolrClient(), 10);
@@ -186,7 +189,13 @@ public class PackageToolTest extends SolrCloudTestCase {
     run(
         tool,
         new String[] {
-          "--solr-url", solrUrl, "list-deployed", "-c", "abc", "--credentials", SecurityJson.USER_PASS
+          "--solr-url",
+          solrUrl,
+          "list-deployed",
+          "-c",
+          "abc",
+          "--credentials",
+          SecurityJson.USER_PASS
         });
 
     // Should we test the "auto-update to latest" functionality or the default explicit deploy
@@ -216,7 +225,12 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "--solr-url", solrUrl, "install", "question-answer", "--credentials", SecurityJson.USER_PASS
+            "--solr-url",
+            solrUrl,
+            "install",
+            "question-answer",
+            "--credentials",
+            SecurityJson.USER_PASS
           });
       assertPackageVersion(
           "abc", "question-answer", "$LATEST", rhPath, "1.1.0", SecurityJson.USER_PASS);
@@ -226,7 +240,12 @@ public class PackageToolTest extends SolrCloudTestCase {
       run(
           tool,
           new String[] {
-            "--solr-url", solrUrl, "install", "question-answer", "--credentials", SecurityJson.USER_PASS
+            "--solr-url",
+            solrUrl,
+            "install",
+            "question-answer",
+            "--credentials",
+            SecurityJson.USER_PASS
           });
       assertPackageVersion(
           "abc", "question-answer", "1.0.0", rhPath, "1.0.0", SecurityJson.USER_PASS);
