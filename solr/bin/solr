@@ -1002,9 +1002,14 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
   CONNECTION_PARAMS=""
 
   if [[ -z "$ZK_HOST" ]]; then
-    CONNECTION_PARAMS="-solrUrl ${ZK_SOLR_URL}"
+    if [[ -z "$ZK_SOLR_URL" ]]; then
+      CONNECTION_PARAMS=""
+    else
+      CONNECTION_PARAMS="--solr-url ${ZK_SOLR_URL}"
+    fi
+
   else
-    CONNECTION_PARAMS="-zkHost ${ZK_HOST}"
+    CONNECTION_PARAMS="--zk-host ${ZK_HOST}"
   fi
 
   case "$ZK_OP" in
@@ -1035,6 +1040,8 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
       if [ -z "$ZK_SRC" ]; then
         print_short_zk_usage "Zookeeper path to list must be specified when using the 'ls' command"
       fi
+      echo "HERE"
+      echo $CONNECTION_PARAMS
       run_tool "$ZK_OP" -path "$ZK_SRC" --recurse "$ZK_RECURSE" $CONNECTION_PARAMS $VERBOSE
     ;;
     mkroot)
