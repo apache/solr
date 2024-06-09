@@ -341,20 +341,21 @@ public class CreateTool extends ToolBase {
 
     if (confDirectoryName.equals("_default")
         && (confName.equals("") || confName.equals("_default"))) {
-      final String collectionName = cli.getOptionValue("collection");
+      final String collectionName = cli.getOptionValue("name");
       final String solrUrl = cli.getOptionValue("solrUrl", SolrCLI.getDefaultSolrUrl());
       final String curlCommand =
           String.format(
               Locale.ROOT,
-              "curl %s/%s/config -d "
+              "curl %s/solr/%s/config -d "
                   + "'{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'",
               solrUrl,
               collectionName);
       final String configCommand =
           String.format(
               Locale.ROOT,
-              "bin/solr config -c %s -p 8983 --action set-user-property --property update.autoCreateFields --value false",
-              collectionName);
+              "bin/solr config -c %s -solrUrl %s -action set-user-property -property update.autoCreateFields -value false",
+              collectionName,
+              solrUrl);
       echo(
           "WARNING: Using _default configset. Data driven schema functionality is enabled by default, which is");
       echo("         NOT RECOMMENDED for production use.");
