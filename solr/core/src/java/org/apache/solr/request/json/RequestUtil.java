@@ -252,7 +252,7 @@ public class RequestUtil {
               convertJsonPropertyToLocalParams(
                   newMap, jsonQueryConverter, queryJsonProperty, out, isQuery, arr);
             }
-            newMap.put(COMBINER_KEYS, queryKeys.toArray(new String[queryKeys.size()]));
+            newMap.put(COMBINER_KEYS, queryKeys.toArray(new String[0]));
             continue;
           } else {
             throw new SolrException(
