@@ -350,7 +350,7 @@ public class CreateTool extends ToolBase {
       final String curlCommand =
           String.format(
               Locale.ROOT,
-              "curl %s/api/collections/%s/config -d "
+              "curl %s/solr/%s/config -d "
                   + "'{\"set-user-property\": {\"update.autoCreateFields\":\"false\"}}'",
               solrUrl,
               collectionName);
