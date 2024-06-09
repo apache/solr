@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -126,19 +125,6 @@ public class CollectionHandlingUtils {
           replicaType == Replica.Type.defaultType() ? "1" : "0");
     }
     return propsAndDefaults;
-  }
-
-  public static final Random RANDOM;
-
-  static {
-    // We try to make things reproducible in the context of our tests by initializing the random
-    // instance based on the current seed
-    String seed = System.getProperty("tests.seed");
-    if (seed == null) {
-      RANDOM = new Random();
-    } else {
-      RANDOM = new Random(seed.hashCode());
-    }
   }
 
   /** Returns names of properties that are used to specify a number of replicas of a given type. */
@@ -236,12 +222,13 @@ public class CollectionHandlingUtils {
 
   static void commit(NamedList<Object> results, String slice, Replica parentShardLeader) {
     log.debug("Calling soft commit to make sub shard updates visible");
+    final var zkCoreProps = new ZkCoreNodeProps(parentShardLeader);
     String coreUrl = new ZkCoreNodeProps(parentShardLeader).getCoreUrl();
     // HttpShardHandler is hard coded to send a QueryRequest hence we go direct
     // and we force open a searcher so that we have documents to show upon switching states
     UpdateResponse updateResponse = null;
     try {
-      updateResponse = softCommit(coreUrl);
+      updateResponse = softCommit(zkCoreProps.getBaseUrl(), zkCoreProps.getCoreName());
       CollectionHandlingUtils.processResponse(
           results, null, coreUrl, updateResponse, slice, Collections.emptySet());
     } catch (Exception e) {
@@ -254,10 +241,12 @@ public class CollectionHandlingUtils {
     }
   }
 
-  static UpdateResponse softCommit(String url) throws SolrServerException, IOException {
+  static UpdateResponse softCommit(String baseUrl, String coreName)
+      throws SolrServerException, IOException {
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(url)
+        new HttpSolrClient.Builder(baseUrl)
+            .withDefaultCollection(coreName)
             .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(120000, TimeUnit.MILLISECONDS)
             .build()) {

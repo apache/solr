@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.request;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -28,7 +27,7 @@ import org.apache.solr.common.params.SolrParams;
 /**
  * @since solr 1.3
  */
-public class LukeRequest extends SolrRequest<LukeResponse> {
+public class LukeRequest extends CollectionRequiringSolrRequest<LukeResponse> {
 
   private List<String> fields;
   private int numTerms = -1;

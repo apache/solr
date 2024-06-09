@@ -21,6 +21,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.Test;
 
@@ -34,7 +35,7 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
     super.setUp();
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig());
+    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build());
     solrCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");
   }
 

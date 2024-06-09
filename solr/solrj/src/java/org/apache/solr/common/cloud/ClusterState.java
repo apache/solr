@@ -20,12 +20,16 @@ import static org.apache.solr.common.util.Utils.STANDARDOBJBUILDER;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -175,32 +179,51 @@ public class ClusterState implements MapWriter {
     return Collections.unmodifiableSet(liveNodes);
   }
 
+  @Deprecated
   public String getShardId(String nodeName, String coreName) {
     return getShardId(null, nodeName, coreName);
   }
 
+  @Deprecated
   public String getShardId(String collectionName, String nodeName, String coreName) {
-    Collection<CollectionRef> states = collectionStates.values();
+    if (coreName == null || nodeName == null) {
+      return null;
+    }
+    Collection<CollectionRef> states = Collections.emptyList();
     if (collectionName != null) {
       CollectionRef c = collectionStates.get(collectionName);
       if (c != null) states = Collections.singletonList(c);
+    } else {
+      states = collectionStates.values();
     }
 
     for (CollectionRef ref : states) {
       DocCollection coll = ref.get();
-      if (coll == null) continue; // this collection go tremoved in between, skip
-      for (Slice slice : coll.getSlices()) {
-        for (Replica replica : slice.getReplicas()) {
-          // TODO: for really large clusters, we could 'index' on this
-          String rnodeName = replica.getStr(ReplicaStateProps.NODE_NAME);
-          String rcore = replica.getStr(ReplicaStateProps.CORE_NAME);
-          if (nodeName.equals(rnodeName) && coreName.equals(rcore)) {
-            return slice.getName();
-          }
-        }
-      }
+      if (coll == null) continue; // this collection got removed in between, skip
+      // TODO: for really large clusters, we could 'index' on this
+      return Optional.ofNullable(coll.getReplicas(nodeName)).stream()
+          .flatMap(List::stream)
+          .filter(r -> coreName.equals(r.getStr(ReplicaStateProps.CORE_NAME)))
+          .map(Replica::getShard)
+          .findAny()
+          .orElse(null);
     }
     return null;
+  }
+
+  public Map<String, List<Replica>> getReplicaNamesPerCollectionOnNode(final String nodeName) {
+    Map<String, List<Replica>> replicaNamesPerCollectionOnNode = new HashMap<>();
+    collectionStates.values().stream()
+        .map(CollectionRef::get)
+        .filter(Objects::nonNull)
+        .forEach(
+            col -> {
+              List<Replica> replicas = col.getReplicas(nodeName);
+              if (replicas != null && !replicas.isEmpty()) {
+                replicaNamesPerCollectionOnNode.put(col.getName(), replicas);
+              }
+            });
+    return replicaNamesPerCollectionOnNode;
   }
 
   /** Check if node is alive. */
@@ -225,28 +248,35 @@ public class ClusterState implements MapWriter {
    *     Json representation of a {@link DocCollection} as written by {@link #write(JSONWriter)}. It
    *     can represent one or more collections.
    * @param liveNodes list of live nodes
+   * @param creationTime assigns this date to all {@link DocCollection} referenced by the returned
+   *     {@link ClusterState}
    * @return the ClusterState
    */
   public static ClusterState createFromJson(
-      int version, byte[] bytes, Set<String> liveNodes, DocCollection.PrsSupplier prsSupplier) {
+      int version,
+      byte[] bytes,
+      Set<String> liveNodes,
+      Instant creationTime,
+      DocCollection.PrsSupplier prsSupplier) {
     if (bytes == null || bytes.length == 0) {
       return new ClusterState(liveNodes, Collections.<String, DocCollection>emptyMap());
     }
     @SuppressWarnings({"unchecked"})
     Map<String, Object> stateMap =
         (Map<String, Object>) Utils.fromJSON(bytes, 0, bytes.length, STR_INTERNER_OBJ_BUILDER);
-    return createFromCollectionMap(version, stateMap, liveNodes, prsSupplier);
+    return createFromCollectionMap(version, stateMap, liveNodes, creationTime, prsSupplier);
   }
 
   @Deprecated
   public static ClusterState createFromJson(int version, byte[] bytes, Set<String> liveNodes) {
-    return createFromJson(version, bytes, liveNodes, null);
+    return createFromJson(version, bytes, liveNodes, Instant.EPOCH, null);
   }
 
   public static ClusterState createFromCollectionMap(
       int version,
       Map<String, Object> stateMap,
       Set<String> liveNodes,
+      Instant creationTime,
       DocCollection.PrsSupplier prsSupplier) {
     Map<String, CollectionRef> collections = CollectionUtil.newLinkedHashMap(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
@@ -254,7 +284,11 @@ public class ClusterState implements MapWriter {
       @SuppressWarnings({"unchecked"})
       DocCollection coll =
           collectionFromObjects(
-              collectionName, (Map<String, Object>) entry.getValue(), version, prsSupplier);
+              collectionName,
+              (Map<String, Object>) entry.getValue(),
+              version,
+              creationTime,
+              prsSupplier);
       collections.put(collectionName, new CollectionRef(coll));
     }
 
@@ -264,12 +298,16 @@ public class ClusterState implements MapWriter {
   @Deprecated
   public static ClusterState createFromCollectionMap(
       int version, Map<String, Object> stateMap, Set<String> liveNodes) {
-    return createFromCollectionMap(version, stateMap, liveNodes, null);
+    return createFromCollectionMap(version, stateMap, liveNodes, Instant.EPOCH, null);
   }
 
   // TODO move to static DocCollection.loadFromMap
   public static DocCollection collectionFromObjects(
-      String name, Map<String, Object> objs, int version, DocCollection.PrsSupplier prsSupplier) {
+      String name,
+      Map<String, Object> objs,
+      int version,
+      Instant creationTime,
+      DocCollection.PrsSupplier prsSupplier) {
     Map<String, Object> props;
     Map<String, Slice> slices;
 
@@ -304,7 +342,7 @@ public class ClusterState implements MapWriter {
       router = DocRouter.getDocRouter((String) routerProps.get("name"));
     }
 
-    return DocCollection.create(name, slices, props, router, version, prsSupplier);
+    return DocCollection.create(name, slices, props, router, version, creationTime, prsSupplier);
   }
 
   @Override

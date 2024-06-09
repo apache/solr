@@ -30,6 +30,7 @@
   <str name="coreSorter">testCoreSorter</str>
   <int name="transientCacheSize">66</int>
   <int name="replayUpdatesThreads">100</int>
+  <int name="indexSearcherExecutorThreads">7</int>
   <int name="maxBooleanClauses">42</int>
   <bool name="hideStackTrace">true</bool>
 
@@ -75,5 +76,8 @@
   <backup>
     <repository name="local" class="a.b.C" default="true"/>
   </backup>
+
+  <clusterSingleton name="testSingleton1" class="org.apache.solr.core.TestSolrXml$CS"/>
+  <clusterSingleton name="testSingleton2" class="org.apache.solr.core.TestSolrXml$CS"/>
 
 </solr>

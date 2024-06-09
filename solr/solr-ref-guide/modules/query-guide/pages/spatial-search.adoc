@@ -68,10 +68,10 @@ However, it's much bulkier than the raw coordinates for such simple data.
 
 === Indexing GeoJSON and WKT
 
-Using the `bin/post` tool:
+Using the `bin/solr post` tool:
 
 [source,text]
-bin/post -type "application/json" -url "http://localhost:8983/solr/mycollection/update?format=geojson" /path/to/geojson.file
+bin/solr post -type "application/json" -url "http://localhost:8983/solr/mycollection/update?format=geojson" /path/to/geojson.file
 
 The key parameter to pass in with your request is:
 
@@ -480,7 +480,7 @@ The https://github.com/locationtech/jts[JTS Topology Suite] is a popular computa
 It supports a variety of shapes including polygons, buffering shapes, and some invalid polygon repair fall-backs.
 With the help of Spatial4j, included with Solr, the polygons support dateline (anti-meridian) crossing.
 You must download it (a JAR file) and put that in a special location internal to Solr:  `SOLR_INSTALL/server/solr-webapp/webapp/WEB-INF/lib/`.
-You can readily download it here: https://mvnrepository.com/artifact/org.locationtech.jts/jts-core/1.15.0.
+You can readily download it here: https://mvnrepository.com/artifact/org.locationtech.jts/jts-core/1.17.1.
 _It will not work if placed in other more typical Solr lib directories, unfortunately._
 
 Set the `spatialContextFactory` attribute on the field type to `JTS`.

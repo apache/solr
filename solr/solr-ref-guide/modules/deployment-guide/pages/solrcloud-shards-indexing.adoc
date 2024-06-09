@@ -24,17 +24,9 @@ Which shard contains each document in a collection depends on the overall shardi
 For example, you might have a collection where the "country" field of each document determines which shard it is part of, so documents from the same country are co-located.
 A different collection might simply use a "hash" on the uniqueKey of each document to determine its Shard.
 
-Before SolrCloud, Solr supported Distributed Search, which allowed one query to be executed across multiple shards, so the query was executed against the entire Solr index and no documents would be missed from the search results.
-So splitting an index across shards is not exclusively a SolrCloud concept.
-There were, however, several problems with the distributed approach that necessitated improvement with SolrCloud:
-
-. Splitting an index into shards was somewhat manual.
-. There was no support for distributed indexing, which meant that you needed to explicitly send documents to a specific shard; Solr couldn't figure out on its own what shards to send documents to.
-. There was no load balancing or failover, so if you got a high number of queries, you needed to figure out where to send them and if one shard died it was just gone.
-
-SolrCloud addresses those limitations.
 There is support for distributing both the index process and the queries automatically, and ZooKeeper provides failover and load balancing.
-Additionally, every shard can  have multiple replicas for additional robustness.
+As well as supporting replication, automatic index spliting to shards, there is support for automatic routing of documents to specific shards by a sharding strategy.
+Additionally, every shard can have multiple replicas for additional robustness.
 
 == Leaders and Replicas
 

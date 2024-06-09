@@ -604,7 +604,7 @@ teardown() {
   run solr api -get "https://localhost:${SOLR2_PORT}/solr/test-single-shard/select?q=query4"
   assert_output --partial '"numFound":0'
 
-  run solr post -url https://localhost:${SOLR_PORT}/solr/test/update -commit ${SOLR_TIP}/example/exampledocs/books.csv
+  run solr post -url https://localhost:${SOLR_PORT}/solr/test/update ${SOLR_TIP}/example/exampledocs/books.csv
 
   run solr api -get "https://localhost:${SOLR_PORT}/solr/test/select?q=*:*"
   assert_output --partial '"numFound":10'

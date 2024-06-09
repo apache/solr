@@ -19,14 +19,16 @@ package org.apache.solr.handler;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.SolrPing;
-import org.apache.solr.client.solrj.util.AsyncListener;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -79,19 +81,6 @@ public class TestHttpRequestId extends SolrJettyTestBase {
     final String key = "mdcContextTestKey" + System.nanoTime();
     final String value = "TestHttpRequestId" + System.nanoTime();
 
-    AsyncListener<NamedList<Object>> listener =
-        new AsyncListener<>() {
-          @Override
-          public void onSuccess(NamedList<Object> t) {
-            assertEquals(value, MDC.get(key));
-          }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            assertEquals(value, MDC.get(key));
-          }
-        };
-
     try (LogListener reqLog =
         LogListener.debug(Http2SolrClient.class).substring("response processing")) {
       // client setup needs to be same as HttpShardHandlerFactory
@@ -104,15 +93,31 @@ public class TestHttpRequestId extends SolrJettyTestBase {
               workQueue,
               new SolrNamedThreadFactory("httpShardExecutor"),
               false);
+      CompletableFuture<NamedList<Object>> cf;
       try (Http2SolrClient client =
-          new Http2SolrClient.Builder(getBaseUrl() + collection)
+          new Http2SolrClient.Builder(getBaseUrl())
+              .withDefaultCollection(collection)
               .withExecutor(commExecutor)
               .build()) {
         MDC.put(key, value);
-        client.asyncRequest(new SolrPing(), null, listener);
+        cf =
+            client
+                .requestAsync(new SolrPing(), null)
+                .whenComplete((nl, e) -> assertEquals(value, MDC.get(key)));
       } finally {
         ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
         MDC.remove(key);
+      }
+
+      try {
+        cf.get(1, TimeUnit.MINUTES);
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+        fail("interrupted");
+      } catch (TimeoutException te) {
+        fail("timeout");
+      } catch (ExecutionException ee) {
+        // ignore
       }
 
       // expecting 2 events: success|failed, completed

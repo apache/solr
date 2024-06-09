@@ -21,10 +21,10 @@ import static org.apache.solr.jersey.MessageBodyReaders.CachingDelegatingMessage
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.UriInfo;
 import java.util.List;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.UriInfo;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateReplicaRequestBody;
 import org.junit.BeforeClass;

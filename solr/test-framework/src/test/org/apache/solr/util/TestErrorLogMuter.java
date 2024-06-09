@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.regex.Pattern;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.hamcrest.MatcherAssert;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,8 +48,8 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
         log.warn("This is an warn message, mentioning 'eRrOr Log', that should also not be muted");
         assertEquals(1, x.getCount());
         // the root logger better have gotten both of those...
-        MatcherAssert.assertThat(rootErrorCheck.pollMessage(), containsString("should not mute"));
-        MatcherAssert.assertThat(rootWarnCheck.pollMessage(), containsString("also not be muted"));
+        assertThat(rootErrorCheck.pollMessage(), containsString("should not mute"));
+        assertThat(rootWarnCheck.pollMessage(), containsString("also not be muted"));
 
         log.error(
             "This {} because of the {} msg",
@@ -114,7 +113,7 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
       log.error("this matches the default ignore_exception pattern");
       log.error("something matching foo that should make it"); // E1
       assertEquals(1, rootErrorCheck.getCount());
-      MatcherAssert.assertThat(rootErrorCheck.pollMessage(), containsString("should make it"));
+      assertThat(rootErrorCheck.pollMessage(), containsString("should make it"));
       ignoreException("foo");
       log.error("something matching foo that should NOT make it");
       ignoreException("foo");
@@ -125,17 +124,17 @@ public class TestErrorLogMuter extends SolrTestCaseJ4 {
           "A warning should be fine even if it matches ignore_exception and foo and bar"); // W1
       assertEquals(1, rootErrorCheck.getCount());
       assertEquals(1, rootWarnCheck.getCount());
-      MatcherAssert.assertThat(rootErrorCheck.pollMessage(), containsString("should be fine"));
+      assertThat(rootErrorCheck.pollMessage(), containsString("should be fine"));
       unIgnoreException("foo");
       log.error("another thing matching foo that should make it"); // E2
       assertEquals(2, rootErrorCheck.getCount());
-      MatcherAssert.assertThat(rootErrorCheck.pollMessage(), containsString("another thing"));
+      assertThat(rootErrorCheck.pollMessage(), containsString("another thing"));
       log.error("something matching baaaar that should still NOT make it");
       assertEquals(2, rootErrorCheck.getCount());
       resetExceptionIgnores();
       log.error("this still matches the default ignore_exception pattern");
       log.error("but something matching baaaar should make it now"); // E3
-      MatcherAssert.assertThat(rootErrorCheck.pollMessage(), containsString("should make it now"));
+      assertThat(rootErrorCheck.pollMessage(), containsString("should make it now"));
 
       // the root logger must have only gotten the non-muted messages...
       assertEquals(3, rootErrorCheck.getCount());

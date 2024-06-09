@@ -1,4 +1,4 @@
-# https://cwiki.apache.org/confluence/display/INFRA/.asf.yaml+features+for+git+repositories
+# https://cwiki.apache.org/confluence/display/INFRA/Git+-+.asf.yaml+features
 
 github:
   description: "Apache Solr open-source search software"
@@ -17,6 +17,27 @@ github:
     squash: true
     merge:  false
     rebase: false
+
+  # TODO: Add to this list for each new minor release
+  protected_branches:
+    main: {}
+    branch_9_0: {}
+    branch_9_1: {}
+    branch_9_2: {}
+    branch_9_3: {}
+    branch_9_4: {}
+    branch_9_5: {}
+    branch_9_6: {}
+    branch_9x: {}
+
+  protected_tags:
+    - "releases/*"
+
+  autolink_jira:
+    - SOLR
+
+  collaborators:
+    - solrbot
 
 notifications:
   commits:      commits@solr.apache.org

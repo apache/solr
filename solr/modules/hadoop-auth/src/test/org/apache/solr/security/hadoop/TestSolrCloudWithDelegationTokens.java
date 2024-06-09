@@ -46,6 +46,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -67,7 +68,8 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     System.setProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED, "true");
     System.setProperty("solr.kerberos.cookie.domain", "127.0.0.1");
 
-    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig());
+    miniCluster =
+        new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), JettyConfig.builder().build());
     JettySolrRunner runnerPrimary = miniCluster.getJettySolrRunners().get(0);
     solrClientPrimary = new HttpSolrClient.Builder(runnerPrimary.getBaseUrl().toString()).build();
     JettySolrRunner runnerSecondary = miniCluster.getJettySolrRunners().get(1);

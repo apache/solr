@@ -89,7 +89,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
@@ -168,9 +167,9 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain.ProcessorInfo;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.IOFunction;
+import org.apache.solr.util.IndexOutputOutputStream;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesInputStream;
-import org.apache.solr.util.PropertiesOutputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
@@ -1077,17 +1076,17 @@ public class SolrCore implements SolrInfoBean, Closeable {
       this.configSet = configSet;
       this.coreDescriptor = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
       this.name = Objects.requireNonNull(coreDescriptor.getName());
-      coreProvider = new Provider(coreContainer, getName(), uniqueId);
+      this.coreProvider = new Provider(coreContainer, getName(), uniqueId);
 
       this.solrConfig = configSet.getSolrConfig();
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
-      this.resourceLoader.initCore(this);
+      this.resourceLoader.setSolrCore(this);
       IndexSchema schema = configSet.getIndexSchema();
 
       this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
-      solrMetricsContext = coreMetricManager.getSolrMetricsContext();
+      this.solrMetricsContext = coreMetricManager.getSolrMetricsContext();
       this.coreMetricManager.loadReporters();
 
       if (updateHandler == null) {
@@ -1514,7 +1513,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     Writer os = null;
     try {
       IndexOutput out = dir.createOutput(tmpFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
-      os = new OutputStreamWriter(new PropertiesOutputStream(out), StandardCharsets.UTF_8);
+      os = new OutputStreamWriter(new IndexOutputOutputStream(out), StandardCharsets.UTF_8);
       p.store(os, IndexFetcher.INDEX_PROPERTIES);
       dir.sync(Collections.singleton(tmpFileName));
     } catch (Exception e) {
@@ -2056,8 +2055,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private final ArrayDeque<RefCounted<SolrIndexSearcher>> _searchers = new ArrayDeque<>();
   private final ArrayDeque<RefCounted<SolrIndexSearcher>> _realtimeSearchers = new ArrayDeque<>();
 
+  // Single threaded pool, with a time-to-keep of 60 seconds
   final ExecutorService searcherExecutor =
-      ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("searcherExecutor"));
+      ExecutorUtil.newMDCAwareSingleLazyThreadExecutor(
+          new SolrNamedThreadFactory("searcherExecutor"), 60L, TimeUnit.SECONDS);
   private int onDeckSearchers; // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not
   // vice-versa.
@@ -3536,40 +3537,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   public List<PluginInfo> getImplicitHandlers() {
     return ImplicitHolder.INSTANCE;
-  }
-
-  /**
-   * Convenience method to load a blob. This method minimizes the degree to which component and
-   * other code needs to depend on the structure of solr's object graph and ensures that a proper
-   * close hook is registered. This method should normally be called in {@link
-   * SolrCoreAware#inform(SolrCore)}, and should never be called during request processing. The
-   * Decoder will only run on the first invocations, subsequent invocations will return the cached
-   * object.
-   *
-   * @param key A key in the format of name/version for a blob stored in the {@link
-   *     CollectionAdminParams#SYSTEM_COLL} blob store via the Blob Store API
-   * @param decoder a decoder with which to convert the blob into a Java Object representation
-   *     (first time only)
-   * @return a reference to the blob that has already cached the decoded version.
-   */
-  public <T> BlobRepository.BlobContentRef<T> loadDecodeAndCacheBlob(
-      String key, BlobRepository.Decoder<T> decoder) {
-    // make sure component authors don't give us oddball keys with no version...
-    if (!BlobRepository.BLOB_KEY_PATTERN_CHECKER.matcher(key).matches()) {
-      throw new IllegalArgumentException(
-          "invalid key format, must end in /N where N is the version number");
-    }
-    // define the blob
-    BlobRepository.BlobContentRef<T> blobRef =
-        coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
-    addCloseHook(
-        new CloseHook() {
-          @Override
-          public void postClose(SolrCore core) {
-            coreContainer.getBlobRepository().decrementBlobRefCount(blobRef);
-          }
-        });
-    return blobRef;
   }
 
   public CancellableQueryTracker getCancellableQueryTracker() {
