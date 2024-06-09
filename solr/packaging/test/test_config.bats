@@ -41,7 +41,7 @@ teardown() {
 @test "setting property" {
   solr create -c COLL_NAME
 
-  run solr config -c COLL_NAME --action set-property --property updateHandler.autoCommit.maxDocs --value 100 --solr-url http://localhost:${SOLR_PORT}/solr
+  run solr config -c COLL_NAME --action set-property --property updateHandler.autoCommit.maxDocs --value 100 --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
 }
 
