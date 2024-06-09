@@ -41,20 +41,20 @@ teardown() {
 @test "create collection" {
   run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"
-  assert_output --partial "assuming solrUrl is http://localhost:${SOLR_PORT}"
+  assert_output --partial "assuming solr url is http://localhost:${SOLR_PORT}"
 }
 
 @test "create collection using solrUrl" {
   run solr create -c COLL_NAME --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Created collection 'COLL_NAME'"
-  refute_output --partial "assuming solrUrl is http://localhost:${SOLR_PORT}"
+  refute_output --partial "assuming solr url is http://localhost:${SOLR_PORT}"
 }
 
 @test "create collection using legacy solrUrl" {
   run solr create -c COLL_NAME --solr-url http://localhost:${SOLR_PORT}/solr
   assert_output --partial "Created collection 'COLL_NAME'"
   assert_output --partial "needn't include Solr's context-root"
-  refute_output --partial "assuming solrUrl is http://localhost:${SOLR_PORT}"
+  refute_output --partial "assuming solr url is http://localhost:${SOLR_PORT}"
 }
 
 @test "create collection using Zookeeper" {

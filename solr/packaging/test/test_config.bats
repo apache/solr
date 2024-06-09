@@ -50,5 +50,5 @@ teardown() {
 
   run solr config -c COLL_NAME --property updateHandler.autoCommit.maxDocs -v 100
   assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
-  assert_output --partial "assuming solrUrl is http://localhost:${SOLR_PORT}."
+  assert_output --partial "assuming solr url is http://localhost:${SOLR_PORT}."
 }
