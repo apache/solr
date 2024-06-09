@@ -39,6 +39,7 @@ import org.apache.solr.search.SolrIndexSearcher;
  * A combining algorithm creates a unique ranked list I = (i1, i2, ...).<br>
  * This list is created by combining elements from the lists la and lb as described by the
  * implementation algorithm.<br>
+ * since @Version 9.7 Used by {@link org.apache.solr.handler.component.QueryComponent}
  */
 public abstract class QueriesCombiner {
 
@@ -51,7 +52,7 @@ public abstract class QueriesCombiner {
 
   public abstract QueryResult combine(QueryResult[] rankedLists);
 
-  QueryResult initCombinedResult(QueryResult[] rankedLists) {
+  protected QueryResult initCombinedResult(QueryResult[] rankedLists) {
     QueryResult combinedRankedList = new QueryResult();
     boolean partialResults = false;
     for (QueryResult result : rankedLists) {

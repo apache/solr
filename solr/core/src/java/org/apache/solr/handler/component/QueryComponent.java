@@ -185,14 +185,13 @@ public class QueryComponent extends SearchComponent {
         unparsedQueries.add(params.get(queryKey));
       }
     } else {
-      unparsedQueries = new ArrayList<>(1);
       String queryString = rb.getQueryString();
       if (queryString == null) {
         // this is the normal way it's set.
         queryString = params.get(CommonParams.Q);
         rb.setQueryString(queryString);
       }
-      unparsedQueries.add(queryString);
+      unparsedQueries = List.of(queryString);
     }
 
     try {
