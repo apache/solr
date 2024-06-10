@@ -491,8 +491,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     public TaskObject getAsyncRequestForStatus(String key) {
       TaskObject task = requestStatusCache.getIfPresent(key);
 
-      if (task != null && !RUNNING.equals(task.status) && !task.polled) {
-        task.polled = true;
+      if (task != null && !RUNNING.equals(task.status) && !task.polledAfterCompletion) {
+        task.polledAfterCompletion = true;
         // At the first time we retrieve the status of a completed request, do a second lookup in
         // the cache. This is necessary to update the TTL of this request in the cache.
         // Unfortunately, we can't force the expiration time to be refreshed without a lookup.
@@ -561,7 +561,12 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       public String rspInfo;
       public Object operationRspInfo;
       private volatile String status;
-      private volatile boolean polled;
+
+      /**
+       * Flag set to true once the task is complete (can be in error) and the status was polled
+       * already once. Once set, the time we keep the task status is shortened.
+       */
+      private volatile boolean polledAfterCompletion;
 
       public TaskObject(
           String taskId, String action, boolean expensive, Callable<SolrQueryResponse> task) {
@@ -618,13 +623,13 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       @Override
       public long expireAfterUpdate(
           String key, TaskObject task, long currentTime, long currentDuration) {
-        return task.polled ? completedTimeoutNanos : runningTimeoutNanos;
+        return task.polledAfterCompletion ? completedTimeoutNanos : runningTimeoutNanos;
       }
 
       @Override
       public long expireAfterRead(
           String key, TaskObject task, long currentTime, long currentDuration) {
-        return task.polled ? completedTimeoutNanos : runningTimeoutNanos;
+        return task.polledAfterCompletion ? completedTimeoutNanos : runningTimeoutNanos;
       }
     }
   }
