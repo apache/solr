@@ -75,6 +75,8 @@ Other Changes
 
 * SOLR-16503: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
 
+* SOLR-16796: Include cyclonedx SBOMs with maven artifacts (Arnout Engelen, Houston Putman, Kevin Risden)
+
 ==================  9.6.1 ==================
 Bug Fixes
 ---------------------
