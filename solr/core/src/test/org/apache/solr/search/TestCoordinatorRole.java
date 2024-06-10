@@ -104,13 +104,14 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
 
       assertEquals(10, rslt.getResults().size());
 
-      String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.getSyntheticCollectionName("conf");
+      String SYNTHETIC_COLLECTION =
+          CoordinatorHttpSolrCall.getSyntheticCollectionNameFromConfig("conf");
       DocCollection collection =
           cluster.getSolrClient().getClusterStateProvider().getCollection(SYNTHETIC_COLLECTION);
       // this should be empty as synthetic collection does not register with ZK
       assertNull(collection);
 
-      String syntheticCoreName = CoordinatorHttpSolrCall.getSyntheticCoreName("conf");
+      String syntheticCoreName = CoordinatorHttpSolrCall.getSyntheticCoreNameFromConfig("conf");
       try (SolrCore syntheticCore =
           coordinatorJetty.getCoreContainer().getCore(syntheticCoreName)) {
         assertNotNull(syntheticCore);

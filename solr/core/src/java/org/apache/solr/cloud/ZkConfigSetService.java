@@ -68,9 +68,6 @@ public class ZkConfigSetService extends ConfigSetService {
 
   @Override
   public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
-    // The configSet is read from ZK and populated.  Ignore CD's pre-existing configSet; only
-    // populated in standalone
-    //
     // Currently, cd.getConfigSet() is always null. Except that it's explicitly set by
     // {@link org.apache.solr.core.SyntheticSolrCore}.
     // Should we consider setting it for all cores as a part of CoreDescriptor creation/loading

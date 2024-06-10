@@ -97,7 +97,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
       }
 
       String confName = coll.getConfigName();
-      syntheticCoreName = getSyntheticCoreName(confName);
+      syntheticCoreName = getSyntheticCoreNameFromConfig(confName);
 
       SolrCore syntheticCore;
       synchronized (CoordinatorHttpSolrCall.class) {
@@ -139,12 +139,12 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     }
   }
 
-  public static String getSyntheticCollectionName(String configName) {
+  public static String getSyntheticCollectionNameFromConfig(String configName) {
     return SYNTHETIC_COLL_PREFIX + configName;
   }
 
-  public static String getSyntheticCoreName(String configName) {
-    return getSyntheticCollectionName(configName) + "_core";
+  public static String getSyntheticCoreNameFromConfig(String configName) {
+    return getSyntheticCollectionNameFromConfig(configName) + "_core";
   }
 
   @Override
