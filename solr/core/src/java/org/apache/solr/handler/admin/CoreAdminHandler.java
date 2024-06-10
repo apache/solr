@@ -50,6 +50,7 @@ import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -431,9 +432,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
   public static class CoreAdminAsyncTracker {
     /**
-     * Max number of requests we track in the Caffeine cache. This limit is super high on
-     * purpose, we're not supposed to hit it. This is just a protection to grow in memory too
-     * much when receiving an abusive number of admin requests.
+     * Max number of requests we track in the Caffeine cache. This limit is super high on purpose,
+     * we're not supposed to hit it. This is just a protection to grow in memory too much when
+     * receiving an abusive number of admin requests.
      */
     private static final int MAX_TRACKED_REQUESTS = 10_000;
 
@@ -461,9 +462,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       this(
           Ticker.systemTicker(),
           TimeUnit.MINUTES.toNanos(
-              Long.getLong("solr.admin.requests.running.timeout.minutes", 60L)),
+              EnvUtils.getEnvAsLong("solr.admin.requests.running.timeout.minutes", 60L)),
           TimeUnit.MINUTES.toNanos(
-              Long.getLong("solr.admin.requests.completed.timeout.minutes", 5L)));
+              EnvUtils.getEnvAsLong("solr.admin.requests.completed.timeout.minutes", 5L)));
     }
 
     /**
