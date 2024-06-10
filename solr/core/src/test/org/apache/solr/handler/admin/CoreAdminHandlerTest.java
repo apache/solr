@@ -569,4 +569,26 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       asyncTracker.shutdown();
     }
   }
+
+  /** Check we reject a task is the async ID already exists. */
+  @Test
+  public void testDuplicatedRequestId() {
+
+    // Different tasks but with same ID
+    TaskObject task1 = new TaskObject("id1", "ACTION", false, null);
+    TaskObject task2 = new TaskObject("id1", "ACTION", false, null);
+
+    CoreAdminAsyncTracker asyncTracker = new CoreAdminAsyncTracker();
+    try {
+      asyncTracker.submitAsyncTask(task1);
+      try {
+        asyncTracker.submitAsyncTask(task2);
+        fail("Task should have been rejected.");
+      } catch (SolrException e) {
+        assertEquals("Duplicate request with the same requestid found.", e.getMessage());
+      }
+    } finally {
+      asyncTracker.shutdown();
+    }
+  }
 }

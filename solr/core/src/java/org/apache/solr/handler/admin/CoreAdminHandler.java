@@ -536,7 +536,11 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
 
     private void addTask(TaskObject taskObject) {
       // Ensure task ID is not already in use
-      if (requestStatusCache.asMap().containsKey(taskObject.taskId)) {
+      TaskObject taskInCache = requestStatusCache.get(taskObject.taskId, n -> taskObject);
+
+      // If we get a different task instance, it means one was already in the cache with the
+      // same name. Just reject the new one.
+      if (taskInCache != taskObject) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST, "Duplicate request with the same requestid found.");
       }
