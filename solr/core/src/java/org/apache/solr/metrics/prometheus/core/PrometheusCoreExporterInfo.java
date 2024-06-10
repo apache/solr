@@ -14,12 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.metrics.prometheus.core;
 
-/**
- * The {@link org.apache.solr.metrics.prometheus.SolrPrometheusExporter} is responsible for
- * collecting Prometheus metrics from exporting {@link com.codahale.metrics.Metric}'s from {@link
- * com.codahale.metrics.MetricRegistry} {@link org.apache.solr.metrics.prometheus.SolrMetric} is a
- * wrapper to export {@link com.codahale.metrics.Metric} to {@link
- * io.prometheus.metrics.model.snapshots.DataPointSnapshot}
- */
-package org.apache.solr.metrics.prometheus;
+import java.util.regex.Pattern;
+
+public interface PrometheusCoreExporterInfo {
+  /** Category of prefix Solr Core dropwizard handler metric names */
+  enum CoreCategory {
+    ADMIN,
+    QUERY,
+    UPDATE,
+    REPLICATION,
+    TLOG,
+    CACHE,
+    SEARCHER,
+    HIGHLIGHTER,
+    INDEX,
+    CORE
+  }
+
+  Pattern CLOUD_CORE_PATTERN = Pattern.compile("^core_(.*)_(shard[0-9]+)_(replica_n[0-9]+)$");
+}

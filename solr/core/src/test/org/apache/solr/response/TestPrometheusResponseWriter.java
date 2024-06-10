@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
+import org.apache.solr.metrics.prometheus.core.SolrPrometheusCoreExporter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;

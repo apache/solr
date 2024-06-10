@@ -14,29 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.core;
+package org.apache.solr.metrics.prometheus.node;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
-import com.codahale.metrics.Timer;
+import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
-/** Dropwizard metrics of name ADMIN/QUERY/UPDATE/REPLICATION.* */
-public class SolrCoreHandlerMetric extends SolrCoreMetric {
-  public static final String CORE_REQUESTS_TOTAL = "solr_metrics_core_requests";
-  public static final String CORE_REQUESTS_UPDATE_HANDLER = "solr_metrics_core_update_handler";
-  public static final String CORE_REQUESTS_TOTAL_TIME = "solr_metrics_core_requests_time";
-  public static final String CORE_REQUEST_TIMES = "solr_metrics_core_average_request_time";
+/* Dropwizard metrics of name ADMIN.* and UPDATE.* */
+public class SolrNodeHandlerMetric extends SolrNodeMetric {
+  public static final String NODE_REQUESTS = "solr_metrics_node_requests";
+  public static final String NODE_SECONDS_TOTAL = "solr_metrics_node_requests_time";
+  public static final String NODE_CONNECTIONS = "solr_metrics_node_connections";
 
-  public SolrCoreHandlerMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+  public SolrNodeHandlerMetric(Metric dropwizardMetric, String metricName) {
+    super(dropwizardMetric, metricName);
   }
 
   @Override
-  public SolrCoreMetric parseLabels() {
+  public SolrMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
     labels.put("category", parsedMetric[0]);
     labels.put("handler", parsedMetric[1]);
@@ -46,25 +44,21 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
 
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
+    String[] parsedMetric = metricName.split("\\.");
     if (dropwizardMetric instanceof Meter) {
-      exporter.exportMeter(CORE_REQUESTS_TOTAL, (Meter) dropwizardMetric, getLabels());
+      exporter.exportMeter(NODE_REQUESTS, (Meter) dropwizardMetric, getLabels());
     } else if (dropwizardMetric instanceof Counter) {
-      if (metricName.endsWith("requests")) {
-        exporter.exportCounter(CORE_REQUESTS_TOTAL, (Counter) dropwizardMetric, getLabels());
-      } else if (metricName.endsWith("totalTime")) {
+      if (metricName.endsWith(".requests")) {
+        exporter.exportCounter(NODE_REQUESTS, (Counter) dropwizardMetric, getLabels());
+      } else if (metricName.endsWith(".totalTime")) {
         // Do not need type label for total time
         labels.remove("type");
-        exporter.exportCounter(CORE_REQUESTS_TOTAL_TIME, (Counter) dropwizardMetric, getLabels());
+        exporter.exportCounter(NODE_SECONDS_TOTAL, (Counter) dropwizardMetric, getLabels());
       }
     } else if (dropwizardMetric instanceof Gauge) {
-      if (!metricName.endsWith("handlerStart")) {
-        exporter.exportGauge(
-            CORE_REQUESTS_UPDATE_HANDLER, (Gauge<?>) dropwizardMetric, getLabels());
+      if (metricName.endsWith("Connections")) {
+        exporter.exportGauge(NODE_CONNECTIONS, (Gauge<?>) dropwizardMetric, getLabels());
       }
-    } else if (dropwizardMetric instanceof Timer) {
-      // Do not need type label for request times
-      labels.remove("type");
-      exporter.exportTimer(CORE_REQUEST_TIMES, (Timer) dropwizardMetric, getLabels());
     }
   }
 }

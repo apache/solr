@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 import org.junit.Test;
 
@@ -143,6 +144,11 @@ public class SolrPrometheusExporterTest extends SolrTestCaseJ4 {
   static class TestSolrPrometheusExporter extends SolrPrometheusExporter {
     @Override
     public void exportDropwizardMetric(Metric dropwizardMetric, String metricName) {}
+
+    @Override
+    public SolrMetric categorizeMetric(Metric dropwizardMetric, String metricName) {
+      return null;
+    }
 
     public Map<String, List<CounterSnapshot.CounterDataPointSnapshot>> getMetricCounters() {
       return metricCounters;

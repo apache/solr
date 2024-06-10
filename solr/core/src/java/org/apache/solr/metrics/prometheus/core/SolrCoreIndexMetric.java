@@ -18,7 +18,7 @@ package org.apache.solr.metrics.prometheus.core;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
+import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
 /** Dropwizard metrics of name INDEX.* */
 public class SolrCoreIndexMetric extends SolrCoreMetric {
@@ -35,7 +35,7 @@ public class SolrCoreIndexMetric extends SolrCoreMetric {
   }
 
   @Override
-  public void toPrometheus(SolrPrometheusCoreExporter exporter) {
+  public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Gauge) {
       if (metricName.endsWith("sizeInBytes")) {
         exporter.exportGauge(CORE_INDEX_METRICS, (Gauge<?>) dropwizardMetric, getLabels());

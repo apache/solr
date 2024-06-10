@@ -16,48 +16,26 @@
  */
 package org.apache.solr.metrics.prometheus.core;
 
-import static org.apache.solr.metrics.prometheus.PrometheusCoreExporterInfo.CLOUD_CORE_PATTERN;
+import static org.apache.solr.metrics.prometheus.core.PrometheusCoreExporterInfo.CLOUD_CORE_PATTERN;
 
 import com.codahale.metrics.Metric;
-import io.prometheus.metrics.model.snapshots.Labels;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.regex.Matcher;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
+import org.apache.solr.metrics.prometheus.SolrMetric;
 
-/**
- * Base class is a wrapper to categorize and export {@link com.codahale.metrics.Metric} to {@link
- * io.prometheus.metrics.model.snapshots.DataPointSnapshot} and register to a {@link
- * SolrPrometheusCoreExporter}. {@link com.codahale.metrics.MetricRegistry} does not support tags
- * unlike prometheus. Metrics registered to the registry need to be parsed out from the metric name
- * to be exported to {@link io.prometheus.metrics.model.snapshots.DataPointSnapshot}
- */
-public abstract class SolrCoreMetric {
-  public Metric dropwizardMetric;
+/** Base class is a wrapper to export a solr.core {@link com.codahale.metrics.Metric} */
+public abstract class SolrCoreMetric extends SolrMetric {
   public String coreName;
-  public String metricName;
-  public Map<String, String> labels = new HashMap<>();
 
   public SolrCoreMetric(
       Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    this.dropwizardMetric = dropwizardMetric;
+    super(dropwizardMetric, metricName);
     this.coreName = coreName;
-    this.metricName = metricName;
     labels.put("core", coreName);
     if (cloudMode) {
       appendCloudModeLabels();
     }
   }
-
-  public Labels getLabels() {
-    return Labels.of(new ArrayList<>(labels.keySet()), new ArrayList<>(labels.values()));
-  }
-
-  public abstract SolrCoreMetric parseLabels();
-
-  public abstract void toPrometheus(SolrPrometheusCoreExporter exporter);
 
   private void appendCloudModeLabels() {
     Matcher m = CLOUD_CORE_PATTERN.matcher(coreName);

@@ -14,23 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.core;
 
-import com.codahale.metrics.Metric;
-import org.apache.solr.metrics.prometheus.SolrPrometheusCoreExporter;
-
-public class SolrCoreNoOpMetric extends SolrCoreMetric {
-
-  public SolrCoreNoOpMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
-  }
-
-  @Override
-  public SolrCoreMetric parseLabels() {
-    return this;
-  }
-
-  @Override
-  public void toPrometheus(SolrPrometheusCoreExporter exporter) {}
-}
+/**
+ * The {@link org.apache.solr.metrics.prometheus.jvm.SolrPrometheusJvmExporter} is responsible for
+ * exporting solr.jvm registry metrics to Prometheus.
+ */
+package org.apache.solr.metrics.prometheus.jvm;

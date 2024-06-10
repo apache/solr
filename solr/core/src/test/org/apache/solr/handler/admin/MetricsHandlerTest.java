@@ -18,6 +18,8 @@
 package org.apache.solr.handler.admin;
 
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.SettableGauge;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
@@ -26,7 +28,6 @@ import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CommonParams;
@@ -37,6 +38,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 import org.apache.solr.request.SolrQueryRequest;
@@ -64,6 +66,26 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     // test escapes
     c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "solrtest_foo:bar");
     c.inc(3);
+
+    // Manually register for Prometheus exporter tests
+    registerGauge("solr.jvm", "gc.G1-Old-Generation.count");
+    registerGauge("solr.jvm", "gc.G1-Old-Generation.time");
+    registerGauge("solr.jvm", "memory.heap.committed");
+    registerGauge("solr.jvm", "memory.pools.CodeHeap-'non-nmethods'.committed");
+    registerGauge("solr.jvm", "threads.count");
+    registerGauge("solr.jvm", "os.availableProcessors");
+    registerGauge("solr.jvm", "buffers.direct.Count");
+    registerGauge("solr.jvm", "buffers.direct.MemoryUsed");
+    h.getCoreContainer()
+        .getMetricManager()
+        .meter(null, "solr.jetty", "org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses");
+    h.getCoreContainer()
+        .getMetricManager()
+        .counter(
+            null, "solr.jetty", "org.eclipse.jetty.server.handler.DefaultHandler.active-requests");
+    h.getCoreContainer()
+        .getMetricManager()
+        .timer(null, "solr.jetty", "org.eclipse.jetty.server.handler.DefaultHandler.dispatches");
   }
 
   @AfterClass
@@ -686,7 +708,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings("unchecked")
-  public void testPrometheusMetrics() throws Exception {
+  public void testPrometheusMetricsCore() throws Exception {
     MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
     SolrQueryResponse resp = new SolrQueryResponse();
@@ -708,199 +730,272 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     MetricSnapshots actualSnapshots = exporter.collect();
     assertNotNull(actualSnapshots);
 
-    Optional<MetricSnapshot> actualSnapshot =
-        actualSnapshots.stream()
-            .filter(
-                ss ->
-                    ss.getMetadata()
-                        .getPrometheusName()
-                        .equals("solr_metrics_core_average_request_time"))
-            .findAny();
-    assertTrue(actualSnapshot.isPresent());
-    Optional<GaugeSnapshot.GaugeDataPointSnapshot> actualGaugeDataPoint =
-        (Optional<GaugeSnapshot.GaugeDataPointSnapshot>)
-            actualSnapshot.get().getDataPoints().stream()
-                .filter(
-                    ss ->
-                        ss.getLabels()
-                            .hasSameValues(
-                                Labels.of(
-                                    "category",
-                                    "QUERY",
-                                    "core",
-                                    "collection1",
-                                    "handler",
-                                    "/select[shard]")))
-                .findAny();
-    assertTrue(actualGaugeDataPoint.isPresent());
-    assertEquals(0, actualGaugeDataPoint.get().getValue(), 0);
+    MetricSnapshot actualSnapshot =
+        getMetricSnapshot(actualSnapshots, "solr_metrics_core_average_request_time");
+    GaugeSnapshot.GaugeDataPointSnapshot actualGaugeDataPoint =
+        getGaugeDatapointSnapshot(
+            actualSnapshot,
+            Labels.of("category", "QUERY", "core", "collection1", "handler", "/select[shard]"));
+    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
 
-    actualSnapshot =
-        actualSnapshots.stream()
-            .filter(ss -> ss.getMetadata().getPrometheusName().equals("solr_metrics_core_requests"))
-            .findAny();
-    assertTrue(actualSnapshot.isPresent());
-    Optional<CounterSnapshot.CounterDataPointSnapshot> actualCounterDataPoint =
-        (Optional<CounterSnapshot.CounterDataPointSnapshot>)
-            actualSnapshot.get().getDataPoints().stream()
-                .filter(
-                    ss ->
-                        ss.getLabels()
-                            .hasSameValues(
-                                Labels.of(
-                                    "category",
-                                    "QUERY",
-                                    "core",
-                                    "collection1",
-                                    "handler",
-                                    "/select[shard]",
-                                    "type",
-                                    "requests")))
-                .findAny();
-    assertTrue(actualCounterDataPoint.isPresent());
-    assertEquals(0, actualCounterDataPoint.get().getValue(), 0);
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_requests");
+    CounterSnapshot.CounterDataPointSnapshot actualCounterDataPoint =
+        getCounterDatapointSnapshot(
+            actualSnapshot,
+            Labels.of(
+                "category",
+                "QUERY",
+                "core",
+                "collection1",
+                "handler",
+                "/select[shard]",
+                "type",
+                "requests"));
+    assertEquals(0, actualCounterDataPoint.getValue(), 0);
 
-    actualSnapshot =
-        actualSnapshots.stream()
-            .filter(ss -> ss.getMetadata().getPrometheusName().equals("solr_metrics_core_cache"))
-            .findAny();
-    assertTrue(actualSnapshot.isPresent());
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_cache");
     actualGaugeDataPoint =
-        (Optional<GaugeSnapshot.GaugeDataPointSnapshot>)
-            actualSnapshot.get().getDataPoints().stream()
-                .filter(
-                    ss ->
-                        ss.getLabels()
-                            .hasSameValues(
-                                Labels.of(
-                                    "cacheType",
-                                    "fieldValueCache",
-                                    "core",
-                                    "collection1",
-                                    "item",
-                                    "hits")))
-                .findAny();
-    assertTrue(actualGaugeDataPoint.isPresent());
-    assertEquals(0, actualGaugeDataPoint.get().getValue(), 0);
+        getGaugeDatapointSnapshot(
+            actualSnapshot,
+            Labels.of("cacheType", "fieldValueCache", "core", "collection1", "item", "hits"));
+    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
 
-    actualSnapshot =
-        actualSnapshots.stream()
-            .filter(
-                ss ->
-                    ss.getMetadata()
-                        .getPrometheusName()
-                        .equals("solr_metrics_core_highlighter_requests"))
-            .findAny();
-    assertTrue(actualSnapshot.isPresent());
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_highlighter_requests");
     actualCounterDataPoint =
-        (Optional<CounterSnapshot.CounterDataPointSnapshot>)
-            actualSnapshot.get().getDataPoints().stream()
-                .filter(
-                    ss ->
-                        ss.getLabels()
-                            .hasSameValues(
-                                Labels.of(
-                                    "item",
-                                    "default",
-                                    "core",
-                                    "collection1",
-                                    "type",
-                                    "SolrFragmenter")))
-                .findAny();
-    assertTrue(actualCounterDataPoint.isPresent());
-    assertEquals(0, actualCounterDataPoint.get().getValue(), 0);
+        getCounterDatapointSnapshot(
+            actualSnapshot,
+            Labels.of("item", "default", "core", "collection1", "type", "SolrFragmenter"));
+    assertEquals(0, actualCounterDataPoint.getValue(), 0);
 
-    actualSnapshot =
-        actualSnapshots.stream()
-            .filter(
-                ss ->
-                    ss.getMetadata().getPrometheusName().equals("solr_metrics_core_requests_time"))
-            .findAny();
-    assertTrue(actualSnapshot.isPresent());
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_requests_time");
     actualCounterDataPoint =
-        (Optional<CounterSnapshot.CounterDataPointSnapshot>)
-            actualSnapshot.get().getDataPoints().stream()
-                .filter(
-                    ss ->
-                        ss.getLabels()
-                            .hasSameValues(
-                                Labels.of(
-                                    "category",
-                                    "QUERY",
-                                    "core",
-                                    "collection1",
-                                    "handler",
-                                    "/select[shard]")))
-                .findAny();
-    assertTrue(actualCounterDataPoint.isPresent());
-    assertEquals(0, actualCounterDataPoint.get().getValue(), 0);
+        getCounterDatapointSnapshot(
+            actualSnapshot,
+            Labels.of("category", "QUERY", "core", "collection1", "handler", "/select[shard]"));
+    assertEquals(0, actualCounterDataPoint.getValue(), 0);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_searcher_documents");
+    actualGaugeDataPoint =
+        getGaugeDatapointSnapshot(
+            actualSnapshot, Labels.of("core", "collection1", "type", "numDocs"));
+    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_core_update_handler");
+    actualGaugeDataPoint =
+        getGaugeDatapointSnapshot(
+            actualSnapshot,
+            Labels.of(
+                "category",
+                "UPDATE",
+                "core",
+                "collection1",
+                "type",
+                "adds",
+                "handler",
+                "updateHandler"));
+    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
 
     actualSnapshot =
-        actualSnapshots.stream()
-            .filter(
-                ss ->
-                    ss.getMetadata()
-                        .getPrometheusName()
-                        .equals("solr_metrics_core_searcher_documents"))
-            .findAny();
-    assertTrue(actualSnapshot.isPresent());
+        getMetricSnapshot(actualSnapshots, "solr_metrics_core_average_searcher_warmup_time");
     actualGaugeDataPoint =
-        (Optional<GaugeSnapshot.GaugeDataPointSnapshot>)
-            actualSnapshot.get().getDataPoints().stream()
-                .filter(
-                    ss ->
-                        ss.getLabels()
-                            .hasSameValues(Labels.of("core", "collection1", "type", "numDocs")))
-                .findAny();
-    assertTrue(actualGaugeDataPoint.isPresent());
-    assertEquals(0, actualGaugeDataPoint.get().getValue(), 0);
+        getGaugeDatapointSnapshot(
+            actualSnapshot, Labels.of("core", "collection1", "type", "warmup"));
+    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
 
-    actualSnapshot =
-        actualSnapshots.stream()
-            .filter(
-                ss ->
-                    ss.getMetadata().getPrometheusName().equals("solr_metrics_core_update_handler"))
-            .findAny();
-    assertTrue(actualSnapshot.isPresent());
-    actualGaugeDataPoint =
-        (Optional<GaugeSnapshot.GaugeDataPointSnapshot>)
-            actualSnapshot.get().getDataPoints().stream()
-                .filter(
-                    ss ->
-                        ss.getLabels()
-                            .hasSameValues(
-                                Labels.of(
-                                    "category",
-                                    "UPDATE",
-                                    "core",
-                                    "collection1",
-                                    "type",
-                                    "adds",
-                                    "handler",
-                                    "updateHandler")))
-                .findAny();
-    assertTrue(actualGaugeDataPoint.isPresent());
-    assertEquals(0, actualGaugeDataPoint.get().getValue(), 0);
+    handler.close();
+  }
 
-    actualSnapshot =
-        actualSnapshots.stream()
-            .filter(
-                ss ->
-                    ss.getMetadata()
-                        .getPrometheusName()
-                        .equals("solr_metrics_core_average_searcher_warmup_time"))
-            .findAny();
-    assertTrue(actualSnapshot.isPresent());
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testPrometheusMetricsNode() throws Exception {
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            MetricsHandler.COMPACT_PARAM,
+            "false",
+            CommonParams.WT,
+            "prometheus"),
+        resp);
+
+    NamedList<?> values = resp.getValues();
+    assertNotNull(values.get("metrics"));
+    values = (NamedList<?>) values.get("metrics");
+    SolrPrometheusExporter exporter = (SolrPrometheusExporter) values.get("solr.node");
+    assertNotNull(exporter);
+    MetricSnapshots actualSnapshots = exporter.collect();
+    assertNotNull(actualSnapshots);
+
+    MetricSnapshot actualSnapshot =
+        getMetricSnapshot(actualSnapshots, "solr_metrics_node_requests");
+
+    CounterSnapshot.CounterDataPointSnapshot actualCounterDataPoint =
+        getCounterDatapointSnapshot(
+            actualSnapshot,
+            Labels.of("category", "ADMIN", "handler", "/admin/info", "type", "requests"));
+    assertEquals(0, actualCounterDataPoint.getValue(), 0);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_node_requests_time");
+    actualCounterDataPoint =
+        getCounterDatapointSnapshot(
+            actualSnapshot, Labels.of("category", "ADMIN", "handler", "/admin/info"));
+    assertEquals(0, actualCounterDataPoint.getValue(), 0);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_node_thread_pool");
+    actualCounterDataPoint =
+        getCounterDatapointSnapshot(
+            actualSnapshot,
+            Labels.of(
+                "category",
+                "ADMIN",
+                "executer",
+                "parallelCoreAdminExecutor",
+                "handler",
+                "/admin/cores",
+                "task",
+                "completed"));
+    assertEquals(0, actualCounterDataPoint.getValue(), 0);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_node_connections");
+    GaugeSnapshot.GaugeDataPointSnapshot actualGaugeDataPoint =
+        getGaugeDatapointSnapshot(
+            actualSnapshot,
+            Labels.of(
+                "category",
+                "UPDATE",
+                "handler",
+                "updateShardHandler",
+                "item",
+                "availableConnections"));
+    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_node_core_root_fs_bytes");
     actualGaugeDataPoint =
-        (Optional<GaugeSnapshot.GaugeDataPointSnapshot>)
-            actualSnapshot.get().getDataPoints().stream()
-                .filter(
-                    ss ->
-                        ss.getLabels()
-                            .hasSameValues(Labels.of("core", "collection1", "type", "warmup")))
-                .findAny();
-    assertTrue(actualGaugeDataPoint.isPresent());
-    assertEquals(0, actualGaugeDataPoint.get().getValue(), 0);
+        getGaugeDatapointSnapshot(
+            actualSnapshot, Labels.of("category", "CONTAINER", "item", "totalSpace"));
+    assertNotNull(actualGaugeDataPoint);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_node_cores");
+    actualGaugeDataPoint =
+        getGaugeDatapointSnapshot(
+            actualSnapshot, Labels.of("category", "CONTAINER", "item", "lazy"));
+    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+
+    handler.close();
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testPrometheusMetricsJvm() throws Exception {
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            MetricsHandler.COMPACT_PARAM,
+            "false",
+            CommonParams.WT,
+            "prometheus"),
+        resp);
+
+    NamedList<?> values = resp.getValues();
+    assertNotNull(values.get("metrics"));
+    values = (NamedList<?>) values.get("metrics");
+    SolrPrometheusExporter exporter = (SolrPrometheusExporter) values.get("solr.jvm");
+    assertNotNull(exporter);
+    MetricSnapshots actualSnapshots = exporter.collect();
+    assertNotNull(actualSnapshots);
+
+    MetricSnapshot actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_gc");
+    GaugeSnapshot.GaugeDataPointSnapshot actualGaugeDataPoint =
+        getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "G1-Old-Generation"));
+    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_threads");
+    actualGaugeDataPoint = getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "count"));
+    assertNotNull(actualGaugeDataPoint);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_memory_pools_bytes");
+    actualGaugeDataPoint =
+        getGaugeDatapointSnapshot(
+            actualSnapshot, Labels.of("item", "committed", "space", "CodeHeap-'non-nmethods'"));
+    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_os");
+    actualGaugeDataPoint =
+        getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "availableProcessors"));
+    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_buffers");
+    actualGaugeDataPoint =
+        getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "Count", "pool", "direct"));
+    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_heap");
+    actualSnapshots.stream()
+        .filter(ss -> ss.getMetadata().getPrometheusName().equals("solr_metrics_jvm_heap"))
+        .findAny();
+    actualGaugeDataPoint =
+        getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "committed", "memory", "heap"));
+    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_buffers_bytes");
+    actualGaugeDataPoint =
+        getGaugeDatapointSnapshot(
+            actualSnapshot, Labels.of("item", "MemoryUsed", "pool", "direct"));
+    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_gc_seconds");
+    actualGaugeDataPoint =
+        getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "G1-Old-Generation"));
+    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+
+    handler.close();
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testPrometheusMetricsJetty() throws Exception {
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            MetricsHandler.COMPACT_PARAM,
+            "false",
+            CommonParams.WT,
+            "prometheus"),
+        resp);
+
+    NamedList<?> values = resp.getValues();
+    assertNotNull(values.get("metrics"));
+    values = (NamedList<?>) values.get("metrics");
+    SolrPrometheusExporter exporter = (SolrPrometheusExporter) values.get("solr.jetty");
+    assertNotNull(exporter);
+    MetricSnapshots actualSnapshots = exporter.collect();
+    assertNotNull(actualSnapshots);
+
+    MetricSnapshot actualSnapshot =
+        getMetricSnapshot(actualSnapshots, "solr_metrics_jetty_response");
+    CounterSnapshot.CounterDataPointSnapshot actualCounterDatapoint =
+        getCounterDatapointSnapshot(actualSnapshot, Labels.of("status", "2xx"));
+    assertEquals(0, actualCounterDatapoint.getValue(), 0);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jetty_requests");
+    actualCounterDatapoint =
+        getCounterDatapointSnapshot(actualSnapshot, Labels.of("method", "active"));
+    assertEquals(0, actualCounterDatapoint.getValue(), 0);
+
+    actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jetty_dispatches");
+    actualCounterDatapoint = getCounterDatapointSnapshot(actualSnapshot, Labels.of());
+    assertEquals(0, actualCounterDatapoint.getValue(), 0);
 
     handler.close();
   }
@@ -1013,6 +1108,54 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
                 null));
 
     handler.close();
+  }
+
+  public static void registerGauge(String registry, String metricName) {
+    Gauge<Number> metric =
+        new SettableGauge<>() {
+          @Override
+          public void setValue(Number value) {}
+
+          @Override
+          public Number getValue() {
+            return 0;
+          }
+        };
+    h.getCoreContainer()
+        .getMetricManager()
+        .registerGauge(
+            null,
+            registry,
+            metric,
+            "",
+            SolrMetricManager.ResolutionStrategy.IGNORE,
+            metricName,
+            "");
+  }
+
+  private MetricSnapshot getMetricSnapshot(MetricSnapshots snapshots, String metricName) {
+    return snapshots.stream()
+        .filter(ss -> ss.getMetadata().getPrometheusName().equals(metricName))
+        .findAny()
+        .get();
+  }
+
+  private GaugeSnapshot.GaugeDataPointSnapshot getGaugeDatapointSnapshot(
+      MetricSnapshot snapshot, Labels labels) {
+    return (GaugeSnapshot.GaugeDataPointSnapshot)
+        snapshot.getDataPoints().stream()
+            .filter(ss -> ss.getLabels().hasSameValues(labels))
+            .findAny()
+            .get();
+  }
+
+  private CounterSnapshot.CounterDataPointSnapshot getCounterDatapointSnapshot(
+      MetricSnapshot snapshot, Labels labels) {
+    return (CounterSnapshot.CounterDataPointSnapshot)
+        snapshot.getDataPoints().stream()
+            .filter(ss -> ss.getLabels().hasSameValues(labels))
+            .findAny()
+            .get();
   }
 
   static class RefreshablePluginHolder extends PluginBag.PluginHolder<SolrRequestHandler> {

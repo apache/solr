@@ -14,12 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.metrics.prometheus.jvm;
 
-/**
- * The {@link org.apache.solr.metrics.prometheus.SolrPrometheusExporter} is responsible for
- * collecting Prometheus metrics from exporting {@link com.codahale.metrics.Metric}'s from {@link
- * com.codahale.metrics.MetricRegistry} {@link org.apache.solr.metrics.prometheus.SolrMetric} is a
- * wrapper to export {@link com.codahale.metrics.Metric} to {@link
- * io.prometheus.metrics.model.snapshots.DataPointSnapshot}
- */
-package org.apache.solr.metrics.prometheus;
+import com.codahale.metrics.Metric;
+import org.apache.solr.metrics.prometheus.SolrMetric;
+
+/** Base class is a wrapper to export a solr.jvm {@link com.codahale.metrics.Metric} */
+public abstract class SolrJvmMetric extends SolrMetric {
+  public SolrJvmMetric(Metric dropwizardMetric, String metricName) {
+    super(dropwizardMetric, metricName);
+  }
+}

@@ -14,12 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.metrics.prometheus.node;
 
-/**
- * The {@link org.apache.solr.metrics.prometheus.SolrPrometheusExporter} is responsible for
- * collecting Prometheus metrics from exporting {@link com.codahale.metrics.Metric}'s from {@link
- * com.codahale.metrics.MetricRegistry} {@link org.apache.solr.metrics.prometheus.SolrMetric} is a
- * wrapper to export {@link com.codahale.metrics.Metric} to {@link
- * io.prometheus.metrics.model.snapshots.DataPointSnapshot}
- */
-package org.apache.solr.metrics.prometheus;
+public interface PrometheusNodeExporterInfo {
+  /** Category of prefix Solr Node dropwizard handler metric names */
+  enum NodeCategory {
+    ADMIN,
+    UPDATE,
+    CONTAINER,
+    CACHE
+  }
+}

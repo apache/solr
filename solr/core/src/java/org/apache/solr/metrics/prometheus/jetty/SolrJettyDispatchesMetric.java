@@ -14,34 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.core;
+package org.apache.solr.metrics.prometheus.jetty;
 
-import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
+import com.codahale.metrics.Timer;
+import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
-/** Dropwizard metrics of name CACHE.* */
-public class SolrCoreCacheMetric extends SolrCoreMetric {
-  public static final String CORE_CACHE_SEARCHER_METRICS = "solr_metrics_core_cache";
+/* Dropwizard metrics of name *.dispatches */
+public class SolrJettyDispatchesMetric extends SolrJettyMetric {
+  public static final String JETTY_DISPATCHES_TOTAL = "solr_metrics_jetty_dispatches";
 
-  public SolrCoreCacheMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+  public SolrJettyDispatchesMetric(Metric dropwizardMetric, String metricName) {
+    super(dropwizardMetric, metricName);
   }
 
   @Override
-  public SolrCoreMetric parseLabels() {
-    String[] parsedMetric = metricName.split("\\.");
-    if (dropwizardMetric instanceof Gauge) {
-      labels.put("cacheType", parsedMetric[2]);
-    }
+  public SolrMetric parseLabels() {
     return this;
   }
 
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
-    if (dropwizardMetric instanceof Gauge) {
-      exporter.exportGauge(CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
+    if (dropwizardMetric instanceof Timer) {
+      exporter.exportTimerCount(JETTY_DISPATCHES_TOTAL, (Timer) dropwizardMetric, getLabels());
     }
   }
 }

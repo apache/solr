@@ -14,34 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.core;
+package org.apache.solr.metrics.prometheus.node;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
+import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
-/** Dropwizard metrics of name CACHE.* */
-public class SolrCoreCacheMetric extends SolrCoreMetric {
-  public static final String CORE_CACHE_SEARCHER_METRICS = "solr_metrics_core_cache";
+/* Dropwizard metrics of name CONTAINER.* */
+public class SolrNodeContainerMetric extends SolrNodeMetric {
+  public static final String NODE_CORES = "solr_metrics_node_cores";
+  public static final String NODE_CORE_FS_BYTES = "solr_metrics_node_core_root_fs_bytes";
 
-  public SolrCoreCacheMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+  public SolrNodeContainerMetric(Metric dropwizardMetric, String metricName) {
+    super(dropwizardMetric, metricName);
   }
 
   @Override
-  public SolrCoreMetric parseLabels() {
+  public SolrMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
-    if (dropwizardMetric instanceof Gauge) {
-      labels.put("cacheType", parsedMetric[2]);
-    }
+    labels.put("category", parsedMetric[0]);
     return this;
   }
 
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
+    String[] parsedMetric = metricName.split("\\.");
     if (dropwizardMetric instanceof Gauge) {
-      exporter.exportGauge(CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
+      if (metricName.startsWith("CONTAINER.cores.")) {
+        labels.put("item", parsedMetric[2]);
+        exporter.exportGauge(NODE_CORES, (Gauge<?>) dropwizardMetric, getLabels());
+      } else if (metricName.startsWith("CONTAINER.fs.coreRoot.")) {
+        labels.put("item", parsedMetric[3]);
+        exporter.exportGauge(NODE_CORE_FS_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
+      }
     }
   }
 }

@@ -14,34 +14,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.core;
+package org.apache.solr.metrics.prometheus.jvm;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
+import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
-/** Dropwizard metrics of name CACHE.* */
-public class SolrCoreCacheMetric extends SolrCoreMetric {
-  public static final String CORE_CACHE_SEARCHER_METRICS = "solr_metrics_core_cache";
+/* Dropwizard metrics of name gc.* and memory.* */
+public class SolrJvmMemoryMetric extends SolrJvmMetric {
+  public static String JVM_MEMORY_POOL_BYTES = "solr_metrics_jvm_memory_pools_bytes";
+  public static String JVM_MEMORY = "solr_metrics_jvm_heap";
 
-  public SolrCoreCacheMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+  public SolrJvmMemoryMetric(Metric dropwizardMetric, String metricName) {
+    super(dropwizardMetric, metricName);
   }
 
   @Override
-  public SolrCoreMetric parseLabels() {
+  public SolrMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
-    if (dropwizardMetric instanceof Gauge) {
-      labels.put("cacheType", parsedMetric[2]);
-    }
+    labels.put("item", parsedMetric[parsedMetric.length - 1]);
     return this;
   }
 
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
+    String[] parsedMetric = metricName.split("\\.");
     if (dropwizardMetric instanceof Gauge) {
-      exporter.exportGauge(CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
+      String metricType = parsedMetric[1];
+      switch (metricType) {
+        case "heap":
+        case "non-heap":
+        case "total":
+          labels.put("memory", parsedMetric[1]);
+          exporter.exportGauge(JVM_MEMORY, (Gauge<?>) dropwizardMetric, getLabels());
+          break;
+        case "pools":
+          labels.put("space", parsedMetric[2]);
+          exporter.exportGauge(JVM_MEMORY_POOL_BYTES, (Gauge<?>) dropwizardMetric, getLabels());
+          break;
+      }
     }
   }
 }

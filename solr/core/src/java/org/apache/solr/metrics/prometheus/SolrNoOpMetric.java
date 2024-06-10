@@ -16,22 +16,14 @@
  */
 package org.apache.solr.metrics.prometheus;
 
-import java.util.regex.Pattern;
+public class SolrNoOpMetric extends SolrMetric {
+  public SolrNoOpMetric() {}
 
-public interface PrometheusCoreExporterInfo {
-  /** Category of prefix Solr Core dropwizard handler metric names */
-  enum CoreCategory {
-    ADMIN,
-    QUERY,
-    UPDATE,
-    REPLICATION,
-    TLOG,
-    CACHE,
-    SEARCHER,
-    HIGHLIGHTER,
-    INDEX,
-    CORE
+  @Override
+  public SolrMetric parseLabels() {
+    return this;
   }
 
-  Pattern CLOUD_CORE_PATTERN = Pattern.compile("^core_(.*)_(shard[0-9]+)_(replica_n[0-9]+)$");
+  @Override
+  public void toPrometheus(SolrPrometheusExporter exporter) {}
 }

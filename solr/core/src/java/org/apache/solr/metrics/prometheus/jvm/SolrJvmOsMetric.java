@@ -14,34 +14,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.metrics.prometheus.core;
+package org.apache.solr.metrics.prometheus.jvm;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
+import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
-/** Dropwizard metrics of name CACHE.* */
-public class SolrCoreCacheMetric extends SolrCoreMetric {
-  public static final String CORE_CACHE_SEARCHER_METRICS = "solr_metrics_core_cache";
+public class SolrJvmOsMetric extends SolrJvmMetric {
+  public static final String JVM_OS_THREADS = "solr_metrics_jvm_threads";
+  public static final String JVM_OS = "solr_metrics_os";
 
-  public SolrCoreCacheMetric(
-      Metric dropwizardMetric, String coreName, String metricName, boolean cloudMode) {
-    super(dropwizardMetric, coreName, metricName, cloudMode);
+  /* Dropwizard metrics of name os.* and threads.* */
+  public SolrJvmOsMetric(Metric dropwizardMetric, String metricName) {
+    super(dropwizardMetric, metricName);
   }
 
   @Override
-  public SolrCoreMetric parseLabels() {
+  public SolrMetric parseLabels() {
     String[] parsedMetric = metricName.split("\\.");
-    if (dropwizardMetric instanceof Gauge) {
-      labels.put("cacheType", parsedMetric[2]);
+    if (parsedMetric[0].equals("threads")) {
+      labels.put("item", parsedMetric[1]);
+    } else {
+      labels.put("item", parsedMetric[parsedMetric.length - 1]);
     }
     return this;
   }
 
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
+    String exportName = "";
     if (dropwizardMetric instanceof Gauge) {
-      exporter.exportGauge(CORE_CACHE_SEARCHER_METRICS, (Gauge<?>) dropwizardMetric, getLabels());
+      if (metricName.startsWith("threads.")) {
+        exportName = JVM_OS_THREADS;
+      } else {
+        exportName = JVM_OS;
+      }
+    }
+    if (!exportName.isEmpty()) {
+      exporter.exportGauge(exportName, (Gauge<?>) dropwizardMetric, getLabels());
     }
   }
 }
