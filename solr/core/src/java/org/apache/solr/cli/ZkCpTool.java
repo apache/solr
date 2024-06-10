@@ -75,9 +75,11 @@ public class ZkCpTool extends ToolBase {
             .desc("Required to look up configuration for compressing state.json.")
             .build(),
         SolrCLI.OPTION_RECURSE,
-        SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override

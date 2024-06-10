@@ -65,8 +65,11 @@ public class ConfigSetUploadTool extends ToolBase {
             .required(false)
             .desc("Parent directory of example configsets.")
             .build(),
-        SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
+        SolrCLI.OPTION_CREDENTIALS,
         SolrCLI.OPTION_VERBOSE);
   }
 

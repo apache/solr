@@ -52,3 +52,26 @@ teardown() {
   assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
   assert_output --partial "assuming solr url is http://localhost:${SOLR_PORT}."
 }
+
+# This test is to validate the deprecated and non deprecated options for connecting to Solr
+@test "connecting to solr via various solr urls and zk hosts" {
+  solr create -c COLL_NAME
+
+  run solr config -c COLL_NAME --property updateHandler.autoCommit.maxDocs -v 100 -solrUrl http://localhost:${SOLR_PORT}
+  assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
+  assert_output --partial "Deprecated for removal since 9.7: Use --solr-url instead"
+
+  run solr config -c COLL_NAME --property updateHandler.autoCommit.maxDocs -v 100 --solr-url http://localhost:${SOLR_PORT}
+  assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
+
+  run solr config -c COLL_NAME --property updateHandler.autoCommit.maxDocs -v 100 -zkHost localhost:${ZK_PORT}
+  assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
+  assert_output --partial "Deprecated for removal since 9.7: Use --zk-host instead"
+
+  run solr config -c COLL_NAME --property updateHandler.autoCommit.maxDocs -v 100 -z localhost:${ZK_PORT}
+  assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
+
+  run solr config -c COLL_NAME --property updateHandler.autoCommit.maxDocs -v 100 --zk-host localhost:${ZK_PORT}
+  assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
+
+}

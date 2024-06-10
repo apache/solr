@@ -595,7 +595,8 @@ public class SolrCLI implements CLIO {
     String solrUrl =
         cli.hasOption("solr-url") ? cli.getOptionValue("solr-url") : cli.getOptionValue("solrUrl");
     if (solrUrl == null) {
-      String zkHost = cli.hasOption("z") ? cli.getOptionValue("z") : cli.getOptionValue("zkHost");
+      String zkHost =
+          cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
       if (zkHost == null) {
         solrUrl = SolrCLI.getDefaultSolrUrl();
         CLIO.getOutStream()
@@ -628,7 +629,8 @@ public class SolrCLI implements CLIO {
    */
   public static String getZkHost(CommandLine cli) throws Exception {
 
-    String zkHost = cli.getOptionValue("zk-host");
+    String zkHost =
+        cli.hasOption("zk-host") ? cli.getOptionValue("zk-host") : cli.getOptionValue("zkHost");
     if (zkHost != null && !zkHost.isBlank()) {
       return zkHost;
     }

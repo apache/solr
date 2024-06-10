@@ -154,7 +154,6 @@ public class RunExampleTool extends ToolBase {
             .desc("Specify the hostname for this Solr instance.")
             .longOpt("host")
             .build(),
-        SolrCLI.OPTION_ZKHOST,
         Option.builder("c")
             .required(false)
             .desc(
@@ -176,7 +175,9 @@ public class RunExampleTool extends ToolBase {
             .desc(
                 "Additional options to be passed to the JVM when starting example Solr server(s).")
             .longOpt("addlopts")
-            .build());
+            .build(),
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED);
   }
 
   @Override

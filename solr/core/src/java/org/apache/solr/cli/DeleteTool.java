@@ -61,7 +61,6 @@ public class DeleteTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        SolrCLI.OPTION_SOLRURL,
         Option.builder("c")
             .longOpt("name")
             .argName("NAME")
@@ -83,7 +82,10 @@ public class DeleteTool extends ToolBase {
             .desc(
                 "Skip safety checks when deleting the configuration directory used by a collection.")
             .build(),
+        SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
         SolrCLI.OPTION_CREDENTIALS);
   }
 

@@ -59,7 +59,8 @@ public class LinkConfigTool extends ToolBase {
             .required(true)
             .desc("Configset name in ZooKeeper.")
             .build(),
-        SolrCLI.OPTION_ZKHOST);
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED);
   }
 
   @Override

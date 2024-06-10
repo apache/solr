@@ -68,10 +68,6 @@ public class CreateTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        SolrCLI.OPTION_ZKHOST,
-        SolrCLI.OPTION_SOLRURL,
-        SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_SOLRURL,
         Option.builder("c")
             .longOpt("name")
             .argName("NAME")
@@ -111,6 +107,10 @@ public class CreateTool extends ToolBase {
             .required(false)
             .desc("Configuration name; default is the collection name.")
             .build(),
+        SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
         SolrCLI.OPTION_CREDENTIALS);
   }
 

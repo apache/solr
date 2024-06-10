@@ -308,7 +308,6 @@ public class PackageTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        SolrCLI.OPTION_SOLRURL,
         Option.builder()
             .longOpt("collections")
             .argName("COLLECTIONS")
@@ -344,6 +343,10 @@ public class PackageTool extends ToolBase {
             .desc("Don't prompt for input; accept all default choices, defaults to false.")
             .longOpt("noprompt")
             .build(),
+        SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
+        SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
         SolrCLI.OPTION_CREDENTIALS);
   }
 }

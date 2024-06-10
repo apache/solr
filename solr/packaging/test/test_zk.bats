@@ -47,19 +47,34 @@ teardown() {
   assert_output --partial "aliases.json"
 }
 
-@test "get zk host using solr url" {
+@test "connecting to solr via various solr urls and zk hosts" {
   sleep 1
   run solr zk ls / -solrUrl http://localhost:${SOLR_PORT}
   assert_output --partial "aliases.json"
+  # We do mapping in bin/solr script from -solrUrl to --solr-url that prevents deprecation warning
+  #assert_output --partial "Deprecated for removal since 9.7: Use --solr-url instead"
 
   run solr zk ls / -s http://localhost:${SOLR_PORT}
   assert_output --partial "aliases.json"
+  # We do mapping in bin/solr script from -solrUrl to --solr-url that prevents deprecation warning
+  #assert_output --partial "Deprecated for removal since 9.7: Use --solr-url instead"
 
   run solr zk ls / --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "aliases.json"
 
   run solr zk ls /
   assert_output --partial "aliases.json"
+
+  run solr zk ls / -z localhost:${ZK_PORT}
+  assert_output --partial "aliases.json"
+
+  run solr zk ls / --zk-host localhost:${ZK_PORT}
+  assert_output --partial "aliases.json"
+
+  run solr zk ls / -zkHost localhost:${ZK_PORT}
+  assert_output --partial "aliases.json"
+  # We do mapping in bin/solr script from -zkHost to --zk-host that prevents deprecation warning
+  #assert_output --partial "Deprecated for removal since 9.7: Use --zk-host instead"
 }
 
 @test "copying files around" {

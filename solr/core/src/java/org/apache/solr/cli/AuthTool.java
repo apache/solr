@@ -111,7 +111,9 @@ public class AuthTool extends ToolBase {
                 "This is where any authentication related configuration files, if any, would be placed.")
             .build(),
         SolrCLI.OPTION_SOLRURL,
+        SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
+        SolrCLI.OPTION_ZKHOST_DEPRECATED,
         SolrCLI.OPTION_CREDENTIALS);
   }
 
