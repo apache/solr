@@ -441,7 +441,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     public static final String COMPLETED = "completed";
     public static final String FAILED = "failed";
 
-    private final Cache<String, TaskObject> requestStatusCache;
+    private final Cache<String, TaskObject> requestStatusCache; // key by ID
 
     // Executor for all standard tasks (the ones that are not flagged as expensive)
     // We always keep 50 live threads
