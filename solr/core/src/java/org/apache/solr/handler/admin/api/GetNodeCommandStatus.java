@@ -61,10 +61,10 @@ public class GetNodeCommandStatus extends CoreAdminAPIBase implements GetNodeCom
     } else {
       requestStatusResponse.status = status;
 
-      if (taskObject.getStatus().equals(COMPLETED)) {
+      if (status.equals(COMPLETED)) {
         requestStatusResponse.response = taskObject.getRspObject();
         requestStatusResponse.response = taskObject.getOperationRspObject();
-      } else if (taskObject.getStatus().equals(FAILED)) {
+      } else if (status.equals(FAILED)) {
         requestStatusResponse.response = taskObject.getRspObject();
       }
     }
