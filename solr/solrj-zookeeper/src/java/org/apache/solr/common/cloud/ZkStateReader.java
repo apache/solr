@@ -119,7 +119,7 @@ public class ZkStateReader implements SolrCloseable {
 
   /**
    * This ZooKeeper file is no longer used starting with Solr 9 but keeping the name around to check
-   * if it is still present and non empty (in case of upgrade from previous Solr version). It used
+   * if it is still present and non-empty (in case of upgrade from previous Solr version). It used
    * to contain collection state for all collections in the cluster.
    */
   public static final String UNSUPPORTED_CLUSTER_STATE = "/clusterstate.json";
@@ -163,7 +163,6 @@ public class ZkStateReader implements SolrCloseable {
   private static final int GET_LEADER_RETRY_INTERVAL_MS = 50;
   private static final int GET_LEADER_RETRY_DEFAULT_TIMEOUT =
       Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "4000"));
-  ;
 
   public static final String LEADER_ELECT_ZKNODE = "leader_elect";
 
@@ -1331,10 +1330,24 @@ public class ZkStateReader implements SolrCloseable {
    * Returns the baseURL corresponding to a given node's nodeName -- NOTE: does not (currently)
    * imply that the nodeName (or resulting baseURL) exists in the cluster.
    *
-   * @lucene.experimental
+   * @param nodeName name of the node
+   * @return url that looks like {@code https://localhost:8983/solr}
    */
   public String getBaseUrlForNodeName(final String nodeName) {
-    return Utils.getBaseUrlForNodeName(nodeName, getClusterProperty(URL_SCHEME, "http"));
+    String urlScheme = getClusterProperty(URL_SCHEME, "http");
+    return Utils.getBaseUrlForNodeName(nodeName, urlScheme, false);
+  }
+
+  /**
+   * Returns the V2 baseURL corresponding to a given node's nodeName -- NOTE: does not (currently)
+   * imply that the nodeName (or resulting baseURL) exists in the cluster.
+   *
+   * @param nodeName name of the node
+   * @return url that looks like {@code https://localhost:8983/api}
+   */
+  public String getBaseUrlV2ForNodeName(final String nodeName) {
+    String urlScheme = getClusterProperty(URL_SCHEME, "http");
+    return Utils.getBaseUrlForNodeName(nodeName, urlScheme, true);
   }
 
   /** Watches a single collection's state.json. */
@@ -2265,7 +2278,7 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     /**
-     * Ensures the internal aliases is up to date. If there is a change, return true.
+     * Ensures the internal aliases is up-to-date. If there is a change, return true.
      *
      * @return true if an update was performed
      */
@@ -2273,7 +2286,7 @@ public class ZkStateReader implements SolrCloseable {
       if (log.isDebugEnabled()) {
         log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
       }
-      // Call sync() first to ensure the subsequent read (getData) is up to date.
+      // Call sync() first to ensure the subsequent read (getData) is up-to-date.
       zkClient.getZooKeeper().sync(ALIASES, null, null);
       return setIfNewer(zkClient.getNode(ALIASES, null, true));
     }
