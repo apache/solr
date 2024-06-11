@@ -118,7 +118,7 @@ public abstract class SolrPrometheusExporter {
    */
   public void exportTimerCount(String metricName, Timer dropwizardMetric, Labels labels) {
     CounterSnapshot.CounterDataPointSnapshot dataPoint =
-        createCounterDatapoint(dropwizardMetric.getCount(), labels);
+        createCounterDatapoint((double) dropwizardMetric.getCount(), labels);
     collectCounterDatapoint(metricName, dataPoint);
   }
 

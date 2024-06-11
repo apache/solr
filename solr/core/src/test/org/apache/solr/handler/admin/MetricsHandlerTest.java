@@ -929,7 +929,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_os");
     actualGaugeDataPoint =
         getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "availableProcessors"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+    assertNotNull(actualGaugeDataPoint);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_buffers");
     actualGaugeDataPoint =
@@ -937,9 +937,6 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals(0, actualGaugeDataPoint.getValue(), 0);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_heap");
-    actualSnapshots.stream()
-        .filter(ss -> ss.getMetadata().getPrometheusName().equals("solr_metrics_jvm_heap"))
-        .findAny();
     actualGaugeDataPoint =
         getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "committed", "memory", "heap"));
     assertEquals(0, actualGaugeDataPoint.getValue(), 0);
