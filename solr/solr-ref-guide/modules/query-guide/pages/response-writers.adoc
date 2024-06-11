@@ -399,7 +399,7 @@ MA147LL/A,"electronics,music",Apple 60 GB iPod with Video Playback Black,10,399.
 
 Solr supports CBOR response format which is more compact and fast. Use the `wt=cbor` parameter to get responses in CBOR.
 
-If your client does not support the STRINGREF feature of CBOR, use `wt=cbor&str_ref=false`
+If your client does not support the STRINGREF feature of CBOR, use `wt=cbor&string_ref=false`
 
 === Example Python program
 
