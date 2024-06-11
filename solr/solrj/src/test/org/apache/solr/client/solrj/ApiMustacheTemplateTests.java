@@ -27,9 +27,10 @@ import org.junit.Assert;
 import org.junit.Test;
 
 /**
- * A test ensuring that specific generated SolrRequest classes deserialize responses into the correct type.
+ * A test ensuring that specific generated SolrRequest classes deserialize responses into the
+ * correct type.
  *
- * See SOLR-17326 for more context.  Consider removing once SOLR-17329 has been completed.
+ * <p>See SOLR-17326 for more context. Consider removing once SOLR-17329 has been completed.
  */
 public class ApiMustacheTemplateTests {
 
