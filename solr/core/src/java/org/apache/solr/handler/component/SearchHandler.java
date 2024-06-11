@@ -492,7 +492,7 @@ public class SearchHandler extends RequestHandlerBase
       }
     } else {
       // a distributed request
-      long maxTimeAllowed = req.getParams().getLong(CommonParams.TIME_ALLOWED, -1);
+      long maxTimeAllowed = req.getParams().getLong(CommonParams.TIME_ALLOWED, 24 * 60 * 60 * 1000);
 
       if (rb.outgoing == null) {
         rb.outgoing = new ArrayList<>();
@@ -556,9 +556,10 @@ public class SearchHandler extends RequestHandlerBase
           // this loop)
           boolean tolerant = ShardParams.getShardsTolerantAsBool(rb.req.getParams());
           while (rb.outgoing.size() == 0) {
+            long timeAllowed = maxTimeAllowed - (long) req.getRequestTimer().getTime();
             ShardResponse srsp =
                 tolerant
-                    ? shardHandler1.takeCompletedIncludingErrorsWithTimeout(maxTimeAllowed)
+                    ? shardHandler1.takeCompletedIncludingErrorsWithTimeout(timeAllowed)
                     : shardHandler1.takeCompletedOrError();
             if (srsp == null) break; // no more requests to wait for
 

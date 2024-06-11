@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -181,7 +180,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
       ExecutorUtil.shutdownAndAwaitTermination(exec);
     }
     ShardResponse gotResponse =
-            shardHandler.takeCompletedIncludingErrorsWithTimeout(timeAllowedInMillis);
+        shardHandler.takeCompletedIncludingErrorsWithTimeout(timeAllowedInMillis);
 
     assertEquals(shardResponse, gotResponse);
   }
@@ -212,7 +211,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
 
     // partial response
     ShardResponse gotResponse =
-            shardHandler.takeCompletedIncludingErrorsWithTimeout(timeAllowedInMillis);
+        shardHandler.takeCompletedIncludingErrorsWithTimeout(timeAllowedInMillis);
 
     assertEquals(shardResponse, gotResponse);
   }

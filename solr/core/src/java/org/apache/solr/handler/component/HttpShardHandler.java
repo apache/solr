@@ -232,9 +232,9 @@ public class HttpShardHandler extends ShardHandler {
       while (pending.get() > 0) {
         long waitTime = deadline - System.nanoTime();
         ShardResponse rsp = responses.poll(waitTime, TimeUnit.NANOSECONDS);
+        pending.decrementAndGet();
         if (rsp == null) return previousResponse;
 
-        pending.decrementAndGet();
         if (bailOnError && rsp.getException() != null)
           return rsp; // if exception, return immediately
         // add response to the response list... we do this after the take() and
