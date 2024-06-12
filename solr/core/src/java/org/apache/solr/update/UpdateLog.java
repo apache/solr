@@ -428,12 +428,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     // on a reopen, return early; less work to do.
     if (!initialized.compareAndSet(false, true)) {
-      // TODO: why do we need fancy concurrency constructs here? I don't see where this would
-      //  actually be called concurrently. Could `TestHdfsUpdateLog.testFSThreadSafety()`
-      //  (introduced by SOLR-7113) in fact be the only place that requires this? Or perhaps we
-      //  need the `init(UpdateHandler, SolrCore)` method in its entirety (or some large portion of
-      //  it) to synchronize on `this`, to ensure visibility of non-final fields that are
-      //  initialized?
+      // NOTE: we may not strictly _need_ fancy concurrency constructs here, since it looks like
+      // `init(UpdateHandler, SolrCore` is never actually called concurrently in application code
+      // (`TestHdfsUpdateLog.testFSThreadSafety()`, introduced by SOLR-7113, seems to be the only
+      // place that requires true thread safety from this method?).
       if (debug) {
         log.debug(
             "UpdateHandler init: tlogDir={}, next id={}  this is a reopen or double init ... nothing else to do.",
@@ -444,6 +442,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       core.getCoreMetricManager()
           .registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
       if (lastDataDir != null && !lastDataDir.equals(dataDir)) {
+        // NOTE: the _first_ time `init(UpdateHandler, SolrCore)` is called, `dataDir` may indeed
+        // be changed from `lastDataDir`; but then we shouldn't get here, because this block is
+        // protected by `initialized.compareAndSet()`.
         throw new IllegalStateException(
             "dataDir should not change on reload! expected " + lastDataDir + ", found " + dataDir);
       }
