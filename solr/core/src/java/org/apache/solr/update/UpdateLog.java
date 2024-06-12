@@ -397,22 +397,15 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   private final AtomicBoolean initialized = new AtomicBoolean();
 
-  /**
-   * This must be called when a new log is created, or for an existing log whenever the core or
-   * update handler changes. It is called from the ctor of the specified {@link UpdateHandler}, so
-   * the specified uhandler will not yet be completely constructed.
-   *
-   * <p>This method must be called <i>after</i> {@link #init(PluginInfo)} is called.
-   */
-  public void init(UpdateHandler uhandler, SolrCore core) {
-    this.uhandler = uhandler;
-    String lastDataDir = dataDir;
+  private String resolveDataDir(SolrCore core) {
+    // we need to initialize with existing `this.dataDir`, because it may have been
+    // set in `init(PluginInfo)` to the ulogDir specified in `<updateLog>` element
+    // of `solrconfig.xml`
+    String dataDir = this.dataDir;
 
     // ulogDir from CoreDescriptor overrides
     String ulogDir = core.getCoreDescriptor().getUlogDir();
 
-    // just like dataDir, we do not allow
-    // moving the tlog dir on reload
     if (ulogDir != null) {
       dataDir = ulogDir;
     }
@@ -424,7 +417,18 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       dataDir = core.getDataDir();
     }
 
-    dataDir = resolveDataDir(core, dataDir);
+    return resolveDataDir(core, dataDir);
+  }
+
+  /**
+   * This must be called when a new log is created, or for an existing log whenever the core or
+   * update handler changes. It is called from the ctor of the specified {@link UpdateHandler}, so
+   * the specified uhandler will not yet be completely constructed.
+   *
+   * <p>This method must be called <i>after</i> {@link #init(PluginInfo)} is called.
+   */
+  public void init(UpdateHandler uhandler, SolrCore core) {
+    this.uhandler = uhandler;
 
     // on a reopen, return early; less work to do.
     if (!initialized.compareAndSet(false, true)) {
@@ -441,15 +445,18 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       versionInfo.reload();
       core.getCoreMetricManager()
           .registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
-      if (lastDataDir != null && !lastDataDir.equals(dataDir)) {
-        // NOTE: the _first_ time `init(UpdateHandler, SolrCore)` is called, `dataDir` may indeed
-        // be changed from `lastDataDir`; but then we shouldn't get here, because this block is
-        // protected by `initialized.compareAndSet()`.
+
+      String reResolved = resolveDataDir(core);
+      if (dataDir == null || !dataDir.equals(reResolved)) {
+        // dataDir should already be initialized, and should not change. We recompute every time
+        // in order to fail on attempted config changes, rather than simply silently ignore them.
         throw new IllegalStateException(
-            "dataDir should not change on reload! expected " + lastDataDir + ", found " + dataDir);
+            "dataDir should not change on reload! computed " + reResolved + ", found " + dataDir);
       }
       return;
     }
+
+    dataDir = resolveDataDir(core);
 
     initTlogDir(core);
 
