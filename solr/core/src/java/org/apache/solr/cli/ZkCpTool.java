@@ -53,17 +53,17 @@ public class ZkCpTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("src")
-            .argName("src")
+        Option.builder()
             .longOpt("source")
             .hasArg()
+            .argName("SRC")
             .required(true)
             .desc("Source file or directory, may be local or a Znode.")
             .build(),
-        Option.builder("dst")
-            .argName("dst")
+        Option.builder()
             .longOpt("destination")
             .hasArg()
+            .argName("DST")
             .required(true)
             .desc("Destination of copy, may be local or a Znode.")
             .build(),

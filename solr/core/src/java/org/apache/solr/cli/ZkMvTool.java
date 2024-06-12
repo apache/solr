@@ -42,15 +42,15 @@ public class ZkMvTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("src")
-            .argName("src")
+        Option.builder()
+            .argName("SRC")
             .longOpt("source")
             .hasArg()
             .required(true)
             .desc("Source Znode to move from.")
             .build(),
-        Option.builder("dst")
-            .argName("dst")
+        Option.builder()
+            .argName("DST")
             .longOpt("destination")
             .hasArg()
             .required(true)

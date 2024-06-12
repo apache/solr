@@ -45,25 +45,19 @@ public class ConfigSetUploadTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("confname")
+        Option.builder()
             .longOpt("confname")
-            .argName("NAME")
             .hasArg()
+            .argName("NAME")
             .required(true)
             .desc("Configset name in ZooKeeper.")
             .build(),
-        Option.builder("confdir")
+        Option.builder()
             .longOpt("confdir")
-            .argName("DIR")
             .hasArg()
+            .argName("DIR")
             .required(true)
             .desc("Local directory with configs.")
-            .build(),
-        Option.builder("configsetsDir")
-            .argName("configsetsDir")
-            .hasArg()
-            .required(false)
-            .desc("Parent directory of example configsets.")
             .build(),
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,

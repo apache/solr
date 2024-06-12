@@ -47,7 +47,7 @@ public class ZkMkrootTool extends ToolBase {
             .required(true)
             .desc("Path to create.")
             .build(),
-        Option.builder()
+        Option.builder() // This appears not to be wired into bin/solr commands.
             .longOpt("fail-on-exists")
             .hasArg()
             .required(false)

@@ -1023,16 +1023,16 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
       if [ -z "$ZK_SRC" ]; then
         print_short_zk_usage "Zookeeper path to remove must be specified when using the 'rm' command"
       fi
-      run_tool "$ZK_OP" -path "$ZK_SRC" $CONNECTION_PARAMS --recurse "$ZK_RECURSE" $VERBOSE
+      run_tool "$ZK_OP" --path "$ZK_SRC" $CONNECTION_PARAMS --recurse "$ZK_RECURSE" $VERBOSE
     ;;
     mv)
-      run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" $CONNECTION_PARAMS $VERBOSE
+      run_tool "$ZK_OP" --source "$ZK_SRC" --destination "$ZK_DST" $CONNECTION_PARAMS $VERBOSE
     ;;
     cp)
       if [ -z "$ZK_SOLR_HOME" ]; then
-        run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" $CONNECTION_PARAMS --recurse "$ZK_RECURSE" $VERBOSE
+        run_tool "$ZK_OP" --source "$ZK_SRC" --destination "$ZK_DST" $CONNECTION_PARAMS --recurse "$ZK_RECURSE" $VERBOSE
       else
-        run_tool "$ZK_OP" -src "$ZK_SRC" -dst "$ZK_DST" $CONNECTION_PARAMS --recurse "$ZK_RECURSE" $VERBOSE --solr-home "$ZK_SOLR_HOME"
+        run_tool "$ZK_OP" --source "$ZK_SRC" --destination "$ZK_DST" $CONNECTION_PARAMS --recurse "$ZK_RECURSE" $VERBOSE --solr-home "$ZK_SOLR_HOME"
       fi
 
     ;;
@@ -1040,7 +1040,7 @@ if [[ "$SCRIPT_CMD" == "zk" ]]; then
       if [ -z "$ZK_SRC" ]; then
         print_short_zk_usage "Zookeeper path to list must be specified when using the 'ls' command"
       fi
-      run_tool "$ZK_OP" -path "$ZK_SRC" --recurse "$ZK_RECURSE" $CONNECTION_PARAMS $VERBOSE
+      run_tool "$ZK_OP" --path "$ZK_SRC" --recurse "$ZK_RECURSE" $CONNECTION_PARAMS $VERBOSE
     ;;
     mkroot)
       if [ -z "$ZK_SRC" ]; then

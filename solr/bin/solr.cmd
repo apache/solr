@@ -1541,7 +1541,6 @@ IF "!ZK_OP!"=="upconfig" (
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
   org.apache.solr.cli.SolrCLI !ZK_OP! --confname !CONFIGSET_NAME! --confdir !CONFIGSET_DIR! %CONNECTION_PARAMS% %ZK_VERBOSE%^
-  -configsetsDir "%SOLR_TIP%/server/solr/configsets"
 ) ELSE IF "!ZK_OP!"=="downconfig" (
   IF "!CONFIGSET_NAME!"=="" (
     set ERROR_MSG="-n option must be set for downconfig"
@@ -1576,7 +1575,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -path !ZK_SRC! -z !ZK_HOST! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! --path !ZK_SRC! -z !ZK_HOST! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="cp" (
   IF "%ZK_SRC%"=="" (
     set ERROR_MSG="<src> must be specified for 'cp' command"
@@ -1595,7 +1594,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! -src !ZK_SRC! -dst !ZK_DST! --recurse !ZK_RECURSE! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --source !ZK_SRC! --destination !ZK_DST! --recurse !ZK_RECURSE! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="mv" (
   IF "%ZK_SRC%"=="" (
     set ERROR_MSG="<src> must be specified for 'mv' command"
@@ -1608,7 +1607,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! -src !ZK_SRC! -dst !ZK_DST! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --source !ZK_SRC! --destination !ZK_DST! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="rm" (
   IF "%ZK_SRC"=="" (
     set ERROR_MSG="Zookeeper path to remove must be specified when using the 'rm' command"
@@ -1617,7 +1616,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! -path !ZK_SRC! --recurse !ZK_RECURSE! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! --recurse !ZK_RECURSE! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="ls" (
   IF "%ZK_SRC"=="" (
     set ERROR_MSG="Zookeeper path to remove must be specified when using the 'ls' command"
@@ -1626,7 +1625,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! -path !ZK_SRC! --recurse !ZK_RECURSE! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! --recurse !ZK_RECURSE! %ZK_VERBOSE%
 ) ELSE IF "!ZK_OP!"=="mkroot" (
   IF "%ZK_SRC"=="" (
     set ERROR_MSG="Zookeeper path to create must be specified when using the 'mkroot' command"
@@ -1635,7 +1634,7 @@ IF "!ZK_OP!"=="upconfig" (
   "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% %SOLR_TOOL_OPTS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%SOLR_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
-  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! -path !ZK_SRC! %ZK_VERBOSE%
+  org.apache.solr.cli.SolrCLI !ZK_OP! -z !ZK_HOST! --path !ZK_SRC! %ZK_VERBOSE%
 ) ELSE (
   set ERROR_MSG="Unknown zk option !ZK_OP!"
   goto zk_short_usage

@@ -43,17 +43,17 @@ public class ConfigSetDownloadTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder("confname")
-            .argName("NAME")
+        Option.builder()
             .longOpt("confname")
             .hasArg()
+            .argName("NAME")
             .required(true)
             .desc("Configset name in ZooKeeper.")
             .build(),
-        Option.builder("confdir")
-            .argName("DIR")
+        Option.builder()
             .longOpt("confdir")
             .hasArg()
+            .argName("DIR")
             .required(true)
             .desc("Local directory with configs.")
             .build(),
