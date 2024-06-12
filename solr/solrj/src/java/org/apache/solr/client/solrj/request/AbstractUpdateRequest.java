@@ -17,13 +17,12 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 
 /** */
-public abstract class AbstractUpdateRequest extends SolrRequest<UpdateResponse>
+public abstract class AbstractUpdateRequest extends CollectionRequiringSolrRequest<UpdateResponse>
     implements IsUpdateRequest {
   protected ModifiableSolrParams params;
   protected int commitWithin = -1;

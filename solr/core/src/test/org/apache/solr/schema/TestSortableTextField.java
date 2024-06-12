@@ -38,7 +38,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -291,23 +290,23 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
             "whitespace_l_stxt")) {
       values = createIndexableFields(field);
       assertEquals(field, 2, values.size());
-      MatcherAssert.assertThat(field, values.get(0), instanceOf(Field.class));
-      MatcherAssert.assertThat(field, values.get(1), instanceOf(SortedDocValuesField.class));
+      assertThat(field, values.get(0), instanceOf(Field.class));
+      assertThat(field, values.get(1), instanceOf(SortedDocValuesField.class));
     }
 
     // special cases...
     values = createIndexableFields("whitespace_nois_stxt");
     assertEquals(1, values.size());
-    MatcherAssert.assertThat(values.get(0), instanceOf(SortedDocValuesField.class));
+    assertThat(values.get(0), instanceOf(SortedDocValuesField.class));
     //
     values = createIndexableFields("whitespace_nodv_stxt");
     assertEquals(1, values.size());
-    MatcherAssert.assertThat(values.get(0), instanceOf(Field.class));
+    assertThat(values.get(0), instanceOf(Field.class));
     //
     values = createIndexableFields("whitespace_m_stxt");
     assertEquals(2, values.size());
-    MatcherAssert.assertThat(values.get(0), instanceOf(Field.class));
-    MatcherAssert.assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class));
+    assertThat(values.get(0), instanceOf(Field.class));
+    assertThat(values.get(1), instanceOf(SortedSetDocValuesField.class));
   }
 
   private List<IndexableField> createIndexableFields(String fieldName) {

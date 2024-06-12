@@ -16,17 +16,26 @@
  */
 package org.apache.solr.response.transform;
 
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import org.apache.solr.JSONTestUtil;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -40,6 +49,9 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.security.BasicAuthPlugin;
+import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -51,6 +63,8 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
   static final String people = "people";
   static final String depts = "departments";
   private static boolean differentUniqueId;
+  private static final String USER = "solr";
+  private static final String PASS = "SolrRocksAgain";
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -61,24 +75,54 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
 
     String configName = "solrCloudCollectionConfig";
     int nodeCount = 5;
-    configureCluster(nodeCount).addConfig(configName, configDir).configure();
+
+    final String SECURITY_JSON =
+        Utils.toJSONString(
+            Map.of(
+                "authorization",
+                Map.of(
+                    "class",
+                    RuleBasedAuthorizationPlugin.class.getName(),
+                    "user-role",
+                    singletonMap(USER, "admin"),
+                    "permissions",
+                    singletonList(Map.of("name", "all", "role", "admin"))),
+                "authentication",
+                Map.of(
+                    "class",
+                    BasicAuthPlugin.class.getName(),
+                    "blockUnknown",
+                    true,
+                    "credentials",
+                    singletonMap(USER, getSaltedHashedValue(PASS)),
+                    "forwardCredentials", // forward basic auth credentials during internode
+                    // requests instead of relying on PKI authentication; the test should pass
+                    // regardless of the setting here, but "true" is the more interesting case that
+                    // demonstrates that basic auth credentials are being properly handled in the
+                    // context of a distributed subquery
+                    true)));
+
+    configureCluster(nodeCount)
+        .addConfig(configName, configDir)
+        .withSecurityJson(SECURITY_JSON)
+        .configure();
 
     int shards = 2;
     int replicas = 2;
-    CollectionAdminRequest.createCollection(people, configName, shards, replicas)
-        .withProperty("config", "solrconfig-doctransformers.xml")
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
-        .withProperty("schema", "schema-docValuesJoin.xml")
+    withBasicAuth(
+            CollectionAdminRequest.createCollection(people, configName, shards, replicas)
+                .withProperty("config", "solrconfig-doctransformers.xml")
+                .withProperty("schema", "schema-docValuesJoin.xml"))
         .process(cluster.getSolrClient());
 
-    CollectionAdminRequest.createCollection(depts, configName, shards, replicas)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
-        .withProperty("config", "solrconfig-doctransformers.xml")
-        .withProperty(
-            "schema",
-            differentUniqueId
-                ? "schema-minimal-with-another-uniqkey.xml"
-                : "schema-docValuesJoin.xml")
+    withBasicAuth(
+            CollectionAdminRequest.createCollection(depts, configName, shards, replicas)
+                .withProperty("config", "solrconfig-doctransformers.xml")
+                .withProperty(
+                    "schema",
+                    differentUniqueId
+                        ? "schema-minimal-with-another-uniqkey.xml"
+                        : "schema-docValuesJoin.xml"))
         .process(cluster.getSolrClient());
 
     CloudSolrClient client = cluster.getSolrClient();
@@ -136,7 +180,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
 
     final SolrDocumentList hits;
     {
-      final QueryRequest qr = new QueryRequest(params);
+      final QueryRequest qr = withBasicAuth(new QueryRequest(params));
       final QueryResponse rsp = new QueryResponse();
       rsp.setResponse(cluster.getSolrClient().request(qr, people + "," + depts));
       hits = rsp.getResults();
@@ -172,7 +216,17 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
                 + "/select"
                 + params.toQueryString());
 
-    try (final InputStream jsonResponse = node.openStream()) {
+    final URLConnection urlConnectionWithoutAuth = node.openConnection();
+    assertThrows(Exception.class, () -> urlConnectionWithoutAuth.getInputStream());
+    final URLConnection urlConnection = node.openConnection();
+    String basicAuth =
+        "Basic "
+            + new String(
+                Base64.getEncoder().encode((USER + ":" + PASS).getBytes(StandardCharsets.UTF_8)),
+                StandardCharsets.UTF_8);
+    urlConnection.setRequestProperty("Authorization", basicAuth);
+
+    try (final InputStream jsonResponse = urlConnection.getInputStream()) {
       final ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
       jsonResponse.transferTo(outBuffer);
 
@@ -359,12 +413,16 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
         }
         upd.append("</update>");
 
-        ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
+        ContentStreamUpdateRequest req = withBasicAuth(new ContentStreamUpdateRequest("/update"));
         req.addContentStream(new ContentStreamBase.StringStream(upd.toString(), "text/xml"));
-
         cluster.getSolrClient().request(req, collection);
         upd.setLength("<update>".length());
       }
     }
+  }
+
+  private static <T extends SolrRequest<? extends SolrResponse>> T withBasicAuth(T req) {
+    req.setBasicAuthCredentials(USER, PASS);
+    return req;
   }
 }

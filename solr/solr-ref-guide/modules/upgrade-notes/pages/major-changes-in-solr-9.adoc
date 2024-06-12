@@ -67,15 +67,37 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
+== Solr 9.6
+=== Dependency upgrades
+Lucene is upgraded to 9.10.0 and a variety of library dependencies have been upgraded. See https://solr.apache.org/docs/9_6_0/changes/Changes.html for specific upgraded libraries.
+
+=== SolrJ
+* The `Http2SolrClient` classes powered by the Jetty Http library are no longer marked as experimental.
+* Solrj now offers a lightweight client based on java.net.http.HttpClient: `HttpJdkSolrClient`
+* SolrJ now offers an improved async request API
+
+=== Queries
+* Distributed stats can be disabled via request parameter
+* Query timeouts (limits) may now be based on either CPU time as well as wall clock
+
+=== Other
+* Inactive shards will now be cleaned up periodically
+
 == Solr 9.5
-=== Curator upgraded to 5.5.0 and requires Zookeeper 3.5.x or higher
+=== Dependency Upgrades
 <<#solr-8-2,Solr 8.2 recommended using Zookeeper 3.5.5>> and now with Curator 5.5.0 requires https://curator.apache.org/docs/breaking-changes/[Zookeeper 3.5.x or higher]. This primarily affects users of `hadoop-auth`, but usage of Curator could affect other parts of Solr.
 
 === Global Circuit Breakers
 * Circuit breakers can now be configured globally, not only per collection. See xref:deployment-guide:circuit-breakers.adoc[Configuring Circuit Breakers] for more information.
 
-=== Environment variables and syste properties
+=== Configuration and Ease-of-Use
 * Solr will now automatically resolve all environment variables with `SOLR_` prefix, and set the corresponding system property. This is useful for configuring more aspects of Solr through environment variables, such as for containers. Underscores are replaced with dots and strings are lowercased. For example, while you earlier had to set the system property `-Dsolr.clustering.enabled=true` to enable clustering, you can now set the equivalent environment variable `SOLR_CLUSTERING_ENABLED=true` instead.
+
+* Collection and Replica Properties may now be used as property substitution variables in configuration files (e.g. solrconfig.xml).
+
+* Solr now auto-reloads updated keystore and truststore files when TLS is enabled.
+
+* Tracing support has received a number of quality-of-life improvements, including improved tracking of distributed collection commands and increased coverage for internal requests made with the Apache and Jetty HTTP clients.
 
 == Solr 9.4
 === The Built-In Config Sets

@@ -19,7 +19,7 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  solr start -c
+  solr start -DminStateByteLenForCompression=0 -c
 }
 
 teardown_file() {
@@ -36,16 +36,27 @@ teardown() {
   save_home_on_failure
 }
 
+@test "running subcommands with zk is prevented" {
+ run solr ls / -z localhost:${ZK_PORT}
+ assert_output --partial "You must invoke this subcommand using the zk command"
+}
+
 @test "listing out files" {
   sleep 1
   run solr zk ls / -z localhost:${ZK_PORT}
   assert_output --partial "aliases.json"
 }
 
+@test "get zk host using solr url" {
+  sleep 1
+  run solr zk ls / -solrUrl http://localhost:${SOLR_PORT}
+  assert_output --partial "aliases.json"
+}
+
 @test "copying files around" {
   touch myfile.txt
-  # Umm, what is solr cp?  It's like bin/solr zk cp but not?
-  run solr cp -src myfile.txt -dst zk:/myfile.txt -z localhost:${ZK_PORT}
+
+  run solr zk cp myfile.txt zk:/myfile.txt -z localhost:${ZK_PORT}
   assert_output --partial "Copying from 'myfile.txt' to 'zk:/myfile.txt'. ZooKeeper at localhost:${ZK_PORT}"
   sleep 1
   run solr zk ls / -z localhost:${ZK_PORT}
@@ -53,13 +64,20 @@ teardown() {
 
   touch myfile2.txt
   run solr zk cp myfile2.txt zk:myfile2.txt -z localhost:${ZK_PORT}
-  assert_output --partial "Copying from 'myfile2.txt' to 'zk:myfile2.txt'. ZooKeeper at localhost:${ZK_PORT}"
   sleep 1
   run solr zk ls / -z localhost:${ZK_PORT}
   assert_output --partial "myfile2.txt"
+  
+  touch myfile3.txt
+  run solr zk cp myfile3.txt zk:/myfile3.txt -z localhost:${ZK_PORT}
+  assert_output --partial "Copying from 'myfile3.txt' to 'zk:/myfile3.txt'. ZooKeeper at localhost:${ZK_PORT}"
+  sleep 1
+  run solr zk ls / -z localhost:${ZK_PORT}
+  assert_output --partial "myfile3.txt"
 
   rm myfile.txt
   rm myfile2.txt
+  rm myfile3.txt
 }
 
 @test "upconfig" {
@@ -76,20 +94,17 @@ teardown() {
 
 }
 
-@test "zkcli.sh gets 'solrhome' from 'solr.home' system property" {
-  sleep 1
-  run "${SOLR_TIP}/server/scripts/cloud-scripts/zkcli.sh" -v
-  local extracted_solrhome=$(echo "$output" | grep -oE "solrhome=[^ ]+")
-  # remove 'solrhome='
-  local path_value=${extracted_solrhome#*=}
-  [[ $path_value == *"/server/scripts/cloud-scripts/../../solr" ]] || [[ $path_value == *"/server/solr" ]]
-}
 
-@test "zkcli.sh gets 'solrhome' from 'solrhome' command line option" {
-  sleep 1
-  run "${SOLR_TIP}/server/scripts/cloud-scripts/zkcli.sh" -v -s /path/to/solr/home
-  local extracted_solrhome=$(echo "$output" | grep -oE "solrhome=[^ ]+")
-  # remove 'solrhome='
-  local path_value=${extracted_solrhome#*=}
-  [[ $path_value == "/path/to/solr/home" ]]
+@test "bin/solr zk cp gets 'solrhome' from '--solr-home' command line option" {
+  touch afile.txt
+  
+  run solr zk cp afile.txt zk:/afile.txt -z localhost:${ZK_PORT} -verbose --solr-home ${SOLR_TIP}/server/solr
+  assert_output --partial "Using SolrHome: ${SOLR_TIP}/server/solr"
+  refute_output --partial 'Failed to load solr.xml from ZK or SolrHome'
+  
+  # The -DminStateByteLenForCompression variable substitution on solr start is not seen
+  # by the ZkCpTool.java, so therefore we do not have compression unless solr.xml is directly edited.
+  #assert_output --partial 'Compression of state.json has been enabled'
+    
+  rm afile.txt
 }

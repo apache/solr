@@ -48,7 +48,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.BlobRepository;
+import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.DistribFileStore;
 import org.apache.solr.filestore.FileStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
@@ -130,7 +130,8 @@ public class PackageUtils {
   public static <T> T getJson(SolrClient client, String path, Class<T> klass) {
     try {
       return getMapper()
-          .readValue(getJsonStringFromUrl(client, path, new ModifiableSolrParams()), klass);
+          .readValue(
+              getJsonStringFromNonCollectionApi(client, path, new ModifiableSolrParams()), klass);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -154,10 +155,39 @@ public class PackageUtils {
     return null;
   }
 
+  /**
+   * Returns the response of a collection or core API call as string-ified JSON
+   *
+   * @param client the SolrClient used to make the request
+   * @param path the HTTP path of the Solr API to hit, starting after the collection or core name
+   *     (i.e. omitting '/solr/techproducts')
+   * @param params query parameters to include when making the request
+   */
+  public static String getJsonStringFromCollectionApi(
+      SolrClient client, String path, SolrParams params) {
+    return getJsonStringFromUrl(client, path, params, true);
+  }
+
+  /**
+   * Returns the response of a collection-agnostic API call as string-ified JSON
+   *
+   * @param client the SolrClient used to make the request
+   * @param path the HTTP path of the Solr API to hit, starting after '/solr' (or '/api' for v2
+   *     requests)
+   * @param params query parameters to include when making the request
+   */
+  public static String getJsonStringFromNonCollectionApi(
+      SolrClient client, String path, SolrParams params) {
+    return getJsonStringFromUrl(client, path, params, false);
+  }
+
   /** Returns JSON string from a given Solr URL */
-  public static String getJsonStringFromUrl(SolrClient client, String path, SolrParams params) {
+  private static String getJsonStringFromUrl(
+      SolrClient client, String path, SolrParams params, boolean isCollectionApi) {
     try {
-      GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
+      GenericSolrRequest request =
+          new GenericSolrRequest(SolrRequest.METHOD.GET, path, params)
+              .setRequiresCollection(isCollectionApi);
       request.setResponseParser(new JsonMapResponseParser());
       NamedList<Object> response = client.request(request);
       return response.jsonStr();
@@ -179,7 +209,7 @@ public class PackageUtils {
     NamedList<Object> response = solrClient.request(request);
     String manifestJson = (String) response.get("response");
     String calculatedSHA512 =
-        BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
+        Utils.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
     if (expectedSHA512.equals(calculatedSHA512) == false) {
       throw new SolrException(
           ErrorCode.UNAUTHORIZED,
@@ -272,7 +302,7 @@ public class PackageUtils {
   }
 
   public static void uploadKey(byte[] bytes, String path, Path home) throws IOException {
-    FileStoreAPI.MetaData meta = FileStoreAPI._createJsonMetaData(bytes, null);
+    FileStoreAPI.MetaData meta = ClusterFileStore._createJsonMetaData(bytes, null);
     DistribFileStore._persistToFile(
         home, path, ByteBuffer.wrap(bytes), ByteBuffer.wrap(Utils.toJSON(meta)));
   }

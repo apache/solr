@@ -47,9 +47,9 @@ grant {
   permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen,connect,resolve";
   permission java.net.SocketPermission "[::1]:1024-", "accept,listen,connect,resolve";
   // "dead hosts", we try to keep it fast
-  permission java.net.SocketPermission "[::1]:4", "connect,resolve";
-  permission java.net.SocketPermission "[::1]:6", "connect,resolve";
-  permission java.net.SocketPermission "[::1]:8", "connect,resolve";
+  permission java.net.SocketPermission "127.0.0.1:4", "connect,resolve";
+  permission java.net.SocketPermission "127.0.0.1:6", "connect,resolve";
+  permission java.net.SocketPermission "127.0.0.1:8", "connect,resolve";
 
   // Basic permissions needed for Lucene to work:
   permission java.util.PropertyPermission "*", "read,write";
@@ -184,6 +184,19 @@ grant {
   // for Apache HttpClient useSystemProperties
   permission java.net.NetPermission "getProxySelector";
   permission java.net.NetPermission "requestPasswordAuthentication";
+
+  // for java.net.http.HttpClient.  See HttpJdkSolrClientTest
+  permission "java.net.URLPermission" "http://127.0.0.1:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://127.0.0.1:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "socket://127.0.0.1:*", "CONNECT:*";
+
+  permission "java.net.URLPermission" "http://localhost:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://localhost:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "socket://localhost:*", "CONNECT:*";
+
+  permission "java.net.URLPermission" "http://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "socket://[::1]:*", "CONNECT:*";
 };
 
 // additional permissions based on system properties set by /bin/solr

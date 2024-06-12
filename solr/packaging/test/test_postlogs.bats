@@ -38,18 +38,6 @@ teardown() {
   delete_all_collections
 }
 
-@test "post solr log into solr via script" {
-  run solr create -c COLL_NAME
-  assert_output --partial "Created collection 'COLL_NAME'"
-
-  run postlogs http://localhost:${SOLR_PORT}/solr/COLL_NAME ${SOLR_LOGS_DIR}/solr.log
-  assert_output --partial 'Sending last batch'
-  assert_output --partial 'Committed'
-
-  run curl "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=*:*"
-  refute_output --partial '"numFound":0'
-}
-
 @test "post solr log into solr via cli" {
   run solr create -c COLL_NAME
   assert_output --partial "Created collection 'COLL_NAME'"

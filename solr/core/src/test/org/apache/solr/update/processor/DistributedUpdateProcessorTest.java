@@ -24,6 +24,7 @@ import static org.mockito.Mockito.doReturn;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -37,10 +38,10 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.update.TimedVersionBucket;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -106,11 +107,11 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         };
     int succeeded = runCommands(threads, 1000, req, versionAddFunc);
     // only one should succeed
-    MatcherAssert.assertThat(succeeded, is(1));
+    assertThat(succeeded, is(1));
 
     succeeded = runCommands(threads, -1, req, versionAddFunc);
     // all should succeed
-    MatcherAssert.assertThat(succeeded, is(threads));
+    assertThat(succeeded, is(threads));
   }
 
   @Test
@@ -131,11 +132,31 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
 
     int succeeded = runCommands(threads, 1000, req, versionDeleteFunc);
     // only one should succeed
-    MatcherAssert.assertThat(succeeded, is(1));
+    assertThat(succeeded, is(1));
 
     succeeded = runCommands(threads, -1, req, versionDeleteFunc);
     // all should succeed
-    MatcherAssert.assertThat(succeeded, is(threads));
+    assertThat(succeeded, is(threads));
+  }
+
+  @Test
+  public void testStatusCodeOnDistribError_NotSolrException() {
+
+    // SolrCmdDistributor defaults to a status code of -1, and sets it to a legal value only if
+    // the distributed exception is a SolrException instance. If it isn't it remains as -1,
+    // which should be replaced with a 500
+    final String message = "some communication issue";
+    SolrCmdDistributor.SolrError e = new SolrCmdDistributor.SolrError();
+    e.e = new IOException(message);
+
+    DistributedUpdateProcessor.DistributedUpdatesAsyncException distribError =
+        new DistributedUpdateProcessor.DistributedUpdatesAsyncException(List.of(e));
+    assertEquals(
+        "Expected HTTP 500 status code for distributed update IOException",
+        500,
+        distribError.code());
+    assertEquals(
+        "Async exception during distributed update: " + message, distribError.getMessage());
   }
 
   /**
