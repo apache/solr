@@ -345,7 +345,7 @@ public class CoreDescriptor {
   }
 
   public boolean isLoadOnStartup() {
-    String tmp = coreProperties.getProperty(CORE_LOADONSTARTUP, "false");
+    String tmp = coreProperties.getProperty(CORE_LOADONSTARTUP, "true");
     return Boolean.parseBoolean(tmp);
   }
 
