@@ -125,9 +125,10 @@ public class RankQueryTest extends SolrTestCaseJ4 {
   // if covariant ScoreDocs are not supported because it returns a TopDocsCollector
   // for MyScoreDoc (a subtype of ScoreDoc).
   static class MyScoreDoc extends ScoreDoc {
-    public int someOtherField = 0;
-    public MyScoreDoc(int doc, float score, int someOtherField) {
-      super(doc, score, -1);
+    public int someOtherField;
+
+    public MyScoreDoc(int doc, float score, int shardIndex, int someOtherField) {
+      super(doc, score, shardIndex);
       this.someOtherField = someOtherField;
     }
   }
@@ -149,7 +150,6 @@ public class RankQueryTest extends SolrTestCaseJ4 {
   }
 
   static class MyRankQuery extends RankQuery {
-
     @Override 
     public TopDocsCollector<? extends ScoreDoc> getTopDocsCollector(
       int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
