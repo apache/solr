@@ -478,7 +478,7 @@ teardown() {
   run solr api --solr-url "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
   assert_output --partial '"urlScheme":"https"'
 
-  run solr api -url "https://localhost:${SOLR2_PORT}/solr/test/select?q=*:*&rows=0"
+  run solr api --solr-url "https://localhost:${SOLR2_PORT}/solr/test/select?q=*:*&rows=0"
   assert_output --partial '"numFound":0'
 
   export SOLR_SSL_CLIENT_KEY_STORE=
