@@ -611,7 +611,12 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // Now fail if we specify "file:". Everything should still be in /mv2
     args =
         new String[] {
-          "--source", "file:" + File.separator + "mv2", "--destination", "/mv3", "--zk-host", zkAddr,
+          "--source",
+          "file:" + File.separator + "mv2",
+          "--destination",
+          "/mv3",
+          "--zk-host",
+          zkAddr,
         };
 
     // Still in mv2
