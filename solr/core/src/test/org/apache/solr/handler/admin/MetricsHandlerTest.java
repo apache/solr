@@ -890,6 +890,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   @Test
   @SuppressWarnings("unchecked")
   public void testPrometheusMetricsJvm() throws Exception {
+    // Some JVM metrics are non-deterministic due to testing environment such as
+    // availableProcessors. We confirm snapshot exists and is nonNull instead.
     MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
     SolrQueryResponse resp = new SolrQueryResponse();
@@ -934,18 +936,18 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_buffers");
     actualGaugeDataPoint =
         getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "Count", "pool", "direct"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+    assertNotNull(actualGaugeDataPoint);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_heap");
     actualGaugeDataPoint =
         getGaugeDatapointSnapshot(actualSnapshot, Labels.of("item", "committed", "memory", "heap"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+    assertNotNull(actualGaugeDataPoint);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_buffers_bytes");
     actualGaugeDataPoint =
         getGaugeDatapointSnapshot(
             actualSnapshot, Labels.of("item", "MemoryUsed", "pool", "direct"));
-    assertEquals(0, actualGaugeDataPoint.getValue(), 0);
+    assertNotNull(actualGaugeDataPoint);
 
     actualSnapshot = getMetricSnapshot(actualSnapshots, "solr_metrics_jvm_gc_seconds");
     actualGaugeDataPoint =
