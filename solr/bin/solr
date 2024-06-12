@@ -1103,34 +1103,34 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "-z" "$ZK_HOST")
             shift 2
         ;;
-        -t|--type)
+        -t|--type|-type)
             AUTH_TYPE="$2"
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--type" "$AUTH_TYPE")
             shift 2
         ;;
-        --credentials)
+        --credentials|-credentials)
             AUTH_CREDENTIALS="$2"
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--credentials" "$AUTH_CREDENTIALS")
             shift 2
         ;;
-        --config)
+        --config|-config)
             AUTH_CONFIG="$(echo "$2"| base64)"
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--config" "$AUTH_CONFIG")
             shift 2
         ;;
-        --solr-include-file)
+        --solr-include-file|-solrIncludeFile)
             SOLR_INCLUDE="$2"
             shift 2
         ;;
-        --prompt)
+        --prompt|-prompt)
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--prompt" "$2")
             shift 2
         ;;
-        --block-unknown)
+        --block-unknown|-blockUnknown)
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--block-unknown" "$2")
             shift 2
         ;;
-        --update-include-file-only)
+        --update-include-file-only|-updateIncludeFileOnly|--updateIncludeFileOnly)
             AUTH_PARAMS=("${AUTH_PARAMS[@]}" "--update-include-file-only" "$2")
             shift 2
         ;;
@@ -1138,7 +1138,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             VERBOSE="--verbose"
             shift
         ;;
-        -d|--dir)
+        -d|--dir|-dir)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Server directory is required when using the $1 option!"
               exit 1
@@ -1158,7 +1158,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
             SOLR_SERVER_DIR="$(cd "$SOLR_SERVER_DIR" || (echo "SOLR_SERVER_DIR not found" && exit 1); pwd)"
             shift 2
         ;;
-        -s|--solr-home)
+        -s|--solr-home|-solr.home)
             if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
               print_usage "$SCRIPT_CMD" "Solr home directory is required when using the $1 option!"
               exit 1
