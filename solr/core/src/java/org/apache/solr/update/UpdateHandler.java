@@ -149,7 +149,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
             && !core.getCoreDescriptor().getCloudDescriptor().requiresTransactionLog();
     if (updateLog == null
         && ulogPluginInfo != null
-        && ulogPluginInfo.isEnabled()
+        && ulogPluginInfo.isEnabled() // useless; `getPluginInfo()` returns null if !enabled
         && !skipUpdateLog) {
       DirectoryFactory dirFactory = core.getDirectoryFactory();
 

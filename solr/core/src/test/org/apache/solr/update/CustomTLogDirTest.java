@@ -39,12 +39,6 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
           System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
           solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
         }
-
-        @Override
-        protected void after() {
-          System.clearProperty("solr.directoryFactory");
-          super.after();
-        }
       };
 
   private static final AtomicInteger collectionIdx = new AtomicInteger();
@@ -147,6 +141,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
   private static void validateTlogPath(
       SolrClient client, Path instanceDir, Path ulogDir, Path resolvedTlogDir) throws Exception {
     Path configSet = LuceneTestCase.createTempDir();
+    System.setProperty("enable.update.log", "true");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     if (ulogDir != null) {
       System.setProperty("solr.ulog.dir", ulogDir.toString()); // picked up from `solrconfig.xml`
