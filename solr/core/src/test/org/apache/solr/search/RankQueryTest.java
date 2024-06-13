@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search;
 
-
+import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
@@ -32,8 +32,6 @@ import org.apache.solr.handler.component.MergeStrategy;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.IOException;
 
 public class RankQueryTest extends SolrTestCaseJ4 {
 
@@ -132,13 +130,13 @@ public class RankQueryTest extends SolrTestCaseJ4 {
       this.someOtherField = someOtherField;
     }
   }
-  
+
   static class MyTopDocsCollector extends TopDocsCollector<MyScoreDoc> {
     public MyTopDocsCollector(PriorityQueue<MyScoreDoc> pq) {
       super(pq);
     }
-    
-    @Override 
+
+    @Override
     public ScoreMode scoreMode() {
       return ScoreMode.COMPLETE;
     }
@@ -150,27 +148,26 @@ public class RankQueryTest extends SolrTestCaseJ4 {
   }
 
   static class MyRankQuery extends RankQuery {
-    @Override 
+    @Override
     public TopDocsCollector<? extends ScoreDoc> getTopDocsCollector(
-      int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
+        int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
       return new MyTopDocsCollector(null);
     }
 
-    @Override 
+    @Override
     public MergeStrategy getMergeStrategy() {
       return null;
     }
 
-    @Override 
+    @Override
     public RankQuery wrap(Query mainQuery) {
       return this;
     }
 
     @Override
-    public void visit(QueryVisitor visitor) {
-    }
+    public void visit(QueryVisitor visitor) {}
 
-    @Override 
+    @Override
     public int hashCode() {
       return 1;
     }
