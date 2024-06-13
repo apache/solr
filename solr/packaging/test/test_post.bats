@@ -39,7 +39,7 @@ teardown() {
 @test "Check help command" {
 
   run solr post
-  assert_output --partial 'Must specify either -url or -c parameter'
+  assert_output --partial 'Must specify either --solr-update-url or -c parameter'
 
   run solr post -h
   assert_output --partial 'usage: post'

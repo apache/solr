@@ -117,8 +117,8 @@ public class PackageTool extends ToolBase {
               }
               break;
             case "list-deployed":
-              if (cli.hasOption('c')) {
-                String collection = cli.getArgs()[1];
+              if (cli.hasOption("collection")) {
+                String collection = cli.getOptionValue("collection");
                 Map<String, SolrPackageInstance> packages =
                     packageManager.getPackagesDeployed(collection);
                 PackageUtils.printGreen("Packages deployed on " + collection + ":");
@@ -126,6 +126,9 @@ public class PackageTool extends ToolBase {
                   PackageUtils.printGreen("\t" + packages.get(packageName));
                 }
               } else {
+                // nuance that we use a arg here instead of requiring a --package parameter with a
+                // value
+                // in this code path
                 String packageName = cli.getArgs()[1];
                 Map<String, String> deployedCollections =
                     packageManager.getDeployedCollections(packageName);
@@ -167,7 +170,7 @@ public class PackageTool extends ToolBase {
                   Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1));
                   String packageName = parsedVersion.first();
                   String version = parsedVersion.second();
-                  boolean noprompt = cli.hasOption('y');
+                  boolean noprompt = cli.hasOption("noprompt");
                   boolean isUpdate = cli.hasOption("update");
                   String[] collections =
                       cli.hasOption("collections")
@@ -331,7 +334,7 @@ public class PackageTool extends ToolBase {
             .build(),
         Option.builder("c")
             .longOpt("collection")
-            .hasArg(true)
+            .hasArg()
             .argName("COLLECTION")
             .desc("The collection to apply the package to, not required.")
             .build(),
