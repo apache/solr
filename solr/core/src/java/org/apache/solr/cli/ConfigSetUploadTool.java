@@ -45,14 +45,14 @@ public class ConfigSetUploadTool extends ToolBase {
   @Override
   public List<Option> getOptions() {
     return List.of(
-        Option.builder()
+        Option.builder("n")
             .longOpt("confname")
             .hasArg()
             .argName("NAME")
             .required(true)
             .desc("Configset name in ZooKeeper.")
             .build(),
-        Option.builder()
+        Option.builder("d")
             .longOpt("confdir")
             .hasArg()
             .argName("DIR")
@@ -63,8 +63,7 @@ public class ConfigSetUploadTool extends ToolBase {
         SolrCLI.OPTION_SOLRURL_DEPRECATED,
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_ZKHOST_DEPRECATED,
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override

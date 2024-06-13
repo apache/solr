@@ -172,16 +172,14 @@ public class PostTool extends ToolBase {
   public List<Option> getOptions() {
     return List.of(
         Option.builder("url")
-            .argName("UPDATEURL")
             .longOpt("solr-update-url")
             .hasArg()
-            .required(false)
+            .argName("UPDATEURL")
             .desc("Solr Update URL, the full url to the update handler, including the /update.")
             .build(),
         Option.builder("c")
             .longOpt("name")
             .argName("NAME")
-            .hasArg()
             .required(false)
             .desc("Name of the collection.")
             .build(),
@@ -197,45 +195,45 @@ public class PostTool extends ToolBase {
             .build(),
         Option.builder()
             .longOpt("mode")
+            .hasArg()
             .argName("mode")
-            .hasArg(true)
             .required(false)
             .desc(
                 "Files crawls files, web crawls website, args processes input args, and stdin reads a command from standard in. default: files.")
             .build(),
         Option.builder("r")
             .longOpt("recursive")
+            .hasArg()
             .argName("recursive")
-            .hasArg(true)
             .required(false)
             .desc("For web crawl, how deep to go. default: 1")
             .build(),
         Option.builder("d")
             .longOpt("delay")
+            .hasArg()
             .argName("delay")
-            .hasArg(true)
             .required(false)
             .desc(
                 "If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
             .build(),
         Option.builder("t")
             .longOpt("type")
+            .hasArg()
             .argName("content-type")
-            .hasArg(true)
             .required(false)
             .desc("Specify a specific mimetype to use, such as application/json.")
             .build(),
         Option.builder("ft")
             .longOpt("filetypes")
+            .hasArg()
             .argName("<type>[,<type>,...]")
-            .hasArg(true)
             .required(false)
             .desc("default: " + DEFAULT_FILE_TYPES)
             .build(),
         Option.builder("p")
             .longOpt("params")
+            .hasArg()
             .argName("<key>=<value>[&<key>=<value>...]")
-            .hasArg(true)
             .required(false)
             .desc("values must be URL-encoded; these pass through to Solr update request.")
             .build(),

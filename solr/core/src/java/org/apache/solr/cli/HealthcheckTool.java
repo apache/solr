@@ -58,8 +58,8 @@ public class HealthcheckTool extends ToolBase {
     return List.of(
         Option.builder("c")
             .longOpt("name")
-            .argName("NAME")
             .hasArg()
+            .argName("COLLECTION")
             .required(true)
             .desc("Name of the collection to check.")
             .build(),

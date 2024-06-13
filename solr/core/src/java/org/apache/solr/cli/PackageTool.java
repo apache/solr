@@ -310,38 +310,34 @@ public class PackageTool extends ToolBase {
     return List.of(
         Option.builder()
             .longOpt("collections")
-            .argName("COLLECTIONS")
             .hasArg()
-            .required(false)
+            .argName("COLLECTIONS")
             .desc(
                 "Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
             .build(),
         Option.builder()
             .longOpt("cluster")
-            .required(false)
             .desc("Specifies that this action should affect cluster-level plugins only.")
             .build(),
         Option.builder("p")
-            .argName("PARAMS")
-            .hasArgs()
-            .required(false)
-            .desc("List of parameters to be used with deploy command.")
             .longOpt("param")
+            .hasArgs()
+            .argName("PARAMS")
+            .desc("List of parameters to be used with deploy command.")
             .build(),
         Option.builder()
-            .required(false)
-            .desc("If a deployment is an update over a previous deployment.")
             .longOpt("update")
+            .desc("If a deployment is an update over a previous deployment.")
             .build(),
         Option.builder("c")
-            .required(false)
-            .desc("The collection to apply the package to, not required.")
             .longOpt("collection")
+            .hasArg(true)
+            .argName("COLLECTION")
+            .desc("The collection to apply the package to, not required.")
             .build(),
         Option.builder("y")
-            .required(false)
-            .desc("Don't prompt for input; accept all default choices, defaults to false.")
             .longOpt("noprompt")
+            .desc("Don't prompt for input; accept all default choices, defaults to false.")
             .build(),
         SolrCLI.OPTION_SOLRURL,
         SolrCLI.OPTION_SOLRURL_DEPRECATED,

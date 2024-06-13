@@ -66,15 +66,15 @@ public class PostLogsTool extends ToolBase {
     return List.of(
         Option.builder("url")
             .longOpt("solr-collection-url")
-            .argName("ADDRESS")
             .hasArg()
+            .argName("ADDRESS")
             .required(true)
             .desc("Address of the collection, example http://localhost:8983/solr/collection1/.")
             .build(),
         Option.builder("rootdir")
             .longOpt("rootdir")
-            .argName("DIRECTORY")
             .hasArg()
+            .argName("DIRECTORY")
             .required(true)
             .desc("All files found at or below the root directory will be indexed.")
             .build(),
