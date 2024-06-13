@@ -17,6 +17,7 @@
 package org.apache.solr.hdfs;
 
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
+import static org.apache.solr.cloud.ZkController.trimLeadingAndTrailingSlashes;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
@@ -47,7 +48,6 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -463,6 +463,14 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
               + " for relative dataDir paths to work");
     }
 
+    String scopePath = scopePath(cd);
+
+    return normalize(
+        SolrPaths.normalizeDir(
+            trimLeadingAndTrailingSlashes(hdfsDataDir) + "/" + scopePath + "/" + cd.getDataDir()));
+  }
+
+  public static String scopePath(CoreDescriptor cd) {
     // by default, we go off the instance directory
     String path;
     if (cd.getCloudDescriptor() != null) {
@@ -474,14 +482,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory
     } else {
       path = cd.getName();
     }
-
-    return normalize(
-        SolrPaths.normalizeDir(
-            ZkController.trimLeadingAndTrailingSlashes(hdfsDataDir)
-                + "/"
-                + path
-                + "/"
-                + cd.getDataDir()));
+    return path;
   }
 
   /**

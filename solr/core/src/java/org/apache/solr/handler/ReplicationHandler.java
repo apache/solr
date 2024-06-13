@@ -1741,7 +1741,7 @@ public class ReplicationHandler extends RequestHandlerBase
     @Override
     protected Path initFile() {
       // if it is a tlog file read from tlog directory
-      return Path.of(core.getUpdateHandler().getUpdateLog().getLogDir(), tlogFileName);
+      return Path.of(core.getUpdateHandler().getUpdateLog().getTlogDir(), tlogFileName);
     }
   }
 
