@@ -667,7 +667,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
           VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME,
           "pass");
 
-      String[] args = new String[] {"updateacls", "---path", "/", "-z", zkServer.getZkAddress()};
+      String[] args = new String[] {"updateacls", "--path", "/", "-z", zkServer.getZkAddress()};
       UpdateACLTool tool = new UpdateACLTool();
       assertEquals(0, runTool(args, tool));
     } finally {
