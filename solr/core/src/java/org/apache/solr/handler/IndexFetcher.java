@@ -1540,7 +1540,7 @@ public class IndexFetcher {
    */
   private boolean copyTmpTlogFiles2Tlog(File tmpTlogDir) {
     Path tlogDir =
-        FileSystems.getDefault().getPath(solrCore.getUpdateHandler().getUpdateLog().getLogDir());
+        FileSystems.getDefault().getPath(solrCore.getUpdateHandler().getUpdateLog().getTlogDir());
     Path backupTlogDir =
         FileSystems.getDefault()
             .getPath(tlogDir.getParent().toAbsolutePath().toString(), tmpTlogDir.getName());
