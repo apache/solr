@@ -18,10 +18,13 @@
 package org.apache.solr.cluster.placement.plugins;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.Shard;
 import org.apache.solr.cluster.SolrCollection;
@@ -30,6 +33,7 @@ import org.apache.solr.cluster.placement.Builders;
 import org.apache.solr.cluster.placement.PlacementContext;
 import org.apache.solr.cluster.placement.PlacementPlan;
 import org.apache.solr.cluster.placement.PlacementPlugin;
+import org.apache.solr.cluster.placement.PlacementRequest;
 import org.apache.solr.cluster.placement.ReplicaPlacement;
 import org.apache.solr.cluster.placement.impl.BalanceRequestImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
@@ -39,8 +43,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Unit test for {@link MinimizeCoresPlacementFactoryTest} */
-public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryTest {
+/** Unit test for {@link SimplePlacementFactoryTest} */
+public class SimplePlacementFactoryTest extends AbstractPlacementFactoryTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private PlacementPlugin plugin;
@@ -51,7 +55,7 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
   }
 
   private void configurePlugin() {
-    MinimizeCoresPlacementFactory factory = new MinimizeCoresPlacementFactory();
+    SimplePlacementFactory factory = new SimplePlacementFactory();
     plugin = factory.createPluginInstance();
   }
 
@@ -116,17 +120,90 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
    * replica per shard to be placed on any node.
    */
   @Test
+  public void testMultiplePlacementsWithExistingReplicas() throws Exception {
+    String collectionName = "existingCollection";
+
+    // Cluster nodes and their attributes
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(3);
+
+    // The collection already exists with shards and replicas
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+    // Note that the collection as defined below is in a state that would NOT be returned by the
+    // placement plugin: shard 1 has two replicas on node 0. The plugin should still be able to
+    // place additional replicas as long as they don't break the rules.
+    List<List<String>> shardsReplicas =
+        List.of(
+            List.of("NRT 0"), // shard 1
+            List.of("NRT 1"), // shard 2
+            List.of("NRT 2")); // shard 3
+    collectionBuilder.customCollectionSetup(shardsReplicas, clusterBuilder.getLiveNodeBuilders());
+    clusterBuilder.addCollection(collectionBuilder);
+    SolrCollection solrCollection = collectionBuilder.build();
+
+    List<Node> liveNodes = clusterBuilder.buildLiveNodes();
+
+    // Place an additional NRT and an additional TLOG replica for each shard
+    PlacementRequestImpl placementRequest =
+        new PlacementRequestImpl(
+            solrCollection,
+            solrCollection.getShardNames(),
+            new HashSet<>(liveNodes),
+            ReplicaCount.of(1, 0, 0));
+
+    List<PlacementRequest> placementRequests =
+        solrCollection.getShardNames().stream()
+            .map(
+                shard ->
+                    new PlacementRequestImpl(
+                        solrCollection,
+                        Collections.singleton(shard),
+                        new HashSet<>(liveNodes),
+                        ReplicaCount.of(1, 0, 0)))
+            .collect(Collectors.toList());
+    // Randomize the order of the requests
+    Collections.shuffle(placementRequests, random());
+
+    // The replicas must be placed on the most appropriate nodes, i.e. those that do not already
+    // have a replica for the shard and then on the node with the lowest number of cores. NRT are
+    // placed first and given the cluster state here the placement is deterministic (easier to test,
+    // only one good placement).
+    List<PlacementPlan> pps =
+        plugin.computePlacements(placementRequests, clusterBuilder.buildPlacementContext());
+
+    List<ReplicaPlacement> replicaPlacements =
+        pps.stream().flatMap(pp -> pp.getReplicaPlacements().stream()).collect(Collectors.toList());
+    replicaPlacements.forEach(
+        rp ->
+            assertNotEquals(
+                "Two replicas of the same shard on the same node",
+                solrCollection.getShard(rp.getShardName()).iterator().next().getNode(),
+                rp.getNode()));
+    Map<Node, List<ReplicaPlacement>> placementsByNode =
+        replicaPlacements.stream()
+            .collect(Collectors.groupingBy(ReplicaPlacement::getNode, Collectors.toList()));
+    for (Map.Entry<Node, List<ReplicaPlacement>> entry : placementsByNode.entrySet()) {
+      assertEquals(
+          String.format(
+              "Node %s has multiple replicas placed on it, when each node should have 1 placement: [%s]",
+              entry.getKey().getName(),
+              entry.getValue().stream()
+                  .map(ReplicaPlacement::getShardName)
+                  .collect(Collectors.joining(", "))),
+          1,
+          entry.getValue().size());
+    }
+  }
+
+  /**
+   * Tests that existing collection replicas are taken into account when preventing more than one
+   * replica per shard to be placed on any node.
+   */
+  @Test
   public void testPlacementWithExistingReplicas() throws Exception {
     String collectionName = "existingCollection";
 
     // Cluster nodes and their attributes
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(5);
-    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
-    int coresOnNode = 10;
-    for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
-      nodeBuilder.setCoreCount(coresOnNode);
-      coresOnNode += 10;
-    }
 
     // The collection already exists with shards and replicas
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
@@ -137,7 +214,7 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
         List.of(
             List.of("NRT 0", "TLOG 0", "NRT 3"), // shard 1
             List.of("NRT 1", "NRT 3", "TLOG 2")); // shard 2
-    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    collectionBuilder.customCollectionSetup(shardsReplicas, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
     SolrCollection solrCollection = collectionBuilder.build();
 
@@ -159,7 +236,7 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
         plugin.computePlacement(placementRequest, clusterBuilder.buildPlacementContext());
 
     // Each expected placement is represented as a string "shard replica-type node"
-    Set<String> expectedPlacements = Set.of("1 NRT 1", "1 TLOG 2", "2 NRT 0", "2 TLOG 4");
+    Set<String> expectedPlacements = Set.of("1 NRT 1", "1 TLOG 2", "2 TLOG 0", "2 NRT 4");
     verifyPlacements(expectedPlacements, pp, collectionBuilder.getShardBuilders(), liveNodes);
   }
 
@@ -173,11 +250,6 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
 
     // Cluster nodes and their attributes
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(3);
-    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
-    int coreCount = 0;
-    for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
-      nodeBuilder.setCoreCount(coreCount++);
-    }
 
     // The collection already exists with shards and replicas
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
@@ -188,7 +260,7 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
         List.of(
             List.of("NRT 10", "TLOG 11"), // shard 1
             List.of()); // shard 2
-    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    collectionBuilder.customCollectionSetup(shardsReplicas, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
     SolrCollection solrCollection = collectionBuilder.build();
 
@@ -227,58 +299,10 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
 
   /** Tests replica balancing across all nodes in a cluster */
   @Test
-  public void testBalancingBareMetrics() throws Exception {
+  public void testBalancing() throws Exception {
     // Cluster nodes and their attributes
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(5);
     List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
-
-    // The collection already exists with shards and replicas
-    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder("a");
-    // Note that the collection as defined below is in a state that would NOT be returned by the
-    // placement plugin: shard 1 has two replicas on node 0. The plugin should still be able to
-    // place additional replicas as long as they don't break the rules.
-    List<List<String>> shardsReplicas =
-        List.of(
-            List.of("NRT 0", "TLOG 0", "NRT 2"), // shard 1
-            List.of("NRT 1", "NRT 4", "TLOG 3")); // shard 2
-    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
-    clusterBuilder.addCollection(collectionBuilder);
-
-    // Add another collection
-    collectionBuilder = Builders.newCollectionBuilder("b");
-    shardsReplicas =
-        List.of(
-            List.of("NRT 1", "TLOG 0", "NRT 3"), // shard 1
-            List.of("NRT 1", "NRT 3", "TLOG 0")); // shard 2
-    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
-    clusterBuilder.addCollection(collectionBuilder);
-
-    BalanceRequestImpl balanceRequest =
-        new BalanceRequestImpl(new HashSet<>(clusterBuilder.buildLiveNodes()));
-    BalancePlan balancePlan =
-        plugin.computeBalancing(balanceRequest, clusterBuilder.buildPlacementContext());
-
-    // Each expected placement is represented as a string "col shard replica-type fromNode ->
-    // toNode"
-    Set<String> expectedPlacements = Set.of("b 1 TLOG 0 -> 2", "b 1 NRT 3 -> 4");
-    verifyBalancing(
-        expectedPlacements,
-        balancePlan,
-        collectionBuilder.getShardBuilders(),
-        clusterBuilder.buildLiveNodes());
-  }
-
-  /** Tests replica balancing across all nodes in a cluster */
-  @Test
-  public void testBalancingExistingMetrics() throws Exception {
-    // Cluster nodes and their attributes
-    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(5);
-    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
-    int coresOnNode = 10;
-    for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
-      nodeBuilder.setCoreCount(coresOnNode);
-      coresOnNode += 10;
-    }
 
     // The collection already exists with shards and replicas
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder("a");
@@ -299,7 +323,7 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
 
     // Each expected placement is represented as a string "col shard replica-type fromNode ->
     // toNode"
-    Set<String> expectedPlacements = Set.of("a 1 NRT 3 -> 1", "a 2 NRT 3 -> 0");
+    Set<String> expectedPlacements = Set.of("a 1 NRT 0 -> 4");
     verifyBalancing(
         expectedPlacements,
         balancePlan,
@@ -312,13 +336,6 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
   public void testBalancingWithNodeSubset() throws Exception {
     // Cluster nodes and their attributes
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(5);
-    List<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
-    int coresOnNode = 10;
-    for (Builders.NodeBuilder nodeBuilder : nodeBuilders) {
-      nodeBuilder.setCoreCount(coresOnNode);
-      coresOnNode += 10;
-    }
-
     // The collection already exists with shards and replicas
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder("a");
     // Note that the collection as defined below is in a state that would NOT be returned by the
@@ -328,10 +345,10 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
         List.of(
             List.of("NRT 0", "TLOG 0", "NRT 3"), // shard 1
             List.of("NRT 1", "NRT 3", "TLOG 2")); // shard 2
-    collectionBuilder.customCollectionSetup(shardsReplicas, nodeBuilders);
+    collectionBuilder.customCollectionSetup(shardsReplicas, clusterBuilder.getLiveNodeBuilders());
     clusterBuilder.addCollection(collectionBuilder);
 
-    // Only balance over node 1 and 2
+    // Only balance over node 1-4
     List<Node> overNodes = clusterBuilder.buildLiveNodes();
     overNodes.remove(0);
 
@@ -341,7 +358,7 @@ public class MinimizeCoresPlacementFactoryTest extends AbstractPlacementFactoryT
 
     // Each expected placement is represented as a string "col shard replica-type fromNode ->
     // toNode"
-    Set<String> expectedPlacements = Set.of("a 1 NRT 3 -> 1");
+    Set<String> expectedPlacements = Set.of("a 1 NRT 3 -> 4");
     verifyBalancing(
         expectedPlacements,
         balancePlan,

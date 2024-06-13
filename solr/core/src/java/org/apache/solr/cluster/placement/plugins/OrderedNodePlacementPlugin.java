@@ -134,7 +134,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
             // options than we have replicas to place, that's ok, because the replicas will likely
             // be put on all the tie options.
             //
-            // Only skip the request if it can be requeued, and there are other outstanding requests to
+            // Only skip the request if it can be requeued, and there are other outstanding requests
+            // to
             // compute. If the next outstanding request cannot be requeued,
             int numWeightTies = nodesForReplicaType.peekTies();
             if (numWeightTies > (replicaCount - replicasPlaced)
@@ -847,8 +848,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     /**
-     * Determine if this request is complete, and there are no requested replicas that have not
-     *  yet had placements computed.
+     * Determine if this request is complete, and there are no requested replicas that have not yet
+     * had placements computed.
      *
      * @return if all replica placements have been computed
      */
@@ -917,7 +918,9 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     /**
-     * The request can be requeued as long as there have been placements since the last time it was requeued. If no placements have been made since, we will not allow a requeue which will force placements to be determined. This removes the possibility of a never-ending loop.
+     * The request can be requeued as long as there have been placements since the last time it was
+     * requeued. If no placements have been made since, we will not allow a requeue which will force
+     * placements to be determined. This removes the possibility of a never-ending loop.
      *
      * @return true if the request has not been requeued already
      */
@@ -925,7 +928,8 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       return requeuedAtPlacementCount < placementCount;
     }
 
-    /** Let the request know that it has been requeued
+    /**
+     * Let the request know that it has been requeued
      *
      * @param placementCount the number of placements made at the time of the requeue
      */
