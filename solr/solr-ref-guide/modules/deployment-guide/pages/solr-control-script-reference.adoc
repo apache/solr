@@ -1206,7 +1206,7 @@ An absolute path may be supplied instead.
 * `-d directory_under_configsets`
 * `-d /path/to/configset/source`
 
-`-z <zkHost>`::
+`-z <zkHost>` or `--zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1218,7 +1218,7 @@ Is not required if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-solrUrl <url>`::
+`-url <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1278,7 +1278,7 @@ In either case, _pre-existing configurations at the destination will be overwrit
 * `-d directory_under_configsets`
 * `-d /path/to/configset/destination`
 
-`-z <zkHost>`::
+`-z <zkHost>` or `--zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1290,7 +1290,7 @@ Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-solrUrl <url>`::
+`-url <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1362,7 +1362,7 @@ If `<dest>` ends in a slash character it names a directory.
 * `zk:/configs/myconfigs/solrconfig.xml`
 * `file:/Users/apache/configs/src`
 
-`-z <zkHost>`::
+`-z <zkHost>` or `--zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1374,7 +1374,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-solrUrl <url>`::
+`-url <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1445,7 +1445,7 @@ The path is assumed to be a ZooKeeper node, no `zk:` prefix is necessary.
 * `/configs/myconfigset`
 * `/configs/myconfigset/solrconfig.xml`
 
-`-z <zkHost>`::
+`-z <zkHost>` or `--zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1457,7 +1457,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-solrUrl <url>`::
+`-url <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1503,7 +1503,7 @@ The `zk:` prefix is assumed.
 +
 *Example*: `/configs/newconfigset`
 
-`-z <zkHost>`::
+`-z <zkHost>` or `--zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1519,7 +1519,7 @@ An example of this command is:
 
 `bin/solr zk mv /configs/oldconfigset /configs/newconfigset`
 
-`-solrUrl <url>`::
+`-url <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1558,7 +1558,7 @@ The path on ZooKeeper to list.
 +
 *Example*: `/collections/mycollection`
 
-`-z <zkHost>`::
+`-z <zkHost>` or `--zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1570,7 +1570,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-solrUrl <url>`::
+`-url <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1607,7 +1607,7 @@ A leading slash is assumed if not present.
 +
 *Example*: `/solr`
 
-`-z <zkHost>`::
+`-z <zkHost>` or `--zk-host <zkHost>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1619,7 +1619,7 @@ Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
-`-solrUrl <url>`::
+`-url <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
@@ -1799,7 +1799,7 @@ If you have configured basicAuth or TLS with your Solr you may find this easier 
 
 The `bin/solr api` command takes the following parameters:
 
-`--solr-url <url>`::
+`-url <url>` or `--solr-url <url>`::
 +
 [%autowidth,frame=none]
 |===
