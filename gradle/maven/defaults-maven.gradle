@@ -149,10 +149,6 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
             artifact sourcesJar
             artifact javadocJar
 
-            // Include SBOM artifacts
-            artifact(sbomXmlArtifact)
-            artifact(sbomJsonArtifact)
-
             pom(configurePom)
 
             pom({
