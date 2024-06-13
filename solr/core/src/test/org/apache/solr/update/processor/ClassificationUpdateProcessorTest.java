@@ -36,7 +36,6 @@ import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.update.AddUpdateCommand;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -105,7 +104,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
         new ClassificationUpdateProcessor(params, mockProcessor, reader, req().getSchema());
     updateProcessorToTest.processAdd(update);
 
-    MatcherAssert.assertThat(unseenDocument1.getFieldValue(PREDICTED_CLASS), is("class2"));
+    assertThat(unseenDocument1.getFieldValue(PREDICTED_CLASS), is("class2"));
   }
 
   @Test
@@ -125,7 +124,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
         new ClassificationUpdateProcessor(params, mockProcessor, reader, req().getSchema());
     updateProcessorToTest.processAdd(update);
 
-    MatcherAssert.assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS), is("class2"));
+    assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS), is("class2"));
   }
 
   @Test
@@ -147,7 +146,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
     updateProcessorToTest.processAdd(update);
 
-    MatcherAssert.assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS), is("class2"));
+    assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS), is("class2"));
   }
 
   @Test
@@ -167,7 +166,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
         new ClassificationUpdateProcessor(params, mockProcessor, reader, req().getSchema());
     updateProcessorToTest.processAdd(update);
 
-    MatcherAssert.assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS), is("class1"));
+    assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS), is("class1"));
   }
 
   @Test
@@ -189,7 +188,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
         new ClassificationUpdateProcessor(params, mockProcessor, reader, req().getSchema());
     updateProcessorToTest.processAdd(update);
 
-    MatcherAssert.assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS), is("class3"));
+    assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS), is("class3"));
   }
 
   @Test
@@ -211,7 +210,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
     updateProcessorToTest.processAdd(update);
 
-    MatcherAssert.assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS), is("class2"));
+    assertThat(unseenDocument1.getFieldValue(TRAINING_CLASS), is("class2"));
   }
 
   @Test
@@ -235,8 +234,8 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
     @SuppressWarnings({"unchecked"})
     ArrayList<Object> assignedClasses = (ArrayList) unseenDocument1.getFieldValues(TRAINING_CLASS);
-    MatcherAssert.assertThat(assignedClasses.get(0), is("class2"));
-    MatcherAssert.assertThat(assignedClasses.get(1), is("class1"));
+    assertThat(assignedClasses.get(0), is("class2"));
+    assertThat(assignedClasses.get(1), is("class1"));
   }
 
   @Test
@@ -259,9 +258,9 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
     @SuppressWarnings({"unchecked"})
     ArrayList<Object> assignedClasses = (ArrayList) unseenDocument1.getFieldValues(TRAINING_CLASS);
-    MatcherAssert.assertThat(assignedClasses.size(), is(2));
-    MatcherAssert.assertThat(assignedClasses.get(0), is("class2"));
-    MatcherAssert.assertThat(assignedClasses.get(1), is("class1"));
+    assertThat(assignedClasses.size(), is(2));
+    assertThat(assignedClasses.get(0), is("class2"));
+    assertThat(assignedClasses.get(1), is("class1"));
   }
 
   @Test
@@ -284,9 +283,9 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
     @SuppressWarnings({"unchecked"})
     ArrayList<Object> assignedClasses = (ArrayList) unseenDocument1.getFieldValues(TRAINING_CLASS);
-    MatcherAssert.assertThat(assignedClasses.size(), is(2));
-    MatcherAssert.assertThat(assignedClasses.get(0), is("class2"));
-    MatcherAssert.assertThat(assignedClasses.get(1), is("class1"));
+    assertThat(assignedClasses.size(), is(2));
+    assertThat(assignedClasses.get(0), is("class2"));
+    assertThat(assignedClasses.get(1), is("class1"));
   }
 
   @Test
@@ -312,9 +311,9 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
     @SuppressWarnings({"unchecked"})
     ArrayList<Object> assignedClasses = (ArrayList) unseenDocument1.getFieldValues(TRAINING_CLASS);
-    MatcherAssert.assertThat(assignedClasses.size(), is(2));
-    MatcherAssert.assertThat(assignedClasses.get(0), is("class4"));
-    MatcherAssert.assertThat(assignedClasses.get(1), is("class6"));
+    assertThat(assignedClasses.size(), is(2));
+    assertThat(assignedClasses.get(0), is("class4"));
+    assertThat(assignedClasses.get(1), is("class6"));
   }
 
   @Test
@@ -340,9 +339,9 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
     @SuppressWarnings({"unchecked"})
     ArrayList<Object> assignedClasses = (ArrayList) unseenDocument1.getFieldValues(TRAINING_CLASS);
-    MatcherAssert.assertThat(assignedClasses.size(), is(2));
-    MatcherAssert.assertThat(assignedClasses.get(0), is("class4"));
-    MatcherAssert.assertThat(assignedClasses.get(1), is("class6"));
+    assertThat(assignedClasses.size(), is(2));
+    assertThat(assignedClasses.get(0), is("class4"));
+    assertThat(assignedClasses.get(1), is("class6"));
   }
 
   private ClassificationUpdateProcessorParams initParams(

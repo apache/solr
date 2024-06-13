@@ -130,7 +130,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     DebugServlet.clear();
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
-    q.setParam("a", "\u1234");
+    q.setParam("a", MUST_ENCODE);
     Http2SolrClient.Builder b =
         new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE);
     if (rp != null) {
@@ -233,7 +233,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     String url = getBaseUrl() + DEBUG_SERVLET_PATH;
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).build()) {
-      testUpdate(client, WT.JAVABIN, "application/javabin", "\u1234");
+      testUpdate(client, WT.JAVABIN, "application/javabin", MUST_ENCODE);
     }
   }
 
@@ -246,7 +246,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
             .withRequestWriter(new RequestWriter())
             .withResponseParser(new XMLResponseParser())
             .build()) {
-      testUpdate(client, WT.XML, "application/xml; charset=UTF-8", "\u1234");
+      testUpdate(client, WT.XML, "application/xml; charset=UTF-8", MUST_ENCODE);
     }
   }
 
@@ -259,8 +259,23 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
             .withRequestWriter(new BinaryRequestWriter())
             .withResponseParser(new BinaryResponseParser())
             .build()) {
-      testUpdate(client, WT.JAVABIN, "application/javabin", "\u1234");
+      testUpdate(client, WT.JAVABIN, "application/javabin", MUST_ENCODE);
     }
+  }
+
+  @Test
+  public void testAsyncGet() throws Exception {
+    super.testQueryAsync();
+  }
+
+  @Test
+  public void testAsyncPost() throws Exception {
+    super.testUpdateAsync();
+  }
+
+  @Test
+  public void testAsyncException() throws Exception {
+    super.testAsyncExceptionBase();
   }
 
   @Test
@@ -568,6 +583,28 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
         String expected3 =
             Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu3", "testp3");
         assertEquals(expected3, clone3.basicAuthAuthorizationStr);
+      }
+    }
+  }
+
+  @Test
+  public void testIdleTimeoutWithHttpClient() {
+    try (Http2SolrClient oldClient =
+        new Http2SolrClient.Builder("baseSolrUrl")
+            .withIdleTimeout(5000, TimeUnit.MILLISECONDS)
+            .build()) {
+      try (Http2SolrClient onlyBaseUrlChangedClient =
+          new Http2SolrClient.Builder("newBaseSolrUrl").withHttpClient(oldClient).build()) {
+        assertEquals(oldClient.getIdleTimeout(), onlyBaseUrlChangedClient.getIdleTimeout());
+        assertEquals(oldClient.getHttpClient(), onlyBaseUrlChangedClient.getHttpClient());
+      }
+      try (Http2SolrClient idleTimeoutChangedClient =
+          new Http2SolrClient.Builder("baseSolrUrl")
+              .withHttpClient(oldClient)
+              .withIdleTimeout(3000, TimeUnit.MILLISECONDS)
+              .build()) {
+        assertFalse(oldClient.getIdleTimeout() == idleTimeoutChangedClient.getIdleTimeout());
+        assertEquals(3000, idleTimeoutChangedClient.getIdleTimeout());
       }
     }
   }
