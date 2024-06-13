@@ -484,8 +484,8 @@ public abstract class LBSolrClient extends SolrClient {
     Exception ex = null;
     try {
       rsp.server = baseUrl.toString();
-      req.getRequest().setBasePath(baseUrl.toString());
-      rsp.rsp = getClient(baseUrl).request(req.getRequest(), (String) null);
+      req.getRequest().setBasePath(baseUrl.getBaseUrl());
+      rsp.rsp = getClient(baseUrl).request(req.getRequest(), baseUrl.getCore());
       if (isZombie) {
         zombieServers.remove(baseUrl.toString());
       }

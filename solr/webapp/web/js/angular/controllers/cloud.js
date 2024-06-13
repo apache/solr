@@ -155,7 +155,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.isFirstNodeForHost = function(node) {
     var hostName = node.split(":")[0]; 
     var nodesInHost = $scope.filteredNodes.filter(function (node) {
-      return node.startsWith(hostName);
+      return node.split(":")[0] === hostName;
     });
     return nodesInHost[0] === node;
   };
@@ -164,7 +164,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
   $scope.firstLiveNodeForHost = function(key) {
     var hostName = key.split(":")[0]; 
     var liveNodesInHost = $scope.filteredNodes.filter(function (key) {
-      return key.startsWith(hostName);
+      return key.split(":")[0] === hostName;
     }).filter(function (key) {
       return $scope.live_nodes.includes(key);
     });
@@ -329,7 +329,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
       hostsToShow.push(hostName);
       if (isFiltered) { // Only show the nodes per host matching active filter
         nodesToShow = nodesToShow.concat(filteredNodes.filter(function (node) {
-          return node.startsWith(hostName);
+          return node.split(":")[0] === hostName;
         }));
       } else {
         nodesToShow = nodesToShow.concat(hosts[hostName]['nodes']);
