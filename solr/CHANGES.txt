@@ -165,6 +165,8 @@ Other Changes
 
 * SOLR-16503: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
 
+* SOLR-17322: Once again allow rank queries to use custom TopDocsCollectors that operate on types that extend ScoreDocs. (Stephen Woods via Christine Poerschke)
+
 ==================  9.6.1 ==================
 Bug Fixes
 ---------------------
