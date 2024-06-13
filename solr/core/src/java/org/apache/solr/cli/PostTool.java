@@ -179,6 +179,7 @@ public class PostTool extends ToolBase {
             .build(),
         Option.builder("c")
             .longOpt("name")
+            .hasArg()
             .argName("NAME")
             .required(false)
             .desc("Name of the collection.")
@@ -262,15 +263,15 @@ public class PostTool extends ToolBase {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
     solrUpdateUrl = null;
-    if (cli.hasOption("url")) {
-      String url = cli.getOptionValue("url");
+    if (cli.hasOption("solr-update-url")) {
+      String url = cli.getOptionValue("solr-update-url");
       solrUpdateUrl = new URL(url);
-    } else if (cli.hasOption("c")) {
-      String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("c") + "/update";
+    } else if (cli.hasOption("name")) {
+      String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("name") + "/update";
       solrUpdateUrl = new URL(url);
     } else {
       throw new IllegalArgumentException(
-          "Must specify either -url or -c parameter to post documents.");
+          "Must specify either --solr-update-url or -c parameter to post documents.");
     }
 
     if (cli.hasOption("mode")) {
