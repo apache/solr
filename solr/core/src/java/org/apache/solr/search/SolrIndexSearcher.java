@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import com.codahale.metrics.Gauge;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -432,7 +433,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       return docFetcher.createInstance();
     } catch (IOException e) {
       // TODO: should we instead throw IOException?
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
   }
 
