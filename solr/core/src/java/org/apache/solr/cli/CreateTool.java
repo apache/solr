@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.file.PathUtils;
@@ -70,22 +71,34 @@ public class CreateTool extends ToolBase {
     return List.of(
         Option.builder("c")
             .longOpt("name")
-            .argName("NAME")
             .hasArg()
+            .argName("NAME")
             .required(true)
             .desc("Name of collection or core to create.")
             .build(),
         Option.builder("s")
             .longOpt("shards")
-            .argName("#")
             .hasArg()
-            .required(false)
+            .argName("#")
             .desc("Number of shards; default is 1.")
             .build(),
         Option.builder("rf")
             .longOpt("replication-factor")
-            .argName("#")
             .hasArg()
+            .argName("#")
+            .desc(
+                "Number of copies of each document across the collection (replicas per shard); default is 1.")
+            .build(),
+        Option.builder()
+            .longOpt("replicationFactor")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --replication-factor instead")
+                    .get())
+            .hasArg()
+            .argName("#")
             .required(false)
             .desc(
                 "Number of copies of each document across the collection (replicas per shard); default is 1.")
@@ -94,7 +107,6 @@ public class CreateTool extends ToolBase {
             .longOpt("confdir")
             .argName("DIR")
             .hasArg()
-            .required(false)
             .desc(
                 "Configuration directory to copy when creating the new collection; default is "
                     + SolrCLI.DEFAULT_CONFIG_SET
@@ -237,8 +249,13 @@ public class CreateTool extends ToolBase {
 
     // build a URL to create the collection
     int numShards = Integer.parseInt(cli.getOptionValue("shards", String.valueOf(1)));
-    int replicationFactor =
-        Integer.parseInt(cli.getOptionValue("replication-factor", String.valueOf(1)));
+    int replicationFactor = 1;
+
+    if (cli.hasOption("replication-factor")) {
+      replicationFactor = Integer.parseInt(cli.getOptionValue("replication-factor"));
+    } else if (cli.hasOption("replicationFactor")) {
+      replicationFactor = Integer.parseInt(cli.getOptionValue("replicationFactor"));
+    }
 
     boolean configExistsInZk =
         confName != null

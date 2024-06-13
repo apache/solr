@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DeprecatedAttributes;
 import org.apache.commons.cli.Option;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -70,14 +71,40 @@ public class DeleteTool extends ToolBase {
             .build(),
         Option.builder("d")
             .longOpt("delete-config")
-            .argName("true|false")
             .hasArg()
+            .argName("true|false")
+            .required(false)
+            .desc(
+                "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
+            .build(),
+        Option.builder()
+            .longOpt("deleteConfig")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --delete-config instead")
+                    .get())
+            .hasArg()
+            .argName("true|false")
             .required(false)
             .desc(
                 "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
             .build(),
         Option.builder("f")
             .longOpt("force-delete-config")
+            .required(false)
+            .desc(
+                "Skip safety checks when deleting the configuration directory used by a collection.")
+            .build(),
+        Option.builder()
+            .longOpt("forceDeleteConfig")
+            .deprecated(
+                DeprecatedAttributes.builder()
+                    .setForRemoval(true)
+                    .setSince("9.7")
+                    .setDescription("Use --force-delete-config instead")
+                    .get())
             .required(false)
             .desc(
                 "Skip safety checks when deleting the configuration directory used by a collection.")
@@ -134,9 +161,15 @@ public class DeleteTool extends ToolBase {
 
     String configName =
         zkStateReader.getClusterState().getCollection(collectionName).getConfigName();
-    boolean deleteConfig = "true".equals(cli.getOptionValue("delete-config", "true"));
+    boolean deleteConfig = true;
+    if (cli.hasOption("delete-config")) {
+      deleteConfig = "true".equals(cli.getOptionValue("delete-config"));
+    } else if (cli.hasOption("deleteConfig")) {
+      deleteConfig = "true".equals(cli.getOptionValue("deleteConfig"));
+    }
+
     if (deleteConfig && configName != null) {
-      if (cli.hasOption("force-delete-config")) {
+      if (cli.hasOption("force-delete-config") || cli.hasOption("forceDeleteConfig")) {
         log.warn(
             "Skipping safety checks, configuration directory {} will be deleted with impunity.",
             configName);
