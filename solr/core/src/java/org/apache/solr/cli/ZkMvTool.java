@@ -77,8 +77,8 @@ public class ZkMvTool extends ToolBase {
 
     try (SolrZkClient zkClient = SolrCLI.getSolrZkClient(cli, zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
-      String src = cli.getOptionValue("src");
-      String dst = cli.getOptionValue("dst");
+      String src = cli.getOptionValue("source");
+      String dst = cli.getOptionValue("destination");
 
       if (src.toLowerCase(Locale.ROOT).startsWith("file:")
           || dst.toLowerCase(Locale.ROOT).startsWith("file:")) {
