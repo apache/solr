@@ -345,13 +345,13 @@ public class CoreDescriptor {
   }
 
   public boolean isLoadOnStartup() {
-    String tmp = coreProperties.getProperty(CORE_LOADONSTARTUP, "true");
-    return Boolean.parseBoolean(tmp);
+    String stringValue = coreProperties.getProperty(CORE_LOADONSTARTUP, "true");
+    return Boolean.parseBoolean(stringValue);
   }
 
   public boolean isTransient() {
-    String tmp = coreProperties.getProperty(CORE_TRANSIENT, "false");
-    return PropertiesUtil.toBoolean(tmp);
+    String stringValue = coreProperties.getProperty(CORE_TRANSIENT, "false");
+    return PropertiesUtil.toBoolean(stringValue);
   }
 
   public String getUlogDir() {
