@@ -41,6 +41,6 @@ teardown() {
 }
 
 @test "status does not expose cli parameters to end user" {
-  run solr status -solr http://localhost:${SOLR_PORT}/solr
+  run solr status -solr http://localhost:${SOLR_PORT}
   assert_output --partial "ERROR: Unrecognized or misplaced argument: -solr!"
 }
