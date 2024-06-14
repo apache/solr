@@ -423,9 +423,7 @@ Use `bin/solr post` to index some example documents to the SolrCloud collection 
 
 [source,bash]
 ----
-$ cd example/exampledocs
-
-$ java -Djavax.net.ssl.keyStorePassword=secret -Djavax.net.ssl.keyStore=../../server/etc/solr-ssl.keystore.p12 -Djavax.net.ssl.trustStore=../../server/etc/solr-ssl.keystore.p12 -Djavax.net.ssl.trustStorePassword=secret -Durl=https://localhost:8984/solr/mycollection/update -jar post.jar *.xml
+$ bin/solr post --solr-update-url https://localhost:8984/solr/mycollection/update example/exampledocs/*.xml
 ----
 
 === Query Using curl

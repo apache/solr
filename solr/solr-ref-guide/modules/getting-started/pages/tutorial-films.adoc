@@ -264,7 +264,7 @@ $ bin/solr post -c films example/films/films.xml
 
 [,console]
 ----
-$  bin/solr post -c films example\films\films.xml
+$ bin/solr post -c films example\films\films.xml
 ----
 ====
 --
