@@ -156,6 +156,11 @@ Bug Fixes
 
 * SOLR-17326: Generated v2 'SolrRequest' implementations now all serialize to the correct response type (Christos Malliaridis via Jason Gerlowski)
 
+* SOLR-16962: Restore ability to configure tlog directory. Changes largely focus on UpdateLog and
+  HdfsUpdateLog. There is no anticipated change in existing behavior, other than that the `dir` parameter
+  to the `<updateLog>` element in `solrconfig.xml`, which has long been silently ignored, will now be
+  respected (Michael Gibney, David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
