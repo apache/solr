@@ -417,9 +417,9 @@ You should get a response that looks like this:
     "properties":{"urlScheme":"https"}}}
 ----
 
-=== Index Documents using post.jar
+=== Index Documents using bin/solr post
 
-Use `post.jar` to index some example documents to the SolrCloud collection created above:
+Use `bin/solr post` to index some example documents to the SolrCloud collection created above:
 
 [source,bash]
 ----
