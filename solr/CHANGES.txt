@@ -111,6 +111,8 @@ Optimizations
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
   cluster metrics.  AttributeFetcherImpl was improved accordingly.  (Yohann Callea)
 
+* SOLR-17269: Simplify cores of Coordinator node to avoid unnecessary registrations on Zookeeper (Patson Luk)
+
 Bug Fixes
 ---------------------
 * SOLR-12813: subqueries should respect basic auth. (Rudy Seitz via Eric Pugh)
