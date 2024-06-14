@@ -417,15 +417,13 @@ You should get a response that looks like this:
     "properties":{"urlScheme":"https"}}}
 ----
 
-=== Index Documents using post.jar
+=== Index Documents using bin/solr post
 
-Use `post.jar` to index some example documents to the SolrCloud collection created above:
+Use `bin/solr post` to index some example documents to the SolrCloud collection created above:
 
 [source,bash]
 ----
-$ cd example/exampledocs
-
-$ java -Djavax.net.ssl.keyStorePassword=secret -Djavax.net.ssl.keyStore=../../server/etc/solr-ssl.keystore.p12 -Djavax.net.ssl.trustStore=../../server/etc/solr-ssl.keystore.p12 -Djavax.net.ssl.trustStorePassword=secret -Durl=https://localhost:8984/solr/mycollection/update -jar post.jar *.xml
+$ bin/solr post --solr-update-url https://localhost:8984/solr/mycollection/update example/exampledocs/*.xml
 ----
 
 === Query Using curl
