@@ -264,7 +264,7 @@ $ bin/solr post -c films example/films/films.xml
 
 [,console]
 ----
-$ java -jar -Dc=films -Dauto example\exampledocs\post.jar example\films\*.xml
+$  bin/solr post -c films example\films\films.xml
 ----
 ====
 --
@@ -290,7 +290,7 @@ $ bin/solr post -c films example/films/films.csv -params "f.genre.split=true&f.d
 
 [,console]
 ----
-$ java -jar -Dc=films -Dparams=f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=| -Dauto example\exampledocs\post.jar example\films\*.csv
+$ bin/solr post -c films example\films\films.csv -params "f.genre.split=true&f.directed_by.split=true&f.genre.separator=|&f.directed_by.separator=|"
 ----
 ====
 --
