@@ -17,11 +17,8 @@
 
 package org.apache.solr.cli;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.cli.SolrCLI.findTool;
 import static org.apache.solr.cli.SolrCLI.parseCmdLine;
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -49,8 +46,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.security.BasicAuthPlugin;
-import org.apache.solr.security.RuleBasedAuthorizationPlugin;
+import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -62,39 +58,16 @@ import org.junit.Test;
 @SolrTestCaseJ4.SuppressSSL
 public class PostToolTest extends SolrCloudTestCase {
 
-  private static final String USER = "solr";
-  private static final String PASS = "SolrRocksAgain";
-
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
-    final String SECURITY_JSON =
-        Utils.toJSONString(
-            Map.of(
-                "authorization",
-                Map.of(
-                    "class",
-                    RuleBasedAuthorizationPlugin.class.getName(),
-                    "user-role",
-                    singletonMap(USER, "admin"),
-                    "permissions",
-                    singletonList(Map.of("name", "all", "role", "admin"))),
-                "authentication",
-                Map.of(
-                    "class",
-                    BasicAuthPlugin.class.getName(),
-                    "blockUnknown",
-                    true,
-                    "credentials",
-                    singletonMap(USER, getSaltedHashedValue(PASS)))));
-
     configureCluster(2)
         .addConfig("conf1", configset("cloud-minimal"))
-        .withSecurityJson(SECURITY_JSON)
+        .withSecurityJson(SecurityJson.SIMPLE)
         .configure();
   }
 
   private <T extends SolrRequest<? extends SolrResponse>> T withBasicAuth(T req) {
-    req.setBasicAuthCredentials(USER, PASS);
+    req.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
     return req;
   }
 
@@ -116,7 +89,7 @@ public class PostToolTest extends SolrCloudTestCase {
       "--solr-update-url",
       cluster.getJettySolrRunner(0).getBaseUrl() + "/" + collection + "/update",
       "--credentials",
-      USER + ":" + PASS,
+      SecurityJson.USER_PASS,
       jsonDoc.getAbsolutePath()
     };
     assertEquals(0, runTool(args));
@@ -154,7 +127,7 @@ public class PostToolTest extends SolrCloudTestCase {
     fw.flush();
 
     String[] args = {
-      "post", "-c", collection, "-credentials", USER + ":" + PASS, jsonDoc.getAbsolutePath()
+      "post", "-c", collection, "-credentials", SecurityJson.USER_PASS, jsonDoc.getAbsolutePath()
     };
     assertEquals(0, runTool(args));
 

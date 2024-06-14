@@ -17,8 +17,7 @@
 
 package org.apache.solr.core;
 
-import java.nio.file.Paths;
-import java.util.HashMap;
+import java.nio.file.Path;
 import java.util.Map;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -40,20 +39,18 @@ public class SyntheticSolrCore extends SolrCore {
 
   public static SyntheticSolrCore createAndRegisterCore(
       CoreContainer coreContainer, String syntheticCoreName, String configSetName) {
-    Map<String, String> coreProps = new HashMap<>();
-    coreProps.put(CoreAdminParams.CORE_NODE_NAME, coreContainer.getHostName());
-    coreProps.put(CoreAdminParams.COLLECTION, syntheticCoreName);
+    Map<String, String> coreProps = Map.of(CoreAdminParams.COLLECTION, syntheticCoreName);
 
     CoreDescriptor syntheticCoreDescriptor =
         new CoreDescriptor(
             syntheticCoreName,
-            Paths.get(coreContainer.getSolrHome() + "/" + syntheticCoreName),
+            Path.of(coreContainer.getSolrHome(), syntheticCoreName),
             coreProps,
             coreContainer.getContainerProperties(),
             coreContainer.getZkController());
-
+    syntheticCoreDescriptor.setConfigSet(configSetName);
     ConfigSet coreConfig =
-        coreContainer.getConfigSetService().loadConfigSet(syntheticCoreDescriptor, configSetName);
+        coreContainer.getConfigSetService().loadConfigSet(syntheticCoreDescriptor);
     syntheticCoreDescriptor.setConfigSetTrusted(coreConfig.isTrusted());
     SyntheticSolrCore syntheticCore =
         new SyntheticSolrCore(coreContainer, syntheticCoreDescriptor, coreConfig);
@@ -74,10 +71,5 @@ public class SyntheticSolrCore extends SolrCore {
     // which synthetic core is not registered in ZK.
     // We do not expect RestManager ops on Coordinator Nodes
     return new RestManager();
-  }
-
-  @Override
-  public void close() {
-    super.close();
   }
 }

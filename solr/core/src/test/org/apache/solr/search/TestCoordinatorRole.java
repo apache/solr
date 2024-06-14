@@ -60,6 +60,8 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.NodeRoles;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SyntheticSolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.servlet.CoordinatorHttpSolrCall;
 import org.slf4j.Logger;
@@ -102,11 +104,20 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
 
       assertEquals(10, rslt.getResults().size());
 
-      String SYNTHETIC_COLLECTION = CoordinatorHttpSolrCall.getSyntheticCollectionName("conf");
+      String SYNTHETIC_COLLECTION =
+          CoordinatorHttpSolrCall.getSyntheticCollectionNameFromConfig("conf");
       DocCollection collection =
           cluster.getSolrClient().getClusterStateProvider().getCollection(SYNTHETIC_COLLECTION);
       // this should be empty as synthetic collection does not register with ZK
       assertNull(collection);
+
+      String syntheticCoreName = CoordinatorHttpSolrCall.getSyntheticCoreNameFromConfig("conf");
+      try (SolrCore syntheticCore =
+          coordinatorJetty.getCoreContainer().getCore(syntheticCoreName)) {
+        assertNotNull(syntheticCore);
+        assertTrue(syntheticCore instanceof SyntheticSolrCore);
+        assertEquals("conf", syntheticCore.getCoreDescriptor().getConfigSet());
+      }
     } finally {
       cluster.shutdown();
     }
