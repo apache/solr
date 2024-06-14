@@ -201,6 +201,4 @@ apply from: file('gradle/hacks/dummy-outputs.gradle')
 apply from: file('gradle/solr/packaging.gradle')
 apply from: file('gradle/solr/solr-forbidden-apis.gradle')
 
-apply from: file('gradle/ant-compat/solr.post-jar.gradle')
-
 apply from: file('gradle/node.gradle')
