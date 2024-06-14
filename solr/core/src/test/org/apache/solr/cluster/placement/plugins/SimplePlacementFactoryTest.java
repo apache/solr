@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -184,6 +185,7 @@ public class SimplePlacementFactoryTest extends AbstractPlacementFactoryTest {
     for (Map.Entry<Node, List<ReplicaPlacement>> entry : placementsByNode.entrySet()) {
       assertEquals(
           String.format(
+              Locale.ROOT,
               "Node %s has multiple replicas placed on it, when each node should have 1 placement: [%s]",
               entry.getKey().getName(),
               entry.getValue().stream()
