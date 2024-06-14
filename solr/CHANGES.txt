@@ -132,7 +132,7 @@ Optimizations
 
 * SOLR-17099: Do not return spurious tags when fetching metrics from a Solr node to another. (Pierre Salagnac)
 
-* SOLR-17269: Simplify cores of Coordinator node to avoid unnecessary registrations on Zookeeper (Patson Luk)
+* SOLR-17269: Prevent the "Coordinator node" feature from registering synthetic cores in ZooKeeper (Patson Luk)
 
 Bug Fixes
 ---------------------
