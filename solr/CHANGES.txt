@@ -156,6 +156,11 @@ Bug Fixes
 
 * SOLR-17326: Generated v2 'SolrRequest' implementations now all serialize to the correct response type (Christos Malliaridis via Jason Gerlowski)
 
+* SOLR-16962: Restore ability to configure tlog directory. Changes largely focus on UpdateLog and
+  HdfsUpdateLog. There is no anticipated change in existing behavior, other than that the `dir` parameter
+  to the `<updateLog>` element in `solrconfig.xml`, which has long been silently ignored, will now be
+  respected (Michael Gibney, David Smiley)
+
 Dependency Upgrades
 ---------------------
 (No changes)
@@ -170,8 +175,6 @@ Other Changes
 * GITHUB#2454: Refactor preparePutOrPost method in HttpJdkSolrClient (Andy Webb)
 
 * SOLR-16503: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
-
-* SOLR-16796: Include cyclonedx SBOMs with maven artifacts (Arnout Engelen, Houston Putman, Kevin Risden)
 
 * SOLR-17322: Once again allow rank queries to use custom TopDocsCollectors that operate on types that extend ScoreDocs. (Stephen Woods via Christine Poerschke)
 
