@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -325,24 +324,24 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   protected JettySolrRunner getJettyForReplica(Replica replica) throws Exception {
     String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     assertNotNull(replicaBaseUrl);
-    URL baseUrl = URI.create(replicaBaseUrl).toURL();
+    URI baseUri = URI.create(replicaBaseUrl);
 
-    JettySolrRunner proxy = jettys.get(baseUrl.toURI());
-    assertNotNull("No proxy found for " + baseUrl + "!", proxy);
+    JettySolrRunner proxy = jettys.get(baseUri);
+    assertNotNull("No proxy found for " + baseUri + "!", proxy);
     return proxy;
   }
 
   protected SocketProxy getProxyForReplica(Replica replica) throws Exception {
     String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     assertNotNull(replicaBaseUrl);
-    URL baseUrl = URI.create(replicaBaseUrl).toURL();
+    URI baseUri = URI.create(replicaBaseUrl);
 
-    SocketProxy proxy = proxies.get(baseUrl.toURI());
-    if (proxy == null && !baseUrl.toExternalForm().endsWith("/")) {
-      baseUrl = URI.create(baseUrl.toExternalForm() + "/").toURL();
-      proxy = proxies.get(baseUrl.toURI());
+    SocketProxy proxy = proxies.get(baseUri);
+    if (proxy == null && !baseUri.toString().endsWith("/")) {
+      baseUri = URI.create(baseUri.toString() + "/");
+      proxy = proxies.get(baseUri);
     }
-    assertNotNull("No proxy found for " + baseUrl + "!", proxy);
+    assertNotNull("No proxy found for " + baseUri + "!", proxy);
     return proxy;
   }
 

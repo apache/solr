@@ -215,10 +215,10 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testAppendUrlPath() throws MalformedURLException {
+  public void testAppendUrlPath() throws URISyntaxException {
     assertEquals(
-        URI.create("http://[ff01::114]/a?foo=bar").toURL(),
-        PostTool.appendUrlPath(URI.create("http://[ff01::114]?foo=bar").toURL(), "/a"));
+        URI.create("http://[ff01::114]/a?foo=bar"),
+        PostTool.appendUrlPath(URI.create("http://[ff01::114]?foo=bar"), "/a"));
   }
 
   @Test
@@ -236,7 +236,7 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.recursive = 0;
     postTool.dryRun = true;
-    postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update").toURL();
+    postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
     File dir = getFile("exampledocs");
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
@@ -258,7 +258,7 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.recursive = 1; // This is the default
     postTool.dryRun = true;
-    postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update").toURL();
+    postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
     File dir = getFile("exampledocs");
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
@@ -269,8 +269,7 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.pageFetcher = new MockPageFetcher();
     postTool.dryRun = true;
-    postTool.solrUpdateUrl =
-        URI.create("http://user:password@localhost:5150/solr/fake/update").toURL();
+    postTool.solrUpdateUrl = URI.create("http://user:password@localhost:5150/solr/fake/update");
 
     // Uses mock pageFetcher
     postTool.delay = 0;
@@ -377,7 +376,7 @@ public class PostToolTest extends SolrCloudTestCase {
     }
 
     @Override
-    public Set<URI> getLinksFromWebPage(URL url, InputStream is, String type, URL postUrl) {
+    public Set<URI> getLinksFromWebPage(URL url, InputStream is, String type, URI postUri) {
       Set<URI> s = linkMap.get(PostTool.normalizeUrlEnding(url.toString()));
       if (s == null) {
         s = new HashSet<>();

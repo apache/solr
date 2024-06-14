@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.zip.GZIPInputStream;
@@ -101,8 +100,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
       is.transferTo(os);
     }
 
-    ContentStreamBase stream =
-        new ContentStreamBase.URLStream(URI.create(file.toURI().toASCIIString()).toURL());
+    ContentStreamBase stream = new ContentStreamBase.URLStream(file.toURI().toURL());
 
     try (InputStream s = stream.getStream();
         FileInputStream fis = new FileInputStream(file);
@@ -133,8 +131,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
       is.transferTo(zos);
     }
 
-    ContentStreamBase stream =
-        new ContentStreamBase.URLStream(URI.create(file.toURI().toASCIIString()).toURL());
+    ContentStreamBase stream = new ContentStreamBase.URLStream(file.toURI().toURL());
     try (InputStream s = stream.getStream();
         FileInputStream fis = new FileInputStream(file);
         GZIPInputStream zis = new GZIPInputStream(fis);
@@ -160,8 +157,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
       is.transferTo(zos);
     }
 
-    ContentStreamBase stream =
-        new ContentStreamBase.URLStream(URI.create(file.toURI().toASCIIString()).toURL());
+    ContentStreamBase stream = new ContentStreamBase.URLStream(file.toURI().toURL());
     try (InputStream s = stream.getStream();
         FileInputStream fis = new FileInputStream(file);
         GZIPInputStream zis = new GZIPInputStream(fis);
@@ -187,8 +183,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
       is.transferTo(zos);
     }
 
-    ContentStreamBase stream =
-        new ContentStreamBase.URLStream(URI.create(file.toURI().toASCIIString()).toURL());
+    ContentStreamBase stream = new ContentStreamBase.URLStream(file.toURI().toURL());
     try (InputStream s = stream.getStream();
         FileInputStream fis = new FileInputStream(file);
         GZIPInputStream zis = new GZIPInputStream(fis);
