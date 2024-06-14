@@ -79,9 +79,9 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
         };
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
-    validate(response, 0, List.of("1", "4"));
-    validate(response, 1, List.of("7"));
-    validate(response, 2, List.of("5"));
+    validate(response, 0, List.of("1", "4"), false);
+    validate(response, 1, List.of("7"), false);
+    validate(response, 2, List.of("5"), false);
     assertEquals(0, ((SolrDocumentList) response.getResponse().get("response")).size());
 
     index(id, Integer.toString(5), MonitorFields.MONITOR_QUERY, "other_content_s:\"solr is lame\"");
@@ -97,6 +97,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
+    final boolean writeToDocList = supportsWriteToDocList();
     params =
         new Object[] {
           CommonParams.SORT,
@@ -106,17 +107,17 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          supportsWriteToDocList(),
+          writeToDocList,
           QUERY_MATCH_TYPE_KEY,
           "simple"
         };
     response = query(params);
     System.out.println("Response = " + response);
-    validate(response, 0, 0, "2");
-    validate(response, 0, 1, "4");
-    validate(response, 1, 0, "7");
-    validate(response, 2, 0, "6");
-    if (supportsWriteToDocList()) {
+    validate(response, 0, 0, "2", writeToDocList);
+    validate(response, 0, 1, "4", writeToDocList);
+    validate(response, 1, 0, "7", writeToDocList);
+    validate(response, 2, 0, "6", writeToDocList);
+    if (writeToDocList) {
       assertEquals(4, ((SolrDocumentList) response.getResponse().get("response")).size());
     }
   }
@@ -141,6 +142,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
+    final boolean writeToDocList = false;
     Object[] params =
         new Object[] {
           CommonParams.SORT,
@@ -150,15 +152,15 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          false,
+          writeToDocList,
           QUERY_MATCH_TYPE_KEY,
           "simple"
         };
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
-    validate(response, 0, List.of("1", "4"));
-    validate(response, 1, List.of("7"));
-    validate(response, 2, List.of("5"));
+    validate(response, 0, List.of("1", "4"), writeToDocList);
+    validate(response, 1, List.of("7"), writeToDocList);
+    validate(response, 2, List.of("5"), writeToDocList);
     assertEquals(0, ((SolrDocumentList) response.getResponse().get("response")).size());
   }
 
@@ -171,6 +173,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
+    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
@@ -180,15 +183,15 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          supportsWriteToDocList(),
+          writeToDocList,
           QUERY_MATCH_TYPE_KEY,
           "simple"
         };
 
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
-    validate(response, 0, List.of("0"));
-    validate(response, 1, List.of("1"));
+    validate(response, 0, List.of("0"), writeToDocList);
+    validate(response, 1, List.of("1"), writeToDocList);
   }
 
   @Test
@@ -209,6 +212,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
+    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
@@ -218,17 +222,17 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          supportsWriteToDocList(),
+          writeToDocList,
           QUERY_MATCH_TYPE_KEY,
           "simple"
         };
 
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
-    if (supportsWriteToDocList()) {
+    if (writeToDocList) {
       assertEquals(3, ((SolrDocumentList) response.getResponse().get("response")).size());
     }
-    validate(response, 0, List.of("0"));
+    validate(response, 0, List.of("0"), writeToDocList);
   }
 
   @Test
@@ -243,6 +247,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
+    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
@@ -252,17 +257,17 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          supportsWriteToDocList(),
+          writeToDocList,
           QUERY_MATCH_TYPE_KEY,
           "simple"
         };
 
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
-    if (supportsWriteToDocList()) {
+    if (writeToDocList) {
       assertEquals(1, ((SolrDocumentList) response.getResponse().get("response")).size());
     }
-    validate(response, 0, List.of("0"));
+    validate(response, 0, List.of("0"), writeToDocList);
 
     index(
         id,
@@ -272,10 +277,10 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     commit();
     response = query(params);
     System.out.println("Response = " + response);
-    if (supportsWriteToDocList()) {
+    if (writeToDocList) {
       assertEquals(0, ((SolrDocumentList) response.getResponse().get("response")).size());
     }
-    validate(response, 0, List.of());
+    validate(response, 0, List.of(), writeToDocList);
   }
 
   @Test
@@ -291,6 +296,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
+    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
@@ -300,14 +306,14 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          supportsWriteToDocList(),
+          writeToDocList,
           QUERY_MATCH_TYPE_KEY,
           "simple"
         };
 
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
-    validate(response, 0, List.of("1"));
+    validate(response, 0, List.of("1"), writeToDocList);
   }
 
   @Test
@@ -322,6 +328,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
+    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
@@ -331,18 +338,18 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          supportsWriteToDocList(),
+          writeToDocList,
           QUERY_MATCH_TYPE_KEY,
           "simple"
         };
 
     QueryResponse response = query(params);
-    if (supportsWriteToDocList()) {
+    if (writeToDocList) {
       assertEquals(3, ((SolrDocumentList) response.getResponse().get("response")).size());
     }
     System.out.println("Response = " + response);
-    validate(response, 3, List.of("0", "1", "2"));
-    validate(response, 4, List.of("0", "1", "2"));
+    validate(response, 3, List.of("0", "1", "2"), writeToDocList);
+    validate(response, 4, List.of("0", "1", "2"), writeToDocList);
   }
 
   @Test
@@ -355,6 +362,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
+    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
@@ -364,12 +372,12 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          supportsWriteToDocList()
+          writeToDocList
         };
 
     QueryResponse response = query(params);
     System.out.println("Response = " + response);
-    if (supportsWriteToDocList()) {
+    if (writeToDocList) {
       assertEquals(2, ((SolrDocumentList) response.getResponse().get("response")).size());
     }
     assertNull(response.getResponse().get(MONITOR_OUTPUT_KEY));
@@ -404,6 +412,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
+    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
@@ -415,7 +424,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           QUERY_MATCH_TYPE_KEY,
           "highlights",
           WRITE_TO_DOC_LIST_KEY,
-          supportsWriteToDocList()
+          writeToDocList
         };
 
     QueryResponse response = query(params);
@@ -435,14 +444,14 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
                 new HighlightsMatch.Hit(1, 5, 1, 15), new HighlightsMatch.Hit(106, 38, 106, 43)));
     Map<Object, Object> queryMatch4 =
         queryMatch("4", f1, List.of(new HighlightsMatch.Hit(0, 0, 0, 8)), f2, List.of());
-    validate(response, 0, List.of(queryMatch0, queryMatch1, queryMatch4));
+    validate(response, 0, List.of(queryMatch0, queryMatch1, queryMatch4), writeToDocList);
     queryMatch4 = queryMatch("4", f1, List.of(new HighlightsMatch.Hit(2, 7, 2, 15)), f2, List.of());
-    validate(response, 1, List.of(queryMatch4));
+    validate(response, 1, List.of(queryMatch4), writeToDocList);
     var queries = monitorQueries(response, 0);
     assertEquals(3, queries.size());
     queries = monitorQueries(response, 1);
     assertEquals(1, queries.size());
-    if (supportsWriteToDocList()) {
+    if (writeToDocList) {
       assertEquals(3, ((SolrDocumentList) response.getResponse().get("response")).size());
     }
   }
@@ -465,6 +474,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
+    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
@@ -476,7 +486,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           QUERY_MATCH_TYPE_KEY,
           "highlights",
           WRITE_TO_DOC_LIST_KEY,
-          supportsWriteToDocList()
+          writeToDocList
         };
 
     QueryResponse response = query(params);
@@ -494,10 +504,10 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
             f2,
             List.of(
                 new HighlightsMatch.Hit(1, 5, 1, 15), new HighlightsMatch.Hit(106, 38, 106, 43)));
-    validate(response, 0, List.of(queryMatch0, queryMatch1));
+    validate(response, 0, List.of(queryMatch0, queryMatch1), writeToDocList);
     var queries = monitorQueries(response, 0);
     assertEquals(2, queries.size());
-    if (supportsWriteToDocList()) {
+    if (writeToDocList) {
       // The disjuncts come in as separate matches
       // TODO is this the most desirable behavior?
       assertEquals(4, ((SolrDocumentList) response.getResponse().get("response")).size());
@@ -516,6 +526,7 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     handle.put("responseHeader", SKIP);
     handle.put("response", SKIP);
 
+    final boolean writeToDocList = supportsWriteToDocList();
     Object[] params =
         new Object[] {
           CommonParams.SORT,
@@ -525,16 +536,16 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
           CommonParams.QT,
           "/reverseSearch",
           WRITE_TO_DOC_LIST_KEY,
-          supportsWriteToDocList(),
+          writeToDocList,
           QUERY_MATCH_TYPE_KEY,
           "simple"
         };
 
     QueryResponse response = query(params);
-    if (supportsWriteToDocList()) {
+    if (writeToDocList) {
       assertEquals(1, ((SolrDocumentList) response.getResponse().get("response")).size());
     }
-    validate(response, 0, List.of("0"));
+    validate(response, 0, List.of("0"), writeToDocList);
 
     del(MonitorFields.QUERY_ID + ":0");
     commit();
@@ -576,15 +587,35 @@ public class MonitorSolrQueryTest extends BaseDistributedSearchTestCase {
     return outHits;
   }
 
-  void validate(QueryResponse response, int doc, Object expectedValue) {
+  void validate(QueryResponse response, int doc, Object expectedValue, boolean writeToDocList) {
     var monitorQueries = monitorQueries(response, doc);
     assertEquals(expectedValue, monitorQueries);
+    if (writeToDocList) {
+      validateDocList(response, doc, expectedValue);
+    }
   }
 
-  void validate(QueryResponse response, int doc, int query, Object expectedValue) {
+  void validate(
+      QueryResponse response, int doc, int query, Object expectedValue, boolean writeToDocList) {
     var monitorQueries = monitorQueries(response, doc);
     assertTrue(monitorQueries.size() > query);
     assertEquals(expectedValue, monitorQueries.get(query));
+    if (writeToDocList) {
+      validateDocList(response, doc, expectedValue);
+    }
+  }
+
+  void validateDocList(QueryResponse response, int doc, Object expectedValue) {
+    SolrDocumentList actualValues = (SolrDocumentList) response.getResponse().get("response");
+    // minimal checks only so far; TODO: make this more comprehensive
+    if (expectedValue instanceof List) {
+      List<Object> expectedValues = (List) expectedValue;
+      if (expectedValues.size() == 1 && actualValues.size() <= 2) {
+        assertEquals(
+            expectedValues.get(0),
+            actualValues.get(actualValues.size() - 1 - doc).getFieldValue(MonitorFields.QUERY_ID));
+      }
+    }
   }
 
   List<Object> monitorQueries(QueryResponse response, int doc) {

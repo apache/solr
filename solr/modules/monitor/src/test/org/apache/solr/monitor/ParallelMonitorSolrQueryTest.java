@@ -73,7 +73,7 @@ public class ParallelMonitorSolrQueryTest extends MonitorSolrQueryTest {
         };
 
     QueryResponse response = query(params);
-    validate(response, 0, 0, "0");
+    validate(response, 0, 0, "0", false);
     assertEquals(count, ((Map) response.getResponse().get("monitor")).get("queriesRun"));
     assertEquals(
         count,
@@ -98,7 +98,7 @@ public class ParallelMonitorSolrQueryTest extends MonitorSolrQueryTest {
     commit();
 
     response = query(params);
-    validate(response, 0, 0, "0");
+    validate(response, 0, 0, "0", false);
     assertEquals(count / 2, ((Map) response.getResponse().get("monitor")).get("queriesRun"));
     assertEquals(
         count / 2,
@@ -138,7 +138,7 @@ public class ParallelMonitorSolrQueryTest extends MonitorSolrQueryTest {
 
     QueryResponse response = query(params);
     assertEquals(1, ((Map<String, ?>) response.getResponse().get("monitor")).get("queriesRun"));
-    validate(response, 0, 0, "3");
+    validate(response, 0, 0, "3", false);
   }
 
   @Override
