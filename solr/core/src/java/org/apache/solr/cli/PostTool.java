@@ -1245,7 +1245,7 @@ public class PostTool extends ToolBase {
      * @param url the URL of the web page
      * @param is the input stream of the page
      * @param type the content-type
-     * @param postUrl the URL (typically /solr/extract) in order to pull out links
+     * @param postUri the URI (typically /solr/extract) in order to pull out links
      * @return a set of URIs parsed from the page
      */
     protected Set<URI> getLinksFromWebPage(URL url, InputStream is, String type, URI postUri) {
