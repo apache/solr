@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import static org.apache.solr.search.CpuAllowedLimit.hasCpuLimit;
+import static org.apache.solr.search.MemAllowedLimit.hasMemLimit;
 import static org.apache.solr.search.TimeAllowedLimit.hasTimeLimit;
 
 import java.util.ArrayList;
@@ -66,6 +67,9 @@ public class QueryLimits implements QueryTimeout {
       }
       if (hasCpuLimit(req)) {
         limits.add(new CpuAllowedLimit(req));
+      }
+      if (hasMemLimit(req)) {
+        limits.add(new MemAllowedLimit(req));
       }
     }
     // for testing
