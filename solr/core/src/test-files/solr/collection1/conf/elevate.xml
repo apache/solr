@@ -33,6 +33,21 @@
   <doc id="3" />
  </query>
 
+ <query text="C:F1">
+  <doc id="1" />
+ </query>
+
+ <query text="C:F2">
+  <doc id="1" />
+  <doc id="2" />
+ </query>
+
+ <query text="C:F3">
+  <doc id="1" />
+  <doc id="2" />
+  <doc id="3" />
+ </query>
+
  <query text="AAAA">
   <doc id="7" />
  </query>
