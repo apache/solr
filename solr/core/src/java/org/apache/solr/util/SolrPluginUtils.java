@@ -50,7 +50,6 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -81,7 +80,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.search.combining.QueriesCombiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -283,37 +281,6 @@ public class SolrPluginUtils {
   /**
    * Returns a NamedList containing many "standard" pieces of debugging information.
    *
-   * @param req the request we are dealing with
-   * @param queriesCombiningStrategy the algorithm to use when combining queries
-   * @param userQueries the users queries as a string, after any basic preprocessing has been done
-   * @param queryParsers the query parsers associated to each query
-   * @param queries the queries built from the userQueries
-   * @param resultsPerQuery the results for each query
-   * @param dbgQuery debug the query
-   * @param dbgResults debug the results
-   * @return The debug info
-   * @throws IOException if there was an IO error
-   */
-  public static NamedList<Object> doCombinedSearchDebug(
-      SolrQueryRequest req,
-      QueriesCombiner queriesCombiningStrategy,
-      List<String> userQueries,
-      List<QParser> queryParsers,
-      List<Query> queries,
-      List<DocList> resultsPerQuery,
-      boolean dbgQuery,
-      boolean dbgResults)
-      throws IOException {
-    NamedList<Object> dbg = new SimpleOrderedMap<>();
-    doCombinedSearchQueryDebug(req, userQueries, queryParsers, queries, dbgQuery, dbg);
-    doCombinedSearchResultsDebug(
-        req, queriesCombiningStrategy, queries, resultsPerQuery, dbgResults, dbg);
-    return dbg;
-  }
-
-  /**
-   * Returns a NamedList containing many "standard" pieces of debugging information.
-   *
    * <ul>
    *   <li>rawquerystring - the 'q' param exactly as specified by the client
    *   <li>querystring - the 'q' param after any preprocessing done by the plugin
@@ -349,28 +316,6 @@ public class SolrPluginUtils {
     return dbg;
   }
 
-  public static void doCombinedSearchQueryDebug(
-      SolrQueryRequest req,
-      List<String> userQueries,
-      List<QParser> queryParsers,
-      List<Query> queries,
-      boolean dbgQuery,
-      NamedList<Object> dbg) {
-    if (dbgQuery) {
-      NamedList<NamedList<Object>> queriesDebug = new SimpleOrderedMap<>();
-      String[] queryKeys = req.getParams().getParams(CombinerParams.COMBINER_KEYS);
-      for (int i = 0; i < queries.size(); i++) {
-        NamedList<Object> singleQueryDebug = new SimpleOrderedMap<>();
-        singleQueryDebug.add("querystring", userQueries.get(i));
-        singleQueryDebug.add("queryparser", queryParsers.get(i).getClass().getSimpleName());
-        singleQueryDebug.add("parsedquery", QueryParsing.toString(queries.get(i), req.getSchema()));
-        singleQueryDebug.add("parsedquery_toString", queries.get(i).toString());
-        queriesDebug.add(queryKeys[i], singleQueryDebug);
-      }
-      dbg.add("queriesToCombine", queriesDebug);
-    }
-  }
-
   public static void doStandardQueryDebug(
       SolrQueryRequest req,
       String userQuery,
@@ -388,31 +333,6 @@ public class SolrPluginUtils {
        */
       dbg.add("parsedquery", QueryParsing.toString(query, req.getSchema()));
       dbg.add("parsedquery_toString", query.toString());
-    }
-  }
-
-  public static void doCombinedSearchResultsDebug(
-      SolrQueryRequest req,
-      QueriesCombiner queriesCombiningStrategy,
-      List<Query> queriesToCombine,
-      List<DocList> resultsPerQuery,
-      boolean dbgResults,
-      NamedList<Object> dbg)
-      throws IOException {
-    if (dbgResults) {
-      SolrIndexSearcher searcher = req.getSearcher();
-      IndexSchema schema = searcher.getSchema();
-      String[] querykeys = req.getParams().getParams(CombinerParams.COMBINER_KEYS);
-      boolean explainStruct = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT, false);
-
-      if (resultsPerQuery != null) {
-        NamedList<Explanation> explain =
-            queriesCombiningStrategy.getExplanations(
-                querykeys, queriesToCombine, resultsPerQuery, searcher, schema);
-        dbg.add(
-            "explain",
-            explainStruct ? explanationsToNamedLists(explain) : explanationsToStrings(explain));
-      }
     }
   }
 
@@ -763,8 +683,7 @@ public class SolrPluginUtils {
   }
 
   /**
-   * Recursively walks the "from" query pulling out sub-queriesToCombine and adding them to the "to"
-   * query.
+   * Recursively walks the "from" query pulling out sub-queries and adding them to the "to" query.
    *
    * <p>Boosts are multiplied as needed. Sub-BooleanQueryies which are not optional will not be
    * flattened. From will be mangled durring the walk, so do not attempt to reuse it.
@@ -821,7 +740,7 @@ public class SolrPluginUtils {
 
   /**
    * Strips operators that are used illegally, otherwise returns its input. Some examples of illegal
-   * user queriesToCombine are: "chocolate +- chip", "chocolate - - chip", and "chocolate chip -".
+   * user queries are: "chocolate +- chip", "chocolate - - chip", and "chocolate chip -".
    */
   public static CharSequence stripIllegalOperators(CharSequence s) {
     String temp = CONSECUTIVE_OP_PATTERN.matcher(s).replaceAll(" ");
@@ -1003,7 +922,7 @@ public class SolrPluginUtils {
   /**
    * Turns an array of query strings into a List of Query objects.
    *
-   * @return null if no queriesToCombine are generated
+   * @return null if no queries are generated
    */
   public static List<Query> parseQueryStrings(SolrQueryRequest req, String[] queries)
       throws SyntaxError {

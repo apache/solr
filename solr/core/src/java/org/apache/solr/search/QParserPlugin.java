@@ -23,6 +23,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.combining.CombineQParserPlugin;
 import org.apache.solr.search.join.BlockJoinChildQParserPlugin;
 import org.apache.solr.search.join.BlockJoinParentQParserPlugin;
 import org.apache.solr.search.join.FiltersQParserPlugin;
@@ -89,6 +90,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(HashRangeQParserPlugin.NAME, new HashRangeQParserPlugin());
     map.put(RankQParserPlugin.NAME, new RankQParserPlugin());
     map.put(KnnQParserPlugin.NAME, new KnnQParserPlugin());
+    map.put(CombineQParserPlugin.NAME, new CombineQParserPlugin());
 
     standardPlugins = Collections.unmodifiableMap(map);
   }

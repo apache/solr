@@ -36,7 +36,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
-import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
@@ -44,7 +43,6 @@ import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.SortSpec;
-import org.apache.solr.search.combining.QueriesCombiner;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 import org.apache.solr.util.RTimer;
@@ -99,15 +97,6 @@ public class ResponseBuilder {
   public List<SearchComponent> components;
 
   SolrRequestInfo requestInfo;
-
-  /** Query Combination */
-  QueriesCombiner queriesCombiningStrategy;
-
-  private List<String> unparsedQueriesToCombine = null;
-  private List<Query> queriesToCombine = null;
-  private List<QParser> queriesToCombineParsers = null;
-  private List<DocList> resultsPerQueryToCombine = null;
-  boolean isCombined;
 
   public ResponseBuilder(
       SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
@@ -387,42 +376,6 @@ public class ResponseBuilder {
 
   public void setQuery(Query query) {
     this.query = query;
-  }
-
-  public List<String> getUnparsedQueriesToCombine() {
-    return unparsedQueriesToCombine;
-  }
-
-  public void setUnparsedQueriesToCombine(List<String> queriesString) {
-    this.unparsedQueriesToCombine = queriesString;
-  }
-
-  public List<Query> getQueriesToCombine() {
-    return queriesToCombine;
-  }
-
-  public void setQueriesToCombine(List<Query> queries) {
-    this.queriesToCombine = queries;
-  }
-
-  public List<QParser> getQueriesToCombineParsers() {
-    return queriesToCombineParsers;
-  }
-
-  public void setQueriesToCombineParsers(List<QParser> queriesParsers) {
-    this.queriesToCombineParsers = queriesParsers;
-  }
-
-  public List<DocList> getResultsPerQueryToCombine() {
-    return resultsPerQueryToCombine;
-  }
-
-  public void setResultsPerQueryToCombine(List<DocList> resultsPerQuery) {
-    this.resultsPerQueryToCombine = resultsPerQuery;
-  }
-
-  public boolean isCombinedSearch() {
-    return isCombined;
   }
 
   public DocListAndSet getResults() {

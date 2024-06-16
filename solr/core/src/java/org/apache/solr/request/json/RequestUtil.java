@@ -252,7 +252,7 @@ public class RequestUtil {
               convertJsonPropertyToLocalParams(
                   newMap, jsonQueryConverter, queryJsonProperty, out, isQuery, arr);
             }
-            newMap.put(COMBINER_KEYS, queryKeys.toArray(new String[0]));
+            newMap.put(COMBINER_KEYS, queryKeys.toArray(new String[0])); // nocommit a hack
             continue;
           } else {
             throw new SolrException(

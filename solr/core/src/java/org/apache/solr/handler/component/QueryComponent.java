@@ -39,7 +39,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Pruning;
@@ -59,7 +58,6 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.GroupParams;
@@ -96,7 +94,6 @@ import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.search.combining.QueriesCombiner;
 import org.apache.solr.search.grouping.CommandHandler;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.search.grouping.distributed.ShardRequestFactory;
@@ -175,50 +172,22 @@ public class QueryComponent extends SearchComponent {
 
     // get it from the response builder to give a different component a chance
     // to set it.
-    List<String> unparsedQueries;
-    rb.isCombined = params.getBool(CombinerParams.COMBINER, false);
-    if (rb.isCombinedSearch()) {
-      String[] queriesToCombineKeys = params.getParams(CombinerParams.COMBINER_KEYS);
-      unparsedQueries = new ArrayList<>(queriesToCombineKeys.length);
-      rb.queriesCombiningStrategy = QueriesCombiner.getImplementation(params);
-      for (String queryKey : queriesToCombineKeys) {
-        unparsedQueries.add(params.get(queryKey));
-      }
-    } else {
-      String queryString = rb.getQueryString();
-      if (queryString == null) {
-        // this is the normal way it's set.
-        queryString = params.get(CommonParams.Q);
-        rb.setQueryString(queryString);
-      }
-      unparsedQueries = List.of(queryString);
+    String queryString = rb.getQueryString();
+    if (queryString == null) {
+      // this is the normal way it's set.
+      queryString = params.get(CommonParams.Q);
+      rb.setQueryString(queryString);
     }
 
     try {
-      List<Query> parsedQueries = new ArrayList<>(unparsedQueries.size());
-      List<String> expandedUnparsedQueries = new ArrayList<>(unparsedQueries.size());
-      List<QParser> parsers = new ArrayList<>(unparsedQueries.size());
-      for (String unparsedQuery : unparsedQueries) {
-        QParser parser = QParser.getParser(unparsedQuery, defType, req);
-        Query q = parser.getQuery();
-        if (q == null) {
-          // normalize a null query to a query that matches nothing
-          q = new MatchNoDocsQuery();
-        }
-        parsedQueries.add(q);
-        expandedUnparsedQueries.add(parser.getString());
-        parsers.add(parser);
-        rb.setSortSpec(parser.getSortSpec(true));
-        rb.setQparser(parser);
+      QParser parser = QParser.getParser(rb.getQueryString(), defType, req);
+      Query q = parser.getQuery();
+      if (q == null) {
+        // normalize a null query to a query that matches nothing
+        q = new MatchNoDocsQuery();
       }
-      if (rb.isCombinedSearch()) {
-        rb.setUnparsedQueriesToCombine(expandedUnparsedQueries);
-        rb.setQueriesToCombine(parsedQueries);
-        rb.setQueriesToCombineParsers(parsers);
-        rb.setQparser(null); // a parser is set for each query to combine
-      } else {
-        rb.setQuery(parsedQueries.get(0));
-      }
+
+      rb.setQuery(q);
 
       String rankQueryString = rb.req.getParams().get(CommonParams.RQ);
       if (rankQueryString != null) {
@@ -239,6 +208,9 @@ public class QueryComponent extends SearchComponent {
               SolrException.ErrorCode.BAD_REQUEST, "rq parameter must be a RankQuery");
         }
       }
+
+      rb.setSortSpec(parser.getSortSpec(true));
+      rb.setQparser(parser);
 
       String[] fqs = req.getParams().getParams(CommonParams.FQ);
       if (fqs != null && fqs.length != 0) {
@@ -403,93 +375,68 @@ public class QueryComponent extends SearchComponent {
     // -1 as flag if not set.
     long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
 
-    List<Query> queries = rb.getQueriesToCombine();
-    if (!rb.isCombinedSearch()) {
-      queries = new ArrayList<>(1);
-      queries.add(rb.getQuery());
+    QueryCommand cmd = rb.createQueryCommand();
+    cmd.setMultiThreaded(multiThreaded);
+    cmd.setTimeAllowed(timeAllowed);
+    cmd.setMinExactCount(getMinExactCount(params));
+    cmd.setDistribStatsDisabled(rb.isDistribStatsDisabled());
+
+    boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
+
+    if (isCancellableQuery) {
+      // Set the queryID for the searcher to consume
+      String queryID = params.get(ShardParams.QUERY_ID);
+
+      cmd.setQueryCancellable(true);
+
+      if (queryID == null) {
+        if (rb.isDistrib) {
+          throw new IllegalStateException("QueryID is null for distributed query");
+        }
+
+        queryID = rb.queryID;
+      }
+
+      cmd.setQueryID(queryID);
     }
-    QueryResult[] results = new QueryResult[queries.size()];
-    int resultIndex = 0;
-    for (Query q : queries) {
-      rb.setQuery(q);
-      QueryCommand cmd = rb.createQueryCommand();
-      cmd.setMultiThreaded(multiThreaded);
-      cmd.setTimeAllowed(timeAllowed);
-      cmd.setMinExactCount(getMinExactCount(params));
-      cmd.setDistribStatsDisabled(rb.isDistribStatsDisabled());
 
-      boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
+    req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
 
-      if (isCancellableQuery) {
-        // Set the queryID for the searcher to consume
-        String queryID = params.get(ShardParams.QUERY_ID);
+    // TODO QueryResult ought not to be created and passed in methods of QueryComponent.
+    //  Should be created ~exclusively in SolrIndexSearcher and returned by it.
+    QueryResult result = new QueryResult();
+    cmd.setSegmentTerminateEarly(
+        params.getBool(
+            CommonParams.SEGMENT_TERMINATE_EARLY, CommonParams.SEGMENT_TERMINATE_EARLY_DEFAULT));
+    if (cmd.getSegmentTerminateEarly()) {
+      result.setSegmentTerminatedEarly(Boolean.FALSE);
+    }
 
-        cmd.setQueryCancellable(true);
-
-        if (queryID == null) {
-          if (rb.isDistrib) {
-            throw new IllegalStateException("QueryID is null for distributed query");
-          }
-
-          queryID = rb.queryID;
-        }
-
-        cmd.setQueryID(queryID);
-      }
-
-      req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
-
-      QueryResult result = new QueryResult();
-
-      cmd.setSegmentTerminateEarly(
-          params.getBool(
-              CommonParams.SEGMENT_TERMINATE_EARLY, CommonParams.SEGMENT_TERMINATE_EARLY_DEFAULT));
-      if (cmd.getSegmentTerminateEarly()) {
-        result.setSegmentTerminatedEarly(Boolean.FALSE);
-      }
-
-      //
-      // grouping / field collapsing
-      //
-      GroupingSpecification groupingSpec = rb.getGroupingSpec();
-      if (groupingSpec != null) {
-        if (rb.isCombinedSearch()) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "Grouping/Field collapsing is not supported when combining queries");
-        }
-        // not supported, silently ignore any segmentTerminateEarly flag
-        cmd.setSegmentTerminateEarly(false);
-        try {
-          if (params.getBool(GroupParams.GROUP_DISTRIBUTED_FIRST, false)) {
-            doProcessGroupedDistributedSearchFirstPhase(rb, cmd, result);
-            return;
-          } else if (params.getBool(GroupParams.GROUP_DISTRIBUTED_SECOND, false)) {
-            doProcessGroupedDistributedSearchSecondPhase(rb, cmd, result);
-            return;
-          }
-
-          doProcessGroupedSearch(rb, cmd, result);
+    //
+    // grouping / field collapsing
+    //
+    GroupingSpecification groupingSpec = rb.getGroupingSpec();
+    if (groupingSpec != null) {
+      // not supported, silently ignore any segmentTerminateEarly flag
+      cmd.setSegmentTerminateEarly(false);
+      try {
+        if (params.getBool(GroupParams.GROUP_DISTRIBUTED_FIRST, false)) {
+          doProcessGroupedDistributedSearchFirstPhase(rb, cmd, result);
           return;
-        } catch (SyntaxError e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+        } else if (params.getBool(GroupParams.GROUP_DISTRIBUTED_SECOND, false)) {
+          doProcessGroupedDistributedSearchSecondPhase(rb, cmd, result);
+          return;
         }
-      }
 
-      // normal search result
-      doProcessUngroupedSearch(rb, cmd, result, rb.isCombinedSearch());
-      results[resultIndex] = result;
-      resultIndex++;
-    }
-    if (rb.isCombinedSearch()) {
-      QueryResult combined = rb.queriesCombiningStrategy.combine(results);
-      addCombinedResultsToResponse(rb, combined);
-      List<DocList> resultDocLists = new ArrayList<>(results.length);
-      for (QueryResult result : results) {
-        resultDocLists.add(result.getDocList());
+        doProcessGroupedSearch(rb, cmd, result);
+        return;
+      } catch (SyntaxError e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
-      rb.setResultsPerQueryToCombine(resultDocLists);
     }
+
+    // normal search result
+    doProcessUngroupedSearch(rb, cmd, result);
   }
 
   private int getMinExactCount(SolrParams params) {
@@ -1734,8 +1681,7 @@ public class QueryComponent extends SearchComponent {
     }
   }
 
-  private void doProcessUngroupedSearch(
-      ResponseBuilder rb, QueryCommand cmd, QueryResult result, boolean combinedSearch)
+  private void doProcessUngroupedSearch(ResponseBuilder rb, QueryCommand cmd, QueryResult result)
       throws IOException {
 
     SolrQueryRequest req = rb.req;
@@ -1743,30 +1689,12 @@ public class QueryComponent extends SearchComponent {
 
     SolrIndexSearcher searcher = req.getSearcher();
 
-    try {
+    if (cmd.getQuery() instanceof SelfExecutingQuery) {
+      // TODO QueryResult ought not to be created and passed in methods of QueryComponent
+      result = ((SelfExecutingQuery) cmd.getQuery()).search(searcher, cmd);
+    } else {
       searcher.search(result, cmd);
-    } catch (FuzzyTermsEnum.FuzzyTermsException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
-
-    if (!combinedSearch) {
-      addResponseDetails(rb, result, rsp, searcher);
-    }
-  }
-
-  private void addCombinedResultsToResponse(ResponseBuilder rb, QueryResult combinedResults)
-      throws IOException {
-
-    SolrQueryRequest req = rb.req;
-    SolrQueryResponse rsp = rb.rsp;
-    SolrIndexSearcher searcher = req.getSearcher();
-
-    addResponseDetails(rb, combinedResults, rsp, searcher);
-  }
-
-  private void addResponseDetails(
-      ResponseBuilder rb, QueryResult result, SolrQueryResponse rsp, SolrIndexSearcher searcher)
-      throws IOException {
     rb.setResult(result);
 
     ResultContext ctx = new BasicResultContext(rb);
@@ -1836,5 +1764,10 @@ public class QueryComponent extends SearchComponent {
     public float score() throws IOException {
       return score;
     }
+  }
+
+  /** A {@link Query} that processes a command to search on its own. */
+  public interface SelfExecutingQuery {
+    QueryResult search(SolrIndexSearcher searcher, QueryCommand cmd) throws IOException;
   }
 }

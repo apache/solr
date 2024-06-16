@@ -58,6 +58,7 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldDoc;
+import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -706,9 +707,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
   }
 
-  public QueryResult search(QueryResult qr, QueryCommand cmd) throws IOException {
-    getDocListC(qr, cmd);
-    return qr;
+  public void search(QueryResult qr, QueryCommand cmd) throws IOException {
+    try {
+      getDocListC(qr, cmd);
+    } catch (FuzzyTermsEnum.FuzzyTermsException e) { // unsure where best to catch this; shrug
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
   }
 
   @Override

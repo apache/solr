@@ -39,7 +39,7 @@ public class CombiningIntegrationTest extends KnnBaseTest {
                 + "},"
                 + " \"limit\": 10,"
                 + " \"fields\": [id,score],"
-                + " \"params\":{\"combiner\": true}}"),
+                + " \"query\":\"{!combine}\"  }"),
         "//result[@numFound='5']",
         "//result/doc[1]/str[@name='id'][.='10']",
         "//result/doc[2]/str[@name='id'][.='2']",
@@ -64,7 +64,8 @@ public class CombiningIntegrationTest extends KnnBaseTest {
                 + "},"
                 + " \"limit\": 10,"
                 + " \"fields\": [id,score],"
-                + " \"params\":{\"combiner\": true,\"combiner.upTo\": 2}}"),
+                + " \"query\":\"{!combine}\","
+                + " \"params\":{\"combiner.upTo\": 2}}"),
         "//result[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[2]/str[@name='id'][.='1']",
@@ -83,7 +84,7 @@ public class CombiningIntegrationTest extends KnnBaseTest {
                 + " \"lexical2\": { \"lucene\": { \"query\": \"id:(2^=2 OR 4^=1 OR 3^=0.5)\" }}"
                 + "},"
                 + " \"limit\": 10, \"fields\": [id,score],"
-                + " \"params\":{\"combiner\": true}}"),
+                + " \"query\":\"{!combine}\"  }"),
         "//result[@numFound='4']",
         "//result/doc[1]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='4']",
@@ -105,6 +106,7 @@ public class CombiningIntegrationTest extends KnnBaseTest {
                 + " \"lexical2\": { \"lucene\": { \"query\": \"id:(2^=2 OR 4^=1 OR 3^=0.5)\" }}"
                 + "},"
                 + " \"limit\": 10, \"fields\": [id,score],"
+                + " \"query\":\"{!combine}\","
                 + " \"params\":{\"combiner\": true,\"combiner.upTo\": 5,\"facet\": true,\"facet.field\":\"id\",\"facet.mincount\":1}}"),
         "//result[@numFound='4']",
         "//result/doc[1]/str[@name='id'][.='2']",
@@ -132,7 +134,7 @@ public class CombiningIntegrationTest extends KnnBaseTest {
                 + "},"
                 + " \"limit\": 10, \"fields\": [id,score],"
                 + " \"filter\": \"id:(4 OR 3)\","
-                + " \"params\":{\"combiner\": true}}"),
+                + " \"query\":\"{!combine}\"  }"),
         "//result[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[2]/str[@name='id'][.='3']");
@@ -155,7 +157,7 @@ public class CombiningIntegrationTest extends KnnBaseTest {
                 + " \"limit\": 10,"
                 + " \"fields\": [id,score],"
                 + " \"filter\": \"id:(7 OR 8 OR 9 OR 10)\","
-                + " \"params\":{\"combiner\": true}}"),
+                + " \"query\":\"{!combine}\"  }"),
         "//result[@numFound='4']",
         "//result/doc[1]/str[@name='id'][.='7']",
         "//result/doc[2]/str[@name='id'][.='8']",
@@ -182,7 +184,7 @@ public class CombiningIntegrationTest extends KnnBaseTest {
                 + "},"
                 + " \"limit\": 10,"
                 + " \"fields\": [id,score],"
-                + " \"params\":{\"combiner\": true}}"),
+                + " \"query\":\"{!combine}\"  }"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -205,7 +207,7 @@ public class CombiningIntegrationTest extends KnnBaseTest {
                 + "},"
                 + " \"limit\": 10,"
                 + " \"fields\": [id,score],"
-                + " \"params\":{\"combiner\": true}}"),
+                + " \"query\":\"{!combine}\"  }"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 }
