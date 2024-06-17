@@ -71,9 +71,4 @@ class SyncSolrMatcherSink<T extends QueryMatch> implements SolrMatcherSink {
     queriesConsumer.accept(
         MatchesAggregator.aggregate(matchers, matcherFactory.apply(docBatchSearcher), queryCount));
   }
-
-  @Override
-  public boolean isParallel() {
-    return false;
-  }
 }

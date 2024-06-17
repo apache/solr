@@ -77,8 +77,7 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
   private QueryDecomposer queryDecomposer;
   private Presearcher presearcher;
-  private SolrMatcherSinkFactory solrMatcherSinkFactory = new SolrMatcherSinkFactory();
-  private ExecutorService executor;
+  final private SolrMatcherSinkFactory solrMatcherSinkFactory = new SolrMatcherSinkFactory();
   private PresearcherFactory.PresearcherParameters presearcherParameters;
 
   @Override
@@ -87,13 +86,6 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
     Object solrMonitorCacheName = args.remove(SOLR_MONITOR_CACHE_NAME_KEY);
     if (solrMonitorCacheName != null) {
       this.solrMonitorCacheName = (String) solrMonitorCacheName;
-    }
-    Object threadCount = args.remove(MATCHER_THREAD_COUNT_KEY);
-    if (threadCount instanceof Integer) {
-      executor =
-          ExecutorUtil.newMDCAwareFixedThreadPool(
-              (Integer) threadCount, new NamedThreadFactory("monitor-matcher"));
-      solrMatcherSinkFactory = new SolrMatcherSinkFactory(executor);
     }
     presearcherParameters = new PresearcherFactory.PresearcherParameters();
     SolrPluginUtils.invokeSetters(presearcherParameters, args);
@@ -107,11 +99,6 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
     var matchType = QueryMatchType.fromString(req.getParams().get(QUERY_MATCH_TYPE_KEY));
     Map<String, Object> monitorResult = new HashMap<>();
     var matcherSink = solrMatcherSinkFactory.build(matchType, documentBatch, monitorResult);
-    if (matcherSink.isParallel() && writeToDocList) {
-      throw new SolrException(
-          ErrorCode.BAD_REQUEST,
-          "writeToDocList is not supported for parallel matcher. Consider adding more shards/cores instead of parallel matcher.");
-    }
     Query preFilterQuery = presearcher.buildQuery(documentBatch.get(), getTermAcceptor(rb.req));
     List<Query> mutableFilters =
         Optional.ofNullable(rb.getFilters()).map(ArrayList::new).orElseGet(ArrayList::new);
@@ -181,13 +168,6 @@ public class ReverseSearchComponent extends QueryComponent implements SolrCoreAw
 
   @Override
   public void inform(SolrCore core) {
-    core.addCloseHook(
-        new CloseHook() {
-          @Override
-          public void preClose(SolrCore core) {
-            ExecutorUtil.shutdownAndAwaitTermination(executor);
-          }
-        });
     queryDecomposer = new QueryDecomposer();
     presearcher = PresearcherFactory.build(core.getResourceLoader(), presearcherParameters);
     var schema = core.getLatestSchema();

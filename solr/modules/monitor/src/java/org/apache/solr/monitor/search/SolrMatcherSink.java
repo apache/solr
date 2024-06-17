@@ -29,6 +29,4 @@ interface SolrMatcherSink {
       throws IOException;
 
   void complete() throws IOException;
-
-  boolean isParallel();
 }
