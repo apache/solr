@@ -17,7 +17,6 @@
 package org.apache.solr.servlet;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import org.apache.http.HttpResponse;
@@ -33,8 +32,7 @@ import org.junit.Test;
 
 public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
 
-  protected HttpRequestBase getSelectMethod(String method, String... params)
-      throws URISyntaxException {
+  protected HttpRequestBase getSelectMethod(String method, String... params) {
     HttpRequestBase m = null;
 
     ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
@@ -47,7 +45,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     }
 
     URI uri =
-        new URI(
+        URI.create(
             getBaseUrl()
                 + "/"
                 + DEFAULT_TEST_COLLECTION_NAME
@@ -65,7 +63,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     return m;
   }
 
-  HttpRequestBase getUpdateMethod(String method, String... params) throws URISyntaxException {
+  HttpRequestBase getUpdateMethod(String method, String... params) {
     HttpRequestBase m = null;
 
     ArrayList<BasicNameValuePair> qparams = new ArrayList<>();
@@ -74,7 +72,7 @@ public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
     }
 
     URI uri =
-        new URI(
+        URI.create(
             getBaseUrl()
                 + "/"
                 + DEFAULT_TEST_COLLECTION_NAME

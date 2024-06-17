@@ -324,7 +324,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   protected JettySolrRunner getJettyForReplica(Replica replica) throws Exception {
     String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     assertNotNull(replicaBaseUrl);
-    URI baseUri = new URI(replicaBaseUrl);
+    URI baseUri = URI.create(replicaBaseUrl);
 
     JettySolrRunner proxy = jettys.get(baseUri);
     assertNotNull("No proxy found for " + baseUri + "!", proxy);
@@ -334,11 +334,11 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   protected SocketProxy getProxyForReplica(Replica replica) throws Exception {
     String replicaBaseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
     assertNotNull(replicaBaseUrl);
-    URI baseUri = new URI(replicaBaseUrl);
+    URI baseUri = URI.create(replicaBaseUrl);
 
     SocketProxy proxy = proxies.get(baseUri);
     if (proxy == null && !baseUri.toString().endsWith("/")) {
-      baseUri = new URI(baseUri.toString() + "/");
+      baseUri = URI.create(baseUri.toString() + "/");
       proxy = proxies.get(baseUri);
     }
     assertNotNull("No proxy found for " + baseUri + "!", proxy);

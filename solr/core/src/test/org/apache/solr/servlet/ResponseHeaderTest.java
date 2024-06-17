@@ -19,7 +19,6 @@ package org.apache.solr.servlet;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -58,8 +57,8 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
   }
 
   @Test
-  public void testHttpResponse() throws IOException, URISyntaxException {
-    URI uri = new URI(getBaseUrl() + "/collection1/withHeaders?q=*:*");
+  public void testHttpResponse() throws IOException {
+    URI uri = URI.create(getBaseUrl() + "/collection1/withHeaders?q=*:*");
     HttpGet httpGet = new HttpGet(uri);
     HttpResponse response = getHttpClient().execute(httpGet);
     Header[] headers = response.getAllHeaders();

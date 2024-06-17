@@ -257,7 +257,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     expectThrows(
         FileNotFoundException.class,
         () -> {
-          try (InputStream is = new URI(baseUrl + "/node/foo").toURL().openStream()) {
+          try (InputStream is = URI.create(baseUrl + "/node/foo").toURL().openStream()) {
             new String(is.readAllBytes(), StandardCharsets.UTF_8);
           }
         });

@@ -27,7 +27,6 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -390,9 +389,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     }
   }
 
-  private Pair<String, Integer> get(String url, String token)
-      throws IOException, URISyntaxException {
-    URL createUrl = new URI(url).toURL();
+  private Pair<String, Integer> get(String url, String token) throws IOException {
+    URL createUrl = URI.create(url).toURL();
     HttpURLConnection createConn = (HttpURLConnection) createUrl.openConnection();
     if (token != null) createConn.setRequestProperty("Authorization", "Bearer " + token);
     BufferedReader br2 =
@@ -404,9 +402,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return new Pair<>(result, code);
   }
 
-  private Map<String, String> getHeaders(String url, String token)
-      throws IOException, URISyntaxException {
-    URL createUrl = new URI(url).toURL();
+  private Map<String, String> getHeaders(String url, String token) throws IOException {
+    URL createUrl = URI.create(url).toURL();
     HttpURLConnection conn = (HttpURLConnection) createUrl.openConnection();
     if (token != null) conn.setRequestProperty("Authorization", "Bearer " + token);
     conn.connect();
@@ -418,9 +415,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return result;
   }
 
-  private Pair<String, Integer> post(String url, String json, String token)
-      throws IOException, URISyntaxException {
-    URL createUrl = new URI(url).toURL();
+  private Pair<String, Integer> post(String url, String json, String token) throws IOException {
+    URL createUrl = URI.create(url).toURL();
     HttpURLConnection con = (HttpURLConnection) createUrl.openConnection();
     con.setRequestMethod("POST");
     con.setRequestProperty(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
@@ -443,7 +439,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private void createCollection(MiniSolrCloudCluster myCluster, String collectionName)
-      throws IOException, URISyntaxException {
+      throws IOException {
     String baseUrl = myCluster.getRandomJetty(random()).getBaseUrl().toString();
     assertEquals(
         200,

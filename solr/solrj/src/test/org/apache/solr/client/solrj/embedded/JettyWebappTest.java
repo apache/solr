@@ -89,7 +89,7 @@ public class JettyWebappTest extends SolrTestCaseJ4 {
   public void testAdminUI() throws Exception {
     // Not an extensive test, but it does connect to Solr and verify the Admin ui shows up.
     String adminPath = "http://127.0.0.1:" + port + "/solr/";
-    try (InputStream is = new URI(adminPath).toURL().openStream()) {
+    try (InputStream is = URI.create(adminPath).toURL().openStream()) {
       assertNotNull(is.readAllBytes()); // real error will be an exception
     }
 

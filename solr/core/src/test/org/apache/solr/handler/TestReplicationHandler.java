@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -1095,7 +1094,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
 
   public static void pullFromTo(JettySolrRunner srcSolr, JettySolrRunner destSolr)
-      throws IOException, URISyntaxException {
+      throws IOException {
     String srcUrl = buildUrl(srcSolr.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
     String destUrl = buildUrl(destSolr.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
     ReplicationTestHelper.pullFromTo(srcUrl, destUrl);

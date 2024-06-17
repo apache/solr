@@ -281,7 +281,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     String urlString = getCoreUrl() + "/update";
 
     HttpURLConnection conn = null;
-    URL url = new URI(urlString).toURL();
+    URL url = URI.create(urlString).toURL();
 
     conn = (HttpURLConnection) url.openConnection();
     conn.setRequestMethod("POST");

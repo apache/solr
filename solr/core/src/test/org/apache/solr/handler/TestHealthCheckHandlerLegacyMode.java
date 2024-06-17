@@ -25,7 +25,6 @@ import static org.apache.solr.handler.ReplicationTestHelper.numFound;
 import static org.apache.solr.handler.ReplicationTestHelper.rQuery;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -233,7 +232,7 @@ public class TestHealthCheckHandlerLegacyMode extends SolrTestCaseJ4 {
   }
 
   public static void pullFromTo(JettySolrRunner srcSolr, JettySolrRunner destSolr)
-      throws IOException, URISyntaxException {
+      throws IOException {
     String srcUrl = buildUrl(srcSolr.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
     String destUrl = buildUrl(destSolr.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
     ReplicationTestHelper.pullFromTo(srcUrl, destUrl);

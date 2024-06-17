@@ -67,7 +67,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
   public void testWrongUtf8InQ() throws Exception {
     var baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     var request =
-        new URI(baseUrl.toString() + "/" + COLLECTION + "/select?q=%C0")
+        URI.create(baseUrl.toString() + "/" + COLLECTION + "/select?q=%C0")
             .toURL(); // Illegal UTF-8 string
     var connection = (HttpURLConnection) request.openConnection();
     assertEquals(400, connection.getResponseCode());
