@@ -1231,7 +1231,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /** Set UpdateLog to buffer updates if the slice is in construction. */
-  private void bufferUpdatesIfConstructing(CoreDescriptor coreDescriptor) {
+  protected void bufferUpdatesIfConstructing(CoreDescriptor coreDescriptor) {
 
     if (coreContainer != null && coreContainer.isZooKeeperAware()) {
       if (reqHandlers.get("/get") == null) {
