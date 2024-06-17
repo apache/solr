@@ -212,7 +212,7 @@ public class SolrRequestParsers {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Remote Streaming is disabled.");
       }
       for (final String url : strs) {
-        ContentStreamBase stream = new ContentStreamBase.URLStream(URI.create(url).toURL());
+        ContentStreamBase stream = new ContentStreamBase.URLStream(new URI(url).toURL());
         if (contentType != null) {
           stream.setContentType(contentType);
         }

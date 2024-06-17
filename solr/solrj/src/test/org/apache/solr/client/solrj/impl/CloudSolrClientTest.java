@@ -491,7 +491,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     // Make sure the distributed queries were directed to a single node only
     Set<Integer> ports = new HashSet<Integer>();
     for (String shardAddr : shardAddresses) {
-      URI uri = URI.create(shardAddr);
+      URI uri = new URI(shardAddr);
       ports.add(uri.getPort());
     }
 

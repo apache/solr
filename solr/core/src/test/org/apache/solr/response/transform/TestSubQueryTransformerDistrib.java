@@ -210,7 +210,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
 
     params.set("wt", "json");
     final URL node =
-        URI.create(
+        new URI(
                 cluster.getRandomJetty(random()).getBaseUrl().toString()
                     + "/"
                     + people

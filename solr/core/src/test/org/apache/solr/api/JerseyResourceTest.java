@@ -22,6 +22,7 @@ import static org.apache.solr.jersey.container.ContainerRequestUtils.DEFAULT_SEC
 
 import jakarta.ws.rs.container.ContainerRequestContext;
 import java.net.URI;
+import java.net.URISyntaxException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.SchemaNameResponse;
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
@@ -32,7 +33,7 @@ import org.junit.Test;
 public class JerseyResourceTest extends SolrTestCaseJ4 {
 
   @Test
-  public void testSetsResponseInContextUponCreation() {
+  public void testSetsResponseInContextUponCreation() throws URISyntaxException {
     final ContainerRequestContext requestContext = createContext();
     final JerseyResource resource = new JerseyResource();
     resource.containerRequestContext = requestContext;
@@ -47,8 +48,8 @@ public class JerseyResourceTest extends SolrTestCaseJ4 {
     assertEquals(stashed, returned);
   }
 
-  private ContainerRequestContext createContext() {
-    final URI baseUri = URI.create("http://localhost:8983/api/");
+  private ContainerRequestContext createContext() throws URISyntaxException {
+    final URI baseUri = new URI("http://localhost:8983/api/");
     return new ContainerRequest(
         baseUri, baseUri, "GET", DEFAULT_SECURITY_CONTEXT, new MapPropertiesDelegate());
   }

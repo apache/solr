@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -165,30 +164,28 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testComputeFullUrl() throws IOException {
+  public void testComputeFullUrl() throws IOException, URISyntaxException {
 
     PostTool webPostTool = new PostTool();
 
     assertEquals(
         "http://[ff01::114]/index.html",
-        webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "/index.html"));
+        webPostTool.computeFullUrl(new URI("http://[ff01::114]/").toURL(), "/index.html"));
     assertEquals(
         "http://[ff01::114]/index.html",
-        webPostTool.computeFullUrl(
-            URI.create("http://[ff01::114]/foo/bar/").toURL(), "/index.html"));
+        webPostTool.computeFullUrl(new URI("http://[ff01::114]/foo/bar/").toURL(), "/index.html"));
     assertEquals(
         "http://[ff01::114]/fil.html",
         webPostTool.computeFullUrl(
-            URI.create("http://[ff01::114]/foo.htm?baz#hello").toURL(), "fil.html"));
+            new URI("http://[ff01::114]/foo.htm?baz#hello").toURL(), "fil.html"));
     //    TODO: How to know what is the base if URL path ends with "foo"??
     //    assertEquals("http://[ff01::114]/fil.html", t_web.computeFullUrl(new
     // URL("http://[ff01::114]/foo?baz#hello"), "fil.html"));
-    assertNull(webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "fil.jpg"));
+    assertNull(webPostTool.computeFullUrl(new URI("http://[ff01::114]/").toURL(), "fil.jpg"));
     assertNull(
-        webPostTool.computeFullUrl(
-            URI.create("http://[ff01::114]/").toURL(), "mailto:hello@foo.bar"));
+        webPostTool.computeFullUrl(new URI("http://[ff01::114]/").toURL(), "mailto:hello@foo.bar"));
     assertNull(
-        webPostTool.computeFullUrl(URI.create("http://[ff01::114]/").toURL(), "ftp://server/file"));
+        webPostTool.computeFullUrl(new URI("http://[ff01::114]/").toURL(), "ftp://server/file"));
   }
 
   @Test
@@ -217,8 +214,8 @@ public class PostToolTest extends SolrCloudTestCase {
   @Test
   public void testAppendUrlPath() throws URISyntaxException {
     assertEquals(
-        URI.create("http://[ff01::114]/a?foo=bar"),
-        PostTool.appendUrlPath(URI.create("http://[ff01::114]?foo=bar"), "/a"));
+        new URI("http://[ff01::114]/a?foo=bar"),
+        PostTool.appendUrlPath(new URI("http://[ff01::114]?foo=bar"), "/a"));
   }
 
   @Test
@@ -232,11 +229,11 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testDoFilesMode() throws MalformedURLException {
+  public void testDoFilesMode() throws URISyntaxException {
     PostTool postTool = new PostTool();
     postTool.recursive = 0;
     postTool.dryRun = true;
-    postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
+    postTool.solrUpdateUrl = new URI("http://localhost:8983/solr/fake/update");
     File dir = getFile("exampledocs");
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
@@ -254,11 +251,11 @@ public class PostToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testRecursionAppliesToFilesMode() throws MalformedURLException {
+  public void testRecursionAppliesToFilesMode() throws URISyntaxException {
     PostTool postTool = new PostTool();
     postTool.recursive = 1; // This is the default
     postTool.dryRun = true;
-    postTool.solrUpdateUrl = URI.create("http://localhost:8983/solr/fake/update");
+    postTool.solrUpdateUrl = new URI("http://localhost:8983/solr/fake/update");
     File dir = getFile("exampledocs");
     int num = postTool.postFiles(new String[] {dir.toString()}, 0, null, null);
     assertEquals(2, num);
@@ -269,7 +266,7 @@ public class PostToolTest extends SolrCloudTestCase {
     PostTool postTool = new PostTool();
     postTool.pageFetcher = new MockPageFetcher();
     postTool.dryRun = true;
-    postTool.solrUpdateUrl = URI.create("http://user:password@localhost:5150/solr/fake/update");
+    postTool.solrUpdateUrl = new URI("http://user:password@localhost:5150/solr/fake/update");
 
     // Uses mock pageFetcher
     postTool.delay = 0;
@@ -294,11 +291,10 @@ public class PostToolTest extends SolrCloudTestCase {
     postTool.pageFetcher = new MockPageFetcher();
     postTool.dryRun = true;
 
-    assertFalse(
-        postTool.pageFetcher.isDisallowedByRobots(URI.create("http://[ff01::114]/").toURL()));
+    assertFalse(postTool.pageFetcher.isDisallowedByRobots(new URI("http://[ff01::114]/").toURL()));
     assertTrue(
         postTool.pageFetcher.isDisallowedByRobots(
-            URI.create("http://[ff01::114]/disallowed").toURL()));
+            new URI("http://[ff01::114]/disallowed").toURL()));
     assertEquals(
         "There should be two entries parsed from robots.txt",
         2,

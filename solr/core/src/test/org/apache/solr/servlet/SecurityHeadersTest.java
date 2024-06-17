@@ -74,7 +74,7 @@ public class SecurityHeadersTest extends SolrCloudTestCase {
         for (String path : Arrays.asList("/select", "/bogus")) {
           final HttpResponse resp =
               client.execute(
-                  new HttpGet(URI.create(jetty.getBaseUrl().toString() + "/" + COLLECTION + path)));
+                  new HttpGet(new URI(jetty.getBaseUrl().toString() + "/" + COLLECTION + path)));
 
           for (Map.Entry<String, String[]> entry : EXPECTED_HEADERS) {
             // these exact arrays (of 1 element each) should be *ALL* of the header instances...

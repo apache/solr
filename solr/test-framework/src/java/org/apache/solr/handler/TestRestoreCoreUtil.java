@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
@@ -26,7 +27,8 @@ import java.util.regex.Pattern;
 import org.junit.Assert;
 
 public class TestRestoreCoreUtil {
-  public static boolean fetchRestoreStatus(String baseUrl, String coreName) throws IOException {
+  public static boolean fetchRestoreStatus(String baseUrl, String coreName)
+      throws IOException, URISyntaxException {
     String leaderUrl =
         baseUrl
             + "/"
@@ -36,7 +38,7 @@ public class TestRestoreCoreUtil {
             + ReplicationHandler.CMD_RESTORE_STATUS;
     final Pattern pException = Pattern.compile("<str name=\"exception\">(.*?)</str>");
 
-    URL url = URI.create(leaderUrl).toURL();
+    URL url = new URI(leaderUrl).toURL();
     try (InputStream stream = url.openStream()) {
       String response = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
       Matcher matcher = pException.matcher(response);

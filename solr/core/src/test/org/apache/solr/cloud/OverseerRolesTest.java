@@ -75,7 +75,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
 
   private JettySolrRunner getOverseerJetty() throws Exception {
     String overseer = getLeaderNode(zkClient());
-    URI overseerUrl = URI.create("http://" + overseer.substring(0, overseer.indexOf('_')));
+    URI overseerUrl = new URI("http://" + overseer.substring(0, overseer.indexOf('_')));
     int hostPort = overseerUrl.getPort();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       try {

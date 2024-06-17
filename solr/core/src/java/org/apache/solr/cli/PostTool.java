@@ -256,10 +256,10 @@ public class PostTool extends ToolBase {
     solrUpdateUrl = null;
     if (cli.hasOption("url")) {
       String url = cli.getOptionValue("url");
-      solrUpdateUrl = URI.create(url);
+      solrUpdateUrl = new URI(url);
     } else if (cli.hasOption("c")) {
       String url = SolrCLI.getDefaultSolrUrl() + "/solr/" + cli.getOptionValue("c") + "/update";
-      solrUpdateUrl = URI.create(url);
+      solrUpdateUrl = new URI(url);
     } else {
       throw new IllegalArgumentException(
           "Must specify either -url or -c parameter to post documents.");
@@ -797,7 +797,7 @@ public class PostTool extends ToolBase {
       if (type.equals("application/json") && !PostTool.FORMAT_SOLR.equals(format)) {
         suffix = "/json/docs";
         String urlStr = appendUrlPath(solrUpdateUrl, suffix).toString();
-        uri = URI.create(urlStr);
+        uri = new URI(urlStr);
       } else if (type.equals("application/xml")
           || type.equals("text/csv")
           || type.equals("application/json")) {
@@ -815,7 +815,7 @@ public class PostTool extends ToolBase {
           urlStr =
               appendParam(urlStr, "literal.id=" + URLEncoder.encode(file.getAbsolutePath(), UTF_8));
         }
-        uri = URI.create(urlStr);
+        uri = new URI(urlStr);
       }
     } else {
       if (type == null) {
@@ -1195,9 +1195,9 @@ public class PostTool extends ToolBase {
         disallows = new ArrayList<>();
         URL urlRobot;
         try {
-          urlRobot = URI.create(strRobot).toURL();
+          urlRobot = new URI(strRobot).toURL();
           disallows = parseRobotsTxt(urlRobot.openStream());
-        } catch (MalformedURLException e) {
+        } catch (URISyntaxException | MalformedURLException e) {
           return true; // We cannot trust this robots URL, should not happen
         } catch (IOException e) {
           // There is no robots.txt, will cache an empty disallow list
@@ -1253,7 +1253,7 @@ public class PostTool extends ToolBase {
 
       try {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        URI extractUri = URI.create(appendParam(postUri.toString(), "extractOnly=true"));
+        URI extractUri = new URI(appendParam(postUri.toString(), "extractOnly=true"));
         boolean success = postData(is, null, os, type, extractUri);
         if (success) {
           Document d = makeDom(os.toByteArray());
@@ -1273,7 +1273,7 @@ public class PostTool extends ToolBase {
             }
           }
         }
-      } catch (MalformedURLException e) {
+      } catch (URISyntaxException e) {
         warn("Malformed URL " + url);
       } catch (IOException e) {
         warn("IOException opening URL " + url + ": " + e.getMessage());
