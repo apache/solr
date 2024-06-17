@@ -29,6 +29,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.OV
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REQUESTSTATUS;
 import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
+import static org.apache.solr.core.GlobalCircuitBreakerConfig.CIRCUIT_BREAKER_CLUSTER_PROPS_KEY;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
@@ -56,6 +57,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.GlobalCircuitBreakerConfig;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
@@ -303,6 +305,19 @@ public class ClusterAPI {
 
       try {
         clusterProperties.update(rateLimiterConfig, RL_CONFIG_KEY);
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
+      }
+    }
+
+    @Command(name = "set-circuit-breakers")
+    public void setCircuitBreakers(PayloadObj<GlobalCircuitBreakerConfig> payLoad) {
+      GlobalCircuitBreakerConfig circuitBreakerConfig = payLoad.get();
+      ClusterProperties clusterProperties =
+              new ClusterProperties(getCoreContainer().getZkController().getZkClient());
+
+      try {
+        clusterProperties.update(circuitBreakerConfig, CIRCUIT_BREAKER_CLUSTER_PROPS_KEY);
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
       }
