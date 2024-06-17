@@ -88,6 +88,7 @@ public class CPUCircuitBreaker extends CircuitBreaker implements SolrCoreAware {
         + allowedCPUUsage.get();
   }
 
+  @Override
   public CPUCircuitBreaker setThreshold(double thresholdValueInPercentage) {
     if (thresholdValueInPercentage > 100) {
       throw new IllegalArgumentException("Invalid Invalid threshold value.");

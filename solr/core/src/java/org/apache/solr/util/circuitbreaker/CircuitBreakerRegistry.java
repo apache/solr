@@ -160,13 +160,13 @@ public class CircuitBreakerRegistry implements Closeable {
   /** Register a global circuit breaker */
   public static void registerGlobal(CircuitBreaker circuitBreaker) {
     circuitBreaker
-        .getRequestTypes()
-        .forEach(
-            r -> {
-              List<CircuitBreaker> list =
-                  globalCircuitBreakerMap.computeIfAbsent(r, k -> new ArrayList<>());
-              list.add(circuitBreaker);
-            });
+            .getRequestTypes()
+            .forEach(
+                    r -> {
+                      List<CircuitBreaker> list =
+                              globalCircuitBreakerMap.computeIfAbsent(r, k -> new ArrayList<>());
+                      list.add(circuitBreaker);
+                    });
   }
 
   @VisibleForTesting
