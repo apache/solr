@@ -83,6 +83,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
 
     Collection<WeightedNode> weightedNodes =
         getWeightedNodes(placementContext, allNodes, allCollections, true).values();
+
     while (!pendingRequests.isEmpty()) {
       PendingPlacementRequest request = pendingRequests.poll();
       if (!request.isPending()) {
@@ -301,6 +302,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         .createBalancePlan(balanceRequest, replicaMovements);
   }
 
+  /** Compute weighted nodes, to include init'ing each replica. */
   protected Map<Node, WeightedNode> getWeightedNodes(
       PlacementContext placementContext,
       Set<Node> nodes,
@@ -310,7 +312,14 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     Map<Node, WeightedNode> weightedNodes =
         getBaseWeightedNodes(placementContext, nodes, relevantCollections, skipNodesWithErrors);
 
-    for (SolrCollection collection : placementContext.getCluster().collections()) {
+    initWeightedNodeReplicas(weightedNodes, relevantCollections);
+
+    return weightedNodes;
+  }
+
+  protected static void initWeightedNodeReplicas(
+      Map<Node, WeightedNode> weightedNodes, Iterable<SolrCollection> collections) {
+    for (SolrCollection collection : collections) {
       for (Shard shard : collection.shards()) {
         for (Replica replica : shard.replicas()) {
           WeightedNode weightedNode = weightedNodes.get(replica.getNode());
@@ -320,8 +329,6 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         }
       }
     }
-
-    return weightedNodes;
   }
 
   protected abstract Map<Node, WeightedNode> getBaseWeightedNodes(
