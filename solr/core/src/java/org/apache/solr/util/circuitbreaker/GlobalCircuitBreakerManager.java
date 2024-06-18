@@ -80,14 +80,14 @@ public class GlobalCircuitBreakerManager implements ClusterPropertiesListener {
           getConfig(gbConfig, entry.getKey(), entry.getValue());
       try {
         if (config.enabled) {
-          if (config.queryThreshold != Double.MAX_VALUE) {
+          if (config.queryThreshold != null && config.queryThreshold != Double.MAX_VALUE) {
             registerGlobalCircuitBreaker(
                 this.factory.create(entry.getKey()),
                 config.queryThreshold,
                 SolrRequest.SolrRequestType.QUERY,
                 config.warnOnly);
           }
-          if (config.updateThreshold != Double.MAX_VALUE) {
+          if (config.updateThreshold != null && config.updateThreshold != Double.MAX_VALUE) {
             registerGlobalCircuitBreaker(
                 this.factory.create(entry.getKey()),
                 config.updateThreshold,
