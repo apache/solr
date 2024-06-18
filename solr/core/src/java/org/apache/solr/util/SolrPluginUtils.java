@@ -74,6 +74,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.FieldParams;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -302,6 +303,7 @@ public class SolrPluginUtils {
    * @return The debug info
    * @throws java.io.IOException if there was an IO error
    */
+  @Deprecated // move to DebugComponent
   public static NamedList<Object> doStandardDebug(
       SolrQueryRequest req,
       String userQuery,
@@ -316,6 +318,7 @@ public class SolrPluginUtils {
     return dbg;
   }
 
+  @Deprecated // move to DebugComponent
   public static void doStandardQueryDebug(
       SolrQueryRequest req,
       String userQuery,
@@ -336,6 +339,7 @@ public class SolrPluginUtils {
     }
   }
 
+  @Deprecated
   public static void doStandardResultsDebug(
       SolrQueryRequest req, Query query, DocList results, boolean dbgResults, NamedList<Object> dbg)
       throws IOException {
@@ -427,6 +431,7 @@ public class SolrPluginUtils {
   }
 
   /** Executes a basic query */
+  @Deprecated
   public static DocList doSimpleQuery(String sreq, SolrQueryRequest req, int start, int limit)
       throws IOException {
     List<String> commands = StrUtils.splitSmart(sreq, ';');
@@ -442,8 +447,13 @@ public class SolrPluginUtils {
         sort = SortSpecParsing.parseSortSpec(commands.get(1), req).getSort();
       }
 
-      DocList results = req.getSearcher().getDocList(query, sort, start, limit);
-      return results;
+      return new QueryCommand()
+          .setQuery(query)
+          .setSort(sort)
+          .setOffset(start)
+          .setLen(limit)
+          .search(req.getSearcher())
+          .getDocList();
     } catch (SyntaxError e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing query: " + qs);
     }

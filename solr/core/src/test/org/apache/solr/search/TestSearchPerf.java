@@ -28,7 +28,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
@@ -173,7 +172,14 @@ public class TestSearchPerf extends SolrTestCaseJ4 {
     long ret = 0;
     for (int i = 0; i < ITERATIONS; i++) {
       DocList l =
-          searcher.getDocList(q, filt, (Sort) null, 0, 10, SolrIndexSearcher.NO_CHECK_QCACHE);
+          new QueryCommand()
+              .setQuery(q)
+              .setFilterList(filt)
+              .setOffset(0)
+              .setLen(10)
+              .setFlags(SolrIndexSearcher.NO_CHECK_QCACHE)
+              .search(searcher)
+              .getDocList();
       ret += l.matches();
     }
 

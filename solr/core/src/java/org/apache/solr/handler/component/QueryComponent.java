@@ -403,14 +403,9 @@ public class QueryComponent extends SearchComponent {
 
     req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
 
-    QueryResult result = new QueryResult();
-
     cmd.setSegmentTerminateEarly(
         params.getBool(
             CommonParams.SEGMENT_TERMINATE_EARLY, CommonParams.SEGMENT_TERMINATE_EARLY_DEFAULT));
-    if (cmd.getSegmentTerminateEarly()) {
-      result.setSegmentTerminatedEarly(Boolean.FALSE);
-    }
 
     //
     // grouping / field collapsing
@@ -421,14 +416,14 @@ public class QueryComponent extends SearchComponent {
       cmd.setSegmentTerminateEarly(false);
       try {
         if (params.getBool(GroupParams.GROUP_DISTRIBUTED_FIRST, false)) {
-          doProcessGroupedDistributedSearchFirstPhase(rb, cmd, result);
+          doProcessGroupedDistributedSearchFirstPhase(rb, cmd);
           return;
         } else if (params.getBool(GroupParams.GROUP_DISTRIBUTED_SECOND, false)) {
-          doProcessGroupedDistributedSearchSecondPhase(rb, cmd, result);
+          doProcessGroupedDistributedSearchSecondPhase(rb, cmd);
           return;
         }
 
-        doProcessGroupedSearch(rb, cmd, result);
+        doProcessGroupedSearch(rb, cmd);
         return;
       } catch (SyntaxError e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
@@ -436,7 +431,7 @@ public class QueryComponent extends SearchComponent {
     }
 
     // normal search result
-    doProcessUngroupedSearch(rb, cmd, result);
+    doProcessUngroupedSearch(rb, cmd);
   }
 
   private int getMinExactCount(SolrParams params) {
@@ -1468,8 +1463,8 @@ public class QueryComponent extends SearchComponent {
     return true;
   }
 
-  private void doProcessGroupedDistributedSearchFirstPhase(
-      ResponseBuilder rb, QueryCommand cmd, QueryResult result) throws IOException {
+  private void doProcessGroupedDistributedSearchFirstPhase(ResponseBuilder rb, QueryCommand cmd)
+      throws IOException {
 
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
     assert null != groupingSpec : "GroupingSpecification is null";
@@ -1501,13 +1496,14 @@ public class QueryComponent extends SearchComponent {
     commandHandler.execute();
     SearchGroupsResultTransformer serializer = new SearchGroupsResultTransformer(searcher);
 
+    var result = new QueryResult();
     rsp.add("firstPhase", commandHandler.processResult(result, serializer));
     rsp.add("totalHitCount", commandHandler.getTotalHitCount());
     rb.setResult(result);
   }
 
-  private void doProcessGroupedDistributedSearchSecondPhase(
-      ResponseBuilder rb, QueryCommand cmd, QueryResult result) throws IOException, SyntaxError {
+  private void doProcessGroupedDistributedSearchSecondPhase(ResponseBuilder rb, QueryCommand cmd)
+      throws IOException, SyntaxError {
 
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
     assert null != groupingSpec : "GroupingSpecification is null";
@@ -1590,11 +1586,12 @@ public class QueryComponent extends SearchComponent {
     CommandHandler commandHandler = secondPhaseBuilder.build();
     commandHandler.execute();
     TopGroupsResultTransformer serializer = new TopGroupsResultTransformer(rb);
+    var result = new QueryResult();
     rsp.add("secondPhase", commandHandler.processResult(result, serializer));
     rb.setResult(result);
   }
 
-  private void doProcessGroupedSearch(ResponseBuilder rb, QueryCommand cmd, QueryResult result)
+  private void doProcessGroupedSearch(ResponseBuilder rb, QueryCommand cmd)
       throws IOException, SyntaxError {
 
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
@@ -1606,6 +1603,8 @@ public class QueryComponent extends SearchComponent {
     SolrParams params = req.getParams();
 
     SolrIndexSearcher searcher = req.getSearcher();
+
+    var result = new QueryResult();
 
     int maxDocsPercentageToCache = params.getInt(GroupParams.GROUP_CACHE_PERCENTAGE, 0);
     boolean cacheSecondPassSearch =
@@ -1681,16 +1680,16 @@ public class QueryComponent extends SearchComponent {
     }
   }
 
-  private void doProcessUngroupedSearch(ResponseBuilder rb, QueryCommand cmd, QueryResult result)
-      throws IOException {
+  private void doProcessUngroupedSearch(ResponseBuilder rb, QueryCommand cmd) throws IOException {
 
     SolrQueryRequest req = rb.req;
     SolrQueryResponse rsp = rb.rsp;
 
     SolrIndexSearcher searcher = req.getSearcher();
 
+    QueryResult result;
     try {
-      searcher.search(result, cmd);
+      result = searcher.search(cmd);
     } catch (FuzzyTermsEnum.FuzzyTermsException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
