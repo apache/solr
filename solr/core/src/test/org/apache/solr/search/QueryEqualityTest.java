@@ -1476,7 +1476,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertU(adoc(doc));
     assertU(commit());
 
-    final String common = "!vecSim minReturn=0.3 f=vector";
+    final String common = "!vectorSimilarity minReturn=0.3 f=vector";
     final String qvec = "[1.0,2.0,3.0,4.0]";
 
     try (SolrQueryRequest req0 = req()) {
@@ -1484,7 +1484,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
       // no filters
       final Query fqNull =
           assertQueryEqualsAndReturn(
-              "vecSim",
+              "vectorSimilarity",
               req0,
               "{" + common + "}" + qvec,
               "{" + common + " minTraverse='-Infinity'}" + qvec,
@@ -1495,7 +1495,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         // either global fq, or (same) preFilter as localparam
         final Query fqOne =
             assertQueryEqualsAndReturn(
-                "vecSim",
+                "vectorSimilarity",
                 req1,
                 "{" + common + "}" + qvec,
                 "{" + common + " includeTags=t1}" + qvec,
@@ -1508,7 +1508,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           // override global fq with local param to use different preFilter
           final Query fqOneOverride =
               assertQueryEqualsAndReturn(
-                  "vecSim",
+                  "vectorSimilarity",
                   req2,
                   "{" + common + " preFilter='id:1'}" + qvec,
                   "{" + common + " preFilter=$xxx}" + qvec);
@@ -1517,7 +1517,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           // override global fq with local param to use no preFilters
           final Query fqNullOverride =
               assertQueryEqualsAndReturn(
-                  "vecSim",
+                  "vectorSimilarity",
                   req2,
                   "{" + common + " preFilter=''}" + qvec,
                   "{" + common + " excludeTags=t2}" + qvec,
@@ -1530,7 +1530,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         // global post-filter fq should always be ignored
         final Query fqPostFilter =
             assertQueryEqualsAndReturn(
-                "vecSim",
+                "vectorSimilarity",
                 reqPostFilter,
                 "{" + common + "}" + qvec,
                 "{" + common + " includeTags=post}" + qvec);

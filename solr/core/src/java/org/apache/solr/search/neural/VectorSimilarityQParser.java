@@ -28,7 +28,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.vector.DenseVectorParser;
 
-public class VecSimQParser extends AbstractVectorQParserBase {
+public class VectorSimilarityQParser extends AbstractVectorQParserBase {
 
   // retrieve the top results based on the distance similarity function thresholds
   static final String MIN_RETURN = "minReturn";
@@ -36,7 +36,7 @@ public class VecSimQParser extends AbstractVectorQParserBase {
 
   static final float DEFAULT_MIN_TRAVERSE = Float.NEGATIVE_INFINITY;
 
-  public VecSimQParser(
+  public VectorSimilarityQParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
   }

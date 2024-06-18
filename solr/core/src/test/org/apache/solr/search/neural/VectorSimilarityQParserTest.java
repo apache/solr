@@ -30,7 +30,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class VecSimQParserTest extends SolrTestCaseJ4 {
+public class VectorSimilarityQParserTest extends SolrTestCaseJ4 {
   String IDField = "id";
   String vectorField = "vector";
   String vectorField2 = "vector2";
@@ -120,7 +120,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     assertQEx(
         "Incorrect vector field type should throw Exception",
         "only DenseVectorField is compatible with ",
-        req(CommonParams.Q, "{!vecSim f=id}" + vectorToSearch, "fl", "id"),
+        req(CommonParams.Q, "{!vectorSimilarity f=id}" + vectorToSearch, "fl", "id"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -131,7 +131,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     assertQEx(
         "Undefined vector field should throw Exception",
         "undefined field: \"notExistent\"",
-        req(CommonParams.Q, "{!vecSim f=notExistent}" + vectorToSearch, "fl", "id"),
+        req(CommonParams.Q, "{!vectorSimilarity f=notExistent}" + vectorToSearch, "fl", "id"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -142,7 +142,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     assertQEx(
         "missing vector field should throw Exception",
         "the Dense Vector field 'f' is missing",
-        req(CommonParams.Q, "{!vecSim}" + vectorToSearch, "fl", "id"),
+        req(CommonParams.Q, "{!vectorSimilarity}" + vectorToSearch, "fl", "id"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -151,7 +151,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
     assertQ(
-        req(CommonParams.Q, "{!vecSim f=vector2 minReturn=0.8}" + vectorToSearch, "fl", "id"),
+        req(CommonParams.Q, "{!vectorSimilarity f=vector2 minReturn=0.8}" + vectorToSearch, "fl", "id"),
         "//result[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='11']",
         "//result/doc[2]/str[@name='id'][.='13']",
@@ -167,7 +167,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     assertQ(
         req(
             CommonParams.Q,
-            "{!vecSim f=vector_byte_encoding minReturn=" + minR + "}" + vectorToSearch,
+            "{!vectorSimilarity f=vector_byte_encoding minReturn=" + minR + "}" + vectorToSearch,
             "fl",
             "id"),
         "//result[@numFound='2']",
@@ -181,7 +181,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     assertQ(
         req(
             CommonParams.Q,
-            "{!vecSim f=vector_byte_encoding minReturn=" + minR + "}" + vectorToSearch,
+            "{!vectorSimilarity f=vector_byte_encoding minReturn=" + minR + "}" + vectorToSearch,
             "fl",
             "id,score,vector_byte_encoding",
             "indent",
@@ -200,7 +200,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
         "incorrect vector element: '8.3'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
         req(
             CommonParams.Q,
-            "{!vecSim f=vector_byte_encoding minReturn=0.0}" + vectorToSearch,
+            "{!vectorSimilarity f=vector_byte_encoding minReturn=0.0}" + vectorToSearch,
             "fl",
             "id"),
         SolrException.ErrorCode.BAD_REQUEST);
@@ -216,7 +216,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
         "incorrect vector element: ' -129'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
         req(
             CommonParams.Q,
-            "{!vecSim f=vector_byte_encoding minReturn=0.0}" + vectorToSearch,
+            "{!vectorSimilarity f=vector_byte_encoding minReturn=0.0}" + vectorToSearch,
             "fl",
             "id"),
         SolrException.ErrorCode.BAD_REQUEST);
@@ -228,7 +228,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
         "incorrect vector element: ' 156'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)",
         req(
             CommonParams.Q,
-            "{!vecSim f=vector_byte_encoding minReturn=0.0}" + vectorToSearch,
+            "{!vectorSimilarity f=vector_byte_encoding minReturn=0.0}" + vectorToSearch,
             "fl",
             "id"),
         SolrException.ErrorCode.BAD_REQUEST);
@@ -239,7 +239,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     assertQEx(
         "missing vector to search should throw Exception",
         "the Dense Vector value 'v' to search is missing",
-        req(CommonParams.Q, "{!vecSim f=vector minReturn=0.0}", "fl", "id"),
+        req(CommonParams.Q, "{!vectorSimilarity f=vector minReturn=0.0}", "fl", "id"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -249,14 +249,14 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     assertQEx(
         "missing vector to search should throw Exception",
         "incorrect vector dimension. The vector value has size 3 while it is expected a vector with size 4",
-        req(CommonParams.Q, "{!vecSim f=vector minReturn=0.0}" + vectorToSearch, "fl", "id"),
+        req(CommonParams.Q, "{!vectorSimilarity f=vector minReturn=0.0}" + vectorToSearch, "fl", "id"),
         SolrException.ErrorCode.BAD_REQUEST);
 
     vectorToSearch = "[2.0, 4.4,,]";
     assertQEx(
         "incorrect vector to search should throw Exception",
         "incorrect vector dimension. The vector value has size 2 while it is expected a vector with size 4",
-        req(CommonParams.Q, "{!vecSim f=vector minReturn=0.0}" + vectorToSearch, "fl", "id"),
+        req(CommonParams.Q, "{!vectorSimilarity f=vector minReturn=0.0}" + vectorToSearch, "fl", "id"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -266,35 +266,35 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     assertQEx(
         "incorrect vector to search should throw Exception",
         "incorrect vector format. The expected format is:'[f1,f2..f3]' where each element f is a float",
-        req(CommonParams.Q, "{!vecSim f=vector minReturn=0.0}" + vectorToSearch, "fl", "id"),
+        req(CommonParams.Q, "{!vectorSimilarity f=vector minReturn=0.0}" + vectorToSearch, "fl", "id"),
         SolrException.ErrorCode.BAD_REQUEST);
 
     vectorToSearch = "[2.0, 4.4, 3.5, 6.4";
     assertQEx(
         "incorrect vector to search should throw Exception",
         "incorrect vector format. The expected format is:'[f1,f2..f3]' where each element f is a float",
-        req(CommonParams.Q, "{!vecSim f=vector minReturn=0.0}" + vectorToSearch, "fl", "id"),
+        req(CommonParams.Q, "{!vectorSimilarity f=vector minReturn=0.0}" + vectorToSearch, "fl", "id"),
         SolrException.ErrorCode.BAD_REQUEST);
 
     vectorToSearch = "2.0, 4.4, 3.5, 6.4]";
     assertQEx(
         "incorrect vector to search should throw Exception",
         "incorrect vector format. The expected format is:'[f1,f2..f3]' where each element f is a float",
-        req(CommonParams.Q, "{!vecSim f=vector minReturn=0.0}" + vectorToSearch, "fl", "id"),
+        req(CommonParams.Q, "{!vectorSimilarity f=vector minReturn=0.0}" + vectorToSearch, "fl", "id"),
         SolrException.ErrorCode.BAD_REQUEST);
 
     vectorToSearch = "[2.0, 4.4, 3.5, stringElement]";
     assertQEx(
         "incorrect vector to search should throw Exception",
         "incorrect vector element: ' stringElement'. The expected format is:'[f1,f2..f3]' where each element f is a float",
-        req(CommonParams.Q, "{!vecSim f=vector minReturn=0.0}" + vectorToSearch, "fl", "id"),
+        req(CommonParams.Q, "{!vectorSimilarity f=vector minReturn=0.0}" + vectorToSearch, "fl", "id"),
         SolrException.ErrorCode.BAD_REQUEST);
 
     vectorToSearch = "[2.0, 4.4, , ]";
     assertQEx(
         "incorrect vector to search should throw Exception",
         "incorrect vector element: ' '. The expected format is:'[f1,f2..f3]' where each element f is a float",
-        req(CommonParams.Q, "{!vecSim f=vector minReturn=0.0}" + vectorToSearch, "fl", "id"),
+        req(CommonParams.Q, "{!vectorSimilarity f=vector minReturn=0.0}" + vectorToSearch, "fl", "id"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -303,7 +303,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
     assertQ(
-        req(CommonParams.Q, "{!vecSim f=vector minReturn=0.8}" + vectorToSearch, "fl", "id"),
+        req(CommonParams.Q, "{!vectorSimilarity f=vector minReturn=0.8}" + vectorToSearch, "fl", "id"),
         "//result[@numFound='8']",
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='4']",
@@ -325,7 +325,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
             CommonParams.Q,
             "id:(3 4 9 2)",
             "fq",
-            "{!vecSim f=vector minReturn=0.8}" + vectorToSearch,
+            "{!vectorSimilarity f=vector minReturn=0.8}" + vectorToSearch,
             "fq",
             "id:(4 20 9)",
             "fl",
@@ -344,7 +344,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
             CommonParams.Q,
             "id:(3 4 7 2)",
             "fq",
-            "{!vecSim f=vector minReturn=0.8 preFilter='id:(1 4 7 8 9)'}" + vectorToSearch,
+            "{!vectorSimilarity f=vector minReturn=0.8 preFilter='id:(1 4 7 8 9)'}" + vectorToSearch,
             "fq",
             "id:(4 20 7)",
             "fl",
@@ -360,10 +360,10 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
 
     for (String fq :
         Arrays.asList(
-            "{!vecSim f=vector minReturn=0.8 includeTags=xxx}" + vectorToSearch,
-            "{!vecSim f=vector minReturn=0.8 excludeTags=xxx}" + vectorToSearch)) {
+            "{!vectorSimilarity f=vector minReturn=0.8 includeTags=xxx}" + vectorToSearch,
+            "{!vectorSimilarity f=vector minReturn=0.8 excludeTags=xxx}" + vectorToSearch)) {
       assertQEx(
-          "fq={!vecSim...} incompatible with include/exclude localparams",
+          "fq={!vectorSimilarity...} incompatible with include/exclude localparams",
           "used as a filter does not support",
           req("q", "*:*", "fq", fq),
           SolrException.ErrorCode.BAD_REQUEST);
@@ -378,14 +378,14 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     // When vecSim parser is a subquery, it should not pre-filter on any global fq params
     // minReturn -> 1,4,2,10,3,7,5,6 -> fq -> 4,2,7
     assertQ(
-        req(common, "fq", filt, "q", "*:* AND {!vecSim f=vector minReturn=0.8 v=$vec}"),
+        req(common, "fq", filt, "q", "*:* AND {!vectorSimilarity f=vector minReturn=0.8 v=$vec}"),
         "//result[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[2]/str[@name='id'][.='2']",
         "//result/doc[3]/str[@name='id'][.='7']");
     // minReturn -> 1,4,2,10,3,7,5,6 + '8' -> fq -> 4,2,7,8
     assertQ(
-        req(common, "fq", filt, "q", "id:8^=0.01 OR {!vecSim f=vector minReturn=0.8 v=$vec}"),
+        req(common, "fq", filt, "q", "id:8^=0.01 OR {!vectorSimilarity f=vector minReturn=0.8 v=$vec}"),
         "//result[@numFound='4']",
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[2]/str[@name='id'][.='2']",
@@ -404,7 +404,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
         req(
             common,
             "q",
-            "*:* AND {!vecSim f=vector minReturn=0.8 preFilter='" + filt + "' v=$vec}"),
+            "*:* AND {!vectorSimilarity f=vector minReturn=0.8 preFilter='" + filt + "' v=$vec}"),
         "//result[@numFound='4']",
         "//result/doc[1]/str[@name='id'][.='4']",
         "//result/doc[2]/str[@name='id'][.='2']",
@@ -419,7 +419,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
             "fq",
             "id:(1 9 20 3 5 7 8)",
             "q",
-            "*:* AND {!vecSim f=vector minReturn=0.8 preFilter='" + filt + "' v=$vec}"),
+            "*:* AND {!vectorSimilarity f=vector minReturn=0.8 preFilter='" + filt + "' v=$vec}"),
         "//result[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='3']",
         "//result/doc[2]/str[@name='id'][.='7']");
@@ -430,7 +430,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
             "fq",
             "id:(1 9 20 3 5 7 8)",
             "q",
-            "id:8^=100 OR {!vecSim f=vector minReturn=0.8 preFilter='" + filt + "' v=$vec}"),
+            "id:8^=100 OR {!vectorSimilarity f=vector minReturn=0.8 preFilter='" + filt + "' v=$vec}"),
         "//result[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='8']",
         "//result/doc[2]/str[@name='id'][.='3']",
@@ -443,8 +443,8 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
 
     for (String subq :
         Arrays.asList(
-            "{!vecSim f=vector minReturn=0.8 includeTags=xxx v=$vec}",
-            "{!vecSim f=vector minReturn=0.8 excludeTags=xxx v=$vec}")) {
+            "{!vectorSimilarity f=vector minReturn=0.8 includeTags=xxx v=$vec}",
+            "{!vectorSimilarity f=vector minReturn=0.8 excludeTags=xxx v=$vec}")) {
       assertQEx(
           "vecSim as subquery incompatible with include/exclude localparams",
           "used as a sub-query does not support",
@@ -462,15 +462,15 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     final String filt = "id:(1 2 7 20)";
     for (SolrQueryRequest req :
         Arrays.asList(
-            req(common, "q", "{!vecSim f=vector minReturn=0.8}" + vectorToSearch, "fq", filt),
+            req(common, "q", "{!vectorSimilarity f=vector minReturn=0.8}" + vectorToSearch, "fq", filt),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector preFilter=\"" + filt + "\" minReturn=0.8}" + vectorToSearch),
+                "{!vectorSimilarity f=vector preFilter=\"" + filt + "\" minReturn=0.8}" + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector preFilter=$my_filt minReturn=0.8}" + vectorToSearch,
+                "{!vectorSimilarity f=vector preFilter=$my_filt minReturn=0.8}" + vectorToSearch,
                 "my_filt",
                 filt))) {
       assertQ(
@@ -496,7 +496,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
             req(
                 common,
                 "q",
-                "{!vecSim f=vector " + minR + "}" + vectorToSearch,
+                "{!vectorSimilarity f=vector " + minR + "}" + vectorToSearch,
                 "fq",
                 fx,
                 "fq",
@@ -504,7 +504,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
             req(
                 common,
                 "q",
-                "{!vecSim f=vector preFilter=\""
+                "{!vectorSimilarity f=vector preFilter=\""
                     + fx
                     + "\" preFilter=\""
                     + fy
@@ -515,7 +515,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
             req(
                 common,
                 "q",
-                "{!vecSim f=vector preFilter=$fx preFilter=$fy " + minR + "}" + vectorToSearch,
+                "{!vectorSimilarity f=vector preFilter=$fx preFilter=$fy " + minR + "}" + vectorToSearch,
                 "fx",
                 fx,
                 "fy",
@@ -523,7 +523,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
             req(
                 common,
                 "q",
-                "{!vecSim f=vector preFilter=$multi_filt " + minR + "}" + vectorToSearch,
+                "{!vectorSimilarity f=vector preFilter=$multi_filt " + minR + "}" + vectorToSearch,
                 "multi_filt",
                 fx,
                 "multi_filt",
@@ -547,7 +547,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
         // shouldn't matter if global fq w/tag even exists, usage is an error
         req(
             "q",
-            "{!vecSim f=vector minReturn=0.8 preFilter='id:1' includeTags=xxx}" + vectorToSearch),
+            "{!vectorSimilarity f=vector minReturn=0.8 preFilter='id:1' includeTags=xxx}" + vectorToSearch),
         SolrException.ErrorCode.BAD_REQUEST);
     assertQEx(
         "vecSim preFilter localparm incompatible with include/exclude localparams",
@@ -555,7 +555,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
         // shouldn't matter if global fq w/tag even exists, usage is an error
         req(
             "q",
-            "{!vecSim f=vector minReturn=0.8 preFilter='id:1' excludeTags=xxx}" + vectorToSearch),
+            "{!vectorSimilarity f=vector minReturn=0.8 preFilter='id:1' excludeTags=xxx}" + vectorToSearch),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -566,7 +566,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     // trivial case: empty preFilter localparam means no pre-filtering
     assertQ(
         req(
-            "q", "{!vecSim f=vector preFilter='' minReturn=0.8}" + vectorToSearch,
+            "q", "{!vectorSimilarity f=vector preFilter='' minReturn=0.8}" + vectorToSearch,
             "fq", "-id:4",
             "fl", "id"),
         "//result[@numFound='7']",
@@ -578,7 +578,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     // localparam prefiltering, global fqs applied independently
     assertQ(
         req(
-            "q", "{!vecSim f=vector preFilter='id:(3 4 9 2 7 8)' minReturn=0.8}" + vectorToSearch,
+            "q", "{!vectorSimilarity f=vector preFilter='id:(3 4 9 2 7 8)' minReturn=0.8}" + vectorToSearch,
             "fq", "-id:4",
             "fl", "id"),
         "//result[@numFound='3']",
@@ -601,26 +601,26 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     for (SolrQueryRequest req :
         Arrays.asList(
             // default behavior is all fq's pre-filter,
-            req(common, "q", "{!vecSim f=vector minReturn=0.8}" + vectorToSearch),
+            req(common, "q", "{!vectorSimilarity f=vector minReturn=0.8}" + vectorToSearch),
             // diff ways of explicitly requesting both fq params
-            req(common, "q", "{!vecSim f=vector includeTags=aa minReturn=0.8}" + vectorToSearch),
+            req(common, "q", "{!vectorSimilarity f=vector includeTags=aa minReturn=0.8}" + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector includeTags=aa excludeTags='' minReturn=0.8}" + vectorToSearch),
+                "{!vectorSimilarity f=vector includeTags=aa excludeTags='' minReturn=0.8}" + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector includeTags=aa excludeTags=bogus minReturn=0.8}"
+                "{!vectorSimilarity f=vector includeTags=aa excludeTags=bogus minReturn=0.8}"
                     + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector includeTags=xx includeTags=yy minReturn=0.8}" + vectorToSearch),
+                "{!vectorSimilarity f=vector includeTags=xx includeTags=yy minReturn=0.8}" + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector includeTags=xx,yy,bogus minReturn=0.8}" + vectorToSearch))) {
+                "{!vectorSimilarity f=vector includeTags=xx,yy,bogus minReturn=0.8}" + vectorToSearch))) {
       assertQ(
           req,
           "//result[@numFound='3']",
@@ -645,41 +645,41 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
     for (SolrQueryRequest req :
         Arrays.asList(
             // explicit local empty preFilter
-            req(common, "q", "{!vecSim f=vector preFilter='' minReturn=0.8}" + vectorToSearch),
+            req(common, "q", "{!vectorSimilarity f=vector preFilter='' minReturn=0.8}" + vectorToSearch),
             // diff ways of explicitly including none of the global fq params
-            req(common, "q", "{!vecSim f=vector includeTags='' minReturn=0.8}" + vectorToSearch),
-            req(common, "q", "{!vecSim f=vector includeTags=bogus minReturn=0.8}" + vectorToSearch),
+            req(common, "q", "{!vectorSimilarity f=vector includeTags='' minReturn=0.8}" + vectorToSearch),
+            req(common, "q", "{!vectorSimilarity f=vector includeTags=bogus minReturn=0.8}" + vectorToSearch),
             // diff ways of explicitly excluding all of the global fq params
-            req(common, "q", "{!vecSim f=vector excludeTags=aa minReturn=0.8}" + vectorToSearch),
+            req(common, "q", "{!vectorSimilarity f=vector excludeTags=aa minReturn=0.8}" + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector includeTags=aa excludeTags=aa minReturn=0.8}" + vectorToSearch),
+                "{!vectorSimilarity f=vector includeTags=aa excludeTags=aa minReturn=0.8}" + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector includeTags=aa excludeTags=xx,yy minReturn=0.8}"
+                "{!vectorSimilarity f=vector includeTags=aa excludeTags=xx,yy minReturn=0.8}"
                     + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector includeTags=xx,yy excludeTags=aa minReturn=0.8}"
+                "{!vectorSimilarity f=vector includeTags=xx,yy excludeTags=aa minReturn=0.8}"
                     + vectorToSearch),
-            req(common, "q", "{!vecSim f=vector excludeTags=xx,yy minReturn=0.8}" + vectorToSearch),
-            req(common, "q", "{!vecSim f=vector excludeTags=aa minReturn=0.8}" + vectorToSearch),
+            req(common, "q", "{!vectorSimilarity f=vector excludeTags=xx,yy minReturn=0.8}" + vectorToSearch),
+            req(common, "q", "{!vectorSimilarity f=vector excludeTags=aa minReturn=0.8}" + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector excludeTags=xx excludeTags=yy minReturn=0.8}" + vectorToSearch),
+                "{!vectorSimilarity f=vector excludeTags=xx excludeTags=yy minReturn=0.8}" + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector excludeTags=xx excludeTags=yy,bogus minReturn=0.8}"
+                "{!vectorSimilarity f=vector excludeTags=xx excludeTags=yy,bogus minReturn=0.8}"
                     + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector excludeTags=xx,yy,bogus minReturn=0.8}" + vectorToSearch))) {
+                "{!vectorSimilarity f=vector excludeTags=xx,yy,bogus minReturn=0.8}" + vectorToSearch))) {
       assertQ(req, "//result[@numFound='1']", "//result/doc[1]/str[@name='id'][.='7']");
     }
   }
@@ -702,23 +702,23 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
             req(
                 common,
                 "q",
-                "{!vecSim f=vector includeTags=yy,bogus minReturn=0.8}" + vectorToSearch),
+                "{!vectorSimilarity f=vector includeTags=yy,bogus minReturn=0.8}" + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector includeTags=yy excludeTags='' minReturn=0.8}" + vectorToSearch),
+                "{!vectorSimilarity f=vector includeTags=yy excludeTags='' minReturn=0.8}" + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector excludeTags=xx,bogus minReturn=0.8}" + vectorToSearch),
+                "{!vectorSimilarity f=vector excludeTags=xx,bogus minReturn=0.8}" + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector includeTags=yy excludeTags=xx minReturn=0.8}" + vectorToSearch),
+                "{!vectorSimilarity f=vector includeTags=yy excludeTags=xx minReturn=0.8}" + vectorToSearch),
             req(
                 common,
                 "q",
-                "{!vecSim f=vector includeTags=aa excludeTags=xx minReturn=0.8}"
+                "{!vectorSimilarity f=vector includeTags=aa excludeTags=xx minReturn=0.8}"
                     + vectorToSearch))) {
       assertQ(req, "//result[@numFound='1']", "//result/doc[1]/str[@name='id'][.='7']");
     }
@@ -735,7 +735,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
         params(
             "fl", "id",
             "indent", "true",
-            "q", "{!vecSim f=vector minReturn=0.9 excludeTags=facet_click v=$vec}",
+            "q", "{!vectorSimilarity f=vector minReturn=0.9 excludeTags=facet_click v=$vec}",
             "vec", vectorToSearch,
             // mimicing "inStock:true"
             "fq", "-id:(2 3)",
@@ -802,7 +802,7 @@ public class VecSimQParserTest extends SolrTestCaseJ4 {
             "rq",
             "{!rerank reRankQuery=$rqq reRankDocs=4 reRankWeight=1}",
             "rqq",
-            "{!vecSim f=vector minReturn=0.8}" + vectorToSearch,
+            "{!vectorSimilarity f=vector minReturn=0.8}" + vectorToSearch,
             "fl",
             "id"),
         "//result[@numFound='4']",

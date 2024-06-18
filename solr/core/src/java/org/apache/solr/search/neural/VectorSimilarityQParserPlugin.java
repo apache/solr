@@ -22,12 +22,12 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 
 /** A neural query parser to run min-similarity search on Dense Vector fields. */
-public class VecSimQParserPlugin extends QParserPlugin {
-  public static final String NAME = "vecSim";
+public class VectorSimilarityQParserPlugin extends QParserPlugin {
+  public static final String NAME = "vectorSimilarity";
 
   @Override
   public QParser createParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new VecSimQParser(qstr, localParams, params, req);
+    return new VectorSimilarityQParser(qstr, localParams, params, req);
   }
 }
