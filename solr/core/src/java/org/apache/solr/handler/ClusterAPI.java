@@ -28,8 +28,8 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REQUESTSTATUS;
-import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 import static org.apache.solr.core.GlobalCircuitBreakerConfig.CIRCUIT_BREAKER_CLUSTER_PROPS_KEY;
+import static org.apache.solr.core.RateLimiterConfig.RL_CONFIG_KEY;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
@@ -314,7 +314,7 @@ public class ClusterAPI {
     public void setCircuitBreakers(PayloadObj<GlobalCircuitBreakerConfig> payLoad) {
       GlobalCircuitBreakerConfig circuitBreakerConfig = payLoad.get();
       ClusterProperties clusterProperties =
-              new ClusterProperties(getCoreContainer().getZkController().getZkClient());
+          new ClusterProperties(getCoreContainer().getZkController().getZkClient());
 
       try {
         clusterProperties.update(circuitBreakerConfig, CIRCUIT_BREAKER_CLUSTER_PROPS_KEY);
