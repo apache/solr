@@ -69,6 +69,8 @@ Bug Fixes
   to the `<updateLog>` element in `solrconfig.xml`, which has long been silently ignored, will now be
   respected (Michael Gibney, David Smiley)
 
+* SOLR-17255: Fix bugs in SolrParams.toLocalParamsString() (hossman)
+
 Dependency Upgrades
 ---------------------
 (No changes)
