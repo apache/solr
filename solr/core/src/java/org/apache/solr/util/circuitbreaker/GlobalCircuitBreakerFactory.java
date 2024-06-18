@@ -10,10 +10,10 @@ public class GlobalCircuitBreakerFactory {
   }
 
   public CircuitBreaker create(String className) throws Exception {
-    Class<?> clazz = Class.forName(className);
+    Class<?> cl = Class.forName(className);
 
-    if (CircuitBreaker.class.isAssignableFrom(clazz)) {
-      Class<? extends CircuitBreaker> breakerClass = clazz.asSubclass(CircuitBreaker.class);
+    if (CircuitBreaker.class.isAssignableFrom(cl)) {
+      Class<? extends CircuitBreaker> breakerClass = cl.asSubclass(CircuitBreaker.class);
 
       try {
         // try with 0 arg constructor
