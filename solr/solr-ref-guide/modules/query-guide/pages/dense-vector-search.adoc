@@ -238,7 +238,7 @@ client.add(Arrays.asList(d1, d2));
 
 == Query Time
 
-Apache Solr provides two query parsers that work with dense vector fields, that each support differnet ways of matching documents based on vector similarity: The `knn` query parser, and the `vecSim` query parser.
+Apache Solr provides two query parsers that work with dense vector fields, that each support different ways of matching documents based on vector similarity: The `knn` query parser, and the `vecSim` query parser.
 
 Both parsers return scores for retrieved documents that is the approximate distance to the target vector (defined by the similarityFunction configured at indexing time) and both support "Pre-Filtering" the document graph to reduce the number of candidate vectors evaluated (with out needing to compute their vector similarity distances).
 
@@ -348,7 +348,7 @@ The `preFilter` parameter can be specified explicitly to reduce the number of ca
 [source,text]
 ?q={!vecSim f=vector minReturn=0.7 preFilter=inStock:true}[1.0, 2.0, 3.0, 4.0]
 
-In the above example, only documents matching the Pre-Filter `inStock:true` will be candidates for consideration when evaluating the `knn` search against the specified vector.
+In the above example, only documents matching the Pre-Filter `inStock:true` will be candidates for consideration when evaluating the `vecSim` search against the specified vector.
 
 The `preFilter` parameter may be blank (ex: `preFilter=""`) to indicate that no Pre-Filtering should be performed; or it may be multi-valued -- either through repetition, or via duplicated xref:local-params.adoc#parameter-dereferencing[Parameter References].
 

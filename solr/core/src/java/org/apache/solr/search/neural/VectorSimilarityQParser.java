@@ -52,7 +52,7 @@ public class VectorSimilarityQParser extends AbstractVectorQParserBase {
     if (null == minReturn) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          MIN_RETURN + " is requried to use Vector Similarity QParser");
+          MIN_RETURN + " is required to use Vector Similarity QParser");
     }
 
     final DenseVectorParser vectorBuilder =
