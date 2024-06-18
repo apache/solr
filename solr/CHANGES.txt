@@ -33,6 +33,8 @@ Improvements
 
 * SOLR-17109: Give security manager explicit read access to sharedLib (Tomás Fernández Löbbe via Eric Pugh)
 
+* SOLR-17331: OrderedNodePlacementPlugin will give an even more optimal replica placements during ReplicaMigration commands (Houston Putman, Yohann Callea)
+
 Optimizations
 ---------------------
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
