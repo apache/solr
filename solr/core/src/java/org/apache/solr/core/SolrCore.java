@@ -1070,9 +1070,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     try {
       this.coreContainer = coreContainer;
       this.circuitBreakerRegistry = new CircuitBreakerRegistry(coreContainer);
-      if (this.coreContainer.isZooKeeperAware()) {
-        GlobalCircuitBreakerManager.init(coreContainer);
-      }
       this.configSet = configSet;
       this.coreDescriptor = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
       this.name = Objects.requireNonNull(coreDescriptor.getName());
