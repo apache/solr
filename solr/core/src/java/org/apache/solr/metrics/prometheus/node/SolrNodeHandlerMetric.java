@@ -42,9 +42,13 @@ public class SolrNodeHandlerMetric extends SolrNodeMetric {
     return this;
   }
 
+  /*
+   * Metric examples being exported
+   * ADMIN./admin/collections.requests
+   * UPDATE.updateShardHandler.maxConnections
+   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
-    String[] parsedMetric = metricName.split("\\.");
     if (dropwizardMetric instanceof Meter) {
       exporter.exportMeter(NODE_REQUESTS, (Meter) dropwizardMetric, getLabels());
     } else if (dropwizardMetric instanceof Counter) {

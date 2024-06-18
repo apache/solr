@@ -34,6 +34,10 @@ public class SolrCoreIndexMetric extends SolrCoreMetric {
     return this;
   }
 
+  /*
+   * Metric examples being exported
+   * INDEX.sizeInBytes
+   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Gauge) {

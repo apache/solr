@@ -41,8 +41,14 @@ public abstract class SolrMetric {
     this.metricName = metricName;
   }
 
+  /*
+   * Parse labels from the Dropwizard Metric name to be exported
+   */
   public abstract SolrMetric parseLabels();
 
+  /*
+   * Export metric to Prometheus with labels
+   */
   public abstract void toPrometheus(SolrPrometheusExporter exporter);
 
   public Labels getLabels() {

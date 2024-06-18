@@ -38,6 +38,10 @@ public class SolrCoreTlogMetric extends SolrCoreMetric {
     return this;
   }
 
+  /*
+   * Metric examples being exported
+   * TLOG.buffered.ops
+   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Meter) {

@@ -21,11 +21,11 @@ import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
+/* Dropwizard metrics of name os.* and threads.* */
 public class SolrJvmOsMetric extends SolrJvmMetric {
   public static final String JVM_OS_THREADS = "solr_metrics_jvm_threads";
   public static final String JVM_OS = "solr_metrics_os";
 
-  /* Dropwizard metrics of name os.* and threads.* */
   public SolrJvmOsMetric(Metric dropwizardMetric, String metricName) {
     super(dropwizardMetric, metricName);
   }
@@ -41,6 +41,11 @@ public class SolrJvmOsMetric extends SolrJvmMetric {
     return this;
   }
 
+  /*
+   * Metric examples being exported
+   * os.availableProcessors
+   * threads.peak.count
+   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     String exportName = "";

@@ -44,6 +44,13 @@ public class SolrCoreHandlerMetric extends SolrCoreMetric {
     return this;
   }
 
+  /*
+   * Metric examples being exported
+   * QUERY./select.requests
+   * QUERY./select.totalTime
+   * UPDATE./update.requests
+   * UPDATE./update.totalTime
+   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Meter) {

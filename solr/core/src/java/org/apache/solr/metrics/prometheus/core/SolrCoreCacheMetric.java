@@ -38,6 +38,10 @@ public class SolrCoreCacheMetric extends SolrCoreMetric {
     return this;
   }
 
+  /*
+   * Metric examples being exported
+   * CACHE.searcher.documentCache
+   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Gauge) {

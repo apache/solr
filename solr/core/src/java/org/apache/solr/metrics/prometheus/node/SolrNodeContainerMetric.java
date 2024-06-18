@@ -37,6 +37,11 @@ public class SolrNodeContainerMetric extends SolrNodeMetric {
     return this;
   }
 
+  /*
+   * Metric examples being exported
+   * CONTAINER.fs.coreRoot.totalSpace
+   * CONTAINER.cores.loaded
+   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     String[] parsedMetric = metricName.split("\\.");

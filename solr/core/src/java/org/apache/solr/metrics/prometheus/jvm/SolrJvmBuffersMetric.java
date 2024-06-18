@@ -37,6 +37,11 @@ public class SolrJvmBuffersMetric extends SolrJvmMetric {
     return this;
   }
 
+  /*
+   * Metric examples being exported
+   * buffers.direct.MemoryUsed
+   * buffers.mapped.Count
+   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Gauge) {

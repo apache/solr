@@ -23,7 +23,7 @@ import com.codahale.metrics.Timer;
 import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
-/* Dropwizard metrics of name requests and responses */
+/* Dropwizard metrics of name *.xx-responses and *-requests */
 public class SolrJettyReqRespMetric extends SolrJettyMetric {
   public static final String JETTY_RESPONSES_TOTAL = "solr_metrics_jetty_response";
   public static final String JETTY_REQUESTS_TOTAL = "solr_metrics_jetty_requests";
@@ -44,6 +44,11 @@ public class SolrJettyReqRespMetric extends SolrJettyMetric {
     return this;
   }
 
+  /*
+   * Metric examples being exported
+   * org.eclipse.jetty.server.handler.DefaultHandler.2xx-responses
+   * org.eclipse.jetty.server.handler.DefaultHandler.get-requests
+   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Meter) {

@@ -21,9 +21,10 @@ import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
+/* Dropwizard metrics of name gc.* */
 public class SolrJvmGcMetrics extends SolrJvmMetric {
-  public static String JVM_GC = "solr_metrics_jvm_gc";
-  public static String JVM_GC_SECONDS = "solr_metrics_jvm_gc_seconds";
+  public static final String JVM_GC = "solr_metrics_jvm_gc";
+  public static final String JVM_GC_SECONDS = "solr_metrics_jvm_gc_seconds";
 
   public SolrJvmGcMetrics(Metric dropwizardMetric, String metricName) {
     super(dropwizardMetric, metricName);
@@ -36,6 +37,11 @@ public class SolrJvmGcMetrics extends SolrJvmMetric {
     return this;
   }
 
+  /*
+   * Metric examples being exported
+   * gc.G1-Old-Generation.time
+   * gc.G1-Young-Generation.count
+   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Gauge) {

@@ -43,6 +43,11 @@ public class SolrCoreSearcherMetric extends SolrCoreMetric {
     return this;
   }
 
+  /*
+   * Metric examples being exported
+   * SEARCHER.searcher.deletedDocs
+   * SEARCHER.new.time
+   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Gauge) {

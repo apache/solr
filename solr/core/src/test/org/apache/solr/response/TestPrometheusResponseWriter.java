@@ -16,16 +16,14 @@
  */
 package org.apache.solr.response;
 
-import io.prometheus.metrics.model.snapshots.CounterSnapshot;
-import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
-import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.metrics.prometheus.core.SolrPrometheusCoreExporter;
+import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,33 +33,38 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml");
+    initCore("solrconfig-minimal.xml", "schema.xml");
+    h.getCoreContainer().waitForLoadingCoresToFinish(30000);
   }
 
   @Test
-  public void testPrometheusOutput() throws IOException {
+  public void testPrometheusOutput() throws Exception {
     SolrQueryRequest req = req("dummy");
     SolrQueryResponse rsp = new SolrQueryResponse();
     PrometheusResponseWriter w = new PrometheusResponseWriter();
-    NamedList<Object> registries = new SimpleOrderedMap<>();
     ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-    Labels expectedLabels = Labels.of("test", "test-value");
 
-    SolrPrometheusCoreExporter exporter = new SolrPrometheusCoreExporter("collection1", false);
-    CounterSnapshot.CounterDataPointSnapshot counterDatapoint =
-        exporter.createCounterDatapoint(1.234, expectedLabels);
-    GaugeSnapshot.GaugeDataPointSnapshot gaugeDataPoint =
-        exporter.createGaugeDatapoint(9.876, expectedLabels);
-    exporter.collectCounterDatapoint("test_counter_metric_name", counterDatapoint);
-    exporter.collectGaugeDatapoint("test_gauge_metric_name", gaugeDataPoint);
-    registries.add("solr.core.collection1", exporter);
-    rsp.add("metrics", registries);
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+    SolrQueryResponse resp = new SolrQueryResponse();
 
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            MetricsHandler.COMPACT_PARAM,
+            "false",
+            CommonParams.WT,
+            "prometheus"),
+        resp);
+    NamedList<?> values = resp.getValues();
+    rsp.add("metrics", values.get("metrics"));
     w.write(byteOut, req, rsp);
-    String actual = byteOut.toString(StandardCharsets.UTF_8);
-    assertEquals(
-        "# TYPE test_counter_metric_name_total counter\ntest_counter_metric_name_total{test=\"test-value\"} 1.234\n# TYPE test_gauge_metric_name gauge\ntest_gauge_metric_name{test=\"test-value\"} 9.876\n",
-        actual);
-    req.close();
+    String actualOutput = byteOut.toString(StandardCharsets.UTF_8).replaceAll("(?<=}).*", "");
+    String expectedOutput =
+        Files.readString(
+            new File(TEST_PATH().toString(), "solr-prometheus-output.txt").toPath(),
+            StandardCharsets.UTF_8);
+    assertEquals(expectedOutput, actualOutput);
+    handler.close();
   }
 }

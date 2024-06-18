@@ -34,6 +34,10 @@ public class SolrJettyDispatchesMetric extends SolrJettyMetric {
     return this;
   }
 
+  /*
+   * Metric examples being exported
+   * org.eclipse.jetty.server.handler.DefaultHandler.dispatches
+   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Timer) {

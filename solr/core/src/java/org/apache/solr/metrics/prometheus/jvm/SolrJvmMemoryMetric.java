@@ -21,10 +21,10 @@ import com.codahale.metrics.Metric;
 import org.apache.solr.metrics.prometheus.SolrMetric;
 import org.apache.solr.metrics.prometheus.SolrPrometheusExporter;
 
-/* Dropwizard metrics of name gc.* and memory.* */
+/* Dropwizard metrics of name memory.* */
 public class SolrJvmMemoryMetric extends SolrJvmMetric {
-  public static String JVM_MEMORY_POOL_BYTES = "solr_metrics_jvm_memory_pools_bytes";
-  public static String JVM_MEMORY = "solr_metrics_jvm_heap";
+  public static final String JVM_MEMORY_POOL_BYTES = "solr_metrics_jvm_memory_pools_bytes";
+  public static final String JVM_MEMORY = "solr_metrics_jvm_heap";
 
   public SolrJvmMemoryMetric(Metric dropwizardMetric, String metricName) {
     super(dropwizardMetric, metricName);
@@ -37,6 +37,13 @@ public class SolrJvmMemoryMetric extends SolrJvmMetric {
     return this;
   }
 
+  /*
+   * Metric examples being exported
+   * memory.heap.usage
+   * memory.non-heap.committed
+   * memory.total.committed
+   * memory.pools.CodeHeap-'non-nmethods'.committed
+   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     String[] parsedMetric = metricName.split("\\.");

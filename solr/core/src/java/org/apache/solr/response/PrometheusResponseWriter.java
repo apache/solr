@@ -25,7 +25,6 @@ import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -121,25 +120,24 @@ public class PrometheusResponseWriter extends RawResponseWriter {
   public static SolrPrometheusExporter getExporterType(String registryName) {
     String coreName;
     boolean cloudMode = false;
-    String[] rawParsedRegistry = registryName.split("\\.");
-    List<String> parsedRegistry = new ArrayList<>(Arrays.asList(rawParsedRegistry));
+    String[] parsedRegistry = registryName.split("\\.");
 
-    switch (parsedRegistry.get(1)) {
-      case ("core"):
-        if (parsedRegistry.size() == 3) {
-          coreName = parsedRegistry.get(2);
-        } else if (parsedRegistry.size() == 5) {
-          coreName = parsedRegistry.stream().skip(1).collect(Collectors.joining("_"));
+    switch (parsedRegistry[1]) {
+      case "core":
+        if (parsedRegistry.length == 3) {
+          coreName = parsedRegistry[2];
+        } else if (parsedRegistry.length == 5) {
+          coreName = Arrays.stream(parsedRegistry).skip(1).collect(Collectors.joining("_"));
           cloudMode = true;
         } else {
           coreName = registryName;
         }
         return new SolrPrometheusCoreExporter(coreName, cloudMode);
-      case ("jvm"):
+      case "jvm":
         return new SolrPrometheusJvmExporter();
-      case ("jetty"):
+      case "jetty":
         return new SolrPrometheusJettyExporter();
-      case ("node"):
+      case "node":
         return new SolrPrometheusNodeExporter();
       default:
         return null;

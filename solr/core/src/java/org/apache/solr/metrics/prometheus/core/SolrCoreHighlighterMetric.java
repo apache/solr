@@ -37,6 +37,11 @@ public class SolrCoreHighlighterMetric extends SolrCoreMetric {
     return this;
   }
 
+  /*
+   * Metric examples being exported
+   * HIGHLIGHTER.SolrBoundaryScanner.default.requests
+   * HIGHLIGHTER.SolrFragmentsBuilder.colored.requests
+   */
   @Override
   public void toPrometheus(SolrPrometheusExporter exporter) {
     if (dropwizardMetric instanceof Counter) {

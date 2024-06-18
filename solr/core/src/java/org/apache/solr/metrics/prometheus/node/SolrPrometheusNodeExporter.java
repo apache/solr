@@ -66,6 +66,11 @@ public class SolrPrometheusNodeExporter extends SolrPrometheusExporter
     }
   }
 
+  /*
+   * Metric examples being exported
+   * ADMIN./admin/cores.threadPool.parallelCoreAdminExecutor.completed
+   * CONTAINER.threadPool.coreContainerWorkExecutor.completed
+   */
   private void exportThreadPoolMetric(Metric dropwizardMetric, String metricName) {
     Labels labels;
     String[] parsedMetric = metricName.split("\\.");

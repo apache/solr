@@ -19,7 +19,7 @@
 If you use https://prometheus.io[Prometheus] and https://grafana.com[Grafana] for metrics storage and data visualization, Solr provides 2 solutions to collect metrics and other data:
 
 * Prometheus Exporter
-* Prometheus Metrics API endpoint
+* Metrics API with Prometheus format
 
 The Prometheus exporter is included with the full Solr distribution, and is located under `prometheus-exporter/`.
 It is not included in the `slim` Solr distribution.
@@ -595,14 +595,14 @@ This screenshot shows what it might look like:
 .Grafana Dashboard
 image::monitoring-with-prometheus-and-grafana/grafana-solr-dashboard.png[image,width=800]
 
-== Prometheus Metrics API
+== Metrics API with Prometheus format
 
 Prometheus Metrics are available natively directly from Solr by leveraging the Metrics API and setting `wt` parameter to `prometheus`:
 
 [source,text]
 localhost:8983/solr/admin/metrics?wt=prometheus
 
-The Prometheus Metrics API does not provide any configurability and the Prometheus output is fixed. Any metrics aggregations and/or filtering must be done on Grafana or the Prometheus server.
+The Metrics API with the `prometheus` parameter does not provide any configurability and the Prometheus output is fixed. Any metrics aggregations and/or filtering must be done on Grafana or the Prometheus server.
 
 === Prometheus Configuration
 
