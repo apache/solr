@@ -119,6 +119,7 @@ public class GlobalCircuitBreakerManager implements ClusterPropertiesListener {
   }
 
   private String getHostName() {
+    // hostname can be null if host is offline, so default to localhost
     return this.coreContainer.getHostName() != null
         ? this.coreContainer.getHostName()
         : "localhost";
@@ -134,7 +135,7 @@ public class GlobalCircuitBreakerManager implements ClusterPropertiesListener {
     globalCb.setWarnOnly(warnOnly);
     CircuitBreakerRegistry.registerGlobal(globalCb);
     if (log.isInfoEnabled()) {
-      log.info("onChange registered circuit breaker {}", globalCb);
+      log.info("registered global circuit breaker {}", globalCb);
     }
   }
 }
