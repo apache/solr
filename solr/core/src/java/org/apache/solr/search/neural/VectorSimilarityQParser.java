@@ -47,9 +47,9 @@ public class VectorSimilarityQParser extends AbstractVectorQParserBase {
     final SchemaField schemaField = req.getCore().getLatestSchema().getField(fieldName);
     final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
     final String vectorToSearch = getVectorToSearch();
-    final float minT = localParams.getFloat(MIN_TRAVERSE, DEFAULT_MIN_TRAVERSE);
-    final Float minR = localParams.getFloat(MIN_RETURN);
-    if (null == minR) {
+    final float minTraverse = localParams.getFloat(MIN_TRAVERSE, DEFAULT_MIN_TRAVERSE);
+    final Float minReturn = localParams.getFloat(MIN_RETURN);
+    if (null == minReturn) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           MIN_RETURN + " is requried to use Vector Similarity QParser");
@@ -62,10 +62,10 @@ public class VectorSimilarityQParser extends AbstractVectorQParserBase {
     switch (vectorEncoding) {
       case FLOAT32:
         return new FloatVectorSimilarityQuery(
-            fieldName, vectorBuilder.getFloatVector(), minT, minR, getFilterQuery());
+            fieldName, vectorBuilder.getFloatVector(), minTraverse, minReturn, getFilterQuery());
       case BYTE:
         return new ByteVectorSimilarityQuery(
-            fieldName, vectorBuilder.getByteVector(), minT, minR, getFilterQuery());
+            fieldName, vectorBuilder.getByteVector(), minTraverse, minReturn, getFilterQuery());
       default:
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
