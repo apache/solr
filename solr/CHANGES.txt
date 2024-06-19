@@ -182,6 +182,8 @@ Other Changes
 
 * SOLR-16503: Use Jetty HTTP2 for SyncStrategy and PeerSyncWithLeader for "recovery" operations (Sanjay Dutt, David Smiley)
 
+* SOLR-16503: Introduce new default Http2SolrClient in UpdateShardHandler and deprecated old default HttpClient (Sanjay Dutt, David Smiley)
+
 ==================  9.6.1 ==================
 Bug Fixes
 ---------------------
