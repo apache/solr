@@ -150,9 +150,9 @@ public class CollationField extends FieldType {
     if (language != null && country == null && variant != null)
       throw new SolrException(ErrorCode.SERVER_ERROR, "To specify variant, country is required");
     else if (language != null && country != null && variant != null)
-      locale = new Locale(language, country, variant);
-    else if (language != null && country != null) locale = new Locale(language, country);
-    else locale = new Locale(language);
+      locale = Locale.of(language, country, variant);
+    else if (language != null && country != null) locale = Locale.of(language, country);
+    else locale = Locale.of(language);
 
     return Collator.getInstance(locale);
   }

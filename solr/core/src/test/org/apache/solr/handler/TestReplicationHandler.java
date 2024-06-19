@@ -28,6 +28,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -844,7 +845,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
             + "/"
             + DEFAULT_TEST_CORENAME
             + ReplicationHandler.PATH;
-    URL url = new URL(leaderUrl);
+    URI uri = new URI(leaderUrl);
+    URL url = uri.toURL();
     InputStream stream = url.openStream();
     stream.close();
 

@@ -306,7 +306,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   }
 
   public void testParseIntNonRootLocale() throws Exception {
-    final DecimalFormatSymbols ru_RU = DecimalFormatSymbols.getInstance(new Locale("ru", "RU"));
+    final DecimalFormatSymbols ru_RU = DecimalFormatSymbols.getInstance(Locale.of("ru", "RU"));
     final char groupChar = ru_RU.getGroupingSeparator();
 
     int value = 1089883491;
@@ -421,7 +421,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   }
 
   public void testParseLongNonRootLocale() throws Exception {
-    final DecimalFormatSymbols ru_RU = DecimalFormatSymbols.getInstance(new Locale("ru", "RU"));
+    final DecimalFormatSymbols ru_RU = DecimalFormatSymbols.getInstance(Locale.of("ru", "RU"));
     final char groupChar = ru_RU.getGroupingSeparator();
 
     long value = 1089883491L;
@@ -518,7 +518,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   }
 
   public void testParseFloatNonRootLocale() throws Exception {
-    final DecimalFormatSymbols fr_FR = DecimalFormatSymbols.getInstance(new Locale("fr", "FR"));
+    final DecimalFormatSymbols fr_FR = DecimalFormatSymbols.getInstance(Locale.of("fr", "FR"));
     final char groupChar = fr_FR.getGroupingSeparator();
     final char decimalChar = fr_FR.getDecimalSeparator();
 
@@ -636,7 +636,7 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
   }
 
   public void testParseDoubleNonRootLocale() throws Exception {
-    final DecimalFormatSymbols fr_FR = DecimalFormatSymbols.getInstance(new Locale("fr", "FR"));
+    final DecimalFormatSymbols fr_FR = DecimalFormatSymbols.getInstance(Locale.of("fr", "FR"));
     final char groupChar = fr_FR.getGroupingSeparator();
     final char decimalChar = fr_FR.getDecimalSeparator();
 

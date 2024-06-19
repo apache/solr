@@ -40,7 +40,7 @@ public class BreakIteratorBoundaryScanner extends SolrBoundaryScanner {
     }
     Locale locale = null;
     if (language != null) {
-      locale = country == null ? new Locale(language) : new Locale(language, country);
+      locale = country == null ? Locale.of(language) : Locale.of(language, country);
     } else {
       locale = Locale.ROOT;
     }

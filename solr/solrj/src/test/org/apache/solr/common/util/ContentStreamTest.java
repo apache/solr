@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.zip.GZIPInputStream;
@@ -102,7 +102,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
 
     ContentStreamBase stream =
-        new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
+        new ContentStreamBase.URLStream(URI.create(file.toURI().toASCIIString()).toURL());
 
     try (InputStream s = stream.getStream();
         FileInputStream fis = new FileInputStream(file);
@@ -134,7 +134,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
 
     ContentStreamBase stream =
-        new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
+        new ContentStreamBase.URLStream(URI.create(file.toURI().toASCIIString()).toURL());
     try (InputStream s = stream.getStream();
         FileInputStream fis = new FileInputStream(file);
         GZIPInputStream zis = new GZIPInputStream(fis);
@@ -161,7 +161,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
 
     ContentStreamBase stream =
-        new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
+        new ContentStreamBase.URLStream(URI.create(file.toURI().toASCIIString()).toURL());
     try (InputStream s = stream.getStream();
         FileInputStream fis = new FileInputStream(file);
         GZIPInputStream zis = new GZIPInputStream(fis);
@@ -188,7 +188,7 @@ public class ContentStreamTest extends SolrTestCaseJ4 {
     }
 
     ContentStreamBase stream =
-        new ContentStreamBase.URLStream(new URL(file.toURI().toASCIIString()));
+        new ContentStreamBase.URLStream(URI.create(file.toURI().toASCIIString()).toURL());
     try (InputStream s = stream.getStream();
         FileInputStream fis = new FileInputStream(file);
         GZIPInputStream zis = new GZIPInputStream(fis);

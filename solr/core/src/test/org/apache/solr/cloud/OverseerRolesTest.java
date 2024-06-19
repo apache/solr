@@ -20,6 +20,7 @@ import static org.apache.solr.cloud.OverseerCollectionConfigSetProcessor.getLead
 import static org.apache.solr.cloud.OverseerTaskProcessor.getSortedElectionNodes;
 
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
@@ -75,7 +76,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
 
   private JettySolrRunner getOverseerJetty() throws Exception {
     String overseer = getLeaderNode(zkClient());
-    URL overseerUrl = new URL("http://" + overseer.substring(0, overseer.indexOf('_')));
+    URL overseerUrl = URI.create("http://" + overseer.substring(0, overseer.indexOf('_'))).toURL();
     int hostPort = overseerUrl.getPort();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       try {

@@ -20,6 +20,7 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -109,7 +110,7 @@ public class BackupRestoreUtils extends SolrTestCase {
   }
 
   static void executeHttpRequest(String requestUrl) throws IOException {
-    URL url = new URL(requestUrl);
+    URL url = URI.create(requestUrl).toURL();
     try (InputStream stream = url.openStream()) {
       assert stream != null;
     }

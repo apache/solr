@@ -23,14 +23,14 @@ allprojects { prj ->
     prj.apply plugin: 'ca.cutterslade.analyze'
 
     analyzeClassesDependencies {
-      warnUsedUndeclared = false // means fail build if UsedUndeclared found
-      warnUnusedDeclared = false // means fail build if UnusedDeclared found
+      warnUsedUndeclared = true // means fail build if UsedUndeclared found
+      warnUnusedDeclared = true // means fail build if UnusedDeclared found
       logDependencyInformationToFiles = true
     }
 
     analyzeTestClassesDependencies {
-      warnUsedUndeclared = false // means fail build if UsedUndeclared found
-      warnUnusedDeclared = false // means fail build if UnusedDeclared found
+      warnUsedUndeclared = true // means fail build if UsedUndeclared found
+      warnUnusedDeclared = true // means fail build if UnusedDeclared found
       logDependencyInformationToFiles = true
     }
   })

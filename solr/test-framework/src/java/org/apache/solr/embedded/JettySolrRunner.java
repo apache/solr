@@ -61,6 +61,7 @@ import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -780,6 +781,7 @@ public class JettySolrRunner {
   }
 
   /** Returns a base URL like {@code http://localhost:8983/solr} */
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public URL getBaseUrl() {
     try {
       return new URL(protocol, host, jettyPort, "/solr");
@@ -788,6 +790,7 @@ public class JettySolrRunner {
     }
   }
 
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public URL getBaseURLV2() {
     try {
       return new URL(protocol, host, jettyPort, "/api");
@@ -800,6 +803,7 @@ public class JettySolrRunner {
    * Returns a base URL consisting of the protocol, host, and port for a Connector in use by the
    * Jetty Server contained in this runner.
    */
+  @SuppressForbidden(reason = "java.net.URL ctors deprecated since Java 20")
   public URL getProxyBaseUrl() {
     try {
       return new URL(protocol, host, getLocalPort(), "/solr");

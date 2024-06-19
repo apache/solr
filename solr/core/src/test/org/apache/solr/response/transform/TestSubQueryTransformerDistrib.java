@@ -23,6 +23,7 @@ import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHas
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
@@ -209,12 +210,13 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
 
     params.set("wt", "json");
     final URL node =
-        new URL(
-            cluster.getRandomJetty(random()).getBaseUrl().toString()
-                + "/"
-                + people
-                + "/select"
-                + params.toQueryString());
+        URI.create(
+                cluster.getRandomJetty(random()).getBaseUrl().toString()
+                    + "/"
+                    + people
+                    + "/select"
+                    + params.toQueryString())
+            .toURL();
 
     final URLConnection urlConnectionWithoutAuth = node.openConnection();
     assertThrows(Exception.class, () -> urlConnectionWithoutAuth.getInputStream());

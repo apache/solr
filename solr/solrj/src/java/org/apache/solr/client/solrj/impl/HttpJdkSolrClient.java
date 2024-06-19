@@ -463,9 +463,9 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   @Override
   public void close() throws IOException {
     // If used with Java 21+
-    if (httpClient instanceof AutoCloseable) {
+    if (httpClient != null) {
       try {
-        ((AutoCloseable) httpClient).close();
+        httpClient.close();
       } catch (Exception e) {
         log.warn("Could not close the http client.", e);
       }
