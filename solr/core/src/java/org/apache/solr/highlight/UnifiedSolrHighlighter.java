@@ -17,6 +17,7 @@
 package org.apache.solr.highlight;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.text.BreakIterator;
 import java.util.Collection;
 import java.util.Collections;
@@ -53,6 +54,8 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Highlighter impl that uses {@link UnifiedHighlighter}
@@ -132,10 +135,16 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
  */
 public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   protected static final String SNIPPET_SEPARATOR = "\u0000";
 
   @Override
-  public void init(PluginInfo info) {}
+  public void init(PluginInfo info) {
+    for (PluginInfo child : info.children) {
+      log.warn("unused configuration: {}", child);
+    }
+  }
 
   @Override
   public NamedList<Object> doHighlighting(
