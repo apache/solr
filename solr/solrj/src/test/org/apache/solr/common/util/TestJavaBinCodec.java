@@ -24,6 +24,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -448,6 +454,34 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     assertEquals(l1, l2);
     assertSame(l1.get(0), l2.get(0));
     assertSame(l1.get(1), l2.get(1));
+  }
+
+  public void testJsr310Classes() throws Exception {
+    Instant instant = Instant.ofEpochSecond(1656102189L);
+    LocalDate localDate = LocalDate.of(2222, 6, 24);
+    LocalDateTime localDateTime = LocalDateTime.ofEpochSecond(1656102189L, 0, ZoneOffset.UTC);
+    ZonedDateTime zonedDateTime = ZonedDateTime.of(2222, 6, 24, 0, 0, 0, 0, ZoneOffset.UTC);
+    OffsetDateTime offsetDateTime = OffsetDateTime.of(2222, 6, 24, 0, 0, 0, 0, ZoneOffset.UTC);
+
+    Object instantResult = serializeAndDeserialize(instant);
+    assertTrue(instantResult instanceof String);
+    assertEquals(instant, Instant.parse(instantResult.toString()));
+
+    Object localDateResult = serializeAndDeserialize(localDate);
+    assertTrue(localDateResult instanceof String);
+    assertEquals(localDate, LocalDate.parse(localDateResult.toString()));
+
+    Object localDateTimeResult = serializeAndDeserialize(localDateTime);
+    assertTrue(localDateTimeResult instanceof String);
+    assertEquals(localDateTime, LocalDateTime.parse(localDateTimeResult.toString()));
+
+    Object zonedDateTimeResult = serializeAndDeserialize(zonedDateTime);
+    assertTrue(zonedDateTimeResult instanceof String);
+    assertEquals(zonedDateTime, ZonedDateTime.parse(zonedDateTimeResult.toString()));
+
+    Object offsetDateTimeResult = serializeAndDeserialize(offsetDateTime);
+    assertTrue(offsetDateTimeResult instanceof String);
+    assertEquals(offsetDateTime, OffsetDateTime.parse(offsetDateTimeResult.toString()));
   }
 
   public void genBinaryFiles() throws IOException {
