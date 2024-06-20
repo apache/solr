@@ -31,8 +31,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import org.apache.commons.cli.CommandLine;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.util.SecurityJson;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -40,7 +44,12 @@ public class StreamToolTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
-    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
+    configureCluster(2).withSecurityJson(SecurityJson.SIMPLE).configure();
+  }
+
+  private <T extends SolrRequest<? extends SolrResponse>> T withBasicAuth(T req) {
+    req.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
+    return req;
   }
 
   @Test
@@ -110,14 +119,14 @@ public class StreamToolTest extends SolrCloudTestCase {
     PrintWriter buf = new PrintWriter(stringWriter);
 
     buf.println("# Try me");
-    buf.println("search(mycollection,q='*:*',fl='$1, $2',sort='id $3')");
+    buf.println("search(my_collection,q='*:*',fl='$1, $2',sort='id $3')");
 
     String expr = stringWriter.toString();
 
     LineNumberReader reader = new LineNumberReader(new StringReader(expr));
     String finalExpression = StreamTool.readExpression(reader, args);
     // Strip the comment and insert the params in order.
-    assertEquals(finalExpression, "search(mycollection,q='*:*',fl='id, desc_s',sort='id desc')");
+    assertEquals(finalExpression, "search(my_collection,q='*:*',fl='id, desc_s',sort='id desc')");
   }
 
   @Test
@@ -174,7 +183,35 @@ public class StreamToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testRunEchoStream() throws Exception {
+  public void testRunEchoStreamLocally() throws Exception {
+
+    String expression = "echo(Hello)";
+    File expressionFile = File.createTempFile("expression", ".EXPR");
+    FileWriter writer = new FileWriter(expressionFile);
+    writer.write(expression);
+    writer.close();
+
+    // test passing in the file
+    // notice that we do not pass in zkHost or solrUrl for a simple echo run locally.
+    String[] args = {"stream", "-workers", "local", "-verbose", expressionFile.getAbsolutePath()};
+
+    assertEquals(0, runTool(args));
+
+    // test passing in the expression directly
+    args = new String[] {"stream", "-workers", "local", "-verbose", expression};
+
+    assertEquals(0, runTool(args));
+  }
+
+  @Test
+  public void testRunEchoStreamRemotely() throws Exception {
+    String collectionName = "streamWorkerCollection";
+    withBasicAuth(CollectionAdminRequest.createCollection(collectionName, "_default", 1, 1))
+        .processAndWait(cluster.getSolrClient(), 10);
+    waitForState(
+        "Expected collection to be created with 1 shard and 1 replicas",
+        collectionName,
+        clusterShape(1, 1));
 
     String expression = "echo(Hello)";
     File expressionFile = File.createTempFile("expression", ".EXPR");
@@ -185,9 +222,15 @@ public class StreamToolTest extends SolrCloudTestCase {
     // test passing in the file
     String[] args = {
       "stream",
+      "-workers",
+      "remote",
+      "-name",
+      collectionName,
       "-verbose",
       "-zkHost",
       cluster.getZkClient().getZkServerAddress(),
+      "-credentials",
+      SecurityJson.USER_PASS,
       expressionFile.getAbsolutePath()
     };
 
@@ -196,7 +239,17 @@ public class StreamToolTest extends SolrCloudTestCase {
     // test passing in the expression directly
     args =
         new String[] {
-          "stream", "-verbose", "-zkHost", cluster.getZkClient().getZkServerAddress(), expression
+          "stream",
+          "-workers",
+          "remote",
+          "-name",
+          collectionName,
+          "-verbose",
+          "-zkHost",
+          cluster.getZkClient().getZkServerAddress(),
+          "-credentials",
+          SecurityJson.USER_PASS,
+          expression
         };
 
     assertEquals(0, runTool(args));

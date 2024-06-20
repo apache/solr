@@ -27,6 +27,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +40,7 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.PushBackStream;
+import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -46,12 +48,10 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.params.ModifiableSolrParams;
 
 /** Supports stream command in the bin/solr script. */
 public class StreamTool extends ToolBase {
-
-  // not sure this is right!!!
-  public static final String OUTPUT_FIELDS = "fields";
 
   public StreamTool() {
     this(CLIO.getOutStream());
@@ -60,6 +60,8 @@ public class StreamTool extends ToolBase {
   public StreamTool(PrintStream stdout) {
     super(stdout);
   }
+
+  private final SolrClientCache solrClientCache = new SolrClientCache();
 
   @Override
   public String getName() {
@@ -71,6 +73,19 @@ public class StreamTool extends ToolBase {
     return List.of(
         SolrCLI.OPTION_ZKHOST,
         SolrCLI.OPTION_SOLRURL,
+        Option.builder()
+            .longOpt("workers")
+            .hasArg()
+            .required(false)
+            .desc("Workers are either 'local' or 'solr'. Default is 'solr'")
+            .build(),
+        Option.builder("c")
+            .longOpt("name")
+            .argName("NAME")
+            .hasArg()
+            .desc(
+                "Name of the collection to execute on if workers are 'solr'.  Required for 'solr' worker.")
+            .build(),
         Option.builder("f")
             .longOpt("fields")
             .argName("FIELDS")
@@ -98,8 +113,7 @@ public class StreamTool extends ToolBase {
             .required(false)
             .desc("The delimiter multi-valued fields. (default=|)")
             .build(),
-        SolrCLI.OPTION_CREDENTIALS,
-        SolrCLI.OPTION_VERBOSE);
+        SolrCLI.OPTION_CREDENTIALS);
   }
 
   @Override
@@ -107,38 +121,17 @@ public class StreamTool extends ToolBase {
   public void runImpl(CommandLine cli) throws Exception {
     SolrCLI.raiseLogLevelUnlessVerbose(cli);
 
-    String zkHost = SolrCLI.getZkHost(cli);
-    String[] outputHeaders;
+    String expressionArgument = cli.getArgs()[0];
+    String worker = cli.getOptionValue("workers", "solr");
+
     String arrayDelimiter = cli.getOptionValue("array-delimiter", "|");
     String delimiter = cli.getOptionValue("delimiter", "   ");
     boolean includeHeaders = cli.hasOption("header");
-    // not sure I need verbose however.
-    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
+    String[] outputHeaders = getOutputFields(cli);
 
-    String expressionArgument = cli.getArgs()[0];
-
-    SolrClientCache solrClientCache = new SolrClientCache();
-    solrClientCache.setBasicAuthCredentials(cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
-
-    TupleStream stream;
-    PushBackStream pushBackStream = null;
     LineNumberReader bufferedReader = null;
-
-    // likewise not sure...
-    //    PrintStream filterOut =
-    //        new PrintStream(System.err) {
-    //          @Override
-    //          public void println(String l) {
-    //            if (!l.startsWith("SLF4J")) {
-    //              super.println(l);
-    //            }
-    //          }
-    //        };
-    //
-    //    System.setErr(filterOut);
-
+    String expr;
     try {
-      // Read from the command line either the file name to read from or the actual streaming expression text
       Reader inputStream =
           expressionArgument.toLowerCase(Locale.ROOT).endsWith("expr")
               ? new InputStreamReader(
@@ -146,42 +139,22 @@ public class StreamTool extends ToolBase {
               : new StringReader(expressionArgument);
 
       bufferedReader = new LineNumberReader(inputStream);
-      String expr = readExpression(bufferedReader, cli.getArgs());
+      expr = StreamTool.readExpression(bufferedReader, cli.getArgs());
       echoIfVerbose("Running Expression: " + expr, cli);
-      StreamExpression streamExpression = StreamExpressionParser.parse(expr);
-      StreamFactory streamFactory = new StreamFactory();
-
-      streamFactory.withDefaultZkHost(zkHost);
-
-      Lang.register(streamFactory);
-
-      streamFactory.withFunctionName("stdin", StandardInStream.class);
-      stream = constructStream(streamFactory, streamExpression);
-
-      outputHeaders = getOutputFields(cli);
-
-      pushBackStream = new PushBackStream(stream);
-
-      // unsure of need for this.
-      if (zkHost != null) {
-        echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
-        solrClientCache.getCloudSolrClient(zkHost);
+    } finally {
+      if (bufferedReader != null) {
+        bufferedReader.close();
       }
+    }
 
-      // Now we can run the stream and return the results.
-      StreamContext streamContext = new StreamContext();
-      streamContext.setSolrClientCache(solrClientCache);
-      System.setProperty("COMMAND_LINE_EXPRESSION", "true");
-      // Output the headers
+    PushBackStream pushBackStream;
+    if (worker.equalsIgnoreCase("local")) {
+      pushBackStream = doLocalMode(cli, expr);
+    } else {
+      pushBackStream = doRemoteMode(cli, expr);
+    }
 
-      if (verbose) {
-        CLIO.err("");
-        CLIO.err("CLI -- Running Expression: " + expr + " ...");
-        CLIO.err("");
-      }
-
-      pushBackStream.setStreamContext(streamContext);
-
+    try {
       pushBackStream.open();
 
       if (outputHeaders == null) {
@@ -197,11 +170,13 @@ public class StreamTool extends ToolBase {
 
       if (includeHeaders) {
         StringBuilder headersOut = new StringBuilder();
-        for (int i = 0; i < outputHeaders.length; i++) {
-          if (i > 0) {
-            headersOut.append(delimiter);
+        if (outputHeaders != null) {
+          for (int i = 0; i < outputHeaders.length; i++) {
+            if (i > 0) {
+              headersOut.append(delimiter);
+            }
+            headersOut.append(outputHeaders[i]);
           }
-          headersOut.append(outputHeaders[i]);
         }
         CLIO.out(headersOut.toString());
       }
@@ -212,18 +187,20 @@ public class StreamTool extends ToolBase {
           break;
         } else {
           StringBuilder outLine = new StringBuilder();
-          for (int i = 0; i < outputHeaders.length; i++) {
-            if (i > 0) {
-              outLine.append(delimiter);
-            }
+          if (outputHeaders != null) {
+            for (int i = 0; i < outputHeaders.length; i++) {
+              if (i > 0) {
+                outLine.append(delimiter);
+              }
 
-            Object o = tuple.get(outputHeaders[i]);
-            if (o != null) {
-              if (o instanceof List) {
-                List outfields = (List) o;
-                outLine.append(listToString(outfields, arrayDelimiter));
-              } else {
-                outLine.append(o);
+              Object o = tuple.get(outputHeaders[i]);
+              if (o != null) {
+                if (o instanceof List) {
+                  List outfields = (List) o;
+                  outLine.append(listToString(outfields, arrayDelimiter));
+                } else {
+                  outLine.append(o);
+                }
               }
             }
           }
@@ -232,29 +209,98 @@ public class StreamTool extends ToolBase {
       }
     } finally {
 
-      if (verbose) {
-        CLIO.err("");
-        CLIO.err("CLI -- Expression complete");
-        CLIO.err("CLI -- Cleaning up resources ...");
-      }
-
       if (pushBackStream != null) {
         pushBackStream.close();
       }
 
-      if (bufferedReader != null) {
-        bufferedReader.close();
-      }
+      solrClientCache.close();
+    }
 
-      if (solrClientCache != null) {
-        solrClientCache.close();
-      }
+    if (verbose) {
+      CLIO.err("StreamTool -- Done.");
+      CLIO.err("");
+    }
+  }
 
-      if (verbose) {
-        CLIO.err("CLI -- Done.");
-        CLIO.err("");
+  public PushBackStream doLocalMode(CommandLine cli, String expr) throws Exception {
+    String zkHost = SolrCLI.getZkHost(cli);
+
+    echoIfVerbose("Connecting to ZooKeeper at " + zkHost, cli);
+    solrClientCache.getCloudSolrClient(zkHost);
+    solrClientCache.setBasicAuthCredentials(cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS));
+
+    TupleStream stream;
+    PushBackStream pushBackStream;
+
+    StreamExpression streamExpression = StreamExpressionParser.parse(expr);
+    StreamFactory streamFactory = new StreamFactory();
+
+    streamFactory.withDefaultZkHost(zkHost);
+
+    Lang.register(streamFactory);
+
+    streamFactory.withFunctionName("stdin", StandardInStream.class);
+    stream = StreamTool.constructStream(streamFactory, streamExpression);
+
+    pushBackStream = new PushBackStream(stream);
+
+    // Now we can run the stream and return the results.
+    StreamContext streamContext = new StreamContext();
+    streamContext.setSolrClientCache(solrClientCache);
+    System.setProperty("COMMAND_LINE_EXPRESSION", "true");
+
+    // Output the headers
+    pushBackStream.setStreamContext(streamContext);
+
+    return pushBackStream;
+  }
+
+  public PushBackStream doRemoteMode(CommandLine cli, String expr) throws Exception {
+
+    String solrUrl = SolrCLI.normalizeSolrUrl(cli);
+    if (!cli.hasOption("name")) {
+      throw new IllegalStateException(
+          "You must provide --name COLLECTION with --worker solr parameter.");
+    }
+    String collection = cli.getOptionValue("name");
+
+    final SolrStream solrStream =
+        new SolrStream(solrUrl + "/solr/" + collection, params("qt", "/stream", "expr", expr));
+
+    String credentials = cli.getOptionValue(SolrCLI.OPTION_CREDENTIALS.getLongOpt());
+    if (credentials != null) {
+      String username = credentials.split(":")[0];
+      String password = credentials.split(":")[1];
+      solrStream.setCredentials(username, password);
+    }
+    return new PushBackStream(solrStream);
+  }
+
+  public static ModifiableSolrParams params(String... params) {
+    if (params.length % 2 != 0) throw new RuntimeException("Params length should be even");
+    ModifiableSolrParams msp = new ModifiableSolrParams();
+    for (int i = 0; i < params.length; i += 2) {
+      msp.add(params[i], params[i + 1]);
+    }
+    return msp;
+  }
+
+  /* Slurps a stream into a List */
+  protected static List<Tuple> getTuples(final TupleStream tupleStream) throws IOException {
+    List<Tuple> tuples = new ArrayList<>();
+    try (tupleStream) {
+      // log.trace("TupleStream: {}", tupleStream);
+      System.out.println("TupleStream: {}" + tupleStream);
+      tupleStream.open();
+      for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
+        // if (log.isTraceEnabled()) {
+        //  log.trace("Tuple: {}", t.getFields());
+        System.out.println("Tuple:" + t.getFields());
+        // }
+        tuples.add(t);
       }
     }
+    return tuples;
   }
 
   public static class StandardInStream extends TupleStream implements Expressible {
