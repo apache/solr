@@ -27,7 +27,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -247,7 +246,6 @@ public class StreamTool extends ToolBase {
     // Now we can run the stream and return the results.
     StreamContext streamContext = new StreamContext();
     streamContext.setSolrClientCache(solrClientCache);
-    System.setProperty("COMMAND_LINE_EXPRESSION", "true");
 
     // Output the headers
     pushBackStream.setStreamContext(streamContext);
@@ -283,24 +281,6 @@ public class StreamTool extends ToolBase {
       msp.add(params[i], params[i + 1]);
     }
     return msp;
-  }
-
-  /* Slurps a stream into a List */
-  protected static List<Tuple> getTuples(final TupleStream tupleStream) throws IOException {
-    List<Tuple> tuples = new ArrayList<>();
-    try (tupleStream) {
-      // log.trace("TupleStream: {}", tupleStream);
-      System.out.println("TupleStream: {}" + tupleStream);
-      tupleStream.open();
-      for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
-        // if (log.isTraceEnabled()) {
-        //  log.trace("Tuple: {}", t.getFields());
-        System.out.println("Tuple:" + t.getFields());
-        // }
-        tuples.add(t);
-      }
-    }
-    return tuples;
   }
 
   public static class StandardInStream extends TupleStream implements Expressible {
