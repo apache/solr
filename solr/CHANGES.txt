@@ -129,12 +129,16 @@ Improvements
 
 * SOLR-17109: Give security manager explicit read access to sharedLib (Tomás Fernández Löbbe via Eric Pugh)
 
+* SOLR-17331: OrderedNodePlacementPlugin will give an even more optimal replica placements during ReplicaMigration commands (Houston Putman, Yohann Callea)
+
 Optimizations
 ---------------------
 * SOLR-17257: Both Minimize Cores and the Affinity replica placement strategies would over-gather
   cluster metrics.  AttributeFetcherImpl was improved accordingly.  (Yohann Callea)
 
 * SOLR-17099: Do not return spurious tags when fetching metrics from a Solr node to another. (Pierre Salagnac)
+
+* SOLR-17269: Prevent the "Coordinator node" feature from registering synthetic cores in ZooKeeper (Patson Luk)
 
 Bug Fixes
 ---------------------
@@ -160,6 +164,8 @@ Bug Fixes
   HdfsUpdateLog. There is no anticipated change in existing behavior, other than that the `dir` parameter
   to the `<updateLog>` element in `solrconfig.xml`, which has long been silently ignored, will now be
   respected (Michael Gibney, David Smiley)
+
+* SOLR-17255: Fix bugs in SolrParams.toLocalParamsString() (hossman)
 
 Dependency Upgrades
 ---------------------
