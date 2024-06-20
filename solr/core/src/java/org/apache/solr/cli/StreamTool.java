@@ -122,7 +122,6 @@ public class StreamTool extends ToolBase {
 
     String expressionArgument = cli.getArgs()[0];
     String worker = cli.getOptionValue("workers", "solr");
-
     String arrayDelimiter = cli.getOptionValue("array-delimiter", "|");
     String delimiter = cli.getOptionValue("delimiter", "   ");
     boolean includeHeaders = cli.hasOption("header");
@@ -215,10 +214,7 @@ public class StreamTool extends ToolBase {
       solrClientCache.close();
     }
 
-    if (verbose) {
-      CLIO.err("StreamTool -- Done.");
-      CLIO.err("");
-    }
+    echoIfVerbose("StreamTool -- Done.", cli);
   }
 
   public PushBackStream doLocalMode(CommandLine cli, String expr) throws Exception {

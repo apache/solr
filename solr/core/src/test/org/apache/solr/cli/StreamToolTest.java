@@ -27,6 +27,7 @@ import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -143,7 +144,8 @@ public class StreamToolTest extends SolrCloudTestCase {
       buf.println("five  six");
 
       String expr = stringWriter.toString();
-      ByteArrayInputStream inputStream = new ByteArrayInputStream(expr.getBytes());
+      ByteArrayInputStream inputStream =
+          new ByteArrayInputStream(expr.getBytes(Charset.defaultCharset()));
       inStream.setInputStream(inputStream);
       inStream.open();
       while (true) {
@@ -187,7 +189,7 @@ public class StreamToolTest extends SolrCloudTestCase {
 
     String expression = "echo(Hello)";
     File expressionFile = File.createTempFile("expression", ".EXPR");
-    FileWriter writer = new FileWriter(expressionFile);
+    FileWriter writer = new FileWriter(expressionFile, Charset.defaultCharset());
     writer.write(expression);
     writer.close();
 
@@ -215,7 +217,7 @@ public class StreamToolTest extends SolrCloudTestCase {
 
     String expression = "echo(Hello)";
     File expressionFile = File.createTempFile("expression", ".EXPR");
-    FileWriter writer = new FileWriter(expressionFile);
+    FileWriter writer = new FileWriter(expressionFile, Charset.defaultCharset());
     writer.write(expression);
     writer.close();
 
