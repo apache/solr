@@ -104,7 +104,7 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public TopDocsCollector<ScoreDoc> getTopDocsCollector(
+    public TopDocsCollector<? extends ScoreDoc> getTopDocsCollector(
         int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
       int leafCount = searcher.getTopReaderContext().leaves().size();
       FixedBitSet[] sets = new FixedBitSet[leafCount];
