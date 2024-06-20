@@ -195,12 +195,29 @@ public class StreamToolTest extends SolrCloudTestCase {
 
     // test passing in the file
     // notice that we do not pass in zkHost or solrUrl for a simple echo run locally.
-    String[] args = {"stream", "-workers", "local", "-verbose", expressionFile.getAbsolutePath()};
+    String[] args = {
+      "stream",
+      "-workers",
+      "local",
+      "-verbose",
+      "-zkHost",
+      cluster.getZkClient().getZkServerAddress(),
+      expressionFile.getAbsolutePath()
+    };
 
     assertEquals(0, runTool(args));
 
     // test passing in the expression directly
-    args = new String[] {"stream", "-workers", "local", "-verbose", expression};
+    args =
+        new String[] {
+          "stream",
+          "-workers",
+          "local",
+          "-verbose",
+          "-zkHost",
+          cluster.getZkClient().getZkServerAddress(),
+          expression
+        };
 
     assertEquals(0, runTool(args));
   }
