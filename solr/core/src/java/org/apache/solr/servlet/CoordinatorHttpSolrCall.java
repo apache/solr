@@ -17,6 +17,7 @@
 
 package org.apache.solr.servlet;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,9 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -43,7 +46,9 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.DelegatingSolrQueryRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.servlet.cache.Method;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,12 +79,33 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     this.factory = factory;
   }
 
+  @SuppressWarnings("unchecked")
+  @Override
+  protected void writeResponse(
+      SolrQueryResponse solrRsp, QueryResponseWriter responseWriter, Method reqMethod)
+      throws IOException {
+
+    // make coordinator mode explicit
+    if (solrRsp.getValues().get(CommonParams.DEBUG) != null) {
+      final NamedList<Object> debug =
+          (NamedList<Object>) solrRsp.getValues().get(CommonParams.DEBUG);
+      if (debug.get(CommonParams.TRACK) != null) {
+        final NamedList<Object> track = (NamedList<Object>) debug.get(CommonParams.TRACK);
+        track.add("requestCoordinatorNode", cores.getHostName());
+      }
+    }
+
+    super.writeResponse(solrRsp, responseWriter, reqMethod);
+  }
+
   @Override
   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) {
+    if (collectionName == null || collectionName.trim().isEmpty()) {
+      return null;
+    }
     this.collectionName = collectionName;
     SolrCore core = super.getCoreByCollection(collectionName, isPreferLeader);
     if (core != null) return core;
-    if (!path.endsWith("/select")) return null;
     return getCore(factory, this, collectionName, isPreferLeader);
   }
 
