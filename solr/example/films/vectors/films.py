@@ -89,7 +89,6 @@ def export_films_csv(films_dataset):
         csvw = csv.DictWriter(outfile, ["name","directed_by","genre","type","id","initial_release_date","film_vector"])
         csvw.writeheader()
         for film in films_dataset:
-            # using | pipe delimiter as per TODO-add-relevant-code-reference-here
             film["directed_by"] = "|".join(film["directed_by"])
             film["genre"] = "|".join(film["genre"])
             film["film_vector"] = "|".join(map(str, film["film_vector"]))
