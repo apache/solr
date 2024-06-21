@@ -39,7 +39,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Pruning;
@@ -403,8 +402,9 @@ public class QueryComponent extends SearchComponent {
 
     req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
 
+    // TODO QueryResult ought not to be created and passed in methods of QueryComponent.
+    //  Should be created ~exclusively in SolrIndexSearcher and returned by it.
     QueryResult result = new QueryResult();
-
     cmd.setSegmentTerminateEarly(
         params.getBool(
             CommonParams.SEGMENT_TERMINATE_EARLY, CommonParams.SEGMENT_TERMINATE_EARLY_DEFAULT));
@@ -1689,10 +1689,11 @@ public class QueryComponent extends SearchComponent {
 
     SolrIndexSearcher searcher = req.getSearcher();
 
-    try {
+    if (cmd.getQuery() instanceof SelfExecutingQuery) {
+      // TODO QueryResult ought not to be created and passed in methods of QueryComponent
+      result = ((SelfExecutingQuery) cmd.getQuery()).search(searcher, cmd);
+    } else {
       searcher.search(result, cmd);
-    } catch (FuzzyTermsEnum.FuzzyTermsException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
     rb.setResult(result);
 
@@ -1763,5 +1764,10 @@ public class QueryComponent extends SearchComponent {
     public float score() throws IOException {
       return score;
     }
+  }
+
+  /** A {@link Query} that processes a command to search on its own. */
+  public interface SelfExecutingQuery {
+    QueryResult search(SolrIndexSearcher searcher, QueryCommand cmd) throws IOException;
   }
 }

@@ -1702,6 +1702,10 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         "{!hash_range l='107347968' u='214695935' f='x_id'}");
   }
 
+  public void testCombineQuery() throws Exception {
+    assertQueryEquals("combine", "{!combine keys=ca keys=cb ca=foo cb=bar combiner.algorithm=rrf}");
+  }
+
   // Override req to add df param
   public static SolrQueryRequest req(String... q) {
     return SolrTestCaseJ4.req(q, "df", "text");
