@@ -16,55 +16,54 @@
  */
 package org.apache.solr.response;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.admin.MetricsHandler;
-import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /** Tests the {@link PrometheusResponseWriter} behavior */
 public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  public static JettySolrRunner jetty;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-minimal.xml", "schema.xml");
-    h.getCoreContainer().waitForLoadingCoresToFinish(30000);
+    solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
+    jetty = solrClientTestRule.getJetty();
+    solrClientTestRule.newCollection().withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
+    jetty.getCoreContainer().waitForLoadingCoresToFinish(30000);
   }
 
   @Test
   public void testPrometheusOutput() throws Exception {
-    SolrQueryRequest req = req("dummy");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    PrometheusResponseWriter w = new PrometheusResponseWriter();
-    ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-
-    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
-    SolrQueryResponse resp = new SolrQueryResponse();
-
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            MetricsHandler.COMPACT_PARAM,
-            "false",
-            CommonParams.WT,
-            "prometheus"),
-        resp);
-    NamedList<?> values = resp.getValues();
-    rsp.add("metrics", values.get("metrics"));
-    w.write(byteOut, req, rsp);
-    String actualOutput = byteOut.toString(StandardCharsets.UTF_8).replaceAll("(?<=}).*", "");
-    String expectedOutput =
-        Files.readString(
-            new File(TEST_PATH().toString(), "solr-prometheus-output.txt").toPath(),
-            StandardCharsets.UTF_8);
-    assertEquals(expectedOutput, actualOutput);
-    handler.close();
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("qt", "/admin/metrics");
+    params.set("wt", "prometheus");
+    QueryRequest req = new QueryRequest(params);
+    req.setResponseParser(new NoOpResponseParser("prometheus"));
+    try (SolrClient adminClient = getHttpSolrClient(jetty.getBaseUrl().toString()); ) {
+      NamedList<Object> res = adminClient.request(req);
+      assertNotNull("null response from server", res);
+      String actual = (String) res.get("response");
+      System.out.println(actual.replaceAll("(?<=}).*", ""));
+      String expectedOutput =
+          Files.readString(
+              new File(TEST_PATH().toString(), "solr-prometheus-output.txt").toPath(),
+              StandardCharsets.UTF_8);
+      assertEquals(expectedOutput, actual.replaceAll("(?<=}).*", ""));
+    }
   }
 }

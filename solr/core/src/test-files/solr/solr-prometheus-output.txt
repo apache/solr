@@ -194,6 +194,8 @@ solr_metrics_core_average_request_time{category="QUERY",core="collection1",handl
 solr_metrics_core_average_request_time{category="QUERY",core="collection1",handler="/get"}
 solr_metrics_core_average_request_time{category="QUERY",core="collection1",handler="/get[shard]"}
 solr_metrics_core_average_request_time{category="QUERY",core="collection1",handler="/graph"}
+solr_metrics_core_average_request_time{category="QUERY",core="collection1",handler="/query"}
+solr_metrics_core_average_request_time{category="QUERY",core="collection1",handler="/query[shard]"}
 solr_metrics_core_average_request_time{category="QUERY",core="collection1",handler="/select"}
 solr_metrics_core_average_request_time{category="QUERY",core="collection1",handler="/select[shard]"}
 solr_metrics_core_average_request_time{category="QUERY",core="collection1",handler="/stream"}
@@ -210,6 +212,20 @@ solr_metrics_core_average_request_time{category="UPDATE",core="collection1",hand
 solr_metrics_core_average_searcher_warmup_time{core="collection1",type="time"}
 solr_metrics_core_average_searcher_warmup_time{core="collection1",type="warmup"}
 # TYPE solr_metrics_core_cache gauge
+solr_metrics_core_cache{cacheType="documentCache",core="collection1",item="cumulative_evictions"}
+solr_metrics_core_cache{cacheType="documentCache",core="collection1",item="cumulative_hitratio"}
+solr_metrics_core_cache{cacheType="documentCache",core="collection1",item="cumulative_hits"}
+solr_metrics_core_cache{cacheType="documentCache",core="collection1",item="cumulative_inserts"}
+solr_metrics_core_cache{cacheType="documentCache",core="collection1",item="cumulative_lookups"}
+solr_metrics_core_cache{cacheType="documentCache",core="collection1",item="evictions"}
+solr_metrics_core_cache{cacheType="documentCache",core="collection1",item="hitratio"}
+solr_metrics_core_cache{cacheType="documentCache",core="collection1",item="hits"}
+solr_metrics_core_cache{cacheType="documentCache",core="collection1",item="inserts"}
+solr_metrics_core_cache{cacheType="documentCache",core="collection1",item="lookups"}
+solr_metrics_core_cache{cacheType="documentCache",core="collection1",item="maxRamMB"}
+solr_metrics_core_cache{cacheType="documentCache",core="collection1",item="ramBytesUsed"}
+solr_metrics_core_cache{cacheType="documentCache",core="collection1",item="size"}
+solr_metrics_core_cache{cacheType="documentCache",core="collection1",item="warmupTime"}
 solr_metrics_core_cache{cacheType="fieldCache",core="collection1",item="entries_count"}
 solr_metrics_core_cache{cacheType="fieldValueCache",core="collection1",item="cumulative_evictions"}
 solr_metrics_core_cache{cacheType="fieldValueCache",core="collection1",item="cumulative_hitratio"}
@@ -225,6 +241,48 @@ solr_metrics_core_cache{cacheType="fieldValueCache",core="collection1",item="max
 solr_metrics_core_cache{cacheType="fieldValueCache",core="collection1",item="ramBytesUsed"}
 solr_metrics_core_cache{cacheType="fieldValueCache",core="collection1",item="size"}
 solr_metrics_core_cache{cacheType="fieldValueCache",core="collection1",item="warmupTime"}
+solr_metrics_core_cache{cacheType="filterCache",core="collection1",item="cumulative_evictions"}
+solr_metrics_core_cache{cacheType="filterCache",core="collection1",item="cumulative_hitratio"}
+solr_metrics_core_cache{cacheType="filterCache",core="collection1",item="cumulative_hits"}
+solr_metrics_core_cache{cacheType="filterCache",core="collection1",item="cumulative_inserts"}
+solr_metrics_core_cache{cacheType="filterCache",core="collection1",item="cumulative_lookups"}
+solr_metrics_core_cache{cacheType="filterCache",core="collection1",item="evictions"}
+solr_metrics_core_cache{cacheType="filterCache",core="collection1",item="hitratio"}
+solr_metrics_core_cache{cacheType="filterCache",core="collection1",item="hits"}
+solr_metrics_core_cache{cacheType="filterCache",core="collection1",item="inserts"}
+solr_metrics_core_cache{cacheType="filterCache",core="collection1",item="lookups"}
+solr_metrics_core_cache{cacheType="filterCache",core="collection1",item="maxRamMB"}
+solr_metrics_core_cache{cacheType="filterCache",core="collection1",item="ramBytesUsed"}
+solr_metrics_core_cache{cacheType="filterCache",core="collection1",item="size"}
+solr_metrics_core_cache{cacheType="filterCache",core="collection1",item="warmupTime"}
+solr_metrics_core_cache{cacheType="perSegFilter",core="collection1",item="cumulative_evictions"}
+solr_metrics_core_cache{cacheType="perSegFilter",core="collection1",item="cumulative_hitratio"}
+solr_metrics_core_cache{cacheType="perSegFilter",core="collection1",item="cumulative_hits"}
+solr_metrics_core_cache{cacheType="perSegFilter",core="collection1",item="cumulative_inserts"}
+solr_metrics_core_cache{cacheType="perSegFilter",core="collection1",item="cumulative_lookups"}
+solr_metrics_core_cache{cacheType="perSegFilter",core="collection1",item="evictions"}
+solr_metrics_core_cache{cacheType="perSegFilter",core="collection1",item="hitratio"}
+solr_metrics_core_cache{cacheType="perSegFilter",core="collection1",item="hits"}
+solr_metrics_core_cache{cacheType="perSegFilter",core="collection1",item="inserts"}
+solr_metrics_core_cache{cacheType="perSegFilter",core="collection1",item="lookups"}
+solr_metrics_core_cache{cacheType="perSegFilter",core="collection1",item="maxRamMB"}
+solr_metrics_core_cache{cacheType="perSegFilter",core="collection1",item="ramBytesUsed"}
+solr_metrics_core_cache{cacheType="perSegFilter",core="collection1",item="size"}
+solr_metrics_core_cache{cacheType="perSegFilter",core="collection1",item="warmupTime"}
+solr_metrics_core_cache{cacheType="queryResultCache",core="collection1",item="cumulative_evictions"}
+solr_metrics_core_cache{cacheType="queryResultCache",core="collection1",item="cumulative_hitratio"}
+solr_metrics_core_cache{cacheType="queryResultCache",core="collection1",item="cumulative_hits"}
+solr_metrics_core_cache{cacheType="queryResultCache",core="collection1",item="cumulative_inserts"}
+solr_metrics_core_cache{cacheType="queryResultCache",core="collection1",item="cumulative_lookups"}
+solr_metrics_core_cache{cacheType="queryResultCache",core="collection1",item="evictions"}
+solr_metrics_core_cache{cacheType="queryResultCache",core="collection1",item="hitratio"}
+solr_metrics_core_cache{cacheType="queryResultCache",core="collection1",item="hits"}
+solr_metrics_core_cache{cacheType="queryResultCache",core="collection1",item="inserts"}
+solr_metrics_core_cache{cacheType="queryResultCache",core="collection1",item="lookups"}
+solr_metrics_core_cache{cacheType="queryResultCache",core="collection1",item="maxRamMB"}
+solr_metrics_core_cache{cacheType="queryResultCache",core="collection1",item="ramBytesUsed"}
+solr_metrics_core_cache{cacheType="queryResultCache",core="collection1",item="size"}
+solr_metrics_core_cache{cacheType="queryResultCache",core="collection1",item="warmupTime"}
 solr_metrics_core_cache{cacheType="statsCache",core="collection1",item="lookups"}
 solr_metrics_core_cache{cacheType="statsCache",core="collection1",item="mergeToGlobalStats"}
 solr_metrics_core_cache{cacheType="statsCache",core="collection1",item="missingGlobalFieldStats"}
@@ -238,12 +296,21 @@ solr_metrics_core_cache{core="collection1",item="hits",type="liveDocsCache"}
 solr_metrics_core_cache{core="collection1",item="inserts",type="liveDocsCache"}
 solr_metrics_core_cache{core="collection1",item="naiveHits",type="liveDocsCache"}
 # TYPE solr_metrics_core_highlighter_requests_total counter
+solr_metrics_core_highlighter_requests_total{core="collection1",item="breakIterator",type="SolrBoundaryScanner"}
+solr_metrics_core_highlighter_requests_total{core="collection1",item="colored",type="SolrFragmentsBuilder"}
 solr_metrics_core_highlighter_requests_total{core="collection1",item="default",type="SolrBoundaryScanner"}
 solr_metrics_core_highlighter_requests_total{core="collection1",item="default",type="SolrEncoder"}
 solr_metrics_core_highlighter_requests_total{core="collection1",item="default",type="SolrFormatter"}
 solr_metrics_core_highlighter_requests_total{core="collection1",item="default",type="SolrFragListBuilder"}
 solr_metrics_core_highlighter_requests_total{core="collection1",item="default",type="SolrFragmenter"}
 solr_metrics_core_highlighter_requests_total{core="collection1",item="default",type="SolrFragmentsBuilder"}
+solr_metrics_core_highlighter_requests_total{core="collection1",item="gap",type="SolrFragmenter"}
+solr_metrics_core_highlighter_requests_total{core="collection1",item="html",type="SolrEncoder"}
+solr_metrics_core_highlighter_requests_total{core="collection1",item="html",type="SolrFormatter"}
+solr_metrics_core_highlighter_requests_total{core="collection1",item="regex",type="SolrFragmenter"}
+solr_metrics_core_highlighter_requests_total{core="collection1",item="simple",type="SolrFragListBuilder"}
+solr_metrics_core_highlighter_requests_total{core="collection1",item="single",type="SolrFragListBuilder"}
+solr_metrics_core_highlighter_requests_total{core="collection1",item="weighted",type="SolrFragListBuilder"}
 # TYPE solr_metrics_core_index_size_bytes gauge
 solr_metrics_core_index_size_bytes{core="collection1"}
 # TYPE solr_metrics_core_requests_total counter
@@ -332,6 +399,16 @@ solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/g
 solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/graph",type="requests"}
 solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/graph",type="serverErrors"}
 solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/graph",type="timeouts"}
+solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/query",type="clientErrors"}
+solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/query",type="errors"}
+solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/query",type="requests"}
+solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/query",type="serverErrors"}
+solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/query",type="timeouts"}
+solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/query[shard]",type="clientErrors"}
+solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/query[shard]",type="errors"}
+solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/query[shard]",type="requests"}
+solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/query[shard]",type="serverErrors"}
+solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/query[shard]",type="timeouts"}
 solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/select",type="clientErrors"}
 solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/select",type="errors"}
 solr_metrics_core_requests_total{category="QUERY",core="collection1",handler="/select",type="requests"}
@@ -420,6 +497,8 @@ solr_metrics_core_requests_time_total{category="QUERY",core="collection1",handle
 solr_metrics_core_requests_time_total{category="QUERY",core="collection1",handler="/get"}
 solr_metrics_core_requests_time_total{category="QUERY",core="collection1",handler="/get[shard]"}
 solr_metrics_core_requests_time_total{category="QUERY",core="collection1",handler="/graph"}
+solr_metrics_core_requests_time_total{category="QUERY",core="collection1",handler="/query"}
+solr_metrics_core_requests_time_total{category="QUERY",core="collection1",handler="/query[shard]"}
 solr_metrics_core_requests_time_total{category="QUERY",core="collection1",handler="/select"}
 solr_metrics_core_requests_time_total{category="QUERY",core="collection1",handler="/select[shard]"}
 solr_metrics_core_requests_time_total{category="QUERY",core="collection1",handler="/stream"}
@@ -441,6 +520,10 @@ solr_metrics_core_searcher_documents{core="collection1",type="maxDoc"}
 solr_metrics_core_searcher_documents{core="collection1",type="numDocs"}
 solr_metrics_core_searcher_documents{core="collection1",type="skipSortCount"}
 solr_metrics_core_searcher_documents{core="collection1",type="warmupTime"}
+# TYPE solr_metrics_core_tlog_total counter
+solr_metrics_core_tlog_total{core="collection1",item="applyingBuffered"}
+solr_metrics_core_tlog_total{core="collection1",item="copyOverOldUpdates"}
+solr_metrics_core_tlog_total{core="collection1",item="replay"}
 # TYPE solr_metrics_core_update_handler gauge
 solr_metrics_core_update_handler{category="REPLICATION",core="collection1",handler="/replication",type="generation"}
 solr_metrics_core_update_handler{category="UPDATE",core="collection1",handler="updateHandler",type="adds"}
