@@ -16,6 +16,29 @@
  */
 package org.apache.solr.client.api.model;
 
-public class FileStoreJsonFileResponse extends SolrJerseyResponse {
-  public String response;
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.solr.client.api.util.ReflectWritable;
+
+public class FileStoreEntryMetadata implements ReflectWritable {
+  @JsonProperty public String name;
+  @JsonProperty public Boolean dir;
+  @JsonProperty public Long size;
+  @JsonProperty public Date timestamp;
+
+  private Map<String, Object> additionalMetadata = new HashMap<>();
+
+  @JsonAnyGetter
+  public Map<String, Object> unknownProperties() {
+    return additionalMetadata;
+  }
+
+  @JsonAnySetter
+  public void setUnknownProperty(String field, Object value) {
+    additionalMetadata.put(field, value);
+  }
 }

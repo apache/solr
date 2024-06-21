@@ -198,6 +198,7 @@ public class DistribFileStore implements FileStore {
                 coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
                 baseUrl + "/node/files" + path,
                 Utils.newBytesConsumer((int) MAX_PKG_SIZE));
+
         filedata.mark();
         String sha512 = DigestUtils.sha512Hex(new ByteBufferInputStream(filedata));
         String expected = (String) m.get("sha512");

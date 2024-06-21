@@ -1,0 +1,4 @@
+Here's some data.
+It's definitely not binary data.
+Not even a bit.
+Terminal should be fine.
