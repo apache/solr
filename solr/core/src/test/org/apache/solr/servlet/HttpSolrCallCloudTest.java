@@ -18,7 +18,7 @@
 package org.apache.solr.servlet;
 
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 import javax.servlet.ReadListener;
@@ -67,7 +67,8 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
   public void testWrongUtf8InQ() throws Exception {
     var baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     var request =
-        new URL(baseUrl.toString() + "/" + COLLECTION + "/select?q=%C0"); // Illegal UTF-8 string
+        URI.create(baseUrl.toString() + "/" + COLLECTION + "/select?q=%C0")
+            .toURL(); // Illegal UTF-8 string
     var connection = (HttpURLConnection) request.openConnection();
     assertEquals(400, connection.getResponseCode());
   }

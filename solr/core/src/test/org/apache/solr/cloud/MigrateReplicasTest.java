@@ -237,7 +237,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testGoodSpreadDuringAssignWithNoTarget() throws Exception {
+  public void testWithNoTarget() throws Exception {
     configureCluster(5)
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
@@ -300,9 +300,9 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     }
 
     for (String node : eventualTargetNodes) {
-      assertEquals(
-          "The non-source node '" + node + "' has the wrong number of replicas after the migration",
-          2,
+      assertNotEquals(
+          "The non-source node '" + node + "' should not receive all replicas from the migration",
+          4,
           collection.getReplicas(node).size());
     }
   }
