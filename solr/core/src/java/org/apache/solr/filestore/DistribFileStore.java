@@ -503,7 +503,7 @@ public class DistribFileStore implements FileStore {
     for (String node : nodes) {
       String baseUrl =
           coreContainer.getZkController().getZkStateReader().getBaseUrlV2ForNodeName(node);
-      String url = baseUrl + "/node/files" + path;
+      String url = baseUrl + "/cluster/files" + path + "?localDelete=true";
       HttpDelete del = new HttpDelete(url);
       // invoke delete command on all nodes asynchronously
       coreContainer.runAsync(() -> Utils.executeHttpMethod(client, url, null, del));

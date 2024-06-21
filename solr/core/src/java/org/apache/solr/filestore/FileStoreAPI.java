@@ -55,24 +55,10 @@ public class FileStoreAPI {
   private final CoreContainer coreContainer;
   FileStore fileStore;
   public final FSRead readAPI = new FSRead();
-  public final FSWrite writeAPI = new FSWrite();
 
   public FileStoreAPI(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     fileStore = coreContainer.getFileStore();
-  }
-
-  public class FSWrite {
-
-    @EndPoint(
-        path = "/node/files/*",
-        method = SolrRequest.METHOD.DELETE,
-        permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
-    public void deleteLocal(SolrQueryRequest req, SolrQueryResponse rsp) {
-      String path = req.getPathTemplateValues().get("*");
-      validateName(path, true);
-      fileStore.deleteLocal(path);
-    }
   }
 
   public class FSRead {

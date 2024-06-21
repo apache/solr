@@ -864,7 +864,6 @@ public class CoreContainer {
       fileStore = new DistribFileStore(this);
       fileStoreAPI = new FileStoreAPI(this);
       registerV2ApiIfEnabled(fileStoreAPI.readAPI);
-      registerV2ApiIfEnabled(fileStoreAPI.writeAPI);
       registerV2ApiIfEnabled(ClusterFileStore.class);
 
       packageLoader = new SolrPackageLoader(this);
