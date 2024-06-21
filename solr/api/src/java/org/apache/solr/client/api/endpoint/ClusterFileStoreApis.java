@@ -24,6 +24,7 @@ import io.swagger.v3.oas.annotations.extensions.Extension;
 import io.swagger.v3.oas.annotations.extensions.ExtensionProperty;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -70,4 +71,25 @@ public interface ClusterFileStoreApis {
                   "Indicates whether the deletion should only be done on the receiving node.  For internal use only")
           @QueryParam("localDelete")
           Boolean localDelete);
+
+  @GET
+  @Operation(
+      summary = "Get a file (or related metadata) from the filestore.",
+      tags = {"file-store"})
+  @Path("/files{path:.+}")
+  SolrJerseyResponse getFile(
+      @Parameter(description = "Path to a file or directory within the filestore")
+          @PathParam("path")
+          String path,
+      @Parameter(
+              description =
+                  "If true, triggers syncing for this file across all nodes in the filestore")
+          @QueryParam("sync")
+          Boolean sync,
+      @Parameter(description = "An optional Solr node name to fetch the file from")
+          @QueryParam("getFrom")
+          String getFrom,
+      @Parameter(description = "Indicates that (only) file metadata should be fetched")
+          @QueryParam("meta")
+          Boolean meta);
 }

@@ -38,6 +38,8 @@ public class SolrJerseyResponse implements ReflectWritable {
   @JsonProperty("error")
   public ErrorInfo error;
 
+  // TODO Should we do 'unknownField' capturing here, similar to ResponseHeader below?
+
   public static class ResponseHeader implements ReflectWritable {
     @JsonProperty("status")
     public int status;
