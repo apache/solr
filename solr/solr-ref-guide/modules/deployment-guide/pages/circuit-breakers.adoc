@@ -38,7 +38,10 @@ Typically, any per-collection circuit breaker thresholds are set lower than glob
 A circuit breaker can register itself to be checked for query requests and/or update requests. A user may register circuit breakers of the same type with different thresholds for each request type.
 
 === Global Circuit Breakers
-Circuit breakers can be configured globally using environment variables, e.g. in `solr.in.sh`, or system properties. The variables available are:
+Circuit breakers can be configured globally using environment variables, e.g. in `solr.in.sh`, system properties, or via the v2 Cluster Properties API `set-circuit-breakers`.
+
+==== Environment Variables and System Properties
+The variables available are:
 
 [options="header"]
 |===
@@ -52,6 +55,98 @@ Circuit breakers can be configured in "warn only" mode by adding a "warnonly"-su
 
 For example, you can enable a global CPU circuit breaker that rejects update requests when above 95% CPU load, by setting the following environment variable: `SOLR_CIRCUITBREAKER_UPDATE_CPU=95`.
 If "warn only" mode is desired for this circuit breaker, the `SOLR_CIRCUITBREAKER_UPDATE_CPU_WARNONLY=true` environment variable or `solr.circuitbreaker.update.cpu.warnonly=true` system property could be set.
+
+==== Cluster Properties v2 API
+Note: setting any circuit breaker through Cluster Properties will override all global circuit breakers set through environment variables or system properties.
+
+[.dynamic-tabs]
+
+[example.tab-pane#v2clusterprop]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/json' -d '
+  {
+    "set-circuit-breakers": {
+      "configs": {
+        "org.apache.solr.util.circuitbreaker.LoadAverageCircuitBreaker": {
+          "enabled": true,
+          "queryThreshold": 10.0,
+          "updateThreshold": 10.0
+        }
+      },
+      "hostOverrides": {
+        "localhost": {
+            "org.apache.solr.util.circuitbreaker.LoadAverageCircuitBreaker": {
+              "enabled": true,
+              "queryThreshold": 9.0,
+              "updateThreshold": 5.0
+            }
+    }
+  }
+'
+----
+====
+
+==== set-circuit-breaker Parameters
+
+`configs`:: [[configs-object]]
++
+[%autowidth,frame=none]
+|===
+|Required |Default: none
+|===
++
+A map from CircuitBreaker canonical class name (i.e. `org.apache.solr.util.circuitbreaker.LoadAverageCircuitBreaker`) to a <<configs-parameters,CircuitBreaker configuration object>>.
+
+`hostOverides`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+A map from host name to a <<configs-object, configs object>>. The `hostOverrides` map CircuitBreakers will be merged with any CircuitBreakers of the same class found in `configs`, with the values from this map taking precedence.
+
+==== set-circuit-breaker `configs` Parameters [[configs-parameters]]
+
+`enabled`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+If true, this circuit breaker will trip on its configured query and update thresholds. Otherwise, this circuit breaker will not be registered, and thus will not trip.
+
+`queryThreshold`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The value above which this circuit breaker will trip for all query requests.
+
+`updateThreshold`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The value above which this circuit breaker will trip for all update requests.
+
+`warnOnly`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: false
+|===
++
+If true, this circuit breaker will be registered, but will never trip. When the circuit breaker would have tripped, instead Solr will just log that it would have tripped.
 
 === Per Collection Circuit Breakers
 Circuit breakers are configured as independent `<circuitBreaker>` entries in `solrconfig.xml` as shown in the below examples.
