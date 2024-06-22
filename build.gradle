@@ -28,7 +28,6 @@ plugins {
   id 'net.ltgt.errorprone' version '3.1.0' apply false
   id 'com.diffplug.spotless' version '6.5.2' apply false
   id 'com.github.node-gradle.node' version '7.0.1' apply false
-  id 'org.cyclonedx.bom' version '1.8.2' apply false
 }
 
 // Declare default Java versions for the entire project and for SolrJ separately
@@ -135,7 +134,6 @@ apply from: file('gradle/testing/alternative-jdk-support.gradle')
 apply from: file('gradle/java/jar-manifest.gradle')
 
 // Publishing and releasing
-apply from: file('gradle/maven/cyclonedx-bom.gradle')
 apply from: file('gradle/maven/defaults-maven.gradle')
 
 // IDE support, settings and specials.
@@ -202,7 +200,5 @@ apply from: file('gradle/hacks/dummy-outputs.gradle')
 
 apply from: file('gradle/solr/packaging.gradle')
 apply from: file('gradle/solr/solr-forbidden-apis.gradle')
-
-apply from: file('gradle/ant-compat/solr.post-jar.gradle')
 
 apply from: file('gradle/node.gradle')

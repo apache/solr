@@ -14,34 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.search.neural;
 
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.QParserPlugin;
 
-// I am not convinced packaging of examples should be a separate project... Seems more logical to
-// move it to just the packaging project (?). Let's leave it for now though.
+/** A neural query parser to run min-similarity search on Dense Vector fields. */
+public class VectorSimilarityQParserPlugin extends QParserPlugin {
+  public static final String NAME = "vectorSimilarity";
 
-description = 'Solr examples'
-
-configurations {
-  packaging
-}
-
-ext {
-  packagingDir = file("${buildDir}/packaging")
-}
-
-task assemblePackaging(type: Sync) {
-  from(projectDir, {
-    include "exampledocs/**"
-    include "files/**"
-    include "films/**"
-    include "README.md"
-  })
-
-  into packagingDir
-}
-
-artifacts {
-  packaging packagingDir, {
-    builtBy assemblePackaging
+  @Override
+  public QParser createParser(
+      String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    return new VectorSimilarityQParser(qstr, localParams, params, req);
   }
 }
