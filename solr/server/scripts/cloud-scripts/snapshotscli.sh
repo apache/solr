@@ -2,6 +2,8 @@
 
 set -e
 
+echo "This command is deprecated in favour of bin/solr equivalents and will be removed in Solr 10."
+
 run_solr_snapshot_tool() {
   JVM="java"
   scriptDir=$(dirname "$0")
@@ -173,4 +175,3 @@ case "${cmd}" in
     usage 1>&2
     exit 1
 esac
-
