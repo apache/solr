@@ -51,8 +51,10 @@ public class Tuple implements Cloneable, MapWriter {
 
   /** Tuple fields. */
   private final Map<String, Object> fields = CollectionUtil.newHashMap(2);
+
   /** External serializable field names. */
   private List<String> fieldNames;
+
   /** Mapping of external field names to internal tuple field names. */
   private Map<String, String> fieldLabels;
 
@@ -282,8 +284,9 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   /**
-   * The other tuples fields and fieldLabels will be merged via putAll directly into this Tuple's fields and
-   * fieldLabels while other's fieldNames will be added such that duplicates aren't present.
+   * The other tuples fields and fieldLabels will be merged via putAll directly into this Tuple's
+   * fields and fieldLabels while other's fieldNames will be added such that duplicates aren't
+   * present.
    *
    * @param other Tuple to be merged into this.
    */
