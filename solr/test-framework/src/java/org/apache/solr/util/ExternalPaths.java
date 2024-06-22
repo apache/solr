@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 
 import java.io.File;
+import java.net.URL;
 
 /**
  * Some tests need to reach outside the classpath to get certain resources (e.g. the example
@@ -66,9 +67,7 @@ public class ExternalPaths {
    */
   static String determineSourceHome() {
     try {
-      File file;
-
-      file = new File("solr/conf");
+      File file = new File("solr/conf");
       if (!file.exists()) {
         URL resourceUrl = ExternalPaths.class.getClassLoader().getResource("solr/conf");
         if(resourceUrl != null) {
