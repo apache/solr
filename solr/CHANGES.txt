@@ -100,6 +100,8 @@ Other Changes
 
 * SOLR-17279: Introduce SecurityJson.java file to Test Framework to consolidate setting up authentication in tests. (Rudy Seitz via Eric Pugh)
 
+* SOLR-15582: Remove deprecated APIs in solrj Tuple class. (Christine Poerschke via Eric Pugh)
+
 ==================  9.7.0 ==================
 New Features
 ---------------------
