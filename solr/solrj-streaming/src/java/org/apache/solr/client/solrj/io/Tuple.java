@@ -245,7 +245,7 @@ public class Tuple implements Cloneable, MapWriter {
 
   /**
    * A list of field names to serialize. This list (together with the mapping in {@link
-   * #getFieldLabels()} determines what tuple values are serialized and their external (serialized)
+   * #getFieldLabels()}) determines what tuple values are serialized and their external (serialized)
    * names.
    *
    * @return list of external field names or null
@@ -282,7 +282,7 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   /**
-   * The other tuples fields and fieldLabels will be putAll'd directly to this's fields and
+   * The other tuples fields and fieldLabels will be merged via putAll directly into this Tuple's fields and
    * fieldLabels while other's fieldNames will be added such that duplicates aren't present.
    *
    * @param other Tuple to be merged into this.
